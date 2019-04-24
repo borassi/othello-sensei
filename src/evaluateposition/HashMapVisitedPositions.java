@@ -1,0 +1,565 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package evaluateposition;
+
+import board.Board;
+import board.PossibleMovesFinderImproved;
+import bitpattern.BitPattern;
+import static evaluateposition.StoredBoard.N_SAMPLES;
+
+public class HashMapVisitedPositions {
+  protected final PossibleMovesFinderImproved possibleMovesFinder;
+
+  public StoredBoard evaluationsHashMap[];
+  protected StoredBoard firstPosition;
+  private int arraySize;
+  int maxSize;
+  int size;
+  
+  class PositionToImprove {
+    StoredBoard board;
+    boolean playerIsStartingPlayer;
+    boolean playerVariates;
+    int alpha;
+    int beta;
+    
+    public PositionToImprove(StoredBoard board, boolean playerVariates,
+        boolean playerIsStartingPlayer, StoredBoard firstPosition) {
+      this.board = board;
+      this.playerIsStartingPlayer = playerIsStartingPlayer;
+      this.setAlphaBeta(firstPosition);
+    }
+  
+    private void setAlphaBeta(StoredBoard firstPosition) {
+      if (playerIsStartingPlayer) {
+        alpha = firstPosition.getLowerBound();
+        beta = firstPosition.getUpperBound();
+      } else {
+        alpha = -firstPosition.getUpperBound();
+        beta = -firstPosition.getLowerBound();
+      }
+      if (alpha == beta) {
+//        if (board.eval > beta) {
+          alpha--;
+          beta++;
+//        } else if (board.eval < alpha) {
+//          beta++;
+//          alpha--;
+//        }
+      }
+      if (alpha >= beta) {
+        System.out.println("AGAIN");
+      }
+    }
+  }
+  
+  public HashMapVisitedPositions() {
+    this(2000000, 1000000, PossibleMovesFinderImproved.load());
+  }
+  
+  public HashMapVisitedPositions(int arraySize, int maxSize, PossibleMovesFinderImproved possibleMovesFinder) {
+    this.arraySize = arraySize;
+    this.maxSize = maxSize;
+    this.possibleMovesFinder = possibleMovesFinder;
+    empty();
+  }
+  
+  protected synchronized PositionToImprove nextPositionToImproveRandom(boolean playerIsStartingPlayer) {
+    int i = 0;
+    for (StoredBoard b = first(); b != null; b = next(b.player, b.opponent)) {
+      if (getFull(b.player, b.opponent).isLeaf() && !b.isSolved()) {
+        i++;
+      }
+    }
+    int chosen = 1 + (int) (Math.random() * i);
+    i = 0;
+    for (StoredBoard b = first(); b != null; b = next(b.player, b.opponent)) {
+      if (getFull(b.player, b.opponent).isLeaf() && !b.isSolved()) {
+        i++;
+      }
+      if (i == chosen) {
+        return new PositionToImprove(b, playerIsStartingPlayer, Math.random() > 0.5, this.firstPosition);
+      }
+    }
+    return null;
+  }
+
+  protected synchronized PositionToImprove nextPositionToImproveEndgame(
+      StoredBoard position, boolean playerVariates, boolean playerIsStartingPlayer) {
+    if (position.isLeaf()) {
+
+      if (playerIsStartingPlayer) {
+        
+      }
+      return new PositionToImprove(position, playerVariates, playerIsStartingPlayer, this.firstPosition);
+    }
+    int bestValue = Integer.MIN_VALUE;
+    StoredBoard best = null; 
+    if (playerVariates) {
+      // Player variates: maximize upper bound (lower bound next move).
+      for (StoredBoard child : position.children) {
+        if (bestValue < -child.opponentVariates) {
+          bestValue = -child.opponentVariates;
+          best = child;
+        }
+      }
+    } else {
+      // Opponent variates: maximize eval.
+      for (StoredBoard child : position.children) {
+        if (bestValue < -child.eval) {
+          bestValue = (short) -child.eval;
+          best = child;
+        } else if (bestValue == -child.eval &&
+            child.playerVariates < best.playerVariates) {
+          best = child;          
+        }
+      }
+    }
+    return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer);
+  }
+  protected synchronized PositionToImprove nextPositionToImproveStandard(
+      StoredBoard position, int sample, boolean playerVariates, boolean playerIsStartingPlayer) {
+    if (position.isLeaf()) {
+      return new PositionToImprove(position, playerVariates, playerIsStartingPlayer, this.firstPosition);
+    }
+    int bestValue = 6600;
+    StoredBoard best = null; 
+    if (playerVariates) {
+      for (StoredBoard child : position.children) {
+        int current = (int) (child.samples[sample] + (Math.random() - 0.5) * 200);
+        if (current < bestValue) {
+          bestValue = current;
+          best = child;
+        }
+      }
+    } else {
+      for (StoredBoard child : position.children) {
+        int current = (int) (child.eval + (Math.random() - 0.5) * 400);
+        if (current <= bestValue) {
+          bestValue = current;
+          best = child;
+        }
+      }
+    }
+    return nextPositionToImproveStandard(best, sample, !playerVariates, !playerIsStartingPlayer);
+  }
+
+  protected synchronized PositionToImprove nextPositionToImprove() {
+    StoredBoard positionToEvaluateLocal = this.firstPosition;
+    if (positionToEvaluateLocal.isSolved()) {
+      return null;
+    }
+//    if (Math.random() < 0.8) {
+    int sample = (int) (Math.random() * N_SAMPLES);
+//    for (int i = 0; i < N_SAMPLES; i++) {
+      if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
+//        System.out.println(sample);
+        return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
+            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true);
+      }
+//      sample = (sample + 1) % N_SAMPLES;
+//    }
+    
+    assert(positionToEvaluateLocal.isPartiallySolved());
+//    }
+    boolean playerVariates;
+    if (positionToEvaluateLocal.playerVariates < -6400) {
+      assert(positionToEvaluateLocal.opponentVariates <= 6400);
+      playerVariates = false;
+    } else if (positionToEvaluateLocal.opponentVariates > 6400) {
+      playerVariates = true;
+    } else {
+      playerVariates = Math.random() < 0.5;
+    }
+//    System.out.println("Endgame: " + playerVariates);
+    return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true);
+  }
+
+  private void empty() {
+    evaluationsHashMap = new StoredBoard[arraySize];
+    size = 0;
+  }
+  
+  public static final int hashBoard(long player, long opponent, int maxElements) {
+    int newPlayer = (int) ((player + (player >>> 32)) * 541725397157L);
+    int newOpponent = (int) ((opponent + (opponent >>> 32)) * 541725397157L);
+    return ((3 * newPlayer + 17 * newOpponent) % maxElements + maxElements) % maxElements;
+  }
+
+  public int size() {
+    return size;
+  }
+  
+  public void addFirstPosition(StoredBoard b) {
+    empty();
+    add(b);
+    this.firstPosition = b;
+  }
+  
+  protected void add(StoredBoard b) {
+    long player = b.player;
+    long opponent = b.opponent;
+    int hash = hashBoard(player, opponent, arraySize);
+
+    StoredBoard first = evaluationsHashMap[hash];
+    b.next = first;
+    if (first != null) {
+      first.prev = b;
+    }
+    evaluationsHashMap[hash] = b;
+    size++;
+  }
+  
+  public void updateSolved(long player, long opponent, int eval) {
+    StoredBoard b = getFull(player, opponent);
+    b.setSolved(eval);
+    updateFathers(b);
+  }
+
+  public void updateUpper(long player, long opponent, int upper) {
+    StoredBoard b = getFull(player, opponent);
+    b.setUpper(upper);
+    updateFathers(b);
+  }
+  
+  public void updateLower(long player, long opponent, int lower) {
+    StoredBoard b = getFull(player, opponent);
+    b.setLower(lower);
+    updateFathers(b);
+  }
+  
+//  public void update(long player, long opponent, int eval, int variance) {
+//    StoredBoard b = getFull(player, opponent);
+//    b.updateEval(eval, variance);
+//    updateFathers(b);
+//  }
+  
+  public void add(StoredBoard[] children, StoredBoard father) {
+    StoredBoard fatherInHash = getFull(father.player, father.opponent);
+    assert(children.length > 0);
+    for (int i = 0; i < children.length; i++) {
+      StoredBoard child = children[i];
+      StoredBoard childInHash = getFull(child.player, child.opponent);
+      if (childInHash != null) {
+        boolean found = false;
+        for (StoredBoard otherFather : childInHash.fathers) {
+          if (otherFather.player == fatherInHash.player &&
+              otherFather.opponent == fatherInHash.opponent) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          childInHash.fathers.add(fatherInHash);
+        }
+        children[i] = childInHash;
+        continue;
+      }
+      child.fathers.add(fatherInHash);
+      add(child);
+    }
+    fatherInHash.children = children;
+    updateFathers(children[0]);
+  }
+  
+  public StoredBoard get(Board b) {
+    return get(b.getPlayer(), b.getOpponent());
+  }
+  
+  private StoredBoard getFull(long player, long opponent) {
+    int hash = hashBoard(player, opponent, arraySize);
+
+    StoredBoard first = evaluationsHashMap[hash];
+    StoredBoard b = first;
+
+    while (b != null) {
+      if (b.player == player && b.opponent == opponent) {
+        return b;
+      }
+      b = b.next;
+    }
+    return null;
+  }
+  public StoredBoard get(long player, long opponent) {
+    StoredBoard result = getFull(player, opponent);
+    if (result == null) {
+      return null;
+    }
+    return result;
+  }
+  
+  private StoredBoard next(int hash) {
+    StoredBoard b;
+    for (int i = hash + 1; i < arraySize; i++) {
+      b = evaluationsHashMap[i];
+      if (b != null) {
+        return b;
+      }
+    }
+    return null;
+  }
+  
+  public StoredBoard first() {
+    return next(-1);
+  }
+  public StoredBoard next(long player, long opponent) {
+    StoredBoard b = getFull(player, opponent);
+    if (b.next != null) {
+      return b.next;
+    }
+    return next(hashBoard(player, opponent, arraySize));
+  }
+  
+  public EvaluatedBoard getEvaluatedBoard(Board b) {
+    StoredBoard sb = get(b);
+    if (sb == null) {
+      return null;
+    }
+    return sb.toEvaluatedBoard();
+  }
+  
+
+  protected synchronized void updateFathers(StoredBoard start) {
+    for (StoredBoard father : start.fathers) {
+      father.eval = Short.MIN_VALUE;
+      father.playerVariates = Short.MIN_VALUE;
+      father.opponentVariates = Short.MIN_VALUE;
+      father.descendants = 1;
+      for (StoredBoard child : father.children) {
+        short childEval = (short) -child.eval;
+        if (childEval > father.eval || (childEval == father.eval && 
+            father.opponentVariates < -child.playerVariates)) {
+          father.eval = childEval;
+          father.opponentVariates = (short) (-child.playerVariates);
+        }
+        father.playerVariates = (short) Math.max(father.playerVariates, -child.opponentVariates);
+        father.descendants += child.descendants;
+      }
+      for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
+        short tmp = Short.MIN_VALUE;
+        for (StoredBoard child : father.children) {
+          tmp = (short) Math.max(tmp, -child.samples[i]);
+        }
+        father.samples[i] = tmp;
+      }
+      updateFathers(father);
+    }
+  }
+
+  /**
+   * Checks that this board is correct:
+   * 1) If it has a father, the father is truly a father
+   * @param b the board
+   * @return 
+   */
+  public boolean boardIsCorrect(StoredBoard b) {
+    Board board = b.getBoard();
+    for (StoredBoard fatherHash : b.fathers) {
+      StoredBoard father = fatherHash;
+      boolean found = false;
+      Board fatherBoard = father.getBoard();
+      long moves[] = possibleMovesFinder.possibleMovesAdvanced(father.player, father.opponent);
+      for (long move : moves) {
+        Board result = fatherBoard.move(move);
+        if (result.getPlayer() == board.getPlayer() && 
+            result.getOpponent() == board.getOpponent()) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        System.out.println("The board\n" + fatherBoard + " should not be one " +
+          "of the fathers of the board\n" + board);
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  /**
+   * Checks that the children of this board are correct: (only if it is not a
+   * leaf):
+   * 1) All children have it among their fathers;
+   * 2) Its lower / upper / eval is the same as the max(-children_eval), and for
+   *    the upper bound, we consider also otherChildrenUpperBound.
+   * 3) Its bestDescendant is one of the children's bestDescendant
+   * 
+   * In case of a board that passes, if the opponent has moves, we do the same
+   * checks as before, where the only move is a pass. Else, we only check that
+   * we set the final game score.
+   * 
+   * @param b the board to check
+   * @return true if everything is correct, false otherwise
+   */
+  public boolean boardChildrenAreCorrect(StoredBoard b) {
+    if (b.isLeaf()) {
+      if (b.descendants != 1) {
+        System.out.println("The board " + b + " should have 1 descendant "
+          + "because it is a leaf. However, it has " + b.descendants + " descendants.");
+        return false;
+      }
+      return true;
+    }
+
+    Board board = b.getBoard();
+    long moves[] = possibleMovesFinder.possibleMoves(board);
+    if (moves.length == 0) {
+      Board afterPass = board.move(0);
+      if (possibleMovesFinder.possibleMoves(afterPass).length == 0) {
+        // Double pass, game is over.
+        if (b.children.length != 0) {
+          System.out.println("The board\n" + board + "should have no children.");
+          return false;          
+        }
+        if (b.eval != BitPattern.getEvaluationGameOver(board)) {
+          System.out.println("The board\n" + board + 
+            "should contain a gg result, but it does not, as it has eval = " +
+            b.eval);
+          return false;
+        } else if (b.isLeaf()) {
+          System.out.println("The board\n" + board + 
+            "should contain a gg result, but it does not, as it has isLeaf=TRUE");
+          return false;
+        }
+        int i = 0;
+        if (b.playerVariates >= -6400 || b.opponentVariates <= 6400) {
+          System.out.println("The board\n" + board + 
+            "should contain a gg result, but playerVariates, opponentVariates = " + 
+            b.playerVariates + ", " + b.opponentVariates + ". Expected: -6600, 6600");
+          return false;
+        }
+        for (short s : b.samples) {
+          i++;
+          if (s != Math.round(b.eval)) {
+            System.out.println("The board\n" + board + 
+              "should contain a gg result, but the score of sample " + i + 
+              " is wrong. Expected: " + b.eval + ". Actual: " + s);
+            return false;
+          }
+        }
+        return true;
+      }
+      moves = new long[] {0};
+    }
+
+    short eval = -6600;
+    short opponentVariates = -6600;
+    short playerVariates = -6600;
+    short samples[] = new short[StoredBoard.N_SAMPLES];
+    for (int i = 0; i < samples.length; ++i) {
+      samples[i] = -6600;
+    }
+
+    if (moves.length != b.children.length) {
+      System.out.println("The board\n" + b.getBoard() + 
+        "\n has a wrong number of fathers.\n" + board);
+      return false;
+    }
+    int descendants = 1;
+    for (long move : moves) {
+      Board next = board.move(move);
+      StoredBoard child = this.getFull(next.getPlayer(), next.getOpponent());
+      boolean found = false;
+      for (StoredBoard childStored : b.children) {
+        if (childStored == child) {
+          found = true;
+          break;
+        }
+      }
+      descendants += child.descendants;
+      if (!found) {
+        System.out.println("The board\n" + b.getBoard() + 
+          "\n should have as a children the board\n" + next);
+        return false;         
+      }
+      if (!child.fathers.contains(b)) {
+        System.out.println("The board\n" + child.getBoard() + 
+          "\n does not have as a father the following board\n" + board);
+        return false; 
+      }
+      short otherEval = child.eval;
+      if (-otherEval > eval || (-otherEval == eval && opponentVariates < -child.playerVariates)) {
+        eval = (short) -otherEval;
+        opponentVariates = (short) -child.playerVariates;
+      }
+      if (-child.opponentVariates > playerVariates) {
+        playerVariates = (short) -child.opponentVariates;
+      }
+      for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
+        samples[i] = (short) Math.max(samples[i], -child.samples[i]);
+      }
+    }
+    if (descendants != b.descendants) {
+      System.out.println("The board " + b + " has " + b.descendants + 
+                         " descendants. Expected " + descendants);
+      return false;
+    }
+    
+    if (Math.abs(b.eval - eval) > 1.E-8) {
+      System.out.println(
+        "Wrong eval bound for the board\n" + b.getBoard() + 
+        "Expected: " + eval + ". Actual: " + b.eval);
+      return false;
+    }
+    if (b.playerVariates != playerVariates) {
+      System.out.println("Wrong playerVariates for the board\n" + b.getBoard() + 
+        "Expected: " + playerVariates + ". Actual: " + b.playerVariates);
+      return false;
+    }
+    if (b.opponentVariates != opponentVariates) {
+      System.out.println("Wrong opponentVariates for the board\n" + b.getBoard() + 
+        "Expected: " + opponentVariates + ". Actual: " + b.opponentVariates);
+      System.out.println("CHILDREN");
+      for (StoredBoard c : b.children) {
+        System.out.println(c);
+      }
+      System.out.println("END");
+      return false;
+    }
+    for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
+      if (b.samples[i] != samples[i]) {
+        System.out.println(
+          "Wrong sample or solved " + i + " for the board\n" + b.getBoard() + 
+          "Expected: " + samples[i] + ". Actual: " + b.samples[i]);
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  public boolean allCorrect() {
+    for (StoredBoard b = first(); b != null; b = next(b.player, b.opponent)) {
+      if (!boardIsCorrect(getFull(b.player, b.opponent)) || !boardChildrenAreCorrect(getFull(b.player, b.opponent))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  @Override
+  public String toString() {
+    String result = "";
+    int i = 0;
+    for (StoredBoard a : evaluationsHashMap) {
+      result += i++ + "\n";
+      StoredBoard b = a;
+      while (b != null) {
+        result = result.concat(b.toString());
+        b = b.next;
+      }
+    }
+    return result;
+  }
+}
