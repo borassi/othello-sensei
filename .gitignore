@@ -1,2 +1,9 @@
 /nbproject/private/
 /build/
+/dist/
+build.xml
+coefficients/*
+training_set/*
+include/*
+manifest.mf
+nbproject/
