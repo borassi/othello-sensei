@@ -12,220 +12,267 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package evaluateposition;
 
 import bitpattern.BitPattern;
 import board.Board;
 import static board.PossibleMovesFinderImproved.possibleMovesBasic;
 import evaluatedepthone.MultilinearRegression;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import sun.misc.Unsafe;
 
 /**
  *
  * @author michele
  */
 public class EvaluatorLastMoves {
-  static final int POSITION_VALUE[] = new int[] {
-      0, 7, 3, 4, 4, 3, 7, 0,
-      7, 8, 6, 5, 5, 6, 8, 7,
-      3, 6, 2, 1, 1, 2, 6, 3,
-      4, 5, 1, 9, 9, 1, 5, 4,
-      4, 5, 1, 9, 9, 1, 5, 4,
-      3, 6, 2, 1, 1, 2, 6, 3,
-      7, 8, 6, 5, 5, 6, 8, 7,
-      0, 7, 3, 4, 4, 3, 7, 0
-  };
-    
-  class Empty implements Comparable<Empty> {
-    Empty prev = null;
-    Empty next = null;
-    Space space = null;
-    int position = -1;
-    
-    @Override
-    public int compareTo(Empty other) {
-      return Integer.compare(POSITION_VALUE[position], POSITION_VALUE[other.position]);
-    }
-  }
+//  static final int POSITION_VALUE[] = new int[] {
+//      0, 7, 3, 4, 4, 3, 7, 0,
+//      7, 8, 6, 5, 5, 6, 8, 7,
+//      3, 6, 2, 1, 1, 2, 6, 3,
+//      4, 5, 1, 9, 9, 1, 5, 4,
+//      4, 5, 1, 9, 9, 1, 5, 4,
+//      3, 6, 2, 1, 1, 2, 6, 3,
+//      7, 8, 6, 5, 5, 6, 8, 7,
+//      0, 7, 3, 4, 4, 3, 7, 0
+//  };
+//    
+//  class Empty implements Comparable<Empty> {
+//    Empty prev = null;
+//    Empty next = null;
+//    Space space = null;
+//    int position = -1;
+//    
+//    @Override
+//    public int compareTo(Empty other) {
+//      return Integer.compare(POSITION_VALUE[position], POSITION_VALUE[other.position]);
+//    }
+//  }
+//  class EmptyWithEvaluation implements Comparable<EmptyWithEvaluation> {
+//    Empty empty;
+//    int eval;
+//    @Override
+//    public int compareTo(EmptyWithEvaluation other) {
+//      return Integer.compare(eval, other.eval);
+//    }
+//    public EmptyWithEvaluation(Empty empty, int eval) {
+//      this.empty = empty;
+//      this.eval = eval;
+//    }
+//  }
+//
+//  class Space implements Comparable<Space> {
+//    Empty firstEmpty = new Empty();
+//    Empty lastEmpty = new Empty();
+//    short nEmpties;
+//    int number;
+//    
+//    public Space(int number) {
+//      reset(number);
+//    }
+//    
+//    public final void reset(int number) {
+//      firstEmpty.next = lastEmpty;
+//      firstEmpty.space = this;
+//      lastEmpty.prev = firstEmpty;
+//      lastEmpty.space = this;
+//      this.number = number;
+//      nEmpties = 0;      
+//    }
+//    
+//    private void addSorted(int position) {
+//      Empty newEmpty = new Empty();
+//      newEmpty.space = this;
+//      newEmpty.position = position;
+//      Empty e;
+//      for (e = firstEmpty.next; e != lastEmpty; e = e.next) {
+//        if (newEmpty.compareTo(e) < 0) {
+//          break;
+//        }
+//      }
+//      newEmpty.prev = e.prev;
+//      newEmpty.next = e;
+//      this.reAddElement(newEmpty);
+//    }
+//    
+//    private void addBeforeLast(int position) {
+//      Empty newEmpty = new Empty();
+//      newEmpty.space = this;
+//      newEmpty.position = position;
+//      newEmpty.prev = lastEmpty.prev;
+//      newEmpty.next = lastEmpty;
+//      this.reAddElement(newEmpty);
+//    }
+//
+//    private void reAddElement(Empty empty) {
+//      empty.prev.next = empty;
+//      empty.next.prev = empty;
+//      nEmpties++;      
+//    }
+//
+//    private void removeElement(Empty empty) {
+//      empty.prev.next = empty.next;
+//      empty.next.prev = empty.prev;
+//      nEmpties--;
+//    }
+//    
+//    public int[] toArray() {
+//      int result[] = new int[nEmpties];
+//      Empty empty = firstEmpty;
+//      for (int i = 0; i < nEmpties; i++) {
+//        empty = empty.next;
+//        result[i] = empty.position;
+//      }
+//      return result;
+//    }
+//
+//    public int value() {
+//      return 
+//          (nEmpties == 0 ? 1000000 : 0) +
+//          (nEmpties != 1 ? 200000 : 0) +
+//          (nEmpties % 2 == 0 ? 100000 : 0) +
+////          (number != lastSpacePlayed.topInt() ? 10000 : 0) +
+//          nEmpties * 10 + 
+//          number;
+//    }
+//    @Override
+//    public int compareTo(Space other) {
+//      return Integer.compare(value(), other.value());
+//    }
+//  }
 
-  class Space implements Comparable<Space> {
-    Empty firstEmpty = new Empty();
-    Empty lastEmpty = new Empty();
-    short nEmpties;
-    int number;
-    
-    public Space(int number) {
-      reset(number);
-    }
-    
-    public final void reset(int number) {
-      firstEmpty.next = lastEmpty;
-      firstEmpty.space = this;
-      lastEmpty.prev = firstEmpty;
-      lastEmpty.space = this;
-      this.number = number;
-      nEmpties = 0;      
-    }
-    
-    private void addSorted(int position) {
-      Empty newEmpty = new Empty();
-      newEmpty.space = this;
-      newEmpty.position = position;
-      Empty e;
-      for (e = firstEmpty.next; e != lastEmpty; e = e.next) {
-        if (newEmpty.compareTo(e) < 0) {
-          break;
-        }
-      }
-      newEmpty.prev = e.prev;
-      newEmpty.next = e;
-      this.reAddElement(newEmpty);
-    }
-    
-    private void addBeforeLast(int position) {
-      Empty newEmpty = new Empty();
-      newEmpty.space = this;
-      newEmpty.position = position;
-      newEmpty.prev = lastEmpty.prev;
-      newEmpty.next = lastEmpty;
-      this.reAddElement(newEmpty);
-    }
-
-    private void reAddElement(Empty empty) {
-      empty.prev.next = empty;
-      empty.next.prev = empty;
-      nEmpties++;      
-    }
-
-    private void removeElement(Empty empty) {
-      empty.prev.next = empty.next;
-      empty.next.prev = empty.prev;
-      nEmpties--;
-    }
-    
-    public int[] toArray() {
-      int result[] = new int[nEmpties];
-      Empty empty = firstEmpty;
-      for (int i = 0; i < nEmpties; i++) {
-        empty = empty.next;
-        result[i] = empty.position;
-      }
-      return result;
-    }
-
-    public int value() {
-      return (nEmpties == 0 ? 3000 : 0) +
-          (nEmpties % 2 == 0 ? 2000 : 0) +
-          (number != lastSpacePlayed.topInt() ? 1000 : 0) +
-          nEmpties * 10 + 
-          number;
-    }
-    @Override
-    public int compareTo(Space other) {
-      return Integer.compare(value(), other.value());
-    }
-  }
-
-  Space spaces[];
-  long[][] flipHorizontal = new long[64][256 * 256];
-  long[][] flipVertical = new long[64][256 * 256];
-  long[][] flipDiagonal = new long[64][256 * 256];
-  long[][] flipReverseDiagonal = new long[64][256 * 256];
+  public Unsafe unsafe;
+//  Space spaces[];
+  long[] flipHorizontal = new long[64 * 256 * 256];
+  long[] flipVertical = new long[64 * 256 * 256];
+  long[] flipDiagonal = new long[64 * 256 * 256];
+  long[] flipReverseDiagonal = new long[64 * 256 * 256];
+  long[] flipHorizontalLast = new long[64 * 256 * 256];
+  long[] flipVerticalLast = new long[64 * 256];
+  long[] flipDiagonalLast = new long[64 * 256];
+  long[] flipReverseDiagonalLast = new long[64 * 256];
   int nVisited = 0;
   MultilinearRegression r = new MultilinearRegression();
-  IntArrayList lastSpacePlayed = new IntArrayList(new int[] {-1});
+  int baseOffset;
+//  IntArrayList lastSpacePlayed = new IntArrayList(new int[] {-1});
   
   public EvaluatorLastMoves() {
+    Field theUnsafe;
+    try {
+      theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+      theUnsafe.setAccessible(true);
+      unsafe = (Unsafe) theUnsafe.get(null);
+      baseOffset = unsafe.arrayBaseOffset(long[].class);
+    } catch (Exception ex) {
+      Logger.getLogger(EvaluatorLastMoves.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    initFlips();
     initMoves();
   }
   
   // HANDLING EMPTY CASES
-  protected int[] getEmpties() {
-    int[] result = new int[getNEmpties()];
-    int i = 0;
-    
-    for (Space space : spaces) {
-      for (int empty : space.toArray()) {
-        result[i++] = empty;
-      }
-    }
-    return result;
-  }
-  public int getNEmpties() {
-    int result = 0;
-    for (Space space : spaces) {
-      result += space.nEmpties;
-    }
-    return result;
-  }
-  
-  protected void setEmpties(Board b) {
-    setEmpties(b.getPlayer(), b.getOpponent());
-  }
-
-  protected void setEmpties(long player, long opponent) {
-    long emptySquares = ~(player | opponent);
-    spaces = new Space[] {new Space(0), new Space(1), new Space(2), new Space(3)};
-    
-    while (emptySquares != 0) {
-      int empty = Long.numberOfTrailingZeros(emptySquares);
-      emptySquares = emptySquares & ~(1L << empty);
-      spaces[empty % 8 >= 4 ? 1 : 0 + 2 * (empty / 32)].addSorted(empty);
-    }
-    Arrays.sort(spaces);
-  }
-  
-  private Space bestSpace() {
-    Space toReturn = null;
-    for (Space s : spaces) {
-      toReturn = (toReturn == null || s.compareTo(toReturn) < 0) ? s : toReturn;
-    }
-    return toReturn;
-  }
-  private Space bestSpaceAfterSpace(Space space) {
-    Space toReturn = null;
-    for (Space s : spaces) {
-      if (s.compareTo(space) <= 0) {
-        continue;
-      }
-      toReturn = toReturn == null || s.compareTo(toReturn) < 0 ? s : toReturn;
-    }
-    return toReturn;
-  }
-  
-  Empty firstEmpty() {
-    return nextEmpty(bestSpace().firstEmpty);
-  }
-
-  Empty nextEmpty(Empty empty) {
-    Empty toReturn = empty.next;
-    Space space = empty.space;
-
-    if (toReturn.position == -1) {
-      space = bestSpaceAfterSpace(space);
-      if (space == null || space.nEmpties == 0) {
-        return null;
-      }
-      toReturn = space.firstEmpty.next;
-    } 
-    toReturn.space.removeElement(toReturn);
-    lastSpacePlayed.push(toReturn.space.number);
-    return toReturn;
-  }
-  
-  void reAddEmpty(Empty empty) {
-    empty.space.reAddElement(empty);
-    lastSpacePlayed.popInt();
-  }
+//  protected int[] getEmpties() {
+//    int[] result = new int[getNEmpties()];
+//    int i = 0;
+//    
+//    for (Space space : spaces) {
+//      for (int empty : space.toArray()) {
+//        result[i++] = empty;
+//      }
+//    }
+//    return result;
+//  }
+//  public int getNEmpties() {
+//    int result = 0;
+//    for (Space space : spaces) {
+//      result += space.nEmpties;
+//    }
+//    return result;
+//  }
+//  
+//  protected void setEmpties(Board b) {
+//    setEmpties(b.getPlayer(), b.getOpponent());
+//  }
+//
+//  protected void setEmpties(long player, long opponent) {
+//    long emptySquares = ~(player | opponent);
+//    spaces = new Space[] {new Space(0), new Space(1), new Space(2), new Space(3)};
+////    spaces = new Space[] {new Space(0)};
+//    
+//    while (emptySquares != 0) {
+//      int empty = Long.numberOfTrailingZeros(emptySquares);
+//      emptySquares = emptySquares & ~(1L << empty);
+//      spaces[empty % 8 >= 4 ? 1 : 0 + 2 * (empty / 32)].addSorted(empty);
+////      spaces[0].addSorted(empty);
+//    }
+//    Arrays.sort(spaces);
+//  }
+//  
+//  private Space bestSpace() {
+//    Space toReturn = null;
+//    for (Space s : spaces) {
+//      toReturn = (toReturn == null || s.compareTo(toReturn) < 0) ? s : toReturn;
+//    }
+//    return toReturn;
+//  }
+//  private Space bestSpaceAfterSpace(Space space) {
+//    Space toReturn = null;
+//    for (Space s : spaces) {
+//      if (s.compareTo(space) <= 0) {
+//        continue;
+//      }
+//      toReturn = toReturn == null || s.compareTo(toReturn) < 0 ? s : toReturn;
+//    }
+//    return toReturn;
+//  }
+//  
+//  Empty firstEmpty() {
+//    return nextEmpty(bestSpace().firstEmpty);
+//  }
+//
+//  Empty nextEmpty(Empty empty) {
+//    Empty toReturn = empty.next;
+//    Space space = empty.space;
+//
+//    if (toReturn.position == -1) {
+//      space = bestSpaceAfterSpace(space);
+//      if (space == null || space.nEmpties == 0) {
+//        return null;
+//      }
+//      toReturn = space.firstEmpty.next;
+//    } 
+//    toReturn.space.removeElement(toReturn);
+////    lastSpacePlayed.push(toReturn.space.number);
+//    return toReturn;
+//  }
+//  
+//  void reAddEmpty(Empty empty) {
+//    empty.space.reAddElement(empty);
+////    lastSpacePlayed.popInt();
+//  }
   
   // COMPUTING FLIPS.
+  
+  private static int hashDiagonal(int move, long player) {
+    long bitPattern = BitPattern.getNWSEDiag(move);
+    return BitPattern.anyDiagonalToFirstRow(player & bitPattern);
+  }
+  private static int hashRevDiagonal(int move, long player) {
+    long bitPattern = BitPattern.getNESWDiag(move);
+    return BitPattern.anyDiagonalToFirstRow(player & bitPattern);
+  }
+  private static int hashRow(int move, long player) {
+    long bitPattern = BitPattern.getRow(move);
+    return BitPattern.anyRowToFirstRow(player & bitPattern, move / 8);
+  }
+  private static int hashColumn(int move, long player) {
+    long bitPattern = BitPattern.getColumn(move);
+    return BitPattern.anyColumnToFirstRow(player & bitPattern, move % 8);
+  }
   
   private static int hashDiagonal(int move, long player, long opponent) {
     long bitPattern = BitPattern.getNWSEDiag(move);
@@ -246,6 +293,22 @@ public class EvaluatorLastMoves {
     long bitPattern = BitPattern.getColumn(move);
     return BitPattern.anyColumnToFirstRow(player & bitPattern, move % 8) + 
             BitPattern.anyColumnToFirstRow(opponent & bitPattern, move % 8) * 256;
+  }
+  private static int hashGeneric(int move, long player, long bitPattern) {
+    if (bitPattern == BitPattern.getNWSEDiag(move)) {
+      return hashDiagonal(move, player);
+    }
+    if (bitPattern == BitPattern.getNESWDiag(move)) {
+      return hashRevDiagonal(move, player);
+    }
+    if (bitPattern == BitPattern.getRow(move)) {
+      return hashRow(move, player);
+    }
+    if (bitPattern == BitPattern.getColumn(move)) {
+      return hashColumn(move, player);
+    }
+    assert(false);
+    return 0;
   }
   private static int hashGeneric(int move, long player, long opponent, long bitPattern) {
     if (bitPattern == BitPattern.getNWSEDiag(move)) {
@@ -269,11 +332,13 @@ public class EvaluatorLastMoves {
       long bitPatterns[] = {BitPattern.getRow(position), 
         BitPattern.getColumn(position), BitPattern.getNESWDiag(position),
         BitPattern.getNWSEDiag(position)};
-      long[][][] flips = {flipHorizontal, flipVertical, flipReverseDiagonal, flipDiagonal};
+      long[][] flips = {flipHorizontal, flipVertical, flipReverseDiagonal, flipDiagonal};
+      long[][] flipsLast = {flipHorizontalLast, flipVerticalLast, flipReverseDiagonalLast, flipDiagonalLast};
 
       for (int i = 0; i < bitPatterns.length; i++) {
         long bitPattern = bitPatterns[i];
-        long[][] flip = flips[i];
+        long[] flip = flips[i];
+        long[] flipLast = flipsLast[i];
         for (Board board : Board.existingBoardsInBitPattern(bitPattern)) {
           LongArrayList possibleMoves = possibleMovesBasic(board);
           int hash = hashGeneric(
@@ -284,7 +349,13 @@ public class EvaluatorLastMoves {
             int thisMovePosition = Long.numberOfTrailingZeros(
               curFlip & (~board.getPlayer()) & (~board.getOpponent()));
             if (thisMovePosition == position) {
-              flip[position][hash] = curFlip;
+              flip[position * 65536 + hash] = curFlip;
+              if ((curFlip | board.getPlayer() | board.getOpponent()) == bitPattern) {
+                int newHash = hashGeneric(
+                  position, board.getPlayer(), bitPattern);
+                assert(flipLast[position * 256 + newHash] == 0);
+                flipLast[position * 256 + newHash] = curFlip;
+              }
             }
           }
         }
@@ -292,82 +363,99 @@ public class EvaluatorLastMoves {
     }
   }
   
-//  protected long getFlip1(int move, long player, long opponent) {
-//    long moveBit = 1L << move;
-//    int rightShift = move % 8;
-//    int leftShift = 7 - rightShift;
-//    int bottomShift = move / 8;
-//    int topShift = 7 - bottomShift;
-//    int dirs[] = new int[] {-9, -8, -7, -1, 1, 7, 8, 9};
-//    int maxShift[] = new int[] {Math.min(leftShift, topShift), topShift, Math.min(rightShift, topShift),
-//                                leftShift, rightShift,
-//                                Math.min(leftShift, bottomShift), bottomShift, Math.min(rightShift, bottomShift)};
-//                                
-//    long flip = 0;
-//    for (int i = 0; i < 8; i++) {
-//      long curFlip = 0;
-//      long c;
-//      int dir = dirs[i];
-//      for (int j = 1; j <= maxShift[i]; j++) {
-//        c = 1L << (move - j * dir);
-//        if ((c & opponent) != 0) {
-//          curFlip |= c;
-//        } else if ((c & player) != 0) {
-//          flip |= curFlip;
-//          break;
-//        } else {
-//          break;
-//        }
-//      }
-//    }
-//    flip = flip == 0 ? 0 : flip | moveBit;
-//    return flip;
-//  }
+
+  private long neighbors[];
+  private long horizVert[];
+//  private long diagFlips[];
+//  private long deletersFlips[];
+  
+  private void initFlips() {
+    neighbors = new long[64];
+    horizVert = new long[64];
+//    diagFlips = new long[64];
+//    deletersFlips = new long[64];
+    int dirs[] = new int[] {-9, -8, -7, -1, 1, 7, 8, 9};
+    for (int i = 0; i < 64; ++i) {
+      int rightShift = i % 8;
+      int leftShift = 7 - rightShift;
+      int bottomShift = i / 8;
+      int topShift = 7 - bottomShift;
+      int maxShift[] = new int[] {Math.min(leftShift, topShift),
+                                  topShift,
+                                  Math.min(rightShift, topShift),
+                                  leftShift, rightShift,
+                                  Math.min(leftShift, bottomShift),
+                                  bottomShift,
+                                  Math.min(rightShift, bottomShift)};
+      for (int j = 0; j < 8; j++) {
+        int dir = dirs[j];
+//        for (int k = 1; k <= maxShift[j]; k++) {
+        if (maxShift[j] > 0) {
+          if (dir == -8 || dir == -1 || dir == 1 || dir == 8) {
+            horizVert[i] |= 1L << (i - 1 * dir);
+          }
+//          deletersFlips[i] |= 1L << (i - maxShift[j] * dir);
+          neighbors[i] |= 1L << (i - dir);
+        }
+      }
+    }
+  }
+
+  protected long getFlipLast(int move, long player) {
+    return unsafe.getLongVolatile(flipHorizontalLast, baseOffset + (move * 256 + hashRow(move, player)) * 8) |
+        unsafe.getLongVolatile(flipVerticalLast, baseOffset + (move * 256 + hashColumn(move, player)) * 8) | 
+        unsafe.getLongVolatile(flipDiagonalLast, baseOffset + (move * 256 + hashDiagonal(move, player)) * 8) | 
+        unsafe.getLongVolatile(flipReverseDiagonalLast, baseOffset + (move * 256 + hashRevDiagonal(move, player)) * 8);
+  }
 
   protected long getFlip(int move, long player, long opponent) {
-    long row = flipHorizontal[move][hashRow(move, player, opponent)];
-    long column = flipVertical[move][hashColumn(move, player, opponent)];
-    long diag = flipDiagonal[move][hashDiagonal(move, player, opponent)];
-    long revDiag = flipReverseDiagonal[move][hashRevDiagonal(move, player, opponent)];
-
-    return row | column | diag | revDiag;
+    if ((unsafe.getLong(neighbors, baseOffset + (move * 8)) & opponent) == 0) {
+      return 0;
+    }
+    return unsafe.getLongVolatile(flipHorizontal, baseOffset + (move * 65536 + hashRow(move, player, opponent)) * 8) |
+        unsafe.getLongVolatile(flipVertical, baseOffset + (move * 65536 + hashColumn(move, player, opponent)) * 8) | 
+        unsafe.getLongVolatile(flipDiagonal, baseOffset + (move * 65536 + hashDiagonal(move, player, opponent)) * 8) | 
+        unsafe.getLongVolatile(flipReverseDiagonal, baseOffset + (move * 65536 + hashRevDiagonal(move, player, opponent)) * 8);
   }
   
   // EVALUATE.
   private int evalOneEmpty(long player, long opponent, boolean passed) {
-    long flip = getFlip(bestSpace().firstEmpty.next.position, player, opponent);
-    return flip != 0
-        ? BitPattern.getEvaluationBoardFull(player | flip)
-        : passed
-            ? BitPattern.getEvaluationGameOver(player, opponent)
-            : -evaluateRecursive(opponent, player, -6400, 6400, true);
+    int position = Long.numberOfTrailingZeros(~(player | opponent));
+    long flip = getFlipLast(position, player);
+    if (flip != 0) {
+      return BitPattern.getEvaluationBoardFull(player | flip);
+    }
+    if (passed) {
+      return BitPattern.getEvaluationGameOver(player, opponent);
+    }
+    return -evalOneEmpty(opponent, player, true);
   }
   
-  private int evaluateRecursive(long player, long opponent, int alpha, int beta,
-                                  boolean passed) {
+  private int evaluateSuperFast(long player, long opponent, int alpha, int beta,
+                                boolean passed) {
     if (!passed) {
       nVisited++;
     }
+    long empties = ~(player | opponent);
     
-    if (this.getNEmpties() == 1) {
+    if (Long.bitCount(empties) == 1) {
       return evalOneEmpty(player, opponent, passed);
     }
     boolean pass = true;
     int best = Integer.MIN_VALUE;
     int move;
-    
-    for (Empty empty = firstEmpty(); empty != null; empty = nextEmpty(empty)) {
-      move = empty.position;
+
+    while (empties != 0) {
+      move = Long.numberOfTrailingZeros(empties);
+      empties = empties & (~(1L << move));
       long flip = getFlip(move, player, opponent);
       if (flip == 0) {
-        reAddEmpty(empty);
         continue;
       }
       best = Math.max(best, 
-        -evaluateRecursive(opponent & ~flip, player | flip, -beta, 
+        -evaluateSuperFast(opponent & ~flip, player | flip, -beta, 
                            -Math.max(alpha, best), false));
       pass = false;
-      reAddEmpty(empty);
       if (best >= beta) {
         break;
       }
@@ -376,20 +464,155 @@ public class EvaluatorLastMoves {
       if (passed) {
         return BitPattern.getEvaluationGameOver(player, opponent);
       }
-      return -evaluateRecursive(opponent, player, -beta, -alpha, true);
+      return -evaluateSuperFast(opponent, player, -beta, -alpha, true);
     }
     return best;
   }
   
-  public int evaluatePosition(Board b, int alpha, int beta) {
+  private final static long XSQUARES = BitPattern.parsePattern(
+      "--------" +
+      "-X----X-" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "-X----X-" +
+      "--------");
+  private final static long CORNERS = BitPattern.parsePattern(
+      "X------X" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "X------X");
+  
+  private final static long HORIZVERT = BitPattern.parsePattern(
+      "--------" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "--------" +
+      "------X-" +
+      "-----X-X" +
+      "------X-");
+  
+  private final static long CENTRAL1 = BitPattern.parsePattern(
+      "---XX---" +
+      "--XXXX--" +
+      "-XXXXXX-" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "-XXXXXX-" +
+      "--XXXX--" +
+      "---XX---");
+  
+  private final static long CENTRAL = BitPattern.parsePattern(
+      "--XXXX--" +
+      "--XXXX--" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "--XXXX--" +
+      "--XXXX--");
+  
+  private final static long CENTRAL2 = BitPattern.parsePattern(
+      "-XXXXXX-" +
+      "X-XXXX-X" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "XXXXXXXX" +
+      "X-XXXX-X" +
+      "-XXXXXX-");
+  
+  private final static long neighborCases(long bitPattern) {
+    return (((bitPattern << 9) | (bitPattern << 1) | (bitPattern >> 7)) & ~BitPattern.LAST_COLUMN_BIT_PATTERN) |
+        (((bitPattern >> 9) | (bitPattern >> 1) | (bitPattern << 7)) & ~BitPattern.FIRST_COLUMN_BIT_PATTERN) |
+        (bitPattern << 8) | (bitPattern >> 8);
+  }
+
+  private int evaluateRecursive(long player, long opponent, int alpha, int beta,
+                                long lastMove, boolean passed) {
+    long empties = ~(player | opponent);
+    int nEmpties = Long.bitCount(empties);
+    if (nEmpties <= 4) {
+      return evaluateSuperFast(player, opponent, alpha, beta, passed);
+    }
+    if (!passed) {
+      nVisited++;
+    }
+    if (nEmpties == 1) {
+      return evalOneEmpty(player, opponent, passed);
+    }
+    
+    boolean pass = true;
+    int best = Integer.MIN_VALUE;
+    int move;
+    int lastMovePosition = Long.numberOfTrailingZeros(lastMove);
+    lastMovePosition = lastMovePosition == 64 ? 32 : lastMovePosition;
+    
+//    System.out.println(new Board(player, opponent).toStringOneLine());
+//    System.out.println("\n\n\n" + BitPattern.patternToString(lastMove) + "\n" + lastMovePosition);
+    
+    long[] masks = {
+      ~neighborCases(empties) & (neighborCases(player)),
+      neighbors[lastMovePosition] & CORNERS,
+      ((lastMove & XSQUARES) == 0) ? horizVert[lastMovePosition] : 0,
+      CORNERS,
+      ((lastMove & XSQUARES) == 0) ? neighbors[lastMovePosition] : 0,
+//      nEmpties % 2 == 0 ? 0 : ~neighborCases(empties),
+//      CENTRAL1,
+      CENTRAL,
+      CENTRAL2,
+      // STABILIZE ESMAGIUCHE!!
+      ~0L};
+//    for (long mask : masks) {
+//      if (nEmpties == 7) {
+//        System.out.println(BitPattern.patternToString(mask & empties));
+//      }
+//    }
+    for (long mask : masks) {
+//      System.out.println(BitPattern.patternToString(mask));
+      while ((empties & mask) != 0) {
+        move = Long.numberOfTrailingZeros(empties & mask);
+        lastMove = 1L << move;
+        empties = empties & (~lastMove);
+        long flip = getFlip(move, player, opponent);
+        if (flip == 0) {
+          continue;
+        }
+        best = Math.max(best, 
+          -evaluateRecursive(opponent & ~flip, player | flip, -beta, 
+                             -Math.max(alpha, best), lastMove, false));
+        pass = false;
+        if (best >= beta) {
+          break;
+        }
+      }
+      if (best >= beta) {
+        break;
+      }
+    }
+    if (pass) {
+      if (passed) {
+        return BitPattern.getEvaluationGameOver(player, opponent);
+      }
+      return -evaluateRecursive(opponent, player, -beta, -alpha, lastMove, true);
+    }
+    return best;
+  }
+  
+  public int evaluatePosition(Board b, int alpha, int beta, long lastMove) {
     long player = b.getPlayer();
     long opponent = b.getOpponent();
-    setEmpties(player, opponent);
-    if (this.getNEmpties() == 0) {
+    if (~(player & opponent) == 0) {
       return BitPattern.getEvaluationBoardFull(b);
     }
     nVisited--;
-    return evaluateRecursive(player, opponent, alpha, beta, false);
+    return evaluateRecursive(player, opponent, alpha, beta, lastMove, false);
   }
   
   public void resetNVisited() {
@@ -401,11 +624,11 @@ public class EvaluatorLastMoves {
     return nVisited;
   }
   
-  public static void main(String args[]) {
-    Board b = new Board("--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
-    EvaluatorLastMoves eval = new EvaluatorLastMoves();
-    long t = System.currentTimeMillis();
-    eval.evaluatePosition(b, -6400, 6400);
-    System.out.println(eval.getNVisited() + " " + (System.currentTimeMillis() - t));
-  }
+//  public static void main(String args[]) {
+//    Board b = new Board("--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
+//    EvaluatorLastMoves eval = new EvaluatorLastMoves();
+//    long t = System.currentTimeMillis();
+//    eval.evaluatePosition(b, -6400, 6400);
+//    System.out.println(eval.getNVisited() + " " + (System.currentTimeMillis() - t));
+//  }
 }

@@ -18,12 +18,17 @@ import board.Board;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class StoredBoard {
-  public final static int N_SAMPLES = 10;
+  public final static int N_SAMPLES = 20;
   public long player = 0;
   public long opponent = 0;
+  // Keep lower <= eval <= upper?????
   public short eval;
-  public short playerVariates;
-  public short opponentVariates;
+  public short lower = -6400;
+  public short upper = 6400;
+  public short bestVariationPlayer;
+  public short bestVariationOpponent;
+  
+  public boolean playerIsStartingPlayer;
   public short[] samples = new short[N_SAMPLES];
   public int descendants;
   public StoredBoard next = null;
@@ -32,9 +37,12 @@ public class StoredBoard {
   public StoredBoard[] children = null;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
-//
+
   public StoredBoard(Board board, int eval, int variance) {
-    this(board, eval, variance, new int[StoredBoard.N_SAMPLES]);
+    this.player = board.getPlayer();
+    this.opponent = board.getOpponent();
+    this.updateEval(eval, variance);
+    this.descendants = 1;
   }
   
   public StoredBoard(Board board, int eval, int variance, int deltas[]) {
@@ -49,7 +57,7 @@ public class StoredBoard {
   }
     
   public static StoredBoard randomStoredBoard(Board b) {
-    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600);
+    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600, new int[10]);
   }
   
   public Board getBoard() {
@@ -63,45 +71,63 @@ public class StoredBoard {
     return new EvaluatedBoard(getLowerBound(), 1, getUpperBound(), 1);
   }
 
-  public final void setSolved(int newEval) {
-    this.eval = (short) newEval;
-    for (int i = 0; i < N_SAMPLES; i++) {
-      this.samples[i] = (short) newEval;
-    }
-    this.opponentVariates = 6600;
-    this.playerVariates = -6600;
+  public final void setSolved(int newEval, int evalGoal) {
+    this.setLower(newEval, evalGoal);
+    this.setUpper(newEval, evalGoal);
   }
 
-  public final void setLower(int newLower) {
-    this.eval = (short) newLower;
+  public final void setLower(int newLower, int evalGoal) {
+    this.lower = (short) newLower;
+    this.eval = (short) Math.max(newLower, eval);
     for (int i = 0; i < N_SAMPLES; i++) {
-      this.samples[i] = (short) Math.max(newLower, eval);
+      samples[i] = (short) Math.max(newLower, samples[i]);
     }
-    this.opponentVariates = 6600;
+    if (evalGoal <= 6400 && evalGoal >= -6400) {
+      this.setEvalGoalForLeaf(evalGoal);
+    }
   }
 
-  public final void setUpper(int newUpper) {
-    this.eval = (short) newUpper;
+  public final void setUpper(int newUpper, int evalGoal) {
+    this.upper = (short) newUpper;
+    this.eval = (short) Math.min(newUpper, eval);
     for (int i = 0; i < N_SAMPLES; i++) {
-      this.samples[i] = (short) Math.min(newUpper, eval);
+      this.samples[i] = (short) Math.min(newUpper, samples[i]);
     }
-    this.playerVariates = -6600;
+    if (evalGoal <= 6400 && evalGoal >= -6400) {
+      this.setEvalGoalForLeaf(evalGoal);
+    }
+  }
+  
+  public final void setEvalGoalForLeaf(int evalGoal) {
+    assert(this.isLeaf());
+    assert(evalGoal <= 6400 && evalGoal >= -6400);
+    this.bestVariationOpponent = lower >= evalGoal ? 6600 : eval;
+    this.bestVariationPlayer = upper <= evalGoal ? -6600 : eval;
+  }
+  
+  public final void updateEval(int newEval, int variance) {
+    this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
+
+    for (int i = 0; i < N_SAMPLES; i++) {
+      this.samples[i] = (short) Math.round(Math.max(this.lower, Math.min(
+          this.upper,
+          newEval + RANDOM.next() * variance)));
+    }
   }
   
   public final void updateEval(int newEval, int variance, int deltas[]) {
-    this.eval = (short) Math.max(-6400, Math.min(6400, newEval));
+    this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
-    double weightNew = 0.2;
+    double weightNew = 1;
     double weightOld = Math.sqrt(1 - weightNew * weightNew);
     for (int i = 0; i < N_SAMPLES; i++) {
 //      System.out.println(deltas[i]);
-      this.samples[i] = (short) Math.round(Math.max(Math.min(
-          newEval + RANDOM.next() * variance
-              * weightNew + deltas[i] * weightOld
-          , 6400), -6400));
+      this.samples[i] = (short) Math.round(Math.max(this.lower, Math.min(
+          this.upper,
+          newEval + RANDOM.next() * variance * weightNew - deltas[i] * weightOld)));
     }
-    this.opponentVariates = eval;
-    this.playerVariates = eval;
+    this.bestVariationOpponent = eval;
+    this.bestVariationPlayer = eval;
   }
 
   @Override
@@ -110,17 +136,15 @@ public class StoredBoard {
     for (int i = 0; i < N_SAMPLES; i++) {
       str += samples[i] + " ";
     }
-    return str + "\n" + this.playerVariates + " " + this.opponentVariates + "\n";
+    return str + "\n" + this.lower + "(" + this.bestVariationPlayer + ") " + this.upper + "(" + this.bestVariationOpponent + ")\n";
   }
   
   public boolean isSolved() {
-    return this.playerVariates < -6400 && this.opponentVariates > 6400;
+    return (this.lower == this.upper);
   }
 
-  boolean isPartiallySolved() {
-    int lower = getLowerBound();
-    
-    return lower == eval && getUpperBound() == lower;
+  boolean isPartiallySolved() {    
+    return getLowerBound() == getUpperBound();
   }
 
   public int getUpperBound() {

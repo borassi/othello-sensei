@@ -91,7 +91,7 @@ public class LoadDataset {
   public static final ArrayList<BoardWithEvaluation> loadOMGSet(int endFile) {
     ObjectArrayList<String> files = new ObjectArrayList<>();
     for (int i = 0; i <= endFile; i++) {
-      files.add("tmp/weird_positions_result_" + i + ".tmp");
+      files.add("training_set/weird_positions_result_" + i + ".tmp");
     }
     return loadTrainingSet(files);
   }

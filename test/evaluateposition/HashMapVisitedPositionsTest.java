@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package evaluateposition;
 
 import static org.junit.Assert.*;
@@ -27,6 +26,12 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class HashMapVisitedPositionsTest {
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = new PossibleMovesFinderImproved();
+
+  private short[] createSampleArray(int sample) {
+    short[] result = new short[N_SAMPLES];
+    result[0] = (short) sample;
+    return result;
+  }
 
   @Test
   public void testStartingPosition() {
@@ -44,17 +49,11 @@ public class HashMapVisitedPositionsTest {
     visitedPositions.addFirstPosition(s); 
     assertEquals(visitedPositions.get(s.player, s.opponent).eval, 123);
     
-    s.updateEval(789, 0, new int[StoredBoard.N_SAMPLES]);
+    s.updateEval(789, 0);//, new int[StoredBoard.N_SAMPLES]);
     assertEquals(visitedPositions.get(s.player, s.opponent).eval, 789);
 
     visitedPositions.add(t); 
     assertEquals(visitedPositions.get(t.player, t.opponent).eval, 456);
-  }
-
-  private short[] createSampleArray(int sample) {
-    short[] result = new short[N_SAMPLES];
-    result[0] = (short) sample;
-    return result;
   }
   
   @Test
@@ -62,29 +61,42 @@ public class HashMapVisitedPositionsTest {
     HashMapVisitedPositions positions = new HashMapVisitedPositions(10, 5, POSSIBLE_MOVES_FINDER);
 
     StoredBoard firstMove = new StoredBoard(Board.e6(), 0, 0);
+    positions.firstPosition = firstMove;
+    firstMove.playerIsStartingPlayer = true;
     positions.add(firstMove);
-    firstMove.playerVariates = -2;
-    firstMove.opponentVariates = -5;
+    firstMove.lower = -1;
+    firstMove.bestVariationPlayer = -3;
+    firstMove.upper = 1;
+    firstMove.bestVariationOpponent = 9;
     firstMove.descendants = 4;
  
     StoredBoard diag = new StoredBoard(Board.e6f6(), 0, 0);
     positions.add(diag);
-    diag.playerVariates = 5;
-    diag.opponentVariates = 3;
+    diag.playerIsStartingPlayer = false;
+    diag.lower = -1;
+    diag.bestVariationPlayer = -5;
+    diag.upper = 1;
+    diag.bestVariationOpponent = 3;
     diag.fathers.add(firstMove);
-
+    
     StoredBoard perp = new StoredBoard(Board.e6f4(), 2, 0);
     positions.add(perp);
+    perp.playerIsStartingPlayer = false;
     perp.samples = createSampleArray(9);
-    perp.playerVariates = 9;
-    perp.opponentVariates = 7;
+    perp.lower = 2;
+    perp.upper = 2;
+    perp.bestVariationPlayer = -9;
+    perp.bestVariationOpponent = 7;
     perp.fathers.add(firstMove);
  
     StoredBoard par = new StoredBoard(Board.e6d6(), 8, 0);
     positions.add(par);
+    par.playerIsStartingPlayer = false;
     par.samples = createSampleArray(8);
-    par.playerVariates = 2;
-    par.opponentVariates = 2;
+    par.lower = 8;
+    par.upper = 8;
+    par.bestVariationPlayer = 8;
+    par.bestVariationOpponent = 8;
     par.fathers.add(firstMove);
 
     firstMove.children = new StoredBoard[]{diag, perp, par};
@@ -95,13 +107,21 @@ public class HashMapVisitedPositionsTest {
     assert(!positions.boardChildrenAreCorrect(firstMove));
     firstMove.eval = 0;
     
-    firstMove.playerVariates = 12;
+    firstMove.lower = 12;
     assert(!positions.boardChildrenAreCorrect(firstMove));
-    firstMove.playerVariates = -2;
+    firstMove.lower = -1;
     
-    firstMove.opponentVariates = 12;
+//    firstMove.bestVariationLower = 12;
+//    assert(!positions.boardChildrenAreCorrect(firstMove));
+//    firstMove.bestVariationLower = -2;
+    
+    firstMove.upper = 124;
     assert(!positions.boardChildrenAreCorrect(firstMove));
-    firstMove.opponentVariates = -5;
+    firstMove.upper = 1;
+    
+//    firstMove.bestVariationUpper = 12;
+//    assert(!positions.boardChildrenAreCorrect(firstMove));
+//    firstMove.bestVariationUpper = 5;
     
     diag.fathers = new ObjectArrayList<>();
     assert(!positions.boardChildrenAreCorrect(firstMove));
@@ -121,6 +141,21 @@ public class HashMapVisitedPositionsTest {
     par.descendants = 0;
     assert(!positions.boardChildrenAreCorrect(firstMove));
     par.descendants = 1;
+    
+    par.playerIsStartingPlayer = true;
+    assert(!positions.boardChildrenAreCorrect(firstMove));
+    par.playerIsStartingPlayer = false;
+    
+    positions.setEvalGoalNoUpdate(-6);
+    assert(positions.boardChildrenAreCorrect(firstMove));
+    
+    firstMove.bestVariationPlayer = -5;
+    assert(!positions.boardChildrenAreCorrect(firstMove));
+    firstMove.bestVariationPlayer = -3;
+
+    firstMove.bestVariationOpponent = 8;
+    assert(!positions.boardChildrenAreCorrect(firstMove));
+    firstMove.bestVariationOpponent = 9;
   }
 
   @Test
@@ -146,19 +181,22 @@ public class HashMapVisitedPositionsTest {
     HashMapVisitedPositions positions = new HashMapVisitedPositions(10, 5, POSSIBLE_MOVES_FINDER);
     StoredBoard pass = new StoredBoard(Board.pass(), 200, 0);
     positions.add(pass);
-    StoredBoard afterPass = new StoredBoard(Board.pass().move(0), 200, 0);
+
+    StoredBoard afterPass = new StoredBoard(Board.pass().move(0), -200, 0);
     positions.add(afterPass);
 
     pass.children = new StoredBoard[] {afterPass};
+    pass.playerIsStartingPlayer = true;
     pass.samples = createSampleArray(0);
-    pass.playerVariates = 500;
-    pass.opponentVariates = 300;
+    pass.bestVariationPlayer = 500;
+    pass.bestVariationOpponent = 300;
     pass.descendants = 2;
 
+    afterPass.playerIsStartingPlayer = false;
     afterPass.eval = -200;
     afterPass.samples = createSampleArray(0);
-    afterPass.playerVariates = -300;
-    afterPass.opponentVariates = -500;
+    afterPass.bestVariationPlayer = -300;
+    afterPass.bestVariationOpponent = -500;
     afterPass.fathers.add(pass);
     afterPass.descendants = 1;
 
@@ -166,11 +204,11 @@ public class HashMapVisitedPositionsTest {
 
     pass.eval = 100;
     assert(!positions.boardChildrenAreCorrect(pass));
-    pass.eval = 200;
+    pass.eval = -200;
 
-    pass.playerVariates = 400;
+    pass.bestVariationPlayer = 400;
     assert(!positions.boardChildrenAreCorrect(pass));
-    pass.playerVariates = -300;
+    pass.bestVariationPlayer = -300;
     
     afterPass.fathers = new ObjectArrayList<>();
     assert(!positions.boardChildrenAreCorrect(pass));
@@ -185,12 +223,14 @@ public class HashMapVisitedPositionsTest {
     StoredBoard bothPass = new StoredBoard(Board.bothPass(), -5600, 0);
     positions.add(bothPass);
     bothPass.eval = -5600;
+    bothPass.lower = -5600;
+    bothPass.upper = -5600;
     bothPass.children = new StoredBoard[0];
     for (int i = 0; i < N_SAMPLES; i++) {
       bothPass.samples[i] = -5600;
     }
-    bothPass.playerVariates = -6600;
-    bothPass.opponentVariates = 6600;
+    bothPass.bestVariationPlayer = -6600;
+    bothPass.bestVariationOpponent = 6600;
     assert(positions.boardIsCorrect(bothPass));
     assert(positions.boardChildrenAreCorrect(bothPass));
     
@@ -198,9 +238,9 @@ public class HashMapVisitedPositionsTest {
     assert(!positions.boardChildrenAreCorrect(bothPass));
     bothPass.eval = -5600;
     
-    bothPass.opponentVariates = 500;
+    bothPass.bestVariationOpponent = 500;
     assert(!positions.boardChildrenAreCorrect(bothPass));
-    bothPass.opponentVariates = -5600;
+    bothPass.bestVariationOpponent = -5600;
     
     bothPass.children = new StoredBoard[] {bothPass};
     assert(!positions.boardChildrenAreCorrect(bothPass));
@@ -276,18 +316,21 @@ public class HashMapVisitedPositionsTest {
         if (!evaluator.allCorrect()) {
           assert(false);
         }
+        if (Math.random() < 0.2) {
+          evaluator.setEvalGoal((int) (Math.random() * 3200));
+        }
         boolean playerVariates = Math.random() > 0.5;
-        if (playerVariates && evaluator.firstPosition.playerVariates == -6600) {
+        if (playerVariates && evaluator.firstPosition.bestVariationPlayer == -6600) {
           continue;
         }
-        if (!playerVariates && evaluator.firstPosition.opponentVariates == 6600) {
+        if (!playerVariates && evaluator.firstPosition.bestVariationOpponent == 6600) {
           continue;
         }
         PositionToImprove sb = evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, playerVariates, true);
 
         if (playerVariates) {
           if (sb.playerIsStartingPlayer) {
-            if (sb.board.playerVariates != evaluator.firstPosition.playerVariates) {
+            if (sb.board.bestVariationPlayer != evaluator.firstPosition.bestVariationPlayer) {
               System.out.println(sb.board);
               System.out.println(evaluator.firstPosition);
               System.out.println(playerVariates);
@@ -295,7 +338,7 @@ public class HashMapVisitedPositionsTest {
               assert(false);
             }
           } else {
-            if (sb.board.opponentVariates != -evaluator.firstPosition.playerVariates) {
+            if (sb.board.bestVariationOpponent != -evaluator.firstPosition.bestVariationPlayer) {
               System.out.println(sb.board);
               System.out.println(evaluator.firstPosition);
               System.out.println(playerVariates);
@@ -305,7 +348,7 @@ public class HashMapVisitedPositionsTest {
           }
         } else {
           if (sb.playerIsStartingPlayer) {
-            if (sb.board.opponentVariates != evaluator.firstPosition.opponentVariates) {
+            if (sb.board.bestVariationOpponent != evaluator.firstPosition.bestVariationOpponent) {
               System.out.println(sb.board);
               System.out.println(evaluator.firstPosition);
               System.out.println(playerVariates);
@@ -313,7 +356,7 @@ public class HashMapVisitedPositionsTest {
               assert(false);
             }
           } else {
-            if (sb.board.playerVariates != -evaluator.firstPosition.opponentVariates) {
+            if (sb.board.bestVariationPlayer != -evaluator.firstPosition.bestVariationOpponent) {
               System.out.println(sb.board);
               System.out.println(evaluator.firstPosition);
               System.out.println(playerVariates);
@@ -324,13 +367,14 @@ public class HashMapVisitedPositionsTest {
         }
       }
     }
-    
   }
 
   @Test
   public void testTreeIsCorrectAfterUpdates() {
     for (int i = 0; i < 10000; i++) {
-      System.out.println("Done " + i);
+      if (i % 1000 == 0) {
+        System.out.println("Done " + i);
+      }
       int nElements = 5 + (int) (Math.random() * 100);
       int totalSize = nElements + (int) (Math.random() * 100);
 
@@ -344,6 +388,7 @@ public class HashMapVisitedPositionsTest {
       
       for (int j = 0; j < nElements; j++) {
         PositionToImprove nextPos = evaluator.nextPositionToImproveRandom(true);
+
         if (nextPos == null) {
           break;
         }
@@ -375,11 +420,33 @@ public class HashMapVisitedPositionsTest {
           nextBoards[m] = new StoredBoard(b, eval, (int) (Math.random() * 100));
         }
         evaluator.add(nextBoards, next);
+        if (Math.random() < 0.2) {
+          evaluator.setEvalGoal((int) (Math.random() * 3200));
+        }
         if (!evaluator.allCorrect()) {
           System.out.println(start.toString().replaceAll("\n", ""));
           System.out.println(evaluator);
           assert(false);
         }
+      }
+      boolean allLeaves = true;
+      for (StoredBoard firstBoard : evaluator.evaluationsHashMap) {
+        for (StoredBoard board = firstBoard; board != null; board = board.next) {
+          if (!board.isLeaf()) {
+            allLeaves = false;
+            board.eval = (short) (board.eval + 10);
+            for (int s = 0; s < N_SAMPLES; ++s) {
+              board.samples[s] = (short) ((Math.random() - 0.5) * 6400);
+            }
+            board.bestVariationPlayer = (short) ((Math.random() - 0.5) * 6400);
+            board.bestVariationOpponent = (short) ((Math.random() - 0.5) * 6400);
+          }
+        }
+      }
+      if (!allLeaves) {
+//        assert(!evaluator.allCorrect());
+        evaluator.updateAllDescendants();
+        assert(evaluator.allCorrect());
       }
     }
   }

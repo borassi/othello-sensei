@@ -32,9 +32,7 @@ import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
 import helpers.LoadDataset;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -75,8 +73,10 @@ public class Main {
 //    board = new Board("XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
 //    board = new Board("XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
     board = new Board("--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
-//    board = new Board("OOOOOOOOOOOOOOXOOOOOXXXOOOXXXOXOOXOOOOXOOOXXXOXOO-----OO-------O", true);
-    board = new Board("-OOOOO----OXXO-XXXOXOXX-XXOXOXXOXXOOXOOOXXXXOO-OX-XOOO---XXXXX--", true);
+    board = new Board("-XXXXX--O-XXOOOXOOOOOOXXOOOOOXXXOOOOXXX-OOOXO-X--OOOO--X-XXXXXX-", true);
+    board = new Board("----OX----OOXX---OOOXX-XOOXXOOOOOXXOXXOOOXXXOOOOOXXXXOXO--OOOOOX", true);
+    board = new Board("-XXXXX--O-XXOOOXOOOOOOXXOOOOOXXXOOOOXXX-OOOXO-X--OOOO--X-XXXXXX-", true);
+    board = new Board("----X------XXXO--OOOXXXXXOOOOXXO-XXOOXXOOOXOXXXXOOOXX---X-XXXX--", false);
     ui.setCases(board, blackTurn);
     ui.update(ui.getGraphics());
   }
@@ -174,8 +174,9 @@ public class Main {
 
         ui.setAnnotationsColor(Color.BLACK, ij);
         String str = String.format("%.2f\n%d\n", -evaluation.getEval() / 100F, evaluation.descendants);
-        str += String.format("%.2f   %.2f\n", -evaluation.opponentVariates / 100F, -evaluation.playerVariates / 100F);
-        str += String.format("%.2f   %.2f\n", -evaluation.getLowerBound() / 100F, -evaluation.getUpperBound() / 100F);
+        str += String.format("%.2f %.2f\n", -evaluation.bestVariationOpponent / 100F,
+            -evaluation.bestVariationPlayer / 100F);
+        str += String.format("%.2f   %.2f\n", -evaluation.getUpperBound() / 100F, -evaluation.getLowerBound() / 100F);
         
         for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
           str += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
@@ -199,7 +200,7 @@ public class Main {
 
   public PositionIJ findBestMove(ObjectArrayList<StoredBoard> evaluations) {
     double best = Double.POSITIVE_INFINITY;
-    double bestLower = Double.POSITIVE_INFINITY;
+    double bestUpper = Double.POSITIVE_INFINITY;
     double bestPlayerVariates = Double.POSITIVE_INFINITY;
     PositionIJ bestIJ = new PositionIJ(-1, -1);
 
@@ -213,12 +214,12 @@ public class Main {
       float eval = evaluation.getEval();// -(evaluation.getLowerBound() + evaluation.getUpperBound()) / 2.0F;
       PositionIJ ij = moveFromBoard(board, evaluation);
       if (eval < best ||
-          (eval == best && evaluation.playerVariates < bestPlayerVariates) ||
-          (eval == best && evaluation.playerVariates == bestPlayerVariates &&
-           evaluation.getLowerBound() < bestLower)) {
+          (eval == best && evaluation.getUpperBound() < bestUpper) ||
+          (eval == best && evaluation.getUpperBound() == bestUpper &&
+           evaluation.lower < bestPlayerVariates)) {
         best = eval;
-        bestLower = evaluation.getLowerBound();
-        bestPlayerVariates = evaluation.playerVariates;
+        bestUpper = evaluation.getUpperBound();
+        bestPlayerVariates = evaluation.lower;
         bestIJ = ij;
       }
     }
@@ -240,7 +241,8 @@ public class Main {
       int eval = -evaluation.getEval();// -(evaluation.getLowerBound() + evaluation.getUpperBound()) / 2.0F;
       PositionIJ ij = moveFromBoard(board, evaluation);
       ui.setAnnotationsColor(Color.BLACK, ij);
-      ui.setAnnotations(String.format("%.2f\n%.2f   %.2f", eval / 100F, -evaluation.getLowerBound() / 100F, -evaluation.getUpperBound() / 100F), ij);
+      ui.setAnnotations(String.format("%.2f\n%.2f   %.2f", eval / 100F, -evaluation.getUpperBound() / 100F,
+          -evaluation.getLowerBound() / 100F), ij);
     }
     PositionIJ bestIJ = findBestMove(evaluations);
 //    System.out.println(evaluator.getNVisitedPositionsByEvaluator());

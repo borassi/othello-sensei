@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package tmp;
 
 import board.Board;
@@ -26,22 +25,19 @@ public class OptimumAlphaBeta {
     new PossibleMovesFinderImproved();
   static long INFINITY = 1000000000000L;
 
+  // Prove b.eval <= eval
   public static long computeOptimumUpper(Board b, int eval) {
     if (b.getEmptySquares() == 0) {
-      if (b.getPlayerDisks() - b.getOpponentDisks() > eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 > eval) {
         return INFINITY;
       }
       return 0;
     }
-    long moves[] = possibleMovesFinder.possibleMoves(b);
+    long moves[] = possibleMovesFinder.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
     long result = 1;
 
     if (moves.length == 0) {
-      Board afterPass = b.move(0);
-      if (possibleMovesFinder.possibleMoves(afterPass).length > 0) { 
-        return computeOptimumLower(afterPass, -eval);
-      }
-      if (b.getPlayerDisks() - b.getOpponentDisks() > eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 < eval) {
         return INFINITY;
       }
       return 1;
@@ -55,19 +51,15 @@ public class OptimumAlphaBeta {
 
   public static long computeOptimumLower(Board b, int eval) {
     if (b.getEmptySquares() == 0) {
-      if (b.getPlayerDisks() - b.getOpponentDisks() < eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 < eval) {
         return INFINITY;
       }
       return 0;
     }
-    long moves[] = possibleMovesFinder.possibleMoves(b);
+    long moves[] = possibleMovesFinder.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
 
     if (moves.length == 0) {
-      Board afterPass = b.move(0);
-      if (possibleMovesFinder.possibleMoves(afterPass).length > 0) { 
-        return computeOptimumUpper(afterPass, -eval);
-      }
-      if (b.getPlayerDisks() - b.getOpponentDisks() < eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 < eval) {
         return INFINITY;
       }
       return 1;
@@ -82,20 +74,16 @@ public class OptimumAlphaBeta {
 
   public static long computeOptimumUpperLast(Board b, int eval) {
     if (b.getEmptySquares() == 0) {
-      if (b.getPlayerDisks() - b.getOpponentDisks() > eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 > eval) {
         return INFINITY;
       }
       return 0;
     }
-    long moves[] = possibleMovesFinder.possibleMoves(b);
+    long moves[] = possibleMovesFinder.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
     long result = 1;
 
     if (moves.length == 0) {
-      Board afterPass = b.move(0);
-      if (possibleMovesFinder.possibleMoves(afterPass).length > 0) { 
-        return computeOptimumLowerLast(afterPass, -eval);
-      }
-      if (b.getPlayerDisks() - b.getOpponentDisks() > eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 > eval) {
         return INFINITY + 1;
       }
       return 1;
@@ -109,19 +97,15 @@ public class OptimumAlphaBeta {
 
   public static long computeOptimumLowerLast(Board b, int eval) {
     if (b.getEmptySquares() == 0) {
-      if (b.getPlayerDisks() - b.getOpponentDisks() < eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 < eval) {
         return INFINITY + 1;
       }
       return 0;
     }
-    long moves[] = possibleMovesFinder.possibleMoves(b);
+    long moves[] = possibleMovesFinder.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
 
     if (moves.length == 0) {
-      Board afterPass = b.move(0);
-      if (possibleMovesFinder.possibleMoves(afterPass).length > 0) { 
-        return computeOptimumUpperLast(afterPass, -eval);
-      }
-      if (b.getPlayerDisks() - b.getOpponentDisks() < eval) {
+      if ((b.getPlayerDisks() - b.getOpponentDisks()) * 100 < eval) {
         return INFINITY + 1;
       }
       return 1;

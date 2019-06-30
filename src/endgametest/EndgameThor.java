@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package endgametest;
 
 import board.Board;
@@ -23,6 +22,7 @@ import helpers.LoadDataset;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Random;
 
 /**
  *
@@ -30,30 +30,31 @@ import java.util.Locale;
  */
 public class EndgameThor {
   public ArrayList<BoardWithEvaluation> boards;
-  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
-//  EvaluatorLastMoves eval = new EvaluatorLastMoves();
+//  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
+  EvaluatorLastMoves eval = new EvaluatorLastMoves();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   
   public EndgameThor() {
-    boards = LoadDataset.loadTrainingSet(1977, 1984);
+    boards = LoadDataset.loadTrainingSet(1977, 1987);
   }
   
   long t = 0;
   public boolean runSingleBoard(BoardWithEvaluation be) {
     Board b = be.board;
-//      System.out.println(b);
-//    if (Math.random() < 0.2) {
-//      eval.resetHashMapVisitedPositions();
-//    }
+    Random generator = new Random(1234);
     t -= System.currentTimeMillis();
-    int result = eval.evaluatePosition(b, 100, -6400, 6400);
+    int alpha = (int) (generator.nextDouble() * 120 - 60);
+    int beta = (int) (alpha + generator.nextDouble() * 6);
+    int result = eval.evaluatePosition(b, alpha, beta, 0);
     t += System.currentTimeMillis();
-    if (result - be.evaluation > 0) {
-      System.out.println(b);
-      System.out.println(b.toString().replace("\n", ""));
-      System.out.println(result);
-      System.out.println(be.evaluation);
-      return false;
+    if (alpha < be.evaluation && be.evaluation < beta) {
+      if (result - be.evaluation > 0) {
+        System.out.println(b);
+        System.out.println(b.toString().replace("\n", ""));
+        System.out.println(result);
+        System.out.println(be.evaluation);
+        return false;
+      }
     }
     return true;
   }
@@ -97,6 +98,7 @@ public class EndgameThor {
 //      new Board("XXXXXXXOOOOXXXXOOOXOXXXOOOXXXXXOXOXXXOXO-OOOXXXO-XOOOXXOX--OO-X-", true),
 //      0
 //    )); 
+    
     new EndgameThor().run();
   }
 }

@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package endgametest;
 
 import board.Board;
@@ -20,7 +19,7 @@ import evaluateposition.EvaluatorMCTS;
 public class EndgameTest {
   final static String[] POSITIONS = {
 //          "XXXXXXXOOOOOXXXOXOOOXXOX-OXOXOXXOXXXOXXXXXXOXOXXXXXXOOO--OOOOOX- X", 
-//          "XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO-- X", 
+          "XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO-- X", 
           "--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO-- X", 
           "-XXXXXX---XOOOO--XOXXOOX-OOOOOOOOOOOXXOOOOOXXOOX--XXOO----XXXXX- X", 
           "----OX----OOXX---OOOXX-XOOXXOOOOOXXOXXOOOXXXOOOOOXXXXOXO--OOOOOX X", 
@@ -80,7 +79,7 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
-  EvaluatorMCTS eval = new EvaluatorMCTS(2000000, 1000000);
+  EvaluatorMCTS eval = new EvaluatorMCTS(4000000, 4000000);
 
   public Board readBoardFromFFOFormat(String ffoFormat) {
     String[] boards = ffoFormat.split(" ");
@@ -92,10 +91,10 @@ public class EndgameTest {
     System.out.println(" num empties        t       nVisPos   nVisPos/sec    nCompMoves nCompMoves/sec   eval");
     for (int i = 0; i < POSITIONS.length; i++) {
       Board b = readBoardFromFFOFormat(POSITIONS[i]);
-      System.out.print(String.format("%4d", i));
+      System.out.print(String.format("%4d", i+1));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long t = System.currentTimeMillis();
-      int result = eval.evaluatePosition(b, b.getEmptySquares());
+      int result = -eval.evaluatePosition(b, b.getEmptySquares());
       t = System.currentTimeMillis() - t;
       
 //      eval.resetHashMapVisitedPositions();
@@ -108,11 +107,12 @@ public class EndgameTest {
 //      eval.evaluateAlphaBetaWithHashMap(b, b.getEmptySquares(), result + 0.01F);
 
       System.out.print(String.format("%9.3f", t / 1000.));
-      System.out.print(String.format("%14d", eval.getNVisitedPositionsByEvaluator()));
-      System.out.print(String.format("%14.0f", eval.getNVisitedPositionsByEvaluator() * 1000. / t));
+      System.out.print(String.format("%14d", eval.getNVisitedPositionsByEvaluator() + eval.size()));
+      System.out.print(String.format("%14.0f", (eval.getNVisitedPositionsByEvaluator() + eval.size()) * 1000. / t));
       System.out.print(String.format("%14d", eval.size()));
       System.out.print(String.format("%15.0f", eval.size() * 1000. / t));
       System.out.println(String.format("%12d", result / 100));
+//      System.out.println("\n");
     }
   }
 

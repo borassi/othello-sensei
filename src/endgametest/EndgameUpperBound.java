@@ -11,17 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package endgametest;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.MultilinearRegression;
 import evaluateposition.EvaluatorAlphaBeta;
-import evaluateposition.EvaluatorBasic;
-import evaluateposition.EvaluatorToTestSpeed;
+import evaluateposition.EvaluatorLastMoves;
 import tmp.OptimumAlphaBeta;
-import main.Main;
 
 public class EndgameUpperBound {
   final static String[] POSITIONS = {
@@ -113,7 +110,7 @@ public class EndgameUpperBound {
     "OOOOOOOOXXXXXXOOXXOOXOOOXOXOOX--XOOOXX--XOOXOO--XOOOOO--XXXX---- O",
     "O-OOOOOOO-OOOXO-OXOOXOXXOXOOXXXXOXXXXXXXOXXOXOXX-XXXXX-X----X--- O"};
   
-  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
+  EvaluatorLastMoves eval = new EvaluatorLastMoves();
 
   public Board readBoardFromFFOFormat(String ffoFormat) {
     String[] boards = ffoFormat.split(" ");
@@ -122,30 +119,24 @@ public class EndgameUpperBound {
 
   public void run() {
     System.out.println(" num empties   lower lowEval   upper uppEval   total totEval    actual eval");
+    OptimumAlphaBeta.computeOptimumLower(Board.randomBoard(1, 0), 1);
     for (int i = 0; i < POSITIONS_AFTER_MOVES.length; i++) {
       Board b = readBoardFromFFOFormat(POSITIONS_AFTER_MOVES[i]);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
-      int result = eval.evaluatePosition(b, b.getEmptySquares() + 2);
+      eval.resetNVisited();
+      int result = eval.evaluatePosition(b, -6600, 6600, 0);
       long lower = OptimumAlphaBeta.computeOptimumLower(b, (int) result);
       long upper = OptimumAlphaBeta.computeOptimumUpper(b, (int) result);
       long lowerEval = OptimumAlphaBeta.computeOptimumLowerLast(b, (int) result);
       long upperEval = OptimumAlphaBeta.computeOptimumUpperLast(b, (int) result);
-
-      eval.resetHashMapVisitedPositions();
-      eval.resetNVisitedPositions();
-//      System.out.println(eval.evaluateAlphaBetaWithHashMap(b, b.getEmptySquares() - 1, result));
-      eval.evaluatePosition(b, b.getEmptySquares() - 1, -64, 64);
-      long oldNVisited = eval.getNComputedMoves();
-      
-      eval.resetNVisitedPositions();
-      eval.evaluatePositionWithHashMap(b, b.getEmptySquares(), -64, 64);
-      
-      System.out.println(String.format("%8d%8d%8d%8d%8d%8d%8d%8d%+8.0f", 
+//
+//      System.out.println(lower);
+      System.out.println(String.format("%8d%8d%8d%8d%8d%8d%8d%8d", 
         lower, lowerEval,
         upper, upperEval, 
-        lower + upper, lowerEval + upperEval, eval.getNComputedMoves(),
-        oldNVisited, result));
+        lower + upper, lowerEval + upperEval, eval.getNVisited(),
+        result));
     }
   }
 
