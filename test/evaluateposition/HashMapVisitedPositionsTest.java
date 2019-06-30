@@ -44,7 +44,7 @@ public class HashMapVisitedPositionsTest {
     visitedPositions.addFirstPosition(s); 
     assertEquals(visitedPositions.get(s.player, s.opponent).eval, 123);
     
-    s.updateEval(789, 0);//, new int[StoredBoard.N_SAMPLES]);
+    s.updateEval(789, 0, new int[StoredBoard.N_SAMPLES]);
     assertEquals(visitedPositions.get(s.player, s.opponent).eval, 789);
 
     visitedPositions.add(t); 

@@ -15,7 +15,6 @@
 package endgametest;
 
 import board.Board;
-import board.PossibleMovesFinder;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;

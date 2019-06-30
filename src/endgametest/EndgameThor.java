@@ -15,7 +15,7 @@
 package endgametest;
 
 import board.Board;
-import board.PossibleMovesFinder;
+import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
@@ -32,7 +32,7 @@ public class EndgameThor {
   public ArrayList<BoardWithEvaluation> boards;
   EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
 //  EvaluatorLastMoves eval = new EvaluatorLastMoves();
-  PossibleMovesFinder pmf = new PossibleMovesFinder();
+  PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   
   public EndgameThor() {
     boards = LoadDataset.loadTrainingSet(1977, 1984);

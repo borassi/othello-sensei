@@ -15,7 +15,6 @@
 package evaluateposition;
 
 import board.Board;
-import board.PossibleMovesFinder;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DepthOneEvaluator;
 
