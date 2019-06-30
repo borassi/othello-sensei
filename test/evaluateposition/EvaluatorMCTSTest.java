@@ -113,9 +113,9 @@ public class EvaluatorMCTSTest {
     StoredBoard e6f4e3 = new StoredBoard(new Board("e6f4e3"), 2400, 0);
     
     StoredBoard e6f4c3c4 = new StoredBoard(new Board("e6f4c3c4"), 0, 0);
-    e6f4c3c4.setSolved(-2000);
+    e6f4c3c4.setSolved(-2000, 7000);
     StoredBoard e6f4c3d6 = new StoredBoard(new Board("e6f4c3d6"), -1600, 0);
-    e6f4c3d6.setUpper(-1400);
+    e6f4c3d6.setUpper(-1400, 7000);
 
     evaluator.addFirstPosition(e6);
     evaluator.add(new StoredBoard[] {e6f4, e6f6, e6d6}, e6);
