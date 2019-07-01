@@ -326,6 +326,50 @@ public class EvaluatorLastMoves {
     assert(false);
     return 0;
   }
+  
+  
+  /**
+   * The same as possibleMoves, but with a basic algorithm (used for testing).
+   * @param b the board.
+   * @return the list of moves.
+   */
+  public static final LongArrayList possibleMovesBasic(Board b) {
+    LongArrayList moves = new LongArrayList();
+    int[][] directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, 
+                           {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+    char player = 'X';
+    char opponent = 'O';
+
+    for (int i = 0; i < 8; i++) {
+      for (int j = 0; j < 8; j++) {
+        if (b.getCase(i, j, true) != '-') {
+          continue;
+        }
+        long currentMove = 0;
+        for (int[] direction : directions) {
+          if (b.getCase(i + direction[0], j + direction[1], true) != opponent) {
+            continue;
+          }
+          for (int steps = 2; steps < 8; steps++) {
+            if (b.getCase(i + steps * direction[0], j + steps * direction[1], true) == player) {
+              for (int backSteps = steps; backSteps > 0; backSteps--) {
+                currentMove = currentMove | BitPattern.moveToBit(
+                        i + backSteps * direction[0], j + backSteps * direction[1]);
+              }
+            }
+            if (b.getCase(i + steps * direction[0], j + steps * direction[1], true) != opponent) {
+              break;
+            }              
+          }
+        }
+        if (currentMove != 0) {
+          currentMove = currentMove | BitPattern.moveToBit(i, j);
+          moves.add(currentMove);
+        }
+      }
+    }
+    return moves;
+  }
 
   private void initMoves() {
     for (int position = 0; position < 64; position++) {
@@ -352,7 +396,7 @@ public class EvaluatorLastMoves {
               flip[position * 65536 + hash] = curFlip;
               if ((curFlip | board.getPlayer() | board.getOpponent()) == bitPattern) {
                 int newHash = hashGeneric(
-                  position, board.getPlayer(), bitPattern);
+                  position, board.getOpponent(), bitPattern);
                 assert(flipLast[position * 256 + newHash] == 0);
                 flipLast[position * 256 + newHash] = curFlip;
               }
@@ -401,27 +445,40 @@ public class EvaluatorLastMoves {
     }
   }
 
-  protected long getFlipLast(int move, long player) {
-    return unsafe.getLongVolatile(flipHorizontalLast, baseOffset + (move * 256 + hashRow(move, player)) * 8) |
-        unsafe.getLongVolatile(flipVerticalLast, baseOffset + (move * 256 + hashColumn(move, player)) * 8) | 
-        unsafe.getLongVolatile(flipDiagonalLast, baseOffset + (move * 256 + hashDiagonal(move, player)) * 8) | 
-        unsafe.getLongVolatile(flipReverseDiagonalLast, baseOffset + (move * 256 + hashRevDiagonal(move, player)) * 8);
+  protected long getFlipLast(int move, long opponent) {
+    int position = baseOffset + (move * 2048);
+    return unsafe.getLongVolatile(flipHorizontalLast, position + hashRow(move, opponent) * 8) |
+        unsafe.getLongVolatile(flipVerticalLast, position + hashColumn(move, opponent) * 8) | 
+        unsafe.getLongVolatile(flipDiagonalLast, position + hashDiagonal(move, opponent) * 8) | 
+        unsafe.getLongVolatile(flipReverseDiagonalLast, position + hashRevDiagonal(move, opponent) * 8);
   }
+  
+  int i = 0, j = 0;
 
   protected long getFlip(int move, long player, long opponent) {
-    if ((unsafe.getLong(neighbors, baseOffset + (move * 8)) & opponent) == 0) {
-      return 0;
+    long tmp = getFlipLast(move, opponent);
+    if ((tmp & ~(player | opponent | (1L << move))) == 0) {
+      return tmp;
     }
-    return unsafe.getLongVolatile(flipHorizontal, baseOffset + (move * 65536 + hashRow(move, player, opponent)) * 8) |
-        unsafe.getLongVolatile(flipVertical, baseOffset + (move * 65536 + hashColumn(move, player, opponent)) * 8) | 
-        unsafe.getLongVolatile(flipDiagonal, baseOffset + (move * 65536 + hashDiagonal(move, player, opponent)) * 8) | 
-        unsafe.getLongVolatile(flipReverseDiagonal, baseOffset + (move * 65536 + hashRevDiagonal(move, player, opponent)) * 8);
+//    System.out.println(i + " " + j);
+////    System.out.println("NO");
+//    if ((unsafe.getLong(neighbors, baseOffset + (move * 8)) & opponent) == 0) {
+//      System.out.println(new Board(player, opponent));
+//      System.out.println(BitPattern.patternToString(tmp));
+//      return 0;
+//    }
+//    return tmp & (opponent | (1L << move));
+    int position = baseOffset + move * 524288;
+    return unsafe.getLongVolatile(flipHorizontal, position + hashRow(move, player, opponent) * 8) |
+        unsafe.getLongVolatile(flipVertical, position + hashColumn(move, player, opponent) * 8) | 
+        unsafe.getLongVolatile(flipDiagonal, position + hashDiagonal(move, player, opponent) * 8) | 
+        unsafe.getLongVolatile(flipReverseDiagonal, position + hashRevDiagonal(move, player, opponent) * 8);
   }
   
   // EVALUATE.
   private int evalOneEmpty(long player, long opponent, boolean passed) {
     int position = Long.numberOfTrailingZeros(~(player | opponent));
-    long flip = getFlipLast(position, player);
+    long flip = getFlipLast(position, opponent);
     if (flip != 0) {
       return BitPattern.getEvaluationBoardFull(player | flip);
     }
@@ -499,14 +556,14 @@ public class EvaluatorLastMoves {
       "------X-");
   
   private final static long CENTRAL1 = BitPattern.parsePattern(
-      "---XX---" +
+      "--------" +
       "--XXXX--" +
       "-XXXXXX-" +
-      "XXXXXXXX" +
-      "XXXXXXXX" +
+      "-XXXXXX-" +
+      "-XXXXXX-" +
       "-XXXXXX-" +
       "--XXXX--" +
-      "---XX---");
+      "--------");
   
   private final static long CENTRAL = BitPattern.parsePattern(
       "--XXXX--" +
@@ -533,6 +590,23 @@ public class EvaluatorLastMoves {
         (((bitPattern >> 9) | (bitPattern >> 1) | (bitPattern << 7)) & ~BitPattern.FIRST_COLUMN_BIT_PATTERN) |
         (bitPattern << 8) | (bitPattern >> 8);
   }
+  
+  final static long edges[] = new long[] {BitPattern.FIRST_COLUMN_BIT_PATTERN,
+                                          BitPattern.LAST_COLUMN_BIT_PATTERN,
+                                          BitPattern.FIRST_ROW_BIT_PATTERN,
+                                          BitPattern.LAST_ROW_BIT_PATTERN};
+  
+  private final static long[] firstLastInEdges(long bitPattern) {
+    long firstBit = 0;
+    long lastBit = 0;
+//    System.out.println(BitPattern.patternToString(bitPattern));
+    for (long edge : edges) {
+      firstBit |= Long.highestOneBit(edge & bitPattern);
+      lastBit |= Long.lowestOneBit(edge & bitPattern);
+    }
+    return new long[] {firstBit & ~CORNERS, lastBit & ~CORNERS};
+  }
+
 
   private int evaluateRecursive(long player, long opponent, int alpha, int beta,
                                 long lastMove, boolean passed) {
@@ -553,27 +627,21 @@ public class EvaluatorLastMoves {
     int move;
     int lastMovePosition = Long.numberOfTrailingZeros(lastMove);
     lastMovePosition = lastMovePosition == 64 ? 32 : lastMovePosition;
-    
-//    System.out.println(new Board(player, opponent).toStringOneLine());
-//    System.out.println("\n\n\n" + BitPattern.patternToString(lastMove) + "\n" + lastMovePosition);
-    
-    long[] masks = {
-      ~neighborCases(empties) & (neighborCases(player)),
-      neighbors[lastMovePosition] & CORNERS,
-      ((lastMove & XSQUARES) == 0) ? horizVert[lastMovePosition] : 0,
-      CORNERS,
-      ((lastMove & XSQUARES) == 0) ? neighbors[lastMovePosition] : 0,
-//      nEmpties % 2 == 0 ? 0 : ~neighborCases(empties),
-//      CENTRAL1,
-      CENTRAL,
-      CENTRAL2,
-      // STABILIZE ESMAGIUCHE!!
-      ~0L};
-//    for (long mask : masks) {
-//      if (nEmpties == 7) {
-//        System.out.println(BitPattern.patternToString(mask & empties));
-//      }
-//    }
+
+    long[] firstInEdges = nEmpties > 5 ? firstLastInEdges(empties) : new long[] {};
+    long[] masks = new long[] {
+        ~neighborCases(empties) & neighborCases(player),
+        nEmpties > 5 ? firstInEdges[0] & firstInEdges[1] & neighborCases(player) : 0,
+        neighbors[lastMovePosition] & CORNERS,
+        ((lastMove & XSQUARES) == 0) ? horizVert[lastMovePosition] : 0,
+        CORNERS,
+        nEmpties > 5 ? firstInEdges[0] | firstInEdges[1] : 0,
+        ((lastMove & XSQUARES) == 0) ? neighbors[lastMovePosition] : 0,
+        CENTRAL1,
+        CENTRAL,
+        CENTRAL2,
+        ~0L
+    };
     for (long mask : masks) {
 //      System.out.println(BitPattern.patternToString(mask));
       while ((empties & mask) != 0) {

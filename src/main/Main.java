@@ -77,6 +77,7 @@ public class Main {
     board = new Board("----OX----OOXX---OOOXX-XOOXXOOOOOXXOXXOOOXXXOOOOOXXXXOXO--OOOOOX", true);
     board = new Board("-XXXXX--O-XXOOOXOOOOOOXXOOOOOXXXOOOOXXX-OOOXO-X--OOOO--X-XXXXXX-", true);
     board = new Board("----X------XXXO--OOOXXXXXOOOOXXO-XXOOXXOOOXOXXXXOOOXX---X-XXXX--", false);
+    board = new Board("--XXXXX---XXXX---OOOXX---OOXXXX--OOXXXO-OOOOXOO----XOX----XXXXX-", true);
     ui.setCases(board, blackTurn);
     ui.update(ui.getGraphics());
   }

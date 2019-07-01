@@ -18,7 +18,7 @@ import board.Board;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class StoredBoard {
-  public final static int N_SAMPLES = 20;
+  public final static int N_SAMPLES = 10;
   public long player = 0;
   public long opponent = 0;
   // Keep lower <= eval <= upper?????
@@ -109,9 +109,9 @@ public class StoredBoard {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
     for (int i = 0; i < N_SAMPLES; i++) {
-      this.samples[i] = (short) Math.round(Math.max(this.lower, Math.min(
+      this.samples[i] = (short) Math.max(this.lower, Math.min(
           this.upper,
-          newEval + RANDOM.next() * variance)));
+          (int) (newEval + RANDOM.next() * variance + 0.5)));
     }
   }
   

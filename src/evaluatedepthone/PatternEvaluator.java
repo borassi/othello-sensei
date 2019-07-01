@@ -100,16 +100,17 @@ public class PatternEvaluator implements Serializable {
   }
 
   public float evalForTraining(Board[] allTransp) {
-    float result = 0;
-    for (int hash : hashInterface.hashes(allTransp)) {
-      if (numberOfAppearances[hash] >= minNumberOfAppearances) {
-        assert(evaluatorFloat[hash] != Integer.MIN_VALUE);
-        result += evaluatorFloat[hash];
-      } else {
-        result += missingEval;
-      }
-    }
-    return result;
+    return eval(allTransp);
+//    float result = 0;
+//    for (int hash : hashInterface.hashes(allTransp)) {
+//      if (numberOfAppearances[hash] >= minNumberOfAppearances) {
+//        assert(evaluatorFloat[hash] != Integer.MIN_VALUE);
+//        result += evaluatorFloat[hash];
+//      } else {
+//        result += missingEval;
+//      }
+//    }
+//    return result;
   }
 
   public int getMinTrainingSetSize(Board[] allTransp) {
@@ -164,9 +165,9 @@ public class PatternEvaluator implements Serializable {
               new PatternEvaluator(new Corner3x3(), minNumberOfAppearances),
               new PatternEvaluator(new Diagonal(), minNumberOfAppearances),
               new PatternEvaluator(new Parity(), minNumberOfAppearances),
-              new PatternEvaluator(new SideImproved(), minNumberOfAppearances),
+              new PatternEvaluator(new Side(), minNumberOfAppearances),
               new PatternEvaluator(new StableDisksMiddle(), minNumberOfAppearances),
-              new PatternEvaluator(new Radius(), minNumberOfAppearances),
+//              new PatternEvaluator(new Radius(), minNumberOfAppearances),
 //              new PatternEvaluator(new StableDisks(), minNumberOfAppearances),
               new PatternEvaluator(new Corner5x2(), minNumberOfAppearances)
               };

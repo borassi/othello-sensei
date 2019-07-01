@@ -140,7 +140,7 @@ public class HashMapVisitedPositions {
     StoredBoard best = null; 
     if (playerVariates) {
       for (StoredBoard child : position.children) {
-        int current = (int) (child.samples[sample] + (Math.random() - 0.5) * 0); // 400
+        int current = (int) (child.samples[sample]); // + (Math.random() - 0.5) * 0); // 400
         if (current < bestValue) {
           bestValue = current;
           best = child;
@@ -148,7 +148,7 @@ public class HashMapVisitedPositions {
       }
     } else {
       for (StoredBoard child : position.children) {
-        int current = (int) (child.eval + (Math.random() - 0.5) * 0); // Suppressing now.
+        int current = (int) (child.eval);// + (Math.random() - 0.5) * 0); // Suppressing now.
         if (current <= bestValue) {
           bestValue = current;
           best = child;

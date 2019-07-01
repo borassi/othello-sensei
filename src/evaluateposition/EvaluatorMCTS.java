@@ -111,19 +111,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       this.updateSolved(player, opponent, BitPattern.getEvaluationGameOver(player, opponent));
     } else {
       StoredBoard[] children = new StoredBoard[moves.length];
-      for (int i = 0; i < StoredBoard.N_SAMPLES; i++) {
-        deltas[i] = father.samples[i] - father.eval;
-      }
+//      for (int i = 0; i < StoredBoard.N_SAMPLES; i++) {
+//        deltas[i] = father.samples[i] - father.eval;
+//      }
       for (int i = 0; i < moves.length; i++) {
         long move = moves[i];
         Board childBoard = father.getBoard().move(move);
         int result = this.depthOneEval.eval(childBoard);
-        StoredBoard child = new StoredBoard(childBoard, result, 800, deltas);
-//        StoredBoard child = new StoredBoard(childBoard, result, 600);
-//        if (childBoard.getEmptySquares() == 0) {
-//          child.setSolved(BitPattern.getEvaluationGameOver(childBoard), this.evalGoal);
-//        }
-        children[i] = child;
+        children[i] = new StoredBoard(childBoard, result, 600);
       }
       super.add(children, father);
     }
@@ -186,9 +181,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       bestHeuristicToStop = Math.min(bestHeuristicToStop, heuristicToStop);
 
       if (this.firstPosition.isSolved()) {
-//        System.out.println("STOPPING SOLVED");
-//        System.out.println(heuristicToStop);
-//        System.out.println(bestHeuristicToStop);
         break;
       }
       if (heuristicToStop == bestHeuristicToStop && size > maxSize * 0.8) {
