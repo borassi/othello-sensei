@@ -23,7 +23,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
+import bitpattern.BitPattern;
 import board.Board;
+import evaluateposition.EvaluatorLastMoves;
+import helpers.SelfPlay;
+import evaluateposition.EvaluatorMCTS;
+import evaluateposition.EvaluatorAlphaBeta;
+import board.PossibleMovesFinderImproved;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MultilinearRegression implements java.io.Serializable, DepthOneEvaluator {  
   /**
@@ -72,7 +81,7 @@ public class MultilinearRegression implements java.io.Serializable, DepthOneEval
 
     return result;
   }
-
+  
   public float trainStep(ArrayList<BoardWithEvaluation> trainingSet, float speed) {
     double sumErrorSquared = 0;
 
@@ -80,7 +89,7 @@ public class MultilinearRegression implements java.io.Serializable, DepthOneEval
 
     for (BoardWithEvaluation be : trainingSet) {
       Board b = be.board;
-      float error = be.evaluation - evalForTraining(b);
+      float error = be.evaluation - eval(b);
       sumErrorSquared += error * error;
       Board[] allTranspositions = Board.allTranspositions(b);
       int group = evaluatorsFromBoard(b);
@@ -96,6 +105,44 @@ public class MultilinearRegression implements java.io.Serializable, DepthOneEval
     return curError;
   }
   
+//  public void selfTrain() {
+//    int nThreads = 1;
+//    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+//    EvaluatorLastMoves lastMoves = new EvaluatorLastMoves();
+//    
+//    while (true) {
+//      System.out.println("DONE.");
+//      for (int i = 0; i < 100; ++i) {
+//        SelfPlay selfPlay[] = new SelfPlay[nThreads];
+//        for (int j = 0; j < nThreads; ++j) {
+//          EvaluatorMCTS eval = new EvaluatorMCTS(50000, 100000, pmf, this, lastMoves);
+//          selfPlay[j] = new SelfPlay(eval, eval, pmf, (int) (Math.random() * 10));
+//          selfPlay[j].start();
+//        }
+//        for (SelfPlay s : selfPlay) {
+//          try {
+//            s.join();
+//          } catch (InterruptedException ex) {
+//            Logger.getLogger(MultilinearRegression.class.getName()).log(Level.SEVERE, null, ex);
+//          }
+//          ObjectArrayList<Board> result = s.get();
+//          int finalResult = BitPattern.getEvaluationGameOver(result.top());
+//          for (int j = 0; j < result.size(); ++j) {
+//            Board b = result.get(j);
+//            int error = (((result.size() - j) % 2) == 0 ? -finalResult : finalResult) - eval(b);
+//            Board[] allTranspositions = Board.allTranspositions(b);
+//            int group = evaluatorsFromBoard(b);
+//            PatternEvaluator[] curEvaluators = this.evaluators[group];
+//            for (PatternEvaluator evaluator : curEvaluators) {
+//              evaluator.update(allTranspositions, error, 0.2);
+//            }
+//          }
+//        }
+//      }
+//      this.save(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
+//    }
+//  }
+//  
   /**
    * Trains the model.
    * @param trainingSet
@@ -106,26 +153,26 @@ public class MultilinearRegression implements java.io.Serializable, DepthOneEval
                     float speed, int nIter) {
     int iter = 0;
 
-    for (PatternEvaluator[] patterns : evaluators) {
-      for (PatternEvaluator pattern : patterns) {
-        pattern.resetNumberOfAppearances();
-      }
-    }
+//    for (PatternEvaluator[] patterns : evaluators) {
+//      for (PatternEvaluator pattern : patterns) {
+//        pattern.resetNumberOfAppearances();
+//      }
+//    }
     
-    for (BoardWithEvaluation be : trainingSet) {
-      Board b = be.board;
-      Board[] allTranspositions = Board.allTranspositions(b);
-      PatternEvaluator[] curEvaluator = evaluators[evaluatorsFromBoard(b)];
-      for (PatternEvaluator patternEvaluator : curEvaluator) {
-        patternEvaluator.updateNumberOfAppearences(allTranspositions);
-      }
-    }
+//    for (BoardWithEvaluation be : trainingSet) {
+//      Board b = be.board;
+//      Board[] allTranspositions = Board.allTranspositions(b);
+//      PatternEvaluator[] curEvaluator = evaluators[evaluatorsFromBoard(b)];
+//      for (PatternEvaluator patternEvaluator : curEvaluator) {
+//        patternEvaluator.updateNumberOfAppearences(allTranspositions);
+//      }
+//    }
 
-    for (PatternEvaluator[] patterns : evaluators) {
-      for (PatternEvaluator pattern : patterns) {
-        pattern.resetEvaluatorFloat();
-      }
-    }
+//    for (PatternEvaluator[] patterns : evaluators) {
+//      for (PatternEvaluator pattern : patterns) {
+//        pattern.resetEvaluatorFloat();
+//      }
+//    }
 
     float oldError = Float.MAX_VALUE;
     while (iter++ < nIter) {
@@ -136,27 +183,27 @@ public class MultilinearRegression implements java.io.Serializable, DepthOneEval
       }
       oldError = curError;
     }
-    for (PatternEvaluator[] patterns : evaluators) {
-      for (PatternEvaluator pattern : patterns) {
-        pattern.setMissingEval();
-      }
-    }
+//    for (PatternEvaluator[] patterns : evaluators) {
+//      for (PatternEvaluator pattern : patterns) {
+//        pattern.setMissingEval();
+//      }
+//    }
   }
   /** 
    * Evaluates a position.
    * @param b the position
    * @return the evaluation
    */
-  public int evalForTraining(Board b) {
-    int result = 0;
-    int group = evaluatorsFromBoard(b);
-    PatternEvaluator[] evaluators = this.evaluators[group];
-    Board[] allTranspositions = b.allTranspositions();
-    for (PatternEvaluator evaluator : evaluators) {
-      result += evaluator.evalForTraining(allTranspositions);
-    }
-    return result;
-  }
+//  public int evalForTraining(Board b) {
+//    int result = 0;
+//    int group = evaluatorsFromBoard(b);
+//    PatternEvaluator[] evaluators = this.evaluators[group];
+//    Board[] allTranspositions = b.allTranspositions();
+//    for (PatternEvaluator evaluator : evaluators) {
+//      result += evaluator.evalForTraining(allTranspositions);
+//    }
+//    return result;
+//  }
   /** 
    * Evaluates a position.
    * @param b the position
@@ -230,5 +277,17 @@ public class MultilinearRegression implements java.io.Serializable, DepthOneEval
       result = Math.min(result, evaluator.getMinTrainingSetSize(allTranspositions));
     }
     return result;
+  }
+  
+  public static void main(String args[]) {
+    MultilinearRegression r = MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
+    System.out.println(r.evalVerbose(new Board("OXXXXXXX\n" +
+                                               "OXOOXOXX\n" +
+                                               "OXXXOXOX\n" +
+                                               "OXXXXOXX\n" +
+                                               "OXXXXXOX\n" +
+                                               "OOXOXOOX\n" +
+                                               "OOOOOOXX\n" +
+                                               "XXXXXXXX", true)));
   }
 }

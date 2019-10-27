@@ -63,16 +63,16 @@ public class PatternEvaluatorTest {
     assertEquals(0, evaluator.evalVerbose(oneOnEdge.allRotations()), 1.E-6F);
     assertEquals(0, evaluator.evalVerbose(twoOnEdge.allRotations()), 1.E-6F);
     
-    evaluator.updateNumberOfAppearences(oneOnEdge.allRotations());
-    evaluator.updateNumberOfAppearences(twoOnEdge.allRotations());
+//    evaluator.updateNumberOfAppearences(oneOnEdge.allRotations());
+//    evaluator.updateNumberOfAppearences(twoOnEdge.allRotations());
 
     // The oneOnEdge board is worth 100 and not 0. Hence, we update
     // the value of all the corresponding edges by adding 2 * 10.
     // The empty edge appears 6 times and 3 in this board, so it values 10. 
     // The edge with one element values 20. 
-    evaluator.resetEvaluatorFloat();
+//    evaluator.resetEvaluatorFloat();
     evaluator.update(oneOnEdge.allRotations(), 100, 0.1);
-    evaluator.setMissingEval();
+//    evaluator.setMissingEval();
     
     assertEquals(50, evaluator.evalVerbose(oneOnEdge.allRotations()), 1.E-6);
     assertEquals(30, evaluator.evalVerbose(twoOnEdge.allRotations()), 1.E-6);
@@ -83,9 +83,9 @@ public class PatternEvaluatorTest {
     // The empty edge appears 6 times and 3 in this board, so it values
     // 10 - 12 * 1/2 = 6.
     // The edge with 2 elements values -12.
-    evaluator.resetEvaluatorFloat();
+//    evaluator.resetEvaluatorFloat();
     evaluator.update(twoOnEdge.allRotations(), -60, 0.1);
-    evaluator.setMissingEval();
+//    evaluator.setMissingEval();
     
     assertEquals(4 * 3 + 20, evaluator.evalVerbose(oneOnEdge.allRotations()), 1.E-6);
     assertEquals(4 * 3 - 12, evaluator.evalVerbose(twoOnEdge.allRotations()), 1.E-6);
@@ -94,20 +94,20 @@ public class PatternEvaluatorTest {
   @Test
   public void testMinNumberOfAppearences() {
     PatternEvaluator evaluator = new PatternEvaluator(new Side(), 2);
-    evaluator.updateNumberOfAppearences(oneOnEdge.allRotations());
+//    evaluator.updateNumberOfAppearences(oneOnEdge.allRotations());
     // The oneOnEdge board is worth 1 and not 0. Hence, we update
     // the value of all the corresponding edges by adding 2 * 0.1.
     // The empty edge values 0.2, as the missing edges.
-    evaluator.resetEvaluatorFloat();
+//    evaluator.resetEvaluatorFloat();
     evaluator.update(oneOnEdge.allRotations(), 100, 0.1);
-    evaluator.setMissingEval();
+//    evaluator.setMissingEval();
     assertEquals(20 * 3 + 20, evaluator.eval(oneOnEdge.allRotations()), 1.E-6);
     assertEquals(20 * 3 + 20, evaluator.eval(twoOnEdge.allRotations()), 1.E-6);
     
-    evaluator.resetEvaluatorFloat();
+//    evaluator.resetEvaluatorFloat();
     evaluator.evalVerbose(oneOnEdge.allRotations());
     evaluator.update(oneOnEdge.allRotations(), 100, 0.1);
-    evaluator.setMissingEval();
+//    evaluator.setMissingEval();
     assertEquals(2 * (20 * 3 + 20), evaluator.evalVerbose(oneOnEdge.allRotations()), 1.E-6);
     assertEquals(2 * (20 * 3 + 20), evaluator.evalVerbose(twoOnEdge.allRotations()), 1.E-6);
   }

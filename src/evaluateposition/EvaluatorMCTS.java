@@ -19,21 +19,22 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.MultilinearRegression;
+import evaluatedepthone.PatternEvaluatorImproved;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorInterface {
   private final EvaluatorLastMoves lastMovesEval;
-  private final DepthOneEvaluator depthOneEval;
+  private final PatternEvaluatorImproved depthOneEval;
 
   public EvaluatorMCTS(int arraySize, int nElements) {
     this(arraySize, nElements, PossibleMovesFinderImproved.load(), 
-        MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN),
+        PatternEvaluatorImproved.load(),
         new EvaluatorLastMoves());
   }
 
   public EvaluatorMCTS(int arraySize, int nElements, 
                          PossibleMovesFinderImproved possibleMovesFinder,
-                         DepthOneEvaluator depthOneEvaluator,
+                         PatternEvaluatorImproved depthOneEvaluator,
                          EvaluatorLastMoves evaluatorLastMoves) {
     super(arraySize, nElements, possibleMovesFinder);
     this.depthOneEval = depthOneEvaluator;
@@ -43,16 +44,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   public synchronized float getEval() {
     return get(super.firstPosition.getBoard()).eval;
   }
-
-  public ObjectArrayList<Board> getWeirdPositions(int minTrainingSetSize) {
-    ObjectArrayList<Board> result = new ObjectArrayList<>();
-    for (StoredBoard b = first(); b != null; b = next(b.player, b.opponent)) {
-      if (depthOneEval.getMinTrainingSetSize(b.getBoard()) < minTrainingSetSize) {
-        result.add(b.getBoard());
-      }
-    }
-    return result;
-  }
+//
+//  public ObjectArrayList<Board> getWeirdPositions(int minTrainingSetSize) {
+//    ObjectArrayList<Board> result = new ObjectArrayList<>();
+//    for (StoredBoard b = first(); b != null; b = next(b.player, b.opponent)) {
+//      if (depthOneEval.getMinTrainingSetSize(b.getBoard()) < minTrainingSetSize) {
+//        result.add(b.getBoard());
+//      }
+//    }
+//    return result;
+//  }
   
   @Override  
   public long getNVisited() {
@@ -107,18 +108,28 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
     long player = father.player;
     long opponent = father.opponent;
     long[] moves = possibleMovesFinder.possibleMovesAdvanced(player, opponent);
+    // TODO
+    this.depthOneEval.setup(player, opponent);
+    this.depthOneEval.invert();
     if (moves.length == 0) {
       this.updateSolved(player, opponent, BitPattern.getEvaluationGameOver(player, opponent));
     } else {
       StoredBoard[] children = new StoredBoard[moves.length];
-//      for (int i = 0; i < StoredBoard.N_SAMPLES; i++) {
-//        deltas[i] = father.samples[i] - father.eval;
-//      }
+      for (int i = 0; i < StoredBoard.N_SAMPLES; i++) {
+        deltas[i] = father.samples[i] - father.eval;
+      }
       for (int i = 0; i < moves.length; i++) {
         long move = moves[i];
         Board childBoard = father.getBoard().move(move);
-        int result = this.depthOneEval.eval(childBoard);
-        children[i] = new StoredBoard(childBoard, result, 600);
+        int result;
+        if (move != 0) {
+          this.depthOneEval.update(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
+          result = this.depthOneEval.eval();
+          this.depthOneEval.undoUpdate(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
+        } else {
+          result = this.depthOneEval.eval();
+        }
+        children[i] = new StoredBoard(childBoard, result, 800, deltas);
       }
       super.add(children, father);
     }
@@ -137,8 +148,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   }
 
   public short evaluatePosition(Board current, int depth) {
-//    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 600, deltas);
-    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
+    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800, deltas);
+//    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
     this.lastMovesEval.nVisited = 0;
     HashMapVisitedPositions.PositionToImprove nextPos;
@@ -184,14 +195,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         break;
       }
       if (heuristicToStop == bestHeuristicToStop && size > maxSize * 0.8) {
-        System.out.println("STOPPING HEUR");
-        System.out.println(heuristicToStop);
-        System.out.println(bestHeuristicToStop);
-        System.out.println(super.firstPosition.getUpperBound());
-        System.out.println(super.firstPosition.getLowerBound());
-        // bestVariationLower > bestVariationUpper; maximize the difference.
-        System.out.println(super.firstPosition.bestVariationOpponent);
-        System.out.println(super.firstPosition.bestVariationPlayer);
+//        System.out.println("STOPPING HEUR");
+//        System.out.println(heuristicToStop);
+//        System.out.println(bestHeuristicToStop);
+//        System.out.println(super.firstPosition.getUpperBound());
+//        System.out.println(super.firstPosition.getLowerBound());
+//        // bestVariationLower > bestVariationUpper; maximize the difference.
+//        System.out.println(super.firstPosition.bestVariationOpponent);
+//        System.out.println(super.firstPosition.bestVariationPlayer);
 //        System.out.println(size + " " + maxSize);
         break;
       }
@@ -214,12 +225,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 //    System.out.println(this.size() + this.lastMovesEval.nVisited);
 //    System.out.println("W" + weird + "/" + tot);
 //    System.out.print("  " + wrong + "/" + tot + "  ");
+    System.out.println(-get(current).getEval());
     return (short) -get(current).getEval();
   }
   
   public ObjectArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
     evaluatePosition(current, depth);
-    long[] moves = possibleMovesFinder.possibleMoves(current);
+    long[] moves = possibleMovesFinder.possibleMovesAdvanced(current.getPlayer(), current.getOpponent());
     ObjectArrayList<StoredBoard> evaluations = new ObjectArrayList<>();
     for (long move : moves) {
       Board next = current.move(move);

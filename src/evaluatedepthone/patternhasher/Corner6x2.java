@@ -17,16 +17,16 @@ package evaluatedepthone.patternhasher;
 import bitpattern.BitPattern;
 import board.Board;
 
-public class Corner5x2 implements PatternHashInterface {
-  final static long X_CORNER = BitPattern.parsePattern(
-            "--------\n"
-          + "--------\n"
-          + "--------\n"
-          + "--------\n"
-          + "--------\n"
-          + "--------\n" 
-          + "------X-\n"
-          + "-------X\n");
+public class Corner6x2 implements PatternHashInterface {
+//  final static long X_CORNER = BitPattern.parsePattern(
+//            "--------\n"
+//          + "--------\n"
+//          + "--------\n"
+//          + "--------\n"
+//          + "--------\n"
+//          + "--------\n" 
+//          + "------X-\n"
+//          + "-------X\n");
   final static long LAST_ROW_BIT_PATTERN = BitPattern.parsePattern(
             "--------\n"
           + "--------\n"
@@ -35,7 +35,7 @@ public class Corner5x2 implements PatternHashInterface {
           + "--------\n"
           + "--------\n" 
           + "--------\n"
-          + "---XXXXX\n");
+          + "--XXXXXX\n");
   final static long LAST_BUT_ONE_ROW_BIT_PATTERN = BitPattern.parsePattern(
             "--------\n"
           + "--------\n"
@@ -43,7 +43,7 @@ public class Corner5x2 implements PatternHashInterface {
           + "--------\n"
           + "--------\n"
           + "--------\n" 
-          + "---XXXXX\n"
+          + "--XXXXXX\n"
           + "--------\n");
   final static long pattern = BitPattern.parsePattern(
             "--------\n"
@@ -52,8 +52,8 @@ public class Corner5x2 implements PatternHashInterface {
           + "--------\n"
           + "--------\n"
           + "--------\n" 
-          + "---XXXXX\n"
-          + "---XXXXX\n");
+          + "--XXXXXX\n"
+          + "--XXXXXX\n");
   private static final int N_TRANSPOSITIONS = 8;
 
   /**
@@ -69,9 +69,9 @@ public class Corner5x2 implements PatternHashInterface {
 //    }
     return (int) (
       (player & LAST_ROW_BIT_PATTERN) |
-      (opponent & LAST_ROW_BIT_PATTERN) << 5 |
-      (player & LAST_BUT_ONE_ROW_BIT_PATTERN) << 2 |
-      (opponent & LAST_BUT_ONE_ROW_BIT_PATTERN) << 7);
+      (opponent & LAST_ROW_BIT_PATTERN) << 6 |
+      (player & LAST_BUT_ONE_ROW_BIT_PATTERN) << 4 |
+      (opponent & LAST_BUT_ONE_ROW_BIT_PATTERN) << 10);
   }
   
   @Override
@@ -85,7 +85,7 @@ public class Corner5x2 implements PatternHashInterface {
 
   @Override
   public int maxSize() {
-    return 1048576; // 2^20
+    return 16777216; // 2^24
   }
 
   public final static float eval(Board[] allTransp, float[] evaluators) {

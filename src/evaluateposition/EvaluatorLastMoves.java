@@ -156,7 +156,7 @@ public class EvaluatorLastMoves {
   long[] flipDiagonalLast = new long[64 * 256];
   long[] flipReverseDiagonalLast = new long[64 * 256];
   int nVisited = 0;
-  MultilinearRegression r = new MultilinearRegression();
+//  MultilinearRegression r = new MultilinearRegression();
   int baseOffset;
 //  IntArrayList lastSpacePlayed = new IntArrayList(new int[] {-1});
   

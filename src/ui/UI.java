@@ -86,6 +86,7 @@ public class UI extends JFrame implements ComponentListener {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JButton newGame = new JButton("New game");
   private final JButton retrain = new JButton("Retrain");
+  private final JButton selftrain = new JButton("Self-train");
   private final JButton improveDataset = new JButton("Improve dataset");
   private final JSpinner spinner;
   
@@ -144,6 +145,7 @@ public class UI extends JFrame implements ComponentListener {
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
     commands.add(retrain);
+    commands.add(selftrain);
     commands.add(improveDataset);
     
     newGame.addActionListener((ActionEvent e) -> {
@@ -154,6 +156,13 @@ public class UI extends JFrame implements ComponentListener {
       main.improveDataset();
     });
     
+    selftrain.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        main.selfTrain();
+      }
+    });
+    
     retrain.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -162,7 +171,7 @@ public class UI extends JFrame implements ComponentListener {
     });
     
     SpinnerModel depth = new SpinnerListModel(Arrays.asList(new String[] 
-      {"0", "10", "100", "1000", "2000", "10000", "20000", "50000", "100000", "200000", "500000", "1000000", "2000000"}));
+      {"0", "10", "100", "1000", "2000", "10000", "20000", "50000", "100000", "200000", "500000", "1000000", "2000000", "4000000"}));
     depth.setValue("1000");
     spinner = new JSpinner(depth);
     

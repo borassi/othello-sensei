@@ -17,8 +17,12 @@ package evaluatedepthone;
 import java.io.Serializable;
 
 import board.Board;
+import evaluatedepthone.patternhasher.Corner;
 import evaluatedepthone.patternhasher.Corner3x3;
+import evaluatedepthone.patternhasher.Corner4x3;
 import evaluatedepthone.patternhasher.Corner5x2;
+import evaluatedepthone.patternhasher.Corner6x2;
+import evaluatedepthone.patternhasher.Corner7x2;
 import evaluatedepthone.patternhasher.Diagonal;
 import evaluatedepthone.patternhasher.Parity;
 import evaluatedepthone.patternhasher.PatternHashInterface;
@@ -42,75 +46,75 @@ public class PatternEvaluator implements Serializable {
   public long pattern;
   public long mask = 0;
   public short[] evaluator;
-  public transient int[] numberOfAppearances; 
+  public short[] numberOfAppearances; 
   PatternHashInterface hashInterface;
   public final int minNumberOfAppearances;
   public transient float missingEval = 0;
   public transient float missingEvalNumberOfAppearances = 0;
-  public transient float[] evaluatorFloat;
+//  public transient float[] evaluatorFloat;
   
   
   PatternEvaluator(PatternHashInterface hashInterface, int minNumberOfAppearances) {
     this.hashInterface = hashInterface;
     this.evaluator = new short[this.hashInterface.maxSize()];
     this.minNumberOfAppearances = minNumberOfAppearances;
+    this.numberOfAppearances = new short[this.hashInterface.maxSize()];
   }
 
-  void resetNumberOfAppearances() {
-    this.numberOfAppearances = new int[this.hashInterface.maxSize()];
-  }
-
-  public void resetEvaluatorFloat() {
-    evaluatorFloat = new float[this.hashInterface.maxSize()];
-    missingEval = 0;
-    for (int i = 0; i < evaluatorFloat.length; i++) {
-      if (numberOfAppearances[i] < minNumberOfAppearances) {
-        missingEval = evaluator[i];
-        evaluatorFloat[i] = Integer.MIN_VALUE;
-      } else {
-        evaluatorFloat[i] = evaluator[i];
-      }
-    }
-  }
-
-  public void updateNumberOfAppearences(Board[] allTransp) {
-    if (numberOfAppearances == null) {
-      numberOfAppearances = new int[this.hashInterface.maxSize()];
-    }
-    for (int hash : hashInterface.hashes(allTransp)) {
-      numberOfAppearances[hash]++;
-      if (numberOfAppearances[hash] < minNumberOfAppearances) {
-        missingEvalNumberOfAppearances++;
-      } else if (numberOfAppearances[hash] == minNumberOfAppearances) {
-        missingEvalNumberOfAppearances -= minNumberOfAppearances - 1;
-      }
-    }
-  }
-  
-  public void setMissingEval() {
-    for (int i = 0; i < numberOfAppearances.length; i++) {
-      if (numberOfAppearances[i] < minNumberOfAppearances) {
-        evaluator[i] = (short) Math.round(missingEval);
-      } else {
-        evaluator[i] = (short) Math.round(evaluatorFloat[i]);
-      }
-    }
-    evaluatorFloat = null;
-    missingEval = Integer.MIN_VALUE;
-  }
-
-  public float evalForTraining(Board[] allTransp) {
-    return eval(allTransp);
-//    float result = 0;
-//    for (int hash : hashInterface.hashes(allTransp)) {
-//      if (numberOfAppearances[hash] >= minNumberOfAppearances) {
-//        assert(evaluatorFloat[hash] != Integer.MIN_VALUE);
-//        result += evaluatorFloat[hash];
+//  void resetNumberOfAppearances() {
+//    this.numberOfAppearances = new short[this.hashInterface.maxSize()];
+//  }
+//
+//  public void resetEvaluatorFloat() {
+////    evaluatorFloat = new float[this.hashInterface.maxSize()];
+//    missingEval = 0;
+//    for (int i = 0; i < evaluator.length; i++) {
+//      if (numberOfAppearances[i] < minNumberOfAppearances) {
+//        missingEval = evaluator[i];
+//        evaluator[i] = Short.MIN_VALUE;
 //      } else {
-//        result += missingEval;
+////        evaluatorFloat[i] = evaluator[i];
 //      }
 //    }
-//    return result;
+//  }
+//
+//  public void updateNumberOfAppearences(Board[] allTransp) {
+//    if (numberOfAppearances == null) {
+//      numberOfAppearances = new short[this.hashInterface.maxSize()];
+//    }
+//    for (int hash : hashInterface.hashes(allTransp)) {
+//      numberOfAppearances[hash]++;
+//      if (numberOfAppearances[hash] < minNumberOfAppearances) {
+//        missingEvalNumberOfAppearances++;
+//      } else if (numberOfAppearances[hash] == minNumberOfAppearances) {
+//        missingEvalNumberOfAppearances -= minNumberOfAppearances - 1;
+//      }
+//    }
+//  }
+//  
+//  public void setMissingEval() {
+//    for (int i = 0; i < numberOfAppearances.length; i++) {
+//      if (numberOfAppearances[i] < minNumberOfAppearances) {
+//        evaluator[i] = (short) Math.round(missingEval);
+//      } else {
+////        evaluator[i] = (short) Math.round(evaluatorFloat[i]);
+//      }
+//    }
+////    evaluatorFloat = null;
+//    missingEval = Integer.MIN_VALUE;
+//  }
+
+  public float evalForTraining(Board[] allTransp) {
+    float result = 0;
+    for (int hash : hashInterface.hashes(allTransp)) {
+      if (numberOfAppearances[hash] >= minNumberOfAppearances) {
+        assert(evaluator[hash] != Integer.MIN_VALUE);
+        result += evaluator[hash];
+      } else {
+        result += missingEval;
+      }
+    }
+    return result;
   }
 
   public int getMinTrainingSetSize(Board[] allTransp) {
@@ -134,25 +138,31 @@ public class PatternEvaluator implements Serializable {
     int i = 0;
     for (int hash : hashInterface.hashes(allTransp)) {
       System.out.println(hashInterface.getClass() + " " + Side.sides[i++]);
-      if (numberOfAppearances[hash] >= minNumberOfAppearances || evaluator[hash] != Integer.MIN_VALUE) {
+//      if (numberOfAppearances[hash] >= minNumberOfAppearances || evaluator[hash] != Integer.MIN_VALUE) {
         result += evaluator[hash];
         System.out.println("Eval: " + evaluator[hash] + " / " + numberOfAppearances[hash]);
-      } else {
-        result += missingEval;
-        System.out.println("Eval: " + missingEval + "(missing)");
-      }
+//      } else {
+//        result += missingEval;
+//        System.out.println("Eval: " + missingEval + "(missing)");
+//      }
     }
     return result;
   }
 
   public void update(Board[] allTransp, double error, double speed) {
     for (int hash : hashInterface.hashes(allTransp)) {
-      if (numberOfAppearances[hash] >= minNumberOfAppearances) {
-        evaluatorFloat[hash] += 2 * error * speed / numberOfAppearances[hash];
-      } else {
-        assert(evaluatorFloat[hash] == Integer.MIN_VALUE);
-        missingEval += 2 * error * speed / missingEvalNumberOfAppearances;
-      }
+//      numberOfAppearances[hash] += numberOfAppearances[hash] == 100 ? 0 : 1;
+//      if (numberOfAppearances[hash] >= minNumberOfAppearances) {
+        double updateSize = 2 * error * speed / 100.;
+        evaluator[hash] += Math.floor(updateSize);
+        if (Math.random() < updateSize - Math.floor(updateSize)) {
+          evaluator[hash]++;
+        }
+        evaluator[hash] = (short) Math.max(Math.min(evaluator[hash], 1500), -1500);
+//      } else {
+//        assert(evaluator[hash] == Short.MIN_VALUE);
+//        missingEval += 2 * error * speed / missingEvalNumberOfAppearances;
+//      }
     }
     
   }
@@ -164,12 +174,13 @@ public class PatternEvaluator implements Serializable {
       evaluators[i] = new PatternEvaluator[]{
               new PatternEvaluator(new Corner3x3(), minNumberOfAppearances),
               new PatternEvaluator(new Diagonal(), minNumberOfAppearances),
-              new PatternEvaluator(new Parity(), minNumberOfAppearances),
-              new PatternEvaluator(new Side(), minNumberOfAppearances),
-              new PatternEvaluator(new StableDisksMiddle(), minNumberOfAppearances),
+              new PatternEvaluator(new Corner6x2(), minNumberOfAppearances),
+//              new PatternEvaluator(new Corner(), minNumberOfAppearances),
+              new PatternEvaluator(new SideImproved(), minNumberOfAppearances),
+//              new PatternEvaluator(new Parity(), minNumberOfAppearances),
+//              new PatternEvaluator(new StableDisksMiddle(), minNumberOfAppearances),
 //              new PatternEvaluator(new Radius(), minNumberOfAppearances),
 //              new PatternEvaluator(new StableDisks(), minNumberOfAppearances),
-              new PatternEvaluator(new Corner5x2(), minNumberOfAppearances)
               };
     }
     return evaluators;

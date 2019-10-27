@@ -16,6 +16,7 @@ package bitpattern;
 
 import java.util.ArrayList;
 import board.Board;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 public class BitPattern {
   public final static long FULL_BIT_PATTERN = parsePattern(
@@ -135,7 +136,7 @@ public class BitPattern {
           "----XXXX\n" +
           "----XXXX\n" +
           "----XXXX\n");
-  final static long MAIN_DIAG_BIT_PATTERN = parsePattern(
+  public final static long MAIN_DIAG_BIT_PATTERN = parsePattern(
             "X-------\n"
           + "-X------\n" 
           + "--X-----\n"
@@ -293,6 +294,19 @@ public class BitPattern {
     b = b ^ t ^ (t << 28);
   
     return b;
+  }
+  
+  public final static LongOpenHashSet allTranspositions(long b) {
+    LongOpenHashSet result = new LongOpenHashSet();
+    for (int i = 0; i < 2; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        result.add(b);
+        System.out.println(BitPattern.patternToString(b));
+        b = transpose(horizontalMirror(b));
+      }
+      b = horizontalMirror(b);
+    }
+    return result;
   }
   
   public final static long moveToBit(PositionIJ ij) {

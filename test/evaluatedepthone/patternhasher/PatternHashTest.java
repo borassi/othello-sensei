@@ -37,6 +37,29 @@ public class PatternHashTest {
           + "XXXXXXXX\n");
   
   @Test
+  public void testCorner6x2() {
+    ArrayList<Long> patterns = BitPattern.allSubBitPatterns(Corner6x2.pattern);
+    HashSet<Integer> foundPatterns = new HashSet<>();
+    Corner6x2 hasher = new Corner6x2();
+    
+    patterns.stream().forEach((player) -> {
+      for (long opponent : patterns) {
+        if ((player & opponent) == 0) {
+          player = player | (((long) (Math.random() * Long.MAX_VALUE))
+            & ~Corner6x2.pattern);
+          opponent = opponent | (((long) (Math.random() * Long.MAX_VALUE))
+            & ~Corner6x2.pattern);
+          int hash = Corner6x2.hash(player, opponent);
+          assert(hash >= 0);
+          assert(hash < hasher.maxSize());
+          assert(!foundPatterns.contains(hash));
+          foundPatterns.add(hash);
+        }
+      }
+    });
+  }
+  
+  @Test
   public void testCorner5x2() {
     ArrayList<Long> patterns = BitPattern.allSubBitPatterns(Corner5x2.pattern);
     HashSet<Integer> foundPatterns = new HashSet<>();
@@ -57,6 +80,34 @@ public class PatternHashTest {
         }
       }
     });
+  }
+  @Test
+  public void testCorner4x3() {
+    ArrayList<Long> patterns = BitPattern.allSubBitPatterns(Corner4x3.pattern);
+    HashSet<Integer> foundPatterns = new HashSet<>();
+    Corner4x3 hasher = new Corner4x3();
+    
+    for (long player : patterns) {
+      for (long opponent : patterns) {
+        if ((player & opponent) == 0) {
+          player = player | (((long) (Math.random() * Long.MAX_VALUE))
+                  & ~Corner4x3.pattern);
+          opponent = opponent | (((long) (Math.random() * Long.MAX_VALUE))
+                  & ~Corner4x3.pattern);
+          int hash = Corner4x3.hash(player, opponent);
+          if (hash >= hasher.maxSize()) {
+            System.out.println(hash);
+            System.out.println(new Board(player, opponent));
+            assert(false);
+          }
+          if (foundPatterns.contains(hash)) {
+            System.out.println(new Board(player, opponent));
+            assert(false);
+          }
+          foundPatterns.add(hash);
+        }
+      }
+    }
   }
   @Test
   public void testCorner3x3() {
@@ -133,6 +184,42 @@ public class PatternHashTest {
     }
   }
   @Test
+  public void testCorner() {
+    ArrayList<Long> patternsCorner = BitPattern.allSubBitPatterns(Corner.PATTERN_CORNER);
+    ArrayList<Long> patternHalf = BitPattern.allSubBitPatterns(Corner.PATTERN_HALF);
+    ArrayList<Long> patternInner = BitPattern.allSubBitPatterns(Corner.PATTERN_INNER);
+ 
+//    long bitPatterns[] = {Corner.PATTERN_CORNER, Corner.PATTERN_HALF, Corner.PATTERN_INNER};
+    ArrayList<ArrayList<Long>> allPatterns = new ArrayList<>();
+ 
+    long[] masks = new long[] {Corner.MASK_HALF, Corner.MASK_INNER, PATTERN_ALL};
+    allPatterns.add(patternsCorner);
+    allPatterns.add(patternHalf);
+    allPatterns.add(patternInner);
+    HashMap<Integer, Board> foundPatterns = new HashMap<>();
+    Corner hasher = new Corner();
+    
+    for (int i = 0; i < allPatterns.size(); i++) {
+      ArrayList<Long> patterns = allPatterns.get(i);
+      for (long player : patterns) {
+        for (long opponent : patterns) {
+          if ((player & opponent) == 0 && ((player | opponent) & masks[i]) != 0) {
+            int hash = Corner.hash(player, opponent);
+            assert(hash < hasher.maxSize());
+            if (foundPatterns.containsKey(hash)) {
+              System.out.println(new Board(player, opponent));
+              System.out.println(foundPatterns.get(hash));
+              System.out.println(BitPattern.patternToString(hash));
+              assert(false);
+            }
+            foundPatterns.put(hash, new Board(player, opponent));
+          }
+        }
+      }
+      System.out.println(i);
+    }
+  }
+  @Test
   public void testSideImproved() {    
     ArrayList<Long> patternsSweet = BitPattern.allSubBitPatterns(SideImproved.patternSweet);
     ArrayList<Long> patternCenter = BitPattern.allSubBitPatterns(SideImproved.patternCenter);
@@ -172,7 +259,6 @@ public class PatternHashTest {
     SideImproved hasher = new SideImproved();
     
     for (ArrayList<Long> patterns : allPatterns) {
-      System.out.println("YEAH!");
       i = 0;
       for (long player : patterns) {
         for (long opponent : patterns) {

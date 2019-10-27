@@ -368,8 +368,9 @@ public class Board implements Serializable {
    * the player played and on each flipped disk.
    */
   public void moveInPlace(long move) {
+    long oldPlayer = player;
     player = opponent & ~move;
-    opponent = player | move;
+    opponent = oldPlayer | move;
   }
   
   /**

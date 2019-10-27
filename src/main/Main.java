@@ -26,6 +26,7 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.MultilinearRegression;
+import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
@@ -49,7 +50,7 @@ public class Main {
   ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
   ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
-  private final MultilinearRegression DEPTH_ONE_EVALUATOR = MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
+  private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();// MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
   private final EvaluatorLastMoves EVALUATOR_LAST_MOVES = new EvaluatorLastMoves();
   /**
@@ -150,15 +151,19 @@ public class Main {
 //    System.out.println(DEPTH_ONE_EVALUATOR.evalVerbose(board));
   }
   
+  public void selfTrain() {
+//    DEPTH_ONE_EVALUATOR.selfTrain();
+  }
+  
   public void retrain() {
 //    depthOneEvaluator = new MultilinearRegression();
-    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadOMGSet(184);
-    trainingSet.addAll(LoadDataset.loadTrainingSet());
-//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.5F, 2);
-    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.2F, 5);
-    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.1F, 2);
-//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.05F, 2);
-    DEPTH_ONE_EVALUATOR.save(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
+    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
+    trainingSet.addAll(LoadDataset.loadOMGSet(170));
+    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.005F, 2);
+    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.002F, 5);
+    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.001F, 5);
+    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.0005F, 2);
+    DEPTH_ONE_EVALUATOR.save();
   }
   
   
@@ -273,11 +278,11 @@ public class Main {
           } else {
             newGame();
           }
-          ObjectArrayList<Board> wrongPositions = this.evaluator.getWeirdPositions(20);
-          for (Board wrongPosition : wrongPositions) {
-            stream.writeLong(LoadDataset.littleToBigEndianLong(wrongPosition.getPlayer()));
-            stream.writeLong(LoadDataset.littleToBigEndianLong(wrongPosition.getOpponent()));
-          }
+//          ObjectArrayList<Board> wrongPositions = this.evaluator.getWeirdPositions(20);
+//          for (Board wrongPosition : wrongPositions) {
+//            stream.writeLong(LoadDataset.littleToBigEndianLong(wrongPosition.getPlayer()));
+//            stream.writeLong(LoadDataset.littleToBigEndianLong(wrongPosition.getOpponent()));
+//          }
         }
         stream.flush();
         stream.close();
