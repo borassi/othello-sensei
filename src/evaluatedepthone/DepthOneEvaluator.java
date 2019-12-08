@@ -18,9 +18,9 @@ import board.Board;
 
 public interface DepthOneEvaluator {
   public int eval();
-  public int eval(Board b);
-  public int evalVerbose(Board b);
-  public void setup(Board b);
+  public int eval(long player, long opponent);
+  public int evalVerbose(long player, long opponent);
+  public void setup(long player, long opponent);
   public void update(int square, long flip);
   public void undoUpdate(int square, long flip);
   public void invert();

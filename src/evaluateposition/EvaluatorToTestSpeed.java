@@ -50,7 +50,7 @@ public class EvaluatorToTestSpeed {
       return 0;
     }
     if (current.getEmptySquares() == 0) {
-      return depthOneEvaluator.eval(current);
+      return depthOneEvaluator.eval(current.getPlayer(), current.getOpponent());
     }
     long[] moves = {};
     // PossibleMovesFinderImproved tmp = possibleMovesFinder.updateNonFullBitPatterns(current);

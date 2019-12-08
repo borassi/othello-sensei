@@ -18,13 +18,12 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DepthOneEvaluator;
-import evaluatedepthone.MultilinearRegression;
 import evaluatedepthone.PatternEvaluatorImproved;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorInterface {
   private final EvaluatorLastMoves lastMovesEval;
-  private final PatternEvaluatorImproved depthOneEval;
+  private final DepthOneEvaluator depthOneEval;
 
   public EvaluatorMCTS(int arraySize, int nElements) {
     this(arraySize, nElements, PossibleMovesFinderImproved.load(), 
@@ -33,14 +32,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 
   public EvaluatorMCTS(int arraySize, int nElements, 
                          PossibleMovesFinderImproved possibleMovesFinder,
-                         PatternEvaluatorImproved depthOneEvaluator) {
+                         DepthOneEvaluator depthOneEvaluator) {
     this(arraySize, nElements, possibleMovesFinder, depthOneEvaluator,
         new EvaluatorLastMoves(depthOneEvaluator));
   }
 
   public EvaluatorMCTS(int arraySize, int nElements, 
                          PossibleMovesFinderImproved possibleMovesFinder,
-                         PatternEvaluatorImproved depthOneEvaluator,
+                         DepthOneEvaluator depthOneEvaluator,
                          EvaluatorLastMoves evaluatorLastMoves) {
     super(arraySize, nElements, possibleMovesFinder);
     this.depthOneEval = depthOneEvaluator;
@@ -155,7 +154,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   }
 
   public short evaluatePosition(Board current, int depth) {
-    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800, deltas);
+    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current.getPlayer(), current.getOpponent()), 800, deltas);
 //    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
     this.lastMovesEval.nVisited = 0;

@@ -30,13 +30,13 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
   }
 
   @Override
-  public int evalVerbose(Board b) {
-    return eval(b);
+  public int evalVerbose(long player, long opponent) {
+    return eval(player, opponent);
   }
 
   @Override
-  public void setup(Board b) {
-    this.b = b;
+  public void setup(long player, long opponent) {
+    this.b = new Board(player, opponent);
   }
 
   @Override
@@ -54,12 +54,16 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
     b = new Board(b.getOpponent(), b.getPlayer());
   }
 
-  @Override
   public int eval(Board b) {
+    return eval(b.getPlayer(), b.getOpponent());
+  }
+
+  @Override
+  public int eval(long player, long opponent) {
     Board oldB = b;
-    this.setup(b);
+    this.setup(player, opponent);
     int result = this.eval();
-    this.setup(oldB);
+    this.setup(oldB.getPlayer(), oldB.getOpponent());
     return result;
   }
 }

@@ -25,9 +25,7 @@ import javax.swing.SwingUtilities;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
-import evaluatedepthone.MultilinearRegression;
 import evaluatedepthone.PatternEvaluatorImproved;
-import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
@@ -157,13 +155,13 @@ public class Main {
   
   public void retrain() {
 //    depthOneEvaluator = new MultilinearRegression();
-    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
-    trainingSet.addAll(LoadDataset.loadOMGSet(170));
-    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.005F, 2);
-    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.002F, 5);
-    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.001F, 5);
-    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.0005F, 2);
-    DEPTH_ONE_EVALUATOR.save();
+//    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
+//    trainingSet.addAll(LoadDataset.loadOMGSet(170));
+//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.005F, 2);
+//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.002F, 5);
+//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.001F, 5);
+//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.0005F, 2);
+//    DEPTH_ONE_EVALUATOR.save();
   }
   
   

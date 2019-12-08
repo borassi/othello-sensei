@@ -56,7 +56,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
       return BitPattern.getEvaluationBoardFull(current);
     }
     if (depth <= 0) {
-      return depthOneEvaluator.eval(current);
+      return depthOneEvaluator.eval(current.getPlayer(), current.getOpponent());
     } 
     long[] moves = possibleMovesFinder.possibleMoves(current);
     nComputedMoves++;

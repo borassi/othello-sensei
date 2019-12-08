@@ -17,7 +17,6 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import bitpattern.BitPattern;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.io.FileInputStream;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -189,7 +187,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   int[] maxBaseHashes;
   int[] emptyBaseHashes;
 
-  short[][][] evals;
+  float[][][] evals;
 
   static final int[] longToFeature(long pattern) {
     IntArrayList feature = new IntArrayList();
@@ -290,7 +288,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
 //  }
   
   public int evalVerbose() {
-    short[][] curEvals = evals[getEvalFromEmpties(empties)];
+    float[][] curEvals = evals[getEvalFromEmpties(empties)];
     System.out.println("NWSE Diag: " + curEvals[0][baseHashes[0]]);
     System.out.println("NESW Diag: " + curEvals[0][baseHashes[1]]);
     System.out.println("SE Corner: " + curEvals[2][baseHashes[2]]);
@@ -401,7 +399,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   public int evalSlow() {
     int eval = 0;
     int[] curHashes = hashes();
-    short[][] curEval = evals[getEvalFromEmpties(empties)];
+    float[][] curEval = evals[getEvalFromEmpties(empties)];
     for (int i = 0; i < curEval.length; ++i) {
       eval += curEval[i][curHashes[i]];
     }
@@ -409,7 +407,11 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   
   public int eval(Board b) {
-    this.setup(b);
+    return this.eval(b.getPlayer(), b.getOpponent());
+  }
+  
+  public int eval(long player, long opponent) {
+    this.setup(player, opponent);
     return this.eval();
   }
   
@@ -519,14 +521,14 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
 
     setupFeaturesToSquares();
 
-    System.out.println(featuresToSquaresList.size());
+//    System.out.println(featuresToSquaresList.size());
     assert(featuresToSquaresList.size() < 127);
     features = new long[featuresToSquaresList.size()];
     maxBaseHashes = new int[featuresToSquaresList.size()];
     emptyBaseHashes = new int[featuresToSquaresList.size()];
     baseHashes = new int[featuresToSquaresList.size()];
     hashes = new int[featureToBaseFeature.length];
-    evals = new short[EMPTIES_SPLITS][featureToBaseFeature.length][];
+    evals = new float[EMPTIES_SPLITS][featureToBaseFeature.length][];
 
     for (int i = 0; i < 64; ++i) {
       squaresToFeatureSingleList[i] = new IntArrayList();
@@ -566,26 +568,16 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
           continue;
         }
         if (featureToBaseFeature[i].length == 1) {
-          evals[emptiesGroup][i] = new short[maxBaseHashes[featureToBaseFeature[i][0]] + 1];
+          evals[emptiesGroup][i] = new float[maxBaseHashes[featureToBaseFeature[i][0]] + 1];
         } else {
           int size = 0;
           for (int j = 0; j < featureToBaseFeature[i].length - 1; ++j) {
             size += (maxBaseHashes[featureToBaseFeature[i][j]] + 1) *  (maxBaseHashes[featureToBaseFeature[i][j+1]] + 1);
           }
-          evals[emptiesGroup][i] = new short[size];
+          evals[emptiesGroup][i] = new float[size];
         }
       }
     }
-//    eval0 = evals[0];
-//    eval1 = evals[1];
-//    eval2 = evals[2];
-//    eval3 = evals[3];
-//    eval4 = evals[4];
-//    eval5 = evals[5];
-//    eval6 = evals[6];
-//    eval7 = evals[7];
-//    eval8 = evals[8];
-//    eval9 = evals[9];
   }
   
   public void randomizeEvals() {
@@ -702,8 +694,8 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
 
   @Override
-  public int evalVerbose(Board b) {
-    this.setup(b);
+  public int evalVerbose(long player, long opponent) {
+    this.setup(player, opponent);
     return this.eval();
   }
 }

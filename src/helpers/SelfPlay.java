@@ -16,7 +16,6 @@ package helpers;
 import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import evaluatedepthone.MultilinearRegression;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
@@ -94,33 +93,33 @@ public class SelfPlay extends Thread {
     }
   }
 
-  public static void main(String args[]) {
-    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-    EvaluatorLastMoves lastMoves = new EvaluatorLastMoves();
-    MultilinearRegression oldMR = MultilinearRegression.load("coefficients/multilinear_regression_improved_OK.sar");
-    MultilinearRegression newMR = MultilinearRegression.load("coefficients/multilinear_regression_improved.sar");
-    EvaluatorMCTS oldEval = new EvaluatorMCTS(50000, 100000, pmf, oldMR, lastMoves);
-    EvaluatorMCTS newEval = new EvaluatorMCTS(50000, 100000, pmf, newMR, lastMoves);
-
-    long t = System.currentTimeMillis();
-    for (int i = 0; i < 1000; ++i) {
-      SelfPlay p = new SelfPlay(
-          i % 2 == 0 ? oldEval : newEval,
-          i % 2 == 0 ? newEval : oldEval, pmf, 0);
-      p.start();
-      try {
-        p.join();
-      } catch (InterruptedException ex) {
-        Logger.getLogger(SelfPlay.class.getName()).log(Level.SEVERE, null, ex);
-      }
-      ObjectArrayList<Board> result = p.get();
-      System.out.println(((result.size() + i) % 2 == 0 ? 1 : -1) * 
-          BitPattern.getEvaluationGameOver(result.top()));
-//      System.out.println(i + " " + (System.currentTimeMillis() - t));
-//      for (Board b : result) {
-//        System.out.println(b);
+//  public static void main(String args[]) {
+//    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+//    EvaluatorLastMoves lastMoves = new EvaluatorLastMoves();
+//    MultilinearRegressionImproe oldMR = MultilinearRegression.load("coefficients/multilinear_regression_improved_OK.sar");
+//    MultilinearRegression newMR = MultilinearRegression.load("coefficients/multilinear_regression_improved.sar");
+//    EvaluatorMCTS oldEval = new EvaluatorMCTS(50000, 100000, pmf, oldMR, lastMoves);
+//    EvaluatorMCTS newEval = new EvaluatorMCTS(50000, 100000, pmf, newMR, lastMoves);
+//
+//    long t = System.currentTimeMillis();
+//    for (int i = 0; i < 1000; ++i) {
+//      SelfPlay p = new SelfPlay(
+//          i % 2 == 0 ? oldEval : newEval,
+//          i % 2 == 0 ? newEval : oldEval, pmf, 0);
+//      p.start();
+//      try {
+//        p.join();
+//      } catch (InterruptedException ex) {
+//        Logger.getLogger(SelfPlay.class.getName()).log(Level.SEVERE, null, ex);
 //      }
-//      break;
-    }
-  }
+//      ObjectArrayList<Board> result = p.get();
+//      System.out.println(((result.size() + i) % 2 == 0 ? 1 : -1) * 
+//          BitPattern.getEvaluationGameOver(result.top()));
+////      System.out.println(i + " " + (System.currentTimeMillis() - t));
+////      for (Board b : result) {
+////        System.out.println(b);
+////      }
+////      break;
+//    }
+//  }
 }

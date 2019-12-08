@@ -18,8 +18,6 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
-import static evaluateposition.StoredBoard.N_SAMPLES;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

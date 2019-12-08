@@ -16,6 +16,7 @@ package evaluateposition;
 
 import bitpattern.BitPattern;
 import board.Board;
+import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.MultilinearRegressionImproved;
 import evaluatedepthone.PatternEvaluatorImproved;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -40,7 +41,7 @@ public class EvaluatorLastMoves {
   long[] flipDiagonalLast = new long[64 * 256];
   long[] flipReverseDiagonalLast = new long[64 * 256];
   int nVisited = 0;
-  PatternEvaluatorImproved depthOneEval;
+  DepthOneEvaluator depthOneEval;
   int baseOffset;
   Move[][] moves = new Move[128][64];
   
@@ -59,7 +60,7 @@ public class EvaluatorLastMoves {
     this(PatternEvaluatorImproved.load());
   }
 
-  public EvaluatorLastMoves(PatternEvaluatorImproved depthOneEval) {
+  public EvaluatorLastMoves(DepthOneEvaluator depthOneEval) {
     this.depthOneEval = depthOneEval;
     Field theUnsafe;
     try {

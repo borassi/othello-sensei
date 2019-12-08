@@ -88,7 +88,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
       nVisitedPositions++;
       Board next = current.move(move);
       int currentEval = depth <= 1 ?
-        -depthOneEvaluator.eval(next) :
+        -depthOneEvaluator.eval(next.getPlayer(), next.getOpponent()) :
         -evaluatePosition(next, depth - 1, -beta, -Math.max(alpha, bestEval));
       bestEval = bestEval > currentEval ? bestEval : currentEval;
       if (bestEval >= beta) {
@@ -126,7 +126,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
         }
         output[nOutput++].update(next, -100 * lower.eval - upper.eval);
       } else {
-        output[nOutput++].update(next, depthOneEvaluator.eval(next) + 1000);
+        output[nOutput++].update(next, depthOneEvaluator.eval(next.getPlayer(), next.getOpponent()) + 1000);
       }
     }
     ObjectArrays.quickSort(output, 0, nOutput);
@@ -171,7 +171,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
         nVisitedPositions++;
         
         if (depth <= 1) {
-          currentEval = -depthOneEvaluator.eval(next.board);
+          currentEval = -depthOneEvaluator.eval(next.board.getPlayer(), next.board.getOpponent());
         } else if (depth <= 3) {
           currentEval = -evaluatePosition(next.board, depth - 1, -beta, -Math.max(alpha, bestEval));
         } else {
@@ -206,9 +206,9 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   }
   
   public int evaluatePosition(Board current, int depth) {
-    depthOneEvaluator.setup(current);
+    depthOneEvaluator.setup(current.getPlayer(), current.getOpponent());
     evaluatePositionWithHashMap(current, depth - 4, -6400, 6400);
-    depthOneEvaluator.setup(current);
+    depthOneEvaluator.setup(current.getPlayer(), current.getOpponent());
     return evaluatePositionWithHashMap(current, depth, -6400, 6400);
   }
   
@@ -229,7 +229,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   }
 
   public void evalVerbose(Board board) {
-    depthOneEvaluator.evalVerbose(board);
+    depthOneEvaluator.evalVerbose(board.getPlayer(), board.getOpponent());
   }
 
   public void resetNVisitedPositions() {

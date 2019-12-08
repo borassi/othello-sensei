@@ -55,14 +55,15 @@ public class MultilinearRegressionImproved {
 //  }
   
   public float trainBoard(Board b, int correctEval, float speed, float lambda) {
-    float trainError = correctEval - patternEvaluator.eval(b);
+    float trainError = correctEval - patternEvaluator.eval(b.getPlayer(), b.getOpponent());
 //    System.out.println(error);
 
     int[] curHashes = patternEvaluator.hashes();
     int evalNumber = PatternEvaluatorImproved.getEvalFromEmpties(patternEvaluator.empties);
-    short[][] curEval;
+    float[][] curEval;
+//    System.out.println(b);
 
-    for (int shift = -3; shift <= 3; ++shift) {
+    for (int shift = 0; shift <= 0; ++shift) {
       if (evalNumber + shift < 0 || evalNumber + shift >= patternEvaluator.evals.length) {
         continue;
       }
@@ -71,23 +72,36 @@ public class MultilinearRegressionImproved {
       for (int i = 0; i < curHashes.length; ++i) {
         eval += curEval[i][curHashes[i]];
       }
+
       float error = correctEval - eval;
+      
+//      System.out.println(eval + " " + correctEval + " " + error + " " + 2 * speed * error);
       for (int i = 0; i < curHashes.length; ++i) {
 //        System.out.println(error + " " + 2 * speed * error + " " + );
         double ridgeUpdateSize = 2 * speed * (error - lambda * curEval[i][curHashes[i]]); // Math.signum(error) * 600; //
-        curEval[i][curHashes[i]] += (short) Math.floor(ridgeUpdateSize);
-        if (Math.random() < ridgeUpdateSize - Math.floor(ridgeUpdateSize)) {
-          curEval[i][curHashes[i]]++;
-        }
-        curEval[i][curHashes[i]] = (short) Math.max(Math.min(curEval[i][curHashes[i]], 1500), -1500);
+//        System.out.print("  " + curEval[i][curHashes[i]]);
+        curEval[i][curHashes[i]] += ridgeUpdateSize;
+        curEval[i][curHashes[i]] = Math.max(Math.min(curEval[i][curHashes[i]], 1500), -1500);
+//        System.out.println("  " + curEval[i][curHashes[i]]);
+//        curEval[i][curHashes[i]] += (short) Math.floor(ridgeUpdateSize);
+//        System.out.println(Math.floor(ridgeUpdateSize));
+//        if (Math.random() < ridgeUpdateSize - Math.floor(ridgeUpdateSize)) {
+//          System.out.println("ADD ONE");
+//          curEval[i][curHashes[i]]++;
+//        }
+//        curEval[i][curHashes[i]] = (short) Math.max(Math.min(curEval[i][curHashes[i]], 1500), -1500);
       }
+//      eval = 0;
+//      for (int i = 0; i < curHashes.length; ++i) {
+//        eval += curEval[i][curHashes[i]];
+//      }
+//      System.out.println(eval);
     }
     return trainError;
   }
   
-  public float trainStep(ArrayList<BoardWithEvaluation> trainingSet, float speed) {
+  public float trainStep(ArrayList<BoardWithEvaluation> trainingSet, float lambda, float speed) {
     double sumErrorSquared = 0;
-    float lambda = 0.01F;
 
     Collections.shuffle(trainingSet);
 
@@ -132,7 +146,7 @@ public class MultilinearRegressionImproved {
     for (BoardWithEvaluation be : startingBoards) {
       Board b = be.board;
       if (iter++ % 500000 == 0) {
-        this.train(trainingSet, 0.001F, 1);
+        this.train(trainingSet, 0.01F, 0.001F, 1);
         trainingSet = new ArrayList<BoardWithEvaluation>();
 //        System.out.println(iter + " " + startingBoards.size());
       }
@@ -189,21 +203,15 @@ public class MultilinearRegressionImproved {
 //      }
 //    }
 //  }
-  
-  /**
-   * Trains the model.
-   * @param trainingSet
-   * @param speed
-   * @param nIter The number of iterations.
-   */
+
   public void train(ArrayList<BoardWithEvaluation> trainingSet,
-                    float speed, int nIter) {
+                    float lambda, float speed, int nIter) {
     int iter = 0;
 
     float oldError = Float.MAX_VALUE;
     while (iter++ < nIter) {
       System.out.println("Iteration: " + iter);
-      float curError = trainStep(trainingSet, speed);
+      float curError = trainStep(trainingSet, lambda, speed);
       System.out.println("  Training error: " + curError);
       double[] errors = test();
       System.out.println("  Testing error total: " + errors[0]);
@@ -221,14 +229,14 @@ public class MultilinearRegressionImproved {
   
   public double[] test() {
     int n = 10;
-    double sumErrorForEmpties[] = new double[n+1];
-    double nForEmpties[] = new double[n+1];
+    double sumErrorForEmpties[] = new double[n+2];
+    double nForEmpties[] = new double[n+2];
 
     for (BoardWithEvaluation be : testingSet) {
       if (be.board.getEmptySquares() == 0) {
         continue;
       }
-      double error = be.evaluation - patternEvaluator.eval(be.board);
+      double error = be.evaluation - patternEvaluator.eval(be.board.getPlayer(), be.board.getOpponent());
       double errorSquared = error * error;
       int slice = 1 + be.board.getEmptySquares() * n / 60;
       sumErrorForEmpties[0] += errorSquared;
@@ -244,19 +252,19 @@ public class MultilinearRegressionImproved {
   
   public static void main(String args[]) {
     ArrayList<BoardWithEvaluation> testingSet = LoadDataset.loadTestingSet();
-    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-//    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
-    eval.reset((short) 0);
+//    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
+//    eval.reset((short) 0);
     MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, testingSet);
     ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
 //    trainingSet.addAll(LoadDataset.loadOMGSet(170));
 
-    mr.train(trainingSet, 0.004F, 1);
-    mr.train(trainingSet, 0.002F, 1);
-    mr.train(trainingSet, 0.001F, 1);
-    mr.train(trainingSet, 0.0005F, 1);
-    mr.train(trainingSet, 0.0002F, 1);
-    mr.train(trainingSet, 0.0001F, 1);
+    mr.train(trainingSet, 0.01F, 0.004F, 2);
+    mr.train(trainingSet, 0.01F, 0.002F, 2);
+    mr.train(trainingSet, 0.01F, 0.001F, 2);
+    mr.train(trainingSet, 0.01F, 0.0005F, 2);
+    mr.train(trainingSet, 0.01F, 0.0002F, 2);
+    mr.train(trainingSet, 0.01F, 0.0001F, 2);
     eval.save();
   }
 }

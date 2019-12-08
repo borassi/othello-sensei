@@ -39,13 +39,13 @@ public class DiskDifferenceEvaluatorPlusTwoTest {
       }
       long flip = moves[(int) (Math.random() * moves.length)];
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-      eval.setup(b);
+      eval.setup(b.getPlayer(), b.getOpponent());
       eval.invert();
       if (flip != 0) {
         eval.update(move, flip);
       }
       Board after = b.move(flip);
-      evalForTest.setup(after);
+      evalForTest.setup(after.getPlayer(), after.getOpponent());
       assertEquals(eval.b, evalForTest.b);
       assertEquals(eval.eval(), evalForTest.eval());
     }
@@ -62,14 +62,14 @@ public class DiskDifferenceEvaluatorPlusTwoTest {
       }
       long flip = moves[(int) (Math.random() * moves.length)];
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-      eval.setup(b);
+      eval.setup(b.getPlayer(), b.getOpponent());
       eval.invert();
       if (flip != 0) {
         eval.update(move, flip);
         eval.undoUpdate(move, flip);
       }
       eval.invert();
-      evalForTest.setup(b);
+      evalForTest.setup(b.getPlayer(), b.getOpponent());
       assertEquals(eval.b, evalForTest.b);
       assertEquals(eval.eval(), evalForTest.eval());
     }
