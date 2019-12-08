@@ -82,23 +82,7 @@ public class EndgameThor {
     System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
   }
   
-  public static void main(String args[]) {
-//    EndgameThor e = new EndgameThor();
-//    e.runSingleBoard(new BoardWithEvaluation(
-//      new Board("O-OXXX--OOOOX---OXOXOXXXOOXXXOXXOXXXXXXXOOXOXXXXOOOXXXXXXXXXXXXX", true),
-//      14
-//    ));
-//    e.eval.printHashMapVisitedPositions();
-//    System.out.println("OK, WE GO");
-//    e.runSingleBoard(new BoardWithEvaluation(
-//      new Board("XOOOOO--XOOXO---XOXOXOOOXXOOOXOOXOOOOOOOXXOXOOOOXXXOOOOOOOOOOOOO", true),
-//      -8
-//    ));
-//    e.runSingleBoard(new BoardWithEvaluation(
-//      new Board("XXXXXXXOOOOXXXXOOOXOXXXOOOXXXXXOXOXXXOXO-OOOXXXO-XOOOXXOX--OO-X-", true),
-//      0
-//    )); 
-    
+  public static void main(String args[]) {    
     new EndgameThor().run();
   }
 }

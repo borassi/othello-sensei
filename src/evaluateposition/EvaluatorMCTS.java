@@ -28,8 +28,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 
   public EvaluatorMCTS(int arraySize, int nElements) {
     this(arraySize, nElements, PossibleMovesFinderImproved.load(), 
-        PatternEvaluatorImproved.load(),
-        new EvaluatorLastMoves());
+        PatternEvaluatorImproved.load());
+  }
+
+  public EvaluatorMCTS(int arraySize, int nElements, 
+                         PossibleMovesFinderImproved possibleMovesFinder,
+                         PatternEvaluatorImproved depthOneEvaluator) {
+    this(arraySize, nElements, possibleMovesFinder, depthOneEvaluator,
+        new EvaluatorLastMoves(depthOneEvaluator));
   }
 
   public EvaluatorMCTS(int arraySize, int nElements, 
@@ -129,7 +135,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         } else {
           result = this.depthOneEval.eval();
         }
-        children[i] = new StoredBoard(childBoard, result, 800, deltas);
+        int error = 600;
+        children[i] = new StoredBoard(childBoard, result, error, deltas);
       }
       super.add(children, father);
     }
@@ -188,12 +195,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       } else {
         this.addPositions(next);
       }
-      float heuristicToStop = this.heuristicToStop();
-      bestHeuristicToStop = Math.min(bestHeuristicToStop, heuristicToStop);
-
       if (this.firstPosition.isSolved()) {
         break;
       }
+      float heuristicToStop = this.heuristicToStop();
+      bestHeuristicToStop = Math.min(bestHeuristicToStop, heuristicToStop);
+
       if (heuristicToStop == bestHeuristicToStop && size > maxSize * 0.8) {
 //        System.out.println("STOPPING HEUR");
 //        System.out.println(heuristicToStop);
@@ -225,7 +232,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 //    System.out.println(this.size() + this.lastMovesEval.nVisited);
 //    System.out.println("W" + weird + "/" + tot);
 //    System.out.print("  " + wrong + "/" + tot + "  ");
-    System.out.println(-get(current).getEval());
+//    System.out.println(-get(current).getEval());
     return (short) -get(current).getEval();
   }
   

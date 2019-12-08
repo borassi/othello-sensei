@@ -18,12 +18,24 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import board.Board;
-import evaluateposition.EvaluatorAlphaBeta;
+import board.PossibleMovesFinderImproved;
+import evaluateposition.EvaluatorLastMoves;
+import helpers.SelfPlay;
+import evaluateposition.EvaluatorMCTS;
 import helpers.LoadDataset;
 
 public class MultilinearRegressionImproved {  
 
   private PatternEvaluatorImproved patternEvaluator;
+  private EvaluatorLastMoves eval = new EvaluatorLastMoves();
+  private PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+  ArrayList<BoardWithEvaluation> testingSet;
+  
+  public MultilinearRegressionImproved(PatternEvaluatorImproved patternEvaluator,
+      ArrayList<BoardWithEvaluation> testingSet) {
+    this.patternEvaluator = patternEvaluator;
+    this.testingSet = testingSet;
+  }
   
   /**
    * Creates an empty MultilinearRegression.
@@ -42,36 +54,103 @@ public class MultilinearRegressionImproved {
 //    return result;
 //  }
   
-  public static float trainStep(PatternEvaluatorImproved evaluator,
-      ArrayList<BoardWithEvaluation> trainingSet, float speed) {
+  public float trainBoard(Board b, int correctEval, float speed, float lambda) {
+    float trainError = correctEval - patternEvaluator.eval(b);
+//    System.out.println(error);
+
+    int[] curHashes = patternEvaluator.hashes();
+    int evalNumber = PatternEvaluatorImproved.getEvalFromEmpties(patternEvaluator.empties);
+    short[][] curEval;
+
+    for (int shift = -3; shift <= 3; ++shift) {
+      if (evalNumber + shift < 0 || evalNumber + shift >= patternEvaluator.evals.length) {
+        continue;
+      }
+      curEval = patternEvaluator.evals[evalNumber + shift];
+      float eval = 0;
+      for (int i = 0; i < curHashes.length; ++i) {
+        eval += curEval[i][curHashes[i]];
+      }
+      float error = correctEval - eval;
+      for (int i = 0; i < curHashes.length; ++i) {
+//        System.out.println(error + " " + 2 * speed * error + " " + );
+        double ridgeUpdateSize = 2 * speed * (error - lambda * curEval[i][curHashes[i]]); // Math.signum(error) * 600; //
+        curEval[i][curHashes[i]] += (short) Math.floor(ridgeUpdateSize);
+        if (Math.random() < ridgeUpdateSize - Math.floor(ridgeUpdateSize)) {
+          curEval[i][curHashes[i]]++;
+        }
+        curEval[i][curHashes[i]] = (short) Math.max(Math.min(curEval[i][curHashes[i]], 1500), -1500);
+      }
+    }
+    return trainError;
+  }
+  
+  public float trainStep(ArrayList<BoardWithEvaluation> trainingSet, float speed) {
     double sumErrorSquared = 0;
-    double lambda = 0.1;
+    float lambda = 0.01F;
 
     Collections.shuffle(trainingSet);
 
     for (BoardWithEvaluation be : trainingSet) {
+      if (be.board.getEmptySquares() == 0) {
+        continue;
+      }
       int contB = 0;
-//      Board b = be.board;
       for (Board b : be.board.horizontalSymmetries()) {
-        float error = be.evaluation - evaluator.eval(b);
+        float error = trainBoard(b, be.evaluation, speed, lambda);
+//        trainBoard(new Board(b.getOpponent(), b.getPlayer()), -be.evaluation, speed, lambda);
         
         if (contB++ == 0) {
           sumErrorSquared += error * error;
-        }
-        int[] curHashes = evaluator.hashes();
-        short[][] curEval = evaluator.evals[PatternEvaluatorImproved.getEvalFromEmpties(evaluator.empties)];
-        for (int i = 0; i < curHashes.length; ++i) {
-          double ridgeUpdateSize = 2 * speed * (error - lambda * curEval[i][curHashes[i]]);
-          curEval[i][curHashes[i]] += (short) Math.floor(ridgeUpdateSize);
-          if (Math.random() < ridgeUpdateSize - Math.floor(ridgeUpdateSize)) {
-            curEval[i][curHashes[i]]++;
-          }
-          curEval[i][curHashes[i]] = (short) Math.max(Math.min(curEval[i][curHashes[i]], 1500), -1500);
         }
       }
     }
     float curError = (float) Math.sqrt(sumErrorSquared / trainingSet.size());
     return curError;
+  }
+  
+  
+  public void selfTrainEndgameBoard(Board b, ArrayList<BoardWithEvaluation> trainingSet) {
+    int evalB = this.eval.evaluatePosition(b, -6600, 6600, 0);
+    trainingSet.add(new BoardWithEvaluation(b, evalB));
+    if (b.getEmptySquares() == 1) {
+      return;
+    }
+    long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
+    for (long move : moves) {
+      if (Math.random() < 0.6) {
+        continue;
+      }
+      selfTrainEndgameBoard(b.move(move), trainingSet);
+    }
+  }
+  
+  public void selfTrainEndgame() {
+    ArrayList<BoardWithEvaluation> startingBoards = LoadDataset.loadTrainingSet();
+    ArrayList<BoardWithEvaluation> trainingSet = new ArrayList<BoardWithEvaluation>();
+    int iter = 0;
+    for (BoardWithEvaluation be : startingBoards) {
+      Board b = be.board;
+      if (iter++ % 500000 == 0) {
+        this.train(trainingSet, 0.001F, 1);
+        trainingSet = new ArrayList<BoardWithEvaluation>();
+//        System.out.println(iter + " " + startingBoards.size());
+      }
+      if (b.getEmptySquares() != 12) {
+        continue;
+      }
+//      trainingSet.add(new BoardWithEvaluation(b, this.eval.evaluatePosition(b, -6600, 6600, 0)));
+//      System.out.print(be.evaluation);
+      this.selfTrainEndgameBoard(b, trainingSet);
+    }
+//    double[] errors = test();
+//    System.out.println("  Testing error total: " + errors[0]);
+//    System.out.print("  Testing error part:  ");
+//    for (int i = 1; i < errors.length; ++i) {
+//      System.out.print(((i-1) * 60 / (errors.length-1)) + ":" + (int) errors[i] + " ");
+//    }
+//    System.out.println();
+    
   }
   
 //  public void selfTrain() {
@@ -117,19 +196,22 @@ public class MultilinearRegressionImproved {
    * @param speed
    * @param nIter The number of iterations.
    */
-  public static void train(PatternEvaluatorImproved evaluator,
-                           ArrayList<BoardWithEvaluation> trainingSet,
-                           ArrayList<BoardWithEvaluation> testingSet,
-                           float speed, int nIter) {
+  public void train(ArrayList<BoardWithEvaluation> trainingSet,
+                    float speed, int nIter) {
     int iter = 0;
 
     float oldError = Float.MAX_VALUE;
     while (iter++ < nIter) {
       System.out.println("Iteration: " + iter);
-      float curError = trainStep(evaluator, trainingSet, speed);
+      float curError = trainStep(trainingSet, speed);
       System.out.println("  Training error: " + curError);
-      System.out.println("  Testing error:  " + test(evaluator, testingSet));
-      System.out.println("  Speed: " + speed);
+      double[] errors = test();
+      System.out.println("  Testing error total: " + errors[0]);
+      System.out.print("  Testing error part:  ");
+      for (int i = 1; i < errors.length; ++i) {
+        System.out.print(((i-1) * 60 / (errors.length-1)) + ":" + (int) errors[i] + " ");
+      }
+      System.out.println("\n  Speed: " + speed);
       if (curError > oldError) {
         speed = speed / 2;
       }
@@ -137,34 +219,44 @@ public class MultilinearRegressionImproved {
     }
   }
   
-  public static double test(PatternEvaluatorImproved evaluator,
-       ArrayList<BoardWithEvaluation> testingSet) {
-    double sumErrorSquared = 0;
+  public double[] test() {
+    int n = 10;
+    double sumErrorForEmpties[] = new double[n+1];
+    double nForEmpties[] = new double[n+1];
 
     for (BoardWithEvaluation be : testingSet) {
-      double error = be.evaluation - evaluator.eval(be.board);
-      sumErrorSquared += error * error;
-//      if (Math.abs(error) > 1600 && be.board.getEmptySquares() > 10) {
-//        System.out.println(be.board);
-//        int eval = evaluator.evalVerbose();
-//        System.out.println("TOTAL: " + be.evaluation + " " + eval);
-//      }
+      if (be.board.getEmptySquares() == 0) {
+        continue;
+      }
+      double error = be.evaluation - patternEvaluator.eval(be.board);
+      double errorSquared = error * error;
+      int slice = 1 + be.board.getEmptySquares() * n / 60;
+      sumErrorForEmpties[0] += errorSquared;
+      nForEmpties[0]++;
+      sumErrorForEmpties[slice] += errorSquared;
+      nForEmpties[slice]++;
     }
-    return Math.sqrt(sumErrorSquared / testingSet.size());
+    for (int i = 0; i < n+1; ++i) {
+      sumErrorForEmpties[i] = Math.sqrt(sumErrorForEmpties[i] / nForEmpties[i]);
+    }
+    return sumErrorForEmpties;
   }
   
   public static void main(String args[]) {
-    PatternEvaluatorImproved eval = new PatternEvaluatorImproved(); //PatternEvaluatorImproved.load();// 
-//    depthOneEvaluator = new MultilinearRegression();
-    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
     ArrayList<BoardWithEvaluation> testingSet = LoadDataset.loadTestingSet();
-    trainingSet.addAll(LoadDataset.loadOMGSet(170));
-//    eval.reset((short) 0);
-    eval.train(trainingSet, testingSet, 0.02F, 2);
-    eval.train(trainingSet, testingSet, 0.01F, 5);
-    eval.train(trainingSet, testingSet, 0.005F, 5);
-    eval.train(trainingSet, testingSet, 0.002F, 5);
-//    eval.train(trainingSet, testingSet, 0.005F, 5);
+    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+//    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
+    eval.reset((short) 0);
+    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, testingSet);
+    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
+//    trainingSet.addAll(LoadDataset.loadOMGSet(170));
+
+    mr.train(trainingSet, 0.004F, 1);
+    mr.train(trainingSet, 0.002F, 1);
+    mr.train(trainingSet, 0.001F, 1);
+    mr.train(trainingSet, 0.0005F, 1);
+    mr.train(trainingSet, 0.0002F, 1);
+    mr.train(trainingSet, 0.0001F, 1);
     eval.save();
   }
 }

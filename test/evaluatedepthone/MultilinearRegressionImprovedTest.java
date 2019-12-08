@@ -96,11 +96,11 @@ public class MultilinearRegressionImprovedTest {
       trainingSet.add(new BoardWithEvaluation(fourCorners, -400));
     }
 
-    eval.train(trainingSet, trainingSet, 0.005F, 20);
+    eval.train(trainingSet, trainingSet, 0.05F, 20);
     for (BoardWithEvaluation b : trainingSet) {
       assertEquals(0, eval.eval(b.board) - b.evaluation, 10);
     }
-    eval.train(trainingSet, trainingSet, 0.001F, 20);
+    eval.train(trainingSet, trainingSet, 0.01F, 20);
     for (BoardWithEvaluation b : trainingSet) {
       assertEquals(eval.eval(b.board), b.evaluation, 5);
     }

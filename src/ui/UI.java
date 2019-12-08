@@ -171,7 +171,7 @@ public class UI extends JFrame implements ComponentListener {
     });
     
     SpinnerModel depth = new SpinnerListModel(Arrays.asList(new String[] 
-      {"0", "10", "100", "1000", "2000", "10000", "20000", "50000", "100000", "200000", "500000", "1000000", "2000000", "4000000"}));
+      {"0", "1", "100", "1000", "2000", "10000", "20000", "50000", "100000", "200000", "500000", "1000000", "2000000", "4000000"}));
     depth.setValue("1000");
     spinner = new JSpinner(depth);
     

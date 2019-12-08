@@ -301,7 +301,6 @@ public class BitPattern {
     for (int i = 0; i < 2; ++i) {
       for (int j = 0; j < 4; ++j) {
         result.add(b);
-        System.out.println(BitPattern.patternToString(b));
         b = transpose(horizontalMirror(b));
       }
       b = horizontalMirror(b);

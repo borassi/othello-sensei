@@ -21,7 +21,7 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
-import evaluatedepthone.MultilinearRegression;
+import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
@@ -33,13 +33,10 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   private long nVisitedPositions = 0;
   private long nComputedMoves = 0;
 
-  private BoardWithEvaluation[][] nextPositions; 
-
-  public static final String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
-          "coefficients/multilinear_regression_improved.sar";
+  private BoardWithEvaluation[][] nextPositions;
 
   public EvaluatorAlphaBeta() {
-    this(MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN), 
+    this(PatternEvaluatorImproved.load(), 
          new PossibleMovesFinderImproved(),
          new HashMapVisitedPositionsForAlphaBeta());
   }
@@ -209,7 +206,9 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   }
   
   public int evaluatePosition(Board current, int depth) {
+    depthOneEvaluator.setup(current);
     evaluatePositionWithHashMap(current, depth - 4, -6400, 6400);
+    depthOneEvaluator.setup(current);
     return evaluatePositionWithHashMap(current, depth, -6400, 6400);
   }
   

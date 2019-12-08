@@ -18,7 +18,7 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
-import evaluatedepthone.MultilinearRegression;
+import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorMCTS;
 import helpers.LoadDataset;
@@ -30,37 +30,31 @@ import java.util.ArrayList;
  */
 public class TestThor {
   public ArrayList<BoardWithEvaluation> boards;
-  DepthOneEvaluator eval1 = MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
+  PatternEvaluatorImproved eval1 = PatternEvaluatorImproved.load();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-//  EvaluatorMCTS eval = new EvaluatorMCTS(20000, 10000, pmf, eval1);
-  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
+  EvaluatorMCTS eval = new EvaluatorMCTS(100, 10);
+//  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   
   public TestThor() {
-    boards = LoadDataset.loadTrainingSet(1977, 1980);
+    boards = LoadDataset.loadTestingSet();
   }
   
   public int errorSingleBoard(BoardWithEvaluation be) {
     Board b = be.board;
-    int d = 4;
+//    int d = 1;
 //    if (b.getEmptySquares() > 4) {
 //      return 0F;
 //    }
+    long[] moves = pmf.possibleMoves(b);
+    int eval = Integer.MIN_VALUE;
+    
+    for (long move : moves) {
+      eval = Math.max(eval, -eval1.eval(b.move(move)));
+    }
 
-//    if (eval.evaluatePosition(b, d, -64, 64) != be.evaluation) {
-//      System.out.print(b);
-//      System.out.println(eval1.eval(b) + " " + eval.evaluatePosition(b, d, -64, 64) + " " + be.evaluation);
-//    }
-//    System.out.println(eval1.eval(b));
-//    System.out.print(b);
-//    System.out.println(eval1.eval(b) + " " + eval.evaluatePosition(b, d, -64, 64) + " " + be.evaluation);
-//    System.out.println();
-//    if (Math.abs(eval.evaluatePosition(b, 1) - be.evaluation) > 30) {
-//      System.out.println(eval.evaluatePosition(b, 1));
-//      System.out.println(b);
-//    }
-//    System.out.println(eval1.eval(b));
-//    return eval1.eval(b);// 0.4F * eval.evaluatePosition(b, 8) + 0.6F * eval1.eval(b) - be.evaluation;
-    return eval1.eval(b) - be.evaluation;
+//    System.out.println(eval + " " + this.eval.evaluatePosition(b, 1));
+//    return -this.eval.evaluatePosition(b, 0) - be.evaluation;
+    return eval * 15 / 30 + eval1.eval(b) * 15 / 30 - be.evaluation;
   }
   
   public void run() {
@@ -69,18 +63,16 @@ public class TestThor {
     float nVisitedPositions = 0;
     long t = System.currentTimeMillis();
     for (BoardWithEvaluation be : boards) {
-      if (be.board.getEmptySquares() < 10 || pmf.haveToPass(be.board)) {
+      if (be.board.getEmptySquares() > 64 || be.board.getEmptySquares() < 4 || pmf.haveToPass(be.board)) {
         continue;
       }
       i++;
-      if (i % 1000 == 0) {
-        System.out.println(i + ": " + Math.sqrt(totalError / i) + " " + 
-          nVisitedPositions / i + " " + i / (System.currentTimeMillis() - t));
-      }
-      eval.resetNVisitedPositions();
       float curError = errorSingleBoard(be);
-      nVisitedPositions += eval.getNVisitedPositions();
       totalError += curError * curError;
+
+      if (i % 1000 == 0) {
+        System.out.println(i + ": " + Math.sqrt(totalError / i));
+      }
     }
   }
   

@@ -17,9 +17,11 @@ package evaluatedepthone;
 import board.Board;
 
 public interface DepthOneEvaluator {
+  public int eval();
   public int eval(Board b);
-
-  public int getMinTrainingSetSize(Board b);
-
   public int evalVerbose(Board b);
+  public void setup(Board b);
+  public void update(int square, long flip);
+  public void undoUpdate(int square, long flip);
+  public void invert();
 }

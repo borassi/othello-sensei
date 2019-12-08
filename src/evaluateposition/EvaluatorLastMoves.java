@@ -16,11 +16,11 @@ package evaluateposition;
 
 import bitpattern.BitPattern;
 import board.Board;
-import static board.PossibleMovesFinderImproved.possibleMovesBasic;
-import evaluatedepthone.MultilinearRegression;
+import evaluatedepthone.MultilinearRegressionImproved;
+import evaluatedepthone.PatternEvaluatorImproved;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrays;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import sun.misc.Unsafe;
@@ -30,123 +30,7 @@ import sun.misc.Unsafe;
  * @author michele
  */
 public class EvaluatorLastMoves {
-//  static final int POSITION_VALUE[] = new int[] {
-//      0, 7, 3, 4, 4, 3, 7, 0,
-//      7, 8, 6, 5, 5, 6, 8, 7,
-//      3, 6, 2, 1, 1, 2, 6, 3,
-//      4, 5, 1, 9, 9, 1, 5, 4,
-//      4, 5, 1, 9, 9, 1, 5, 4,
-//      3, 6, 2, 1, 1, 2, 6, 3,
-//      7, 8, 6, 5, 5, 6, 8, 7,
-//      0, 7, 3, 4, 4, 3, 7, 0
-//  };
-//    
-//  class Empty implements Comparable<Empty> {
-//    Empty prev = null;
-//    Empty next = null;
-//    Space space = null;
-//    int position = -1;
-//    
-//    @Override
-//    public int compareTo(Empty other) {
-//      return Integer.compare(POSITION_VALUE[position], POSITION_VALUE[other.position]);
-//    }
-//  }
-//  class EmptyWithEvaluation implements Comparable<EmptyWithEvaluation> {
-//    Empty empty;
-//    int eval;
-//    @Override
-//    public int compareTo(EmptyWithEvaluation other) {
-//      return Integer.compare(eval, other.eval);
-//    }
-//    public EmptyWithEvaluation(Empty empty, int eval) {
-//      this.empty = empty;
-//      this.eval = eval;
-//    }
-//  }
-//
-//  class Space implements Comparable<Space> {
-//    Empty firstEmpty = new Empty();
-//    Empty lastEmpty = new Empty();
-//    short nEmpties;
-//    int number;
-//    
-//    public Space(int number) {
-//      reset(number);
-//    }
-//    
-//    public final void reset(int number) {
-//      firstEmpty.next = lastEmpty;
-//      firstEmpty.space = this;
-//      lastEmpty.prev = firstEmpty;
-//      lastEmpty.space = this;
-//      this.number = number;
-//      nEmpties = 0;      
-//    }
-//    
-//    private void addSorted(int position) {
-//      Empty newEmpty = new Empty();
-//      newEmpty.space = this;
-//      newEmpty.position = position;
-//      Empty e;
-//      for (e = firstEmpty.next; e != lastEmpty; e = e.next) {
-//        if (newEmpty.compareTo(e) < 0) {
-//          break;
-//        }
-//      }
-//      newEmpty.prev = e.prev;
-//      newEmpty.next = e;
-//      this.reAddElement(newEmpty);
-//    }
-//    
-//    private void addBeforeLast(int position) {
-//      Empty newEmpty = new Empty();
-//      newEmpty.space = this;
-//      newEmpty.position = position;
-//      newEmpty.prev = lastEmpty.prev;
-//      newEmpty.next = lastEmpty;
-//      this.reAddElement(newEmpty);
-//    }
-//
-//    private void reAddElement(Empty empty) {
-//      empty.prev.next = empty;
-//      empty.next.prev = empty;
-//      nEmpties++;      
-//    }
-//
-//    private void removeElement(Empty empty) {
-//      empty.prev.next = empty.next;
-//      empty.next.prev = empty.prev;
-//      nEmpties--;
-//    }
-//    
-//    public int[] toArray() {
-//      int result[] = new int[nEmpties];
-//      Empty empty = firstEmpty;
-//      for (int i = 0; i < nEmpties; i++) {
-//        empty = empty.next;
-//        result[i] = empty.position;
-//      }
-//      return result;
-//    }
-//
-//    public int value() {
-//      return 
-//          (nEmpties == 0 ? 1000000 : 0) +
-//          (nEmpties != 1 ? 200000 : 0) +
-//          (nEmpties % 2 == 0 ? 100000 : 0) +
-////          (number != lastSpacePlayed.topInt() ? 10000 : 0) +
-//          nEmpties * 10 + 
-//          number;
-//    }
-//    @Override
-//    public int compareTo(Space other) {
-//      return Integer.compare(value(), other.value());
-//    }
-//  }
-
   public Unsafe unsafe;
-//  Space spaces[];
   long[] flipHorizontal = new long[64 * 256 * 256];
   long[] flipVertical = new long[64 * 256 * 256];
   long[] flipDiagonal = new long[64 * 256 * 256];
@@ -156,11 +40,27 @@ public class EvaluatorLastMoves {
   long[] flipDiagonalLast = new long[64 * 256];
   long[] flipReverseDiagonalLast = new long[64 * 256];
   int nVisited = 0;
-//  MultilinearRegression r = new MultilinearRegression();
+  PatternEvaluatorImproved depthOneEval;
   int baseOffset;
-//  IntArrayList lastSpacePlayed = new IntArrayList(new int[] {-1});
+  Move[][] moves = new Move[128][64];
   
+  public static class Move implements Comparable<Move> {
+    int move;
+    long flip;
+    int eval;
+    
+    @Override
+    public int compareTo(Move other) {
+      return Integer.compare(eval, other.eval);
+    }
+  }
+
   public EvaluatorLastMoves() {
+    this(PatternEvaluatorImproved.load());
+  }
+
+  public EvaluatorLastMoves(PatternEvaluatorImproved depthOneEval) {
+    this.depthOneEval = depthOneEval;
     Field theUnsafe;
     try {
       theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
@@ -172,88 +72,12 @@ public class EvaluatorLastMoves {
     }
     initFlips();
     initMoves();
+    for (int i = 0; i < moves.length; ++i) {
+      for (int j = 0; j < moves[i].length; ++j) {
+        moves[i][j] = new Move();
+      }
+    }
   }
-  
-  // HANDLING EMPTY CASES
-//  protected int[] getEmpties() {
-//    int[] result = new int[getNEmpties()];
-//    int i = 0;
-//    
-//    for (Space space : spaces) {
-//      for (int empty : space.toArray()) {
-//        result[i++] = empty;
-//      }
-//    }
-//    return result;
-//  }
-//  public int getNEmpties() {
-//    int result = 0;
-//    for (Space space : spaces) {
-//      result += space.nEmpties;
-//    }
-//    return result;
-//  }
-//  
-//  protected void setEmpties(Board b) {
-//    setEmpties(b.getPlayer(), b.getOpponent());
-//  }
-//
-//  protected void setEmpties(long player, long opponent) {
-//    long emptySquares = ~(player | opponent);
-//    spaces = new Space[] {new Space(0), new Space(1), new Space(2), new Space(3)};
-////    spaces = new Space[] {new Space(0)};
-//    
-//    while (emptySquares != 0) {
-//      int empty = Long.numberOfTrailingZeros(emptySquares);
-//      emptySquares = emptySquares & ~(1L << empty);
-//      spaces[empty % 8 >= 4 ? 1 : 0 + 2 * (empty / 32)].addSorted(empty);
-////      spaces[0].addSorted(empty);
-//    }
-//    Arrays.sort(spaces);
-//  }
-//  
-//  private Space bestSpace() {
-//    Space toReturn = null;
-//    for (Space s : spaces) {
-//      toReturn = (toReturn == null || s.compareTo(toReturn) < 0) ? s : toReturn;
-//    }
-//    return toReturn;
-//  }
-//  private Space bestSpaceAfterSpace(Space space) {
-//    Space toReturn = null;
-//    for (Space s : spaces) {
-//      if (s.compareTo(space) <= 0) {
-//        continue;
-//      }
-//      toReturn = toReturn == null || s.compareTo(toReturn) < 0 ? s : toReturn;
-//    }
-//    return toReturn;
-//  }
-//  
-//  Empty firstEmpty() {
-//    return nextEmpty(bestSpace().firstEmpty);
-//  }
-//
-//  Empty nextEmpty(Empty empty) {
-//    Empty toReturn = empty.next;
-//    Space space = empty.space;
-//
-//    if (toReturn.position == -1) {
-//      space = bestSpaceAfterSpace(space);
-//      if (space == null || space.nEmpties == 0) {
-//        return null;
-//      }
-//      toReturn = space.firstEmpty.next;
-//    } 
-//    toReturn.space.removeElement(toReturn);
-////    lastSpacePlayed.push(toReturn.space.number);
-//    return toReturn;
-//  }
-//  
-//  void reAddEmpty(Empty empty) {
-//    empty.space.reAddElement(empty);
-////    lastSpacePlayed.popInt();
-//  }
   
   // COMPUTING FLIPS.
   
@@ -410,8 +234,6 @@ public class EvaluatorLastMoves {
 
   private long neighbors[];
   private long horizVert[];
-//  private long diagFlips[];
-//  private long deletersFlips[];
   
   private void initFlips() {
     neighbors = new long[64];
@@ -433,12 +255,10 @@ public class EvaluatorLastMoves {
                                   Math.min(rightShift, bottomShift)};
       for (int j = 0; j < 8; j++) {
         int dir = dirs[j];
-//        for (int k = 1; k <= maxShift[j]; k++) {
         if (maxShift[j] > 0) {
           if (dir == -8 || dir == -1 || dir == 1 || dir == 8) {
             horizVert[i] |= 1L << (i - 1 * dir);
           }
-//          deletersFlips[i] |= 1L << (i - maxShift[j] * dir);
           neighbors[i] |= 1L << (i - dir);
         }
       }
@@ -456,23 +276,39 @@ public class EvaluatorLastMoves {
   int i = 0, j = 0;
 
   protected long getFlip(int move, long player, long opponent) {
-    long tmp = getFlipLast(move, opponent);
-    if ((tmp & ~(player | opponent | (1L << move))) == 0) {
-      return tmp;
-    }
-//    System.out.println(i + " " + j);
-////    System.out.println("NO");
-//    if ((unsafe.getLong(neighbors, baseOffset + (move * 8)) & opponent) == 0) {
-//      System.out.println(new Board(player, opponent));
-//      System.out.println(BitPattern.patternToString(tmp));
-//      return 0;
-//    }
-//    return tmp & (opponent | (1L << move));
+    long flip = 0;
+    long empties = ~(player | opponent | (1L << move));
     int position = baseOffset + move * 524288;
-    return unsafe.getLongVolatile(flipHorizontal, position + hashRow(move, player, opponent) * 8) |
-        unsafe.getLongVolatile(flipVertical, position + hashColumn(move, player, opponent) * 8) | 
-        unsafe.getLongVolatile(flipDiagonal, position + hashDiagonal(move, player, opponent) * 8) | 
-        unsafe.getLongVolatile(flipReverseDiagonal, position + hashRevDiagonal(move, player, opponent) * 8);
+    int positionLast = baseOffset + move * 2048;
+    long curFlip = unsafe.getLongVolatile(flipHorizontalLast, positionLast + hashRow(move, opponent) * 8);
+    if ((curFlip & empties) != 0) {
+      curFlip = unsafe.getLongVolatile(flipHorizontal, position + hashRow(move, player, opponent) * 8);
+    }
+    flip |= curFlip;
+    curFlip = unsafe.getLongVolatile(flipVerticalLast, positionLast + hashColumn(move, opponent) * 8);
+    if ((curFlip & empties) != 0) {
+      curFlip = unsafe.getLongVolatile(flipVertical, position + hashColumn(move, player, opponent) * 8);
+    }
+    flip |= curFlip;
+    curFlip = unsafe.getLongVolatile(flipDiagonalLast, positionLast + hashDiagonal(move, opponent) * 8);
+    if ((curFlip & empties) != 0) {
+      curFlip = unsafe.getLongVolatile(flipDiagonal, position + hashDiagonal(move, player, opponent) * 8);
+    }
+    flip |= curFlip;
+    curFlip = unsafe.getLongVolatile(flipReverseDiagonalLast, positionLast + hashRevDiagonal(move, opponent) * 8);
+    if ((curFlip & empties) != 0) {
+      curFlip = unsafe.getLongVolatile(flipReverseDiagonal, position + hashRevDiagonal(move, player, opponent) * 8);
+    }
+    return flip | curFlip;
+    
+//    long tmp = getFlipLast(move, opponent);
+//    if ((tmp & ~(player | opponent | (1L << move))) == 0) {
+//      return tmp;
+//    }
+//    return unsafe.getLongVolatile(flipHorizontal, position + hashRow(move, player, opponent) * 8) |
+//        unsafe.getLongVolatile(flipVertical, position + hashColumn(move, player, opponent) * 8) | 
+//        unsafe.getLongVolatile(flipDiagonal, position + hashDiagonal(move, player, opponent) * 8) | 
+//        unsafe.getLongVolatile(flipReverseDiagonal, position + hashRevDiagonal(move, player, opponent) * 8);
   }
   
   // EVALUATE.
@@ -503,8 +339,11 @@ public class EvaluatorLastMoves {
     int move;
 
     while (empties != 0) {
-      move = Long.numberOfTrailingZeros(empties);
+      move = Long.numberOfTrailingZeros(empties);      
       empties = empties & (~(1L << move));
+      if ((this.neighbors[move] & opponent) == 0) {
+        continue;
+      }
       long flip = getFlip(move, player, opponent);
       if (flip == 0) {
         continue;
@@ -599,34 +438,38 @@ public class EvaluatorLastMoves {
   private final static long[] firstLastInEdges(long bitPattern) {
     long firstBit = 0;
     long lastBit = 0;
-//    System.out.println(BitPattern.patternToString(bitPattern));
     for (long edge : edges) {
       firstBit |= Long.highestOneBit(edge & bitPattern);
       lastBit |= Long.lowestOneBit(edge & bitPattern);
     }
     return new long[] {firstBit & ~CORNERS, lastBit & ~CORNERS};
   }
+  
+  int getMovesAdvanced(long player, long opponent, long lastMove, Move[] result) {
+    int nMoves = getMoves(player, opponent, lastMove, result);
+    if (result[0].move < 0) {
+      getMoves(opponent, player, lastMove, result);
+      if (result[0].move >= 0) {
+        result[0].move = 0;
+        result[0].flip = 0;
+        result[1].move = -1;
+        return 1;
+      } else {
+        result[0].move = -1;
+        return 0;
+      }
+    }
+    return nMoves;
+  }
 
-
-  private int evaluateRecursive(long player, long opponent, int alpha, int beta,
-                                long lastMove, boolean passed) {
-    long empties = ~(player | opponent);
-    int nEmpties = Long.bitCount(empties);
-    if (nEmpties <= 4) {
-      return evaluateSuperFast(player, opponent, alpha, beta, passed);
-    }
-    if (!passed) {
-      nVisited++;
-    }
-    if (nEmpties == 1) {
-      return evalOneEmpty(player, opponent, passed);
-    }
-    
-    boolean pass = true;
-    int best = Integer.MIN_VALUE;
+  int getMoves(long player, long opponent, long lastMove, Move[] result) {
     int move;
+    long moveBit;
     int lastMovePosition = Long.numberOfTrailingZeros(lastMove);
     lastMovePosition = lastMovePosition == 64 ? 32 : lastMovePosition;
+    long empties = ~(player | opponent);
+    int nEmpties = Long.bitCount(empties);
+    int nMoves = 0;
 
     long[] firstInEdges = nEmpties > 5 ? firstLastInEdges(empties) : new long[] {};
     long[] masks = new long[] {
@@ -643,32 +486,122 @@ public class EvaluatorLastMoves {
         ~0L
     };
     for (long mask : masks) {
-//      System.out.println(BitPattern.patternToString(mask));
       while ((empties & mask) != 0) {
+//      while (empties != 0) {
         move = Long.numberOfTrailingZeros(empties & mask);
-        lastMove = 1L << move;
-        empties = empties & (~lastMove);
-        long flip = getFlip(move, player, opponent);
+//        move = Long.numberOfTrailingZeros(empties);
+        moveBit = 1L << move;
+        empties = empties & (~moveBit);
+        long flip = getFlip(move, player, opponent) & ~player;
         if (flip == 0) {
           continue;
         }
-        best = Math.max(best, 
-          -evaluateRecursive(opponent & ~flip, player | flip, -beta, 
-                             -Math.max(alpha, best), lastMove, false));
-        pass = false;
-        if (best >= beta) {
-          break;
-        }
+        Move curMove = result[nMoves];
+        curMove.move = move;
+        curMove.flip = flip;
+        ++nMoves;
+      }
+    }
+    result[nMoves].move = -1;
+    return nMoves;
+  }
+
+  void getMovesSorted(long player, long opponent, long lastMove, Move[] result) {
+    int nMoves = getMovesAdvanced(player, opponent, lastMove, result);
+    if (nMoves <= 1) {
+      return;
+    }
+    for (int i = 0; i < nMoves; ++i) {
+      Move move = result[i];
+      this.depthOneEval.update(move.move, move.flip);
+      move.eval = this.depthOneEval.eval();
+      this.depthOneEval.undoUpdate(move.move, move.flip);
+    }
+    ObjectArrays.quickSort(result, 0, nMoves);
+  }
+
+  private static final int EMPTIES_FOR_SUPER_FAST = 4;
+  private static final int EMPTIES_FOR_FAST = 8;
+
+  private int evaluateRecursive(long player, long opponent, int alpha, int beta,
+                                long lastMove, int depth) {
+    long empties = ~(player | opponent);
+    int nEmpties = Long.bitCount(empties);
+    if (nEmpties <= EMPTIES_FOR_SUPER_FAST) {
+      return evaluateSuperFast(player, opponent, alpha, beta, false);
+    } else if (nEmpties <= EMPTIES_FOR_FAST) {
+      return evaluateFast(player, opponent, alpha, beta, lastMove, depth);
+    }
+    nVisited++;
+    if (nEmpties == 1) {
+      return evalOneEmpty(player, opponent, false);
+    }
+
+    int best = Integer.MIN_VALUE;
+    long flip;
+
+    Move curMoves[] = moves[depth];
+    
+//    this.depthOneEval.setup(player, opponent);
+    this.depthOneEval.invert();
+    this.getMovesSorted(player, opponent, lastMove, curMoves);
+    for (Move move : curMoves) {
+      if (move.move < 0) {
+        break;
+      }
+      flip = move.flip;
+      if (flip != 0) {
+        this.depthOneEval.update(move.move, flip);
+      }
+      best = Math.max(best, 
+        -evaluateRecursive(opponent & ~flip, player | flip, -beta, 
+                           -Math.max(alpha, best), 1L << move.move, depth + 1));
+      if (flip != 0) {
+        this.depthOneEval.undoUpdate(move.move, flip);
       }
       if (best >= beta) {
         break;
       }
     }
-    if (pass) {
-      if (passed) {
-        return BitPattern.getEvaluationGameOver(player, opponent);
+    this.depthOneEval.invert();
+    if (best == Integer.MIN_VALUE) {
+      return BitPattern.getEvaluationGameOver(player, opponent);
+    }
+    return best;
+  }
+
+  private int evaluateFast(long player, long opponent, int alpha, int beta,
+                                long lastMove, int depth) {
+    long empties = ~(player | opponent);
+    int nEmpties = Long.bitCount(empties);
+    if (nEmpties <= EMPTIES_FOR_SUPER_FAST) {
+      return evaluateSuperFast(player, opponent, alpha, beta, false);
+    }
+    nVisited++;
+    if (nEmpties == 1) {
+      return evalOneEmpty(player, opponent, false);
+    }
+
+    int best = Integer.MIN_VALUE;
+    long flip;
+
+    Move curMoves[] = moves[depth];
+  
+    this.getMovesAdvanced(player, opponent, lastMove, curMoves);
+    for (Move move : curMoves) {
+      if (move.move < 0) {
+        break;
       }
-      return -evaluateRecursive(opponent, player, -beta, -alpha, lastMove, true);
+      flip = move.flip;
+      best = Math.max(best, 
+        -evaluateFast(opponent & ~flip, player | flip, -beta, 
+                           -Math.max(alpha, best), 1L << move.move, depth + 1));
+      if (best >= beta) {
+        break;
+      }
+    }
+    if (best == Integer.MIN_VALUE) {
+      return BitPattern.getEvaluationGameOver(player, opponent);
     }
     return best;
   }
@@ -680,7 +613,9 @@ public class EvaluatorLastMoves {
       return BitPattern.getEvaluationBoardFull(b);
     }
     nVisited--;
-    return evaluateRecursive(player, opponent, alpha, beta, lastMove, false);
+    
+    this.depthOneEval.setup(player, opponent);
+    return evaluateRecursive(player, opponent, alpha, beta, lastMove, 0);
   }
   
   public void resetNVisited() {

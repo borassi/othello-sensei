@@ -18,7 +18,7 @@ import board.Board;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class StoredBoard {
-  public final static int N_SAMPLES = 20;
+  public final static int N_SAMPLES = 10;
   public long player = 0;
   public long opponent = 0;
   // Keep lower <= eval <= upper?????
@@ -57,7 +57,7 @@ public class StoredBoard {
   }
     
   public static StoredBoard randomStoredBoard(Board b) {
-    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600, new int[10]);
+    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600, new int[StoredBoard.N_SAMPLES]);
   }
   
   public Board getBoard() {

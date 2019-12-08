@@ -22,19 +22,44 @@ import board.Board;
  */
 public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
 
-  @Override
-  public int eval(Board b) {
-    return 100 * (b.getPlayerDisks() - b.getOpponentDisks() + 2);
-  }
+  Board b;
 
   @Override
-  public int getMinTrainingSetSize(Board b) {
-    return 0;
+  public int eval() {
+    return 100 * (b.getPlayerDisks() - b.getOpponentDisks() + 2);
   }
 
   @Override
   public int evalVerbose(Board b) {
     return eval(b);
   }
-  
+
+  @Override
+  public void setup(Board b) {
+    this.b = b;
+  }
+
+  @Override
+  public void update(int square, long flip) {
+    b = new Board(b.getPlayer() & ~flip, b.getOpponent() | flip);
+  }
+
+  @Override
+  public void undoUpdate(int square, long flip) {
+    b = new Board((b.getPlayer() | flip) & ~(1L << square), b.getOpponent() & ~flip);
+  }
+
+  @Override
+  public void invert() {
+    b = new Board(b.getOpponent(), b.getPlayer());
+  }
+
+  @Override
+  public int eval(Board b) {
+    Board oldB = b;
+    this.setup(b);
+    int result = this.eval();
+    this.setup(oldB);
+    return result;
+  }
 }

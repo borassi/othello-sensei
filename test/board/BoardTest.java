@@ -33,6 +33,7 @@ public class BoardTest {
   }
 
   public static <T> void assertListEqualsIgnoreOrder(List<T> list1, List<T> list2) {
+    assertEquals(list1.size(), list2.size());
     HashSet<T> tmp1 = new HashSet<>(list1);
     HashSet<T> tmp2 = new HashSet<>(list2);
     assertEquals(tmp1, tmp2);

@@ -33,7 +33,7 @@ import java.util.Arrays;
  *
  * @author michele
  */
-public class PatternEvaluatorImproved implements Serializable {
+public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator {
   /**
    * Needed to implement Serializable.
    */
@@ -42,27 +42,51 @@ public class PatternEvaluatorImproved implements Serializable {
           "coefficients/pattern_evaluator_improved1.sar";
   long features[];
   ObjectArrayList<int[]> featuresToSquaresList;
+  static final int EMPTIES_SPLITS = 20; // SET TO <= 2 FOR TESTS
   static final long FEATURE_CORNER_4X4 = BitPattern.parsePattern("--------" +
                                                                  "--------" +
                                                                  "--------" +
                                                                  "--------" +
-                                                                 "----XXXX" +
-                                                                 "----XXXX" +
+                                                                 "------XX" +
+                                                                 "-----XXX" +
                                                                  "----XXXX" +
                                                                  "----XXXX");
-  static final long FEATURE_DIAGONAL = BitPattern.parsePattern("XX------" +
-                                                               "XX------" +
+  static final long FEATURE_CORNER_SIDED = BitPattern.parsePattern("--------" +
+                                                                 "--------" +
+                                                                 "--------" +
+                                                                 "-------X" +
+                                                                 "-------X" +
+                                                                 "-------X" +
+                                                                 "------XX" +
+                                                                 "---XXXXX");
+  static final long FEATURE_EDGE_BOH = BitPattern.parsePattern("--------" +
+                                                                 "--------" +
+                                                                 "--------" +
+                                                                 "--------" +
+                                                                 "--------" +
+                                                                 "--------" +
+                                                                 "--XXXX--" +
+                                                                 "X-XXXX-X");
+  static final long FEATURE_IMPR_DIAGONAL = BitPattern.parsePattern("XX------" +
+                                                                    "XX------" +
+                                                                    "--X-----" +
+                                                                    "---X----" +
+                                                                    "----X---" +
+                                                                    "-----X--" +
+                                                                    "------XX" +
+                                                                    "------XX");
+  static final long FEATURE_DIAGONAL = BitPattern.parsePattern("X-------" +
+                                                               "-X------" +
                                                                "--X-----" +
                                                                "---X----" +
                                                                "----X---" +
                                                                "-----X--" +
-                                                               "------XX" +
-                                                               "------XX");
-  static final long FEATURE_LAST_ROW = BitPattern.LAST_ROW_BIT_PATTERN;
-  static final long FEATURE_LAST_BUT_ONE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 8;
-  static final long FEATURE_LAST_BUT_TWO_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 16;
-  static final long FEATURE_LAST_BUT_THREE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 24;
-  static final int EMPTIES_SPLITS = 6; // SET TO <= 2 FOR TESTS
+                                                               "------X-" +
+                                                               "-------X");
+//  static final long FEATURE_LAST_ROW = BitPattern.LAST_ROW_BIT_PATTERN;
+//  static final long FEATURE_LAST_BUT_ONE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 8;
+//  static final long FEATURE_LAST_BUT_TWO_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 16;
+//  static final long FEATURE_LAST_BUT_THREE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 24;
 
   final static long PATTERN_CORNER = BitPattern.parsePattern("--------\n" 
                                                            + "--------\n"
@@ -80,9 +104,27 @@ public class PatternEvaluatorImproved implements Serializable {
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
-                                                          + "-XXXXXX-\n");
+                                                          + "XXXXXXXX\n");
 
   final static long PATTERN_LAST2 = BitPattern.parsePattern("--------\n" 
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "XXXXXXXX\n"
+                                                          + "--------\n");
+
+  final static long PATTERN_SM_LAST1 = BitPattern.parsePattern("--------\n" 
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "-XXXXXX-\n");
+
+  final static long PATTERN_SM_LAST2 = BitPattern.parsePattern("--------\n" 
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
@@ -96,7 +138,7 @@ public class PatternEvaluatorImproved implements Serializable {
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
-                                                          + "--XXXX--\n"
+                                                          + "-XXXXXX-\n"
                                                           + "--------\n"
                                                           + "--------\n");
 
@@ -104,15 +146,38 @@ public class PatternEvaluatorImproved implements Serializable {
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
-                                                          + "--XXXX--\n"
+                                                          + "-XXXXXX-\n"
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n");
+
+  final static long PATTERN_CORNER_5x2 = BitPattern.parsePattern("--------\n" 
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "--------\n"
+                                                          + "---XXXXX\n"
+                                                          + "---XXXXX\n");
   
-  static long[][] FEATURE_GROUPS = {{FEATURE_DIAGONAL}, {FEATURE_CORNER_4X4},
+  static long[][] FEATURE_GROUPS = {{FEATURE_IMPR_DIAGONAL}, {FEATURE_CORNER_4X4},
+    {PATTERN_CORNER, PATTERN_SM_LAST1, PATTERN_SM_LAST2, PATTERN_LAST3, PATTERN_LAST4},
+//    {FEATURE_CORNER_SIDED},
+//    {PATTERN_CORNER_5x2},
+//    {FEATURE_EDGE_BOH},
+//    {PATTERN_LAST1}, 
+//    {PATTERN_LAST1 << 8}, 
+    {PATTERN_LAST1 << 16}, 
+    {PATTERN_LAST1 << 24},
+    {FEATURE_DIAGONAL << 8},
+    {FEATURE_DIAGONAL << 16},
+//    {FEATURE_DIAGONAL << 24},
+//    {FEATURE_DIAGONAL << 32},
+//    {PATTERN_CORNER | PATTERN_SM_LAST1}
 //    {FEATURE_LAST_ROW}, {FEATURE_LAST_BUT_ONE_ROW}, {FEATURE_LAST_BUT_TWO_ROW}, {FEATURE_LAST_BUT_THREE_ROW},
-    {FEATURE_LAST_ROW, FEATURE_LAST_BUT_ONE_ROW, FEATURE_LAST_BUT_TWO_ROW, FEATURE_LAST_BUT_THREE_ROW}};
-//    {PATTERN_CORNER, PATTERN_LAST1, PATTERN_LAST2, PATTERN_LAST3, PATTERN_LAST4}};
+//    {FEATURE_LAST_ROW, FEATURE_LAST_BUT_ONE_ROW, FEATURE_LAST_BUT_TWO_ROW, FEATURE_LAST_BUT_THREE_ROW}};
+//    {PATTERN_LAST1, PATTERN_LAST2, PATTERN_LAST3, PATTERN_LAST4}};
+  };
   
   int featureToBaseFeature[][];
 
@@ -197,8 +262,8 @@ public class PatternEvaluatorImproved implements Serializable {
       int j = 0;
       while (baseHashes[featureToBaseFeature[i][j]] == emptyBaseHashes[featureToBaseFeature[i][j]] &&
              j < featureToBaseFeature[i].length - 2) {
-        ++j;
         hashes[i] += (maxBaseHashes[featureToBaseFeature[i][j]] + 1) * (maxBaseHashes[featureToBaseFeature[i][j+1]] + 1);
+        ++j;
       }
       if (j == featureToBaseFeature[i].length - 1) {
         hashes[i] = baseHashes[featureToBaseFeature[i][j]];
@@ -283,7 +348,7 @@ public class PatternEvaluatorImproved implements Serializable {
   }
   
   public int eval() {
-    return evalSlow();
+    return this.evalSlow();
 //    short[][] curEvals = evals[getEvalFromEmpties(empties)];
 //    // TODO: Replace eval1 with eval0, eval3 with eval2, etc.
 //    int eval = curEvals[0][baseHashes[0]] + curEvals[0][baseHashes[1]] + // Diagonals
@@ -295,7 +360,7 @@ public class PatternEvaluatorImproved implements Serializable {
 //    } else if (baseHashes[7] != 3280) {
 //      eval += curEvals[6][43046721 + baseHashes[7] + baseHashes[8] * 6561]; 
 //    } else {
-//      eval += curEvals[6][86093442 + baseHashes[8] + baseHashes[9] * 6561]; 
+//      eval += curEvals[6][47829690 + baseHashes[8] + baseHashes[9] * 729]; 
 //    }
 //    
 //    if (baseHashes[10] != 3280) {
@@ -303,7 +368,7 @@ public class PatternEvaluatorImproved implements Serializable {
 //    } else if (baseHashes[11] != 3280) {
 //      eval += curEvals[6][43046721 + baseHashes[11] + baseHashes[12] * 6561]; 
 //    } else {
-//      eval += curEvals[6][86093442 + baseHashes[12] + baseHashes[13] * 6561]; 
+//      eval += curEvals[6][47829690 + baseHashes[12] + baseHashes[13] * 729]; 
 //    }
 //  
 //    if (baseHashes[14] != 3280) {
@@ -311,7 +376,7 @@ public class PatternEvaluatorImproved implements Serializable {
 //    } else if (baseHashes[15] != 3280) {
 //      eval += curEvals[6][43046721 + baseHashes[15] + baseHashes[16] * 6561]; 
 //    } else {
-//      eval += curEvals[6][86093442 + baseHashes[16] + baseHashes[17] * 6561]; 
+//      eval += curEvals[6][47829690 + baseHashes[16] + baseHashes[17] * 729]; 
 //    }
 ////    eval += baseHashes[18] != 3280 ?
 ////        eval9[baseHashes[18] + baseHashes[19] * 6561] :
@@ -324,7 +389,7 @@ public class PatternEvaluatorImproved implements Serializable {
 //    } else if (baseHashes[19] != 3280) {
 //      eval += curEvals[6][43046721 + baseHashes[19] + baseHashes[20] * 6561]; 
 //    } else {
-//      eval += curEvals[6][86093442 + baseHashes[20] + baseHashes[21] * 6561]; 
+//      eval += curEvals[6][47829690 + baseHashes[20] + baseHashes[21] * 729]; 
 //    }
 //    return eval;
   }
@@ -368,12 +433,12 @@ public class PatternEvaluatorImproved implements Serializable {
     flip = flip & ~(1L << square);
     empties++;
     for (int update : squaresToFeatureSingle[square]) {
-      baseHashes[update & 63] += update >>> 6;
+      baseHashes[update & 127] += update >>> 7;
     }
     while (flip != 0) {
       square = Long.numberOfTrailingZeros(flip);
       for (int update : squaresToFeatureDouble[square]) {
-        baseHashes[update & 63] += update >>> 6;
+        baseHashes[update & 127] += update >>> 7;
       }
       flip = flip & ~(1L << square);
     }
@@ -383,12 +448,12 @@ public class PatternEvaluatorImproved implements Serializable {
     flip = flip & ~(1L << square);
     empties--;
     for (int update : squaresToFeatureSingle[square]) {
-      baseHashes[update & 63] -= update >>> 6;
+      baseHashes[update & 127] -= update >>> 7;
     }
     while (flip != 0) {
       square = Long.numberOfTrailingZeros(flip);
       for (int update : squaresToFeatureDouble[square]) {
-        baseHashes[update & 63] -= update >>> 6;
+        baseHashes[update & 127] -= update >>> 7;
       }
       flip = flip & ~(1L << square);
     }
@@ -407,14 +472,14 @@ public class PatternEvaluatorImproved implements Serializable {
     while (player != 0) {
       square = Long.numberOfTrailingZeros(player);
       for (int update : squaresToFeatureDouble[square]) {
-        baseHashes[update & 63] += update >>> 6;
+        baseHashes[update & 127] += update >>> 7;
       }
       player = player & ~(1L << square);
     }
     while (emptiesLong != 0) {
       square = Long.numberOfTrailingZeros(emptiesLong);
       for (int update : squaresToFeatureSingle[square]) {
-        baseHashes[update & 63] += update >>> 6;
+        baseHashes[update & 127] += update >>> 7;
       }
       emptiesLong = emptiesLong & ~(1L << square);
     }
@@ -454,6 +519,8 @@ public class PatternEvaluatorImproved implements Serializable {
 
     setupFeaturesToSquares();
 
+    System.out.println(featuresToSquaresList.size());
+    assert(featuresToSquaresList.size() < 127);
     features = new long[featuresToSquaresList.size()];
     maxBaseHashes = new int[featuresToSquaresList.size()];
     emptyBaseHashes = new int[featuresToSquaresList.size()];
@@ -469,8 +536,8 @@ public class PatternEvaluatorImproved implements Serializable {
       int squareList[] = featuresToSquaresList.get(j);
       features[j] = featureToLong(squareList);
       for (int k = 0; k < squareList.length; ++k) {
-        squaresToFeatureSingleList[squareList[k]].add((int) Math.pow(3, k) * 64 + j);
-        squaresToFeatureDoubleList[squareList[k]].add((int) (2 * Math.pow(3, k)) * 64 + j);
+        squaresToFeatureSingleList[squareList[k]].add((int) Math.pow(3, k) * 128 + j);
+        squaresToFeatureDoubleList[squareList[k]].add((int) (2 * Math.pow(3, k)) * 128 + j);
         maxBaseHashes[j] += 2 * Math.pow(3, k);
         emptyBaseHashes[j] += Math.pow(3, k);
       }
@@ -544,18 +611,6 @@ public class PatternEvaluatorImproved implements Serializable {
         Arrays.fill(evals[i][j], eval);
       }
     }
-  }
-  
-  /**
-   * Trains the model.
-   * @param trainingSet
-   * @param speed
-   * @param nIter The number of iterations.
-   */
-  public void train(ArrayList<BoardWithEvaluation> trainingSet,
-                    ArrayList<BoardWithEvaluation> testingSet,
-                    float speed, int nIter) {
-    new MultilinearRegressionImproved().train(this, trainingSet, testingSet, speed, nIter);
   }
   
   public void save() {
@@ -644,5 +699,11 @@ public class PatternEvaluatorImproved implements Serializable {
 //      }
     }
     System.out.println(num + " " + t + " " + num * 1000L / t);
+  }
+
+  @Override
+  public int evalVerbose(Board b) {
+    this.setup(b);
+    return this.eval();
   }
 }
