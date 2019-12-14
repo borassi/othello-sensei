@@ -31,7 +31,7 @@ import java.util.Random;
 public class EndgameThor {
   public ArrayList<BoardWithEvaluation> boards;
 //  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
-  EvaluatorLastMoves eval = new EvaluatorLastMoves();
+  EvaluatorLastMoves eval = EvaluatorLastMoves.load();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   
   public EndgameThor() {

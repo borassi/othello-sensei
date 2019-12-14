@@ -21,7 +21,14 @@ import evaluatedepthone.MultilinearRegressionImproved;
 import evaluatedepthone.PatternEvaluatorImproved;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import sun.misc.Unsafe;
@@ -30,8 +37,18 @@ import sun.misc.Unsafe;
  *
  * @author michele
  */
-public class EvaluatorLastMoves {
-  public Unsafe unsafe;
+public class EvaluatorLastMoves implements Serializable {
+  /**
+   * Needed to implement Serializable.
+   */
+  private static final long serialVersionUID = 1L;
+  public static final String EVALUATOR_LAST_MOVES_FILEPATTERN = 
+          "coefficients/evaluator_last_moves.sar";
+
+  private static final int EMPTIES_FOR_SUPER_FAST = 5;
+  private static final int EMPTIES_FOR_FAST = 10;
+
+  public transient Unsafe unsafe;
   long[] flipHorizontal = new long[64 * 256 * 256];
   long[] flipVertical = new long[64 * 256 * 256];
   long[] flipDiagonal = new long[64 * 256 * 256];
@@ -45,7 +62,14 @@ public class EvaluatorLastMoves {
   int baseOffset;
   Move[][] moves = new Move[128][64];
   
-  public static class Move implements Comparable<Move> {
+  long tmp[] = new long[0];
+  long masksTmp[];
+  long firstLastInEdges[];
+  
+  private long neighbors[];
+  private long horizVert[];
+  
+  public static class Move implements Comparable<Move>, Serializable {
     int move;
     long flip;
     int eval;
@@ -55,6 +79,48 @@ public class EvaluatorLastMoves {
       return Integer.compare(eval, other.eval);
     }
   }
+  
+  public void save() {
+    save(EVALUATOR_LAST_MOVES_FILEPATTERN);
+  }
+  public void save(String file) {
+    try {
+       FileOutputStream fileOut = new FileOutputStream(file);
+       ObjectOutputStream out = new ObjectOutputStream(fileOut);
+       out.writeObject(this);
+       out.close();
+       fileOut.close();
+       System.out.println("Saved pattern evaluator.");
+    } catch (IOException e) {
+       e.printStackTrace();
+    }
+  }
+
+  public static EvaluatorLastMoves load() {
+    try {
+      return load(EVALUATOR_LAST_MOVES_FILEPATTERN);
+    } catch(Exception e) {
+      return new EvaluatorLastMoves();
+    }
+  }
+
+  /**
+   * Loads a PatternEvaluatorImproved.
+   * @param filepath the file (obtained by calling save() on another multilinear regression).
+   * @return The PatternEvaluatorImproved loaded, or an empty MultilinearRegression if errors occurred.
+   */
+  public static EvaluatorLastMoves load(String filepath) {
+    EvaluatorLastMoves result;
+    try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filepath))) {
+      result = (EvaluatorLastMoves) in.readObject();
+    } catch (IOException | ClassNotFoundException | ClassCastException e) {
+      System.out.println("Error when loading the PatternEvaluator:\n" + 
+                         Arrays.toString(e.getStackTrace()));
+      return new EvaluatorLastMoves();
+    }
+    result.setupUnsafe();
+    return result;
+  }
 
   public EvaluatorLastMoves() {
     this(PatternEvaluatorImproved.load());
@@ -62,6 +128,18 @@ public class EvaluatorLastMoves {
 
   public EvaluatorLastMoves(DepthOneEvaluator depthOneEval) {
     this.depthOneEval = depthOneEval;
+    setupUnsafe();
+    initFlips();
+    initMoves();
+    for (int i = 0; i < moves.length; ++i) {
+      for (int j = 0; j < moves[i].length; ++j) {
+        moves[i][j] = new Move();
+      }
+    }
+    save();
+  }
+  
+  public void setupUnsafe() {
     Field theUnsafe;
     try {
       theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
@@ -71,13 +149,13 @@ public class EvaluatorLastMoves {
     } catch (Exception ex) {
       Logger.getLogger(EvaluatorLastMoves.class.getName()).log(Level.SEVERE, null, ex);
     }
-    initFlips();
-    initMoves();
-    for (int i = 0; i < moves.length; ++i) {
-      for (int j = 0; j < moves[i].length; ++j) {
-        moves[i][j] = new Move();
-      }
-    }
+    this.masksTmp = new long[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    masksTmp[3] = CORNERS;
+    masksTmp[6] = CENTRAL;
+    masksTmp[7] = CENTRAL1;
+    masksTmp[8] = CENTRAL2;
+    masksTmp[9] = ~0L;
+    this.firstLastInEdges = new long[2];
   }
   
   // COMPUTING FLIPS.
@@ -232,10 +310,6 @@ public class EvaluatorLastMoves {
     }
   }
   
-
-  private long neighbors[];
-  private long horizVert[];
-  
   private void initFlips() {
     neighbors = new long[64];
     horizVert = new long[64];
@@ -278,29 +352,73 @@ public class EvaluatorLastMoves {
 
   protected long getFlip(int move, long player, long opponent) {
     long flip = 0;
-    long empties = ~(player | opponent | (1L << move));
+    long moveBit = 1L << move;
+    long empties = ~(player | opponent | moveBit);
     int position = baseOffset + move * 524288;
     int positionLast = baseOffset + move * 2048;
-    long curFlip = unsafe.getLongVolatile(flipHorizontalLast, positionLast + hashRow(move, opponent) * 8);
-    if ((curFlip & empties) != 0) {
-      curFlip = unsafe.getLongVolatile(flipHorizontal, position + hashRow(move, player, opponent) * 8);
+    long opponentShifted = opponent & this.neighbors[move];
+    long larger = ((-1L) << move);
+    long emptiesFlip;
+    long smaller = (~larger) | moveBit;
+    if (move > 9) {
+      opponentShifted = opponentShifted >>> (move - 9);
+    } else {
+      opponentShifted = opponentShifted << (9 - move);      
     }
-    flip |= curFlip;
-    curFlip = unsafe.getLongVolatile(flipVerticalLast, positionLast + hashColumn(move, opponent) * 8);
-    if ((curFlip & empties) != 0) {
-      curFlip = unsafe.getLongVolatile(flipVertical, position + hashColumn(move, player, opponent) * 8);
+    long curFlip;
+    if ((opponentShifted & 1280L) != 0) {
+      curFlip = unsafe.getLongVolatile(flipHorizontalLast, positionLast + hashRow(move, opponent) * 8);
+      emptiesFlip = curFlip & empties;
+      if (emptiesFlip != 0) {
+        if ((emptiesFlip & larger) != 0) {
+          curFlip &= smaller;
+        }
+        if ((emptiesFlip & smaller) != 0) {
+          curFlip &= larger;
+        }
+      }
+      flip |= curFlip;
     }
-    flip |= curFlip;
-    curFlip = unsafe.getLongVolatile(flipDiagonalLast, positionLast + hashDiagonal(move, opponent) * 8);
-    if ((curFlip & empties) != 0) {
-      curFlip = unsafe.getLongVolatile(flipDiagonal, position + hashDiagonal(move, player, opponent) * 8);
+    if ((opponentShifted & 131074L) != 0) {
+      curFlip = unsafe.getLongVolatile(flipVerticalLast, positionLast + hashColumn(move, opponent) * 8);
+      emptiesFlip = curFlip & empties;
+      if (emptiesFlip != 0) {
+        if ((emptiesFlip & larger) != 0) {
+          curFlip &= smaller;
+        }
+        if ((emptiesFlip & smaller) != 0) {
+          curFlip &= larger;
+        }
+      }
+      flip |= curFlip;
     }
-    flip |= curFlip;
-    curFlip = unsafe.getLongVolatile(flipReverseDiagonalLast, positionLast + hashRevDiagonal(move, opponent) * 8);
-    if ((curFlip & empties) != 0) {
-      curFlip = unsafe.getLongVolatile(flipReverseDiagonal, position + hashRevDiagonal(move, player, opponent) * 8);
+    if ((opponentShifted & 262145L) != 0) {
+      curFlip = unsafe.getLongVolatile(flipDiagonalLast, positionLast + hashDiagonal(move, opponent) * 8);
+      emptiesFlip = curFlip & empties;
+      if (emptiesFlip != 0) {
+        if ((emptiesFlip & larger) != 0) {
+          curFlip &= smaller;
+        }
+        if ((emptiesFlip & smaller) != 0) {
+          curFlip &= larger;
+        }
+      }
+      flip |= curFlip;
     }
-    return flip | curFlip;
+    if ((opponentShifted & 65540L) != 0) {
+      curFlip = unsafe.getLongVolatile(flipReverseDiagonalLast, positionLast + hashRevDiagonal(move, opponent) * 8);
+      emptiesFlip = curFlip & empties;
+      if (emptiesFlip != 0) {
+        if ((emptiesFlip & larger) != 0) {
+          curFlip &= smaller;
+        }
+        if ((emptiesFlip & smaller) != 0) {
+          curFlip &= larger;
+        }
+      }
+      flip |= curFlip;
+    }
+    return flip == moveBit ? 0 : flip;
     
 //    long tmp = getFlipLast(move, opponent);
 //    if ((tmp & ~(player | opponent | (1L << move))) == 0) {
@@ -326,7 +444,7 @@ public class EvaluatorLastMoves {
   }
   
   private int evaluateSuperFast(long player, long opponent, int alpha, int beta,
-                                boolean passed) {
+                                boolean passed, long lastFlip) {
     if (!passed) {
       nVisited++;
     }
@@ -338,7 +456,26 @@ public class EvaluatorLastMoves {
     boolean pass = true;
     int best = Integer.MIN_VALUE;
     int move;
-
+//    long neigh = neighborCases(lastFlip) & empties;
+//    while (neigh != 0) {
+//      move = Long.numberOfTrailingZeros(neigh & empties);      
+//      neigh = neigh & (~(1L << move));     
+//      empties = empties & (~(1L << move));
+////      if ((this.neighbors[move] & opponent) == 0) {
+////        continue;
+////      }
+//      long flip = getFlip(move, player, opponent);
+//      if (flip == 0) {
+//        continue;
+//      }
+//      best = Math.max(best, 
+//        -evaluateSuperFast(opponent & ~flip, player | flip, -beta, 
+//                           -Math.max(alpha, best), false, flip));
+//      pass = false;
+//      if (best >= beta) {
+//        return best;
+//      }
+//    }
     while (empties != 0) {
       move = Long.numberOfTrailingZeros(empties);      
       empties = empties & (~(1L << move));
@@ -351,17 +488,18 @@ public class EvaluatorLastMoves {
       }
       best = Math.max(best, 
         -evaluateSuperFast(opponent & ~flip, player | flip, -beta, 
-                           -Math.max(alpha, best), false));
+                           -Math.max(alpha, best), false, flip));
       pass = false;
       if (best >= beta) {
-        break;
+        return best;
       }
     }
+    
     if (pass) {
       if (passed) {
         return BitPattern.getEvaluationGameOver(player, opponent);
       }
-      return -evaluateSuperFast(opponent, player, -beta, -alpha, true);
+      return -evaluateSuperFast(opponent, player, -beta, -alpha, true, 0);
     }
     return best;
   }
@@ -436,20 +574,24 @@ public class EvaluatorLastMoves {
                                           BitPattern.FIRST_ROW_BIT_PATTERN,
                                           BitPattern.LAST_ROW_BIT_PATTERN};
   
-  private final static long[] firstLastInEdges(long bitPattern) {
+  private final long[] firstLastInEdges(long bitPattern) {
     long firstBit = 0;
     long lastBit = 0;
     for (long edge : edges) {
       firstBit |= Long.highestOneBit(edge & bitPattern);
       lastBit |= Long.lowestOneBit(edge & bitPattern);
     }
-    return new long[] {firstBit & ~CORNERS, lastBit & ~CORNERS};
+    this.firstLastInEdges[0] = firstBit & ~CORNERS;
+    this.firstLastInEdges[1] = lastBit & ~CORNERS;
+    return this.firstLastInEdges;
   }
   
   int getMovesAdvanced(long player, long opponent, long lastMove, Move[] result) {
     int nMoves = getMoves(player, opponent, lastMove, result);
     if (result[0].move < 0) {
+      this.depthOneEval.invert();
       getMoves(opponent, player, lastMove, result);
+      this.depthOneEval.invert();
       if (result[0].move >= 0) {
         result[0].move = 0;
         result[0].flip = 0;
@@ -466,86 +608,45 @@ public class EvaluatorLastMoves {
   int getMoves(long player, long opponent, long lastMove, Move[] result) {
     int move;
     long moveBit;
-    int lastMovePosition = Long.numberOfTrailingZeros(lastMove);
-    lastMovePosition = lastMovePosition == 64 ? 32 : lastMovePosition;
     long empties = ~(player | opponent);
-    int nEmpties = Long.bitCount(empties);
     int nMoves = 0;
 
-    long[] firstInEdges = nEmpties > 5 ? firstLastInEdges(empties) : new long[] {};
-    long[] masks = new long[] {
-        ~neighborCases(empties) & neighborCases(player),
-        nEmpties > 5 ? firstInEdges[0] & firstInEdges[1] & neighborCases(player) : 0,
-        neighbors[lastMovePosition] & CORNERS,
-        ((lastMove & XSQUARES) == 0) ? horizVert[lastMovePosition] : 0,
-        CORNERS,
-        nEmpties > 5 ? firstInEdges[0] | firstInEdges[1] : 0,
-        ((lastMove & XSQUARES) == 0) ? neighbors[lastMovePosition] : 0,
-        CENTRAL1,
-        CENTRAL,
-        CENTRAL2,
-        ~0L
-    };
-    for (long mask : masks) {
-      while ((empties & mask) != 0) {
-//      while (empties != 0) {
-        move = Long.numberOfTrailingZeros(empties & mask);
-//        move = Long.numberOfTrailingZeros(empties);
-        moveBit = 1L << move;
-        empties = empties & (~moveBit);
-        long flip = getFlip(move, player, opponent) & ~player;
-        if (flip == 0) {
-          continue;
-        }
-        Move curMove = result[nMoves];
-        curMove.move = move;
-        curMove.flip = flip;
-        ++nMoves;
+    while (empties != 0) {
+      move = Long.numberOfTrailingZeros(empties);
+      moveBit = 1L << move;
+      empties = empties & (~moveBit);
+      long flip = getFlip(move, player, opponent) & ~player;
+      if (flip == 0) {
+        continue;
       }
+      Move curMove = result[nMoves];
+      curMove.move = move;
+      curMove.flip = flip;
+      this.depthOneEval.update(move, flip);
+      curMove.eval = this.depthOneEval.eval();
+      this.depthOneEval.undoUpdate(move, flip);
+      ++nMoves;
     }
     result[nMoves].move = -1;
+    ObjectArrays.quickSort(result, 0, nMoves);
     return nMoves;
   }
-
-  void getMovesSorted(long player, long opponent, long lastMove, Move[] result) {
-    int nMoves = getMovesAdvanced(player, opponent, lastMove, result);
-    if (nMoves <= 1) {
-      return;
-    }
-    for (int i = 0; i < nMoves; ++i) {
-      Move move = result[i];
-      this.depthOneEval.update(move.move, move.flip);
-      move.eval = this.depthOneEval.eval();
-      this.depthOneEval.undoUpdate(move.move, move.flip);
-    }
-    ObjectArrays.quickSort(result, 0, nMoves);
-  }
-
-  private static final int EMPTIES_FOR_SUPER_FAST = 4;
-  private static final int EMPTIES_FOR_FAST = 8;
 
   private int evaluateRecursive(long player, long opponent, int alpha, int beta,
                                 long lastMove, int depth) {
     long empties = ~(player | opponent);
     int nEmpties = Long.bitCount(empties);
-    if (nEmpties <= EMPTIES_FOR_SUPER_FAST) {
-      return evaluateSuperFast(player, opponent, alpha, beta, false);
-    } else if (nEmpties <= EMPTIES_FOR_FAST) {
-      return evaluateFast(player, opponent, alpha, beta, lastMove, depth);
+    if (nEmpties <= EMPTIES_FOR_FAST) {
+      return evaluateFast(player, opponent, alpha, beta, false, lastMove, depth);
     }
     nVisited++;
-    if (nEmpties == 1) {
-      return evalOneEmpty(player, opponent, false);
-    }
 
     int best = Integer.MIN_VALUE;
     long flip;
 
     Move curMoves[] = moves[depth];
-    
-//    this.depthOneEval.setup(player, opponent);
     this.depthOneEval.invert();
-    this.getMovesSorted(player, opponent, lastMove, curMoves);
+    this.getMovesAdvanced(player, opponent, lastMove, curMoves);
     for (Move move : curMoves) {
       if (move.move < 0) {
         break;
@@ -556,7 +657,7 @@ public class EvaluatorLastMoves {
       }
       best = Math.max(best, 
         -evaluateRecursive(opponent & ~flip, player | flip, -beta, 
-                           -Math.max(alpha, best), 1L << move.move, depth + 1));
+                           -Math.max(alpha, best), flip, depth + 1));
       if (flip != 0) {
         this.depthOneEval.undoUpdate(move.move, flip);
       }
@@ -572,11 +673,11 @@ public class EvaluatorLastMoves {
   }
 
   private int evaluateFast(long player, long opponent, int alpha, int beta,
-                                long lastMove, int depth) {
+                               boolean passed, long lastMove, int depth) {
     long empties = ~(player | opponent);
     int nEmpties = Long.bitCount(empties);
     if (nEmpties <= EMPTIES_FOR_SUPER_FAST) {
-      return evaluateSuperFast(player, opponent, alpha, beta, false);
+      return evaluateSuperFast(player, opponent, alpha, beta, false, lastMove);
     }
     nVisited++;
     if (nEmpties == 1) {
@@ -585,24 +686,45 @@ public class EvaluatorLastMoves {
 
     int best = Integer.MIN_VALUE;
     long flip;
+//    System.out.println(masksTmp);
+//    masksTmp = new long[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    Move curMoves[] = moves[depth];
-  
-    this.getMovesAdvanced(player, opponent, lastMove, curMoves);
-    for (Move move : curMoves) {
-      if (move.move < 0) {
-        break;
+    long[] firstInEdges = nEmpties > 5 ? firstLastInEdges(empties) : tmp;
+    masksTmp[0] = ~neighborCases(empties) & neighborCases(player);
+    masksTmp[1] = nEmpties > 5 ? firstInEdges[0] & firstInEdges[1] & neighborCases(player) : 0;
+    masksTmp[2] = neighborCases(lastMove) & CORNERS;
+    masksTmp[4] = nEmpties > 5 ? firstInEdges[0] | firstInEdges[1] : 0;
+    masksTmp[5] = ((lastMove & XSQUARES) == 0) ? neighborCases(lastMove) : 0;
+    int move;
+    long moveBit;
+    boolean pass = true;
+    
+    for (long mask : masksTmp) {
+      while ((empties & mask) != 0) {
+        move = Long.numberOfTrailingZeros(empties & mask);
+        moveBit = 1L << move;
+        empties = empties & (~moveBit);
+        flip = getFlip(move, player, opponent) & ~player;
+        if (flip == 0) {
+          continue;
+        }
+        best = Math.max(best, 
+          -evaluateFast(opponent & ~flip, player | flip, -beta, 
+                             -Math.max(alpha, best), false, flip, depth + 1));
+        pass = false;
+        if (best >= beta) {
+          break;
+        }
       }
-      flip = move.flip;
-      best = Math.max(best, 
-        -evaluateFast(opponent & ~flip, player | flip, -beta, 
-                           -Math.max(alpha, best), 1L << move.move, depth + 1));
       if (best >= beta) {
         break;
       }
     }
-    if (best == Integer.MIN_VALUE) {
-      return BitPattern.getEvaluationGameOver(player, opponent);
+    if (pass) {
+      if (passed) {
+        return BitPattern.getEvaluationGameOver(player, opponent);
+      }
+      return -evaluateFast(opponent, player, -beta, -alpha, true, 0, depth);
     }
     return best;
   }
@@ -628,11 +750,13 @@ public class EvaluatorLastMoves {
     return nVisited;
   }
   
-//  public static void main(String args[]) {
+  public static void main(String args[]) {
+    System.out.println(BitPattern.patternToString(-1L));
+    System.out.println(BitPattern.patternToString(-1L << (-9)));
 //    Board b = new Board("--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
 //    EvaluatorLastMoves eval = new EvaluatorLastMoves();
 //    long t = System.currentTimeMillis();
 //    eval.evaluatePosition(b, -6400, 6400);
 //    System.out.println(eval.getNVisited() + " " + (System.currentTimeMillis() - t));
-//  }
+  }
 }

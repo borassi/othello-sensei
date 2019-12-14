@@ -85,7 +85,6 @@ public class PatternEvaluatorImprovedTest {
   public void testHash() {
     for (int i = 0; i < eval.features.length; ++i) {
       long feature = eval.features[i];
-      System.out.println(eval.maxBaseHashes[i]);
       ArrayList<Long> patterns = BitPattern.allSubBitPatterns(feature);
       Int2ObjectOpenHashMap<Board> foundPatterns = new Int2ObjectOpenHashMap<>();
       for (long player : patterns) {
@@ -151,14 +150,20 @@ public class PatternEvaluatorImprovedTest {
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
       eval.setup(b);
       eval.invert();
+//      System.out.println(b);
       if (flip != 0) {
         eval.update(move, flip);
       }
       Board after = b.move(flip);
       evalForTest.setup(after);
+//      System.out.println(after);
+//      System.out.println(new Board(eval.player, eval.opponent) + "\n\n\n\n");
+//      System.out.println(evalForTest);
+      assertEquals(eval.empties, evalForTest.empties);
+//      assertEquals(eval.player, after.getPlayer());
+//      assertEquals(eval.opponent, after.getOpponent());
       int[] actual = eval.baseHashes();
       int[] expected = evalForTest.baseHashes();
-      assertEquals(eval.empties, evalForTest.empties);
       for (int j = 0; j < actual.length; ++j) {
         if (actual[j] != expected[j]) {
           assert(false);
@@ -189,6 +194,8 @@ public class PatternEvaluatorImprovedTest {
       evalForTest.setup(b);
       int[] actual = eval.baseHashes();
       int[] expected = evalForTest.baseHashes();
+//      assertEquals(eval.player, b.getPlayer());
+//      assertEquals(eval.opponent, b.getOpponent());
       assertEquals(eval.empties, evalForTest.empties);
       for (int j = 0; j < actual.length; ++j) {
         if (actual[j] != expected[j]) {

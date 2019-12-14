@@ -80,6 +80,8 @@ public class EvaluatorLastMovesTest {
     }
     for (int iter = 0; iter < 1000; ++iter) {
       Board b = Board.randomBoard();
+      LAST_MOVE_EVALUATOR.depthOneEval.setup(b.getPlayer(), b.getOpponent());
+      LAST_MOVE_EVALUATOR.depthOneEval.invert();
       LAST_MOVE_EVALUATOR.getMovesAdvanced(b.getPlayer(), b.getOpponent(), (int) (Math.random() * 64), moves);
       long movesTest[] = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
       LongArrayList movesFromEvaluator = new LongArrayList();

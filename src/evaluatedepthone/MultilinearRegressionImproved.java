@@ -252,9 +252,9 @@ public class MultilinearRegressionImproved {
   
   public static void main(String args[]) {
     ArrayList<BoardWithEvaluation> testingSet = LoadDataset.loadTestingSet();
-//    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
-//    eval.reset((short) 0);
+    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+//    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
+    eval.reset((short) 0);
     MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, testingSet);
     ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
 //    trainingSet.addAll(LoadDataset.loadOMGSet(170));

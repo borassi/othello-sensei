@@ -16,6 +16,7 @@ package evaluatedepthone;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import bitpattern.BitPattern;
+//import evaluatedepthone.patternhasher.StableDisksMiddle;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -39,6 +40,8 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   public static final String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
           "coefficients/pattern_evaluator_improved1.sar";
   long features[];
+//  long player;
+//  long opponent;
   ObjectArrayList<int[]> featuresToSquaresList;
   static final int EMPTIES_SPLITS = 20; // SET TO <= 2 FOR TESTS
   static final long FEATURE_CORNER_4X4 = BitPattern.parsePattern("--------" +
@@ -270,6 +273,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
             (maxBaseHashes[featureToBaseFeature[i][j]] + 1) * baseHashes[featureToBaseFeature[i][j+1]];
       }
     }
+//    hashes[featureToBaseFeature.length] = StableDisksMiddle.hash(new Board(player, opponent));
     return hashes;
   }
 
@@ -340,7 +344,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
       eval += curEvals[6][86093442 + baseHashes[20] + baseHashes[21] * 6561]; 
     }
     System.out.println("W Edge:    " + eval);
-    eval = 0;
+//    eval = 0;
     
     return eval();
   }
@@ -429,10 +433,15 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     for (int i = 0; i < baseHashes.length; ++i) {
       baseHashes[i] = maxBaseHashes[i] - baseHashes[i];
     }
+//    long tmp = player;
+//    player = opponent;
+//    opponent = tmp;
   }
   
   public void undoUpdate(int square, long flip) {
+//    this.opponent = opponent & ~flip;
     flip = flip & ~(1L << square);
+//    this.player = player | flip;
     empties++;
     for (int update : squaresToFeatureSingle[square]) {
       baseHashes[update & 127] += update >>> 7;
@@ -447,6 +456,9 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   
   public void update(int square, long flip) {
+//    System.out.println(BitPattern.patternToString(flip));
+//    this.opponent = opponent | flip;
+//    this.player = player & ~flip;
     flip = flip & ~(1L << square);
     empties--;
     for (int update : squaresToFeatureSingle[square]) {
@@ -465,9 +477,12 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return baseHashes;
   }
   
+  @Override
   public void setup(long player, long opponent) {
     assert((player & opponent) == 0);
     Arrays.fill(baseHashes, 0);
+//    this.player = player;
+//    this.opponent = opponent;
     long emptiesLong = ~(player | opponent);
     empties = Long.bitCount(emptiesLong);
     int square;
@@ -527,8 +542,8 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     maxBaseHashes = new int[featuresToSquaresList.size()];
     emptyBaseHashes = new int[featuresToSquaresList.size()];
     baseHashes = new int[featuresToSquaresList.size()];
-    hashes = new int[featureToBaseFeature.length];
-    evals = new float[EMPTIES_SPLITS][featureToBaseFeature.length][];
+    hashes = new int[featureToBaseFeature.length + 1];
+    evals = new float[EMPTIES_SPLITS][hashes.length][];
 
     for (int i = 0; i < 64; ++i) {
       squaresToFeatureSingleList[i] = new IntArrayList();
@@ -576,6 +591,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
           }
           evals[emptiesGroup][i] = new float[size];
         }
+        evals[emptiesGroup][evals[emptiesGroup].length - 1] = new float[65*64];
       }
     }
   }

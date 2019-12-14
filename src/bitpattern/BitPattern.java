@@ -417,11 +417,11 @@ public class BitPattern {
   }
   
   public final static long getRow(int position) {
-    return (1L << ((position / 8) * 8)) * LAST_ROW_BIT_PATTERN;
+    return LAST_ROW_BIT_PATTERN << (position & (~7));
   }
   
   public final static long getColumn(int position) {
-    return (1L << (position % 8)) * LAST_COLUMN_BIT_PATTERN;
+    return LAST_COLUMN_BIT_PATTERN << (position % 8);
   }
   public final static long getNWSEDiag(int position) {
     int mainDiagShift = (position - 9 * (position % 8));
