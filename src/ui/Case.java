@@ -41,7 +41,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
   /**
    * The UI this case belongs to. Used to propagate move events.
    */
-  private final UI ui;
+  private final DesktopUI ui;
   /**
    * The row and the column (from 0 to 7).
    */
@@ -60,7 +60,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
    * @param ui the UI that uses this case
    * @param ij: the row and the column (from 0 to 7).
    */
-  public Case(UI ui, PositionIJ ij) {
+  public Case(DesktopUI ui, PositionIJ ij) {
     this.ij = ij;
     this.ui = ui;
     super.addMouseListener(this);

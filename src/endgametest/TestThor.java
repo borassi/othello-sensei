@@ -54,7 +54,7 @@ public class TestThor {
 
 //    System.out.println(eval + " " + this.eval.evaluatePosition(b, 1));
 //    return -this.eval.evaluatePosition(b, 0) - be.evaluation;
-    return eval * 30 / 30 + eval1.eval(b) * 0 / 30 - be.evaluation;
+    return eval * 20 / 30 + eval1.eval(b) * 10 / 30 - be.evaluation;
   }
   
   public void run() {

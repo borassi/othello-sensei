@@ -18,6 +18,7 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -137,13 +138,13 @@ public class EvaluatorMCTSTest {
     testBoard(e6, 2000, 1600, 2400);
     
     HashMapVisitedPositions.PositionToImprove nextPosition = 
-        evaluator.nextPositionToImproveEndgame(e6, true, true);
+        evaluator.nextPositionToImproveEndgame(e6, true, true, new ObjectArrayList<>());
     assertEquals(e6f4c3d6, nextPosition.board);
     assertEquals(-2001, nextPosition.alpha);
     assertEquals(-2000, nextPosition.beta);
 
     nextPosition =
-        evaluator.nextPositionToImproveEndgame(e6, false, true);
+        evaluator.nextPositionToImproveEndgame(e6, false, true, new ObjectArrayList<>());
     assertEquals(e6f4e3, nextPosition.board);
     assertEquals(true, nextPosition.playerIsStartingPlayer);
     assertEquals(+1999, nextPosition.alpha);

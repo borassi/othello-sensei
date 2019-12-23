@@ -16,7 +16,6 @@ package main;
 
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
-import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
@@ -24,19 +23,13 @@ import javax.swing.SwingUtilities;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
-import helpers.LoadDataset;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import ui.DesktopUI;
 import ui.UI;
 
 /**
@@ -48,6 +41,7 @@ public class Main {
   ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
   ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
+  private int depth = -1;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();// MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
   private final EvaluatorLastMoves EVALUATOR_LAST_MOVES = new EvaluatorLastMoves();
@@ -66,23 +60,17 @@ public class Main {
    * Creates a new UI and sets the initial position.
    */
   public Main() {
-    ui = new UI(this);
-    changeDepth(ui.depth());
     board = new Board();
-//    board = new Board("XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
-//    board = new Board("XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
-    board = new Board("--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO--", true);
-    board = new Board("-XXXXX--O-XXOOOXOOOOOOXXOOOOOXXXOOOOXXX-OOOXO-X--OOOO--X-XXXXXX-", true);
-    board = new Board("----OX----OOXX---OOOXX-XOOXXOOOOOXXOXXOOOXXXOOOOOXXXXOXO--OOOOOX", true);
-    board = new Board("-XXXXX--O-XXOOOXOOOOOOXXOOOOOXXXOOOOXXX-OOOXO-X--OOOO--X-XXXXXX-", true);
-    board = new Board("----X------XXXO--OOOXXXXXOOOOXXO-XXOOXXOOOXOXXXXOOOXX---X-XXXX--", false);
-    board = new Board("--XXXXX---XXXX---OOOXX---OOXXXX--OOXXXO-OOOOXOO----XOX----XXXXX-", true);
-    ui.setCases(board, blackTurn);
-    ui.update(ui.getGraphics());
+  }
+  
+  public void setUI(UI ui) {
+    this.ui = ui;
+    newGame();
   }
 
   public final void changeDepth(int depth) {
-    if (depth != 0) {
+    this.depth = depth;
+    if (depth > 0) {
       evaluator = new EvaluatorMCTS(2 * depth, depth, POSSIBLE_MOVES_FINDER, DEPTH_ONE_EVALUATOR, EVALUATOR_LAST_MOVES);
     }
   }
@@ -138,36 +126,16 @@ public class Main {
   public void getClick(PositionIJ ij, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
       playMoveIfPossible(ij);
-      if (ui.depth() > 0) {
-        evaluate();
-      } else {
-        showHashMapEvaluations();
-      }
+      evaluate();
     } else if (SwingUtilities.isRightMouseButton(e)) {
       undo();
     }
-//    System.out.println(DEPTH_ONE_EVALUATOR.evalVerbose(board));
-  }
-  
-  public void selfTrain() {
-//    DEPTH_ONE_EVALUATOR.selfTrain();
-  }
-  
-  public void retrain() {
-//    depthOneEvaluator = new MultilinearRegression();
-//    ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
-//    trainingSet.addAll(LoadDataset.loadOMGSet(170));
-//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.005F, 2);
-//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.002F, 5);
-//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.001F, 5);
-//    DEPTH_ONE_EVALUATOR.train(trainingSet, 0.0005F, 2);
-//    DEPTH_ONE_EVALUATOR.save();
   }
   
   
   public void showHashMapEvaluations() {
     long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(board);
-    ObjectArrayList<StoredBoard> evaluations = new ObjectArrayList<>();
+    ArrayList<StoredBoard> evaluations = new ArrayList<>();
     
     for (long move : moves) {
       Board next = board.move(move);
@@ -176,7 +144,6 @@ public class Main {
       if (evaluation != null) {
         PositionIJ ij = BitPattern.bitToMove(board.moveToBit(move));
 
-        ui.setAnnotationsColor(Color.BLACK, ij);
         String str = String.format("%.2f\n%d\n", -evaluation.getEval() / 100F, evaluation.descendants);
         str += String.format("%.2f %.2f\n", -evaluation.bestVariationOpponent / 100F,
             -evaluation.bestVariationPlayer / 100F);
@@ -192,7 +159,7 @@ public class Main {
     PositionIJ bestIJ = this.findBestMove(evaluations);
     
     if (bestIJ.i >= 0) {
-      ui.setAnnotationsColor(Color.RED, bestIJ);
+      ui.setBestMove(bestIJ);
     }
   }
   
@@ -202,10 +169,10 @@ public class Main {
     return BitPattern.bitToMove(move);
   }
 
-  public PositionIJ findBestMove(ObjectArrayList<StoredBoard> evaluations) {
+  public PositionIJ findBestMove(ArrayList<StoredBoard> evaluations) {
     double best = Double.POSITIVE_INFINITY;
     double bestUpper = Double.POSITIVE_INFINITY;
-    double bestPlayerVariates = Double.POSITIVE_INFINITY;
+    double bestOpponentVariates = Double.POSITIVE_INFINITY;
     PositionIJ bestIJ = new PositionIJ(-1, -1);
 
     if (evaluations == null || evaluations.isEmpty() || evaluations.get(0) == null) {
@@ -220,10 +187,10 @@ public class Main {
       if (eval < best ||
           (eval == best && evaluation.getUpperBound() < bestUpper) ||
           (eval == best && evaluation.getUpperBound() == bestUpper &&
-           evaluation.lower < bestPlayerVariates)) {
+           evaluation.upper < bestOpponentVariates)) {
         best = eval;
         bestUpper = evaluation.getUpperBound();
-        bestPlayerVariates = evaluation.lower;
+        bestOpponentVariates = evaluation.upper;
         bestIJ = ij;
       }
     }
@@ -238,13 +205,18 @@ public class Main {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-    ObjectArrayList<StoredBoard> evaluations = evaluator.evaluatePositionAll(
+    if (ui.depth() <= 0) {
+      showHashMapEvaluations();
+    }
+    if (ui.depth() != depth) {
+      this.changeDepth(ui.depth());
+    }
+    ArrayList<StoredBoard> evaluations = evaluator.evaluatePositionAll(
       board, ui.depth());
 
     for (StoredBoard evaluation : evaluations) {
       int eval = -evaluation.getEval();// -(evaluation.getLowerBound() + evaluation.getUpperBound()) / 2.0F;
       PositionIJ ij = moveFromBoard(board, evaluation);
-      ui.setAnnotationsColor(Color.BLACK, ij);
       ui.setAnnotations(String.format("%.2f\n%.2f   %.2f", eval / 100F, -evaluation.getUpperBound() / 100F,
           -evaluation.getLowerBound() / 100F), ij);
     }
@@ -255,39 +227,36 @@ public class Main {
       if (ui.playBlackMoves() || ui.playWhiteMoves()) {
         playMoveIfPossible(bestIJ);
       }
-      ui.setAnnotationsColor(Color.RED, bestIJ);
+      ui.setBestMove(bestIJ);
     }
   }
   
   // The entry main() method
   public static void main(String[] args) throws FileNotFoundException, IOException {
     Main main = new Main();
+    UI ui = new DesktopUI(main);
+    main.setUI(ui);
   }
 
-  public void improveDataset() {
-    for (int i = 0; i < 1000; i++) {
-      try {
-        String file = "tmp/weird_positions_round_6_" + i + ".tmp";
-        DataOutputStream stream = new DataOutputStream(new FileOutputStream(file));
-        for (int j = 0; j < 60; j++) {
-          PositionIJ move = findBestMove(evaluator.evaluatePositionAll(board, ui.depth()));
-          if (move.i >= 0) {
-            playMoveIfPossible(move);
-          } else {
-            newGame();
-          }
-//          ObjectArrayList<Board> wrongPositions = this.evaluator.getWeirdPositions(20);
-//          for (Board wrongPosition : wrongPositions) {
-//            stream.writeLong(LoadDataset.littleToBigEndianLong(wrongPosition.getPlayer()));
-//            stream.writeLong(LoadDataset.littleToBigEndianLong(wrongPosition.getOpponent()));
+//  public void improveDataset() {
+//    for (int i = 0; i < 1000; i++) {
+//      try {
+//        String file = "tmp/weird_positions_round_6_" + i + ".tmp";
+//        DataOutputStream stream = new DataOutputStream(new FileOutputStream(file));
+//        for (int j = 0; j < 60; j++) {
+//          PositionIJ move = findBestMove(evaluator.evaluatePositionAll(board, ui.depth()));
+//          if (move.i >= 0) {
+//            playMoveIfPossible(move);
+//          } else {
+//            newGame();
 //          }
-        }
-        stream.flush();
-        stream.close();
-//        break;
-      } catch (IOException ex) {
-        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-      }
-    }
-  }
+//        }
+//        stream.flush();
+//        stream.close();
+////        break;
+//      } catch (IOException ex) {
+//        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+//      }
+//    }
+//  }
 }

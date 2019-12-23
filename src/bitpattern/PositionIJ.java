@@ -52,6 +52,6 @@ public class PositionIJ {
   
   @Override
   public String toString() {
-    return Character.toString('a' + (char) (j)) + (i + 1);
+    return Character.toString((char) (j + 'a')) + (i + 1);
   }
 }

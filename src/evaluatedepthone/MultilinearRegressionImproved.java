@@ -252,19 +252,20 @@ public class MultilinearRegressionImproved {
   
   public static void main(String args[]) {
     ArrayList<BoardWithEvaluation> testingSet = LoadDataset.loadTestingSet();
-    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-//    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
-    eval.reset((short) 0);
+//    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+//    eval.reset((short) 0);
+    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
     MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, testingSet);
     ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
 //    trainingSet.addAll(LoadDataset.loadOMGSet(170));
 
-    mr.train(trainingSet, 0.01F, 0.004F, 2);
-    mr.train(trainingSet, 0.01F, 0.002F, 2);
-    mr.train(trainingSet, 0.01F, 0.001F, 2);
-    mr.train(trainingSet, 0.01F, 0.0005F, 2);
-    mr.train(trainingSet, 0.01F, 0.0002F, 2);
-    mr.train(trainingSet, 0.01F, 0.0001F, 2);
+//    mr.train(trainingSet, 0.0F, 0.008F, 2);
+//    mr.train(trainingSet, 0.01F, 0.004F, 2);
+    mr.train(trainingSet, 0.01F, 0.002F, 1);
+    mr.train(trainingSet, 0.01F, 0.001F, 1);
+    mr.train(trainingSet, 0.01F, 0.0005F, 1);
+    mr.train(trainingSet, 0.01F, 0.0002F, 1);
+    mr.train(trainingSet, 0.01F, 0.0001F, 1);
     eval.save();
   }
 }

@@ -20,6 +20,7 @@ import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /**
@@ -42,7 +43,7 @@ public class SelfPlay extends Thread {
   }
   
   public synchronized Board bestMove(Board b, EvaluatorMCTS player) {
-    ObjectArrayList<StoredBoard> evaluations = player.evaluatePositionAll(b, 0);
+    ArrayList<StoredBoard> evaluations = player.evaluatePositionAll(b, 0);
     double best = Double.POSITIVE_INFINITY;
     double bestUpper = Double.POSITIVE_INFINITY;
     double bestPlayerVariates = Double.POSITIVE_INFINITY;

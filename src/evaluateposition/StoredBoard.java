@@ -18,7 +18,7 @@ import board.Board;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class StoredBoard {
-  public final static int N_SAMPLES = 10;
+  public final static int N_SAMPLES = 20;
   public long player = 0;
   public long opponent = 0;
   // Keep lower <= eval <= upper?????
@@ -42,14 +42,14 @@ public class StoredBoard {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();
     this.updateEval(eval, variance);
-    this.descendants = 1;
+    this.descendants = 0;
   }
   
   public StoredBoard(Board board, int eval, int variance, int deltas[]) {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();
     this.updateEval(eval, variance, deltas);
-    this.descendants = 1;
+    this.descendants = 0;
   }
   
   public boolean isLeaf() {
@@ -118,7 +118,7 @@ public class StoredBoard {
   public final void updateEval(int newEval, int variance, int deltas[]) {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
-    double weightNew = 0.4;
+    double weightNew = 0.6;
     double weightOld = Math.sqrt(1 - weightNew * weightNew);
     for (int i = 0; i < N_SAMPLES; i++) {
 //      System.out.println(deltas[i]);

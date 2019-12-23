@@ -419,15 +419,6 @@ public class EvaluatorLastMoves implements Serializable {
       flip |= curFlip;
     }
     return flip == moveBit ? 0 : flip;
-    
-//    long tmp = getFlipLast(move, opponent);
-//    if ((tmp & ~(player | opponent | (1L << move))) == 0) {
-//      return tmp;
-//    }
-//    return unsafe.getLongVolatile(flipHorizontal, position + hashRow(move, player, opponent) * 8) |
-//        unsafe.getLongVolatile(flipVertical, position + hashColumn(move, player, opponent) * 8) | 
-//        unsafe.getLongVolatile(flipDiagonal, position + hashDiagonal(move, player, opponent) * 8) | 
-//        unsafe.getLongVolatile(flipReverseDiagonal, position + hashRevDiagonal(move, player, opponent) * 8);
   }
   
   // EVALUATE.
@@ -456,26 +447,7 @@ public class EvaluatorLastMoves implements Serializable {
     boolean pass = true;
     int best = Integer.MIN_VALUE;
     int move;
-//    long neigh = neighborCases(lastFlip) & empties;
-//    while (neigh != 0) {
-//      move = Long.numberOfTrailingZeros(neigh & empties);      
-//      neigh = neigh & (~(1L << move));     
-//      empties = empties & (~(1L << move));
-////      if ((this.neighbors[move] & opponent) == 0) {
-////        continue;
-////      }
-//      long flip = getFlip(move, player, opponent);
-//      if (flip == 0) {
-//        continue;
-//      }
-//      best = Math.max(best, 
-//        -evaluateSuperFast(opponent & ~flip, player | flip, -beta, 
-//                           -Math.max(alpha, best), false, flip));
-//      pass = false;
-//      if (best >= beta) {
-//        return best;
-//      }
-//    }
+
     while (empties != 0) {
       move = Long.numberOfTrailingZeros(empties);      
       empties = empties & (~(1L << move));

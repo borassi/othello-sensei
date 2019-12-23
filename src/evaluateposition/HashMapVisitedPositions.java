@@ -37,11 +37,14 @@ public class HashMapVisitedPositions {
     boolean playerVariates;
     int alpha;
     int beta;
+    ObjectArrayList<StoredBoard> parents;
     
     public PositionToImprove(StoredBoard board, boolean playerVariates,
-        boolean playerIsStartingPlayer, StoredBoard firstPosition) {
+        boolean playerIsStartingPlayer, StoredBoard firstPosition,
+        ObjectArrayList<StoredBoard> parents) {
       this.board = board;
       this.playerIsStartingPlayer = playerIsStartingPlayer;
+      this.parents = parents;
       this.setAlphaBeta(firstPosition, playerVariates);
     }
   
@@ -98,19 +101,32 @@ public class HashMapVisitedPositions {
       if (getFull(b.player, b.opponent).isLeaf() && !b.isSolved()) {
         i++;
       }
+
       if (i == chosen) {
-        return new PositionToImprove(b, playerIsStartingPlayer, Math.random() > 0.5, this.firstPosition);
+        ObjectArrayList<StoredBoard> parents = new ObjectArrayList<>();
+        StoredBoard parent = b;
+        while (parent.fathers.size() > 0) {
+          parents.add(parent);
+          parent = parent.fathers.get((int) (Math.random() * parent.fathers.size()));
+        }
+        ObjectArrayList<StoredBoard> parentsReversed = new ObjectArrayList<>();
+        for (int p = parents.size() - 1; p >= 0; --p) {
+          parentsReversed.add(parents.get(p));
+        }
+        return new PositionToImprove(b, playerIsStartingPlayer, Math.random() > 0.5, this.firstPosition, parentsReversed);
       }
     }
     return null;
   }
 
   protected synchronized PositionToImprove nextPositionToImproveEndgame(
-      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer) {
+      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
+      ObjectArrayList<StoredBoard> parents) {
+    parents.add(father);
 //    System.out.println("ENDGAME");
     lastEndgame = true;
     if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition);
+      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
     }
     int bestValue = Integer.MIN_VALUE;
     StoredBoard best = null; 
@@ -126,15 +142,17 @@ public class HashMapVisitedPositions {
       // Opponent variates:
       best = this.bestChild(father);
     }
-    return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer);
+    return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer, parents);
   }
   boolean lastEndgame = false;
   protected synchronized PositionToImprove nextPositionToImproveStandard(
-      StoredBoard position, int sample, boolean playerVariates, boolean playerIsStartingPlayer) {
+      StoredBoard position, int sample, boolean playerVariates, boolean playerIsStartingPlayer,
+      ObjectArrayList<StoredBoard> parents) {
+    parents.add(position);
 //    System.out.println("STANDARD");
     lastEndgame = false;
     if (position.isLeaf()) {
-      return new PositionToImprove(position, playerVariates, playerIsStartingPlayer, this.firstPosition);
+      return new PositionToImprove(position, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
     }
     int bestValue = 6600;
     StoredBoard best = null; 
@@ -155,10 +173,11 @@ public class HashMapVisitedPositions {
         }
       }
     }
-    return nextPositionToImproveStandard(best, sample, !playerVariates, !playerIsStartingPlayer);
+    return nextPositionToImproveStandard(best, sample, !playerVariates, !playerIsStartingPlayer, parents);
   }
 
   protected synchronized PositionToImprove nextPositionToImprove() {
+    ObjectArrayList<StoredBoard> parents = new ObjectArrayList<StoredBoard>();
     StoredBoard positionToEvaluateLocal = this.firstPosition;
     if (positionToEvaluateLocal.isSolved()) {
       return null;
@@ -168,7 +187,8 @@ public class HashMapVisitedPositions {
       if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
 
         return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
-            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true);
+            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true,
+            parents);
       }
       sample = (sample + 1) % N_SAMPLES;
     }
@@ -190,7 +210,7 @@ public class HashMapVisitedPositions {
       }
     }
 //    System.out.println("Endgame: " + playerVariates);
-    return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true);
+    return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
   }
 
   private void empty() {
@@ -387,7 +407,7 @@ public class HashMapVisitedPositions {
     father.upper = Short.MIN_VALUE;
     father.bestVariationPlayer = Short.MIN_VALUE;
     father.bestVariationOpponent = Short.MIN_VALUE;
-    father.descendants = 1;
+//    father.descendants = 1;
 
     father.bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
 
@@ -397,7 +417,7 @@ public class HashMapVisitedPositions {
           -child.bestVariationOpponent);
       father.lower = (short) Math.max(father.lower, -child.upper);
       father.upper = (short) Math.max(father.upper, -child.lower);
-      father.descendants += child.descendants;
+//      father.descendants += child.descendants;
     }
     for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
       short tmp = Short.MIN_VALUE;
@@ -482,11 +502,11 @@ public class HashMapVisitedPositions {
    */
   public boolean boardChildrenAreCorrect(StoredBoard b) {
     if (b.isLeaf()) {
-      if (b.descendants != 1) {
-        System.out.println("The board " + b + " should have 1 descendant "
-          + "because it is a leaf. However, it has " + b.descendants + " descendants.");
-        return false;
-      }
+//      if (b.descendants != 1) {
+//        System.out.println("The board " + b + " should have 1 descendant "
+//          + "because it is a leaf. However, it has " + b.descendants + " descendants.");
+//        return false;
+//      }
       return true;
     }
 
@@ -547,7 +567,7 @@ public class HashMapVisitedPositions {
         "\n has a wrong number of fathers.\n" + board);
       return false;
     }
-    int descendants = 1;
+    int descendants = 0;
     for (long move : moves) {
       Board next = board.move(move);
       StoredBoard child = this.getFull(next.getPlayer(), next.getOpponent());
