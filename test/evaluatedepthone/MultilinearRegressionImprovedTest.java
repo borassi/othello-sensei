@@ -19,9 +19,6 @@ import java.util.ArrayList;
 import org.junit.Test;
 
 import board.Board;
-import board.BoardTest;
-import evaluatedepthone.patternhasher.Side;
-import helpers.LoadDataset;
 import static org.junit.Assert.assertEquals;
 
 public class MultilinearRegressionImprovedTest {
@@ -99,7 +96,10 @@ public class MultilinearRegressionImprovedTest {
 
     MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, trainingSet);
     
-    mr.train(trainingSet, 0, 0.5F, 20);
+    MultilinearRegressionImproved.Feature[][][] newEvals = mr.getFeatures();
+    mr.train(newEvals, trainingSet, 0, 0.05F, 20, false);
+    mr.setFeatures(newEvals);
+    
     for (BoardWithEvaluation b : trainingSet) {
       System.out.println(b.board);
       System.out.println(eval.eval(b.board) + " " + b.evaluation);

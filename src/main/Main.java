@@ -42,9 +42,9 @@ public class Main {
   ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
   private int depth = -1;
-  private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();// MultilinearRegression.load(EvaluatorAlphaBeta.DEPTH_ONE_EVALUATOR_FILEPATTERN);
-  private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-  private final EvaluatorLastMoves EVALUATOR_LAST_MOVES = new EvaluatorLastMoves();
+  private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
+  private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
+  private final EvaluatorLastMoves EVALUATOR_LAST_MOVES;
   /**
    * The board, as a pair of bitpattern.
    */
@@ -60,7 +60,9 @@ public class Main {
    * Creates a new UI and sets the initial position.
    */
   public Main() {
-    board = new Board();
+    DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
+    POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
+    EVALUATOR_LAST_MOVES = new EvaluatorLastMoves();
   }
   
   public void setUI(UI ui) {
@@ -207,6 +209,7 @@ public class Main {
     }
     if (ui.depth() <= 0) {
       showHashMapEvaluations();
+      return;
     }
     if (ui.depth() != depth) {
       this.changeDepth(ui.depth());

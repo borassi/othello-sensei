@@ -149,9 +149,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
           Board father = next.fathers.get(0).getBoard();
           lastMove = (father.getPlayer() | father.getOpponent());
         }
-        seenPositions = lastMovesEval.nVisited;
+        lastMovesEval.resetNVisited();
         int curEval = lastMovesEval.evaluatePosition(next.getBoard(), nextPos.alpha, nextPos.beta, lastMove);
-        seenPositions = lastMovesEval.nVisited - seenPositions;
+        seenPositions = lastMovesEval.getNVisited();
         updateEndgame(nextPos, curEval);
       } else {
         seenPositions = this.addPositions(next);
@@ -179,15 +179,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       }
       if (this.firstPosition.isPartiallySolved() &&
           this.firstPosition.eval != oldStable) {
-//        System.out.println("Stabilizing at " + this.firstPosition.eval);
+        System.out.println("Stabilizing at " + this.firstPosition.eval);
         oldStable = this.firstPosition.eval;
         this.setEvalGoal(this.firstPosition.eval);
 //        break;
-      } 
-//      System.out.println(this.firstPosition.getLowerBound() + " " + this.firstPosition.getUpperBound());
-//      if (this.firstPosition.evalGoal != this.firstPosition.eval) {
-////        super.setEvalGoal(Short.MAX_VALUE);
-//      }
+      }
       if (size > maxSize) {
 //        System.out.println("STOPPING SIZE");
         break;

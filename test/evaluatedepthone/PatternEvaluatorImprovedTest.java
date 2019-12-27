@@ -17,7 +17,6 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.util.ArrayList;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -27,8 +26,8 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class PatternEvaluatorImprovedTest {
-  static final PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-  static final PatternEvaluatorImproved evalForTest = new PatternEvaluatorImproved();
+  static final PatternEvaluatorImproved EVAL = new PatternEvaluatorImproved();
+  static final PatternEvaluatorImproved EVAL_FOR_TEST = new PatternEvaluatorImproved();
 
   @Test
   public void testHorizMirrorFeature() {
@@ -83,8 +82,8 @@ public class PatternEvaluatorImprovedTest {
    */
   @Test
   public void testHash() {
-    for (int i = 0; i < eval.features.length; ++i) {
-      long feature = eval.features[i];
+    for (int i = 0; i < EVAL.features.length; ++i) {
+      long feature = EVAL.features[i];
       ArrayList<Long> patterns = BitPattern.allSubBitPatterns(feature);
       Int2ObjectOpenHashMap<Board> foundPatterns = new Int2ObjectOpenHashMap<>();
       for (long player : patterns) {
@@ -94,15 +93,15 @@ public class PatternEvaluatorImprovedTest {
             break;
           }
           if ((player & opponent) == 0) {
-//            player = player | (((long) (Math.random() * Long.MAX_VALUE))
-//              & ~feature);
-//            opponent = opponent | (((long) (Math.random() * Long.MAX_VALUE))
-//              & ~feature & ~player);
-            eval.setup(player, opponent);
-            int hash = eval.baseHashes()[i];
+            player = player | (((long) (Math.random() * Long.MAX_VALUE))
+              & ~feature);
+            opponent = opponent | (((long) (Math.random() * Long.MAX_VALUE))
+              & ~feature & ~player);
+            EVAL.setup(player, opponent);
+            int hash = EVAL.baseHashes()[i];
             assert(hash >= 0);
-            assertEquals(eval.empties, new Board(player, opponent).getEmptySquares());
-            assert(hash <= eval.maxBaseHashes[i]);
+            assertEquals(EVAL.empties, new Board(player, opponent).getEmptySquares());
+            assert(hash <= EVAL.maxBaseHashes[i]);
             if (foundPatterns.containsKey(hash)) {
               System.out.println(BitPattern.patternToString(feature));
               System.out.println(new Board(player, opponent));
@@ -116,11 +115,11 @@ public class PatternEvaluatorImprovedTest {
       }
     }
   }
-//  @Test
-//  public void testAllFeatures() {
-//    assertEquals(PatternEvaluatorImproved.allFeatures(eval.FEATURE_CORNER_4X4).size(), 4);
-//    assertEquals(PatternEvaluatorImproved.allFeatures(eval.FEATURE_DIAGONAL).size(), 2);
-//  }
+  @Test
+  public void testAllFeatures() {
+    assertEquals(PatternEvaluatorImproved.allFeatures(PatternEvaluatorImproved.FEATURE_CORNER_4X4).size(), 4);
+    assertEquals(PatternEvaluatorImproved.allFeatures(PatternEvaluatorImproved.FEATURE_DIAGONAL).size(), 2);
+  }
   
   public String toStringBase3(int num, int max) {
     String result = "";
@@ -148,28 +147,28 @@ public class PatternEvaluatorImprovedTest {
       }
       long flip = moves[(int) (Math.random() * moves.length)];
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-      eval.setup(b);
-      eval.invert();
+      EVAL.setup(b);
+      EVAL.invert();
 //      System.out.println(b);
       if (flip != 0) {
-        eval.update(move, flip);
+        EVAL.update(move, flip);
       }
       Board after = b.move(flip);
-      evalForTest.setup(after);
+      EVAL_FOR_TEST.setup(after);
 //      System.out.println(after);
 //      System.out.println(new Board(eval.player, eval.opponent) + "\n\n\n\n");
 //      System.out.println(evalForTest);
-      assertEquals(eval.empties, evalForTest.empties);
+      assertEquals(EVAL.empties, EVAL_FOR_TEST.empties);
 //      assertEquals(eval.player, after.getPlayer());
 //      assertEquals(eval.opponent, after.getOpponent());
-      int[] actual = eval.baseHashes();
-      int[] expected = evalForTest.baseHashes();
+      int[] actual = EVAL.baseHashes();
+      int[] expected = EVAL_FOR_TEST.baseHashes();
       for (int j = 0; j < actual.length; ++j) {
         if (actual[j] != expected[j]) {
           assert(false);
         }
       }
-      assertArrayEquals(eval.baseHashes(), evalForTest.baseHashes());
+      assertArrayEquals(EVAL.baseHashes(), EVAL_FOR_TEST.baseHashes());
     }
   }
   
@@ -184,83 +183,62 @@ public class PatternEvaluatorImprovedTest {
       }
       long flip = moves[(int) (Math.random() * moves.length)];
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-      eval.setup(b);
-      eval.invert();
+      EVAL.setup(b);
+      EVAL.invert();
       if (flip != 0) {
-        eval.update(move, flip);
-        eval.undoUpdate(move, flip);
+        EVAL.update(move, flip);
+        EVAL.undoUpdate(move, flip);
       }
-      eval.invert();
-      evalForTest.setup(b);
-      int[] actual = eval.baseHashes();
-      int[] expected = evalForTest.baseHashes();
+      EVAL.invert();
+      EVAL_FOR_TEST.setup(b);
+      int[] actual = EVAL.baseHashes();
+      int[] expected = EVAL_FOR_TEST.baseHashes();
 //      assertEquals(eval.player, b.getPlayer());
 //      assertEquals(eval.opponent, b.getOpponent());
-      assertEquals(eval.empties, evalForTest.empties);
+      assertEquals(EVAL.empties, EVAL_FOR_TEST.empties);
       for (int j = 0; j < actual.length; ++j) {
         if (actual[j] != expected[j]) {
           System.out.println(b);
           System.out.println(move);
           System.out.println(BitPattern.patternToString(flip));
-          System.out.println(BitPattern.patternToString(
-              PatternEvaluatorImproved.featureToLong(eval.featuresToSquaresList.get(j))));
-          System.out.println(j + " " + toStringBase3(actual[j], eval.maxBaseHashes[j]) +
-              "    " + toStringBase3(expected[j], eval.maxBaseHashes[j]));
+          System.out.println(BitPattern.patternToString(PatternEvaluatorImproved.featureToLong(EVAL.featuresToSquaresList.get(j))));
+          System.out.println(j + " " + toStringBase3(actual[j], EVAL.maxBaseHashes[j]) +
+              "    " + toStringBase3(expected[j], EVAL.maxBaseHashes[j]));
           assert(false);
         }
       }
-      assertArrayEquals(eval.baseHashes(), evalForTest.baseHashes());
+      assertArrayEquals(EVAL.baseHashes(), EVAL_FOR_TEST.baseHashes());
     }
   }
   
-//  @Test
-//  public void testSetupFeaturesToSquare1() {
-//    assertEquals(eval.features[0], PatternEvaluatorImproved.FEATURE_DIAGONAL);
-//    assertEquals(eval.features[1], BitPattern.horizontalMirror(PatternEvaluatorImproved.FEATURE_DIAGONAL));
-//    assertEquals(eval.features[2], PatternEvaluatorImproved.FEATURE_CORNER_4X4);
-//    // 3 to 5 are rotations of corner.
-//    assertEquals(eval.features[6], PatternEvaluatorImproved.PATTERN_CORNER);
-//    assertEquals(eval.features[7], PatternEvaluatorImproved.PATTERN_LAST1);
-//    assertEquals(eval.features[8], PatternEvaluatorImproved.PATTERN_LAST2);
-//    assertEquals(eval.features[9], PatternEvaluatorImproved.PATTERN_LAST3);
-//    assertEquals(eval.features[10], PatternEvaluatorImproved.PATTERN_LAST4);
-//    
-//    for (int i = 0; i < 6; ++i) {
-//      assertArrayEquals(new int[] {i}, eval.featureToBaseFeature[i]);
-//    }
-//    for (int i = 6; i < eval.features.length; i += 5) {
-//      assertArrayEquals(new int[] {i, i+1, i+2, i+3, i+4}, eval.featureToBaseFeature[6 + (i - 6) / 5]);
-//    }
-//  }
-  
-//  @Test
-//  public void testSetupFeaturesToSquare() {
-//    assertEquals(eval.features[0], PatternEvaluatorImproved.FEATURE_DIAGONAL);
-//    assertEquals(eval.features[1], BitPattern.horizontalMirror(PatternEvaluatorImproved.FEATURE_DIAGONAL));
-//    assertEquals(eval.features[2], PatternEvaluatorImproved.FEATURE_CORNER_4X4);
-//    // 3 to 5 are rotations of corner 3x3.
-//    assertEquals(eval.features[6], PatternEvaluatorImproved.PATTERN_LAST1);
-//    assertEquals(eval.features[7], PatternEvaluatorImproved.PATTERN_LAST2);
-//    assertEquals(eval.features[8], PatternEvaluatorImproved.PATTERN_LAST3);
-//    assertEquals(eval.features[9], PatternEvaluatorImproved.PATTERN_LAST4);
-//    
-//    for (int i = 0; i < 6; ++i) {
-//      assertArrayEquals(new int[] {i}, eval.featureToBaseFeature[i]);
-//    }
-//    for (int i = 6; i < eval.features.length; i += 4) {
-//      assertArrayEquals(new int[] {i, i+1, i+2, i+3}, eval.featureToBaseFeature[6 + (i - 6) / 4]);
-//    }
-//  }
+  @Test
+  public void testSetupFeaturesToSquare() {
+    for (int i = 0; i < 20; i += 5) {
+      assertArrayEquals(new int[] {i, i+1, i+2, i+3, i+4}, EVAL.featureToBaseFeature[i / 5]);
+    }
+    assertEquals(EVAL.features[20], PatternEvaluatorImproved.FEATURE_IMPR_DIAGONAL);
+    assertEquals(EVAL.features[21], BitPattern.horizontalMirror(PatternEvaluatorImproved.FEATURE_IMPR_DIAGONAL));
+    assertEquals(EVAL.features[22], PatternEvaluatorImproved.FEATURE_CORNER_4X4);
+    // 23 to 25 are rotations of corner 4x4.
+    assertEquals(EVAL.features[26], PatternEvaluatorImproved.PATTERN_LAST1 << 16);
+//    assertEquals(EVAL.features[27], PatternEvaluatorImproved.PATTERN_LAST2);
+//    assertEquals(EVAL.features[28], PatternEvaluatorImproved.PATTERN_LAST3);
+//    assertEquals(EVAL.features[29], PatternEvaluatorImproved.PATTERN_LAST4);
+    
+    for (int i = 20; i < EVAL.features.length; ++i) {
+      assertArrayEquals(new int[] {i}, EVAL.featureToBaseFeature[i - 16]);
+    }
+  }
   
   @Test
   public void testEval() {
-    eval.randomizeEvals();
+    EVAL.randomizeEvals();
     for (int i = 0; i < 100000; ++i) {
       Board b = Board.randomBoard();
-      eval.setup(b);
-      if (eval.evalSlow() != eval.eval()) {
+      EVAL.setup(b);
+      if (EVAL.evalSlow() != EVAL.eval()) {
         System.out.println(b);
-        System.out.println(eval.evalVerbose());
+        System.out.println(EVAL.evalVerbose());
         assert(false);
       }
 //      assertEquals(eval.evalSlow(), eval.eval());
@@ -269,15 +247,15 @@ public class PatternEvaluatorImprovedTest {
 
   @Test
   public void testSave() {
-    eval.randomizeEvals();
-    eval.save("tmp/PatternEvaluatorImprovedTest.ser");
+    EVAL.randomizeEvals();
+    EVAL.save("tmp/PatternEvaluatorImprovedTest.ser");
     PatternEvaluatorImproved evalCopy = PatternEvaluatorImproved.load(
             "tmp/PatternEvaluatorImprovedTest.ser");
     for (int i = 0; i < 100; ++i) {
       Board b = Board.randomBoard();
-      eval.setup(b);
+      EVAL.setup(b);
       evalCopy.setup(b);
-      assertEquals(eval.eval(), evalCopy.eval());
+      assertEquals(EVAL.evalSlow(), evalCopy.evalSlow());
     }
   }
   
