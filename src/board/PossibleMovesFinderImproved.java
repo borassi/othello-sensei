@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import main.Main;
 
 public class PossibleMovesFinderImproved implements Serializable {
 
@@ -933,10 +934,8 @@ public class PossibleMovesFinderImproved implements Serializable {
   }
 
   public final void save(String file) {
-    try (FileOutputStream fileOut = new FileOutputStream(file); 
-         ObjectOutputStream out = new ObjectOutputStream(fileOut)) {
+    try (ObjectOutputStream out = Main.fileAccessor.outputFile(file)) {
       out.writeObject(this);
-      fileOut.close();
     } catch (IOException e) {
     }
     System.out.println("Serialized data is saved.");
@@ -948,14 +947,13 @@ public class PossibleMovesFinderImproved implements Serializable {
 
   public static PossibleMovesFinderImproved load(String filename) {
     PossibleMovesFinderImproved result;
-    try (ObjectInputStream in = new ObjectInputStream(
-        new FileInputStream(SERIALIZE_FILEPATTERN))) {
+    try (ObjectInputStream in = Main.fileAccessor.inputFile(filename)) {
       result = (PossibleMovesFinderImproved) in.readObject();
     } catch (IOException | ClassNotFoundException e) {
       e.printStackTrace();
       return new PossibleMovesFinderImproved();
     }
-    return result;    
+    return result;
   }
   
   private void initNumberedVariables() {

@@ -38,8 +38,6 @@ import javax.swing.SpinnerModel;
 import board.Board;
 import java.util.Arrays;
 import javax.swing.SpinnerListModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import main.Main;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {

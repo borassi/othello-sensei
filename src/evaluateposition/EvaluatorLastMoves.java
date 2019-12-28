@@ -31,6 +31,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import main.Main;
 import sun.misc.Unsafe;
 
 /**
@@ -85,12 +86,10 @@ public class EvaluatorLastMoves implements Serializable {
   }
   public void save(String file) {
     try {
-       FileOutputStream fileOut = new FileOutputStream(file);
-       ObjectOutputStream out = new ObjectOutputStream(fileOut);
+       ObjectOutputStream out = Main.fileAccessor.outputFile(file);
        out.writeObject(this);
        out.close();
-       fileOut.close();
-       System.out.println("Saved pattern evaluator.");
+       System.out.println("Saved evaluator last moves.");
     } catch (IOException e) {
        e.printStackTrace();
     }
@@ -111,7 +110,7 @@ public class EvaluatorLastMoves implements Serializable {
    */
   public static EvaluatorLastMoves load(String filepath) {
     EvaluatorLastMoves result;
-    try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filepath))) {
+    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
       result = (EvaluatorLastMoves) in.readObject();
     } catch (IOException | ClassNotFoundException | ClassCastException e) {
       System.out.println("Error when loading the PatternEvaluator:\n" + 
@@ -569,10 +568,9 @@ public class EvaluatorLastMoves implements Serializable {
         result[0].flip = 0;
         result[1].move = -1;
         return 1;
-      } else {
-        result[0].move = -1;
-        return 0;
       }
+      result[0].move = -1;
+      return 0;
     }
     return nMoves;
   }

@@ -53,7 +53,7 @@ public class Main {
    * The user interface.
    */
   UI ui;
-  
+  public static FileAccessor fileAccessor = new DesktopFileAccessor();
   EvaluatorMCTS evaluator;
   
   /**
@@ -62,7 +62,7 @@ public class Main {
   public Main() {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-    EVALUATOR_LAST_MOVES = new EvaluatorLastMoves();
+    EVALUATOR_LAST_MOVES = EvaluatorLastMoves.load();
   }
   
   public void setUI(UI ui) {

@@ -38,6 +38,7 @@ public class MultilinearRegressionImproved {
   class Feature {
     public float eval;
     public int appearences = 0;
+    public float squaredError = 1200F * 1200F / 42F;
     
     public Feature() {}
     
@@ -109,14 +110,25 @@ public class MultilinearRegressionImproved {
       }
 //      System.out.println(correctEval);
 //      System.out.println(eval);
-      
+      double expectedSquaredError = 0;
+      for (int i = 0; i < curHashes.length; ++i) {
+        expectedSquaredError += curEval[i][curHashes[i]].squaredError;
+      }
+//      if (speed > 0 && Math.random() < 0.001) {
+//        System.out.println(Math.sqrt(expectedSquaredError) + " " + error);
+//      }
       for (int i = 0; i < curHashes.length; ++i) {
         Feature feature = curEval[i][curHashes[i]];
         if (updateAppearences) {
           feature.appearences = Math.min(100000, feature.appearences + 1);
         } else {
-          double ridgeUpdateSize = 2 * speed * (error - lambda * feature.eval)
-              / Math.min(100, Math.max(feature.appearences, 5)); // Math.signum(error) * 600; //
+          double expectedErrorUpdateSize = 2 * speed * (error * error - expectedSquaredError);
+          feature.squaredError += expectedErrorUpdateSize;
+          feature.squaredError = (float) Math.max(Math.min(
+              feature.squaredError + expectedErrorUpdateSize, 3000 * 3000 / 42.0), 200 * 200 / 42.0);
+
+          double ridgeUpdateSize = 2 * speed * (error - lambda * feature.eval) * 800 / Math.sqrt(expectedSquaredError);
+//              / Math.min(1000, Math.max(feature.appearences, 5)); // Math.signum(error) * 600; //
           feature.eval += ridgeUpdateSize;
           feature.eval = Math.max(Math.min(feature.eval, 1500), -1500);
         }
@@ -293,18 +305,17 @@ public class MultilinearRegressionImproved {
 //    trainingSet.addAll(LoadDataset.loadOMGSet(170));
     Feature features[][][] = mr.getFeatures();
     mr.train(features, trainingSet, 0.01F, 0F, 1, true);
-//    mr.train(features, trainingSet, 0.01F, 0.002F, 1, false);
-//    mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);
-//    mr.train(features, trainingSet, 0.01F, 0.0005F, 1, false);
-//    mr.train(features, trainingSet, 0.01F, 0.0002F, 1, false);
+    mr.train(features, trainingSet, 0.01F, 0.002F, 1, false);
     mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.01F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.1F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 1F, 1, false);
-    mr.train(features, trainingSet, 0F, 1F, 1, false);
+    mr.train(features, trainingSet, 0.01F, 0.0005F, 1, false);
+    mr.train(features, trainingSet, 0.01F, 0.0002F, 1, false);
+    mr.train(features, trainingSet, 0.01F, 0.0001F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.01F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.1F, 1, false);
+//    mr.train(features, trainingSet, 0F, 0.01F, 1, false);
 //    mr.train(features, trainingSet, 0.01F, 0.01F, 1, false);
 //    mr.train(features, trainingSet, 0.01F, 0.01F, 1, false);
     mr.setFeatures(features);
-    eval.save();
+//    eval.save();
   }
 }

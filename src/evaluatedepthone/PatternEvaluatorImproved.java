@@ -27,6 +27,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
+import main.Main;
 
 /**
  *
@@ -635,11 +636,9 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   public void save(String file) {
     try {
-       FileOutputStream fileOut = new FileOutputStream(file);
-       ObjectOutputStream out = new ObjectOutputStream(fileOut);
+       ObjectOutputStream out = Main.fileAccessor.outputFile(file);
        out.writeObject(this);
        out.close();
-       fileOut.close();
        System.out.println("Saved pattern evaluator.");
     } catch (IOException e) {
        e.printStackTrace();
@@ -657,7 +656,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
    */
   public static PatternEvaluatorImproved load(String filepath) {
     PatternEvaluatorImproved result;
-    try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filepath))) {
+    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
       result = (PatternEvaluatorImproved) in.readObject();
     } catch (IOException | ClassNotFoundException | ClassCastException e) {
       System.out.println("Error when loading the PatternEvaluator:\n" + 
