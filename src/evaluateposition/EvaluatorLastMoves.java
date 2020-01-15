@@ -436,7 +436,7 @@ public class EvaluatorLastMoves implements Serializable {
     return -evalOneEmpty(opponent, player, true);
   }
   
-  private int evaluateSuperFast(long player, long opponent, int alpha, int beta,
+  private int evaluateSuperFast(long player, long opponent, int lower, int upper,
                                 boolean passed, long lastFlip) {
     if (!passed) {
       nVisited++;
@@ -461,10 +461,10 @@ public class EvaluatorLastMoves implements Serializable {
         continue;
       }
       best = Math.max(best, 
-        -evaluateSuperFast(opponent & ~flip, player | flip, -beta, 
-                           -Math.max(alpha, best), false, flip));
+        -evaluateSuperFast(opponent & ~flip, player | flip, -upper, 
+                           -Math.max(lower, best), false, flip));
       pass = false;
-      if (best >= beta) {
+      if (best >= upper) {
         return best;
       }
     }
@@ -473,7 +473,7 @@ public class EvaluatorLastMoves implements Serializable {
       if (passed) {
         return BitPattern.getEvaluationGameOver(player, opponent);
       }
-      return -evaluateSuperFast(opponent, player, -beta, -alpha, true, 0);
+      return -evaluateSuperFast(opponent, player, -upper, -lower, true, 0);
     }
     return best;
   }
@@ -606,12 +606,12 @@ public class EvaluatorLastMoves implements Serializable {
     return nMoves;
   }
 
-  private int evaluateRecursive(long player, long opponent, int alpha, int beta,
+  private int evaluateRecursive(long player, long opponent, int lower, int upper,
                                 long lastMove, int depth) {
     long empties = ~(player | opponent);
     int nEmpties = Long.bitCount(empties);
     if (nEmpties <= EMPTIES_FOR_FAST) {
-      return evaluateFast(player, opponent, alpha, beta, false, lastMove, depth);
+      return evaluateFast(player, opponent, lower, upper, false, lastMove, depth);
     }
     nVisited++;
 
@@ -630,12 +630,12 @@ public class EvaluatorLastMoves implements Serializable {
         this.depthOneEval.update(move.move, flip);
       }
       best = Math.max(best, 
-        -evaluateRecursive(opponent & ~flip, player | flip, -beta, 
-                           -Math.max(alpha, best), flip, depth + 1));
+        -evaluateRecursive(opponent & ~flip, player | flip, -upper, 
+                           -Math.max(lower, best), flip, depth + 1));
       if (flip != 0) {
         this.depthOneEval.undoUpdate(move.move, flip);
       }
-      if (best >= beta) {
+      if (best >= upper) {
         break;
       }
     }
@@ -646,12 +646,12 @@ public class EvaluatorLastMoves implements Serializable {
     return best;
   }
 
-  private int evaluateFast(long player, long opponent, int alpha, int beta,
-                               boolean passed, long lastMove, int depth) {
+  private int evaluateFast(long player, long opponent, int lower, int upper,
+                           boolean passed, long lastMove, int depth) {
     long empties = ~(player | opponent);
     int nEmpties = Long.bitCount(empties);
     if (nEmpties <= EMPTIES_FOR_SUPER_FAST) {
-      return evaluateSuperFast(player, opponent, alpha, beta, false, lastMove);
+      return evaluateSuperFast(player, opponent, lower, upper, false, lastMove);
     }
     nVisited++;
     if (nEmpties == 1) {
@@ -683,14 +683,14 @@ public class EvaluatorLastMoves implements Serializable {
           continue;
         }
         best = Math.max(best, 
-          -evaluateFast(opponent & ~flip, player | flip, -beta, 
-                             -Math.max(alpha, best), false, flip, depth + 1));
+          -evaluateFast(opponent & ~flip, player | flip, -upper, 
+                             -Math.max(lower, best), false, flip, depth + 1));
         pass = false;
-        if (best >= beta) {
+        if (best >= upper) {
           break;
         }
       }
-      if (best >= beta) {
+      if (best >= upper) {
         break;
       }
     }
@@ -698,12 +698,12 @@ public class EvaluatorLastMoves implements Serializable {
       if (passed) {
         return BitPattern.getEvaluationGameOver(player, opponent);
       }
-      return -evaluateFast(opponent, player, -beta, -alpha, true, 0, depth);
+      return -evaluateFast(opponent, player, -upper, -lower, true, 0, depth);
     }
     return best;
   }
   
-  public int evaluatePosition(Board b, int alpha, int beta, long lastMove) {
+  public int evaluatePosition(Board b, int lower, int upper, long lastMove) {
     long player = b.getPlayer();
     long opponent = b.getOpponent();
     if (~(player & opponent) == 0) {
@@ -712,7 +712,7 @@ public class EvaluatorLastMoves implements Serializable {
     nVisited--;
     
     this.depthOneEval.setup(player, opponent);
-    return evaluateRecursive(player, opponent, alpha, beta, lastMove, 0);
+    return evaluateRecursive(player, opponent, lower, upper, lastMove, 0);
   }
   
   public void resetNVisited() {
