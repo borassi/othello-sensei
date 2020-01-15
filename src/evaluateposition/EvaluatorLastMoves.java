@@ -81,7 +81,7 @@ public class EvaluatorLastMoves implements Serializable {
       return Float.compare(eval - 0.3F * error, other.eval - 0.3F * other.error);
     }
   }
-  
+
   public void save() {
     save(EVALUATOR_LAST_MOVES_FILEPATTERN);
   }
