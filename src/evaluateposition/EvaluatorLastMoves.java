@@ -74,10 +74,11 @@ public class EvaluatorLastMoves implements Serializable {
     int move;
     long flip;
     int eval;
+    float error;
     
     @Override
     public int compareTo(Move other) {
-      return Integer.compare(eval, other.eval);
+      return Float.compare(eval - 0.3F * error, other.eval - 0.3F * other.error);
     }
   }
   
@@ -596,6 +597,7 @@ public class EvaluatorLastMoves implements Serializable {
       curMove.flip = flip;
       this.depthOneEval.update(move, flip);
       curMove.eval = this.depthOneEval.eval();
+      curMove.error = this.depthOneEval.lastError();
       this.depthOneEval.undoUpdate(move, flip);
       ++nMoves;
     }

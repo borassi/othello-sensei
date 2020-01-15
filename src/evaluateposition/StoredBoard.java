@@ -118,7 +118,7 @@ public class StoredBoard {
   public final void updateEval(int newEval, float variance, int deltas[]) {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
-    double weightNew = 0.4;
+    double weightNew = 0.8;
     double weightOld = Math.sqrt(1 - weightNew * weightNew);
     for (int i = 0; i < N_SAMPLES; i++) {
 //      System.out.println(deltas[i]);

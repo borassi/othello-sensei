@@ -205,15 +205,15 @@ public class Main {
   }
   
   public void evaluate() {
+    if (ui.depth() <= 0) {
+      showHashMapEvaluations();
+      return;
+    }
     if (ui.playBlackMoves() && !blackTurn) {
       return;
     }
     
     if (ui.playWhiteMoves() && blackTurn) {
-      return;
-    }
-    if (ui.depth() <= 0) {
-      showHashMapEvaluations();
       return;
     }
     if (ui.depth() != depth) {
