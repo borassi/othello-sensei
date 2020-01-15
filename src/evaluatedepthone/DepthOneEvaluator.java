@@ -17,6 +17,7 @@ package evaluatedepthone;
 import board.Board;
 
 public interface DepthOneEvaluator {
+  public float lastError();
   public int eval();
   public int eval(long player, long opponent);
   public int evalVerbose(long player, long opponent);

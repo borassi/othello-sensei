@@ -35,15 +35,32 @@ public class MultilinearRegressionImproved {
     this.testingSet = testingSet;
   }
   
-  class Feature {
-    public float eval;
+  static class Feature {
+    public float eval; // Between -1500 and 1500
     public int appearences = 0;
-    public float squaredError = 1200F * 1200F / 42F;
-    
-    public Feature() {}
-    
-    public Feature(float eval) {
-      this.eval = eval;
+    public float squaredError = 1200F * 1200F / 42F; // Between 2000 * 2000, 200 * 200 / 42.0
+    public PatternEvaluatorImproved patternEvaluator;
+
+    public Feature(PatternEvaluatorImproved patternEvaluator) {
+      this.patternEvaluator = patternEvaluator;
+    }
+
+    public Feature(PatternEvaluatorImproved patternEvaluator, long eval) {
+      this(patternEvaluator);
+      this.eval = eval >> PatternEvaluatorImproved.EVAL_SHIFT;
+      if (eval == 0) {
+        this.squaredError = (1200F * 1200F) / patternEvaluator.evals[0].length;
+      } else {
+        this.squaredError = eval - ((eval >> PatternEvaluatorImproved.EVAL_SHIFT) << PatternEvaluatorImproved.EVAL_SHIFT);
+      }
+    }
+
+    public long toLong() {
+      long evalPart = ((long) Math.round(eval)) << PatternEvaluatorImproved.EVAL_SHIFT;
+      assert(Long.MAX_VALUE / patternEvaluator.evals[0].length > evalPart);
+      int errorPart = (int) (Math.round(squaredError));
+      assert((double) errorPart * patternEvaluator.evals[0].length < (1L << PatternEvaluatorImproved.EVAL_SHIFT));
+      return evalPart + errorPart;
     }
   }
   
@@ -59,10 +76,10 @@ public class MultilinearRegressionImproved {
           continue;
         }
         features[i][j] = new Feature[patternEvaluator.evals[i][j].length];
-        int[] evalsIJ = patternEvaluator.evals[i][j];
+        long[] evalsIJ = patternEvaluator.evals[i][j];
         Feature[] featuresIJ = features[i][j];
         for (int k = 0; k < featuresIJ.length; ++k) {
-          featuresIJ[k] = new Feature(evalsIJ[k]);
+          featuresIJ[k] = new Feature(patternEvaluator, evalsIJ[k]);
         }
       }
     }
@@ -72,10 +89,14 @@ public class MultilinearRegressionImproved {
   protected void setFeatures(Feature[][][] newEvals) {
     for (int i = 0; i < newEvals.length; ++i) {
       for (int j = 0; j < newEvals[i].length; ++j) {
+        if (j > 0 && newEvals[i][j] == newEvals[i][j-1]) {
+          patternEvaluator.evals[i][j] = patternEvaluator.evals[i][j-1];
+          continue;
+        }
         Feature[] newEvalsIJ = newEvals[i][j];
-        int[] evalsIJ = patternEvaluator.evals[i][j];
+        long[] evalsIJ = patternEvaluator.evals[i][j];
         for (int k = 0; k < evalsIJ.length; ++k) {
-          evalsIJ[k] = (int) (newEvalsIJ[k].eval + 0.5);
+          evalsIJ[k] = newEvalsIJ[k].toLong();
         }
       }
     }
@@ -122,12 +143,13 @@ public class MultilinearRegressionImproved {
         if (updateAppearences) {
           feature.appearences = Math.min(100000, feature.appearences + 1);
         } else {
-          double expectedErrorUpdateSize = 2 * speed * (error * error - expectedSquaredError);
+          float expectedErrorUpdateSize = (float) (2 * speed * (error * error - expectedSquaredError));
           feature.squaredError += expectedErrorUpdateSize;
-          feature.squaredError = (float) Math.max(Math.min(
-              feature.squaredError + expectedErrorUpdateSize, 3000 * 3000 / 42.0), 200 * 200 / 42.0);
+          feature.squaredError = (float) Math.max(
+              Math.min(feature.squaredError, 2000 * 2000),
+              200.0 * 200.0 / this.patternEvaluator.evals[0].length);
 
-          double ridgeUpdateSize = 2 * speed * (error - lambda * feature.eval) * 800 / Math.sqrt(expectedSquaredError);
+          double ridgeUpdateSize = 2 * speed * (error - lambda * feature.eval);// * 800 / Math.sqrt(expectedSquaredError);
 //              / Math.min(1000, Math.max(feature.appearences, 5)); // Math.signum(error) * 600; //
           feature.eval += ridgeUpdateSize;
           feature.eval = Math.max(Math.min(feature.eval, 1500), -1500);
@@ -282,6 +304,7 @@ public class MultilinearRegressionImproved {
       double error = be.evaluation - eval(
           evals[PatternEvaluatorImproved.getEvalFromEmpties(be.board.getEmptySquares())],
           patternEvaluator.hashes());
+//      System.out.println(error);
       double errorSquared = error * error;
       int slice = 1 + be.board.getEmptySquares() * n / 60;
       sumErrorForEmpties[0] += errorSquared;
@@ -295,16 +318,17 @@ public class MultilinearRegressionImproved {
     return sumErrorForEmpties;
   }
   
+  // TODO: RUN ONCE!!
   public static void main(String args[]) {
     ArrayList<BoardWithEvaluation> testingSet = LoadDataset.loadTestingSet();
 //    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
 //    eval.reset(0);
-    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load("coefficients/pattern_evaluator_improved_ok.sar");
+    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load(); // "coefficients/pattern_evaluator_improved1.sar");
     MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, testingSet);
     ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
 //    trainingSet.addAll(LoadDataset.loadOMGSet(170));
     Feature features[][][] = mr.getFeatures();
-    mr.train(features, trainingSet, 0.01F, 0F, 1, true);
+//    mr.train(features, trainingSet, 0.01F, 0F, 1, true);
     mr.train(features, trainingSet, 0.01F, 0.002F, 1, false);
     mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);
     mr.train(features, trainingSet, 0.01F, 0.0005F, 1, false);
@@ -316,6 +340,6 @@ public class MultilinearRegressionImproved {
 //    mr.train(features, trainingSet, 0.01F, 0.01F, 1, false);
 //    mr.train(features, trainingSet, 0.01F, 0.01F, 1, false);
     mr.setFeatures(features);
-//    eval.save();
+    eval.save();
   }
 }

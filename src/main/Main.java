@@ -68,6 +68,7 @@ public class Main {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
+    setBoard(new Board("--OOO-------XX-OOOOOOXOO-OOOOXOOX-OOOXXO---OOXOO---OOOXO--OOOO--", true), true); // 43
   }
 
   public final void changeDepth(int depth) {
@@ -112,8 +113,12 @@ public class Main {
   }
   
   public void newGame() {
-    this.board = new Board();
-    this.blackTurn = true;
+    setBoard(new Board(), true);
+  }
+  
+  public void setBoard(Board b, boolean blackTurn) {
+    this.board = b;
+    this.blackTurn = blackTurn;
     this.oldBoards.clear();
     this.oldBlackTurns.clear();
     ui.setCases(board, blackTurn);

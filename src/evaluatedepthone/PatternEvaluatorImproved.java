@@ -38,6 +38,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
    * Needed to implement Serializable.
    */
   private static final long serialVersionUID = 1L;
+  public final static int EVAL_SHIFT = 32;
   public static final String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
           "coefficients/pattern_evaluator_improved1.sar";
   long features[];
@@ -140,7 +141,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
-                                                          + "-XXXXXX-\n"
+                                                          + "--XXXX--\n"
                                                           + "--------\n"
                                                           + "--------\n");
 
@@ -148,7 +149,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
-                                                          + "-XXXXXX-\n"
+                                                          + "--XXXX--\n"
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n");
@@ -172,7 +173,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     {FEATURE_DIAGONAL << 16},
   };
   
-  int featureToBaseFeature[][];
+  static int featureToBaseFeature[][];
 
   int squaresToFeatureSingle[][] = new int[64][];
   int squaresToFeatureDouble[][] = new int[64][];
@@ -181,8 +182,9 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   int empties;
   int[] maxBaseHashes;
   int[] emptyBaseHashes;
+  float lastError;
 
-  int[][][] evals;
+  long[][][] evals;
 
   static final int[] longToFeature(long pattern) {
     IntArrayList feature = new IntArrayList();
@@ -269,89 +271,11 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return hashes;
   }
 
-//  public int[] hashes() {
-//    for (int i = 0; i < featureToBaseFeature.length; ++i) {
-//      hashes[i] = 0;
-//      int j = 0;
-//      while (baseHashes[featureToBaseFeature[i][j]] == emptyBaseHashes[featureToBaseFeature[i][j]] &&
-//             j < featureToBaseFeature[i].length - 1) {
-//        ++j;
-//        hashes[i] += (maxBaseHashes[featureToBaseFeature[i][0]] + 1);
-//      }
-//      hashes[i] += baseHashes[featureToBaseFeature[i][j]];
-//    }
-//    return hashes;
-//  }
-  
-  public int evalVerbose() {
-//    float[][] curEvals = evals[getEvalFromEmpties(empties)];
-//    System.out.println("NWSE Diag: " + curEvals[0][baseHashes[0]]);
-//    System.out.println("NESW Diag: " + curEvals[0][baseHashes[1]]);
-//    System.out.println("SE Corner: " + curEvals[2][baseHashes[2]]);
-//    System.out.println("NE Corner: " + curEvals[2][baseHashes[3]]);
-//    System.out.println("NW Corner: " + curEvals[2][baseHashes[4]]);
-//    System.out.println("SW Corner: " + curEvals[2][baseHashes[5]]);
-//    
-//    int eval = 0;
-//    if (baseHashes[6] != 3280) {
-//      eval += curEvals[6][baseHashes[6] + baseHashes[7] * 6561];
-//    } else if (baseHashes[7] != 3280) {
-//      eval += curEvals[6][43046721 + baseHashes[7] + baseHashes[8] * 6561]; 
-//    } else {
-//      eval += curEvals[6][86093442 + baseHashes[8] + baseHashes[9] * 6561]; 
-//    }
-//    System.out.println("S Edge:    " + eval);
-//    eval = 0;
-//    
-//    if (baseHashes[10] != 3280) {
-//      eval += curEvals[6][baseHashes[10] + baseHashes[11] * 6561];
-//    } else if (baseHashes[11] != 3280) {
-//      eval += curEvals[6][43046721 + baseHashes[11] + baseHashes[12] * 6561]; 
-//    } else {
-//      eval += curEvals[6][86093442 + baseHashes[12] + baseHashes[13] * 6561]; 
-//    }
-//    System.out.println("E Edge:    " + eval);
-//    eval = 0;
-//  
-//    if (baseHashes[14] != 3280) {
-//      eval += curEvals[6][baseHashes[14] + baseHashes[15] * 6561];
-//    } else if (baseHashes[15] != 3280) {
-//      eval += curEvals[6][43046721 + baseHashes[15] + baseHashes[16] * 6561]; 
-//    } else {
-//      eval += curEvals[6][86093442 + baseHashes[16] + baseHashes[17] * 6561]; 
-//    }
-//    System.out.println("N Edge:    " + eval);
-//    eval = 0;
-////    eval += baseHashes[18] != 3280 ?
-////        eval9[baseHashes[18] + baseHashes[19] * 6561] :
-////        baseHashes[19] != 3280 ?
-////            eval9[43046721 + baseHashes[19] + baseHashes[20] * 6561] :
-////            eval9[86093442 + baseHashes[20] + baseHashes[21] * 6561];
-//    
-//    if (baseHashes[18] != 3280) {
-//      eval += curEvals[6][baseHashes[18] + baseHashes[19] * 6561];
-//    } else if (baseHashes[19] != 3280) {
-//      eval += curEvals[6][43046721 + baseHashes[19] + baseHashes[20] * 6561]; 
-//    } else {
-//      eval += curEvals[6][86093442 + baseHashes[20] + baseHashes[21] * 6561]; 
-//    }
-//    System.out.println("W Edge:    " + eval);
-////    eval = 0;
-    
-    return eval();
-  }
-  
-//    {PATTERN_CORNER, PATTERN_SM_LAST1, PATTERN_SM_LAST2, PATTERN_LAST3, PATTERN_LAST4},
-//    {FEATURE_IMPR_DIAGONAL},
-//    {FEATURE_CORNER_4X4},
-//    {PATTERN_LAST1 << 16}, 
-//    {PATTERN_LAST1 << 24},
-//    {FEATURE_DIAGONAL << 8},
-//    {FEATURE_DIAGONAL << 16},
+  @Override
   public int eval() {
 //    return this.evalSlow();
-    int[][] curEvals = evals[getEvalFromEmpties(empties)];
-    int eval = 0;
+    long[][] curEvals = evals[getEvalFromEmpties(empties)];
+    long eval = 0;
     
     if (baseHashes[0] != 40) {
       eval += curEvals[0][baseHashes[0] + baseHashes[1] * 81];
@@ -366,11 +290,11 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     if (baseHashes[5] != 40) {
       eval += curEvals[0][baseHashes[5] + baseHashes[6] * 81];
     } else if (baseHashes[6] != 364) {
-      eval += curEvals[0][59049 + baseHashes[6] + baseHashes[7] * 729]; 
+      eval += curEvals[0][59049 + baseHashes[6] + baseHashes[7] * 729];
     } else if (baseHashes[7] != 40) {
-      eval += curEvals[0][118098 + baseHashes[7] + baseHashes[8] * 81]; 
+      eval += curEvals[0][118098 + baseHashes[7] + baseHashes[8] * 81];
     } else {
-      eval += curEvals[0][124659 + baseHashes[8] + baseHashes[9] * 81]; 
+      eval += curEvals[0][124659 + baseHashes[8] + baseHashes[9] * 81];
     }
     
     if (baseHashes[10] != 40) {
@@ -393,7 +317,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
       eval += curEvals[0][124659 + baseHashes[18] + baseHashes[19] * 81]; 
     }
     // TODO: Replace eval1 with eval0, eval3 with eval2, etc.
-    return eval + curEvals[4][baseHashes[20]] + curEvals[4][baseHashes[21]] + // Diagonals
+    eval += curEvals[4][baseHashes[20]] + curEvals[4][baseHashes[21]] + // Diagonals
         curEvals[6][baseHashes[22]] + curEvals[6][baseHashes[23]] +           // Corner
         curEvals[6][baseHashes[24]] + curEvals[6][baseHashes[25]] +           // Corner
         curEvals[10][baseHashes[26]] + curEvals[10][baseHashes[27]] +         // Central column
@@ -404,22 +328,35 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
         curEvals[18][baseHashes[36]] + curEvals[18][baseHashes[37]] +         // Diag-1
         curEvals[22][baseHashes[38]] + curEvals[22][baseHashes[39]] +         // Diag-2
         curEvals[22][baseHashes[40]] + curEvals[22][baseHashes[41]];          // Diag-2
+    return getEvalAndSetupLastError(eval);
+  }
+  
+  public int getEvalAndSetupLastError(long eval) {
+    long evalValue = eval >> 32;
+    this.lastError = (float) Math.sqrt(eval - (evalValue << 32));
+    return (int) evalValue;
+  }
+  
+  @Override
+  public float lastError() {
+    return this.lastError;
   }
   
   public static final int getEvalFromEmpties(int empties) {
     return Math.min((empties - 1) * EMPTIES_SPLITS / 60, EMPTIES_SPLITS - 1);
   }
 
+  // WARNING: RETURNS EVAL * 2^15 + ERROR
   public int evalSlow() {
-    int eval = 0;
+    long eval = 0;
     int[] curHashes = hashes();
-    int[][] curEval = evals[getEvalFromEmpties(empties)];
+    long[][] curEval = evals[getEvalFromEmpties(empties)];
     for (int i = 0; i < curEval.length; ++i) {
       eval += curEval[i][curHashes[i]];
     }
-    return eval;
+    return getEvalAndSetupLastError(eval);
   }
-  
+
   public int eval(Board b) {
     return this.eval(b.getPlayer(), b.getOpponent());
   }
@@ -537,7 +474,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     featureToBaseFeature = new int[featureToBaseFeaturesList.size()][];
     for (int i = 0; i < featureToBaseFeaturesList.size(); ++i) {
       featureToBaseFeature[i] = featureToBaseFeaturesList.get(i).toArray(new int[featureToBaseFeaturesList.get(i).size()]);
-    }
+    }    
   }
   
   public PatternEvaluatorImproved() {
@@ -553,7 +490,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     emptyBaseHashes = new int[featuresToSquaresList.size()];
     baseHashes = new int[featuresToSquaresList.size()];
     hashes = new int[featureToBaseFeature.length];
-    evals = new int[EMPTIES_SPLITS][hashes.length][];
+    evals = new long[EMPTIES_SPLITS][hashes.length][];
 
     for (int i = 0; i < 64; ++i) {
       squaresToFeatureSingleList[i] = new IntArrayList();
@@ -593,13 +530,13 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
           continue;
         }
         if (featureToBaseFeature[i].length == 1) {
-          evals[emptiesGroup][i] = new int[maxBaseHashes[featureToBaseFeature[i][0]] + 1];
+          evals[emptiesGroup][i] = new long[maxBaseHashes[featureToBaseFeature[i][0]] + 1];
         } else {
           int size = 0;
           for (int j = 0; j < featureToBaseFeature[i].length - 1; ++j) {
             size += (maxBaseHashes[featureToBaseFeature[i][j]] + 1) *  (maxBaseHashes[featureToBaseFeature[i][j+1]] + 1);
           }
-          evals[emptiesGroup][i] = new int[size];
+          evals[emptiesGroup][i] = new long[size];
         }
 //        evals[emptiesGroup][evals[emptiesGroup].length - 1] = new int[65*64];
       }
@@ -607,12 +544,11 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   
   public void randomizeEvals() {
-    for (int emptiesGroup = 0; emptiesGroup < EMPTIES_SPLITS; ++emptiesGroup) {
-    
-      for (int i = 0; i < evals.length; ++i) {
+    for (int emptiesGroup = 0; emptiesGroup < evals.length; ++emptiesGroup) {
+      for (int i = 0; i < evals[emptiesGroup].length; ++i) {
         int mod1 = (int) (Math.random() * 100) + 3;
         int mod2 = (int) (Math.random() * 100) + 3;
-        for (int j = 0; j < evals[i].length; ++j) {
+        for (int j = 0; j < evals[emptiesGroup][i].length; ++j) {
           evals[emptiesGroup][i][j] += emptiesGroup + i % mod1 - j % mod2; // (int) (Math.random() * 6400);
         }
       }
@@ -663,34 +599,16 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                          Arrays.toString(e.getStackTrace()));
       return new PatternEvaluatorImproved();
     }
+    result.setupFeaturesToSquares();
     return result;
   }
-  
-//  public static void main(String args[]) {
-//    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-//    long[] combinedFeatures = {FEATURE_LAST_ROW, FEATURE_LAST_BUT_ONE_ROW, FEATURE_LAST_BUT_TWO_ROW, FEATURE_LAST_BUT_THREE_ROW};
-//    
-//    for (int i = 0; i < 2; ++i) {
-//      for (int j = 0; j < 4; ++j) {
-//        System.out.println("\n\n\n");
-//        for (int k = 0; k < combinedFeatures.length; ++k) {
-//          System.out.println(eval.getPositions(combinedFeatures[k]));
-//          combinedFeatures[k] = BitPattern.transpose(BitPattern.verticalMirror(combinedFeatures[k]));
-//        }
-//      }
-//      for (int k = 0; k < combinedFeatures.length; ++k) {
-//        combinedFeatures[k] = BitPattern.horizontalMirror(combinedFeatures[k]);
-//      }
-//    }
-//    System.out.println(eval.getPositions(BitPattern.horizontalMirror(eval.FEATURE_DIAGONAL)));
-//  }
+
   public static void main(String args[]) {
     PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
     PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
     long t = 0;
     int num = 0;
     for (int i = 0; i < 200000; ++i) {
-//      System.out.println(i);
       Board b = Board.randomBoard();
 //      while (true) {
         long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());

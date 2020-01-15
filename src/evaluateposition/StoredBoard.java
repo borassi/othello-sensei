@@ -38,14 +38,14 @@ public class StoredBoard {
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
-  public StoredBoard(Board board, int eval, int variance) {
+  public StoredBoard(Board board, int eval, float variance) {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();
     this.updateEval(eval, variance);
     this.descendants = 0;
   }
   
-  public StoredBoard(Board board, int eval, int variance, int deltas[]) {
+  public StoredBoard(Board board, int eval, float variance, int deltas[]) {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();
     this.updateEval(eval, variance, deltas);
@@ -105,7 +105,7 @@ public class StoredBoard {
     this.bestVariationPlayer = upper <= evalGoal ? -6600 : eval;
   }
   
-  public final void updateEval(int newEval, int variance) {
+  public final void updateEval(int newEval, float variance) {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
     for (int i = 0; i < N_SAMPLES; i++) {
@@ -115,10 +115,10 @@ public class StoredBoard {
     }
   }
   
-  public final void updateEval(int newEval, int variance, int deltas[]) {
+  public final void updateEval(int newEval, float variance, int deltas[]) {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
-    double weightNew = 0.6;
+    double weightNew = 0.4;
     double weightOld = Math.sqrt(1 - weightNew * weightNew);
     for (int i = 0; i < N_SAMPLES; i++) {
 //      System.out.println(deltas[i]);

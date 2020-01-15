@@ -85,30 +85,113 @@ public class MultilinearRegressionImprovedTest {
                   true);
   
   @Test
-  public void testTrainNumberOfDisks() {
+  public void testFeatureBasic() {
+    for (int i = 0; i < 10000; ++i) {
+      long origError = (long) (Math.random() * 10000);
+      long origEval = (long) ((Math.random() - 0.5) * 20000);
+      long orig = (origEval << 32) + origError;
+      MultilinearRegressionImproved.Feature feature = new MultilinearRegressionImproved.Feature(
+          eval, orig);
+      assertEquals(feature.toLong(), orig);
+    }
+  }
+
+  @Test
+  public void testEditFeature() {
+    for (int i = 0; i < 10000; ++i) {
+      long origError = (long) (Math.random() * 10000);
+      long origEval = (long) ((Math.random() - 0.5) * 20000);
+      double errorSum = (Math.random() - 0.5) * origError;
+      double evalSum = (Math.random() - 0.5) * 10000;
+      long orig = (origEval << 32) + origError;
+      MultilinearRegressionImproved.Feature feature = new MultilinearRegressionImproved.Feature(
+          eval, orig);
+      feature.eval += evalSum;
+      feature.squaredError += errorSum;
+      long updatedEval = feature.toLong() >> 32;
+      long updatedError = feature.toLong() - (updatedEval << 32);
+
+      assertEquals(updatedEval, origEval + evalSum, 0.51);
+      assertEquals(updatedError, origError + errorSum, 0.51);
+    }
+  }
+
+  @Test
+  public void testSumFeatures() {
+    for (int i = 0; i < 10000; ++i) {
+      long origEval1 = (long) ((Math.random() - 0.5) * 20000);
+      long origError1 = (long) (Math.random() * 10000);
+      long origEval2 = (long) ((Math.random() - 0.5) * 20000);
+      long origError2 = (long) (Math.random() * 10000);
+      MultilinearRegressionImproved.Feature f1 = new MultilinearRegressionImproved.Feature(eval);
+      f1.eval = origEval1;
+      f1.squaredError = origError1;
+      MultilinearRegressionImproved.Feature f2 = new MultilinearRegressionImproved.Feature(eval);
+      f2.eval = origEval2;
+      f2.squaredError = origError2;
+
+      long sumEval = (f1.toLong() + f2.toLong()) >> PatternEvaluatorImproved.EVAL_SHIFT;
+      long sumErrors = (f1.toLong() + f2.toLong()) - (sumEval << PatternEvaluatorImproved.EVAL_SHIFT);
+      assertEquals(sumEval, origEval1 + origEval2);
+      assertEquals(sumErrors, origError1 + origError2);
+    }
+  }
+  
+  @Test
+  public void testTrainBasic() {
     ArrayList<BoardWithEvaluation> trainingSet = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
-      trainingSet.add(new BoardWithEvaluation(oneOnEdge, 100));
-      trainingSet.add(new BoardWithEvaluation(twoOnEdge, 200));
+      trainingSet.add(new BoardWithEvaluation(oneOnEdge, 1000));
+      trainingSet.add(new BoardWithEvaluation(twoOnEdge, 2000));
       trainingSet.add(new BoardWithEvaluation(twoOppositeEdges, 0));
-      trainingSet.add(new BoardWithEvaluation(fourCorners, -400));
+      trainingSet.add(new BoardWithEvaluation(fourCorners, -4000));
     }
 
     MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, trainingSet);
     
     MultilinearRegressionImproved.Feature[][][] newEvals = mr.getFeatures();
-    mr.train(newEvals, trainingSet, 0, 0.05F, 20, false);
+    mr.train(newEvals, trainingSet, 0, 0.005F, 20, false);
     mr.setFeatures(newEvals);
     
     for (BoardWithEvaluation b : trainingSet) {
-      System.out.println(b.board);
-      System.out.println(eval.eval(b.board) + " " + b.evaluation);
-      assertEquals(0, eval.eval(b.board) - b.evaluation, 20);
+      assertEquals(b.evaluation, eval.eval(b.board), 30);
+      assertEquals(200, eval.lastError(), 30);  // Minimum error: +-2
     }
-//    mr.train(trainingSet, 0, 0.1F, 20);
-//    for (BoardWithEvaluation b : trainingSet) {
-//      assertEquals(eval.eval(b.board), b.evaluation, 10);
-//    }
+  }
+
+  @Test
+  public void testTrainError() {
+    ArrayList<BoardWithEvaluation> trainingSet = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+      trainingSet.add(new BoardWithEvaluation(oneOnEdge, 500));
+      trainingSet.add(new BoardWithEvaluation(oneOnEdge, 1500));
+      trainingSet.add(new BoardWithEvaluation(twoOnEdge, 2000));
+      trainingSet.add(new BoardWithEvaluation(twoOppositeEdges, 0));
+      trainingSet.add(new BoardWithEvaluation(fourCorners, -4000));
+    }
+
+    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, trainingSet);
+    
+    MultilinearRegressionImproved.Feature[][][] newEvals = mr.getFeatures();
+    mr.train(newEvals, trainingSet, 0, 0.005F, 2, false);
+    mr.train(newEvals, trainingSet, 0, 0.002F, 2, false);
+    mr.train(newEvals, trainingSet, 0, 0.001F, 2, false);
+    mr.train(newEvals, trainingSet, 0, 0.0005F, 2, false);
+    mr.train(newEvals, trainingSet, 0, 0.0002F, 2, false);
+    mr.train(newEvals, trainingSet, 0, 0.0001F, 2, false);
+    mr.setFeatures(newEvals);
+    
+    for (BoardWithEvaluation b : trainingSet) {
+      if (b.board != oneOnEdge) {
+        System.out.println(b.board);
+        assertEquals(b.evaluation, eval.eval(b.board), 400);
+        assertEquals(200, eval.lastError(), 400);  // Minimum error: +-2
+      } else {
+        System.out.println(b.board);
+        assertEquals(1000, eval.eval(b.board), 400);
+        assertEquals(500, eval.lastError(), 400);
+      }
+    }
   }
 
 //  @Test

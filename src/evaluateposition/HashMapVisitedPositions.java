@@ -27,8 +27,8 @@ public class HashMapVisitedPositions {
   public StoredBoard evaluationsHashMap[];
   protected StoredBoard firstPosition;
   private int arraySize;
-  int maxSize;
-  int size;
+  long maxSize;
+  long size;
   int evalGoal = 7000;
   
   class PositionToImprove {
@@ -81,7 +81,7 @@ public class HashMapVisitedPositions {
     this(2000000, 1000000, PossibleMovesFinderImproved.load());
   }
   
-  public HashMapVisitedPositions(int arraySize, int maxSize, PossibleMovesFinderImproved possibleMovesFinder) {
+  public HashMapVisitedPositions(int arraySize, long maxSize, PossibleMovesFinderImproved possibleMovesFinder) {
     this.arraySize = arraySize;
     this.maxSize = maxSize;
     this.possibleMovesFinder = possibleMovesFinder;
@@ -222,10 +222,6 @@ public class HashMapVisitedPositions {
     int newPlayer = (int) ((player + (player >>> 32)) * 541725397157L);
     int newOpponent = (int) ((opponent + (opponent >>> 32)) * 541725397157L);
     return ((3 * newPlayer + 17 * newOpponent) % maxElements + maxElements) % maxElements;
-  }
-
-  public int size() {
-    return size;
   }
   
   public void addFirstPosition(StoredBoard b) {

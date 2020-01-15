@@ -25,6 +25,11 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
   Board b;
 
   @Override
+  public float lastError() {
+    return 800;
+  }
+
+  @Override
   public int eval() {
     return 100 * (b.getPlayerDisks() - b.getOpponentDisks() + 2);
   }
@@ -54,7 +59,7 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
     b = new Board(b.getOpponent(), b.getPlayer());
   }
 
-  public int eval(Board b) {
+  public long eval(Board b) {
     return eval(b.getPlayer(), b.getOpponent());
   }
 

@@ -58,10 +58,10 @@ public class EndgameTest {
           "---X-O----XXXO-XXXXXXXXXXOOXXOOXXOXOOOXXXXOOOO-XX--OOOO--------- O",
           "--OOOO--O-OOOO--OXXXOOO-OXXOXO--OOXXOXX-OOXXXX--O-XXX-----XX-O-- X",
           "--OOOO----OOOO---XOXXOOXOOXOOOOX-OOOOOXXXOOXXXXX--X-X----------- X",
-          "O-OOOO--XOXXOX--XOOOXXX-XOOOXX--XOOXOX--XOXXX---X-XX------------ O",
+          "O-OOOO--XOXXOX--XOOOXXX-XOOOXX--XOOXOX--XOXXX---X-XX------------ O", // 40
           "O--OOOOX-OOOOOOXOOXXOOOXOOXOOOXXOOOOOOXX---OOOOX----O--X-------- X",
           "-OOOOO----OOOOX--OOOOOO-XXXXXOO--XXOOX--OOXOXX----OXXO---OOO--O- X",
-          "--OOO-------XX-OOOOOOXOO-OOOOXOOX-OOOXXO---OOXOO---OOOXO--OOOO-- X",
+          "--OOO-------XX-OOOOOOXOO-OOOOXOOX-OOOXXO---OOXOO---OOOXO--OOOO-- X", // 43
           "--XXXXX---XXXX---OOOXX---OOXXXX--OOXXXO-OOOOXOO----XOX----XXXXX- O",
           "--O-X-O---O-XO-O-OOXXXOOOOOOXXXOOOOOXX--XXOOXO----XXXX-----XXX-- O",
           "---XXXX-X-XXXO--XXOXOO--XXXOXO--XXOXXO---OXXXOO-O-OOOO------OO-- X",
@@ -79,7 +79,7 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
-  EvaluatorMCTS eval = new EvaluatorMCTS(4000000, 4000000);
+  EvaluatorMCTS eval = new EvaluatorMCTS(4000000, 1000000000L);
 
   public Board readBoardFromFFOFormat(String ffoFormat) {
     String[] boards = ffoFormat.split(" ");
@@ -88,7 +88,7 @@ public class EndgameTest {
 
   public void run() {
     
-    System.out.println(" num empties        t       nVisPos   nVisPos/sec    nCompMoves nCompMoves/sec   eval");
+    System.out.println(" num empties        t       nVisPos   nVisPos/sec      nStored   eval");
     for (int i = 0; i < POSITIONS.length; i++) {
       Board b = readBoardFromFFOFormat(POSITIONS[i]);
       System.out.print(String.format("%4d", i+1));
@@ -107,10 +107,10 @@ public class EndgameTest {
 //      eval.evaluateAlphaBetaWithHashMap(b, b.getEmptySquares(), result + 0.01F);
 
       System.out.print(String.format("%9.3f", t / 1000.));
-      System.out.print(String.format("%14d", eval.getNVisitedPositionsByEvaluator() + eval.size()));
-      System.out.print(String.format("%14.0f", (eval.getNVisitedPositionsByEvaluator() + eval.size()) * 1000. / t));
-      System.out.print(String.format("%14d", eval.size()));
-      System.out.print(String.format("%15.0f", eval.size() * 1000. / t));
+      System.out.print(String.format("%14d", eval.getNVisited()));
+      System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));
+      System.out.print(String.format("%14d", eval.getNStored()));
+//      System.out.print(String.format("%15.0f", eval.size() * 1000. / t));eval.getNVisited()
       System.out.println(String.format("%12d", result / 100));
 //      System.out.println("\n");
     }

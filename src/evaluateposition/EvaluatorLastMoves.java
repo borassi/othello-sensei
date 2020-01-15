@@ -99,21 +99,23 @@ public class EvaluatorLastMoves implements Serializable {
     try {
       return load(EVALUATOR_LAST_MOVES_FILEPATTERN);
     } catch(Exception e) {
-      return new EvaluatorLastMoves();
+      EvaluatorLastMoves result = new EvaluatorLastMoves();
+      result.save();
+      return result;
     }
   }
 
   /**
-   * Loads a PatternEvaluatorImproved.
+   * Loads a EvaluatorLastMoves.
    * @param filepath the file (obtained by calling save() on another multilinear regression).
-   * @return The PatternEvaluatorImproved loaded, or an empty MultilinearRegression if errors occurred.
+   * @return The EvaluatorLastMoves loaded, or an empty MultilinearRegression if errors occurred.
    */
   public static EvaluatorLastMoves load(String filepath) {
     EvaluatorLastMoves result;
     try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
       result = (EvaluatorLastMoves) in.readObject();
     } catch (IOException | ClassNotFoundException | ClassCastException e) {
-      System.out.println("Error when loading the PatternEvaluator:\n" + 
+      System.out.println("Error when loading the EvaluatorLastMoves:\n" + 
                          Arrays.toString(e.getStackTrace()));
       return new EvaluatorLastMoves();
     }

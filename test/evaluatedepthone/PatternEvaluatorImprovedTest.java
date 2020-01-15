@@ -236,9 +236,12 @@ public class PatternEvaluatorImprovedTest {
     for (int i = 0; i < 100000; ++i) {
       Board b = Board.randomBoard();
       EVAL.setup(b);
-      if (EVAL.evalSlow() != EVAL.eval()) {
+//      System.out.println(EVAL.eval() + " " + EVAL.evalSlow());
+      int correctEval = EVAL.evalSlow();
+      float lastError = EVAL.lastError();
+      if (correctEval != EVAL.eval() || Math.abs(lastError - EVAL.lastError()) > 0.01) {
         System.out.println(b);
-        System.out.println(EVAL.evalVerbose());
+        System.out.println();
         assert(false);
       }
 //      assertEquals(eval.evalSlow(), eval.eval());

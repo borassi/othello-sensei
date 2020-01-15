@@ -26,23 +26,23 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   private final EvaluatorLastMoves lastMovesEval;
   private final DepthOneEvaluator depthOneEval;
 
-  public EvaluatorMCTS(int arraySize, int nElements) {
-    this(arraySize, nElements, PossibleMovesFinderImproved.load(), 
+  public EvaluatorMCTS(int arraySize, long maxSize) {
+    this(arraySize, maxSize, PossibleMovesFinderImproved.load(), 
         PatternEvaluatorImproved.load());
   }
 
-  public EvaluatorMCTS(int arraySize, int nElements, 
+  public EvaluatorMCTS(int arraySize, long maxSize, 
                          PossibleMovesFinderImproved possibleMovesFinder,
                          DepthOneEvaluator depthOneEvaluator) {
-    this(arraySize, nElements, possibleMovesFinder, depthOneEvaluator,
+    this(arraySize, maxSize, possibleMovesFinder, depthOneEvaluator,
         new EvaluatorLastMoves(depthOneEvaluator));
   }
 
-  public EvaluatorMCTS(int arraySize, int nElements, 
+  public EvaluatorMCTS(int arraySize, long maxSize,
                          PossibleMovesFinderImproved possibleMovesFinder,
                          DepthOneEvaluator depthOneEvaluator,
                          EvaluatorLastMoves evaluatorLastMoves) {
-    super(arraySize, nElements, possibleMovesFinder);
+    super(arraySize, maxSize, possibleMovesFinder);
     this.depthOneEval = depthOneEvaluator;
     this.lastMovesEval = evaluatorLastMoves;
   }
@@ -63,11 +63,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   
   @Override  
   public long getNVisited() {
-    return size;
+    return this.firstPosition.descendants;
   }
   
-  public int getNVisitedPositionsByEvaluator() {
-    return lastMovesEval.nVisited;
+  public long getNStored() {
+    return this.size;
   }
   
   @Override
@@ -109,7 +109,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         } else {
           result = this.depthOneEval.eval();
         }
-        int error = 800;
+        float error = this.depthOneEval.lastError();
         children[i] = new StoredBoard(childBoard, result, error, deltas);
         children[i].descendants = 1;
         addedPositions++;
@@ -132,7 +132,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   }
 
   public short evaluatePosition(Board current, int depth) {
-    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current.getPlayer(), current.getOpponent()), 800, deltas);
+    StoredBoard currentStored = new StoredBoard(
+        current,
+        this.depthOneEval.eval(current.getPlayer(), current.getOpponent()),
+        this.depthOneEval.lastError());
+
 //    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
     this.lastMovesEval.nVisited = 0;
@@ -160,6 +164,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         b.descendants += seenPositions;
       }
       if (this.firstPosition.isSolved()) {
+//        System.out.println("STOPPING FINISHED");
         break;
       }
       float heuristicToStop = this.heuristicToStop();
@@ -179,7 +184,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       }
       if (this.firstPosition.isPartiallySolved() &&
           this.firstPosition.eval != oldStable) {
-        System.out.println("Stabilizing at " + this.firstPosition.eval);
+//        System.out.println("Stabilizing at " + this.firstPosition.eval);
         oldStable = this.firstPosition.eval;
         this.setEvalGoal(this.firstPosition.eval);
 //        break;
