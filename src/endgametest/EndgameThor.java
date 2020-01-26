@@ -18,6 +18,7 @@ import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
+import evaluateposition.EvaluatorMidgame;
 import helpers.LoadDataset;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -31,7 +32,8 @@ import java.util.Random;
 public class EndgameThor {
   public ArrayList<BoardWithEvaluation> boards;
 //  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
-  EvaluatorLastMoves eval = EvaluatorLastMoves.load();
+//  EvaluatorLastMoves eval = new EvaluatorLastMoves();
+  EvaluatorMidgame eval = new EvaluatorMidgame();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   
   public EndgameThor() {
@@ -45,7 +47,8 @@ public class EndgameThor {
     t -= System.currentTimeMillis();
     int alpha = (int) (generator.nextDouble() * 120 - 60);
     int beta = (int) (alpha + generator.nextDouble() * 6);
-    int result = eval.evaluatePosition(b, alpha, beta, 0);
+//    int result = eval.evaluatePosition(b, alpha, beta, 0);
+    int result = eval.evaluatePosition(b, 60, alpha, beta);
     t += System.currentTimeMillis();
     if (alpha < be.evaluation && be.evaluation < beta) {
       if (result - be.evaluation > 0) {

@@ -38,6 +38,11 @@ public class StoredBoard {
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
+  public StoredBoard(Board board) {
+    this.player = board.getPlayer();
+    this.opponent = board.getOpponent();
+  }
+
   public StoredBoard(Board board, int eval, float variance) {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();

@@ -52,9 +52,9 @@ public class EvaluatorBasic implements EvaluatorInterface {
   }
   
   public int evaluatePosition(Board current, int depth) {
-    if (current.getEmptySquares() == 0) {
-      return BitPattern.getEvaluationBoardFull(current);
-    }
+//    if (current.getEmptySquares() == 0) {
+//      return BitPattern.getEvaluationBoardFull(current);
+//    }
     if (depth <= 0) {
       return depthOneEvaluator.eval(current.getPlayer(), current.getOpponent());
     } 

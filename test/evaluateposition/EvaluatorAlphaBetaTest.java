@@ -25,12 +25,12 @@ import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 
 public class EvaluatorAlphaBetaTest {
-  PossibleMovesFinderImproved possibleMovesFinder = new PossibleMovesFinderImproved();
-  EvaluatorAlphaBeta evaluator = new EvaluatorAlphaBeta(
-    new DiskDifferenceEvaluatorPlusTwo(), possibleMovesFinder, 
+  PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = new PossibleMovesFinderImproved();
+  EvaluatorAlphaBeta EVALUATOR = new EvaluatorAlphaBeta(
+    new DiskDifferenceEvaluatorPlusTwo(), POSSIBLE_MOVES_FINDER, 
     new HashMapVisitedPositionsForAlphaBeta(2000, 1000));
   EvaluatorBasic evaluatorBasic = new EvaluatorBasic(
-          new DiskDifferenceEvaluatorPlusTwo(), possibleMovesFinder);
+          new DiskDifferenceEvaluatorPlusTwo(), POSSIBLE_MOVES_FINDER);
 
   final static String THIRD_MOVE_BOARD_STRING = "--------\n"
                                               + "--------\n" 
@@ -47,22 +47,22 @@ public class EvaluatorAlphaBetaTest {
 
     // At depth 1, Black has 4 disks, White has 1. +3 for Black.
     // (+1 because of the bias).
-    assert(evaluator.evaluatePosition(b, 1, 7, 7) <= 700);
-    assert(evaluator.evaluatePosition(b, 1, 0, 0) >= 0);
-    assertEquals(evaluator.evaluatePosition(b, 1, 0, 2), 100);
+    assert(EVALUATOR.evaluatePosition(b, 1, 700, 700) <= 700);
+    assert(EVALUATOR.evaluatePosition(b, 1, 0, 0) >= 0);
+    assertEquals(EVALUATOR.evaluatePosition(b, 1, 0, 200), 100);
 
     // At depth 2, Black has 3 disks, White has 3. +0 for Black
     // (+2 because of the bias).
-    assert(evaluator.evaluatePosition(b, 2, 3, 3) <= 300);
-    assert(evaluator.evaluatePosition(b, 2, -1, -1) >= -100);
-    assertEquals(evaluator.evaluatePosition(b, 2, -1, 6), 200);
+    assert(EVALUATOR.evaluatePosition(b, 2, 300, 300) <= 300);
+    assert(EVALUATOR.evaluatePosition(b, 2, -100, -100) >= -100);
+    assertEquals(EVALUATOR.evaluatePosition(b, 2, -100, 600), 200);
 
     // At depth 3, Black has 5 disks, White has 2. +3 for Black.
     // Unless you play e6d6, in which case Black can get 6 disks.
     // (the result is +1 because of the bias).
-    assert(evaluator.evaluatePosition(b, 3, 700, 700) <= 700);
-    assert(evaluator.evaluatePosition(b, 3, 0, 0) >= 0);
-    assertEquals(evaluator.evaluatePosition(b, 3, -1000, 200), 100);
+    assert(EVALUATOR.evaluatePosition(b, 3, 700, 700) <= 700);
+    assert(EVALUATOR.evaluatePosition(b, 3, 0, 0) >= 0);
+    assertEquals(EVALUATOR.evaluatePosition(b, 3, -1000, 200), 100);
   }
 
   @Test
@@ -71,22 +71,22 @@ public class EvaluatorAlphaBetaTest {
 
     // At depth 1, Black has 4 disks, White has 1. +3 for Black.
     // (+1 because of the bias).
-    assert(evaluator.evaluatePositionWithHashMap(b, 1, 700, 700) <= 700);
-    assert(evaluator.evaluatePositionWithHashMap(b, 1, 0, 0) >= 0);
-    assertEquals(evaluator.evaluatePositionWithHashMap(b, 1, -100, 200), 100);
+    assert(EVALUATOR.evaluatePositionWithHashMap(b, 1, 700, 700) <= 700);
+    assert(EVALUATOR.evaluatePositionWithHashMap(b, 1, 0, 0) >= 0);
+    assertEquals(EVALUATOR.evaluatePositionWithHashMap(b, 1, -100, 200), 100);
 
     // At depth 2, Black has 3 disks, White has 3. +0 for Black
     // (+2 because of the bias).
-    assert(evaluator.evaluatePositionWithHashMap(b, 2, 300, 300) <= 300);
-    assert(evaluator.evaluatePositionWithHashMap(b, 2, -100, -100) >= -100);
-    assertEquals(evaluator.evaluatePositionWithHashMap(b, 2, -100, 600), 200);
+    assert(EVALUATOR.evaluatePositionWithHashMap(b, 2, 300, 300) <= 300);
+    assert(EVALUATOR.evaluatePositionWithHashMap(b, 2, -100, -100) >= -100);
+    assertEquals(EVALUATOR.evaluatePositionWithHashMap(b, 2, -100, 600), 200);
 
     // At depth 3, Black has 5 disks, White has 2. +3 for Black.
     // Unless you play e6d6, in which case Black can get 6 disks.
     // (the result is +1 because of the bias).
-    assert(evaluator.evaluatePositionWithHashMap(b, 3, 700, 800) <= 700);
-    assert(evaluator.evaluatePositionWithHashMap(b, 3, -100, 0) >= 0);
-    assertEquals(evaluator.evaluatePositionWithHashMap(b, 3, -100, 200), 100);
+    assert(EVALUATOR.evaluatePositionWithHashMap(b, 3, 700, 800) <= 700);
+    assert(EVALUATOR.evaluatePositionWithHashMap(b, 3, -100, 0) >= 0);
+    assertEquals(EVALUATOR.evaluatePositionWithHashMap(b, 3, -100, 200), 100);
   }
 
 //  @Test
@@ -130,9 +130,9 @@ public class EvaluatorAlphaBetaTest {
       Board b = Board.randomBoard();
       for (int d = 1; d < 5; d++) {
         int eval = evaluatorBasic.evaluatePosition(b, d);
-        assert(evaluator.evaluatePosition(b, d, -6400, eval - 200) >= eval - 200);
-        assert(evaluator.evaluatePosition(b, d, eval + 200, 6400) <= eval + 200);
-        assertEquals(evaluator.evaluatePosition(b, d, -6400, 6400), eval);
+        assert(EVALUATOR.evaluatePosition(b, d, -6400, eval - 200) >= eval - 200);
+        assert(EVALUATOR.evaluatePosition(b, d, eval + 200, 6400) <= eval + 200);
+        assertEquals(EVALUATOR.evaluatePosition(b, d, -6400, 6400), eval);
       }
     }
   }
@@ -142,9 +142,9 @@ public class EvaluatorAlphaBetaTest {
     Board b = new Board ("OOOXOOOXXXXX-XXOOOOXXXXXXOOOOXXXXO-OOXXOXXXOOX-XXOO-OXOOXXXXOXXX", true);
 
     for (int d = 4; d < 5; d++) {
-      System.out.println("EVAL: " + evaluator.evaluatePosition(b, d));
+      System.out.println("EVAL: " + EVALUATOR.evaluatePosition(b, d));
       System.out.println("EVAL: " + evaluatorBasic.evaluatePosition(b, d));
-      assertEquals(evaluator.evaluatePosition(b, d), evaluatorBasic.evaluatePosition(b, d));
+      assertEquals(EVALUATOR.evaluatePosition(b, d), evaluatorBasic.evaluatePosition(b, d));
     }
   }
   
@@ -158,12 +158,12 @@ public class EvaluatorAlphaBetaTest {
         System.out.println(i);
       }
       Board b = Board.randomBoard();
-      evaluator.resetHashMapVisitedPositions();
+      EVALUATOR.resetHashMapVisitedPositions();
       if (b.getPlayer() == 0 && b.getOpponent() == 0) {
         continue;
       }
       for (int d = 1; d < 5; d++) {
-        int f1 = evaluator.evaluatePosition(b, d);
+        int f1 = EVALUATOR.evaluatePosition(b, d);
         int f2 = evaluatorBasic.evaluatePosition(b, d);
         if (f1 != f2) {
           System.out.println("\n\n" + d);
@@ -192,31 +192,31 @@ public class EvaluatorAlphaBetaTest {
     // The board has 21 Black, 9 White. In 1 move, Black can flip at most 5 disks.
     int eval = 2100;
     assertEquals(evaluatorBasic.evaluatePosition(b, 1), eval);
-    assert(evaluator.evaluatePosition(b, 1, eval - 2, eval - 2) >= eval - 2);
-    assert(evaluator.evaluatePosition(b, 1, eval + 2, eval + 2) <= eval + 2);
-    assertEquals(evaluator.evaluatePosition(b, 1, -6400, 6400), eval);
+    assert(EVALUATOR.evaluatePosition(b, 1, eval - 2, eval - 2) >= eval - 2);
+    assert(EVALUATOR.evaluatePosition(b, 1, eval + 2, eval + 2) <= eval + 2);
+    assertEquals(EVALUATOR.evaluatePosition(b, 1, -6400, 6400), eval);
     
     // In 2 moves, Black can flip all white disks.
     eval = 3000;
     assertEquals(eval, evaluatorBasic.evaluatePosition(b, 2), 0.01);
-    assert(evaluator.evaluatePosition(b, 2, eval - 200, eval - 200) >= eval - 200);
-    assert(evaluator.evaluatePosition(b, 2, eval + 200, eval + 200) <= eval + 200);
-    assertEquals(eval, evaluator.evaluatePosition(b, 2, -6400, 6400));
+    assert(EVALUATOR.evaluatePosition(b, 2, eval - 200, eval - 200) >= eval - 200);
+    assert(EVALUATOR.evaluatePosition(b, 2, eval + 200, eval + 200) <= eval + 200);
+    assertEquals(eval, EVALUATOR.evaluatePosition(b, 2, -6400, 6400));
 
     // In 3 moves, Black can flip all white disks (+31 because of bias).
     // However, in 2 moves, Black can finish the game (+32, no bias).
     eval = 6400;
     assertEquals(eval, evaluatorBasic.evaluatePosition(b, 3), 0.01);
-    assert(evaluator.evaluatePosition(b, 3, eval - 400, eval - 400) > eval - 400);
-    assert(evaluator.evaluatePosition(b, 3, eval + 400, eval + 400) < eval + 400);
-    assertEquals(eval, evaluator.evaluatePosition(b, 3, eval-100, eval+100));
+    assert(EVALUATOR.evaluatePosition(b, 3, eval - 400, eval - 400) > eval - 400);
+    assert(EVALUATOR.evaluatePosition(b, 3, eval + 400, eval + 400) < eval + 400);
+    assertEquals(eval, EVALUATOR.evaluatePosition(b, 3, eval-100, eval+100));
   }
 
   @Test
   public void testGetSortedMoves() {
     HashMapVisitedPositionsForAlphaBeta h = new HashMapVisitedPositionsForAlphaBeta();
     Board b = new Board(THIRD_MOVE_BOARD_STRING, true);
-    long[] moves = possibleMovesFinder.possibleMoves(b);
+    long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(b);
     int depth[] =   { 5,  4,  5,  5,  5};
     int lower[] = {-400, -200, -500, -100, -300};
     int upper[] = {100, 100, 100, 200, 200};
@@ -230,7 +230,7 @@ public class EvaluatorAlphaBetaTest {
     for (int i = 0; i < 60; i++) {
       output[i] = new BoardWithEvaluation(new Board(0, 0), Integer.MIN_VALUE);
     }
-    EvaluatorAlphaBeta.getSortedMoves(b, possibleMovesFinder, h, 7, -1000, 0, new DiskDifferenceEvaluatorPlusTwo(), output);
+    EvaluatorAlphaBeta.getSortedMoves(b, POSSIBLE_MOVES_FINDER, h, 7, -1000, 0, new DiskDifferenceEvaluatorPlusTwo(), output);
 
     assertEquals(output[0].board, b.move(moves[2]));
     assertEquals(output[1].board, b.move(moves[0]));
@@ -244,7 +244,7 @@ public class EvaluatorAlphaBetaTest {
   public void testGetSortedMovesOneBetterMove() {
     HashMapVisitedPositionsForAlphaBeta h = new HashMapVisitedPositionsForAlphaBeta();
     Board b = new Board(THIRD_MOVE_BOARD_STRING, true);
-    long[] moves = possibleMovesFinder.possibleMoves(b);
+    long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(b);
     int depth[] =   {7, 4, 5, 5, 5};
     int upper[] = {-400, -200, -500, -100, -300};
     
@@ -256,7 +256,7 @@ public class EvaluatorAlphaBetaTest {
     for (int i = 0; i < 60; i++) {
       output[i] = new BoardWithEvaluation(new Board(0, 0), Integer.MIN_VALUE);
     }
-    assertEquals(400, EvaluatorAlphaBeta.getSortedMoves(b, possibleMovesFinder, h, 7, -1000, 200, new DiskDifferenceEvaluatorPlusTwo(), output), 0.01);
+    assertEquals(400, EvaluatorAlphaBeta.getSortedMoves(b, POSSIBLE_MOVES_FINDER, h, 7, -1000, 200, new DiskDifferenceEvaluatorPlusTwo(), output), 0.01);
     assertEquals(Integer.MIN_VALUE, output[0].evaluation, 1);
   }
 
@@ -264,7 +264,7 @@ public class EvaluatorAlphaBetaTest {
   public void testGetSortedMovesWorseMove() {
     HashMapVisitedPositionsForAlphaBeta h = new HashMapVisitedPositionsForAlphaBeta(10, 5);
     Board b = new Board(THIRD_MOVE_BOARD_STRING, true);
-    long[] moves = possibleMovesFinder.possibleMoves(b);
+    long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(b);
     int depth[] =   { 7, 7,  7,  5,  5};
     int lower[] = { 200, 400, -100, -100, -300};
     int upper[] = {1000, 900,  000, -300, -300};
@@ -279,7 +279,7 @@ public class EvaluatorAlphaBetaTest {
       output[i] = new BoardWithEvaluation(new Board(0, 0), Integer.MIN_VALUE);
     }
     System.out.println(h);
-    assertEquals(-400, EvaluatorAlphaBeta.getSortedMoves(b, possibleMovesFinder, h, 7, -100, 200, new DiskDifferenceEvaluatorPlusTwo(), output), 0.01);
+    assertEquals(-400, EvaluatorAlphaBeta.getSortedMoves(b, POSSIBLE_MOVES_FINDER, h, 7, -100, 200, new DiskDifferenceEvaluatorPlusTwo(), output), 0.01);
     assertEquals(output[0].board, b.move(moves[4]));
     assertEquals(output[1].board, b.move(moves[3]));
     assertEquals(output[2].board, b.move(moves[2]));
@@ -291,10 +291,10 @@ public class EvaluatorAlphaBetaTest {
     for (int i = 0; i < 1000; i++) {
       Board b = BoardTest.randomBoard();
       int depth = (int) (Math.random() * 5) + 1;
-      int eval = evaluator.evaluatePosition(b, depth);
+      int eval = EVALUATOR.evaluatePosition(b, depth);
       System.out.println(eval);
       for (Board p : Board.allTranspositions(b)) {
-        assertEquals(eval, evaluator.evaluatePosition(p, depth));
+        assertEquals(eval, EVALUATOR.evaluatePosition(p, depth));
       }
     }
   }

@@ -17,34 +17,31 @@ package evaluateposition;
 import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
+import constants.Constants;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.PatternEvaluatorImproved;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorInterface {
-  private final EvaluatorLastMoves lastMovesEval;
-  private final DepthOneEvaluator depthOneEval;
+  private final EvaluatorMidgame evaluatorMidgame;
 
   public EvaluatorMCTS(int arraySize, long maxSize) {
     this(arraySize, maxSize, PossibleMovesFinderImproved.load(), 
-        PatternEvaluatorImproved.load());
+        new EvaluatorMidgame());
   }
 
   public EvaluatorMCTS(int arraySize, long maxSize, 
-                         PossibleMovesFinderImproved possibleMovesFinder,
-                         DepthOneEvaluator depthOneEvaluator) {
-    this(arraySize, maxSize, possibleMovesFinder, depthOneEvaluator,
-        new EvaluatorLastMoves(depthOneEvaluator));
+                        PossibleMovesFinderImproved possibleMovesFinder) {
+    this(arraySize, maxSize, possibleMovesFinder, new EvaluatorMidgame());
   }
 
   public EvaluatorMCTS(int arraySize, long maxSize,
-                         PossibleMovesFinderImproved possibleMovesFinder,
-                         DepthOneEvaluator depthOneEvaluator,
-                         EvaluatorLastMoves evaluatorLastMoves) {
+                       PossibleMovesFinderImproved possibleMovesFinder,
+                       EvaluatorMidgame evaluatorMidgame) {
     super(arraySize, maxSize, possibleMovesFinder);
-    this.depthOneEval = depthOneEvaluator;
-    this.lastMovesEval = evaluatorLastMoves;
+//    this.depthOneEval = depthOneEvaluator;
+    this.evaluatorMidgame = evaluatorMidgame;
   }
   
   public synchronized float getEval() {
@@ -87,9 +84,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
     long player = father.player;
     long opponent = father.opponent;
     long[] moves = possibleMovesFinder.possibleMovesAdvanced(player, opponent);
-    // TODO
-    this.depthOneEval.setup(player, opponent);
-    this.depthOneEval.invert();
+//     TODO
+//    this.depthOneEval.setup(player, opponent);
+//    this.depthOneEval.invert();
     int addedPositions = 0;
     if (moves.length == 0) {
       this.updateSolved(player, opponent, BitPattern.getEvaluationGameOver(player, opponent));
@@ -101,18 +98,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       for (int i = 0; i < moves.length; i++) {
         long move = moves[i];
         Board childBoard = father.getBoard().move(move);
-        int result;
-        if (move != 0) {
-          this.depthOneEval.update(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
-          result = this.depthOneEval.eval();
-          this.depthOneEval.undoUpdate(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
-        } else {
-          result = this.depthOneEval.eval();
-        }
-        float error = this.depthOneEval.lastError();
+//        if (move != 0) {
+//          this.depthOneEval.update(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
+//          result = this.depthOneEval.eval();
+//          this.depthOneEval.undoUpdate(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
+//        } else {
+//          result = this.depthOneEval.eval();
+//        }
+//        float error = this.depthOneEval.lastError();
+        evaluatorMidgame.resetNVisitedPositions();
+        int result = evaluatorMidgame.evaluatePosition(childBoard, 0, -6400, 6400);
+        int error = 400;
         children[i] = new StoredBoard(childBoard, result, error, deltas);
-        children[i].descendants = 1;
-        addedPositions++;
+        children[i].descendants += evaluatorMidgame.getNVisitedPositions();
+        addedPositions += evaluatorMidgame.getNVisitedPositions();
       }
       super.add(children, father);
     }
@@ -134,28 +133,24 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   public short evaluatePosition(Board current, int depth) {
     StoredBoard currentStored = new StoredBoard(
         current,
-        this.depthOneEval.eval(current.getPlayer(), current.getOpponent()),
-        this.depthOneEval.lastError());
+        evaluatorMidgame.evaluatePosition(current, 2, -6400, 6400),
+        800);
 
 //    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
-    this.lastMovesEval.nVisited = 0;
+    this.evaluatorMidgame.resetNVisitedPositions();
     HashMapVisitedPositions.PositionToImprove nextPos;
     float bestHeuristicToStop = Float.POSITIVE_INFINITY;
     int oldStable = Integer.MIN_VALUE;
-    int seenPositions = 0;
+    long seenPositions = 0;
     while ((nextPos = nextPositionToImprove()) != null) {
       StoredBoard next = nextPos.board;
 
-      if (next.getBoard().getEmptySquares() <= 12 && next != this.firstPosition) {
-        long lastMove = 0;
-        if (next.fathers.size() > 0) {
-          Board father = next.fathers.get(0).getBoard();
-          lastMove = (father.getPlayer() | father.getOpponent());
-        }
-        lastMovesEval.resetNVisited();
-        int curEval = lastMovesEval.evaluatePosition(next.getBoard(), nextPos.alpha, nextPos.beta, lastMove);
-        seenPositions = lastMovesEval.getNVisited();
+      if (next.getBoard().getEmptySquares() <= Constants.EMPTIES_FOR_FORCED_MIDGAME && next != this.firstPosition) {
+        this.evaluatorMidgame.resetNVisitedPositions();
+        int curEval = evaluatorMidgame.evaluatePosition(
+            next.getBoard(), Constants.EMPTIES_FOR_FORCED_MIDGAME, nextPos.alpha, nextPos.beta);
+        seenPositions = evaluatorMidgame.getNVisitedPositions();
         updateEndgame(nextPos, curEval);
       } else {
         seenPositions = this.addPositions(next);
@@ -189,7 +184,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         this.setEvalGoal(this.firstPosition.eval);
 //        break;
       }
-      if (size > maxSize) {
+      if (this.firstPosition.descendants > maxSize) {
 //        System.out.println("STOPPING SIZE");
         break;
       }

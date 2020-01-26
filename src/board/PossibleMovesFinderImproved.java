@@ -938,7 +938,7 @@ public class PossibleMovesFinderImproved implements Serializable {
       out.writeObject(this);
     } catch (IOException e) {
     }
-    System.out.println("Serialized data is saved.");
+//    System.out.println("Serialized data is saved.");
   }
   
   public static PossibleMovesFinderImproved load() {

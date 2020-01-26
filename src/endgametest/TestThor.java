@@ -21,6 +21,8 @@ import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorMCTS;
+import evaluateposition.EvaluatorMidgame;
+import evaluateposition.StoredBoard;
 import helpers.LoadDataset;
 import java.util.ArrayList;
 
@@ -32,14 +34,16 @@ public class TestThor {
   public ArrayList<BoardWithEvaluation> boards;
   PatternEvaluatorImproved eval1 = PatternEvaluatorImproved.load();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-  EvaluatorMCTS eval = new EvaluatorMCTS(100, 10);
+//  EvaluatorMCTS eval = new EvaluatorMCTS(100, 10);
+  EvaluatorMidgame eval = new EvaluatorMidgame(eval1);
+  long time;
 //  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   
   public TestThor() {
     boards = LoadDataset.loadTestingSet();
   }
   
-  public int errorSingleBoard(BoardWithEvaluation be) {
+  public int errorSingleBoardDepthOne(BoardWithEvaluation be, int depth) {
     Board b = be.board;
 //    int d = 1;
 //    if (b.getEmptySquares() > 4) {
@@ -57,21 +61,47 @@ public class TestThor {
     return eval * 30 / 30 + eval1.eval(b) * 0 / 30 - be.evaluation;
   }
   
+  public int errorSingleBoard(BoardWithEvaluation be, int depth) {
+    Board b = be.board;
+//    int d = 1;
+//    if (b.getEmptySquares() > 4) {
+//      return 0F;
+//    }
+    long[] moves = pmf.possibleMoves(b);
+//    Board sb = new StoredBoard(b, 0, 0);
+    long startTime = System.currentTimeMillis();
+    int curEval = eval.evaluatePosition(b, depth, -6400, 6400);
+    time += System.currentTimeMillis() - startTime;
+//    for (long move : moves) {
+//      eval = Math.max(eval, -eval1.eval(b.move(move)));
+//    }
+
+//    System.out.println(eval + " " + this.eval.evaluatePosition(b, 1));
+//    return -this.eval.evaluatePosition(b, 0) - be.evaluation;
+    return curEval - be.evaluation;// eval * 30 / 30 + eval1.eval(b) * 0 / 30 - be.evaluation;
+  }
+  
   public void run() {
     int i = 0;
+    int depth = 6;
     float totalError = 0;
-    float nVisitedPositions = 0;
-    long t = System.currentTimeMillis();
     for (BoardWithEvaluation be : boards) {
       if (be.board.getEmptySquares() > 64 || be.board.getEmptySquares() < 4 || pmf.haveToPass(be.board)) {
         continue;
       }
+      if (be.board.getEmptySquares() < depth + 12) {
+        continue;
+      }
       i++;
-      float curError = errorSingleBoard(be);
+      float curError = errorSingleBoard(be, depth);
       totalError += curError * curError;
 
       if (i % 1000 == 0) {
-        System.out.println(i + ": " + Math.sqrt(totalError / i));
+        System.out.println(i + "/" + boards.size() + ": " + Math.sqrt(totalError / i));
+        System.out.println("  Visited positions: " + String.format("%.0f", eval.getNVisitedPositions() * 1000. / this.time));
+        System.out.println("  Computed moves:    " + String.format("%.0f", eval.getNComputedMoves() * 1000. / this.time));
+        System.out.println("  Average positions: " + eval.getNVisitedPositions() / i);
+        System.out.println("  Depth: " + depth);
       }
     }
   }

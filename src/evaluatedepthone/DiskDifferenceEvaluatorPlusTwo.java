@@ -22,7 +22,7 @@ import board.Board;
  */
 public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
 
-  Board b;
+  Board b = new Board();
 
   @Override
   public float lastError() {
