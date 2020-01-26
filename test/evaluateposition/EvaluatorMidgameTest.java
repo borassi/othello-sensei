@@ -322,6 +322,22 @@ public class EvaluatorMidgameTest {
   }
 
   @Test
+  public void testGetMovesStartingPosition() {
+    Board b = new Board();
+    evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
+    evaluator.depthOneEvaluator.invert();
+    ObjectArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -2000, 1000);
+    assertEquals(4, moves.size());
+    for (EvaluatorMidgame.Move move : moves) {
+      assertEquals(2, Long.bitCount(move.flip));
+      assertEquals(100, move.eval);
+      assertEquals(-2000, move.lower);
+      assertEquals(1000, move.upper);
+      assertEquals(800, move.error, 1);
+    }
+  }
+
+  @Test
   public void testGetMoves() {
     PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
     
@@ -329,7 +345,7 @@ public class EvaluatorMidgameTest {
       Board b = Board.randomBoard();
       evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
       evaluator.depthOneEvaluator.invert();
-      ObjectArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent());
+      ObjectArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -20, 20);
       long movesTest[] = pmf.possibleMoves(b.getPlayer(), b.getOpponent());
       LongArrayList movesFromEvaluator = new LongArrayList();
 

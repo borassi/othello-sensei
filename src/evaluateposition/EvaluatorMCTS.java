@@ -109,9 +109,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         evaluatorMidgame.resetNVisitedPositions();
         int result = evaluatorMidgame.evaluatePosition(childBoard, 0, -6400, 6400);
         int error = 400;
+        long visited = evaluatorMidgame.getNVisitedPositions() + 1;
         children[i] = new StoredBoard(childBoard, result, error, deltas);
-        children[i].descendants += evaluatorMidgame.getNVisitedPositions();
-        addedPositions += evaluatorMidgame.getNVisitedPositions();
+        children[i].descendants += visited;
+        addedPositions += visited;
       }
       super.add(children, father);
     }
@@ -150,7 +151,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), Constants.EMPTIES_FOR_FORCED_MIDGAME, nextPos.alpha, nextPos.beta);
-        seenPositions = evaluatorMidgame.getNVisitedPositions();
+        seenPositions = evaluatorMidgame.getNVisitedPositions() + 1;
         updateEndgame(nextPos, curEval);
       } else {
         seenPositions = this.addPositions(next);

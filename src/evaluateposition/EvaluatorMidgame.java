@@ -40,11 +40,18 @@ public class EvaluatorMidgame {
     int move;
     long flip;
     int eval;
+    int nextOpponentMoves;
+    int lower;
+    int upper;
     float error;
     
     @Override
     public int compareTo(Move other) {
-      return Float.compare(eval, other.eval);
+      return Float.compare(other.value(), value());
+    }
+    
+    public float value() {
+      return eval;
     }
   }
 
@@ -122,7 +129,7 @@ public class EvaluatorMidgame {
     return bestEval;    
   }
 
-  ObjectArrayList<Move> getMoves(long player, long opponent) {
+  ObjectArrayList<Move> getMoves(long player, long opponent, int lower, int upper) {
     int move;
     long moveBit;
     long empties = ~(player | opponent);
@@ -141,8 +148,12 @@ public class EvaluatorMidgame {
       this.depthOneEvaluator.update(move, flip);
       curMove.move = move;
       curMove.flip = flip;
-      curMove.eval = this.depthOneEvaluator.eval();
+      curMove.eval = -this.depthOneEvaluator.eval();
       curMove.error = this.depthOneEvaluator.lastError();
+      curMove.nextOpponentMoves = Long.bitCount(
+          (empties & ~moveBit) & GetFlip.neighbors(flip | player));
+      curMove.lower = lower;
+      curMove.upper = upper;
       this.depthOneEvaluator.undoUpdate(move, flip);
       moves.add(curMove);
     }
@@ -161,7 +172,7 @@ public class EvaluatorMidgame {
     nComputedMoves++;
     this.depthOneEvaluator.invert();
 
-    ObjectArrayList<Move> moves = getMoves(player, opponent);
+    ObjectArrayList<Move> moves = getMoves(player, opponent, lower, upper);
     for (Move curMove : moves) {
       move = curMove.move;
       flip = curMove.flip;

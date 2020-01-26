@@ -44,7 +44,6 @@ public class Main {
   private int depth = -1;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
-  private final EvaluatorLastMoves EVALUATOR_LAST_MOVES;
   /**
    * The board, as a pair of bitpattern.
    */
@@ -62,7 +61,6 @@ public class Main {
   public Main() {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-    EVALUATOR_LAST_MOVES = new EvaluatorLastMoves();
   }
   
   public void setUI(UI ui) {
@@ -74,7 +72,7 @@ public class Main {
   public final void changeDepth(int depth) {
     this.depth = depth;
     if (depth > 0) {
-      evaluator = new EvaluatorMCTS(2 * depth, depth, POSSIBLE_MOVES_FINDER, EVALUATOR_LAST_MOVES);
+      evaluator = new EvaluatorMCTS(2 * depth, depth, POSSIBLE_MOVES_FINDER);
     }
   }
 
