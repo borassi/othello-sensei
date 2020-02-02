@@ -15,7 +15,7 @@
 package evaluateposition;
 
 import board.Board;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 
 public class StoredBoard {
   public final static int N_SAMPLES = 20;
@@ -33,8 +33,9 @@ public class StoredBoard {
   public int descendants;
   public StoredBoard next = null;
   public StoredBoard prev = null;
-  public ObjectArrayList<StoredBoard> fathers = new ObjectArrayList<>();
+  public ArrayList<StoredBoard> fathers = new ArrayList<>();
   public StoredBoard[] children = null;
+  public long expectedToSolve = 0;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
@@ -108,6 +109,9 @@ public class StoredBoard {
     assert(evalGoal <= 6400 && evalGoal >= -6400);
     this.bestVariationOpponent = lower >= evalGoal ? 6600 : eval;
     this.bestVariationPlayer = upper <= evalGoal ? -6600 : eval;
+    // TODO: improve
+    this.expectedToSolve = (long) (
+        Math.pow(2.2, 64 - Long.bitCount(player | opponent)));
   }
   
   public final void updateEval(int newEval, float variance) {

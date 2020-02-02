@@ -13,7 +13,6 @@
 // limitations under the License.
 
 package bitpattern;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -273,7 +272,8 @@ public class BitPatternTest {
   public void testAllRotations() {
     String patternString = randomPatternString();
     long pattern = BitPattern.parsePattern(patternString);
-    LongOpenHashSet transpositions = BitPattern.allTranspositions(pattern);
+    HashSet<Long> transpositions = BitPattern.allTranspositions(pattern);
+    assertEquals(transpositions.size(), 8);
     
     for (int i = 0; i < 30; ++i) {
       if (Math.random() < 0.5) {

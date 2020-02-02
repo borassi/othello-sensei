@@ -22,8 +22,7 @@ import constants.Constants;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.PatternEvaluatorImproved;
-import evaluateposition.HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 import java.util.Collections;
 
 public class EvaluatorMidgame {
@@ -129,11 +128,11 @@ public class EvaluatorMidgame {
     return bestEval;    
   }
 
-  ObjectArrayList<Move> getMoves(long player, long opponent, int lower, int upper) {
+  ArrayList<Move> getMoves(long player, long opponent, int lower, int upper) {
     int move;
     long moveBit;
     long empties = ~(player | opponent);
-    ObjectArrayList<Move> moves = new ObjectArrayList<>();
+    ArrayList<Move> moves = new ArrayList<>();
 
     while (empties != 0) {
       move = Long.numberOfTrailingZeros(empties);
@@ -172,7 +171,7 @@ public class EvaluatorMidgame {
     nComputedMoves++;
     this.depthOneEvaluator.invert();
 
-    ObjectArrayList<Move> moves = getMoves(player, opponent, lower, upper);
+    ArrayList<Move> moves = getMoves(player, opponent, lower, upper);
     for (Move curMove : moves) {
       move = curMove.move;
       flip = curMove.flip;
@@ -183,7 +182,7 @@ public class EvaluatorMidgame {
         currentEval = -lastMovesEvaluator.evaluatePosition(opponent & ~flip, player | flip, -upper, -Math.max(lower, bestEval), 64);
         nVisitedPositions += lastMovesEvaluator.getNVisited();
       } else if (depth <= 1) {
-        currentEval = -curMove.eval;
+        currentEval = curMove.eval;
       } else {
         depthOneEvaluator.update(move, flip);
         if (depth <= 3) {

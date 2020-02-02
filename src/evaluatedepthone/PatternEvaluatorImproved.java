@@ -14,19 +14,15 @@
 package evaluatedepthone;
 
 import board.Board;
-import board.PossibleMovesFinderImproved;
 import bitpattern.BitPattern;
 //import evaluatedepthone.patternhasher.StableDisksMiddle;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import main.Main;
 
 /**
@@ -40,11 +36,11 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   private static final long serialVersionUID = 1L;
   public final static int EVAL_SHIFT = 32;
   public static final String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
-          "coefficients/pattern_evaluator_improved1.sar";
+      "coefficients/pattern_evaluator_improved1.sar";
   long features[];
 //  long player;
 //  long opponent;
-  ObjectArrayList<int[]> featuresToSquaresList;
+  ArrayList<int[]> featuresToSquaresList;
   static final int EMPTIES_SPLITS = 20; // SET TO <= 2 FOR TESTS
   static final long FEATURE_CORNER_4X4 = BitPattern.parsePattern("--------" +
                                                                  "--------" +
@@ -187,17 +183,18 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   long[][][] evals;
 
   static final int[] longToFeature(long pattern) {
-    IntArrayList feature = new IntArrayList();
+    int[] feature = new int[Long.bitCount(pattern)];
+    int currentBit = 0;
     int square;
     while (true) {
       square = Long.numberOfTrailingZeros(pattern);
-      feature.add(square);
+      feature[currentBit++] = square;
       pattern = pattern & ~(1L << square);
       if (pattern == 0) {
         break;
       }
     }
-    return feature.toArray(new int[feature.size()]);
+    return feature;
   }
 
   static final long featureToLong(int[] feature) {
@@ -234,10 +231,10 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return newFeature;
   }
   
-  static final ObjectArrayList<int[]> allFeatures(long pattern) {
-    LongOpenHashSet seen = new LongOpenHashSet();
+  static final ArrayList<int[]> allFeatures(long pattern) {
+    HashSet<Long> seen = new HashSet<>();
     int[] feature = longToFeature(pattern);
-    ObjectArrayList<int[]> result = new ObjectArrayList<>();
+    ArrayList<int[]> result = new ArrayList<>();
 
     for (int i = 0; i < 1; ++i) {
       for (int j = 0; j < 4; ++j) {
@@ -454,36 +451,36 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   
   public final void setupFeaturesToSquares() {
-    ObjectArrayList<IntArrayList> featureToBaseFeaturesList = new ObjectArrayList<>();
-    this.featuresToSquaresList = new ObjectArrayList<>();
+    ArrayList<int[]> featureToBaseFeaturesList = new ArrayList<>();
+    this.featuresToSquaresList = new ArrayList<>();
     for (long[] featureGroup : FEATURE_GROUPS) {
-      ObjectArrayList<ObjectArrayList<int[]>> baseFeatures = new ObjectArrayList<>();
+      ArrayList<ArrayList<int[]>> baseFeatures = new ArrayList<>();
       for (long featureLong : featureGroup) {
         baseFeatures.add(allFeatures(featureLong));
       }
       for (int i = 0; i < baseFeatures.get(0).size(); ++i) {
-        IntArrayList baseFeature = new IntArrayList();
+        int[] baseFeature = new int[baseFeatures.size()];
+        int nBaseFeature = 0;
         for (int j = 0; j < baseFeatures.size(); ++j) {
           assert(baseFeatures.get(0).size() == baseFeatures.get(j).size());
           this.featuresToSquaresList.add(baseFeatures.get(j).get(i));
-          baseFeature.add(this.featuresToSquaresList.size() - 1);
+          baseFeature[nBaseFeature++] = this.featuresToSquaresList.size() - 1;
         }
         featureToBaseFeaturesList.add(baseFeature);
       }
     }
     featureToBaseFeature = new int[featureToBaseFeaturesList.size()][];
     for (int i = 0; i < featureToBaseFeaturesList.size(); ++i) {
-      featureToBaseFeature[i] = featureToBaseFeaturesList.get(i).toArray(new int[featureToBaseFeaturesList.get(i).size()]);
+      featureToBaseFeature[i] = featureToBaseFeaturesList.get(i);
     }    
   }
   
   public PatternEvaluatorImproved() {
-    IntArrayList[] squaresToFeatureSingleList = new IntArrayList[64];
-    IntArrayList[] squaresToFeatureDoubleList = new IntArrayList[64];
+    ArrayList<ArrayList<Integer>> squaresToFeatureSingleList = new ArrayList<>();
+    ArrayList<ArrayList<Integer>> squaresToFeatureDoubleList = new ArrayList<>();
 
     setupFeaturesToSquares();
 
-//    System.out.println(featuresToSquaresList.size());
     assert(featuresToSquaresList.size() < 127);
     features = new long[featuresToSquaresList.size()];
     maxBaseHashes = new int[featuresToSquaresList.size()];
@@ -493,29 +490,34 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     evals = new long[EMPTIES_SPLITS][hashes.length][];
 
     for (int i = 0; i < 64; ++i) {
-      squaresToFeatureSingleList[i] = new IntArrayList();
-      squaresToFeatureDoubleList[i] = new IntArrayList();
+      squaresToFeatureSingleList.add(new ArrayList<>());
+      squaresToFeatureDoubleList.add(new ArrayList<>());
     }
     for (int j = 0; j < featuresToSquaresList.size(); ++j) {
       int squareList[] = featuresToSquaresList.get(j);
       features[j] = featureToLong(squareList);
       for (int k = 0; k < squareList.length; ++k) {
-        squaresToFeatureSingleList[squareList[k]].add((int) Math.pow(3, k) * 128 + j);
-        squaresToFeatureDoubleList[squareList[k]].add((int) (2 * Math.pow(3, k)) * 128 + j);
+        squaresToFeatureSingleList.get(squareList[k]).add((int) Math.pow(3, k) * 128 + j);
+        squaresToFeatureDoubleList.get(squareList[k]).add((int) (2 * Math.pow(3, k)) * 128 + j);
         maxBaseHashes[j] += 2 * Math.pow(3, k);
         emptyBaseHashes[j] += Math.pow(3, k);
       }
     }
     for (int i = 0; i < 64; ++i) {
-      squaresToFeatureSingle[i] = squaresToFeatureSingleList[i].toArray(squaresToFeatureSingle[i]);
-      squaresToFeatureDouble[i] = squaresToFeatureDoubleList[i].toArray(squaresToFeatureDouble[i]);
+      squaresToFeatureSingle[i] = new int[squaresToFeatureSingleList.get(i).size()];
+      squaresToFeatureDouble[i] = new int[squaresToFeatureDoubleList.get(i).size()];
+      for (int j = 0; j < squaresToFeatureSingleList.get(i).size(); ++j) {
+        squaresToFeatureSingle[i][j] = squaresToFeatureSingleList.get(i).get(j);
+        squaresToFeatureDouble[i][j] = squaresToFeatureDoubleList.get(i).get(j);
+        
+      }
     }
     for (int i = 0; i < featureToBaseFeature.length; ++i) {
       boolean copied = true;
       // Check if featureToBaseFeature[i][j] == featureToBaseFeature[i-1][j] rotated for all j.
       if (i > 0 && featureToBaseFeature[i].length == featureToBaseFeature[i-1].length) {
         for (int j = 0; j < featureToBaseFeature[i].length; ++j) {
-          LongOpenHashSet allTransp = BitPattern.allTranspositions(features[featureToBaseFeature[i][j]]);
+          HashSet<Long> allTransp = BitPattern.allTranspositions(features[featureToBaseFeature[i][j]]);
           if (!allTransp.contains(features[featureToBaseFeature[i-1][j]])) {
             copied = false;
             break;
@@ -603,41 +605,46 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return result;
   }
 
-  public static void main(String args[]) {
-    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-    long t = 0;
-    int num = 0;
-    for (int i = 0; i < 200000; ++i) {
-      Board b = Board.randomBoard();
-//      while (true) {
-        long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
-        if (moves.length == 0) {
-          continue;
-        }
-        long flip = moves[(int) (Math.random() * moves.length)];
-        if (flip == 0) {
-          continue;
-        }
-        int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-        num += 100;
-        t -= System.currentTimeMillis();
-          eval.setup(b);
-          eval.invert();
-        for (int g = 0; g < 100; ++g) {
-          eval.update(move, flip);
-          eval.eval();
-          eval.undoUpdate(move, flip);
-        }
-        t += System.currentTimeMillis();
-//      }
-    }
-    System.out.println(num + " " + t + " " + num * 1000L / t);
-  }
+//  public static void main(String args[]) {
+//    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+//    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+//    long t = 0;
+//    int num = 0;
+//    for (int i = 0; i < 200000; ++i) {
+//      Board b = Board.randomBoard();
+////      while (true) {
+//        long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
+//        if (moves.length == 0) {
+//          continue;
+//        }
+//        long flip = moves[(int) (Math.random() * moves.length)];
+//        if (flip == 0) {
+//          continue;
+//        }
+//        int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
+//        num += 100;
+//        t -= System.currentTimeMillis();
+//          eval.setup(b);
+//          eval.invert();
+//        for (int g = 0; g < 100; ++g) {
+//          eval.update(move, flip);
+//          eval.eval();
+//          eval.undoUpdate(move, flip);
+//        }
+//        t += System.currentTimeMillis();
+////      }
+//    }
+//    System.out.println(num + " " + t + " " + num * 1000L / t);
+//  }
 
   @Override
   public int evalVerbose(long player, long opponent) {
     this.setup(player, opponent);
     return this.eval();
+  }
+  
+  public static void main(String args[]) {
+    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+    eval.save("coefficients/empty_pattern_evaluator.sar");
   }
 }

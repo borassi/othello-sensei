@@ -13,16 +13,12 @@
 // limitations under the License.
 package helpers;
 
-import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 /**
  *
  * @author michele
@@ -32,7 +28,7 @@ public class SelfPlay extends Thread {
   EvaluatorMCTS player1, player2;
   PossibleMovesFinderImproved pmf;
   int nRandMoves;
-  ObjectArrayList<Board> game;
+  ArrayList<Board> game;
   
   public SelfPlay(EvaluatorMCTS player1, EvaluatorMCTS player2,
                   PossibleMovesFinderImproved pmf, int nRandMoves) {
@@ -67,14 +63,14 @@ public class SelfPlay extends Thread {
     return next;
   }
   
-  public synchronized ObjectArrayList<Board> get() {
+  public synchronized ArrayList<Board> get() {
     return this.game;
   }
   
   @Override
   public synchronized void run() {
     Board b = new Board();
-    game = new ObjectArrayList<>();
+    game = new ArrayList<>();
     
     for (int i = 0; i < nRandMoves; ++i) {
       long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());

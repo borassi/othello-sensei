@@ -13,11 +13,8 @@
 // limitations under the License.
 package evaluateposition;
 
-import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import java.util.HashSet;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

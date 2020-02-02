@@ -14,8 +14,6 @@
 
 package bitpattern;
 
-import java.util.ArrayList;
-
 public class BitPatternInt {
   public final static int SIGN_BIT_PATTERN = parsePattern(
           "X-------\n" +

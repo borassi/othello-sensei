@@ -150,6 +150,7 @@ public class Main {
         PositionIJ ij = BitPattern.bitToMove(board.moveToBit(move));
 
         String str = String.format("%.2f\n%d\n", -evaluation.getEval() / 100F, evaluation.descendants);
+        str += String.format("%d %d\n", evaluator.getEvalGoal() / 100, evaluation.expectedToSolve);
         str += String.format("%.2f %.2f\n", -evaluation.bestVariationOpponent / 100F,
             -evaluation.bestVariationPlayer / 100F);
         str += String.format("%.2f   %.2f\n", -evaluation.getUpperBound() / 100F, -evaluation.getLowerBound() / 100F);

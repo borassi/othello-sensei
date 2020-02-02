@@ -22,7 +22,7 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluateposition.HashMapVisitedPositions.PositionToImprove;
 import static evaluateposition.StoredBoard.N_SAMPLES;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 
 public class HashMapVisitedPositionsTest {
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = new PossibleMovesFinderImproved();
@@ -41,7 +41,7 @@ public class HashMapVisitedPositionsTest {
     t.eval = 456;
     HashMapVisitedPositions visitedPositions = new HashMapVisitedPositions(11, 5, POSSIBLE_MOVES_FINDER);
     
-    assertEquals(0, visitedPositions.size());
+    assertEquals(0, visitedPositions.size);
     
     assertEquals(visitedPositions.get(s.player, s.opponent), null);
     assertEquals(visitedPositions.get(s.player, s.opponent), null);
@@ -126,7 +126,7 @@ public class HashMapVisitedPositionsTest {
 //    assert(!positions.boardChildrenAreCorrect(firstMove));
 //    firstMove.bestVariationUpper = 5;
     
-    diag.fathers = new ObjectArrayList<>();
+    diag.fathers = new ArrayList<>();
     assert(!positions.boardChildrenAreCorrect(firstMove));
     diag.fathers.add(firstMove);
     
@@ -176,7 +176,7 @@ public class HashMapVisitedPositionsTest {
 
     firstMove.fathers.add(firstMove);
     assert(!positions.boardIsCorrect(firstMove));
-    firstMove.fathers.pop();
+    firstMove.fathers.remove(firstMove.fathers.size() - 1);
   }
 
   @Test
@@ -213,7 +213,7 @@ public class HashMapVisitedPositionsTest {
     assert(!positions.boardChildrenAreCorrect(pass));
     pass.bestVariationPlayer = -300;
     
-    afterPass.fathers = new ObjectArrayList<>();
+    afterPass.fathers = new ArrayList<>();
     assert(!positions.boardChildrenAreCorrect(pass));
     afterPass.fathers.add(pass);
     
@@ -329,7 +329,7 @@ public class HashMapVisitedPositionsTest {
         if (!playerVariates && evaluator.firstPosition.bestVariationOpponent == 6600) {
           continue;
         }
-        ObjectArrayList<StoredBoard> parents = new ObjectArrayList<>();
+        ArrayList<StoredBoard> parents = new ArrayList<>();
         PositionToImprove sb = evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, playerVariates, true, parents);
 
         for (int p = 0; p < sb.parents.size() - 1; ++p) {

@@ -23,8 +23,7 @@ import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectArrays;
+import java.util.Arrays;
 
 public class EvaluatorAlphaBeta implements EvaluatorInterface {
   private final DepthOneEvaluator depthOneEvaluator;
@@ -129,7 +128,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
         output[nOutput++].update(next, depthOneEvaluator.eval(next.getPlayer(), next.getOpponent()) + 1000);
       }
     }
-    ObjectArrays.quickSort(output, 0, nOutput);
+    Arrays.sort(output, 0, nOutput);
     output[nOutput].update(new Board(0, 0), Integer.MIN_VALUE);
 
     return bestEval;
@@ -216,8 +215,8 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
     return this.hashMapVisitedPositions.getStoredBoard(board);
   }
   
-  public ObjectArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
-    ObjectArrayList<StoredBoard> evaluations = new ObjectArrayList<>();
+  public ArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
+    ArrayList<StoredBoard> evaluations = new ArrayList<>();
     long[] moves = possibleMovesFinder.possibleMoves(current);
  
     for (long move : moves) {

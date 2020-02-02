@@ -18,9 +18,6 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import constants.Constants;
-import evaluatedepthone.DepthOneEvaluator;
-import evaluatedepthone.PatternEvaluatorImproved;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorInterface {
@@ -197,6 +194,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
     return (short) -get(current).getEval();
   }
   
+  public int getEvalGoal() {
+    return evalGoal;
+  }
+
   public ArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
     evaluatePosition(current, depth);
     long[] moves = possibleMovesFinder.possibleMovesAdvanced(current.getPlayer(), current.getOpponent());

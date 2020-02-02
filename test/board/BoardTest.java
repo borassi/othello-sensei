@@ -14,8 +14,7 @@
 
 package board;
 
-import board.Board;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
@@ -270,7 +269,7 @@ public class BoardTest {
     finder.initBitPatterns();
     
     for (long bitPattern : finder.bitPatterns) {
-      ObjectArrayList<Board> boards = Board.existingBoardsInBitPattern(bitPattern);
+      ArrayList<Board> boards = Board.existingBoardsInBitPattern(bitPattern);
       assertEquals((int) Math.pow(3., Long.bitCount(bitPattern)), boards.size());
     }
   }
@@ -281,7 +280,7 @@ public class BoardTest {
     finder.initBitPatterns();
     
     for (long bitPattern : finder.bitPatterns) {
-      ObjectArrayList<Board> boards = Board.existingBoardsInBitPattern(bitPattern);
+      ArrayList<Board> boards = Board.existingBoardsInBitPattern(bitPattern);
       for (int i = 0; i < 1000; i++) {
         Board b = Board.randomBoard();
         assert(boards.contains(b.filter(bitPattern)));

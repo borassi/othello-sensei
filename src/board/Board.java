@@ -17,7 +17,7 @@ package board;
 import java.io.Serializable;
 
 import bitpattern.BitPattern;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 
 public class Board implements Serializable {
 
@@ -507,7 +507,7 @@ public class Board implements Serializable {
    * @param bitPattern the bit pattern.
    * @return an ArrayList with all the possible boards.
    */
-  public static ObjectArrayList<Board> existingBoardsInBitPattern(long bitPattern) {
+  public static ArrayList<Board> existingBoardsInBitPattern(long bitPattern) {
     return existingBoardsInBitPattern(bitPattern, new Board(0, 0), 0);
   }
   
@@ -518,10 +518,10 @@ public class Board implements Serializable {
    * @param currentCase the next case to be filled.
    * @return an ArrayList with all the possible boards.
    */
-  private static ObjectArrayList<Board> existingBoardsInBitPattern(
+  private static ArrayList<Board> existingBoardsInBitPattern(
           long bitPattern, Board startingBoard, int currentCase) {
     if (currentCase >= 64) {
-      ObjectArrayList<Board> b = new ObjectArrayList<>();
+      ArrayList<Board> b = new ArrayList<>();
       b.add(startingBoard);
       return b;
     }
@@ -530,7 +530,7 @@ public class Board implements Serializable {
       return existingBoardsInBitPattern(bitPattern, startingBoard, currentCase + 1);
     }
 
-    ObjectArrayList<Board> result = new ObjectArrayList<>();
+    ArrayList<Board> result = new ArrayList<>();
     char possibleCaseValues[] = {'X', 'O', '-'};
 
     for (char caseValue : possibleCaseValues) {

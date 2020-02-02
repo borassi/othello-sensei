@@ -18,12 +18,12 @@ import java.io.Serializable;
 
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import main.Main;
 
 public class PossibleMovesFinderImproved implements Serializable {
@@ -213,12 +213,12 @@ public class PossibleMovesFinderImproved implements Serializable {
       Move[][] movesForCurrentBitPattern = this.movesForBitPatterns[i];
 
       for (Board board : Board.existingBoardsInBitPattern(bitPattern)) {
-        LongArrayList possibleMoves = possibleMovesBasic(board);
+        ArrayList<Long> possibleMoves = possibleMovesBasic(board);
         int hash = hashBoard(bitPattern, board, i);
         movesForCurrentBitPattern[hash] = new Move[possibleMoves.size()];
 
         for (int j = 0; j < possibleMoves.size(); j++) {
-          long move = possibleMoves.getLong(j);
+          long move = possibleMoves.get(j);
           movesForCurrentBitPattern[hash][j] = new Move(board, move);
         }
       }
@@ -848,8 +848,8 @@ public class PossibleMovesFinderImproved implements Serializable {
    * @param b the board.
    * @return the list of moves.
    */
-  public static final LongArrayList possibleMovesBasic(Board b) {
-    LongArrayList moves = new LongArrayList();
+  public static final ArrayList<Long> possibleMovesBasic(Board b) {
+    ArrayList<Long> moves = new ArrayList<>();
     int[][] directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, 
                            {0, 1}, {1, -1}, {1, 0}, {1, 1}};
     char player = 'X';

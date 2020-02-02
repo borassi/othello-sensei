@@ -25,10 +25,16 @@ import org.junit.Test;
 
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class PossibleMovesFinderImprovedTest {
+
+  public static <T> void assertArrayEqualsListIgnoreOrder(long[] array, List<Long> list) {
+    HashSet<Long> listSet = new HashSet<>(list);
+    assertEquals(array.length, list.size());
+    for (long l : array) {
+      assert(listSet.contains(l));
+    }
+  }
 
   public static <T> void assertListEqualsIgnoreOrder(List<T> list1, List<T> list2) {
     HashSet<T> tmp1 = new HashSet<>(list1);
@@ -75,8 +81,8 @@ public class PossibleMovesFinderImprovedTest {
                              + "--------\n"
                              + "--------\n")));
 
-    assertListEqualsIgnoreOrder(possibleMovesBlack, new LongArrayList(movesFinder.possibleMoves(boardBlack)));
-    assertListEqualsIgnoreOrder(possibleMovesBlack, new LongArrayList(movesFinder.possibleMoves(boardBlack)));
+    assertArrayEqualsListIgnoreOrder(movesFinder.possibleMoves(boardBlack), possibleMovesBlack);
+    assertArrayEqualsListIgnoreOrder(movesFinder.possibleMoves(boardBlack), possibleMovesBlack);
   }
   
 
@@ -117,7 +123,7 @@ public class PossibleMovesFinderImprovedTest {
                              + "--------\n"
                              + "--------\n")));
 
-    assertListEqualsIgnoreOrder(possibleMoves, new LongArrayList(movesFinder.possibleMoves(board)));
+    assertArrayEqualsListIgnoreOrder(movesFinder.possibleMoves(board), possibleMoves);
   }
   
   @Test
@@ -144,10 +150,15 @@ public class PossibleMovesFinderImprovedTest {
  
     for (int i = 0; i < n; i++) {
       Board b = Board.randomBoard();
-      LongArrayList movesBasic = movesFinder.possibleMovesBasic(b);
-      LongArrayList movesClever = new LongArrayList(movesFinder.possibleMoves(b));
-
-      BoardTest.assertListEqualsIgnoreOrder(movesBasic, movesClever);
+      ArrayList<Long> movesBasic = movesFinder.possibleMovesBasic(b);
+      long[] movesClever = movesFinder.possibleMoves(b);
+      if (movesClever.length > 0) {
+        ArrayList<Long> movesCleverList = new ArrayList<>();
+        for (long move : movesClever) {
+          movesCleverList.add(move);
+        }
+        BoardTest.assertListEqualsIgnoreOrder(movesBasic, movesCleverList);
+      }
     }
   }
   

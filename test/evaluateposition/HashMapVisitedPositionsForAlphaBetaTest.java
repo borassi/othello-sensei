@@ -20,7 +20,7 @@ import org.junit.Test;
 
 import board.Board;
 import evaluateposition.HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 
 public class HashMapVisitedPositionsForAlphaBetaTest {
 
@@ -135,7 +135,7 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
       }
       {
         int j = 0;
-        for (ObjectArrayList<StoredBoardForAlphaBeta> a : visitedPositions.evaluationsHashMap) {
+        for (ArrayList<StoredBoardForAlphaBeta> a : visitedPositions.evaluationsHashMap) {
           for (StoredBoardForAlphaBeta b : a) {
             if (b.prevToRemove != null) {
               j++;

@@ -19,7 +19,6 @@ import bitpattern.PositionIJ;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DepthOneEvaluator;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.ArrayList;
 
 public class EvaluatorBasic implements EvaluatorInterface {
@@ -80,8 +79,8 @@ public class EvaluatorBasic implements EvaluatorInterface {
     return bestEval;    
   }
 
-  public ObjectArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
-    ObjectArrayList<StoredBoard> evaluations = new ObjectArrayList<>();
+  public ArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
+    ArrayList<StoredBoard> evaluations = new ArrayList<>();
     long[] moves = possibleMovesFinder.possibleMoves(current);
  
     for (long move : moves) {

@@ -17,9 +17,8 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import bitpattern.BitPattern;
 import static evaluateposition.StoredBoard.N_SAMPLES;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 public class HashMapVisitedPositions {
   protected final PossibleMovesFinderImproved possibleMovesFinder;
@@ -37,11 +36,11 @@ public class HashMapVisitedPositions {
     boolean playerVariates;
     int alpha;
     int beta;
-    ObjectArrayList<StoredBoard> parents;
+    ArrayList<StoredBoard> parents;
     
     public PositionToImprove(StoredBoard board, boolean playerVariates,
         boolean playerIsStartingPlayer, StoredBoard firstPosition,
-        ObjectArrayList<StoredBoard> parents) {
+        ArrayList<StoredBoard> parents) {
       this.board = board;
       this.playerIsStartingPlayer = playerIsStartingPlayer;
       this.parents = parents;
@@ -103,13 +102,13 @@ public class HashMapVisitedPositions {
       }
 
       if (i == chosen) {
-        ObjectArrayList<StoredBoard> parents = new ObjectArrayList<>();
+        ArrayList<StoredBoard> parents = new ArrayList<>();
         StoredBoard parent = b;
         while (parent.fathers.size() > 0) {
           parents.add(parent);
           parent = parent.fathers.get((int) (Math.random() * parent.fathers.size()));
         }
-        ObjectArrayList<StoredBoard> parentsReversed = new ObjectArrayList<>();
+        ArrayList<StoredBoard> parentsReversed = new ArrayList<>();
         for (int p = parents.size() - 1; p >= 0; --p) {
           parentsReversed.add(parents.get(p));
         }
@@ -121,7 +120,7 @@ public class HashMapVisitedPositions {
 
   protected synchronized PositionToImprove nextPositionToImproveEndgame(
       StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
-      ObjectArrayList<StoredBoard> parents) {
+      ArrayList<StoredBoard> parents) {
     parents.add(father);
 //    System.out.println("ENDGAME");
     lastEndgame = true;
@@ -147,7 +146,7 @@ public class HashMapVisitedPositions {
   boolean lastEndgame = false;
   protected synchronized PositionToImprove nextPositionToImproveStandard(
       StoredBoard position, int sample, boolean playerVariates, boolean playerIsStartingPlayer,
-      ObjectArrayList<StoredBoard> parents) {
+      ArrayList<StoredBoard> parents) {
     parents.add(position);
 //    System.out.println("STANDARD");
     lastEndgame = false;
@@ -177,7 +176,7 @@ public class HashMapVisitedPositions {
   }
 
   protected synchronized PositionToImprove nextPositionToImprove() {
-    ObjectArrayList<StoredBoard> parents = new ObjectArrayList<StoredBoard>();
+    ArrayList<StoredBoard> parents = new ArrayList<StoredBoard>();
     StoredBoard positionToEvaluateLocal = this.firstPosition;
     if (positionToEvaluateLocal.isSolved()) {
       return null;
@@ -403,7 +402,6 @@ public class HashMapVisitedPositions {
     father.upper = Short.MIN_VALUE;
     father.bestVariationPlayer = Short.MIN_VALUE;
     father.bestVariationOpponent = Short.MIN_VALUE;
-//    father.descendants = 1;
 
     father.bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
 
@@ -413,7 +411,16 @@ public class HashMapVisitedPositions {
           -child.bestVariationOpponent);
       father.lower = (short) Math.max(father.lower, -child.upper);
       father.upper = (short) Math.max(father.upper, -child.lower);
-//      father.descendants += child.descendants;
+    }
+    if (father.eval >= evalGoal) {
+      father.expectedToSolve = father.children[0].expectedToSolve;
+      for (StoredBoard child : father.children) {
+        father.expectedToSolve = Math.min(father.expectedToSolve, child.expectedToSolve);
+      }
+    } else {
+      for (StoredBoard child : father.children) {
+        father.expectedToSolve += child.expectedToSolve;
+      }      
     }
     for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
       short tmp = Short.MIN_VALUE;
@@ -425,11 +432,11 @@ public class HashMapVisitedPositions {
   }
   
   protected synchronized void updateAllDescendants() {
-    updateAllDescendantsRecursive(this.firstPosition, new ObjectOpenHashSet<>());
+    updateAllDescendantsRecursive(this.firstPosition, new HashSet<>());
   }
   
   protected synchronized void updateAllDescendantsRecursive(StoredBoard start,
-      ObjectOpenHashSet<StoredBoard> alreadyDone) {
+      HashSet<StoredBoard> alreadyDone) {
     if (alreadyDone.contains(start)) {
       return;
     }
@@ -548,8 +555,8 @@ public class HashMapVisitedPositions {
     }
 
     int eval = -6600;
-    ObjectArrayList<StoredBoard> bestVariationOpponent = new ObjectArrayList<>();
-    ObjectArrayList<StoredBoard> allChildren = new ObjectArrayList<>();
+    ArrayList<StoredBoard> bestVariationOpponent = new ArrayList<>();
+    ArrayList<StoredBoard> allChildren = new ArrayList<>();
     int lower = Integer.MIN_VALUE;
     int upper = Integer.MIN_VALUE;
     int bestVariationPlayer = -6800;
@@ -592,7 +599,7 @@ public class HashMapVisitedPositions {
         return false; 
       }
       boolean isParetoOptimal = true;
-      ObjectArrayList<StoredBoard> newBestVariationUpper = new ObjectArrayList<>();
+      ArrayList<StoredBoard> newBestVariationUpper = new ArrayList<>();
       eval = Math.max(eval, -child.eval);
       for (StoredBoard other : bestVariationOpponent) {
         if (-other.eval >= -child.eval && -other.bestVariationPlayer >= -child.bestVariationPlayer) {

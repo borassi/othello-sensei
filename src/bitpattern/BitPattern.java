@@ -16,7 +16,7 @@ package bitpattern;
 
 import java.util.ArrayList;
 import board.Board;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import java.util.HashSet;
 
 public class BitPattern {
   public final static long FULL_BIT_PATTERN = parsePattern(
@@ -296,8 +296,8 @@ public class BitPattern {
     return b;
   }
   
-  public final static LongOpenHashSet allTranspositions(long b) {
-    LongOpenHashSet result = new LongOpenHashSet();
+  public final static HashSet<Long> allTranspositions(long b) {
+    HashSet<Long> result = new HashSet<>();
     for (int i = 0; i < 2; ++i) {
       for (int j = 0; j < 4; ++j) {
         result.add(b);

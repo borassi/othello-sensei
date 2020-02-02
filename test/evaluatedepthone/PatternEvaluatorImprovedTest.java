@@ -16,8 +16,8 @@ package evaluatedepthone;
 import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -85,7 +85,7 @@ public class PatternEvaluatorImprovedTest {
     for (int i = 0; i < EVAL.features.length; ++i) {
       long feature = EVAL.features[i];
       ArrayList<Long> patterns = BitPattern.allSubBitPatterns(feature);
-      Int2ObjectOpenHashMap<Board> foundPatterns = new Int2ObjectOpenHashMap<>();
+      HashMap<Integer, Board> foundPatterns = new HashMap<>();
       for (long player : patterns) {
         int k = 0;
         for (long opponent : patterns) {

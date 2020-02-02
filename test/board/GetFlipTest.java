@@ -14,7 +14,6 @@
 package board;
 
 import bitpattern.BitPattern;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.Test;
@@ -137,7 +136,7 @@ public class GetFlipTest {
       Arrays.fill(movesFound, false);
 
       Board board = Board.randomBoard();
-      LongArrayList flips = new LongArrayList(movesFinder.possibleMoves(board));
+      long[] flips = movesFinder.possibleMoves(board);
 
       for (long flip : flips) {
         int move = Long.numberOfTrailingZeros(flip & ~(board.getPlayer() | board.getOpponent()));

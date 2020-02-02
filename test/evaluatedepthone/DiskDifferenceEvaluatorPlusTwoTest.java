@@ -24,8 +24,8 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class DiskDifferenceEvaluatorPlusTwoTest {
-  static final DiskDifferenceEvaluatorPlusTwo eval = new DiskDifferenceEvaluatorPlusTwo();
-  static final DiskDifferenceEvaluatorPlusTwo evalForTest = new DiskDifferenceEvaluatorPlusTwo();
+  static final DiskDifferenceEvaluatorPlusTwo EVAL = new DiskDifferenceEvaluatorPlusTwo();
+  static final DiskDifferenceEvaluatorPlusTwo EVAL_FOR_TEST = new DiskDifferenceEvaluatorPlusTwo();
 
   
   @Test
@@ -39,15 +39,15 @@ public class DiskDifferenceEvaluatorPlusTwoTest {
       }
       long flip = moves[(int) (Math.random() * moves.length)];
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-      eval.setup(b.getPlayer(), b.getOpponent());
-      eval.invert();
+      EVAL.setup(b.getPlayer(), b.getOpponent());
+      EVAL.invert();
       if (flip != 0) {
-        eval.update(move, flip);
+        EVAL.update(move, flip);
       }
       Board after = b.move(flip);
-      evalForTest.setup(after.getPlayer(), after.getOpponent());
-      assertEquals(eval.b, evalForTest.b);
-      assertEquals(eval.eval(), evalForTest.eval());
+      EVAL_FOR_TEST.setup(after.getPlayer(), after.getOpponent());
+      assertEquals(EVAL.b, EVAL_FOR_TEST.b);
+      assertEquals(EVAL.eval(), EVAL_FOR_TEST.eval());
     }
   }
   
@@ -62,16 +62,16 @@ public class DiskDifferenceEvaluatorPlusTwoTest {
       }
       long flip = moves[(int) (Math.random() * moves.length)];
       int move = Long.numberOfTrailingZeros(flip & ~b.getPlayer() & ~b.getOpponent());
-      eval.setup(b.getPlayer(), b.getOpponent());
-      eval.invert();
+      EVAL.setup(b.getPlayer(), b.getOpponent());
+      EVAL.invert();
       if (flip != 0) {
-        eval.update(move, flip);
-        eval.undoUpdate(move, flip);
+        EVAL.update(move, flip);
+        EVAL.undoUpdate(move, flip);
       }
-      eval.invert();
-      evalForTest.setup(b.getPlayer(), b.getOpponent());
-      assertEquals(eval.b, evalForTest.b);
-      assertEquals(eval.eval(), evalForTest.eval());
+      EVAL.invert();
+      EVAL_FOR_TEST.setup(b.getPlayer(), b.getOpponent());
+      assertEquals(EVAL.b, EVAL_FOR_TEST.b);
+      assertEquals(EVAL.eval(), EVAL_FOR_TEST.eval());
     }
   }
 }

@@ -15,7 +15,7 @@
 package evaluateposition;
 
 import board.Board;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 
 public class HashMapVisitedPositionsForAlphaBeta {
   
@@ -26,11 +26,11 @@ public class HashMapVisitedPositionsForAlphaBeta {
     public int upper;
     public int depthLower;
     public int depthUpper;
-    public ObjectArrayList<StoredBoardForAlphaBeta> myArray;
+    public ArrayList<StoredBoardForAlphaBeta> myArray;
     public StoredBoardForAlphaBeta prevToRemove;
     public StoredBoardForAlphaBeta nextToRemove;
 
-    public StoredBoardForAlphaBeta(ObjectArrayList<StoredBoardForAlphaBeta> myArray) {
+    public StoredBoardForAlphaBeta(ArrayList<StoredBoardForAlphaBeta> myArray) {
       this.myArray = myArray;
     }
     
@@ -42,7 +42,7 @@ public class HashMapVisitedPositionsForAlphaBeta {
     }
   
     public final void reset(long player, long opponent, 
-                            ObjectArrayList<StoredBoardForAlphaBeta> myArray) {
+                            ArrayList<StoredBoardForAlphaBeta> myArray) {
       this.player = player;
       this.opponent = opponent;
       this.lower = -66;
@@ -66,10 +66,10 @@ public class HashMapVisitedPositionsForAlphaBeta {
     }
   }
 
-  public ObjectArrayList<StoredBoardForAlphaBeta> fathers = new ObjectArrayList<>();
+  public ArrayList<StoredBoardForAlphaBeta> fathers = new ArrayList<>();
   public StoredBoardForAlphaBeta prevToRemove = null;
   public StoredBoardForAlphaBeta nextToRemove = null;
-  public ObjectArrayList<StoredBoardForAlphaBeta> myArray;
+  public ArrayList<StoredBoardForAlphaBeta> myArray;
   
   public static final int hashBoard(long player, long opponent, int maxElements) {
     int newPlayer = (int) ((player + (player >> 32)) * 541725397157L);
@@ -77,7 +77,7 @@ public class HashMapVisitedPositionsForAlphaBeta {
     return Math.abs(3 * newPlayer + 17 * newOpponent) % maxElements;
   }
 
-  public ObjectArrayList<StoredBoardForAlphaBeta> evaluationsHashMap[];
+  public ArrayList<StoredBoardForAlphaBeta> evaluationsHashMap[];
 
   protected StoredBoardForAlphaBeta firstToRemove;
   protected StoredBoardForAlphaBeta lastToRemove;
@@ -98,11 +98,11 @@ public class HashMapVisitedPositionsForAlphaBeta {
   }
 
   public final void reset() {
-    evaluationsHashMap = new ObjectArrayList[arraySize];
-    firstToRemove = new StoredBoardForAlphaBeta(new ObjectArrayList<>());
-    lastToRemove = new StoredBoardForAlphaBeta(new ObjectArrayList<>());
+    evaluationsHashMap = new ArrayList[arraySize];
+    firstToRemove = new StoredBoardForAlphaBeta(new ArrayList<>());
+    lastToRemove = new StoredBoardForAlphaBeta(new ArrayList<>());
     for (int i = 0; i < arraySize; i++) {
-      evaluationsHashMap[i] = new ObjectArrayList<>();
+      evaluationsHashMap[i] = new ArrayList<>();
     }
     for (int i = 0; i < maxSize; i++) {
       evaluationsHashMap[i].add(new StoredBoardForAlphaBeta(evaluationsHashMap[i]));
@@ -130,7 +130,7 @@ public class HashMapVisitedPositionsForAlphaBeta {
   
   public StoredBoardForAlphaBeta getOrAddStoredBoard(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    ObjectArrayList<StoredBoardForAlphaBeta> boards = evaluationsHashMap[hash];
+    ArrayList<StoredBoardForAlphaBeta> boards = evaluationsHashMap[hash];
     for (StoredBoardForAlphaBeta b : boards) {
       if (b.player == player && b.opponent == opponent) {
         this.updateToRemove(b);
@@ -151,7 +151,7 @@ public class HashMapVisitedPositionsForAlphaBeta {
   
   public StoredBoardForAlphaBeta getStoredBoardNoUpdate(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    ObjectArrayList<StoredBoardForAlphaBeta> boards = evaluationsHashMap[hash];
+    ArrayList<StoredBoardForAlphaBeta> boards = evaluationsHashMap[hash];
     for (StoredBoardForAlphaBeta b : boards) {
       if (b.player == player && b.opponent == opponent) {
         return b;
@@ -162,7 +162,7 @@ public class HashMapVisitedPositionsForAlphaBeta {
   
   public StoredBoardForAlphaBeta getStoredBoard(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    ObjectArrayList<StoredBoardForAlphaBeta> boards = evaluationsHashMap[hash];
+    ArrayList<StoredBoardForAlphaBeta> boards = evaluationsHashMap[hash];
     for (StoredBoardForAlphaBeta b : boards) {
       if (b.player == player && b.opponent == opponent) {
         this.updateToRemove(b);
@@ -197,9 +197,9 @@ public class HashMapVisitedPositionsForAlphaBeta {
     if (!toRemove.isNull()) {
       size--;
     }
-    ObjectArrayList<StoredBoardForAlphaBeta> toRemoveArray = toRemove.myArray;
+    ArrayList<StoredBoardForAlphaBeta> toRemoveArray = toRemove.myArray;
     
-    StoredBoardForAlphaBeta other = toRemoveArray.pop();
+    StoredBoardForAlphaBeta other = toRemoveArray.remove(toRemoveArray.size() - 1);
     if (toRemove == other) {
       return toRemove;
     }
@@ -223,7 +223,7 @@ public class HashMapVisitedPositionsForAlphaBeta {
   public String toString() {
     String result = "";
     int i = 0;
-    for (ObjectArrayList<StoredBoardForAlphaBeta> a : evaluationsHashMap) {
+    for (ArrayList<StoredBoardForAlphaBeta> a : evaluationsHashMap) {
       result += i++ + "\n";
       result = a.stream().map((b) -> b.toString()).reduce(result, String::concat);
     }

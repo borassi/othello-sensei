@@ -23,11 +23,10 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.BoardTest;
 import board.PossibleMovesFinderImproved;
+import static board.PossibleMovesFinderImprovedTest.assertArrayEqualsListIgnoreOrder;
 import constants.Constants;
-import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import java.util.ArrayList;
 
 public class EvaluatorMidgameTest {
   PossibleMovesFinderImproved possibleMovesFinder = PossibleMovesFinderImproved.load();
@@ -326,7 +325,7 @@ public class EvaluatorMidgameTest {
     Board b = new Board();
     evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
     evaluator.depthOneEvaluator.invert();
-    ObjectArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -2000, 1000);
+    ArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -2000, 1000);
     assertEquals(4, moves.size());
     for (EvaluatorMidgame.Move move : moves) {
       assertEquals(2, Long.bitCount(move.flip));
@@ -345,13 +344,20 @@ public class EvaluatorMidgameTest {
       Board b = Board.randomBoard();
       evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
       evaluator.depthOneEvaluator.invert();
-      ObjectArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -20, 20);
+      ArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -20, 20);
       long movesTest[] = pmf.possibleMoves(b.getPlayer(), b.getOpponent());
-      LongArrayList movesFromEvaluator = new LongArrayList();
+      ArrayList<Long> movesFromEvaluator = new ArrayList<>();
 
       for (EvaluatorMidgame.Move m : moves) {
         m.flip = m.flip & ~b.getPlayer();
-        if (!new LongArrayList(movesTest).contains(m.flip)) {
+        boolean contains = false;
+        for (long l : movesTest) {
+          if (l == m.flip) {
+            contains = true;
+            break;
+          }
+        }
+        if (!contains) {
           System.out.println(b);
           System.out.println(BitPattern.patternToString(m.flip));
           assert(false);
@@ -359,7 +365,7 @@ public class EvaluatorMidgameTest {
         movesFromEvaluator.add(m.flip);
       }
 
-      assertListEqualsIgnoreOrder(new LongArrayList(movesTest), movesFromEvaluator);
+      assertArrayEqualsListIgnoreOrder(movesTest, movesFromEvaluator);
     }
   }
 }
