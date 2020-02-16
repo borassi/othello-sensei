@@ -22,8 +22,7 @@ import board.Board;
  */
 public interface UI {
   public void setCases(Board board, boolean blackTurn);
-  public void setAnnotations(String str, PositionIJ ij);
-  public void setBestMove(PositionIJ ij);
+  public void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
   public boolean playBlackMoves();
   public boolean playWhiteMoves();
   public int depth();

@@ -22,23 +22,25 @@ import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorInterface {
   private final EvaluatorMidgame evaluatorMidgame;
+  private long maxNVisited;
 
-  public EvaluatorMCTS(int arraySize, long maxSize) {
-    this(arraySize, maxSize, PossibleMovesFinderImproved.load(), 
+  public EvaluatorMCTS(long maxNVisited, int arraySize, long maxSize) {
+    this(maxNVisited, arraySize, maxSize, PossibleMovesFinderImproved.load(), 
         new EvaluatorMidgame());
   }
 
-  public EvaluatorMCTS(int arraySize, long maxSize, 
-                        PossibleMovesFinderImproved possibleMovesFinder) {
-    this(arraySize, maxSize, possibleMovesFinder, new EvaluatorMidgame());
+  public EvaluatorMCTS(long maxNVisited, int arraySize, long maxSize, 
+                       PossibleMovesFinderImproved possibleMovesFinder) {
+    this(maxNVisited, arraySize, maxSize, possibleMovesFinder, new EvaluatorMidgame());
   }
 
-  public EvaluatorMCTS(int arraySize, long maxSize,
+  public EvaluatorMCTS(long maxNVisited, int arraySize, long maxSize,
                        PossibleMovesFinderImproved possibleMovesFinder,
                        EvaluatorMidgame evaluatorMidgame) {
     super(arraySize, maxSize, possibleMovesFinder);
 //    this.depthOneEval = depthOneEvaluator;
     this.evaluatorMidgame = evaluatorMidgame;
+    this.maxNVisited = maxNVisited;
   }
   
   public synchronized float getEval() {
@@ -77,7 +79,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
   }
 
   int[] deltas = new int[StoredBoard.N_SAMPLES];
-  protected int addPositions(StoredBoard father) {
+  protected int addPositions(PositionToImprove fatherPos) {
+    StoredBoard father = fatherPos.board;
     long player = father.player;
     long opponent = father.opponent;
     long[] moves = possibleMovesFinder.possibleMovesAdvanced(player, opponent);
@@ -86,29 +89,28 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 //    this.depthOneEval.invert();
     int addedPositions = 0;
     if (moves.length == 0) {
-      this.updateSolved(player, opponent, BitPattern.getEvaluationGameOver(player, opponent));
+      father.setSolved(BitPattern.getEvaluationGameOver(player, opponent),
+                       this.getEvalGoalForBoard(father));
+      updateFathers(father);
     } else {
       StoredBoard[] children = new StoredBoard[moves.length];
-      for (int i = 0; i < StoredBoard.N_SAMPLES; i++) {
-        deltas[i] = father.samples[i] - father.eval;
-      }
+//      for (int i = 0; i < StoredBoard.N_SAMPLES; i++) {
+//        deltas[i] = father.samples[i] - father.eval;
+//      }
       for (int i = 0; i < moves.length; i++) {
         long move = moves[i];
         Board childBoard = father.getBoard().move(move);
-//        if (move != 0) {
-//          this.depthOneEval.update(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
-//          result = this.depthOneEval.eval();
-//          this.depthOneEval.undoUpdate(Long.numberOfTrailingZeros(move & ~(player | opponent)), move);
-//        } else {
-//          result = this.depthOneEval.eval();
-//        }
-//        float error = this.depthOneEval.lastError();
         evaluatorMidgame.resetNVisitedPositions();
-        int result = evaluatorMidgame.evaluatePosition(childBoard, 0, -6400, 6400);
-        int error = 400;
+        int result = 0;
+        if (this.hasEvalGoal()) {
+          result = evaluatorMidgame.evaluatePosition(childBoard, 2, -6400, 6400);          
+        } else {
+          result = evaluatorMidgame.evaluatePosition(childBoard, 2, -fatherPos.beta, -fatherPos.alpha);
+        }
+//        System.out.println(result + " " + childBoard.getEmptySquares());
+        int error = 600;
         long visited = evaluatorMidgame.getNVisitedPositions() + 1;
-        children[i] = new StoredBoard(childBoard, result, error, deltas);
-        children[i].descendants += visited;
+        children[i] = new StoredBoard(childBoard, result, error, visited);
         addedPositions += visited;
       }
       super.add(children, father);
@@ -116,27 +118,29 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
     return addedPositions;
   }
   
-  protected void updateEndgame(HashMapVisitedPositions.PositionToImprove pos, int eval) {
+  protected void updateEndgame(PositionToImprove pos, int eval) {
 //    System.out.println("\n\n\n" + pos.alpha + " " + pos.beta + pos.board + eval);
+    StoredBoard b = pos.board;
     if (eval <= pos.alpha) {
-      // Tricky but probably correct.
-      super.updateUpper(pos.board.player, pos.board.opponent, eval);
+      b.setUpper(eval, this.getEvalGoalForBoard(b));
     } else if (eval >= pos.beta) {
-      super.updateLower(pos.board.player, pos.board.opponent, eval);
+      b.setLower(eval, this.getEvalGoalForBoard(b));
     } else {
-      super.updateSolved(pos.board.player, pos.board.opponent, eval);
+      b.setSolved(eval, this.getEvalGoalForBoard(b));
     }
+    updateFathers(b);
   }
 
   public short evaluatePosition(Board current, int depth) {
+    this.evaluatorMidgame.resetNVisitedPositions();
     StoredBoard currentStored = new StoredBoard(
         current,
         evaluatorMidgame.evaluatePosition(current, 2, -6400, 6400),
-        800);
+        600,
+        evaluatorMidgame.getNVisited());
 
 //    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
-    this.evaluatorMidgame.resetNVisitedPositions();
     HashMapVisitedPositions.PositionToImprove nextPos;
     float bestHeuristicToStop = Float.POSITIVE_INFINITY;
     int oldStable = Integer.MIN_VALUE;
@@ -150,8 +154,34 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
             next.getBoard(), Constants.EMPTIES_FOR_FORCED_MIDGAME, nextPos.alpha, nextPos.beta);
         seenPositions = evaluatorMidgame.getNVisitedPositions() + 1;
         updateEndgame(nextPos, curEval);
+//      } else {
+//        seenPositions = this.addPositions(nextPos);
+//      }
+      } else if (this.size < this.maxSize) {
+        seenPositions = this.addPositions(nextPos);
       } else {
-        seenPositions = this.addPositions(next);
+        // NOW IT IS PLAYING RANDOMLY.
+        this.evaluatorMidgame.resetNVisitedPositions();
+        int curEval = evaluatorMidgame.evaluatePosition(
+            next.getBoard(), 2, nextPos.alpha, nextPos.beta);
+        int d;
+        for (d = 4; evaluatorMidgame.getNVisitedPositions() < next.descendants; d += 2) {
+          if (next.getBoard().getEmptySquares() - d < 8) {
+            d = next.getBoard().getEmptySquares();
+          }
+          curEval = evaluatorMidgame.evaluatePosition(
+            next.getBoard(), d, nextPos.alpha, nextPos.beta);
+        }
+        seenPositions = evaluatorMidgame.getNVisitedPositions() + 1;
+        if (d >= next.getBoard().getEmptySquares()) {
+          updateEndgame(nextPos, curEval);
+        } else {
+          nextPos.board.updateEval(curEval, (float) (600 / Math.sqrt(d+1) * Math.sqrt(2)));
+          updateFathers(nextPos.board);
+        }
+        System.out.println("\n" + d);
+        System.out.println("  Eval " + curEval + " [" + nextPos.board.ciLower + "," + nextPos.board.ciUpper + "]");
+        System.out.println("  Seen " + seenPositions);
       }
       for (StoredBoard b : nextPos.parents) {
         b.descendants += seenPositions;
@@ -163,16 +193,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       float heuristicToStop = this.heuristicToStop();
       bestHeuristicToStop = Math.min(bestHeuristicToStop, heuristicToStop);
 
-      if (heuristicToStop == bestHeuristicToStop && this.firstPosition.descendants > maxSize * 0.8) {
-//        System.out.println("STOPPING HEUR");
-//        System.out.println(heuristicToStop);
-//        System.out.println(bestHeuristicToStop);
-//        System.out.println(super.firstPosition.getUpperBound());
-//        System.out.println(super.firstPosition.getLowerBound());
-//        // bestVariationLower > bestVariationUpper; maximize the difference.
-//        System.out.println(super.firstPosition.bestVariationOpponent);
-//        System.out.println(super.firstPosition.bestVariationPlayer);
-//        System.out.println(size + " " + maxSize);
+      if (heuristicToStop == bestHeuristicToStop && this.firstPosition.descendants > maxNVisited * 0.8) {
         break;
       }
       if (this.firstPosition.isPartiallySolved() &&
@@ -182,15 +203,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         this.setEvalGoal(this.firstPosition.eval);
 //        break;
       }
-      if (this.firstPosition.descendants > maxSize) {
+      if (this.firstPosition.descendants > maxNVisited) {
 //        System.out.println("STOPPING SIZE");
         break;
       }
     }
-//    System.out.println(this.size() + this.lastMovesEval.nVisited);
-//    System.out.println("W" + weird + "/" + tot);
-//    System.out.print("  " + wrong + "/" + tot + "  ");
-//    System.out.println(-get(current).getEval());
     return (short) -get(current).getEval();
   }
   

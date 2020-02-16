@@ -49,6 +49,11 @@ public class PositionIJ {
     final PositionIJ otherMove = (PositionIJ) other;
     return i == otherMove.i && j == otherMove.j;
   }
+
+  @Override
+  public int hashCode() {
+    return this.i + 8 * this.j;
+  }
   
   @Override
   public String toString() {

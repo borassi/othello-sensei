@@ -81,17 +81,32 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
   
   @Override
-  public void setAnnotations(String annotations, PositionIJ ij) {
-    cases[ij.i][ij.j].setAnnotationsColor(Color.BLACK);
-    cases[ij.i][ij.j].setAnnotations(annotations);
+  public void setAnnotations(CaseAnnotations annotations, PositionIJ ij) {
+    
+    String annotationsString = String.format("%.2f", annotations.eval);
+
+    if (annotations.lower != Float.NEGATIVE_INFINITY && annotations.upper != Float.NEGATIVE_INFINITY) {
+      annotationsString += String.format("\n%.2f  %.2f", annotations.lower, annotations.upper);
+    }
+    if (annotations.bestVariationPlayer != Float.NEGATIVE_INFINITY && annotations.bestVariationOpponent != Float.NEGATIVE_INFINITY) {
+      annotationsString += String.format("\n%.2f  %.2f", annotations.bestVariationPlayer, annotations.bestVariationOpponent);
+    }
+    if (annotations.nVisited != 0) {
+      annotationsString += String.format("\n%d", annotations.nVisited);
+    }
+    if (annotations.otherAnnotations != "") {
+      annotationsString += "\n" + annotations.otherAnnotations;
+    }
+    cases[ij.i][ij.j].setAnnotations(annotationsString);
+    cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
     cases[ij.i][ij.j].repaint();
   }
   
-  @Override
-  public void setBestMove(PositionIJ ij) {
-    cases[ij.i][ij.j].setAnnotationsColor(Color.RED);
-    cases[ij.i][ij.j].update(cases[ij.i][ij.j].getGraphics());
-  }
+//  @Override
+//  public void setBestMove(PositionIJ ij) {
+//    cases[ij.i][ij.j].setAnnotationsColor(Color.RED);
+//    cases[ij.i][ij.j].update(cases[ij.i][ij.j].getGraphics());
+//  }
   
   @Override
   public void setCases(Board board, boolean blackTurn) {
@@ -161,9 +176,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 //    });
     
     SpinnerModel depth = new SpinnerListModel(Arrays.asList(new String[] 
-      {"0", "1", "100", "1000", "2000", "10000", "20000", "50000", "100000",
-      "200000", "500000", "1000000", "2000000", "5000000", "100000000"}));
-    depth.setValue("1000");
+      {"0", "1", "100", "1000000", "2000000", "5000000", "10000000",
+      "20000000", "50000000", "100000000", "200000000"
+    }));
+    depth.setValue("1000000");
     spinner = new JSpinner(depth);
 
     commands.add(spinner);

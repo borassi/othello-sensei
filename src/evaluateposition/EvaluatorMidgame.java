@@ -97,11 +97,12 @@ public class EvaluatorMidgame {
       }
       nVisitedPositions++;
       pass = false;
-      if (nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
-        lastMovesEvaluator.resetNVisited();
-        currentEval = -lastMovesEvaluator.evaluatePosition(opponent & ~flip, player | flip, -upper, -lower, empties);
-        nVisitedPositions += lastMovesEvaluator.getNVisited();
-      } else if (depth <= 1) {
+//      if (depth >= nEmpties && nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
+//        lastMovesEvaluator.resetNVisited();
+//        currentEval = -lastMovesEvaluator.evaluatePosition(opponent & ~flip, player | flip, -upper, -lower, empties);
+//        nVisitedPositions += lastMovesEvaluator.getNVisited();
+//      } else
+      if (depth <= 1) {
         depthOneEvaluator.update(move, flip);
         currentEval = -depthOneEvaluator.eval();
         depthOneEvaluator.undoUpdate(move, flip);
@@ -177,12 +178,12 @@ public class EvaluatorMidgame {
       flip = curMove.flip;
 
       pass = false;
-      if (nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
+      if (depth <= 1) {
+        currentEval = curMove.eval;
+      } else if (depth >= nEmpties && nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
         lastMovesEvaluator.resetNVisited();
         currentEval = -lastMovesEvaluator.evaluatePosition(opponent & ~flip, player | flip, -upper, -Math.max(lower, bestEval), 64);
         nVisitedPositions += lastMovesEvaluator.getNVisited();
-      } else if (depth <= 1) {
-        currentEval = curMove.eval;
       } else {
         depthOneEvaluator.update(move, flip);
         if (depth <= 3) {
@@ -239,6 +240,9 @@ public class EvaluatorMidgame {
     depthOneEvaluator.setup(current.getPlayer(), current.getOpponent());
     if (depth == 0) {
       return depthOneEvaluator.eval();
+    }
+    if (depth + Constants.EMPTIES_FOR_ENDGAME > current.getEmptySquares()) {
+      
     }
     return evaluatePositionSlow(current.getPlayer(), current.getOpponent(), depth, lower, upper, false);
 //    return evaluatePositionQuick(current.getPlayer(), current.getOpponent(), depth, lower, upper, false, 64);

@@ -26,7 +26,7 @@ public class StoredBoardTest {
 
   @Test
   public void testUpdateEval() {
-    StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0);
+    StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0, 1);
     sb.updateEval(0, 0);//, new int[StoredBoard.N_SAMPLES]);
     
     for (short s : sb.samples) {
@@ -35,7 +35,7 @@ public class StoredBoardTest {
   }
   @Test
   public void testUpdateLowerUpperBound() {
-    StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0);
+    StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0, 1);
     sb.updateEval(0, 1000);//, new int[StoredBoard.N_SAMPLES]);
     sb.setLower(-200, 7000);
     assertEquals(0, sb.eval);

@@ -324,23 +324,23 @@ public class MultilinearRegressionImproved {
     PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
     eval.reset(0);
 //    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load(); // "coefficients/pattern_evaluator_improved1.sar");
-    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, testingSet);
+    MultilinearRegressionImproved mr;// = new MultilinearRegressionImproved(eval, testingSet);
     ArrayList<BoardWithEvaluation> trainingSet = LoadDataset.loadTrainingSet();
-    trainingSet.addAll(LoadDataset.loadOMGSet(170));
-    Feature features[][][] = mr.getFeatures();
-    mr.train(features, trainingSet, 0.01F, 0.002F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.0005F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.0002F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.0001F, 1, false);
-    mr.setFeatures(features);
-    eval.save("evaluator_after_first_training.sar");
+//    trainingSet.addAll(LoadDataset.loadOMGSet(170));
+    Feature features[][][]; // = mr.getFeatures();
+//    mr.train(features, trainingSet, 0.01F, 0.002F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.0005F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.0002F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.0001F, 1, false);
+//    mr.setFeatures(features);
+//    eval.save("evaluator_after_first_training.sar");
     
     
     
-    eval = PatternEvaluatorImproved.load(); // "coefficients/pattern_evaluator_improved1.sar");
+    eval = PatternEvaluatorImproved.load("evaluator_after_first_training.sar"); // "coefficients/pattern_evaluator_improved1.sar");
     mr = new MultilinearRegressionImproved(eval, testingSet);
-    trainingSet = LoadDataset.loadTrainingSet();
+//    trainingSet = LoadDataset.loadTrainingSet();
     features = mr.getFeatures();
     mr.train(features, trainingSet, 0.01F, 0.002F, 1, false);
     mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);

@@ -17,7 +17,7 @@ import board.Board;
 import evaluateposition.EvaluatorMCTS;
 
 public class EndgameTest {
-  final static String[] POSITIONS = {
+  public final static String[] POSITIONS = {
 //          "XXXXXXXOOOOOXXXOXOOOXXOX-OXOXOXXOXXXOXXXXXXOXOXXXXXXOOO--OOOOOX- X", 
           "XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO-- X", 
           "--XXXXX--OOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO-- X", 
@@ -42,7 +42,7 @@ public class EndgameTest {
           "XXXOXXXXOXXXXXXXOOXXXXXXOOOXXXXXOOOXXOO-OOOOO---OOOOOOO-OOOOOOO- X",
           "OOOOOOOOXOOXXX--XXOOXOO-XOXOOO--XOOOOX--XOOXOO--XOOOOO--XXXX---- O",
           "--OOOO--X-OOOOO-XXOOXOXXXOXOXXXXXXXOXXXX-XXOXOXX--OXXX-X----X--- O",
-          "--O-------OOX---OOOXXXO-OOOOXOXXXXXOOXOXXXXXXOOXX-XXXXOX--XXXX-- X",
+          "--O-------OOX---OOOXXXO-OOOOXOXXXXXOOXOXXXXXXOOXX-XXXXOX--XXXX-- X", // 24
           "--O--O-----OOOX--X-XOXOO--XXXOOOXXXXOOOOXXXOXXOOXXXXXX--XOXX-O-- O",
           "----X------XXXO--OOOXXXXXOOOOXXO-XXOOXXOOOXOXXXXOOOXX---X-XXXX-- O",
           "-OOOOO----OXXO---OOOOXXO-OOOXOXX-OOXOOXX-XOXXOXX--O-XXXX--O----O X",
@@ -79,10 +79,10 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
-  EvaluatorMCTS eval = new EvaluatorMCTS(4000000, 1000000000L);
+  EvaluatorMCTS eval = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
 
-  public Board readBoardFromFFOFormat(String ffoFormat) {
-    String[] boards = ffoFormat.split(" ");
+  public static Board readIthBoard(int i) {
+    String[] boards = POSITIONS[i].split(" ");
     return new Board(boards[0], boards[1].equals("X"));
   }
 
@@ -90,7 +90,7 @@ public class EndgameTest {
     
     System.out.println(" num empties        t       nVisPos   nVisPos/sec      nStored   eval");
     for (int i = 0; i < POSITIONS.length; i++) {
-      Board b = readBoardFromFFOFormat(POSITIONS[i]);
+      Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i+1));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long t = System.currentTimeMillis();

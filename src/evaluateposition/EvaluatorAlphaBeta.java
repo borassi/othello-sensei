@@ -222,7 +222,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
     for (long move : moves) {
       Board next = current.move(move);
       int eval = -EvaluatorAlphaBeta.this.evaluatePosition(next, depth - 1);
-      evaluations.add(new StoredBoard(next, eval, 0));
+      evaluations.add(new StoredBoard(next, eval, 0, 1));
     }
     return evaluations;
   }

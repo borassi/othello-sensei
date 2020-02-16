@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import javax.swing.SwingUtilities;
 
 import board.Board;
+import board.GetFlip;
 import board.PossibleMovesFinderImproved;
+import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
+import evaluateposition.EvaluatorMidgame;
 import evaluateposition.StoredBoard;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import ui.CaseAnnotations;
 import ui.DesktopUI;
 import ui.UI;
 
@@ -44,6 +48,9 @@ public class Main {
   private int depth = -1;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
+  private final GetFlip FLIPPER;
+  private final EvaluatorMidgame EVALUATOR_MIDGAME;
+  private EvaluatorMCTS EVALUATOR;
   /**
    * The board, as a pair of bitpattern.
    */
@@ -53,7 +60,6 @@ public class Main {
    */
   UI ui;
   public static FileAccessor fileAccessor = new DesktopFileAccessor();
-  EvaluatorMCTS evaluator;
   
   /**
    * Creates a new UI and sets the initial position.
@@ -61,18 +67,21 @@ public class Main {
   public Main() {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
+    FLIPPER = GetFlip.load();
+    EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, FLIPPER);
+    EVALUATOR = new EvaluatorMCTS(1000, 200000, 100000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
   }
   
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(new Board("--OOO-------XX-OOOOOOXOO-OOOOXOOX-OOOXXO---OOXOO---OOOXO--OOOO--", true), true); // 43
+    setBoard(EndgameTest.readIthBoard(36), true); // 1
   }
 
   public final void changeDepth(int depth) {
     this.depth = depth;
     if (depth > 0) {
-      evaluator = new EvaluatorMCTS(2 * depth, depth, POSSIBLE_MOVES_FINDER);
+      EVALUATOR = new EvaluatorMCTS(depth, 20000000, 10000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     }
   }
 
@@ -144,29 +153,36 @@ public class Main {
     
     for (long move : moves) {
       Board next = board.move(move);
-      StoredBoard evaluation = evaluator.get(next);
+      StoredBoard evaluation = EVALUATOR.get(next);
       evaluations.add(evaluation);
-      if (evaluation != null) {
-        PositionIJ ij = BitPattern.bitToMove(board.moveToBit(move));
-
-        String str = String.format("%.2f\n%d\n", -evaluation.getEval() / 100F, evaluation.descendants);
-        str += String.format("%d %d\n", evaluator.getEvalGoal() / 100, evaluation.expectedToSolve);
-        str += String.format("%.2f %.2f\n", -evaluation.bestVariationOpponent / 100F,
-            -evaluation.bestVariationPlayer / 100F);
-        str += String.format("%.2f   %.2f\n", -evaluation.getUpperBound() / 100F, -evaluation.getLowerBound() / 100F);
-        
-        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
-          str += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
-              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
-        }
-        ui.setAnnotations(str, ij);
-      }
     }
     PositionIJ bestIJ = this.findBestMove(evaluations);
-    
-    if (bestIJ.i >= 0) {
-      ui.setBestMove(bestIJ);
+    for (StoredBoard evaluation : evaluations) {
+      if (evaluation != null) {
+        PositionIJ ij = moveFromBoard(board, evaluation);
+
+        CaseAnnotations annotations = new CaseAnnotations();
+        annotations.eval = -evaluation.getEval() / 100F;
+        annotations.isBestMove = ij.equals(bestIJ);
+        annotations.lower = -evaluation.getUpperBound() / 100F;
+        annotations.upper = -evaluation.getLowerBound() / 100F;
+        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
+        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
+        annotations.nVisited = evaluation.descendants;
+//        annotations.otherAnnotations = String.format(
+//            "%d %d\n", EVALUATOR.getEvalGoal() / 100, evaluation.expectedToSolve);
+        
+        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
+          annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
+              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
+        }
+        ui.setAnnotations(annotations, ij);
+      }
     }
+//    
+//    if (bestIJ.i >= 0) {
+//      ui.setBestMove(bestIJ);
+//    }
   }
   
   public PositionIJ moveFromBoard(Board father, StoredBoard child) {
@@ -218,24 +234,31 @@ public class Main {
     if (ui.depth() != depth) {
       this.changeDepth(ui.depth());
     }
-    ArrayList<StoredBoard> evaluations = evaluator.evaluatePositionAll(
+    ArrayList<StoredBoard> evaluations = EVALUATOR.evaluatePositionAll(
       board, ui.depth());
 
-    for (StoredBoard evaluation : evaluations) {
-      int eval = -evaluation.getEval();// -(evaluation.getLowerBound() + evaluation.getUpperBound()) / 2.0F;
-      PositionIJ ij = moveFromBoard(board, evaluation);
-      ui.setAnnotations(String.format("%.2f\n%.2f   %.2f", eval / 100F, -evaluation.getUpperBound() / 100F,
-          -evaluation.getLowerBound() / 100F), ij);
-    }
     PositionIJ bestIJ = findBestMove(evaluations);
-//    System.out.println(evaluator.getNVisitedPositionsByEvaluator());
-
+    
     if (bestIJ.i >= 0) {      
       if (ui.playBlackMoves() || ui.playWhiteMoves()) {
         playMoveIfPossible(bestIJ);
+        return;
       }
-      ui.setBestMove(bestIJ);
     }
+ 
+    for (StoredBoard evaluation : evaluations) {
+      PositionIJ ij = moveFromBoard(board, evaluation);
+      CaseAnnotations annotations = new CaseAnnotations();
+      annotations.eval = -evaluation.getEval() / 100F;
+      annotations.isBestMove = ij.equals(bestIJ);
+      annotations.lower = -evaluation.getUpperBound() / 100F;
+      annotations.upper = -evaluation.getLowerBound() / 100F;
+      annotations.nVisited = evaluation.descendants;
+
+      ui.setAnnotations(annotations, ij);
+    }
+//    System.out.println(evaluator.getNVisitedPositionsByEvaluator());
+
   }
   
   // The entry main() method
