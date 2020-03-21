@@ -36,28 +36,28 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
     assertEquals(visitedPositions.get(b1), null);
     assertEquals(visitedPositions.get(b1), null);
     
-    visitedPositions.updateLowerBound(b1, new Evaluation(-10, 1)); 
-    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 1, 66, 0));
-    visitedPositions.updateLowerBound(b1, new Evaluation(-20, 1));    
-    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-20, 1, 66, 0));
-    visitedPositions.updateLowerBound(b1, new Evaluation(-2, 1));    
-    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-2, 1, 66, 0));
-    visitedPositions.updateLowerBound(b1, new Evaluation(-10, 2));    
-    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 66, 0));
+    visitedPositions.updateLowerBound(b1, -10, 1); 
+    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 1, 6600, 0));
+    visitedPositions.updateLowerBound(b1, -20, 1);    
+    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-20, 1, 6600, 0));
+    visitedPositions.updateLowerBound(b1, -2, 1);    
+    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-2, 1, 6600, 0));
+    visitedPositions.updateLowerBound(b1, -10, 2);    
+    assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 6600, 0));
     assertEquals(1, visitedPositions.size());
     
-    visitedPositions.updateUpperBound(b1, new Evaluation(10, 1));
+    visitedPositions.updateUpperBound(b1, 10, 1);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 10, 1));
-    visitedPositions.updateUpperBound(b1, new Evaluation(20, 1));
+    visitedPositions.updateUpperBound(b1, 20, 1);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 20, 1));
-    visitedPositions.updateUpperBound(b1, new Evaluation(2, 1));
+    visitedPositions.updateUpperBound(b1, 2, 1);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 2, 1));
-    visitedPositions.updateUpperBound(b1, new Evaluation(10, 2));
+    visitedPositions.updateUpperBound(b1, 10, 2);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 10, 2));
     
-    visitedPositions.updateLowerBound(b2, new Evaluation(12, 5));
-    assertEquals(visitedPositions.get(b2), new EvaluatedBoard(12, 5, 66, 0));
-    visitedPositions.updateUpperBound(b2, new Evaluation(10, 1));
+    visitedPositions.updateLowerBound(b2, 12, 5);
+    assertEquals(visitedPositions.get(b2), new EvaluatedBoard(12, 5, 6600, 0));
+    visitedPositions.updateUpperBound(b2, 10, 1);
     assertEquals(visitedPositions.get(b2), new EvaluatedBoard(12, 5, 10, 1));
   }
 
@@ -74,29 +74,29 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
     HashMapVisitedPositionsForAlphaBeta visitedPositions = 
       new HashMapVisitedPositionsForAlphaBeta(7, 3);
     
-    visitedPositions.updateLowerBound(b1, new Evaluation(0, 1));
+    visitedPositions.updateLowerBound(b1, 0, 1);
     assertEquals(1, visitedPositions.size());
-    visitedPositions.updateUpperBound(b2, new Evaluation(0, 1));
+    visitedPositions.updateUpperBound(b2, 0, 1);
     assertEquals(2, visitedPositions.size());
-    visitedPositions.updateLowerBound(b4, new Evaluation(0, 1));
+    visitedPositions.updateLowerBound(b4, 0, 1);
     assertEquals(3, visitedPositions.size());
-    visitedPositions.updateUpperBound(b5, new Evaluation(0, 1));
+    visitedPositions.updateUpperBound(b5, 0, 1);
     assertEquals(3, visitedPositions.size());
-    visitedPositions.updateLowerBound(b6, new Evaluation(0, 1));
+    visitedPositions.updateLowerBound(b6, 0, 1);
     assertEquals(3, visitedPositions.size());
-    visitedPositions.updateUpperBound(b7, new Evaluation(0, 4));
+    visitedPositions.updateUpperBound(b7, 0, 4);
 
-    visitedPositions.updateLowerBound(b2, new Evaluation(0, 2));
-    visitedPositions.updateLowerBound(b4, new Evaluation(0, 2));
-    visitedPositions.updateLowerBound(b5, new Evaluation(0, 4));
-    visitedPositions.updateLowerBound(b6, new Evaluation(0, 4));
-    visitedPositions.updateLowerBound(b3, new Evaluation(0, 2));
+    visitedPositions.updateLowerBound(b2, 0, 2);
+    visitedPositions.updateLowerBound(b4, 0, 2);
+    visitedPositions.updateLowerBound(b5, 0, 4);
+    visitedPositions.updateLowerBound(b6, 0, 4);
+    visitedPositions.updateLowerBound(b3, 0, 2);
 
     assertEquals(visitedPositions.get(b1), null);
-    assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 66, 0));
+    assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 6600, 0));
     assertEquals(visitedPositions.get(b2), null);
     assertEquals(visitedPositions.get(b4), null);
-    assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 66, 0));
+    assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 6600, 0));
   }
 
   @Test
@@ -118,9 +118,9 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
         depth[i] = (int) (Math.random() * 6000);
         isUpper[i] = Math.random() > 0.5;
         if (isUpper[i]) {
-          visitedPositions.updateUpperBound(boards[i], new Evaluation(eval[i], depth[i]));
+          visitedPositions.updateUpperBound(boards[i], eval[i], depth[i]);
         } else {
-          visitedPositions.updateLowerBound(boards[i], new Evaluation(eval[i], depth[i]));   
+          visitedPositions.updateLowerBound(boards[i], eval[i], depth[i]);   
         }
       }
 

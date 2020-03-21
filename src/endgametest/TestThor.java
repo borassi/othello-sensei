@@ -58,7 +58,7 @@ public class TestThor {
 
 //    System.out.println(eval + " " + this.eval.evaluatePosition(b, 1));
 //    return -this.eval.evaluatePosition(b, 0) - be.evaluation;
-    return eval * 30 / 30 + eval1.eval(b) * 0 / 30 - be.evaluation;
+    return eval * 20 / 30 + eval1.eval(b) * 10 / 30 - be.evaluation;
   }
   
   public int errorSingleBoard(BoardWithEvaluation be, int depth) {
@@ -83,26 +83,28 @@ public class TestThor {
   
   public void run() {
     int i = 0;
-    int depth = 6;
+    int n = 0;
+    int depth = 1;
     float totalError = 0;
     for (BoardWithEvaluation be : boards) {
-      if (be.board.getEmptySquares() > 64 || be.board.getEmptySquares() < 4 || pmf.haveToPass(be.board)) {
-        continue;
-      }
-      if (be.board.getEmptySquares() < depth + 12) {
-        continue;
-      }
       i++;
-      float curError = errorSingleBoard(be, depth);
-      totalError += curError * curError;
 
       if (i % 1000 == 0) {
-        System.out.println(i + "/" + boards.size() + ": " + Math.sqrt(totalError / i));
-        System.out.println("  Visited positions: " + String.format("%.0f", eval.getNVisitedPositions() * 1000. / this.time));
+        System.out.println(i + "/" + boards.size() + ": " + Math.sqrt(totalError / n));
+        System.out.println("  Visited positions: " + String.format("%.0f", eval.getNVisited() * 1000. / this.time));
         System.out.println("  Computed moves:    " + String.format("%.0f", eval.getNComputedMoves() * 1000. / this.time));
-        System.out.println("  Average positions: " + eval.getNVisitedPositions() / i);
+        System.out.println("  Average positions: " + eval.getNVisited() / n);
         System.out.println("  Depth: " + depth);
       }
+      if (be.board.getEmptySquares() > 16 || be.board.getEmptySquares() < 12 || pmf.haveToPass(be.board)) {
+        continue;
+      }
+      n++;
+//      if (be.board.getEmptySquares() < depth + 12) {
+//        continue;
+//      }
+      float curError = errorSingleBoardDepthOne(be, depth);
+      totalError += curError * curError;
     }
   }
   

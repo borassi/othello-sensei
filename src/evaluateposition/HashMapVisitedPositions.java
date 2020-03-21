@@ -16,7 +16,6 @@ package evaluateposition;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import bitpattern.BitPattern;
-import static evaluateposition.StoredBoard.N_SAMPLES;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -38,22 +37,31 @@ public class HashMapVisitedPositions {
     int beta;
     ArrayList<StoredBoard> parents;
     
+    protected PositionToImprove(StoredBoard board, boolean playerIsStartingPlayer,
+        ArrayList<StoredBoard> parents, int alpha, int beta) {
+      this.board = board;
+      this.playerIsStartingPlayer = playerIsStartingPlayer;
+      this.parents = parents;
+      this.alpha = alpha;
+      this.beta = beta;
+    }
+    
     public PositionToImprove(StoredBoard board, boolean playerVariates,
         boolean playerIsStartingPlayer, StoredBoard firstPosition,
         ArrayList<StoredBoard> parents) {
       this.board = board;
       this.playerIsStartingPlayer = playerIsStartingPlayer;
       this.parents = parents;
-      this.setAlphaBeta(firstPosition, playerVariates);
+      this.setAlphaBeta(firstPosition);
     }
   
-    private void setAlphaBeta(StoredBoard firstPosition, boolean playerVariates) {
+    private void setAlphaBeta(StoredBoard firstPosition) {
       if (playerIsStartingPlayer) {
-        alpha = firstPosition.getLowerBound();
-        beta = firstPosition.getUpperBound();
+        alpha = firstPosition.eval;
+        beta = firstPosition.eval;
       } else {
-        alpha = -firstPosition.getUpperBound();
-        beta = -firstPosition.getLowerBound();
+        alpha = -firstPosition.eval;
+        beta = -firstPosition.eval;
       }
       if (alpha == beta) {
         if (playerVariates) {
@@ -64,10 +72,10 @@ public class HashMapVisitedPositions {
       }
     }
   }
-  
-  protected void setEvalGoalNoUpdate(int evalGoal) {
-    this.evalGoal = evalGoal;
-  }
+//  
+//  protected void setEvalGoalNoUpdate(int evalGoal) {
+//    this.evalGoal = evalGoal;
+//  }
   
   protected void setEvalGoal(int evalGoal) {
     assert(evalGoal <= 6400 && evalGoal >= -6400);
@@ -112,11 +120,12 @@ public class HashMapVisitedPositions {
         for (int p = parents.size() - 1; p >= 0; --p) {
           parentsReversed.add(parents.get(p));
         }
-        return new PositionToImprove(b, playerIsStartingPlayer, Math.random() > 0.5, this.firstPosition, parentsReversed);
+        return new PositionToImprove(b, Math.random() > 0.5, playerIsStartingPlayer, this.firstPosition, parentsReversed);
       }
     }
     return null;
   }
+
 
   protected synchronized PositionToImprove nextPositionToImproveEndgame(
       StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
@@ -149,7 +158,7 @@ public class HashMapVisitedPositions {
   protected synchronized PositionToImprove nextPositionToImproveStandard(
       StoredBoard position,
 //      int sample,
-//      boolean playerVariates,
+      boolean playerVariates,
       boolean playerIsStartingPlayer,
       ArrayList<StoredBoard> parents) {
     parents.add(position);
@@ -159,14 +168,19 @@ public class HashMapVisitedPositions {
 //      return new PositionToImprove(position, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
       return new PositionToImprove(position, true, playerIsStartingPlayer, this.firstPosition, parents);
     }
-    float bestValue = Float.NEGATIVE_INFINITY;
+    double bestValue = Double.NEGATIVE_INFINITY;
     StoredBoard best = null; 
 //    if (playerVariates) {
       for (StoredBoard child : position.children) {
 //        if (child.isPartiallySolved()) {
 //          continue;
 //        }
-        int current = (int) (-child.getLowerBound() - 50 * Math.log(child.descendants)); // TODO: FIX!!!
+        double current;
+        if (playerVariates) {
+          current = child.costUntilLeafDefense + StoredBoard.edgeCost(position, child, true);
+        } else {
+          current = child.costUntilLeafAttack + StoredBoard.edgeCost(position, child, false);
+        }//(int) (-child.getLowerBound() - 50 * Math.log(child.descendants)); // TODO: FIX!!!
         if (current >= bestValue) {
           bestValue = current;
           best = child;
@@ -184,8 +198,30 @@ public class HashMapVisitedPositions {
 //        }
 //      }
 //    }
-    return nextPositionToImproveStandard(best,// sample, !playerVariates,
+    return nextPositionToImproveStandard(best, !playerVariates,// sample, 
                                          !playerIsStartingPlayer, parents);
+  }
+
+  protected synchronized PositionToImprove nextPositionToImprovePNS(
+      StoredBoard father, int evalGoal, boolean playerIsStartingPlayer,
+      ArrayList<StoredBoard> parents) {
+    parents.add(father);
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerIsStartingPlayer, parents, evalGoal-1, evalGoal+1);
+    }
+    double bestValue = Double.POSITIVE_INFINITY;
+    StoredBoard best = null; 
+    for (StoredBoard child : father.children) {
+      float curValue = child.getDisproofNumber(-evalGoal - 100);
+//      System.out.println(curValue);
+      if (curValue < bestValue) {
+        bestValue = curValue;
+        best = child;
+      }
+    }
+//    System.out.println("evalGoal" + evalGoal);
+//    System.out.println("bestValue" + bestValue);
+    return nextPositionToImprovePNS(best, -evalGoal, !playerIsStartingPlayer, parents);
   }
 
   protected synchronized PositionToImprove nextPositionToImprove() {
@@ -204,25 +240,29 @@ public class HashMapVisitedPositions {
 //      }
 //      sample = (sample + 1) % N_SAMPLES;
 //    }
-    if (!positionToEvaluateLocal.isPartiallySolved()) {
-        return nextPositionToImproveStandard(positionToEvaluateLocal, true,
-            parents);
+    if (!this.hasEvalGoal()) {
+        return nextPositionToImproveStandard(positionToEvaluateLocal,
+            Math.random() > 0.5, true, parents);
     }
-    assert(positionToEvaluateLocal.isPartiallySolved());
+    int evalGoal = this.firstPosition.getEvalGoal();
+//    System.out.println("\nOrigEvalGoal: " + evalGoal);
+    return nextPositionToImprovePNS(
+        positionToEvaluateLocal,
+        evalGoal,
+        true, parents);
 
-    boolean playerVariates;
-    if (positionToEvaluateLocal.bestVariationPlayer < -6400) {
-      assert(positionToEvaluateLocal.bestVariationOpponent <= 6400);
-      playerVariates = false;
-    } else if (positionToEvaluateLocal.bestVariationOpponent > 6400) {
-      playerVariates = true;
-    } else {
-      int playerDelta = positionToEvaluateLocal.bestVariationPlayer - positionToEvaluateLocal.eval;
-      int opponentDelta = positionToEvaluateLocal.eval - positionToEvaluateLocal.bestVariationOpponent;
-      playerVariates = playerDelta > opponentDelta;
-    }
+//    boolean playerVariates;
+//    if (positionToEvaluateLocal.bestVariationPlayer < -6400) {
+//      assert(positionToEvaluateLocal.bestVariationOpponent <= 6400);
+//      playerVariates = false;
+//    } else if (positionToEvaluateLocal.bestVariationOpponent > 6400) {
+//      playerVariates = true;
+//    } else {
+//      int playerDelta = positionToEvaluateLocal.bestVariationPlayer - positionToEvaluateLocal.eval;
+//      int opponentDelta = positionToEvaluateLocal.eval - positionToEvaluateLocal.bestVariationOpponent;
+//      playerVariates = playerDelta > opponentDelta;
+//    }
 //    System.out.println("Endgame: " + playerVariates);
-    return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
   }
 
   private void empty() {
@@ -325,7 +365,7 @@ public class HashMapVisitedPositions {
       add(child);
       this.updateEvalGoalForLeaf(child);
     }
-    fatherInHash.children = children;
+    fatherInHash.addChildren(children);
     updateFathers(children[0]);
   }
   
@@ -376,14 +416,14 @@ public class HashMapVisitedPositions {
     }
     return next(hashBoard(player, opponent, arraySize));
   }
-  
-  public EvaluatedBoard getEvaluatedBoard(Board b) {
-    StoredBoard sb = get(b);
-    if (sb == null) {
-      return null;
-    }
-    return sb.toEvaluatedBoard();
-  }
+//  
+//  public EvaluatedBoard getEvaluatedBoard(Board b) {
+//    StoredBoard sb = get(b);
+//    if (sb == null) {
+//      return null;
+//    }
+//    return sb.toEvaluatedBoard();
+//  }
   
   protected boolean hasEvalGoal() {
     return this.evalGoal <= 6400 && this.evalGoal >= -6400;
@@ -498,15 +538,15 @@ public class HashMapVisitedPositions {
             b.bestVariationPlayer + ", " + b.bestVariationOpponent + ". Expected: -6600, 6600");
           return false;
         }
-        for (short s : b.samples) {
-          i++;
-          if (s != Math.round(b.eval)) {
-            System.out.println("The board\n" + board + 
-              "should contain a gg result, but the score of sample " + i + 
-              " is wrong. Expected: " + b.eval + ". Actual: " + s);
-            return false;
-          }
-        }
+//        for (short s : b.samples) {
+//          i++;
+//          if (s != Math.round(b.eval)) {
+//            System.out.println("The board\n" + board + 
+//              "should contain a gg result, but the score of sample " + i + 
+//              " is wrong. Expected: " + b.eval + ". Actual: " + s);
+//            return false;
+//          }
+//        }
         return true;
       }
       moves = new long[] {0};
@@ -576,9 +616,9 @@ public class HashMapVisitedPositions {
       upper = Math.max(upper, -child.lower);
       lower = Math.max(lower, -child.upper);
       bestVariationPlayer = Math.max(bestVariationPlayer, -child.bestVariationOpponent);
-      for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
-        samples[i] = (short) Math.max(samples[i], -child.samples[i]);
-      }
+//      for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
+//        samples[i] = (short) Math.max(samples[i], -child.samples[i]);
+//      }
     }
     if (descendants != b.descendants) {
       System.out.println("The board " + b + " has " + b.descendants + 
@@ -621,14 +661,14 @@ public class HashMapVisitedPositions {
         ". Actual: " + b.upper + ". Expected: " + upper + ".");
       return false;
     }
-    for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
-      if (b.samples[i] != samples[i]) {
-        System.out.println(
-          "Wrong sample or solved " + i + " for the board\n" + b.getBoard() + 
-          "Expected: " + samples[i] + ". Actual: " + b.samples[i]);
-        return false;
-      }
-    }
+//    for (int i = 0; i < StoredBoard.N_SAMPLES; ++i) {
+//      if (b.samples[i] != samples[i]) {
+//        System.out.println(
+//          "Wrong sample or solved " + i + " for the board\n" + b.getBoard() + 
+//          "Expected: " + samples[i] + ". Actual: " + b.samples[i]);
+//        return false;
+//      }
+//    }
     return true;
   }
   

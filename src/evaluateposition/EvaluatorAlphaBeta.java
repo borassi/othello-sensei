@@ -182,10 +182,10 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
         }
       }
       if (bestEval > alpha) {
-        this.hashMapVisitedPositions.updateLowerBound(current, new Evaluation(bestEval, depth));
+        this.hashMapVisitedPositions.updateLowerBound(current, bestEval, depth);
       }
       if (bestEval < beta) {
-        this.hashMapVisitedPositions.updateUpperBound(current, new Evaluation(bestEval, depth));
+        this.hashMapVisitedPositions.updateUpperBound(current, bestEval, depth);
       }
     }
     return bestEval;

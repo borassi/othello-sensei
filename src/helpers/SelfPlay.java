@@ -41,8 +41,8 @@ public class SelfPlay extends Thread {
   public synchronized Board bestMove(Board b, EvaluatorMCTS player) {
     ArrayList<StoredBoard> evaluations = player.evaluatePositionAll(b, 0);
     double best = Double.POSITIVE_INFINITY;
-    double bestUpper = Double.POSITIVE_INFINITY;
-    double bestPlayerVariates = Double.POSITIVE_INFINITY;
+//    double bestUpper = Double.POSITIVE_INFINITY;
+//    double bestPlayerVariates = Double.POSITIVE_INFINITY;
     Board next = null;
 
     for (StoredBoard evaluation : evaluations) {
@@ -50,13 +50,13 @@ public class SelfPlay extends Thread {
         continue;
       }
       int eval = evaluation.getEval();// -(evaluation.getLowerBound() + evaluation.getUpperBound()) / 2.0F;
-      if (eval < best ||
-          (eval == best && evaluation.getUpperBound() < bestUpper) ||
-          (eval == best && evaluation.getUpperBound() == bestUpper &&
-           evaluation.lower < bestPlayerVariates)) {
+      if (eval < best) {// ||
+//          (eval == best && evaluation.getUpperBound() < bestUpper) ||
+//          (eval == best && evaluation.getUpperBound() == bestUpper &&
+//           evaluation.lower < bestPlayerVariates)) {
         best = eval;
-        bestUpper = evaluation.getUpperBound();
-        bestPlayerVariates = evaluation.lower;
+//        bestUpper = evaluation.getUpperBound();
+//        bestPlayerVariates = evaluation.lower;
         next = evaluation.getBoard();
       }
     }

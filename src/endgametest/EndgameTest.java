@@ -47,7 +47,7 @@ public class EndgameTest {
           "----X------XXXO--OOOXXXXXOOOOXXO-XXOOXXOOOXOXXXXOOOXX---X-XXXX-- O",
           "-OOOOO----OXXO---OOOOXXO-OOOXOXX-OOXOOXX-XOXXOXX--O-XXXX--O----O X",
           "--XO-O----OOOO--OOXOXXO-OOOOXXOOOOOXXOX-OXOXXXXX--XXXX----X-O-X- X",
-          "--O-------OOO--X-XOOOOXXXXXXOXOX-XXOXOOXXXOXOOXX-OOOOO-X---OOO-- X",
+          "--O-------OOO--X-XOOOOXXXXXXOXOX-XXOXOOXXXOXOOXX-OOOOO-X---OOO-- X", // 29
           "-OXXXX----OXXO--XXOOXOOOXXXOOXOOXXOOXOOOXXXXOO-XX-XXO----------- X",
           "-XXX----X-XOO---XXOXOO--XOXOXO--XOOXOXXXXOOXXOX---OOOOO--XXXXX-- X",
           "-OOOOO----OOOO--OXXOOO---XXXOO--XXXXXXO-XXXOOO-OX-OOOO---OOOOO-- X",
@@ -82,16 +82,16 @@ public class EndgameTest {
   EvaluatorMCTS eval = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
 
   public static Board readIthBoard(int i) {
-    String[] boards = POSITIONS[i].split(" ");
+    String[] boards = POSITIONS[i - 1].split(" ");
     return new Board(boards[0], boards[1].equals("X"));
   }
 
   public void run() {
     
     System.out.println(" num empties        t       nVisPos   nVisPos/sec      nStored   eval");
-    for (int i = 0; i < POSITIONS.length; i++) {
+    for (int i = 1; i <= POSITIONS.length; i++) {
       Board b = readIthBoard(i);
-      System.out.print(String.format("%4d", i+1));
+      System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long t = System.currentTimeMillis();
       int result = -eval.evaluatePosition(b, b.getEmptySquares());

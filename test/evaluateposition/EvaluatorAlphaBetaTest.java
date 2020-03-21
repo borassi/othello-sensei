@@ -223,8 +223,8 @@ public class EvaluatorAlphaBetaTest {
     
     for (int i = 0; i < moves.length; i++) {
       Board next = b.move(moves[i]);
-      h.updateLowerBound(next, new Evaluation(lower[i], depth[i]));
-      h.updateUpperBound(next, new Evaluation(upper[i], depth[i]));
+      h.updateLowerBound(next, lower[i], depth[i]);
+      h.updateUpperBound(next, upper[i], depth[i]);
     }
     BoardWithEvaluation[] output = new BoardWithEvaluation[60];
     for (int i = 0; i < 60; i++) {
@@ -250,7 +250,7 @@ public class EvaluatorAlphaBetaTest {
     
     for (int i = 0; i < moves.length; i++) {
       Board next = b.move(moves[i]);
-      h.updateUpperBound(next, new Evaluation(upper[i], depth[i]));
+      h.updateUpperBound(next, upper[i], depth[i]);
     }
     BoardWithEvaluation[] output = new BoardWithEvaluation[60];
     for (int i = 0; i < 60; i++) {
@@ -271,8 +271,8 @@ public class EvaluatorAlphaBetaTest {
     
     for (int i = 0; i < moves.length; i++) {
       Board next = b.move(moves[i]);
-      h.updateLowerBound(next, new Evaluation(lower[i], depth[i]));
-      h.updateUpperBound(next, new Evaluation(upper[i], depth[i]));
+      h.updateLowerBound(next, lower[i], depth[i]);
+      h.updateUpperBound(next, upper[i], depth[i]);
     }
     BoardWithEvaluation[] output = new BoardWithEvaluation[60];
     for (int i = 0; i < 60; i++) {

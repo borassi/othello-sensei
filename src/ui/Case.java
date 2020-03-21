@@ -94,7 +94,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
   @Override
   public void paintComponent(Graphics g) {
     this.size = this.getHeight() + 1;
-    Font font = new Font("Serif", Font.PLAIN, size / 8);
+    Font font = new Font("Serif", Font.PLAIN, size / 9);
     g.setFont(font); 
     
     g.setColor(Color.BLACK);

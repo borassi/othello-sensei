@@ -71,11 +71,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
     return evaluatePosition(current, depth);
   }
   
-  private int heuristicToStop() {
-    return 
-        (super.firstPosition.getUpperBound() - super.firstPosition.getLowerBound()) * 10000
-        // bestVariationLower > bestVariationUpper; maximize the difference.
-        - (super.firstPosition.bestVariationOpponent - super.firstPosition.bestVariationPlayer);
+  private double heuristicToStop() {
+    return Math.max(firstPosition.costUntilLeafAttack, firstPosition.costUntilLeafDefense);
+//        (super.firstPosition.getUpperBound() - super.firstPosition.getLowerBound()) * 10000
+//        // bestVariationLower > bestVariationUpper; maximize the difference.
+//        - (super.firstPosition.bestVariationOpponent - super.firstPosition.bestVariationPlayer);
   }
 
   int[] deltas = new int[StoredBoard.N_SAMPLES];
@@ -85,8 +85,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
     long opponent = father.opponent;
     long[] moves = possibleMovesFinder.possibleMovesAdvanced(player, opponent);
 //     TODO
-//    this.depthOneEval.setup(player, opponent);
-//    this.depthOneEval.invert();
     int addedPositions = 0;
     if (moves.length == 0) {
       father.setSolved(BitPattern.getEvaluationGameOver(player, opponent),
@@ -102,14 +100,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         Board childBoard = father.getBoard().move(move);
         evaluatorMidgame.resetNVisitedPositions();
         int result = 0;
-        if (this.hasEvalGoal()) {
-          result = evaluatorMidgame.evaluatePosition(childBoard, 2, -6400, 6400);          
-        } else {
-          result = evaluatorMidgame.evaluatePosition(childBoard, 2, -fatherPos.beta, -fatherPos.alpha);
-        }
+//        if (this.hasEvalGoal()) {
+          result = evaluatorMidgame.evaluatePosition(childBoard, 0, -6400, 6400);          
+//        } else {
+//          result = evaluatorMidgame.evaluatePosition(childBoard, 2, -fatherPos.beta, -fatherPos.alpha);
+//        }
 //        System.out.println(result + " " + childBoard.getEmptySquares());
         int error = 600;
-        long visited = evaluatorMidgame.getNVisitedPositions() + 1;
+        long visited = evaluatorMidgame.getNVisited() + 1;
         children[i] = new StoredBoard(childBoard, result, error, visited);
         addedPositions += visited;
       }
@@ -133,6 +131,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 
   public short evaluatePosition(Board current, int depth) {
     this.evaluatorMidgame.resetNVisitedPositions();
+    this.evalGoal = 7000;
+    int iter = 0;
     StoredBoard currentStored = new StoredBoard(
         current,
         evaluatorMidgame.evaluatePosition(current, 2, -6400, 6400),
@@ -142,17 +142,28 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 //    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
     HashMapVisitedPositions.PositionToImprove nextPos;
-    float bestHeuristicToStop = Float.POSITIVE_INFINITY;
+    double bestHeuristicToStop = Double.POSITIVE_INFINITY;
     int oldStable = Integer.MIN_VALUE;
     long seenPositions = 0;
+    this.evalGoal = 0;
     while ((nextPos = nextPositionToImprove()) != null) {
+//      if (iter++ > 1000000) {
+//        break;
+//      }
       StoredBoard next = nextPos.board;
+//      System.out.println(this.hasEvalGoal());
+      if (!this.hasEvalGoal()) {
+        nextPos.alpha = -6600;
+        nextPos.beta = 6600;
+      }
+//      System.out.println(nextPos.alpha + " " + nextPos.beta + " " + next.costUntilLeafAttack + " " + next.costUntilLeafDefense);
+//      System.out.println(next);
 
       if (next.getBoard().getEmptySquares() <= Constants.EMPTIES_FOR_FORCED_MIDGAME && next != this.firstPosition) {
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), Constants.EMPTIES_FOR_FORCED_MIDGAME, nextPos.alpha, nextPos.beta);
-        seenPositions = evaluatorMidgame.getNVisitedPositions() + 1;
+        seenPositions = evaluatorMidgame.getNVisited() + 1;
         updateEndgame(nextPos, curEval);
 //      } else {
 //        seenPositions = this.addPositions(nextPos);
@@ -160,28 +171,25 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       } else if (this.size < this.maxSize) {
         seenPositions = this.addPositions(nextPos);
       } else {
-        // NOW IT IS PLAYING RANDOMLY.
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), 2, nextPos.alpha, nextPos.beta);
         int d;
-        for (d = 4; evaluatorMidgame.getNVisitedPositions() < next.descendants; d += 2) {
+        for (d = 4; evaluatorMidgame.getNVisited() < next.descendants; d += 2) {
           if (next.getBoard().getEmptySquares() - d < 8) {
             d = next.getBoard().getEmptySquares();
           }
           curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), d, nextPos.alpha, nextPos.beta);
+//          System.out.println(d + " " + evaluatorMidgame.getNVisitedPositions());
         }
-        seenPositions = evaluatorMidgame.getNVisitedPositions() + 1;
+        seenPositions = evaluatorMidgame.getNVisited() + 1;
         if (d >= next.getBoard().getEmptySquares()) {
           updateEndgame(nextPos, curEval);
         } else {
-          nextPos.board.updateEval(curEval, (float) (600 / Math.sqrt(d+1) * Math.sqrt(2)));
+          nextPos.board.setEval(curEval, (float) (600 / Math.sqrt(d+1) * Math.sqrt(2)));
           updateFathers(nextPos.board);
         }
-        System.out.println("\n" + d);
-        System.out.println("  Eval " + curEval + " [" + nextPos.board.ciLower + "," + nextPos.board.ciUpper + "]");
-        System.out.println("  Seen " + seenPositions);
       }
       for (StoredBoard b : nextPos.parents) {
         b.descendants += seenPositions;
@@ -190,24 +198,34 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 //        System.out.println("STOPPING FINISHED");
         break;
       }
-      float heuristicToStop = this.heuristicToStop();
+      double heuristicToStop = this.heuristicToStop();
       bestHeuristicToStop = Math.min(bestHeuristicToStop, heuristicToStop);
 
       if (heuristicToStop == bestHeuristicToStop && this.firstPosition.descendants > maxNVisited * 0.8) {
         break;
       }
-      if (this.firstPosition.isPartiallySolved() &&
-          this.firstPosition.eval != oldStable) {
-//        System.out.println("Stabilizing at " + this.firstPosition.eval);
-        oldStable = this.firstPosition.eval;
-        this.setEvalGoal(this.firstPosition.eval);
+//      double expectedCost = ((-this.firstPosition.getBoard().getEmptySquares() + 10) * 2.1 - 600 * StoredBoard.C_ATTACK);
+//      System.out.println(this.firstPosition.costUntilLeafAttack + " " + expectedCost);
+//      System.out.println(this.firstPosition.isPartiallySolved());
+//      System.out.println("SOLVED " + this.firstPosition.isPartiallySolved() + this.firstPosition.eval + " " + this.evalGoal);
+      if (this.firstPosition.isPartiallySolved()) {
+        this.evalGoal = 0;
 //        break;
-      }
+      }//          this.firstPosition.eval != oldStable) {
+////        System.out.println("Stabilizing at " + this.firstPosition.eval);
+////        break;
+////        oldStable = this.firstPosition.eval;
+//        System.out.println("Setting eval goal " + this.firstPosition.eval);
+//        this.setEvalGoal(this.firstPosition.eval);
+//        System.out.println(this.firstPosition.getEvalGoal());
+////        break;
+//      }
       if (this.firstPosition.descendants > maxNVisited) {
 //        System.out.println("STOPPING SIZE");
         break;
       }
     }
+//    System.out.println(this.size);
     return (short) -get(current).getEval();
   }
   

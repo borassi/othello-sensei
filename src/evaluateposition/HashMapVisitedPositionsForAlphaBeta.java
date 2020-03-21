@@ -27,6 +27,8 @@ public class HashMapVisitedPositionsForAlphaBeta {
     public int depthLower;
     public int depthUpper;
     public ArrayList<StoredBoardForAlphaBeta> myArray;
+    public StoredBoardForAlphaBeta prev;
+    public StoredBoardForAlphaBeta next;
     public StoredBoardForAlphaBeta prevToRemove;
     public StoredBoardForAlphaBeta nextToRemove;
 
@@ -45,8 +47,8 @@ public class HashMapVisitedPositionsForAlphaBeta {
                             ArrayList<StoredBoardForAlphaBeta> myArray) {
       this.player = player;
       this.opponent = opponent;
-      this.lower = -66;
-      this.upper = 66;
+      this.lower = -6600;
+      this.upper = 6600;
       this.depthLower = 0;
       this.depthUpper = 0;
       this.prevToRemove = null;
@@ -230,17 +232,58 @@ public class HashMapVisitedPositionsForAlphaBeta {
     return result;
   }
   
-  public void updateUpperBound(Board b, Evaluation newUpperBound) {
-    StoredBoardForAlphaBeta evaluation = getOrAddStoredBoard(b);
+  public void updateUpperBound(long player, long opponent, int eval, int depth) {
+    StoredBoardForAlphaBeta evaluation = getOrAddStoredBoard(player, opponent);
 
-    evaluation.upper = newUpperBound.eval;
-    evaluation.depthUpper = newUpperBound.depth;
+    evaluation.upper = eval;
+    evaluation.depthUpper = depth;
   }
   
-  public void updateLowerBound(Board b, Evaluation newLowerBound) {    
-    StoredBoardForAlphaBeta evaluation = getOrAddStoredBoard(b);
+  public void updateUpperBound(Board b, int eval, int depth) {    
+    updateUpperBound(b.getPlayer(), b.getOpponent(), eval, depth);
+  }
+  
+  public void updateLowerBound(long player, long opponent, int eval, int depth) {    
+    StoredBoardForAlphaBeta evaluation = getOrAddStoredBoard(player, opponent);
 
-    evaluation.lower = newLowerBound.eval;
-    evaluation.depthLower = newLowerBound.depth;
+    evaluation.lower = eval;
+    evaluation.depthLower = depth;
+  }
+  
+  public void updateLowerBound(Board b, int eval, int depth) {    
+    updateLowerBound(b.getPlayer(), b.getOpponent(), eval, depth);
+  }
+  
+  public static void main(String args[]) {
+    
+    int N = 10000000;
+    int nElements = N / 2 + 1;
+    HashMapVisitedPositionsForAlphaBeta visitedPositions = 
+      new HashMapVisitedPositionsForAlphaBeta(N, nElements);
+    long t = System.currentTimeMillis();
+    long maxNIter = 100000;
+    int intIter = 1000;
+    for (int nIter = 0; nIter < maxNIter; nIter++) {
+      Board board = new Board((long) (Math.random() * Long.MAX_VALUE), 
+                            (long) (Math.random() * Long.MAX_VALUE));
+      int eval = (int) ((Math.random() - 0.5) * 12800);
+      int depth = (int) (Math.random() * 6000);
+      int value = 0;
+      for (int i = 0; i < intIter; ++i) {
+        visitedPositions.updateLowerBound(board, eval, depth);
+        visitedPositions.updateUpperBound(board, eval, depth);
+        value += visitedPositions.get(board).depthUpper;
+      }
+      if (nIter * intIter % 1000000 == 0) {
+        System.out.println(nIter + " " + (System.currentTimeMillis() - t));
+      }
+      
+
+      if (value - intIter * depth != 0) {
+        System.out.println("BIG MISTAKE!!");
+      }
+    }
+    System.out.println(intIter * maxNIter + " " + (System.currentTimeMillis() - t));
+    System.out.println(intIter * maxNIter * 1000 / (System.currentTimeMillis() - t));
   }
 }

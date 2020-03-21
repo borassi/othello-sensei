@@ -85,11 +85,18 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     
     String annotationsString = String.format("%.2f", annotations.eval);
 
-    if (annotations.lower != Float.NEGATIVE_INFINITY && annotations.upper != Float.NEGATIVE_INFINITY) {
-      annotationsString += String.format("\n%.2f  %.2f", annotations.lower, annotations.upper);
-    }
     if (annotations.bestVariationPlayer != Float.NEGATIVE_INFINITY && annotations.bestVariationOpponent != Float.NEGATIVE_INFINITY) {
       annotationsString += String.format("\n%.2f  %.2f", annotations.bestVariationPlayer, annotations.bestVariationOpponent);
+    }
+        
+    if (annotations.costUntilLeafAttack != Float.NEGATIVE_INFINITY && annotations.costUntilLeafDefense != Float.NEGATIVE_INFINITY) {
+      annotationsString += String.format("\n%.2f %.2f\n%.2f %.2f",
+          annotations.costUntilLeafAttack, annotations.costUntilLeafDefense,
+              annotations.edgeCostAttack, annotations.edgeCostDefense);
+    }
+
+    if (annotations.lower != Float.NEGATIVE_INFINITY && annotations.upper != Float.NEGATIVE_INFINITY) {
+      annotationsString += String.format("\n%.2f  %.2f", annotations.lower, annotations.upper);
     }
     if (annotations.nVisited != 0) {
       annotationsString += String.format("\n%d", annotations.nVisited);

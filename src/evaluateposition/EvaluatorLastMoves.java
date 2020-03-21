@@ -17,6 +17,7 @@ package evaluateposition;
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetFlip;
+import evaluatedepthone.FindStableDisks;
 
 /**
  *
@@ -25,6 +26,7 @@ import board.GetFlip;
 public class EvaluatorLastMoves {
 
   private static final int EMPTIES_FOR_SUPER_FAST = 5;
+  private final FindStableDisks stableDisks;
 
   int nVisited = 0;
   int baseOffset;
@@ -35,12 +37,13 @@ public class EvaluatorLastMoves {
 
   private final GetFlip flipper;
   
-  public EvaluatorLastMoves(GetFlip flipper) {
+  public EvaluatorLastMoves(GetFlip flipper, FindStableDisks stableDisks) {
     this.flipper = flipper;
+    this.stableDisks = stableDisks;
     setup();
   }
   public EvaluatorLastMoves() {
-    this(GetFlip.load());
+    this(GetFlip.load(), new FindStableDisks());
   }
   
   private void setup() {
@@ -69,11 +72,17 @@ public class EvaluatorLastMoves {
   private int evaluateSuperFast(long player, long opponent, int lower, int upper,
                                 boolean passed) {
     long empties = ~(player | opponent);
-    
+    int nEmpties = Long.bitCount(empties);
+    if (nEmpties >= 4) {
+      int stabilityCutoffUpper = stableDisks.getUpperBound(player, opponent);
+      if (stabilityCutoffUpper <= lower) {
+        return stabilityCutoffUpper;
+      }
+    }
     boolean pass = true;
     int best = Integer.MIN_VALUE;
     int move;
-    boolean twoEmpties = Long.bitCount(empties) == 2;
+    boolean twoEmpties = nEmpties == 2;
 
     while (empties != 0) {
       move = Long.numberOfTrailingZeros(empties);      
@@ -185,6 +194,10 @@ public class EvaluatorLastMoves {
                            boolean passed, long lastMove) {
     long empties = ~(player | opponent);
     int nEmpties = Long.bitCount(empties);
+    int stabilityCutoffUpper = stableDisks.getUpperBound(player, opponent);
+    if (stabilityCutoffUpper <= lower) {
+      return stabilityCutoffUpper;
+    }
     if (nEmpties <= EMPTIES_FOR_SUPER_FAST) {
       return evaluateSuperFast(player, opponent, lower, upper, false);
     }

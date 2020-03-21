@@ -145,7 +145,7 @@ public class BitPattern {
           + "-----X--\n"
           + "------X-\n"
           + "-------X\n");
-  final static long MAIN_REV_DIAG_BIT_PATTERN = BitPattern.parsePattern(
+  public final static long MAIN_REV_DIAG_BIT_PATTERN = BitPattern.parsePattern(
             "-------X\n"
           + "------X-\n"
           + "-----X--\n"
