@@ -452,28 +452,28 @@ public class BitPatternTest {
   }
   @Test
   public void testGetNWSEDiag() {
-    assertEquals(FIRST_DIAG, BitPattern.getNWSEDiag(5));
-    assertEquals(FIRST_DIAG, BitPattern.getNWSEDiag(14));
-    assertEquals(FIRST_DIAG, BitPattern.getNWSEDiag(23));
-    assertEquals(MAIN_DIAG, BitPattern.getNWSEDiag(0));
-    assertEquals(MAIN_DIAG, BitPattern.getNWSEDiag(27));
-    assertEquals(MAIN_DIAG, BitPattern.getNWSEDiag(63));
-    assertEquals(LAST_DIAG, BitPattern.getNWSEDiag(40));
-    assertEquals(1L << 7, BitPattern.getNWSEDiag(7));
-    assertEquals(1L << 56, BitPattern.getNWSEDiag(56));
+    assertEquals(FIRST_DIAG, BitPattern.getDiag9(5));
+    assertEquals(FIRST_DIAG, BitPattern.getDiag9(14));
+    assertEquals(FIRST_DIAG, BitPattern.getDiag9(23));
+    assertEquals(MAIN_DIAG, BitPattern.getDiag9(0));
+    assertEquals(MAIN_DIAG, BitPattern.getDiag9(27));
+    assertEquals(MAIN_DIAG, BitPattern.getDiag9(63));
+    assertEquals(LAST_DIAG, BitPattern.getDiag9(40));
+    assertEquals(1L << 7, BitPattern.getDiag9(7));
+    assertEquals(1L << 56, BitPattern.getDiag9(56));
   }
   @Test
   public void testGetNESWDiag() {
-    assertEquals(LAST_REV_DIAG, BitPattern.getNESWDiag(2));
-    assertEquals(LAST_REV_DIAG, BitPattern.getNESWDiag(9));
-    assertEquals(LAST_REV_DIAG, BitPattern.getNESWDiag(16));
-    assertEquals(FIRST_REV_DIAG, BitPattern.getNESWDiag(61));
-    assertEquals(FIRST_REV_DIAG, BitPattern.getNESWDiag(54));
-    assertEquals(FIRST_REV_DIAG, BitPattern.getNESWDiag(47));
-    assertEquals(MAIN_REV_DIAG, BitPattern.getNESWDiag(7));
-    assertEquals(MAIN_REV_DIAG, BitPattern.getNESWDiag(56));
-    assertEquals(1L, BitPattern.getNESWDiag(0));
-    assertEquals(1L << 63, BitPattern.getNESWDiag(63));
+    assertEquals(LAST_REV_DIAG, BitPattern.getDiag7(2));
+    assertEquals(LAST_REV_DIAG, BitPattern.getDiag7(9));
+    assertEquals(LAST_REV_DIAG, BitPattern.getDiag7(16));
+    assertEquals(FIRST_REV_DIAG, BitPattern.getDiag7(61));
+    assertEquals(FIRST_REV_DIAG, BitPattern.getDiag7(54));
+    assertEquals(FIRST_REV_DIAG, BitPattern.getDiag7(47));
+    assertEquals(MAIN_REV_DIAG, BitPattern.getDiag7(7));
+    assertEquals(MAIN_REV_DIAG, BitPattern.getDiag7(56));
+    assertEquals(1L, BitPattern.getDiag7(0));
+    assertEquals(1L << 63, BitPattern.getDiag7(63));
   }
   
 }

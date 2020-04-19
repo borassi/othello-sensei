@@ -24,10 +24,10 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
 
   Board b = new Board();
 
-  @Override
-  public float lastError() {
-    return 800;
-  }
+//  @Override
+//  public float lastError() {
+//    return 800;
+//  }
 
   @Override
   public int eval() {

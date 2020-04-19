@@ -18,24 +18,14 @@ import bitpattern.BitPattern;
 
 import board.Board;
 import board.GetFlip;
+import board.GetMoves;
 import constants.Constants;
-import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.FindStableDisks;
 import evaluatedepthone.PatternEvaluatorImproved;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 
 public class EvaluatorMidgame {
-  final DepthOneEvaluator depthOneEvaluator;
-  private final GetFlip flipper;
-//  private final HashMapVisitedPositionsForAlphaBeta hashMapVisitedPositions;
-  private long nVisitedPositions = 0;
-  private long nComputedMoves = 0;
-  private final EvaluatorLastMoves lastMovesEvaluator;
-  private final HashMapVisitedPositionsForAlphaBeta hashMap = new HashMapVisitedPositionsForAlphaBeta();
-  private final FindStableDisks findStableDisks = new FindStableDisks();
-
   static final int SQUARE_VALUE[] = {
     // JCW's score:
     18,  4,  16, 12, 12, 16,  4, 18,
@@ -47,30 +37,41 @@ public class EvaluatorMidgame {
      4,  2,   6,  8,  8,  6,  2,  4,
     18,  4,  16, 12, 12, 16,  4, 18
   };
-  public static class Move implements Comparable<Move> {
+  public class Move implements Comparable<Move> {
     int move;
     long flip;
-    int eval;
-    int nextOpponentMoves;
-    int lower;
-    int upper;
-    float error;
-    boolean isInHash;
-    
+    int value;
+//    int eval;
+//    int nextOpponentMoves;
+//    int lower;
+//    int upper;
+//    float error;
+//    boolean isInHash;
+
     @Override
     public int compareTo(Move other) {
-      if (isInHash && !other.isInHash) {
-        return -1;
-      } else if (other.isInHash && !isInHash) {
-        return 1;
-      }
-      return Float.compare(other.value(), value());
+////      System.out.println(isInHash + " " + other.isInHash);
+//      if (isInHash && !other.isInHash) {
+//        return -1;
+//      } else if (other.isInHash && !isInHash) {
+//        return 1;
+//      }
+      return Float.compare(other.value, value);
     }
-    
-    public float value() {
-      return -nextOpponentMoves * 60000 + eval * 100 + SQUARE_VALUE[move];
-    }
+//
+//    public float value() {
+//      return -nextOpponentMoves * 60000 + eval * 100 + SQUARE_VALUE[move];
+//    }
   }
+  
+  final DepthOneEvaluator depthOneEvaluator;
+  private final GetFlip flipper;
+//  private final HashMapVisitedPositionsForAlphaBeta hashMapVisitedPositions;
+  private long nVisitedPositions = 0;
+  private long nComputedMoves = 0;
+  private final EvaluatorLastMoves lastMovesEvaluator;
+  private final HashMap hashMap = new HashMap();
+  private final FindStableDisks findStableDisks = new FindStableDisks();
 
   public EvaluatorMidgame() {
     this(PatternEvaluatorImproved.load());
@@ -86,6 +87,11 @@ public class EvaluatorMidgame {
     this.depthOneEvaluator = depthOneEvaluator;
     this.flipper = getFlip;
     this.lastMovesEvaluator = new EvaluatorLastMoves(getFlip, this.findStableDisks);
+    for (int i = 0; i < this.moves.length; ++i) {
+      for (int j = 0; j < this.moves[i].length; ++j) {
+        this.moves[i][j] = new Move();
+      }
+    }
   }
   
 //  public void printHashMapVisitedPositions() {
@@ -94,44 +100,52 @@ public class EvaluatorMidgame {
 
   public int evaluatePositionQuick(
       long player, long opponent, int depth, int lower, int upper, boolean passed, int lastMove) {
-    long empties = (~(player | opponent));
-    int nEmpties = Long.bitCount(empties) - 1;
-    empties = (~(player | opponent)) & GetFlip.neighbors(opponent);
+    long movesBit = GetMoves.getMoves(player, opponent);
     int move;
     long flip;
     boolean pass = true;
     int currentEval;
     int bestEval = Integer.MIN_VALUE;
     nComputedMoves++;
-    this.depthOneEvaluator.invert();
 
-    while (empties != 0) {
-      move = Long.numberOfTrailingZeros(empties);      
-      empties = empties & (~(1L << move));
-      flip = flipper.getFlip(move, player, opponent);
+    if (depth <= 1) {
+      int depthZeroEval = depthOneEvaluator.eval();
+      depthOneEvaluator.invert();
+      while (movesBit != 0) {
+        flip = Long.lowestOneBit(movesBit);
+        move = Long.numberOfTrailingZeros(flip);      
+        movesBit = movesBit & (~flip);
+        flip = GetMoves.getFlip(move, player, opponent);
 
-      if (flip == 0) {
-        continue;
-      }
-      nVisitedPositions++;
-      pass = false;
-//      if (depth >= nEmpties && nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
-//        lastMovesEvaluator.resetNVisited();
-//        currentEval = -lastMovesEvaluator.evaluatePosition(opponent & ~flip, player | flip, -upper, -lower, empties);
-//        nVisitedPositions += lastMovesEvaluator.getNVisited();
-//      } else
-      if (depth <= 1) {
+        nVisitedPositions++;
+        pass = false;
+
         depthOneEvaluator.update(move, flip);
-        currentEval = -depthOneEvaluator.eval();
+        currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
+            (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
         depthOneEvaluator.undoUpdate(move, flip);
-      } else {
+        bestEval = bestEval > currentEval ? bestEval : currentEval;
+        if (bestEval >= upper) {
+          break;
+        }
+      }
+    } else {
+      depthOneEvaluator.invert();
+      while (movesBit != 0) {
+        flip = Long.lowestOneBit(movesBit);
+        move = Long.numberOfTrailingZeros(flip);      
+        movesBit = movesBit & (~flip);
+        flip = GetMoves.getFlip(move, player, opponent);
+
+        nVisitedPositions++;
+        pass = false;
         depthOneEvaluator.update(move, flip);
         currentEval = -evaluatePositionQuick(opponent & ~flip, player | flip, depth - 1, -upper, -Math.max(lower, bestEval), false, move);
         depthOneEvaluator.undoUpdate(move, flip);
-      }
-      bestEval = bestEval > currentEval ? bestEval : currentEval;
-      if (bestEval >= upper) {
-        break;
+        bestEval = bestEval > currentEval ? bestEval : currentEval;
+        if (bestEval >= upper) {
+          break;
+        }
       }
     }
 
@@ -146,62 +160,55 @@ public class EvaluatorMidgame {
     this.depthOneEvaluator.invert();
     return bestEval;    
   }
+  
+  Move[][] moves = new Move[64][64];
 
-  ArrayList<Move> getMoves(long player, long opponent, int lower, int upper, int depth) {
+  int getMoves(long player, long opponent, int lower, int upper, int depth, HashMap.BoardInHash boardInHash, Move[] output) {
     int move;
     long moveBit;
     long empties = ~(player | opponent);
-    ArrayList<Move> moves = new ArrayList<>();
+//    int nEmpties = Long.bitCount(empties);
+    int nMoves = 0;
+    int value = 0;
+    boolean missing = boardInHash == null || boardInHash.bestMove >= 0;
+//    System.out.println(depth + " " + isInHash);
 
     while (empties != 0) {
       move = Long.numberOfTrailingZeros(empties);
       moveBit = 1L << move;
       empties = empties & (~moveBit);
-      long flip = flipper.getFlip(move, player, opponent) & ~player;
+      long flip = GetMoves.getFlip(move, player, opponent);
       if (flip == 0) {
         continue;
       }
       nVisitedPositions++;
-      Move curMove = new Move();
-      this.depthOneEvaluator.update(move, flip);
-      HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta boardInHash =
-          hashMap.getStoredBoard(opponent & ~flip, player | flip);
-      curMove.isInHash = boardInHash != null && (boardInHash.depthLower >= depth || boardInHash.depthUpper >= depth);
+      Move curMove = output[nMoves++];
       curMove.move = move;
       curMove.flip = flip;
-      curMove.eval = -this.depthOneEvaluator.eval();
-      curMove.error = this.depthOneEvaluator.lastError();
-      
-      curMove.nextOpponentMoves = 0;
-      long newPlayer = opponent & ~flip;
-      long newOpponent = player | flip;
-      long possibleMoves = ~(newPlayer | newOpponent) & GetFlip.neighbors(newOpponent);
-      while (possibleMoves != 0) {
-        int possibleMove = Long.numberOfTrailingZeros(possibleMoves);
-        long possibleMoveBit = 1L << possibleMove;
-        possibleMoves = possibleMoves & (~possibleMoveBit);
-        long possibleFlip = flipper.getFlip(possibleMove, newPlayer, newOpponent);
-        if (possibleFlip != 0) {
-          curMove.nextOpponentMoves++;
-          if (possibleMove == 0 || possibleMove == 7 || possibleMove == 56 || possibleMove == 63) {
-            curMove.nextOpponentMoves++;
-          }
+      if (boardInHash != null && move == boardInHash.bestMove) {
+        value = 1 << 30;
+      } else if (boardInHash != null && move == boardInHash.secondBestMove) {
+        value = 1 << 29;
+      } else if (missing) {
+        value = -GetMoves.getWeightedNMoves(opponent & ~flip, player | flip) << 16;
+        if (depth > 10) {
+          this.depthOneEvaluator.update(move, flip);
+          value += -this.depthOneEvaluator.eval() << 7;
+          this.depthOneEvaluator.undoUpdate(move, flip);
         }
+        value += SQUARE_VALUE[move];
+      } else {
+        value = SQUARE_VALUE[move];
       }
-//      curMove.nextOpponentMoves = Long.bitCount(
-//          (empties & ~moveBit) & GetFlip.neighbors(flip | player));
-      curMove.lower = lower;
-      curMove.upper = upper;
-      this.depthOneEvaluator.undoUpdate(move, flip);
-      moves.add(curMove);
+      curMove.value = value;
     }
-    Collections.sort(moves);
-    return moves;
+    Arrays.sort(output, 0, nMoves);
+    return nMoves;
   }
   
   public int evaluatePositionSlow(
-      long player, long opponent, int depth, int lower, int upper, boolean passed) {
-    HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta boardInHash = hashMap.getStoredBoard(player, opponent);
+      long player, long opponent, int depth, int lower, int upper, boolean passed, boolean fast) {
+    HashMap.BoardInHash boardInHash = hashMap.getStoredBoard(player, opponent);
     if (boardInHash != null) {
       if (boardInHash.lower >= upper && boardInHash.depthLower >= depth) {
         return boardInHash.lower;
@@ -224,18 +231,28 @@ public class EvaluatorMidgame {
     boolean pass = true;
     int currentEval;
     int bestEval = Integer.MIN_VALUE;
+    int bestMove = -1;
+    int secondBestEval = Integer.MIN_VALUE;
+    int secondBestMove = -1;
+    int depthZeroEval = depthOneEvaluator.eval();
+ 
     nComputedMoves++;
     this.depthOneEvaluator.invert();
+    Move[] moves = this.moves[nEmpties];
 
-    ArrayList<Move> moves = getMoves(player, opponent, lower, upper, depth);
-    for (Move curMove : moves) {
+    int nMoves = getMoves(player, opponent, lower, upper, depth, boardInHash, moves);
+    for (int i = 0; i < nMoves; ++i) {
+      Move curMove = moves[i];
       move = curMove.move;
       flip = curMove.flip;
 
       pass = false;
       int newLower = Math.max(lower, bestEval);
       if (depth <= 1) {
-        currentEval = curMove.eval;
+        depthOneEvaluator.update(move, flip);
+        currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
+            (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
+        depthOneEvaluator.undoUpdate(move, flip);        
       } else if (depth >= nEmpties && nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
         lastMovesEvaluator.resetNVisited();
         currentEval = -lastMovesEvaluator.evaluatePosition(
@@ -243,21 +260,29 @@ public class EvaluatorMidgame {
         nVisitedPositions += lastMovesEvaluator.getNVisited();
       } else {
         depthOneEvaluator.update(move, flip);
-        if (depth <= 3) {
+        if (depth <= 3 && fast) {
           currentEval = -evaluatePositionQuick(opponent & ~flip, player | flip, depth - 1, -upper, -newLower, false, move);
         } else {
           if (bestEval == Integer.MIN_VALUE || upper - newLower < 200) {
-            currentEval = -evaluatePositionSlow(opponent & ~flip, player | flip, depth - 1, -upper, -newLower, false);
+            currentEval = -evaluatePositionSlow(opponent & ~flip, player | flip, depth - 1, -upper, -newLower, false, fast);
           } else {
-            currentEval = -evaluatePositionSlow(opponent & ~flip, player | flip, depth - 1, -bestEval-1, -bestEval, false);
+            currentEval = -evaluatePositionSlow(opponent & ~flip, player | flip, depth - 1, -bestEval-1, -bestEval, false, fast);
             if (currentEval > bestEval && currentEval < upper) {
-              currentEval = -evaluatePositionSlow(opponent & ~flip, player | flip, depth - 1, -upper, -newLower, false);
+              currentEval = -evaluatePositionSlow(opponent & ~flip, player | flip, depth - 1, -upper, -newLower, false, fast);
             }
           }
         }
         depthOneEvaluator.undoUpdate(move, flip);
       }
-      bestEval = Math.max(bestEval, currentEval);
+      if (currentEval > bestEval) {
+        secondBestEval = bestEval;
+        secondBestMove = bestMove;
+        bestEval = currentEval;
+        bestMove = move;
+      } else if (currentEval > secondBestEval) {
+        secondBestEval = currentEval;
+        secondBestMove = move;
+      }
       if (bestEval >= upper) {
         break;
       }
@@ -267,16 +292,16 @@ public class EvaluatorMidgame {
       if (passed) {
         bestEval = BitPattern.getEvaluationGameOver(player, opponent);
       } else {
-        bestEval = -evaluatePositionSlow(opponent, player, depth, -upper, -lower, true);
+        bestEval = -evaluatePositionSlow(opponent, player, depth, -upper, -lower, true, fast);
       }
     }
     
     this.depthOneEvaluator.invert();
     if (bestEval > lower) {
-      hashMap.updateLowerBound(player, opponent, bestEval, depth);
+      hashMap.updateLowerBound(player, opponent, bestEval, depth, bestMove, secondBestMove);
     }
     if (bestEval < upper) {
-      hashMap.updateUpperBound(player, opponent, bestEval, depth);
+      hashMap.updateUpperBound(player, opponent, bestEval, depth, bestMove, secondBestMove);
     }
     return bestEval;    
   }
@@ -313,8 +338,10 @@ public class EvaluatorMidgame {
     }
     depth = Math.min(depth, current.getEmptySquares());
 //    this.resetNVisitedPositions();
-    int approxEval = evaluatePositionSlow(current.getPlayer(), current.getOpponent(), depth - 8, lower, upper, false);
-    return evaluatePositionSlow(current.getPlayer(), current.getOpponent(), depth, lower, upper, false);
+    int approxEval = evaluatePositionSlow(
+        current.getPlayer(), current.getOpponent(), depth - Constants.EMPTIES_FOR_ENDGAME,
+        lower, upper, false, false);
+    return evaluatePositionSlow(current.getPlayer(), current.getOpponent(), depth, lower, upper, false, true);
 //    approxEval = approxEval + 100;
 //    int attemptLower = Math.max(lower, approxEval - (approxEval + 6400) % 200 - 100);
 ////    System.out.print(tmp + " " + attemptLower + " ");

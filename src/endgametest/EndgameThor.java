@@ -14,12 +14,15 @@
 package endgametest;
 
 import board.Board;
+import board.GetFlip;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import helpers.LoadDataset;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -36,12 +39,14 @@ public class EndgameThor {
   EvaluatorMidgame eval = new EvaluatorMidgame();
   EvaluatorMidgame eval1 = new EvaluatorMidgame();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+	ThreadMXBean thread = ManagementFactory.getThreadMXBean();
   
   public EndgameThor() {
     boards = LoadDataset.loadTrainingSet(1977, 1987);
   }
   
   long t = 0;
+  long cpuT = 0;
   public boolean runSingleBoard(BoardWithEvaluation be) {
     Board b = be.board;
     Random generator = new Random(1234);
@@ -49,7 +54,9 @@ public class EndgameThor {
     int beta = 6400;//(int) (alpha + generator.nextDouble() * 6);
 //    int result = eval1.evaluatePosition(b, 60, alpha, beta);
     t -= System.currentTimeMillis();
+    cpuT -= thread.getCurrentThreadCpuTime();
     int result = eval.evaluatePosition(b, 64, alpha, beta);
+    cpuT += thread.getCurrentThreadCpuTime();
     t += System.currentTimeMillis();
     if (alpha < be.evaluation && be.evaluation < beta) {
       if (result - be.evaluation > 0) {
@@ -72,6 +79,7 @@ public class EndgameThor {
         System.out.println(j + " / " + boards.size());
 //        System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
         System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
+        System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
         System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
       }
       int d = be.board.getEmptySquares();
@@ -88,7 +96,9 @@ public class EndgameThor {
 //    System.out.println("Visited1 / s: " + numberFormat.format((int) (eval1.getNVisited() * 1000. / t)));
 //    System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
     System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
+    System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
     System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
+    System.out.println(GetFlip.getCPUTime() + " / " + (cpuT / 1000000000.) + " = " + GetFlip.getCPUTime() * 100000000000. / cpuT + "%");
   }
   
   public static void main(String args[]) {    

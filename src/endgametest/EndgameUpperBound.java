@@ -15,8 +15,8 @@ package endgametest;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorLastMoves;
+import evaluateposition.EvaluatorMidgame;
 import tmp.OptimumAlphaBeta;
 
 public class EndgameUpperBound {
@@ -141,7 +141,7 @@ public class EndgameUpperBound {
 
   public void generateDataSet() {
     PossibleMovesFinderImproved mf = new PossibleMovesFinderImproved();
-    EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
+    EvaluatorMidgame eval = new EvaluatorMidgame();
     for (int i = 0; i < POSITIONS.length; i++) {
       Board b = readBoardFromFFOFormat(POSITIONS[i]);
       while (b.getEmptySquares() > 13) {
@@ -155,7 +155,7 @@ public class EndgameUpperBound {
         
         for (long m : moves) {
           Board next = b.move(m);
-          int curEval = eval.evaluatePosition(next, 6);
+          int curEval = eval.evaluatePosition(next, 6, -6400, 6400);
           if (curEval > bestEval) {
             bestEval = curEval;
             best = next;

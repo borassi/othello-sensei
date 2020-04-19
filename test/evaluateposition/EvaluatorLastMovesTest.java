@@ -100,26 +100,26 @@ public class EvaluatorLastMovesTest {
 //      assertListEqualsIgnoreOrder(new LongArrayList(movesTest), movesFromEvaluator);
 //    }
 //  }
-  
-  @Test
-  public void testNVisitedTwoMoves() {
-    LAST_MOVE_EVALUATOR.resetNVisited();
-    Board b = new Board("OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "XXXXXXO-"
-        + "XXXXXXO-", true);
-    assertEquals(-3200, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
-    assertEquals(2, LAST_MOVE_EVALUATOR.nVisited);
-  }
+//  
+//  @Test
+//  public void testNVisitedTwoMoves() {
+//    LAST_MOVE_EVALUATOR.resetNVisited();
+//    Board b = new Board("OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "XXXXXXO-"
+//        + "XXXXXXO-", true);
+//    assertEquals(-3200, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
+//    assertEquals(2, LAST_MOVE_EVALUATOR.nVisited);
+//  }
 
   @Test
   public void testE2E() {
     EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 100000; i++) {
       double percBlack = Math.random() * 0.9;
       double percWhite = 0.9 - percBlack;
       Board b = Board.randomBoard(percBlack, percWhite);

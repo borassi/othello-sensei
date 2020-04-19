@@ -19,45 +19,45 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import board.Board;
-import evaluateposition.HashMapVisitedPositionsForAlphaBeta.StoredBoardForAlphaBeta;
+import evaluateposition.HashMap.BoardInHash;
 import java.util.ArrayList;
 
-public class HashMapVisitedPositionsForAlphaBetaTest {
+public class HashMapTest {
 
   @Test
   public void testStartingPosition() {
     Board b1 = new Board();
     Board b2 = new Board(12423, 45);
     
-    HashMapVisitedPositionsForAlphaBeta visitedPositions = new HashMapVisitedPositionsForAlphaBeta(11, 5);
+    HashMap visitedPositions = new HashMap(11, 5);
     
     assertEquals(0, visitedPositions.size());
     
     assertEquals(visitedPositions.get(b1), null);
     assertEquals(visitedPositions.get(b1), null);
     
-    visitedPositions.updateLowerBound(b1, -10, 1); 
+    visitedPositions.updateLowerBound(b1, -10, 1, 12, 13); 
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 1, 6600, 0));
-    visitedPositions.updateLowerBound(b1, -20, 1);    
+    visitedPositions.updateLowerBound(b1, -20, 1, 12, 13);    
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-20, 1, 6600, 0));
-    visitedPositions.updateLowerBound(b1, -2, 1);    
+    visitedPositions.updateLowerBound(b1, -2, 1, 12, 13);    
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-2, 1, 6600, 0));
-    visitedPositions.updateLowerBound(b1, -10, 2);    
+    visitedPositions.updateLowerBound(b1, -10, 2, 12, 13);    
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 6600, 0));
     assertEquals(1, visitedPositions.size());
     
-    visitedPositions.updateUpperBound(b1, 10, 1);
+    visitedPositions.updateUpperBound(b1, 10, 1, 12, 13);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 10, 1));
-    visitedPositions.updateUpperBound(b1, 20, 1);
+    visitedPositions.updateUpperBound(b1, 20, 1, 12, 13);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 20, 1));
-    visitedPositions.updateUpperBound(b1, 2, 1);
+    visitedPositions.updateUpperBound(b1, 2, 1, 12, 13);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 2, 1));
-    visitedPositions.updateUpperBound(b1, 10, 2);
+    visitedPositions.updateUpperBound(b1, 10, 2, 12, 13);
     assertEquals(visitedPositions.get(b1), new EvaluatedBoard(-10, 2, 10, 2));
     
-    visitedPositions.updateLowerBound(b2, 12, 5);
+    visitedPositions.updateLowerBound(b2, 12, 5, 12, 13);
     assertEquals(visitedPositions.get(b2), new EvaluatedBoard(12, 5, 6600, 0));
-    visitedPositions.updateUpperBound(b2, 10, 1);
+    visitedPositions.updateUpperBound(b2, 10, 1, 12, 13);
     assertEquals(visitedPositions.get(b2), new EvaluatedBoard(12, 5, 10, 1));
   }
 
@@ -71,26 +71,26 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
     Board b6 = new Board(1, 32);
     Board b7 = new Board(1, 64);
     
-    HashMapVisitedPositionsForAlphaBeta visitedPositions = 
-      new HashMapVisitedPositionsForAlphaBeta(7, 3);
+    HashMap visitedPositions = 
+      new HashMap(7, 3);
     
-    visitedPositions.updateLowerBound(b1, 0, 1);
+    visitedPositions.updateLowerBound(b1, 0, 1, 12, 13);
     assertEquals(1, visitedPositions.size());
-    visitedPositions.updateUpperBound(b2, 0, 1);
+    visitedPositions.updateUpperBound(b2, 0, 1, 12, 13);
     assertEquals(2, visitedPositions.size());
-    visitedPositions.updateLowerBound(b4, 0, 1);
+    visitedPositions.updateLowerBound(b4, 0, 1, 12, 13);
     assertEquals(3, visitedPositions.size());
-    visitedPositions.updateUpperBound(b5, 0, 1);
+    visitedPositions.updateUpperBound(b5, 0, 1, 12, 13);
     assertEquals(3, visitedPositions.size());
-    visitedPositions.updateLowerBound(b6, 0, 1);
+    visitedPositions.updateLowerBound(b6, 0, 1, 12, 13);
     assertEquals(3, visitedPositions.size());
-    visitedPositions.updateUpperBound(b7, 0, 4);
+    visitedPositions.updateUpperBound(b7, 0, 4, 12, 13);
 
-    visitedPositions.updateLowerBound(b2, 0, 2);
-    visitedPositions.updateLowerBound(b4, 0, 2);
-    visitedPositions.updateLowerBound(b5, 0, 4);
-    visitedPositions.updateLowerBound(b6, 0, 4);
-    visitedPositions.updateLowerBound(b3, 0, 2);
+    visitedPositions.updateLowerBound(b2, 0, 2, 12, 13);
+    visitedPositions.updateLowerBound(b4, 0, 2, 12, 13);
+    visitedPositions.updateLowerBound(b5, 0, 4, 12, 13);
+    visitedPositions.updateLowerBound(b6, 0, 4, 12, 13);
+    visitedPositions.updateLowerBound(b3, 0, 2, 12, 13);
 
     assertEquals(visitedPositions.get(b1), null);
     assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 6600, 0));
@@ -103,8 +103,8 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
   public void testRandom() {
     int N = 1000;
     int nElements = N / 2 - 1;
-    HashMapVisitedPositionsForAlphaBeta visitedPositions = 
-      new HashMapVisitedPositionsForAlphaBeta(N, nElements);
+    HashMap visitedPositions = 
+      new HashMap(N, nElements);
     for (int nIter = 0; nIter < 10000; nIter++) {
       Board boards[] = new Board[nElements];
       int eval[] = new int[nElements];
@@ -118,15 +118,15 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
         depth[i] = (int) (Math.random() * 6000);
         isUpper[i] = Math.random() > 0.5;
         if (isUpper[i]) {
-          visitedPositions.updateUpperBound(boards[i], eval[i], depth[i]);
+          visitedPositions.updateUpperBound(boards[i], eval[i], depth[i], 12, 13);
         } else {
-          visitedPositions.updateLowerBound(boards[i], eval[i], depth[i]);   
+          visitedPositions.updateLowerBound(boards[i], eval[i], depth[i], 12, 13);   
         }
       }
 
       {
         int j = 0;
-        StoredBoardForAlphaBeta b = visitedPositions.firstToRemove;
+        BoardInHash b = visitedPositions.firstToRemove;
         while (b != visitedPositions.lastToRemove) {
           b = b.nextToRemove;
           j++;
@@ -135,8 +135,8 @@ public class HashMapVisitedPositionsForAlphaBetaTest {
       }
       {
         int j = 0;
-        for (ArrayList<StoredBoardForAlphaBeta> a : visitedPositions.evaluationsHashMap) {
-          for (StoredBoardForAlphaBeta b : a) {
+        for (ArrayList<BoardInHash> a : visitedPositions.evaluationsHashMap) {
+          for (BoardInHash b : a) {
             if (b.prevToRemove != null) {
               j++;
             }

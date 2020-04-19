@@ -240,10 +240,10 @@ public class HashMapVisitedPositions {
 //      }
 //      sample = (sample + 1) % N_SAMPLES;
 //    }
-    if (!this.hasEvalGoal()) {
-        return nextPositionToImproveStandard(positionToEvaluateLocal,
-            Math.random() > 0.5, true, parents);
-    }
+//    if (!this.hasEvalGoal()) {
+//        return nextPositionToImproveStandard(positionToEvaluateLocal,
+//            Math.random() > 0.5, true, parents);
+//    }
     int evalGoal = this.firstPosition.getEvalGoal();
 //    System.out.println("\nOrigEvalGoal: " + evalGoal);
     return nextPositionToImprovePNS(

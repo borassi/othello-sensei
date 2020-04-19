@@ -19,7 +19,6 @@ import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.PatternEvaluatorImproved;
-import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import evaluateposition.StoredBoard;
@@ -45,10 +44,6 @@ public class TestThor {
   
   public int errorSingleBoardDepthOne(BoardWithEvaluation be, int depth) {
     Board b = be.board;
-//    int d = 1;
-//    if (b.getEmptySquares() > 4) {
-//      return 0F;
-//    }
     long[] moves = pmf.possibleMoves(b);
     int eval = Integer.MIN_VALUE;
     
@@ -96,14 +91,14 @@ public class TestThor {
         System.out.println("  Average positions: " + eval.getNVisited() / n);
         System.out.println("  Depth: " + depth);
       }
-      if (be.board.getEmptySquares() > 16 || be.board.getEmptySquares() < 12 || pmf.haveToPass(be.board)) {
+      if (be.board.getEmptySquares() > 64 || be.board.getEmptySquares() < 4 || pmf.haveToPass(be.board)) {
         continue;
       }
       n++;
 //      if (be.board.getEmptySquares() < depth + 12) {
 //        continue;
 //      }
-      float curError = errorSingleBoardDepthOne(be, depth);
+      float curError = errorSingleBoard(be, depth);
       totalError += curError * curError;
     }
   }

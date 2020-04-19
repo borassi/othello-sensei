@@ -423,7 +423,7 @@ public class BitPattern {
   public final static long getColumn(int position) {
     return LAST_COLUMN_BIT_PATTERN << (position % 8);
   }
-  public final static long getNWSEDiag(int position) {
+  public final static long getDiag9(int position) {
     int mainDiagShift = (position - 9 * (position % 8));
     return mainDiagShift > 0 ? 
       MAIN_DIAG_BIT_PATTERN << mainDiagShift : 
@@ -432,7 +432,7 @@ public class BitPattern {
 //    long mask = (position / 8 == position / 9) ? BOTTOM_LEFT_TRIANGLE_BIT_PATTERN : TOP_RIGHT_TRIANGLE_BIT_PATTERN;
 //    return ((1L << (position % 9)) * MAIN_DIAG_BIT_PATTERN) & mask;
   }
-  public final static long getNESWDiag(int position) {
+  public final static long getDiag7(int position) {
     int mainDiagShift = (position + 7 * (position % 8) - 56);
     return mainDiagShift > 0 ? 
       MAIN_REV_DIAG_BIT_PATTERN << mainDiagShift : 

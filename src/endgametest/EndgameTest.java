@@ -15,6 +15,7 @@ package endgametest;
 
 import board.Board;
 import evaluateposition.EvaluatorMCTS;
+import evaluateposition.EvaluatorMidgame;
 
 public class EndgameTest {
   public final static String[] POSITIONS = {
@@ -79,6 +80,7 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
+//  EvaluatorMidgame eval = new EvaluatorMidgame();
   EvaluatorMCTS eval = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
 
   public static Board readIthBoard(int i) {
@@ -94,7 +96,8 @@ public class EndgameTest {
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long t = System.currentTimeMillis();
-      int result = -eval.evaluatePosition(b, b.getEmptySquares());
+//      eval.resetNVisitedPositions();
+      int result = -eval.evaluatePosition(b, b.getEmptySquares());//, -6400, 6400);
       t = System.currentTimeMillis() - t;
       
 //      eval.resetHashMapVisitedPositions();
@@ -109,7 +112,7 @@ public class EndgameTest {
       System.out.print(String.format("%9.3f", t / 1000.));
       System.out.print(String.format("%14d", eval.getNVisited()));
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));
-      System.out.print(String.format("%14d", eval.getNStored()));
+//      System.out.print(String.format("%14d", eval.getNStored()));
 //      System.out.print(String.format("%15.0f", eval.size() * 1000. / t));eval.getNVisited()
       System.out.println(String.format("%12d", result / 100));
 //      System.out.println("\n");

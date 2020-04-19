@@ -320,52 +320,52 @@ public class EvaluatorMidgameTest {
     }
   }
 
-  @Test
-  public void testGetMovesStartingPosition() {
-    Board b = new Board();
-    evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
-    evaluator.depthOneEvaluator.invert();
-    ArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -2000, 1000);
-    assertEquals(4, moves.size());
-    for (EvaluatorMidgame.Move move : moves) {
-      assertEquals(2, Long.bitCount(move.flip));
-      assertEquals(100, move.eval);
-      assertEquals(-2000, move.lower);
-      assertEquals(1000, move.upper);
-      assertEquals(800, move.error, 1);
-    }
-  }
-
-  @Test
-  public void testGetMoves() {
-    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-    
-    for (int iter = 0; iter < 1000; ++iter) {
-      Board b = Board.randomBoard();
-      evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
-      evaluator.depthOneEvaluator.invert();
-      ArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -20, 20);
-      long movesTest[] = pmf.possibleMoves(b.getPlayer(), b.getOpponent());
-      ArrayList<Long> movesFromEvaluator = new ArrayList<>();
-
-      for (EvaluatorMidgame.Move m : moves) {
-        m.flip = m.flip & ~b.getPlayer();
-        boolean contains = false;
-        for (long l : movesTest) {
-          if (l == m.flip) {
-            contains = true;
-            break;
-          }
-        }
-        if (!contains) {
-          System.out.println(b);
-          System.out.println(BitPattern.patternToString(m.flip));
-          assert(false);
-        }
-        movesFromEvaluator.add(m.flip);
-      }
-
-      assertArrayEqualsListIgnoreOrder(movesTest, movesFromEvaluator);
-    }
-  }
+//  @Test
+//  public void testGetMovesStartingPosition() {
+//    Board b = new Board();
+//    evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
+//    evaluator.depthOneEvaluator.invert();
+//    ArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -2000, 1000);
+//    assertEquals(4, moves.size());
+//    for (EvaluatorMidgame.Move move : moves) {
+//      assertEquals(2, Long.bitCount(move.flip));
+//      assertEquals(100, move.eval);
+//      assertEquals(-2000, move.lower);
+//      assertEquals(1000, move.upper);
+//      assertEquals(800, move.error, 1);
+//    }
+//  }
+//
+//  @Test
+//  public void testGetMoves() {
+//    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+//    
+//    for (int iter = 0; iter < 1000; ++iter) {
+//      Board b = Board.randomBoard();
+//      evaluator.depthOneEvaluator.setup(b.getPlayer(), b.getOpponent());
+//      evaluator.depthOneEvaluator.invert();
+//      ArrayList<EvaluatorMidgame.Move> moves = evaluator.getMoves(b.getPlayer(), b.getOpponent(), -20, 20);
+//      long movesTest[] = pmf.possibleMoves(b.getPlayer(), b.getOpponent());
+//      ArrayList<Long> movesFromEvaluator = new ArrayList<>();
+//
+//      for (EvaluatorMidgame.Move m : moves) {
+//        m.flip = m.flip & ~b.getPlayer();
+//        boolean contains = false;
+//        for (long l : movesTest) {
+//          if (l == m.flip) {
+//            contains = true;
+//            break;
+//          }
+//        }
+//        if (!contains) {
+//          System.out.println(b);
+//          System.out.println(BitPattern.patternToString(m.flip));
+//          assert(false);
+//        }
+//        movesFromEvaluator.add(m.flip);
+//      }
+//
+//      assertArrayEqualsListIgnoreOrder(movesTest, movesFromEvaluator);
+//    }
+//  }
 }
