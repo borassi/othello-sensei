@@ -26,7 +26,6 @@ import board.GetFlip;
 import board.PossibleMovesFinderImproved;
 import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
-import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import evaluateposition.StoredBoard;
@@ -76,7 +75,7 @@ public class Main {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(27), true); // 1
+//    setBoard(EndgameTest.readIthBoard(27), true); // 1
   }
 
   public final void changeDepth(int depth) {
@@ -172,12 +171,12 @@ public class Main {
 //        annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false);
 //        annotations.lower = -evaluation.getUpperBound() / 100F;
 //        annotations.upper = -evaluation.getLowerBound() / 100F;
-      annotations.lower = -evaluation.upper / 100F;
-      annotations.upper = -evaluation.lower / 100F;
+//      annotations.lower = -evaluation.upper / 100F;
+//      annotations.upper = -evaluation.lower / 100F;
 //        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
 //        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
         annotations.nVisited = evaluation.descendants;
-        annotations.otherAnnotations = evaluation.getInterestingProofNumbers();
+        annotations.otherAnnotations = evaluation.getInterestingProbabilities();
 //            String.format(
 //            "%d %d\n", EVALUATOR.getEvalGoal() / 100, evaluation.expectedToSolve);
         
@@ -189,8 +188,9 @@ public class Main {
       }
     }
     StoredBoard cur = EVALUATOR.get(board);
-    for (int i = 0; i < 65; ++i) {
-      System.out.println(i + " " + cur.proofNumbers[i] + " " + cur.disproofNumbers[i]);
+    for (int i = 0; i < 64; ++i) {
+      System.out.println(StoredBoard.offsetToEval(i) + " " + cur.probEvalGreaterThan[i] + " " + cur.maxChildrenLogDerivative[i] + " " +
+          (cur.fathers.size() > 0 ? cur.fathers.get(0).dProbEvalGreaterThanLog(i, cur) : 0));
     }
 //    
 //    if (bestIJ.i >= 0) {
@@ -264,14 +264,14 @@ public class Main {
       PositionIJ ij = moveFromBoard(board, evaluation);
       CaseAnnotations annotations = new CaseAnnotations();
       annotations.eval = -evaluation.getEval() / 100F;
-      annotations.safeEval = -evaluation.getSafeEval() / 100F;
-      annotations.costUntilLeafAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true) + evaluation.costUntilLeafDefense;
-      annotations.costUntilLeafDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false) + evaluation.costUntilLeafAttack;
-      annotations.edgeCostAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
-      annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
+//      annotations.safeEval = -evaluation.getSafeEval() / 100F;
+//      annotations.costUntilLeafAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true) + evaluation.costUntilLeafDefense;
+//      annotations.costUntilLeafDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false) + evaluation.costUntilLeafAttack;
+//      annotations.edgeCostAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
+//      annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
       annotations.isBestMove = ij.equals(bestIJ);
-      annotations.lower = -evaluation.upper / 100F;
-      annotations.upper = -evaluation.lower / 100F;
+//      annotations.lower = -evaluation.upper / 100F;
+//      annotations.upper = -evaluation.lower / 100F;
 //      annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
 //      annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
       annotations.nVisited = evaluation.descendants;

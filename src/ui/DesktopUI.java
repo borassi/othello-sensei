@@ -186,7 +186,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       {"0", "1", "100", "1000000", "2000000", "5000000", "10000000",
       "20000000", "50000000", "100000000", "200000000"
     }));
-    depth.setValue("1000000");
+    depth.setValue("100");
     spinner = new JSpinner(depth);
 
     commands.add(spinner);
