@@ -7,3 +7,4 @@ training_set/*
 include/*
 manifest.mf
 nbproject/
+tmp/*

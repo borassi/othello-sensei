@@ -136,7 +136,7 @@ public class BitPattern {
           "----XXXX\n" +
           "----XXXX\n" +
           "----XXXX\n");
-  public final static long MAIN_DIAG_BIT_PATTERN = parsePattern(
+  public final static long MAIN_DIAG9_BIT_PATTERN = parsePattern(
             "X-------\n"
           + "-X------\n" 
           + "--X-----\n"
@@ -145,7 +145,7 @@ public class BitPattern {
           + "-----X--\n"
           + "------X-\n"
           + "-------X\n");
-  public final static long MAIN_REV_DIAG_BIT_PATTERN = BitPattern.parsePattern(
+  public final static long MAIN_DIAG7_BIT_PATTERN = BitPattern.parsePattern(
             "-------X\n"
           + "------X-\n"
           + "-----X--\n"
@@ -409,7 +409,7 @@ public class BitPattern {
   }
   
   public final static int anyColumnToFirstRow(long bitPattern, int i) {
-    return (int) ((((bitPattern >>> i) * MAIN_DIAG_BIT_PATTERN) & FIRST_ROW_BIT_PATTERN) >>> 56);
+    return (int) ((((bitPattern >>> i) * MAIN_DIAG9_BIT_PATTERN) & FIRST_ROW_BIT_PATTERN) >>> 56);
   }
   
   public final static int anyRowToFirstRow(long bitPattern, int i) {
@@ -426,8 +426,8 @@ public class BitPattern {
   public final static long getDiag9(int position) {
     int mainDiagShift = (position - 9 * (position % 8));
     return mainDiagShift > 0 ? 
-      MAIN_DIAG_BIT_PATTERN << mainDiagShift : 
-      MAIN_DIAG_BIT_PATTERN >>> -mainDiagShift;
+      MAIN_DIAG9_BIT_PATTERN << mainDiagShift : 
+      MAIN_DIAG9_BIT_PATTERN >>> -mainDiagShift;
     
 //    long mask = (position / 8 == position / 9) ? BOTTOM_LEFT_TRIANGLE_BIT_PATTERN : TOP_RIGHT_TRIANGLE_BIT_PATTERN;
 //    return ((1L << (position % 9)) * MAIN_DIAG_BIT_PATTERN) & mask;
@@ -435,7 +435,7 @@ public class BitPattern {
   public final static long getDiag7(int position) {
     int mainDiagShift = (position + 7 * (position % 8) - 56);
     return mainDiagShift > 0 ? 
-      MAIN_REV_DIAG_BIT_PATTERN << mainDiagShift : 
-      MAIN_REV_DIAG_BIT_PATTERN >>> -mainDiagShift;
+      MAIN_DIAG7_BIT_PATTERN << mainDiagShift : 
+      MAIN_DIAG7_BIT_PATTERN >>> -mainDiagShift;
   }
 }

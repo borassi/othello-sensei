@@ -54,22 +54,22 @@ public class EvaluatorLastMovesTest {
     Board b = new Board("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX", true);
     assertEquals(2400, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
   }
-
-  @Test
-  public void testNVisitedOneMove() {
-    LAST_MOVE_EVALUATOR.resetNVisited();
-    Board b = new Board("OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "OOOOOOOO"
-        + "XXXXXXXX"
-        + "XXXXXXO-", true);
-    assertEquals(-3200, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
-    // This should be 0, but we get 1 because we did not evaluate the position at depth 2.
-    assertEquals(1, LAST_MOVE_EVALUATOR.nVisited);
-  }
+//
+//  @Test
+//  public void testNVisitedOneMove() {
+//    LAST_MOVE_EVALUATOR.resetNVisited();
+//    Board b = new Board("OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "OOOOOOOO"
+//        + "XXXXXXXX"
+//        + "XXXXXXO-", true);
+//    assertEquals(-3200, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
+//    // This should be 0, but we get 1 because we did not evaluate the position at depth 2.
+//    assertEquals(1, LAST_MOVE_EVALUATOR.nVisited);
+//  }
 //  
 //  @Test
 //  public void testGetMoves() {
@@ -126,7 +126,7 @@ public class EvaluatorLastMovesTest {
       double percBlack = Math.random() * 0.9;
       double percWhite = 0.9 - percBlack;
       Board b = Board.randomBoard(percBlack, percWhite);
-      if (b.getEmptySquares() > 8) {
+      if (b.getEmptySquares() > 6) {
         i--;
         continue;
       }

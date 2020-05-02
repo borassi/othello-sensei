@@ -110,10 +110,10 @@ public class Corner implements PatternHashInterface {
     opponent = opponent & PATTERN_CORNER;
     long resultPlayer = player & BitPattern.LAST_TWO_ROWS_BIT_PATTERN;
     player = player & ~BitPattern.LAST_TWO_ROWS_BIT_PATTERN;
-    resultPlayer |= (player * BitPattern.MAIN_DIAG_BIT_PATTERN) >>> 54;
+    resultPlayer |= (player * BitPattern.MAIN_DIAG9_BIT_PATTERN) >>> 54;
     long resultOpponent = opponent & BitPattern.LAST_TWO_ROWS_BIT_PATTERN;
     opponent = opponent & ~BitPattern.LAST_TWO_ROWS_BIT_PATTERN;
-    resultOpponent |= (opponent * BitPattern.MAIN_DIAG_BIT_PATTERN) >>> 54;
+    resultOpponent |= (opponent * BitPattern.MAIN_DIAG9_BIT_PATTERN) >>> 54;
     return (int) (resultPlayer | (resultOpponent << 10));
   }
   
