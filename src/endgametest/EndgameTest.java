@@ -56,7 +56,7 @@ public class EndgameTest {
           "-XXXXXXX--XOOO----OXOOXX-OOXXOXX-OOOOOXX-X-XOOXX---O-X-X--OOOO-- X",
           "-------------O-O-OOOOOOOOOOOOXOOOXXOOOXO-XXXOXOO--XXXOXO--OXXXXO X",
           "--XXX-----XXXX-OOOXXOOOOOOOOOOXO-OOXXXXO-OOOXXXO---XOXX---X----- O",
-          "---X-O----XXXO-XXXXXXXXXXOOXXOOXXOXOOOXXXXOOOO-XX--OOOO--------- O",
+          "---X-O----XXXO-XXXXXXXXXXOOXXOOXXOXOOOXXXXOOOO-XX--OOOO--------- O", // 37
           "--OOOO--O-OOOO--OXXXOOO-OXXOXO--OOXXOXX-OOXXXX--O-XXX-----XX-O-- X",
           "--OOOO----OOOO---XOXXOOXOOXOOOOX-OOOOOXXXOOXXXXX--X-X----------- X",
           "O-OOOO--XOXXOX--XOOOXXX-XOOOXX--XOOXOX--XOXXX---X-XX------------ O", // 40
@@ -81,7 +81,7 @@ public class EndgameTest {
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
 //  EvaluatorMidgame eval = new EvaluatorMidgame();
-  EvaluatorMCTS eval = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
+  EvaluatorMCTS eval = new EvaluatorMCTS(4000000, 1000000000L);
 
   public static Board readIthBoard(int i) {
     String[] boards = POSITIONS[i - 1].split(" ");
@@ -91,7 +91,7 @@ public class EndgameTest {
   public void run() {
     
     System.out.println(" num empties        t       nVisPos   nVisPos/sec      nStored   eval");
-    for (int i = 1; i <= POSITIONS.length; i++) {
+    for (int i = 41; i <= POSITIONS.length; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));

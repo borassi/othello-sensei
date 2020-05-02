@@ -15,6 +15,9 @@ package evaluateposition;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
+import evaluatedepthone.DepthOneEvaluator;
+import evaluatedepthone.MultilinearRegressionImproved;
+import evaluatedepthone.PatternEvaluatorImproved;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -118,8 +121,8 @@ public class EvaluatorLastMovesTest {
 
   @Test
   public void testE2E() {
-    EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
-    for (int i = 0; i < 100000; i++) {
+    EvaluatorBasic eval = new EvaluatorBasic(PatternEvaluatorImproved.load(), new PossibleMovesFinderImproved());
+    for (int i = 0; i < 10000; i++) {
       double percBlack = Math.random() * 0.9;
       double percWhite = 0.9 - percBlack;
       Board b = Board.randomBoard(percBlack, percWhite);
@@ -130,7 +133,7 @@ public class EvaluatorLastMovesTest {
       if (i % 1000 == 0) {
         System.out.println(i);
       }
-      float result = eval.evaluatePosition(b, b.getEmptySquares(), -6400, 6400);
+      float result = eval.evaluatePosition(b, b.getEmptySquares() + 3, -6400, 6400);
       int alpha = (int) (result + (Math.random() - 0.5) * 1600);
       int beta = alpha + 1 + (int) (Math.random() * 800);
 

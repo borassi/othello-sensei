@@ -20,15 +20,15 @@ import org.junit.Test;
 import bitpattern.BitPattern;
 import board.Board;
 import board.PossibleMovesFinderImproved;
+import constants.Constants;
 import evaluateposition.HashMapVisitedPositions.PositionToImprove;
-import static evaluateposition.StoredBoard.N_SAMPLES;
 import java.util.ArrayList;
 
 public class HashMapVisitedPositionsTest {
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = new PossibleMovesFinderImproved();
 
   private short[] createSampleArray(int sample) {
-    short[] result = new short[N_SAMPLES];
+    short[] result = new short[Constants.N_SAMPLES];
     result[0] = (short) sample;
     return result;
   }
@@ -49,7 +49,7 @@ public class HashMapVisitedPositionsTest {
     visitedPositions.addFirstPosition(s); 
     assertEquals(visitedPositions.get(s.player, s.opponent).eval, 123);
     
-    s.setEval(789, 0);//, new int[StoredBoard.N_SAMPLES]);
+    s.updateEval(789, 0);//, new int[StoredBoard.N_SAMPLES]);
     assertEquals(visitedPositions.get(s.player, s.opponent).eval, 789);
 
     visitedPositions.add(t); 
@@ -229,7 +229,7 @@ public class HashMapVisitedPositionsTest {
     bothPass.lower = -5600;
     bothPass.upper = -5600;
     bothPass.children = new StoredBoard[0];
-    for (int i = 0; i < N_SAMPLES; i++) {
+    for (int i = 0; i < Constants.N_SAMPLES; i++) {
       bothPass.samples[i] = -5600;
     }
     bothPass.bestVariationPlayer = -6600;
@@ -442,7 +442,7 @@ public class HashMapVisitedPositionsTest {
           if (!board.isLeaf()) {
             allLeaves = false;
             board.eval = (short) (board.eval + 10);
-            for (int s = 0; s < N_SAMPLES; ++s) {
+            for (int s = 0; s < Constants.N_SAMPLES; ++s) {
               board.samples[s] = (short) ((Math.random() - 0.5) * 6400);
             }
             board.bestVariationPlayer = (short) ((Math.random() - 0.5) * 6400);

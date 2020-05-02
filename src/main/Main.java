@@ -68,20 +68,20 @@ public class Main {
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
     FLIPPER = GetFlip.load();
     EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, FLIPPER);
-    EVALUATOR = new EvaluatorMCTS(1000, 200000, 100000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EVALUATOR = new EvaluatorMCTS(1000, 2000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
 //    EVALUATOR = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
   }
   
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-//    setBoard(EndgameTest.readIthBoard(27), true); // 1
+    setBoard(EndgameTest.readIthBoard(29), true); // 37
   }
 
   public final void changeDepth(int depth) {
     this.depth = depth;
     if (depth > 0) {
-      EVALUATOR = new EvaluatorMCTS(depth, 2000000, 1000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+      EVALUATOR = new EvaluatorMCTS(2000000, depth, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     }
   }
 
@@ -169,29 +169,30 @@ public class Main {
 //        annotations.costUntilLeafDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false) + evaluation.costUntilLeafAttack;
 //        annotations.edgeCostAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
 //        annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false);
-//        annotations.lower = -evaluation.getUpperBound() / 100F;
-//        annotations.upper = -evaluation.getLowerBound() / 100F;
-//      annotations.lower = -evaluation.upper / 100F;
-//      annotations.upper = -evaluation.lower / 100F;
+        annotations.lower = -evaluation.upper / 100F;
+        annotations.upper = -evaluation.lower / 100F;
 //        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
 //        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
         annotations.nVisited = evaluation.descendants;
-        annotations.otherAnnotations = evaluation.getInterestingProbabilities();
+//        annotations.otherAnnotations = evaluation.getInterestingProbabilities((Math.random() > 0.5 ? -1 : 1) * EVALUATOR.firstPosition.eval);
 //            String.format(
 //            "%d %d\n", EVALUATOR.getEvalGoal() / 100, evaluation.expectedToSolve);
         
-//        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
-//          annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
-//              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
-//        }
+        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
+          annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
+              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
+        }
         ui.setAnnotations(annotations, ij);
       }
     }
     StoredBoard cur = EVALUATOR.get(board);
-    for (int i = 0; i < 64; ++i) {
-      System.out.println(StoredBoard.offsetToEval(i) + " " + cur.probEvalGreaterThan[i] + " " + cur.maxChildrenLogDerivative[i] + " " +
-          (cur.fathers.size() > 0 ? cur.fathers.get(0).dProbEvalGreaterThanLog(i, cur) : 0));
-    }
+//    System.out.println(cur.eval + " (" + cur.lower + ", " + cur.upper + ")");
+//    for (int i = 63; i >= 0; --i) {
+////      String.format("%d:%.2g (%.2g)\n", -offsetToEval(i) / 100, 1 - probEvalGreaterThan[i],
+////            fathers.size() > 0 ? maxLogDerivativeDescendants(i, fathers.get(0)) : 0);
+//      System.out.println(-StoredBoard.offsetToEval(i) / 100 + " " + (1 - cur.probEvalGreaterThan[i]) + " " +
+//          (cur.fathers.size() > 0 ? cur.maxLogDerivativeDescendants(i, cur.fathers.get(0)) : 0) + " " + cur.maxChildrenLogDerivative[i]);
+//    }
 //    
 //    if (bestIJ.i >= 0) {
 //      ui.setBestMove(bestIJ);

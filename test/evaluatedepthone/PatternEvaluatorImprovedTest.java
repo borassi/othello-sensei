@@ -238,8 +238,8 @@ public class PatternEvaluatorImprovedTest {
       EVAL.setup(b);
 //      System.out.println(EVAL.eval() + " " + EVAL.evalSlow());
       int correctEval = EVAL.evalSlow();
-      float lastError = EVAL.lastError();
-      if (correctEval != EVAL.eval() || Math.abs(lastError - EVAL.lastError()) > 0.01) {
+//      float lastError = EVAL.lastError();
+      if (correctEval != EVAL.eval()) {// || Math.abs(lastError - EVAL.lastError()) > 0.01) {
         System.out.println(b);
         System.out.println();
         assert(false);

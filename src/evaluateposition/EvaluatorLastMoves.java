@@ -418,10 +418,6 @@ public class EvaluatorLastMoves {
       int x1, int x2, int x3, int x4, int x5, long player,
       long opponent, int lower, int upper,
       int scLastDiffPlayerDelta, int scLastSamePlayerDelta) {
-    assert(SQUARE_VALUE[x1] >= SQUARE_VALUE[x2]);
-    assert(SQUARE_VALUE[x2] >= SQUARE_VALUE[x3]);
-    assert(SQUARE_VALUE[x3] >= SQUARE_VALUE[x4]);
-    assert(SQUARE_VALUE[x4] >= SQUARE_VALUE[x5]);
     assert(x1 != x2 && x1 != x3 && x1 != x4 && x1 != x5);
     assert(x2 != x3 && x2 != x4 && x2 != x5);
     assert(x3 != x4 && x3 != x5);
@@ -489,10 +485,6 @@ public class EvaluatorLastMoves {
       int x1, int x2, int x3, int x4, int x5, long player,
       long opponent, int lower, int upper,
       int scLastDiffPlayerDelta, int scLastSamePlayerDelta) {
-    assert(SQUARE_VALUE[x1] >= SQUARE_VALUE[x2]);
-    assert(SQUARE_VALUE[x2] >= SQUARE_VALUE[x3]);
-    assert(SQUARE_VALUE[x3] >= SQUARE_VALUE[x4]);
-    assert(SQUARE_VALUE[x4] >= SQUARE_VALUE[x5]);
     assert(x1 != x2 && x1 != x3 && x1 != x4 && x1 != x5);
     assert(x2 != x3 && x2 != x4 && x2 != x5);
     assert(x3 != x4 && x3 != x5);

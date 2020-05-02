@@ -18,6 +18,7 @@ import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
 import board.Board;
 import board.PossibleMovesFinderImproved;
+import constants.Constants;
 import evaluatedepthone.DepthOneEvaluator;
 import java.util.ArrayList;
 
@@ -86,7 +87,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
     for (long move : moves) {
       Board next = current.move(move);
       int eval = -evaluatePosition(next, depth - 1);
-      evaluations.add(new StoredBoard(next, eval, 0, 1));
+      evaluations.add(new StoredBoard(next, eval, 0, new int[Constants.N_SAMPLES]));
     }
     return evaluations;
   }

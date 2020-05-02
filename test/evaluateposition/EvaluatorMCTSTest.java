@@ -39,7 +39,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testPass() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     StoredBoard pass = new StoredBoard(Board.pass(), 0, 0);
     pass.bestVariationPlayer = 5;
     pass.bestVariationOpponent = 3;
@@ -58,7 +58,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testDoublePass() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     StoredBoard pass = new StoredBoard(Board.bothPass(), 0, 6);
     pass.bestVariationPlayer = 5;
     pass.bestVariationOpponent = 3;
@@ -100,7 +100,7 @@ public class EvaluatorMCTSTest {
   // -66 +66   -16 -16
   @Test
   public void testTree() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(30, 30, 30, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(30, 30, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
 
     StoredBoard e6 = new StoredBoard(Board.e6(), 0, 0);
 

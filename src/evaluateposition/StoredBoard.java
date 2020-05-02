@@ -15,178 +15,159 @@
 package evaluateposition;
 
 import board.Board;
-import helpers.Gaussian;
+import constants.Constants;
 import java.util.ArrayList;
 
 public class StoredBoard {
   public long player = 0;
   public long opponent = 0;
-
+  // Keep lower <= eval <= upper?????
+  public short eval;
+  public short lower = -6400;
+  public short upper = 6400;
+  public short bestVariationPlayer;
+  public short bestVariationOpponent;
+  
+  public boolean playerIsStartingPlayer;
+  public short[] samples = new short[Constants.N_SAMPLES];
+  public int descendants;
   public StoredBoard next = null;
   public StoredBoard prev = null;
   public ArrayList<StoredBoard> fathers = new ArrayList<>();
   public StoredBoard[] children = null;
-
-  public int eval;
-  public long descendants;
-  final static int N_EVAL_SPLITS = 64;
-  private static float PRECISION = 1.E-10F;
-  public float[] probEvalGreaterThan = new float[N_EVAL_SPLITS];
-  public float[] maxChildrenLogDerivative = new float[N_EVAL_SPLITS];
+  public long expectedToSolve = 0;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
-  
+
   public StoredBoard(Board board) {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();
-    for (int i = 0; i < probEvalGreaterThan.length; ++i) {
-      probEvalGreaterThan[i] = 0.5F;
-      maxChildrenLogDerivative[i] = 0;
-    }
   }
 
-  public StoredBoard(Board board, int eval, float variance, long descendants) {
-    this(board);
-    this.descendants = descendants;
-    this.setEval(eval, variance);
+  public StoredBoard(Board board, int eval, float variance) {
+    this.player = board.getPlayer();
+    this.opponent = board.getOpponent();
+    this.updateEval(eval, variance);
+    this.descendants = 0;
   }
   
-  public void addChildren(StoredBoard[] children) {
-    this.children = children;
+  public StoredBoard(Board board, int eval, float variance, int deltas[]) {
+    this.player = board.getPlayer();
+    this.opponent = board.getOpponent();
+    this.updateEval(eval, variance, deltas);
+    this.descendants = 0;
   }
-
+  
   public boolean isLeaf() {
     return children == null;
   }
     
   public static StoredBoard randomStoredBoard(Board b) {
-    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600, 1);
+    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600, new int[Constants.N_SAMPLES]);
   }
   
   public Board getBoard() {
     return new Board(player, opponent);
   }
+
+  public EvaluatedBoard toEvaluatedBoard() {
+    if (player == 0 && opponent == 0) {
+      return null;
+    }
+    return new EvaluatedBoard(getLowerBound(), 1, getUpperBound(), 1);
+  }
+
+  public final void setSolved(int newEval, int evalGoal) {
+    this.setLower(newEval, evalGoal);
+    this.setUpper(newEval, evalGoal);
+  }
+
+  public final void setLower(int newLower, int evalGoal) {
+    this.lower = (short) newLower;
+    this.eval = (short) Math.max(newLower, eval);
+    for (int i = 0; i < Constants.N_SAMPLES; i++) {
+      samples[i] = (short) Math.max(newLower, samples[i]);
+    }
+    if (evalGoal <= 6400 && evalGoal >= -6400) {
+      this.setEvalGoalForLeaf(evalGoal);
+    }
+  }
+
+  public final void setUpper(int newUpper, int evalGoal) {
+    this.upper = (short) newUpper;
+    this.eval = (short) Math.min(newUpper, eval);
+    for (int i = 0; i < samples.length; i++) {
+      this.samples[i] = (short) Math.min(newUpper, samples[i]);
+    }
+    if (evalGoal <= 6400 && evalGoal >= -6400) {
+      this.setEvalGoalForLeaf(evalGoal);
+    }
+  }
   
-  public float dProbEvalGreaterThanLog(int offset, StoredBoard father) {
-   
-    return (float) Math.log((1 - father.probEvalGreaterThan[invertOffset(offset)]) / probEvalGreaterThan[offset]);
-  }
-
-  public static int invertOffset(int offset) {
-    return 63 - offset;
-  }
-
-  static int evalToOffset(int eval) {
-    return (eval + 6300) / 200;
-  }
-  
-  public static int offsetToEval(int offset) {
-    return offset * 200 - 6300;
-  }
-
-  public final void setSolved(int newEval) {
-    this.setLower(newEval);
-    this.setUpper(newEval);
-  }
-
-  public final void setLower(int newLower) {
+  public final void setEvalGoalForLeaf(int evalGoal) {
     assert(this.isLeaf());
-    this.eval = Math.max(eval, newLower);
-    for (int i = -6300; i <= newLower; i += 200) {
-      probEvalGreaterThan[evalToOffset(i)] = 1;
-    }
+    assert(evalGoal <= 6400 && evalGoal >= -6400);
+    this.bestVariationOpponent = lower >= evalGoal ? 6600 : eval;
+    this.bestVariationPlayer = upper <= evalGoal ? -6600 : eval;
+    // TODO: improve
+    this.expectedToSolve = (long) (
+        Math.pow(2.2, 64 - Long.bitCount(player | opponent)));
   }
+  
+  public final void updateEval(int newEval, float variance) {
+    this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
-  public final void setUpper(int newUpper) {
-    assert(this.isLeaf());
-    this.eval = Math.min(eval, newUpper);
-    for (int i = 6300; i >= newUpper; i -= 200) {
-      probEvalGreaterThan[evalToOffset(i)] = 0;
+    for (int i = 0; i < samples.length; i++) {
+      this.samples[i] = (short) Math.max(this.lower, Math.min(
+          this.upper,
+          (int) (newEval + RANDOM.next() * variance + 0.5)));
     }
   }
   
-  public int getBestOffset() {
-    for (int i = 0; i < probEvalGreaterThan.length - 1; ++i) {
-      if (probEvalGreaterThan[i] > 0.5 && probEvalGreaterThan[i+1] < 0.5) {
-        System.out.println("I" + i);
-        return (int) (i + Math.random() * 2);
-      }
+  public final void updateEval(int newEval, float variance, int deltas[]) {
+    this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
+
+    double weightNew = 0.8;
+    double weightOld = Math.sqrt(1 - weightNew * weightNew);
+    for (int i = 0; i < samples.length; i++) {
+//      System.out.println(deltas[i]);
+      this.samples[i] = (short) Math.round(Math.max(this.lower, Math.min(
+          this.upper,
+          newEval + RANDOM.next() * variance * weightNew - deltas[i] * weightOld)));
     }
-    return probEvalGreaterThan.length - 1;
+    this.bestVariationOpponent = eval;
+    this.bestVariationPlayer = eval;
+  }
+
+  @Override
+  public String toString() {
+    String str = new Board(player, opponent).toString() + eval + "\n";
+    for (int i = 0; i < samples.length; i++) {
+      str += samples[i] + " ";
+    }
+    return str + "\n" + this.lower + "(" + this.bestVariationPlayer + ") " + this.upper + "(" + this.bestVariationOpponent + ")\n";
   }
   
-  private static float bound(float value) {
-    final float minValue = PRECISION;
-    return (float) Math.max(minValue, Math.min(1 - minValue, value));
-  }
-  
-  public final void setEval(int newEval, float variance) {
-    assert(this.isLeaf());
-    this.eval = newEval;
-    for (int i = 0; i < probEvalGreaterThan.length; ++i) {
-      if (probEvalGreaterThan[i] > 0 && probEvalGreaterThan[i] < 1) {
-        probEvalGreaterThan[i] = bound(1 - (float) Gaussian.CDF(offsetToEval(i), newEval, variance));
-      }
-    }
-  }
-  
-  public float childMaxLogDerivative(int offset, StoredBoard child) {
-    return child.dProbEvalGreaterThanLog(offset, this) + child.maxChildrenLogDerivative[offset];
-  }
-
-  protected void updateFather() {
-    assert(!this.isLeaf());
-    eval = Short.MIN_VALUE;
-
-    for (StoredBoard child : children) {
-      eval = Math.max(eval, -child.eval);
-    }
-    for (int i = 0; i < N_EVAL_SPLITS; ++i) {
-      float probAllChildrenEvalGreaterThanI = 1;
-      for (StoredBoard child : children) {
-        probAllChildrenEvalGreaterThanI *= child.probEvalGreaterThan[i];
-
-      }
-      this.probEvalGreaterThan[invertOffset(i)] = bound(1 - probAllChildrenEvalGreaterThanI);
-      
-    }
-    for (int i = 0; i < N_EVAL_SPLITS; ++i) {
-      float maxChildrenLogDerivativeI = Float.NEGATIVE_INFINITY;
-      for (StoredBoard child : children) {
-        maxChildrenLogDerivativeI = Math.max(maxChildrenLogDerivativeI, childMaxLogDerivative(i, child));
-      }
-      
-      this.maxChildrenLogDerivative[invertOffset(i)] = maxChildrenLogDerivativeI;
-    }
-  }
-
-  protected void updateFathers() {
-    for (StoredBoard father : fathers) {
-      father.updateFather();
-      father.updateFathers();
-    }
-  }
-  
-  public float getProbEvalGreaterThan(int eval) {
-    return this.probEvalGreaterThan[evalToOffset(eval)];
-  }
-
   public boolean isSolved() {
-    for (float f : this.probEvalGreaterThan) {
-      if (f > 0 && f < 1) {
-        return false;
-      }
-    }
-    return true;
+    return (this.lower == this.upper);
   }
 
-  public String getInterestingProbabilities() {
-    String result = "";
-    for (int i = probEvalGreaterThan.length - 1; i >= 0; --i) {
-      if (Math.abs(offsetToEval(i) - eval) < 500) {
-        result += String.format("%d:%.2g (%.2g)\n", -offsetToEval(i) / 100, 1 - probEvalGreaterThan[i],
-            fathers.size() > 0 ? fathers.get(0).childMaxLogDerivative(i, this) : 0);
-      }
+  boolean isPartiallySolved() {    
+    return getLowerBound() == getUpperBound();
+  }
+
+  public int getUpperBound() {
+    int result = eval;
+    for (short s : samples) {
+      result = Math.max(result, s);
+    }
+    return result;
+  }
+
+  public int getLowerBound() {
+    int result = eval;
+    for (short s : samples) {
+      result = Math.min(result, s);
     }
     return result;
   }
