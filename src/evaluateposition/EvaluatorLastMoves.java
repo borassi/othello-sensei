@@ -40,7 +40,7 @@ public class EvaluatorLastMoves {
   long firstLastInEdges[];
 
   private final GetFlip flipper;
-  private final GetMovesCache mover[] = new GetMovesCache[63];
+  private final GetMovesCache movers[] = new GetMovesCache[63];
   private final GetMovesCache mover5 = new GetMovesCache();
   private final GetMovesCache mover4 = new GetMovesCache();
   private final GetMovesCache mover3 = new GetMovesCache();
@@ -62,8 +62,8 @@ public class EvaluatorLastMoves {
     masksTmp[8] = CENTRAL2;
     masksTmp[9] = ~0L;
     this.firstLastInEdges = new long[2];
-    for (int i = 0; i < mover.length; ++i) {
-      mover[i] = new GetMovesCache();
+    for (int i = 0; i < movers.length; ++i) {
+      movers[i] = new GetMovesCache();
     }
   }
   
@@ -132,14 +132,14 @@ public class EvaluatorLastMoves {
     int cur;
     long flip;
     if ((moves & (1L << x1)) != 0) {
-      flip = mover3.getFlip(x1, player, opponent);
+      flip = mover3.getFlip(x1);
       best = -evalTwoEmpties(x2, x3, opponent & ~flip, player | flip, -upper, -lower);
       if (best >= upper) {
         return best;
       }
     }
     if ((moves & (1L << x2)) != 0) {
-      flip = mover3.getFlip(x2, player, opponent);
+      flip = mover3.getFlip(x2);
       cur = -evalTwoEmpties(x1, x3, opponent & ~flip, player | flip, -upper, -lower);
       if (cur >= upper) {
         return cur;
@@ -147,7 +147,7 @@ public class EvaluatorLastMoves {
       best = Math.max(best, cur);
     }
     if ((moves & (1L << x3)) != 0) {
-      flip = mover3.getFlip(x3, player, opponent);
+      flip = mover3.getFlip(x3);
       return Math.max(best, -evalTwoEmpties(x1, x2, opponent & ~flip, player | flip, -upper, -lower));
     }
 
@@ -162,11 +162,29 @@ public class EvaluatorLastMoves {
     return evalThreeEmptiesNoCut(x1, x2, x3, player, opponent, lower, upper, moves);
   }
 
+//  private int evalThreeEmpties(
+//      int x1, int x2, int x3, long player, long opponent, int lower, int upper,
+//      int scLastSamePlayerDelta, boolean lastMoveCorner) {
+//    nVisited++;
+//    
+//    if (scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_NO_CORNER ||
+//        (lastMoveCorner && scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_CORNER)) {
+//      int scUpper = stableDisks.getUpperBound(player, opponent);
+//      if (scUpper <= lower) {
+//        return scUpper;
+//      }
+//    }
+//    long moves = mover3.getMoves(player, opponent);
+//    if (moves == 0) {
+//      return -evalThreeEmptiesPassed(x1, x2, x3, opponent, player, -upper, -lower);   
+//    }
+//    return evalThreeEmptiesNoCut(x1, x2, x3, player, opponent, lower, upper, moves);
+//  }
+  
   private int evalThreeEmpties(
       int x1, int x2, int x3, long player, long opponent, int lower, int upper,
       int scLastSamePlayerDelta, boolean lastMoveCorner) {
     nVisited++;
-    
     if (scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_NO_CORNER ||
         (lastMoveCorner && scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_CORNER)) {
       int scUpper = stableDisks.getUpperBound(player, opponent);
@@ -174,11 +192,30 @@ public class EvaluatorLastMoves {
         return scUpper;
       }
     }
-    long moves = mover3.getMoves(player, opponent);
-    if (moves == 0) {
-      return -evalThreeEmptiesPassed(x1, x2, x3, opponent, player, -upper, -lower);   
+    int best = -6600;
+    long flip = GetMoves.getFlip(x1, player, opponent);
+    if (flip != 0) {
+      best = -evalTwoEmpties(x2, x3, opponent & ~flip, player | flip, -upper, -lower);
+      if (best >= upper) {
+        return best;
+      }
     }
-    return evalThreeEmptiesNoCut(x1, x2, x3, player, opponent, lower, upper, moves);
+    flip = GetMoves.getFlip(x2, player, opponent);
+    if (flip != 0) {
+      best = Math.max(best, -evalTwoEmpties(x1, x3, opponent & ~flip, player | flip, -upper, -lower));
+      if (best >= upper) {
+        return best;
+      }
+    }
+    flip = GetMoves.getFlip(x3, player, opponent);
+    if (flip != 0) {
+      return Math.max(best, -evalTwoEmpties(x1, x2, opponent & ~flip, player | flip, -upper, -lower));
+    }
+
+    if (best > -6600) {
+      return best;
+    }
+    return -evalThreeEmptiesPassed(x1, x2, x3, opponent, player, -upper, -lower);
   }
   
   private int evalFourEmptiesNoCut(
@@ -187,21 +224,21 @@ public class EvaluatorLastMoves {
     int best = -6600;
     long flip;
     if ((moves & (1L << x1)) != 0) {
-      flip = mover4.getFlip(x1, player, opponent);
+      flip = mover4.getFlip(x1);
       best = -evalThreeEmpties(x2, x3, x4, opponent & ~flip, player | flip, -upper, -lower, scLastDiffPlayerDelta, (flip & CORNERS) != 0);
       if (best >= upper) {
         return best;
       }
     }
     if ((moves & (1L << x2)) != 0) {
-      flip = mover4.getFlip(x2, player, opponent);
+      flip = mover4.getFlip(x2);
       best = Math.max(best, -evalThreeEmpties(x1, x3, x4, opponent & ~flip, player | flip, -upper, -lower, scLastDiffPlayerDelta, (flip & CORNERS) != 0));
       if (best >= upper) {
         return best;
       }
     }
     if ((moves & (1L << x3)) != 0) {
-      flip = mover4.getFlip(x3, player, opponent);
+      flip = mover4.getFlip(x3);
       if (swap) {
         best = Math.max(best, -evalThreeEmpties(x4, x1, x2, opponent & ~flip, player | flip, -upper, -lower, scLastDiffPlayerDelta, (flip & CORNERS) != 0));
       } else {
@@ -212,7 +249,7 @@ public class EvaluatorLastMoves {
       }
     }
     if ((moves & (1L << x4)) != 0) {
-      flip = mover4.getFlip(x4, player, opponent);
+      flip = mover4.getFlip(x4);
       if (swap) {
         best = Math.max(best, -evalThreeEmpties(x3, x1, x2, opponent & ~flip, player | flip, -upper, -lower, scLastDiffPlayerDelta, (flip & CORNERS) != 0));
       } else {
@@ -262,7 +299,7 @@ public class EvaluatorLastMoves {
       boolean swap, long moves) {
     int best = -6600;
     long flip;
-    if (((moves & (1L << x1)) != 0) && ((flip = mover5.getFlip(x1, player, opponent)) != 0)) {
+    if (((moves & (1L << x1)) != 0) && ((flip = mover5.getFlip(x1)) != 0)) {
       best = -evalFourEmpties(
           x2, x3, x4, x5, opponent & ~flip, player | flip, -upper, -lower,
           scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap);
@@ -270,7 +307,7 @@ public class EvaluatorLastMoves {
         return best;
       }
     }
-    if (((moves & (1L << x2)) != 0) && ((flip = mover5.getFlip(x2, player, opponent)) != 0)) {
+    if (((moves & (1L << x2)) != 0) && ((flip = mover5.getFlip(x2)) != 0)) {
       best = Math.max(best, -evalFourEmpties(
           x1, x3, x4, x5, opponent & ~flip, player | flip, -upper, -lower,
           scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap));
@@ -278,7 +315,7 @@ public class EvaluatorLastMoves {
         return best;
       }
     }
-    if (((moves & (1L << x3)) != 0) && ((flip = mover5.getFlip(x3, player, opponent)) != 0)) {
+    if (((moves & (1L << x3)) != 0) && ((flip = mover5.getFlip(x3)) != 0)) {
       best = Math.max(best, -evalFourEmpties(
           x1, x2, x4, x5, opponent & ~flip, player | flip, -upper, -lower,
           scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap));
@@ -286,7 +323,7 @@ public class EvaluatorLastMoves {
         return best;
       }
     }
-    if (((moves & (1L << x4)) != 0) && ((flip = mover5.getFlip(x4, player, opponent)) != 0)) {
+    if (((moves & (1L << x4)) != 0) && ((flip = mover5.getFlip(x4)) != 0)) {
       if (swap) {
         best = Math.max(best, -evalFourEmpties(
             x5, x1, x2, x3, opponent & ~flip, player | flip, -upper, -lower,
@@ -300,7 +337,7 @@ public class EvaluatorLastMoves {
         return best;
       }
     }
-    if (((moves & (1L << x5)) != 0) && ((flip = mover5.getFlip(x5, player, opponent)) != 0)) {
+    if (((moves & (1L << x5)) != 0) && ((flip = mover5.getFlip(x5)) != 0)) {
       if (swap) {
         return Math.max(best, -evalFourEmpties(
             x4, x1, x2, x3, opponent & ~flip, player | flip, -upper, -lower,
@@ -369,6 +406,7 @@ public class EvaluatorLastMoves {
     return ((spaceSize & 1) << 24) | ((6 - spaceSize) << 16) | (SPACE[x] << 8) | SQUARE_VALUE[x];
   }
   
+  private int[] spaceSizes = new int[4];
   private int evalFiveEmpties(
       long player, long opponent, int lower, int upper,
       int scLastDiffPlayerDelta, int scLastSamePlayerDelta,
@@ -387,10 +425,10 @@ public class EvaluatorLastMoves {
       scCurDelta = 12800;
     }
     long empties = ~(player | opponent);
-    int spaceSizes[] = {Long.bitCount(empties & BOTTOMRIGHT),
-                        Long.bitCount(empties & BOTTOMLEFT),
-                        Long.bitCount(empties & TOPRIGHT),
-                        Long.bitCount(empties & TOPLEFT)};
+    spaceSizes[0] = Long.bitCount(empties & BOTTOMRIGHT);
+    spaceSizes[1] = Long.bitCount(empties & BOTTOMLEFT);
+    spaceSizes[2] = Long.bitCount(empties & TOPRIGHT);
+    spaceSizes[3] = Long.bitCount(empties & TOPLEFT);
     int x1, x2, x3, x4, x5, xSwap;
     x1 = Long.numberOfTrailingZeros(empties);
     empties = empties & ~(1L << x1);
@@ -616,7 +654,8 @@ public class EvaluatorLastMoves {
     masksTmp[5] = ((lastMove & XSQUARES) == 0) ? GetFlip.neighbors(lastMove) : 0;
     int move;
     long moveBit;
-    long moves = mover[nEmpties].getMoves(player, opponent);
+    GetMovesCache mover = movers[nEmpties];
+    long moves = mover.getMoves(player, opponent);
     
     if (moves == 0) {
       if (passed) {
@@ -630,7 +669,7 @@ public class EvaluatorLastMoves {
         move = Long.numberOfTrailingZeros(moves & mask);
         moveBit = 1L << move;
         moves = moves & (~moveBit);
-        flip = mover[nEmpties].getFlip(move, player, opponent) & ~player;
+        flip = mover.getFlip(move) & ~player;
         if (flip == 0) {
           continue;
         }

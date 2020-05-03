@@ -175,22 +175,56 @@ public class HashMapVisitedPositions {
     return nextPositionToImproveStandard(best, sample, !playerVariates, !playerIsStartingPlayer, parents);
   }
 
+  protected synchronized PositionToImprove nextPositionToImproveTemp(
+      StoredBoard position, int evalGoal, boolean playerIsStartingPlayer,
+      ArrayList<StoredBoard> parents) {
+    parents.add(position);
+//    System.out.println("STANDARD");
+    lastEndgame = false;
+    if (position.isLeaf()) {
+      return new PositionToImprove(position, false, playerIsStartingPlayer, this.firstPosition, parents);
+    }
+    int bestValue = -6600;
+    StoredBoard best = null; 
+    for (StoredBoard child : position.children) {
+      int current = 0;
+      for (int sample : child.samples) {
+        if (-sample >= evalGoal) {
+          current++;
+        }
+      }
+      if (current > bestValue || (current == bestValue && child.eval < best.eval)) {
+        bestValue = current;
+        best = child;
+      }
+    }
+    return nextPositionToImproveTemp(best, -evalGoal, !playerIsStartingPlayer, parents);
+  }
+
+
   protected synchronized PositionToImprove nextPositionToImprove() {
     ArrayList<StoredBoard> parents = new ArrayList<StoredBoard>();
     StoredBoard positionToEvaluateLocal = this.firstPosition;
     if (positionToEvaluateLocal.isSolved()) {
       return null;
     }
-    int sample = (int) (Math.random() * Constants.N_SAMPLES);
-    for (int i = 0; i < Constants.N_SAMPLES; i++) {
-      if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
-
-        return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
-            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true,
-            parents);
-      }
-      sample = (sample + 1) % Constants.N_SAMPLES;
+    if (!positionToEvaluateLocal.isPartiallySolved()) {
+      int evalGoal = positionToEvaluateLocal.eval + (int) (Math.random() * 200 - 100);
+      
+      return nextPositionToImproveTemp(positionToEvaluateLocal, evalGoal, true,
+          parents);
     }
+    
+//    int sample = (int) (Math.random() * Constants.N_SAMPLES);
+//    for (int i = 0; i < Constants.N_SAMPLES; i++) {
+//      if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
+//      
+//        return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
+//            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true,
+//          parents);
+//      }
+//      sample = (sample + 1) % Constants.N_SAMPLES;
+//    }
     assert(positionToEvaluateLocal.isPartiallySolved());
 
     boolean playerVariates;
@@ -381,14 +415,23 @@ public class HashMapVisitedPositions {
     StoredBoard bestChild = null;
     int curEvalGoal = this.getEvalGoalForBoard(father);
     int bestEval = Integer.MIN_VALUE;
+    int bestNSamples = Integer.MIN_VALUE;
     
     for (StoredBoard child : father.children) {
+      int curNSamples = 0;
+      for (int sample : child.samples) {
+        if (-sample >= curEvalGoal) {
+          curNSamples++;
+        }
+      }
       int effectiveEval = Math.min(-child.eval, curEvalGoal);
-//      System.out.println(-child.eval + " " + curEvalGoal);
-      if (bestChild == null || (effectiveEval > bestEval) ||
-          (effectiveEval == bestEval && -child.bestVariationPlayer > -bestChild.bestVariationPlayer)) {
+      if (bestChild == null ||
+          (effectiveEval > bestEval) ||
+          (effectiveEval == bestEval && -child.bestVariationPlayer > -bestChild.bestVariationPlayer) ||
+          (effectiveEval == bestEval && -child.bestVariationPlayer == -bestChild.bestVariationPlayer && curNSamples > bestNSamples)) {
         bestChild = child;
         bestEval = effectiveEval;
+        bestNSamples = curNSamples;
       }
     }
 //    System.out.println("FATHER IS\n" + father + "\nBESTCHILD IS\n" + bestChild);

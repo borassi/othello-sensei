@@ -18,7 +18,6 @@ import board.GetFlip;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluateposition.EvaluatorLastMoves;
-import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import helpers.LoadDataset;
 import java.lang.management.ManagementFactory;
@@ -37,7 +36,6 @@ public class EndgameThor {
 //  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
 //  EvaluatorLastMoves eval = new EvaluatorLastMoves();
   EvaluatorMidgame eval = new EvaluatorMidgame();
-  EvaluatorMidgame eval1 = new EvaluatorMidgame();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
 	ThreadMXBean thread = ManagementFactory.getThreadMXBean();
   
@@ -55,7 +53,8 @@ public class EndgameThor {
 //    int result = eval1.evaluatePosition(b, 60, alpha, beta);
     t -= System.currentTimeMillis();
     cpuT -= thread.getCurrentThreadCpuTime();
-    int result = eval.evaluatePosition(b, 64, alpha, beta);
+    int result = eval.evaluatePosition(b, 60, alpha, beta);
+//    int result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), alpha, beta, 64);
     cpuT += thread.getCurrentThreadCpuTime();
     t += System.currentTimeMillis();
     if (alpha < be.evaluation && be.evaluation < beta) {

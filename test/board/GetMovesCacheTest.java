@@ -55,14 +55,14 @@ public class GetMovesCacheTest {
       Board b = Board.randomBoard();
       ArrayList<Long> flipBasic = PossibleMovesFinderImproved.possibleMovesBasic(b);
       
-      int move = (int) (Math.random() * 64);
+      int move = 1;//(int) (Math.random() * 64);
       long empties = ~(b.getPlayer() | b.getOpponent());
       if (((1L << move) & empties) == 0) {
         continue;
       }
       boolean found = false;
       long moves = getMoves.getMoves(b.getPlayer(), b.getOpponent());
-      long actualFlip = ((1L << move) & moves) == 0 ? 0 : getMoves.getFlip(move, b.getPlayer(), b.getOpponent());
+      long actualFlip = ((1L << move) & moves) == 0 ? 0 : (getMoves.getFlip(move) & (b.getOpponent() | (1L << move)));
       for (long flip : flipBasic) {
         if ((flip & (1L << move)) == 0) {
           continue;

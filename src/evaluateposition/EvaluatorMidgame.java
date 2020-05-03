@@ -19,6 +19,7 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.GetFlip;
 import board.GetMoves;
+import board.GetMovesCache;
 import constants.Constants;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.FindStableDisks;
@@ -72,6 +73,7 @@ public class EvaluatorMidgame {
   private final EvaluatorLastMoves lastMovesEvaluator;
   private final HashMap hashMap = new HashMap();
   private final FindStableDisks findStableDisks = new FindStableDisks();
+  Move[][] moves = new Move[64][64];
 
   public EvaluatorMidgame() {
     this(PatternEvaluatorImproved.load());
@@ -161,26 +163,21 @@ public class EvaluatorMidgame {
     return bestEval;    
   }
   
-  Move[][] moves = new Move[64][64];
 
   int getMoves(long player, long opponent, int lower, int upper, int depth, HashMap.BoardInHash boardInHash, Move[] output) {
     int move;
     long moveBit;
-    long empties = ~(player | opponent);
-//    int nEmpties = Long.bitCount(empties);
+    GetMovesCache mover = new GetMovesCache();
+    long curMoves = mover.getMoves(player, opponent);
+    long flip;
     int nMoves = 0;
     int value = 0;
-    boolean missing = boardInHash == null || boardInHash.bestMove >= 0;
-//    System.out.println(depth + " " + isInHash);
 
-    while (empties != 0) {
-      move = Long.numberOfTrailingZeros(empties);
+    while (curMoves != 0) {
+      move = Long.numberOfTrailingZeros(curMoves);
       moveBit = 1L << move;
-      empties = empties & (~moveBit);
-      long flip = GetMoves.getFlip(move, player, opponent);
-      if (flip == 0) {
-        continue;
-      }
+      curMoves = curMoves & (~moveBit);
+      flip = mover.getFlip(move) & (opponent | moveBit);
       nVisitedPositions++;
       Move curMove = output[nMoves++];
       curMove.move = move;
@@ -189,16 +186,14 @@ public class EvaluatorMidgame {
         value = 1 << 30;
       } else if (boardInHash != null && move == boardInHash.secondBestMove) {
         value = 1 << 29;
-      } else if (missing) {
-        value = -GetMoves.getWeightedNMoves(opponent & ~flip, player | flip) << 16;
-        if (depth > 10) {
-          this.depthOneEvaluator.update(move, flip);
-          value += -this.depthOneEvaluator.eval() << 7;
-          this.depthOneEvaluator.undoUpdate(move, flip);
-        }
-        value += SQUARE_VALUE[move];
       } else {
-        value = SQUARE_VALUE[move];
+        value = -(GetMoves.getWeightedNMoves(opponent & ~flip, player | flip) << 16);
+//        if (depth > Constants.EMPTIES_FOR_ENDGAME + 3) {
+//          this.depthOneEvaluator.update(move, flip);
+//          value += -(this.depthOneEvaluator.eval() << 7);
+//          this.depthOneEvaluator.undoUpdate(move, flip);
+//        }
+        value |= SQUARE_VALUE[move];
       }
       curMove.value = value;
     }

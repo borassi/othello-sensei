@@ -104,8 +104,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
 //        }
 //        float error = this.depthOneEval.lastError();
         evaluatorMidgame.resetNVisitedPositions();
-        int result = evaluatorMidgame.evaluatePosition(childBoard, 0, -6400, 6400);
-        int error = 400;
+        int result = evaluatorMidgame.evaluatePosition(childBoard, 2, -6400, 6400);
+        int error = 300;
         long visited = evaluatorMidgame.getNVisited() + 1;
         children[i] = new StoredBoard(childBoard, result, error, deltas);
         children[i].descendants += visited;

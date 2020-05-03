@@ -127,13 +127,12 @@ public class StoredBoard {
   public final void updateEval(int newEval, float variance, int deltas[]) {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
 
-    double weightNew = 0.8;
-    double weightOld = Math.sqrt(1 - weightNew * weightNew);
     for (int i = 0; i < samples.length; i++) {
 //      System.out.println(deltas[i]);
       this.samples[i] = (short) Math.round(Math.max(this.lower, Math.min(
           this.upper,
-          newEval + RANDOM.next() * variance * weightNew - deltas[i] * weightOld)));
+          newEval + RANDOM.next() * variance * Constants.WEIGHT_CORRELATION_NEW -
+              deltas[i] * Constants.WEIGHT_CORRELATION_OLD)));
     }
     this.bestVariationOpponent = eval;
     this.bestVariationPlayer = eval;

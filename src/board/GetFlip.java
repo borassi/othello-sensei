@@ -31,10 +31,10 @@ import main.Main;
 public class GetFlip implements Serializable {
   private final static String SERIALIZE_FILEPATTERN = "coefficients/get_flip.sar";
 //  private transient Unsafe unsafe;
-  private final static long[] flipHorizontalLast = new long[64 * 256 * 256];
-  private final static long[] flipVerticalLast = new long[64 * 256];
-  private final static long[] flipDiagonalLast = new long[64 * 256];
-  private final static long[] flipReverseDiagonalLast = new long[64 * 256];
+  static final long[] flipHorizontalLast = new long[64 * 256 * 256];
+  static final long[] flipVerticalLast = new long[64 * 256];
+  static final long[] flipDiagonalLast = new long[64 * 256];
+  static final long[] flipReverseDiagonalLast = new long[64 * 256];
   
   long neighbors[];
   long horizVert[];
@@ -251,7 +251,7 @@ public class GetFlip implements Serializable {
               if ((curFlip | board.getPlayer() | board.getOpponent()) == bitPattern) {
                 int newHash = hashGeneric(
                   position, board.getOpponent(), bitPattern);
-                assert(flipLast[position * 256 + newHash] == 0);
+//                assert(flipLast[position * 256 + newHash] == 0);
                 flipLast[position * 256 + newHash] = curFlip;
               }
             }

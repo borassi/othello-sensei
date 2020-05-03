@@ -99,15 +99,6 @@ public class GetMoves {
     return result;
   }
   
-  private static long leftOfPlayer1;
-  private static long leftOfPlayer7;
-  private static long leftOfPlayer8;
-  private static long leftOfPlayer9;
-  private static long rightOfPlayer1;
-  private static long rightOfPlayer7;
-  private static long rightOfPlayer8;
-  private static long rightOfPlayer9;
-  
   public static long getMoves(long player, long opponent) {
     long opponentFlippable = opponent & MASK;
     long empties = ~(player | opponent);
