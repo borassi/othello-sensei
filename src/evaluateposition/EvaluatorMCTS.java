@@ -23,20 +23,19 @@ import java.util.ArrayList;
 public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorInterface {
   private final EvaluatorMidgame evaluatorMidgame;
 
-  public EvaluatorMCTS(int arraySize, long maxSize) {
-    this(arraySize, maxSize, PossibleMovesFinderImproved.load(), 
-        new EvaluatorMidgame());
+  public EvaluatorMCTS(long maxNVisited, int maxSize, int arraySize) {
+    this(maxNVisited, maxSize, arraySize, PossibleMovesFinderImproved.load());
   }
 
-  public EvaluatorMCTS(int arraySize, long maxSize, 
+  public EvaluatorMCTS(long maxNVisited, int maxSize, int arraySize, 
                         PossibleMovesFinderImproved possibleMovesFinder) {
-    this(arraySize, maxSize, possibleMovesFinder, new EvaluatorMidgame());
+    this(maxNVisited, maxSize, arraySize, possibleMovesFinder, new EvaluatorMidgame());
   }
 
-  public EvaluatorMCTS(int arraySize, long maxSize,
+  public EvaluatorMCTS(long maxNVisited, int maxSize, int arraySize,
                        PossibleMovesFinderImproved possibleMovesFinder,
                        EvaluatorMidgame evaluatorMidgame) {
-    super(arraySize, maxSize, possibleMovesFinder);
+    super(maxNVisited, maxSize, arraySize, possibleMovesFinder);
 //    this.depthOneEval = depthOneEvaluator;
     this.evaluatorMidgame = evaluatorMidgame;
   }
@@ -150,8 +149,27 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
             next.getBoard(), Constants.EMPTIES_FOR_FORCED_MIDGAME, nextPos.alpha, nextPos.beta);
         seenPositions = evaluatorMidgame.getNVisited() + 1;
         updateEndgame(nextPos, curEval);
-      } else {
+      } else if (this.size < this.maxSize) {
         seenPositions = this.addPositions(next);
+      } else {
+        this.evaluatorMidgame.resetNVisitedPositions();
+        int curEval = evaluatorMidgame.evaluatePosition(
+            next.getBoard(), 2, nextPos.alpha, nextPos.beta);
+        int d;
+        for (d = 4; evaluatorMidgame.getNVisited() < next.descendants; d += 2) {
+          if (next.getBoard().getEmptySquares() - d < 8) {
+            d = next.getBoard().getEmptySquares();
+          }
+          curEval = evaluatorMidgame.evaluatePosition(
+            next.getBoard(), d, nextPos.alpha, nextPos.beta);
+        }
+        seenPositions = evaluatorMidgame.getNVisited() + 1;
+        if (d >= next.getBoard().getEmptySquares()) {
+          updateEndgame(nextPos, curEval);
+        } else {
+          nextPos.board.updateEval(curEval, (float) (800 / Math.sqrt(d+1) * Math.sqrt(2)));
+          updateFathers(nextPos.board);
+        }
       }
       for (StoredBoard b : nextPos.parents) {
         b.descendants += seenPositions;
@@ -182,8 +200,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
         this.setEvalGoal(this.firstPosition.eval);
 //        break;
       }
-      if (this.firstPosition.descendants > maxSize) {
-        System.out.println("STOPPING SIZE" + maxSize);
+      if (this.firstPosition.descendants > maxNVisited) {
+        System.out.println("STOPPING SIZE" + maxNVisited);
         break;
       }
     }

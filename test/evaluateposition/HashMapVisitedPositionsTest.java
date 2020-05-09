@@ -39,7 +39,7 @@ public class HashMapVisitedPositionsTest {
     s.eval = 123;
     StoredBoard t = new StoredBoard(new Board(12423, 45), 0, 0);
     t.eval = 456;
-    HashMapVisitedPositions visitedPositions = new HashMapVisitedPositions(11, 5, POSSIBLE_MOVES_FINDER);
+    HashMapVisitedPositions visitedPositions = new HashMapVisitedPositions(5, 11, 5, POSSIBLE_MOVES_FINDER);
     
     assertEquals(0, visitedPositions.size);
     
@@ -58,7 +58,7 @@ public class HashMapVisitedPositionsTest {
   
   @Test
   public void testBoardChildrenAreCorrect() {
-    HashMapVisitedPositions positions = new HashMapVisitedPositions(10, 5, POSSIBLE_MOVES_FINDER);
+    HashMapVisitedPositions positions = new HashMapVisitedPositions(5, 10, 5, POSSIBLE_MOVES_FINDER);
 
     StoredBoard firstMove = new StoredBoard(Board.e6(), 0, 0);
     positions.firstPosition = firstMove;
@@ -163,7 +163,7 @@ public class HashMapVisitedPositionsTest {
 
   @Test
   public void testBoardIsCorrect() {
-    HashMapVisitedPositions positions = new HashMapVisitedPositions(10, 5, POSSIBLE_MOVES_FINDER);
+    HashMapVisitedPositions positions = new HashMapVisitedPositions(5, 10, 5, POSSIBLE_MOVES_FINDER);
     StoredBoard firstMove = new StoredBoard(Board.e6(), 0, 0);
     StoredBoard start = new StoredBoard(new Board(), 0, 0);
     positions.add(firstMove);
@@ -181,7 +181,7 @@ public class HashMapVisitedPositionsTest {
 
   @Test
   public void testBoardChildrenAreCorrectPass() {
-    HashMapVisitedPositions positions = new HashMapVisitedPositions(10, 5, POSSIBLE_MOVES_FINDER);
+    HashMapVisitedPositions positions = new HashMapVisitedPositions(5, 10, 5, POSSIBLE_MOVES_FINDER);
     StoredBoard pass = new StoredBoard(Board.pass(), 200, 0);
     positions.add(pass);
 
@@ -289,7 +289,7 @@ public class HashMapVisitedPositionsTest {
       int totalSize = nElements + (int) (Math.random() * 10);
 
       HashMapVisitedPositions evaluator = new HashMapVisitedPositions(
-        totalSize, nElements, POSSIBLE_MOVES_FINDER);
+        nElements, totalSize, totalSize, POSSIBLE_MOVES_FINDER);
       Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;
@@ -386,7 +386,7 @@ public class HashMapVisitedPositionsTest {
       int totalSize = nElements + (int) (Math.random() * 100);
 
       HashMapVisitedPositions evaluator = new HashMapVisitedPositions(
-        totalSize, nElements, POSSIBLE_MOVES_FINDER);
+        nElements, totalSize, totalSize, POSSIBLE_MOVES_FINDER);
       Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;

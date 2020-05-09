@@ -68,7 +68,7 @@ public class Main {
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
     FLIPPER = GetFlip.load();
     EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, FLIPPER);
-    EVALUATOR = new EvaluatorMCTS(1000, 2000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EVALUATOR = new EvaluatorMCTS(1000, 1000000, 2000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
 //    EVALUATOR = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
   }
   
@@ -81,7 +81,7 @@ public class Main {
   public final void changeDepth(int depth) {
     this.depth = depth;
     if (depth > 0) {
-      EVALUATOR = new EvaluatorMCTS(2000000, depth, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+      EVALUATOR = new EvaluatorMCTS(depth, 1000000, 2000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     }
   }
 
