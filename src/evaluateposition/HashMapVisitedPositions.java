@@ -415,28 +415,14 @@ public class HashMapVisitedPositions {
   protected StoredBoard bestChild(StoredBoard father) {
     // Idea: maximize lower bound of "acceptables".
     StoredBoard bestChild = null;
-    int curEvalGoal = this.getEvalGoalForBoard(father);
-    int bestEval = Integer.MIN_VALUE;
-    int bestNSamples = Integer.MIN_VALUE;
     
     for (StoredBoard child : father.children) {
-      int curNSamples = 0;
-      for (int sample : child.samples) {
-        if (-sample >= curEvalGoal) {
-          curNSamples++;
-        }
-      }
-      int effectiveEval = Math.min(-child.eval, curEvalGoal);
       if (bestChild == null ||
-          (effectiveEval > bestEval) ||
-          (effectiveEval == bestEval && -child.bestVariationPlayer > -bestChild.bestVariationPlayer) ||
-          (effectiveEval == bestEval && -child.bestVariationPlayer == -bestChild.bestVariationPlayer && curNSamples > bestNSamples)) {
+          child.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / child.descendants)) < 
+          bestChild.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / bestChild.descendants))) {
         bestChild = child;
-        bestEval = effectiveEval;
-        bestNSamples = curNSamples;
       }
     }
-//    System.out.println("FATHER IS\n" + father + "\nBESTCHILD IS\n" + bestChild);
     return bestChild;
   }
   
@@ -449,6 +435,8 @@ public class HashMapVisitedPositions {
     father.bestVariationOpponent = Short.MIN_VALUE;
 
     father.bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
+    father.proofNumber = Long.MAX_VALUE;
+    father.disproofNumber = 0;
 
     for (StoredBoard child : father.children) {
       father.eval = (short) Math.max(father.eval, -child.eval);
@@ -456,16 +444,8 @@ public class HashMapVisitedPositions {
           -child.bestVariationOpponent);
       father.lower = (short) Math.max(father.lower, -child.upper);
       father.upper = (short) Math.max(father.upper, -child.lower);
-    }
-    if (father.eval >= evalGoal) {
-      father.expectedToSolve = father.children[0].expectedToSolve;
-      for (StoredBoard child : father.children) {
-        father.expectedToSolve = Math.min(father.expectedToSolve, child.expectedToSolve);
-      }
-    } else {
-      for (StoredBoard child : father.children) {
-        father.expectedToSolve += child.expectedToSolve;
-      }      
+      father.proofNumber = Math.min(father.proofNumber, child.disproofNumber);
+      father.disproofNumber += child.proofNumber;
     }
     for (int i = 0; i < Constants.N_SAMPLES; ++i) {
       short tmp = Short.MIN_VALUE;

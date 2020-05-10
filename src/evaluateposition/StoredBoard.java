@@ -35,7 +35,8 @@ public class StoredBoard {
   public StoredBoard prev = null;
   public ArrayList<StoredBoard> fathers = new ArrayList<>();
   public StoredBoard[] children = null;
-  public long expectedToSolve = 0;
+  public double disproofNumber = 0;
+  public double proofNumber = 0;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
@@ -110,8 +111,22 @@ public class StoredBoard {
     this.bestVariationOpponent = lower >= evalGoal ? 6600 : eval;
     this.bestVariationPlayer = upper <= evalGoal ? -6600 : eval;
     // TODO: improve
-    this.expectedToSolve = (long) (
-        Math.pow(2.2, 64 - Long.bitCount(player | opponent)));
+    if (lower >= evalGoal) {
+      this.proofNumber = 0;
+    } else if (upper < evalGoal) {
+      this.proofNumber = Double.POSITIVE_INFINITY;
+    } else {
+      this.proofNumber = EndgameTimeEstimator.proofNumber(
+          this.getBoard(), evalGoal, this.eval);   
+    }
+    if (upper <= evalGoal) {
+      this.disproofNumber = 0;
+    } else if (lower > evalGoal) {
+      this.disproofNumber = Double.POSITIVE_INFINITY;    
+    } else {
+      this.disproofNumber = EndgameTimeEstimator.disproofNumber(
+          this.getBoard(), evalGoal, this.eval);
+    }
   }
   
   public final void updateEval(int newEval, float variance) {

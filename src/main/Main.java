@@ -75,7 +75,7 @@ public class Main {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(50), true); // 37
+    setBoard(EndgameTest.readIthBoard(42), true); // 37
   }
 
   public final void changeDepth(int depth) {
@@ -146,6 +146,23 @@ public class Main {
     }
   }
   
+  public static String prettyPrintDouble(double l) {
+    if (l < 1000) {
+      return String.format("%f", l);      
+    } else if (l < 10000) {
+      return String.format("%.1fK", l / 1000.);      
+    } else if (l < 1000000) {
+      return String.format("%.0fK", l / 1000);      
+    } else if (l < 10000000) {
+      return String.format("%.1fM", l / 1000000.);      
+    } else if (l < 1000000000) {
+      return String.format("%.0fM", l / 1000000);      
+    } else if (l < 10000000000L) {
+      return String.format("%.1fG", l / 1000000000.);      
+    } else {
+      return String.format("%.0fG", l / 1000000000);      
+    }
+  }
   
   public void showHashMapEvaluations() {
     long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(board);
@@ -171,12 +188,13 @@ public class Main {
 //        annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false);
         annotations.lower = -evaluation.upper / 100F;
         annotations.upper = -evaluation.lower / 100F;
-//        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
-//        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
+        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
+        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
         annotations.nVisited = evaluation.descendants;
 //        annotations.otherAnnotations = evaluation.getInterestingProbabilities((Math.random() > 0.5 ? -1 : 1) * EVALUATOR.firstPosition.eval);
 //            String.format(
 //            "%d %d\n", EVALUATOR.getEvalGoal() / 100, evaluation.expectedToSolve);
+        annotations.otherAnnotations = prettyPrintDouble(evaluation.disproofNumber) + " " + prettyPrintDouble(evaluation.proofNumber) + "\n";
         
         for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
           annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
