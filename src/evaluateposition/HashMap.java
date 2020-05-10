@@ -26,17 +26,12 @@ public class HashMap {
     public int upper;
     public int depthLower;
     public int depthUpper;
-    public ArrayList<BoardInHash> myArray;
     public BoardInHash prev;
     public BoardInHash next;
     public BoardInHash prevToRemove;
     public BoardInHash nextToRemove;
     public int bestMove;
     public int secondBestMove;
-
-    public BoardInHash(ArrayList<BoardInHash> myArray) {
-      this.myArray = myArray;
-    }
     
     public EvaluatedBoard toEvaluatedBoard() {
       if (player == 0 && opponent == 0) {
@@ -45,8 +40,7 @@ public class HashMap {
       return new EvaluatedBoard(lower, depthLower, upper, depthUpper);
     }
   
-    public final void reset(long player, long opponent, 
-                            ArrayList<BoardInHash> myArray) {
+    public final void reset(long player, long opponent) {
       this.player = player;
       this.opponent = opponent;
       this.lower = -6600;
@@ -55,11 +49,10 @@ public class HashMap {
       this.depthUpper = 0;
       this.prevToRemove = null;
       this.nextToRemove = null;
-      this.myArray = myArray;
     }
   
     public boolean isNull() {
-      return player == 0 && opponent == 0;
+      return depthLower == 0 && depthUpper == 0;
     }
       @Override
     public String toString() {
@@ -70,7 +63,6 @@ public class HashMap {
     }
   }
 
-  public ArrayList<BoardInHash> fathers = new ArrayList<>();
   public BoardInHash prevToRemove = null;
   public BoardInHash nextToRemove = null;
   public ArrayList<BoardInHash> myArray;
@@ -81,7 +73,7 @@ public class HashMap {
     return Math.abs(3 * newPlayer + 17 * newOpponent) % maxElements;
   }
 
-  public ArrayList<BoardInHash> evaluationsHashMap[];
+  public BoardInHash evaluationsHashMap[];
 
   protected BoardInHash firstToRemove;
   protected BoardInHash lastToRemove;
@@ -91,7 +83,7 @@ public class HashMap {
   int size;
   
   public HashMap() {
-    this(2000001, 1000000);
+    this(10000001, 5000000);
   }
   
   public HashMap(int arraySize, int maxSize) {
@@ -102,21 +94,22 @@ public class HashMap {
   }
 
   public final void reset() {
-    evaluationsHashMap = new ArrayList[arraySize];
-    firstToRemove = new BoardInHash(new ArrayList<>());
-    lastToRemove = new BoardInHash(new ArrayList<>());
-    for (int i = 0; i < arraySize; i++) {
-      evaluationsHashMap[i] = new ArrayList<>();
-    }
+    evaluationsHashMap = new BoardInHash[arraySize];
+    firstToRemove = new BoardInHash();
+    lastToRemove = new BoardInHash();
+    BoardInHash boards[] = new BoardInHash[maxSize];
     for (int i = 0; i < maxSize; i++) {
-      evaluationsHashMap[i].add(new BoardInHash(evaluationsHashMap[i]));
+      BoardInHash b = new BoardInHash();
+      b.player = (long) (Math.random() * Long.MAX_VALUE);
+      boards[i] = b;
+      this.insertBefore(b, evaluationsHashMap[hashBoard(b.player, b.opponent, arraySize)]);
+      evaluationsHashMap[hashBoard(b.player, b.opponent, arraySize)] = b;
     }
     for (int i = 0; i < maxSize - 1; i++) {
-      pairToRemove(evaluationsHashMap[i].get(0), 
-                   evaluationsHashMap[i + 1].get(0));
+      pairToRemove(boards[i], boards[i + 1]);
     }
-    pairToRemove(firstToRemove, evaluationsHashMap[0].get(0));
-    pairToRemove(evaluationsHashMap[maxSize - 1].get(0), lastToRemove);
+    pairToRemove(firstToRemove, boards[0]);
+    pairToRemove(boards[maxSize - 1], lastToRemove);
     size = 0;
   }
   
@@ -134,18 +127,21 @@ public class HashMap {
   
   public BoardInHash getOrAddStoredBoard(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    ArrayList<BoardInHash> boards = evaluationsHashMap[hash];
-    for (BoardInHash b : boards) {
+    for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
       if (b.player == player && b.opponent == opponent) {
         this.updateToRemove(b);
+        assert(allOk());
         return b;
       }
     }
     BoardInHash b = removeOneBoard();
-    b.reset(player, opponent, boards);
+    b.reset(player, opponent);
     size++;
-    boards.add(b);
-    addBefore(b, lastToRemove);
+    insertBefore(b, evaluationsHashMap[hash]);
+    evaluationsHashMap[hash] = b;
+    addBeforeToRemove(b, lastToRemove);
+    assert(evaluationsHashMap[hash].prev == null);
+    assert(allOk());
     return b;
   }
   
@@ -155,8 +151,7 @@ public class HashMap {
   
   public BoardInHash getStoredBoardNoUpdate(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    ArrayList<BoardInHash> boards = evaluationsHashMap[hash];
-    for (BoardInHash b : boards) {
+    for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
       if (b.player == player && b.opponent == opponent) {
         return b;
       }
@@ -166,14 +161,31 @@ public class HashMap {
   
   public BoardInHash getStoredBoard(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    ArrayList<BoardInHash> boards = evaluationsHashMap[hash];
-    for (BoardInHash b : boards) {
+    for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
       if (b.player == player && b.opponent == opponent) {
         this.updateToRemove(b);
         return b;
       }
     }
     return null;
+  }
+  
+  private boolean allOk() {
+    for (int hash = 0; hash < evaluationsHashMap.length; ++hash) {
+      if (evaluationsHashMap[hash] != null &&
+          evaluationsHashMap[hash].prev != null) {
+        System.out.println("Wrong prev for board " + evaluationsHashMap[hash] +
+            " at evaluationsHashMap[" + hash + "].");
+        return false;
+      }
+      for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
+        if (hashBoard(b.player, b.opponent, arraySize) != hash) {
+          System.out.println("Wrong hash for board " + b);
+          return false;
+        }
+      }
+    }
+    return true;
   }
   
   public EvaluatedBoard get(Board b) {
@@ -189,7 +201,18 @@ public class HashMap {
     next.prevToRemove = prev;
   }
   
-  public final static void addBefore(BoardInHash b, BoardInHash next) {
+  private void insertBefore(BoardInHash b, BoardInHash next) {
+    b.next = next;
+    if (next != null) {
+      b.prev = next.prev;
+      next.prev = b;
+    }
+    b.prev = null;
+    assert(b.next != b);
+    assert(b.prev == null || b.prev.next == b);
+    assert(b.next == null || b.next.prev == b);
+  }
+  public final static void addBeforeToRemove(BoardInHash b, BoardInHash next) {
     pairToRemove(next.prevToRemove, b);
     pairToRemove(b, next);
   }
@@ -201,18 +224,19 @@ public class HashMap {
     if (!toRemove.isNull()) {
       size--;
     }
-    ArrayList<BoardInHash> toRemoveArray = toRemove.myArray;
-    
-    BoardInHash other = toRemoveArray.remove(toRemoveArray.size() - 1);
-    if (toRemove == other) {
-      return toRemove;
+    if (toRemove.prev == null) {
+      assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] == toRemove);
+      evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] = toRemove.next;
+    } else {
+      assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] != toRemove);
+      toRemove.prev.next = toRemove.next;
     }
-    
-    for (int i = 0; i < toRemoveArray.size(); i++) {
-      if (toRemoveArray.get(i) == toRemove) {
-        toRemoveArray.set(i, other);
-      }
+    if (toRemove.next != null) {
+      toRemove.next.prev = toRemove.prev;
     }
+    assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] == null ||
+        evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)].prev == null);
+    assert(allOk());
     return toRemove;
   }
   
@@ -220,16 +244,19 @@ public class HashMap {
     // Remove b from the list.
     pairToRemove(b.prevToRemove, b.nextToRemove);
     // Add b at the end.
-    addBefore(b, lastToRemove);    
+    addBeforeToRemove(b, lastToRemove);   
+    assert(allOk()); 
   }
   
   @Override
   public String toString() {
     String result = "";
     int i = 0;
-    for (ArrayList<BoardInHash> a : evaluationsHashMap) {
+    for (BoardInHash a : evaluationsHashMap) {
       result += i++ + "\n";
-      result = a.stream().map((b) -> b.toString()).reduce(result, String::concat);
+      for (BoardInHash b = a; b != null; b = b.next) {
+        result += b.toString();
+      }
     }
     return result;
   }

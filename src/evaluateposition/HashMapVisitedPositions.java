@@ -210,23 +210,23 @@ public class HashMapVisitedPositions {
     if (positionToEvaluateLocal.isSolved()) {
       return null;
     }
-    if (!positionToEvaluateLocal.isPartiallySolved()) {
-      int evalGoal = positionToEvaluateLocal.eval + (int) (Math.random() * 200 - 100);
-      
-      return nextPositionToImproveTemp(positionToEvaluateLocal, evalGoal, true,
-          parents);
-    }
-    
-//    int sample = (int) (Math.random() * Constants.N_SAMPLES);
-//    for (int i = 0; i < Constants.N_SAMPLES; i++) {
-//      if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
+//    if (!positionToEvaluateLocal.isPartiallySolved()) {
+//      int evalGoal = positionToEvaluateLocal.eval + (int) (Math.random() * 200 - 100);
 //      
-//        return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
-//            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true,
+//      return nextPositionToImproveTemp(positionToEvaluateLocal, evalGoal, true,
 //          parents);
-//      }
-//      sample = (sample + 1) % Constants.N_SAMPLES;
 //    }
+    
+    int sample = (int) (Math.random() * Constants.N_SAMPLES);
+    for (int i = 0; i < Constants.N_SAMPLES; i++) {
+      if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
+      
+        return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
+            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true,
+          parents);
+      }
+      sample = (sample + 1) % Constants.N_SAMPLES;
+    }
     assert(positionToEvaluateLocal.isPartiallySolved());
 
     boolean playerVariates;

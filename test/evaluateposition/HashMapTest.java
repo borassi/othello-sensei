@@ -101,11 +101,11 @@ public class HashMapTest {
 
   @Test
   public void testRandom() {
-    int N = 1000;
-    int nElements = N / 2 - 1;
-    HashMap visitedPositions = 
-      new HashMap(N, nElements);
-    for (int nIter = 0; nIter < 10000; nIter++) {
+    int N = 100;
+    for (int nIter = 0; nIter < 1000; nIter++) {
+      int nElements = (int) (Math.random() * 1.5 * N) + 1;
+      HashMap visitedPositions = 
+        new HashMap(N, nElements);
       Board boards[] = new Board[nElements];
       int eval[] = new int[nElements];
       int depth[] = new int[nElements];
@@ -115,7 +115,7 @@ public class HashMapTest {
         boards[i] = new Board((long) (Math.random() * Long.MAX_VALUE), 
                               (long) (Math.random() * Long.MAX_VALUE));
         eval[i] = (int) ((Math.random() - 0.5) * 12800);
-        depth[i] = (int) (Math.random() * 6000);
+        depth[i] = (int) (Math.random() * 6000) + 1;
         isUpper[i] = Math.random() > 0.5;
         if (isUpper[i]) {
           visitedPositions.updateUpperBound(boards[i], eval[i], depth[i], 12, 13);
@@ -135,9 +135,9 @@ public class HashMapTest {
       }
       {
         int j = 0;
-        for (ArrayList<BoardInHash> a : visitedPositions.evaluationsHashMap) {
-          for (BoardInHash b : a) {
-            if (b.prevToRemove != null) {
+        for (BoardInHash a : visitedPositions.evaluationsHashMap) {
+          for (BoardInHash b = a; b != null; b = b.next) {
+            if (!b.isNull()) {
               j++;
             }
           }

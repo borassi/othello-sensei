@@ -18,7 +18,7 @@ package constants;
  * @author michele
  */
 public class Constants {
-  public final static int N_SAMPLES = 10;
+  public final static int N_SAMPLES = 0;
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
   public final static double WEIGHT_CORRELATION_NEW = 0.8;

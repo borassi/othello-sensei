@@ -17,7 +17,6 @@ import board.Board;
 import board.GetFlip;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
-import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMidgame;
 import helpers.LoadDataset;
 import java.lang.management.ManagementFactory;
@@ -57,15 +56,15 @@ public class EndgameThor {
 //    int result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), alpha, beta, 64);
     cpuT += thread.getCurrentThreadCpuTime();
     t += System.currentTimeMillis();
-    if (alpha < be.evaluation && be.evaluation < beta) {
-      if (result - be.evaluation > 0) {
-        System.out.println(b);
-        System.out.println(b.toString().replace("\n", ""));
-        System.out.println(result);
-        System.out.println(be.evaluation);
-        return false;
-      }
-    }
+//    if (alpha < be.evaluation && be.evaluation < beta) {
+//      if (result - be.evaluation > 0) {
+//        System.out.println(b);
+//        System.out.println(b.toString().replace("\n", ""));
+//        System.out.println(result);
+//        System.out.println(be.evaluation);
+//        return false;
+//      }
+//    }
     return true;
   }
   
@@ -74,12 +73,13 @@ public class EndgameThor {
     int i = 0;
     int j = 0;
     for (BoardWithEvaluation be : boards) {
-      if (j++ % 10000 == 0 && i > 0) {
+      if (j++ % 100 == 0 && i > 0) {
         System.out.println(j + " / " + boards.size());
 //        System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
         System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
         System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
         System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
+        System.out.println("Visited / endgame: " + numberFormat.format((int) (eval.getNVisited() / eval.nEndgames)));
       }
       int d = be.board.getEmptySquares();
       if (d != 14 || pmf.haveToPass(be.board)) {
@@ -94,9 +94,10 @@ public class EndgameThor {
     System.out.println(t + " " + numberFormat.format(eval.getNVisited()) + " " + i);
 //    System.out.println("Visited1 / s: " + numberFormat.format((int) (eval1.getNVisited() * 1000. / t)));
 //    System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
-    System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
-    System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
     System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
+    System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
+    System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
+    System.out.println("Visited / endgame: " + numberFormat.format((int) (eval.getNVisited() / eval.nEndgames)));
     System.out.println(GetFlip.getCPUTime() + " / " + (cpuT / 1000000000.) + " = " + GetFlip.getCPUTime() * 100000000000. / cpuT + "%");
   }
   

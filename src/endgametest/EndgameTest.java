@@ -14,6 +14,7 @@
 package endgametest;
 
 import board.Board;
+import board.PossibleMovesFinderImproved;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 
@@ -80,8 +81,8 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
-//  EvaluatorMidgame eval = new EvaluatorMidgame();
-  EvaluatorMCTS eval = new EvaluatorMCTS(100000000000L, 4000000, 8000000);
+  EvaluatorMidgame evalMidgame = new EvaluatorMidgame();
+  EvaluatorMCTS eval = new EvaluatorMCTS(100000000000L, 4000000, 8000000, new PossibleMovesFinderImproved(), evalMidgame);
 
   public static Board readIthBoard(int i) {
     String[] boards = POSITIONS[i - 1].split(" ");
@@ -90,7 +91,7 @@ public class EndgameTest {
 
   public void run() {
     
-    System.out.println(" num empties        t       nVisPos   nVisPos/sec      nStored   eval");
+    System.out.println(" num empties        t       nVisPos   nVisPos/sec   nStored  n/end  n/mid  eval");
     for (int i = 41; i <= POSITIONS.length; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
@@ -112,10 +113,18 @@ public class EndgameTest {
       System.out.print(String.format("%9.3f", t / 1000.));
       System.out.print(String.format("%14d", eval.getNVisited()));
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));
-//      System.out.print(String.format("%14d", eval.getNStored()));
+      System.out.print(String.format("%10d", eval.getNStored()));
+      System.out.print(String.format("%7.0f", evalMidgame.nVisitedEndgames / (double) evalMidgame.nEndgames));
+      System.out.print(String.format("%7.0f", eval.nVisitedEndgames / (double) eval.nEndgames));
 //      System.out.print(String.format("%15.0f", eval.size() * 1000. / t));eval.getNVisited()
-      System.out.println(String.format("%12d", result / 100));
+      System.out.print(String.format("%6d", result / 100));
+      System.out.println(String.format("  %5.3f", eval.nWeirdEndgames / (double) eval.nEndgames));
 //      System.out.println("\n");
+      evalMidgame.nEndgames = 0;
+      evalMidgame.nVisitedEndgames = 0;
+      eval.nEndgames = 0;
+      eval.nVisitedEndgames = 0;
+      eval.nWeirdEndgames = 0;
     }
   }
 
