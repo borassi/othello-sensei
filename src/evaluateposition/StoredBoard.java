@@ -17,6 +17,7 @@ package evaluateposition;
 import board.Board;
 import constants.Constants;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class StoredBoard {
   public long player = 0;
@@ -188,5 +189,56 @@ public class StoredBoard {
 
   public int getEval() {
     return eval;
+  }
+  
+  protected StoredBoard bestChild() {
+    // Idea: maximize lower bound of "acceptables".
+    StoredBoard bestChild = null;
+    
+    for (StoredBoard child : children) {
+      if (bestChild == null ||
+          child.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(descendants) / child.descendants)) < 
+          bestChild.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(descendants) / bestChild.descendants))) {
+        bestChild = child;
+      }
+    }
+    return bestChild;
+  }
+
+  protected synchronized void updateFathers() {
+    for (StoredBoard father : fathers) {
+      father.updateFather();
+      father.updateFathers();
+    }
+  }
+  
+  protected synchronized void updateFather() {
+    StoredBoard bestChild = bestChild();
+    eval = Short.MIN_VALUE;
+    lower = Short.MIN_VALUE;
+    upper = Short.MIN_VALUE;
+    bestVariationPlayer = Short.MIN_VALUE;
+    bestVariationOpponent = Short.MIN_VALUE;
+
+    bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
+    proofNumber = Long.MAX_VALUE;
+    disproofNumber = 0;
+
+    for (StoredBoard child : children) {
+      eval = (short) Math.max(eval, -child.eval);
+      bestVariationPlayer = (short) Math.max(bestVariationPlayer,
+          -child.bestVariationOpponent);
+      lower = (short) Math.max(lower, -child.upper);
+      upper = (short) Math.max(upper, -child.lower);
+      proofNumber = Math.min(proofNumber, child.disproofNumber);
+      disproofNumber += child.proofNumber;
+    }
+    for (int i = 0; i < Constants.N_SAMPLES; ++i) {
+      short tmp = Short.MIN_VALUE;
+      for (StoredBoard child : children) {
+        tmp = (short) Math.max(tmp, -child.samples[i]);
+      }
+      samples[i] = tmp;
+    }
   }
 }

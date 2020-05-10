@@ -141,7 +141,7 @@ public class HashMapVisitedPositions {
       }
     } else {
       // Opponent variates:
-      best = this.bestChild(father);
+      best = father.bestChild();
     }
     return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer, parents);
   }
@@ -297,31 +297,6 @@ public class HashMapVisitedPositions {
     }
   }
   
-  public void updateSolved(long player, long opponent, int eval) {
-    StoredBoard b = getFull(player, opponent);
-    b.setSolved(eval, this.getEvalGoalForBoard(b));
-    updateFathers(b);
-  }
-
-  public void updateUpper(long player, long opponent, int upper) {
-    StoredBoard b = getFull(player, opponent);
-    b.setUpper(upper, this.getEvalGoalForBoard(b));
-    updateFathers(b);
-  }
-  
-  public void updateLower(long player, long opponent, int lower) {
-    StoredBoard b = getFull(player, opponent);
-    b.setLower(lower, this.getEvalGoalForBoard(b));
-    updateFathers(b);
-  }
-  
-  public void update(long player, long opponent, int eval, int variance) {
-    StoredBoard b = getFull(player, opponent);
-    b.updateEval(eval, variance);
-    this.updateEvalGoalForLeaf(b);
-    updateFathers(b);
-  }
-  
   public void add(StoredBoard[] children, StoredBoard father) {
     StoredBoard fatherInHash = getFull(father.player, father.opponent);
     assert(children.length > 0);
@@ -349,24 +324,20 @@ public class HashMapVisitedPositions {
       this.updateEvalGoalForLeaf(child);
     }
     fatherInHash.children = children;
-    updateFathers(children[0]);
+    children[0].updateFathers();
   }
   
   public StoredBoard get(Board b) {
     return get(b.getPlayer(), b.getOpponent());
   }
   
-  private StoredBoard getFull(long player, long opponent) {
+  protected StoredBoard getFull(long player, long opponent) {
     int hash = hashBoard(player, opponent, arraySize);
 
-    StoredBoard first = evaluationsHashMap[hash];
-    StoredBoard b = first;
-
-    while (b != null) {
+    for (StoredBoard b = evaluationsHashMap[hash]; b != null; b = b.next) {
       if (b.player == player && b.opponent == opponent) {
         return b;
       }
-      b = b.next;
     }
     return null;
   }
@@ -412,54 +383,6 @@ public class HashMapVisitedPositions {
     return this.evalGoal <= 6400 && this.evalGoal >= -6400;
   }
   
-  protected StoredBoard bestChild(StoredBoard father) {
-    // Idea: maximize lower bound of "acceptables".
-    StoredBoard bestChild = null;
-    
-    for (StoredBoard child : father.children) {
-      if (bestChild == null ||
-          child.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / child.descendants)) < 
-          bestChild.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / bestChild.descendants))) {
-        bestChild = child;
-      }
-    }
-    return bestChild;
-  }
-  
-  protected synchronized void updateFather(StoredBoard father) {
-    StoredBoard bestChild = bestChild(father);
-    father.eval = Short.MIN_VALUE;
-    father.lower = Short.MIN_VALUE;
-    father.upper = Short.MIN_VALUE;
-    father.bestVariationPlayer = Short.MIN_VALUE;
-    father.bestVariationOpponent = Short.MIN_VALUE;
-
-    father.bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
-    father.proofNumber = Long.MAX_VALUE;
-    father.disproofNumber = 0;
-
-    for (StoredBoard child : father.children) {
-      father.eval = (short) Math.max(father.eval, -child.eval);
-      father.bestVariationPlayer = (short) Math.max(father.bestVariationPlayer,
-          -child.bestVariationOpponent);
-      father.lower = (short) Math.max(father.lower, -child.upper);
-      father.upper = (short) Math.max(father.upper, -child.lower);
-      father.proofNumber = Math.min(father.proofNumber, child.disproofNumber);
-      father.disproofNumber += child.proofNumber;
-    }
-    for (int i = 0; i < Constants.N_SAMPLES; ++i) {
-      short tmp = Short.MIN_VALUE;
-      for (StoredBoard child : father.children) {
-        tmp = (short) Math.max(tmp, -child.samples[i]);
-      }
-      father.samples[i] = tmp;
-    }
-  }
-  
-  protected synchronized void updateAllDescendants() {
-    updateAllDescendantsRecursive(this.firstPosition, new HashSet<>());
-  }
-  
   protected synchronized void updateAllDescendantsRecursive(StoredBoard start,
       HashSet<StoredBoard> alreadyDone) {
     if (alreadyDone.contains(start)) {
@@ -472,15 +395,12 @@ public class HashMapVisitedPositions {
     for (StoredBoard child : start.children) {
       updateAllDescendantsRecursive(child, alreadyDone);
     }
-    updateFather(start);
+    start.updateFather();
     alreadyDone.add(start);
   }
-
-  protected synchronized void updateFathers(StoredBoard start) {
-    for (StoredBoard father : start.fathers) {
-      updateFather(father);
-      updateFathers(father);
-    }
+  
+  protected synchronized void updateAllDescendants() {
+    updateAllDescendantsRecursive(this.firstPosition, new HashSet<>());
   }
 
   /**
@@ -580,7 +500,6 @@ public class HashMapVisitedPositions {
     }
 
     int eval = -6600;
-    ArrayList<StoredBoard> bestVariationOpponent = new ArrayList<>();
     ArrayList<StoredBoard> allChildren = new ArrayList<>();
     int lower = Integer.MIN_VALUE;
     int upper = Integer.MIN_VALUE;
@@ -623,23 +542,8 @@ public class HashMapVisitedPositions {
           "\n does not have as a father the following board\n" + board);
         return false; 
       }
-      boolean isParetoOptimal = true;
-      ArrayList<StoredBoard> newBestVariationUpper = new ArrayList<>();
       eval = Math.max(eval, -child.eval);
-      for (StoredBoard other : bestVariationOpponent) {
-        if (-other.eval >= -child.eval && -other.bestVariationPlayer >= -child.bestVariationPlayer) {
-          // Other is better than child.
-          isParetoOptimal = false;
-        }
-        if (-other.eval >= -child.eval || -other.bestVariationPlayer >= -child.bestVariationPlayer) {
-          // Child is not strictly better than other.
-          newBestVariationUpper.add(other);
-        }
-      }
-      bestVariationOpponent = newBestVariationUpper;
-      if (isParetoOptimal) {
-        bestVariationOpponent.add(child);
-      }
+
       upper = Math.max(upper, -child.lower);
       lower = Math.max(lower, -child.upper);
       bestVariationPlayer = Math.max(bestVariationPlayer, -child.bestVariationOpponent);
@@ -666,15 +570,15 @@ public class HashMapVisitedPositions {
     }
     if (this.hasEvalGoal()) {
       boolean found = false;
-      for (StoredBoard bestVariation : bestVariationOpponent) {
-        if (b.bestVariationOpponent == -bestVariation.bestVariationPlayer) {
+      for (StoredBoard child : b.children) {
+        if (b.bestVariationOpponent == -child.bestVariationPlayer) {
           found = true;
           break;
         }
       }
       if (!found) {
-        System.out.println("Wrong best variation opponent for board\n" + b +
-            ". Alternatives:\n" + bestVariationOpponent + ". All:\n" + allChildren);
+        System.out.println("Wrong bestVariationOpponent=" + b.bestVariationOpponent + " for board\n" + b +
+            ". Alternatives:\n" + b.children + ". All:\n" + allChildren);
         return false;
       }
     }

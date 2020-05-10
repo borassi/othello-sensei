@@ -304,8 +304,8 @@ public class HashMapVisitedPositionsTest {
         StoredBoard next = nextPos.board;
         long[] moves = POSSIBLE_MOVES_FINDER.possibleMovesAdvanced(next.player, next.opponent);
         if (moves.length == 0) {
-          evaluator.updateSolved(next.player, next.opponent,
-              BitPattern.getEvaluationGameOver(next.player, next.opponent));
+          next.setSolved(BitPattern.getEvaluationGameOver(next.player, next.opponent), evaluator.getEvalGoalForBoard(next));
+          next.updateFathers();
           continue;
         }
         StoredBoard[] nextBoards = new StoredBoard[moves.length];
@@ -404,19 +404,24 @@ public class HashMapVisitedPositionsTest {
         
         int eval = (int) ((Math.random() - 0.5) * 6400);
         if (d <= 0.2) {
-          evaluator.updateLower(next.player, next.opponent, eval);
+          next.setLower(eval, evaluator.getEvalGoalForBoard(next));
+          next.updateFathers();
           continue;
         } else if (d <= 0.4) {
-          evaluator.updateUpper(next.player, next.opponent, eval);
+          next.setUpper(eval, evaluator.getEvalGoalForBoard(next));
+          next.updateFathers();
           continue;
         } else if (d <= 0.6) {
-          evaluator.updateSolved(next.player, next.opponent, eval);
+          next.setSolved(eval, evaluator.getEvalGoalForBoard(next));
+          next.updateFathers();
           continue;
         }
         long[] moves = POSSIBLE_MOVES_FINDER.possibleMovesAdvanced(next.player, next.opponent);
         if (moves.length == 0) {
-          evaluator.updateSolved(next.player, next.opponent,
-              BitPattern.getEvaluationGameOver(next.player, next.opponent));
+          next.setSolved(BitPattern.getEvaluationGameOver(next.player, next.opponent), evaluator.getEvalGoalForBoard(next));
+          next.updateFathers();
+//          evaluator.updateSolved(next.player, next.opponent,
+//              BitPattern.getEvaluationGameOver(next.player, next.opponent));
           continue;
         }
         StoredBoard[] nextBoards = new StoredBoard[moves.length];
