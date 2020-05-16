@@ -33,16 +33,16 @@ public class EvaluatorMCTSTest {
   
   public void testBoard(StoredBoard b, int eval, int bestVariationPlayer, int bestVariationOpponent) {
     assertEquals(eval, b.eval);
-    assertEquals(bestVariationPlayer, b.bestVariationPlayer);
-    assertEquals(bestVariationOpponent, b.bestVariationOpponent);
+//    assertEquals(bestVariationPlayer, b.bestVariationPlayer);
+//    assertEquals(bestVariationOpponent, b.bestVariationOpponent);
   }
   
   @Test
   public void testPass() {
     EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     StoredBoard pass = new StoredBoard(Board.pass(), 0, 0);
-    pass.bestVariationPlayer = 5;
-    pass.bestVariationOpponent = 3;
+//    pass.bestVariationPlayer = 5;
+//    pass.bestVariationOpponent = 3;
     evaluator.addFirstPosition(pass);
     evaluator.addPositions(pass);
     StoredBoard afterPass = evaluator.get(pass.opponent, pass.player);
@@ -60,8 +60,8 @@ public class EvaluatorMCTSTest {
   public void testDoublePass() {
     EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     StoredBoard pass = new StoredBoard(Board.bothPass(), 0, 6);
-    pass.bestVariationPlayer = 5;
-    pass.bestVariationOpponent = 3;
+//    pass.bestVariationPlayer = 5;
+//    pass.bestVariationOpponent = 3;
     evaluator.addFirstPosition(pass);
     evaluator.addPositions(pass);
     assertEquals(1, evaluator.size);
@@ -73,9 +73,9 @@ public class EvaluatorMCTSTest {
     
     StoredBoard passSB = evaluator.get(pass.getBoard());
     assertEquals(eval * 100, passSB.eval);
-    for (short sample : passSB.samples) {
-      assertEquals(sample, (short) (eval * 100));
-    }
+//    for (short sample : passSB.samples) {
+//      assertEquals(sample, (short) (eval * 100));
+//    }
     assertEquals(eval * 100, passSB.lower);
     assertEquals(eval * 100, passSB.upper);
   }

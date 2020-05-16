@@ -29,47 +29,5 @@ public class StoredBoardTest {
     StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0);
     sb.updateEval(0, 0);//, new int[StoredBoard.N_SAMPLES]);
     
-    for (short s : sb.samples) {
-      assertEquals(0, s);
-    }
-  }
-  @Test
-  public void testUpdateLowerUpperBound() {
-    StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0);
-    sb.updateEval(0, 1000);//, new int[StoredBoard.N_SAMPLES]);
-    sb.setLower(-200, 7000);
-    assertEquals(0, sb.eval);
-    for (short s : sb.samples) {
-      assert(s >= -200);
-    }
-    assertEquals(-200, sb.lower);
-    assertEquals(6400, sb.upper);
-
-    sb.setLower(200, 7000);
-    assertEquals(200, sb.eval);
-    for (short s : sb.samples) {
-      assert(s >= 200);
-    }
-    assertEquals(200, sb.lower);
-    assertEquals(6400, sb.upper);
-
-    sb.setUpper(400, 7000);
-    assertEquals(200, sb.eval);
-    for (short s : sb.samples) {
-      assert(s <= 400);
-      assert(s >= 200);
-    }
-    assertEquals(200, sb.lower); // TODO: fix.
-    assertEquals(400, sb.upper);
-    
-    sb.setSolved(200, 7000);
-    assertEquals(200, sb.eval);
-    for (short s : sb.samples) {
-      assertEquals(s, 200);
-    }
-    assertEquals(200, sb.lower);
-    assertEquals(200, sb.upper);
-    
-    
   }
 }

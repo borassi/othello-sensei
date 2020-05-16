@@ -640,7 +640,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   
   public static void main(String args[]) {
-    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
-    eval.save("coefficients/empty_pattern_evaluator.sar");
+    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
+    eval.save();
   }
 }

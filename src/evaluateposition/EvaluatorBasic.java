@@ -87,7 +87,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
     for (long move : moves) {
       Board next = current.move(move);
       int eval = -evaluatePosition(next, depth - 1);
-      evaluations.add(new StoredBoard(next, eval, 0, new int[Constants.N_SAMPLES]));
+      evaluations.add(new StoredBoard(next, eval, eval));
     }
     return evaluations;
   }

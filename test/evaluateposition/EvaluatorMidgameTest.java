@@ -31,7 +31,7 @@ import java.util.ArrayList;
 public class EvaluatorMidgameTest {
   PossibleMovesFinderImproved possibleMovesFinder = PossibleMovesFinderImproved.load();
   EvaluatorMidgame evaluator = new EvaluatorMidgame(
-    new DiskDifferenceEvaluatorPlusTwo());
+    new DiskDifferenceEvaluatorPlusTwo(), new HashMap());
   EvaluatorBasic evaluatorBasic = new EvaluatorBasic(
           new DiskDifferenceEvaluatorPlusTwo(), possibleMovesFinder);
 

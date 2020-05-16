@@ -31,7 +31,7 @@ import main.Main;
 public class GetFlip implements Serializable {
   private final static String SERIALIZE_FILEPATTERN = "coefficients/get_flip.sar";
 //  private transient Unsafe unsafe;
-  static final long[] flipHorizontalLast = new long[64 * 256 * 256];
+  static final long[] flipHorizontalLast = new long[64 * 256];
   static final long[] flipVerticalLast = new long[64 * 256];
   static final long[] flipDiagonalLast = new long[64 * 256];
   static final long[] flipReverseDiagonalLast = new long[64 * 256];
@@ -39,21 +39,21 @@ public class GetFlip implements Serializable {
   long neighbors[];
   long horizVert[];
   private int baseOffset;
-	private static ThreadMXBean cpuTimeGetter = ManagementFactory.getThreadMXBean();
+//	private static ThreadMXBean cpuTimeGetter = ManagementFactory.getThreadMXBean();
   private static double cpuTimeForGetFlip = 0;
-  private static void startCPUTime() {
-    cpuTimeForGetFlip -= cpuTimeGetter.getCurrentThreadCpuTime();
-  }
-  private static void endCPUTime() {
-    cpuTimeForGetFlip += cpuTimeGetter.getCurrentThreadCpuTime();
-  }
+//  private static void startCPUTime() {
+//    cpuTimeForGetFlip -= cpuTimeGetter.getCurrentThreadCpuTime();
+//  }
+//  private static void endCPUTime() {
+//    cpuTimeForGetFlip += cpuTimeGetter.getCurrentThreadCpuTime();
+//  }
   public static double getCPUTime() {
     return cpuTimeForGetFlip / 1000000000.0;
   }
   
   public static void main(String args[]) throws IOException, ClassNotFoundException {
     GetFlip result = new GetFlip();
-    result.save();
+//    result.save();
     ObjectInputStream in = Main.fileAccessor.inputFile(SERIALIZE_FILEPATTERN);
 //    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
     result = (GetFlip) in.readObject();  

@@ -15,9 +15,7 @@
 package evaluateposition;
 
 import board.Board;
-import constants.Constants;
 import java.util.ArrayList;
-import java.util.HashSet;
 
 public class StoredBoard {
   public long player = 0;
@@ -26,18 +24,19 @@ public class StoredBoard {
   public short eval;
   public short lower = -6400;
   public short upper = 6400;
-  public short bestVariationPlayer;
-  public short bestVariationOpponent;
+//  public short bestVariationPlayer;
+//  public short bestVariationOpponent;
   
   public boolean playerIsStartingPlayer;
-  public short[] samples = new short[Constants.N_SAMPLES];
-  public int descendants;
+  public long descendants;
   public StoredBoard next = null;
   public StoredBoard prev = null;
   public ArrayList<StoredBoard> fathers = new ArrayList<>();
   public StoredBoard[] children = null;
-  public double disproofNumber = 0;
-  public double proofNumber = 0;
+  public double disproofNumberCurEval = 0;
+  public double proofNumberCurEval = 0;
+  public double disproofNumberNextEval = 0;
+  public double proofNumberNextEval = 0;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
@@ -46,17 +45,10 @@ public class StoredBoard {
     this.opponent = board.getOpponent();
   }
 
-  public StoredBoard(Board board, int eval, float variance) {
+  public StoredBoard(Board board, int eval, int evalGoal) {
     this.player = board.getPlayer();
     this.opponent = board.getOpponent();
-    this.updateEval(eval, variance);
-    this.descendants = 0;
-  }
-  
-  public StoredBoard(Board board, int eval, float variance, int deltas[]) {
-    this.player = board.getPlayer();
-    this.opponent = board.getOpponent();
-    this.updateEval(eval, variance, deltas);
+    this.updateEval(eval, evalGoal);
     this.descendants = 0;
   }
   
@@ -65,7 +57,7 @@ public class StoredBoard {
   }
     
   public static StoredBoard randomStoredBoard(Board b) {
-    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 600, new int[Constants.N_SAMPLES]);
+    return new StoredBoard(b, (int) ((Math.random() - 0.5) * 6400), 0);
   }
   
   public Board getBoard() {
@@ -87,9 +79,9 @@ public class StoredBoard {
   public final void setLower(int newLower, int evalGoal) {
     this.lower = (short) newLower;
     this.eval = (short) Math.max(newLower, eval);
-    for (int i = 0; i < Constants.N_SAMPLES; i++) {
-      samples[i] = (short) Math.max(newLower, samples[i]);
-    }
+//    for (int i = 0; i < Constants.N_SAMPLES; i++) {
+//      samples[i] = (short) Math.max(newLower, samples[i]);
+//    }
     if (evalGoal <= 6400 && evalGoal >= -6400) {
       this.setEvalGoalForLeaf(evalGoal);
     }
@@ -98,9 +90,6 @@ public class StoredBoard {
   public final void setUpper(int newUpper, int evalGoal) {
     this.upper = (short) newUpper;
     this.eval = (short) Math.min(newUpper, eval);
-    for (int i = 0; i < samples.length; i++) {
-      this.samples[i] = (short) Math.min(newUpper, samples[i]);
-    }
     if (evalGoal <= 6400 && evalGoal >= -6400) {
       this.setEvalGoalForLeaf(evalGoal);
     }
@@ -109,58 +98,49 @@ public class StoredBoard {
   public final void setEvalGoalForLeaf(int evalGoal) {
     assert(this.isLeaf());
     assert(evalGoal <= 6400 && evalGoal >= -6400);
-    this.bestVariationOpponent = lower >= evalGoal ? 6600 : eval;
-    this.bestVariationPlayer = upper <= evalGoal ? -6600 : eval;
-    // TODO: improve
-    if (lower >= evalGoal) {
-      this.proofNumber = 0;
-    } else if (upper < evalGoal) {
-      this.proofNumber = Double.POSITIVE_INFINITY;
+    if (lower > evalGoal - 100) {
+      proofNumberCurEval = 0;
+      disproofNumberNextEval = Double.POSITIVE_INFINITY;
+    } else if (upper < evalGoal - 100) {
+      proofNumberCurEval = Double.POSITIVE_INFINITY;
+      this.disproofNumberNextEval = 0;
     } else {
-      this.proofNumber = EndgameTimeEstimator.proofNumber(
-          this.getBoard(), evalGoal, this.eval);   
+      proofNumberCurEval = EndgameTimeEstimator.proofNumber(
+          this.getBoard(), evalGoal - 100, this.eval);   
+      disproofNumberNextEval = EndgameTimeEstimator.disproofNumber(
+          this.getBoard(), evalGoal - 100, this.eval);
     }
-    if (upper <= evalGoal) {
-      this.disproofNumber = 0;
-    } else if (lower > evalGoal) {
-      this.disproofNumber = Double.POSITIVE_INFINITY;    
+    if (upper < evalGoal + 100) {
+      proofNumberNextEval = Double.POSITIVE_INFINITY;
+      disproofNumberCurEval = 0;
+    } else if (lower > evalGoal + 100) {
+      proofNumberNextEval = 0;
+      disproofNumberCurEval = Double.POSITIVE_INFINITY;    
     } else {
-      this.disproofNumber = EndgameTimeEstimator.disproofNumber(
-          this.getBoard(), evalGoal, this.eval);
+      proofNumberNextEval = EndgameTimeEstimator.proofNumber(
+          this.getBoard(), evalGoal + 100, eval);
+      disproofNumberCurEval = EndgameTimeEstimator.disproofNumber(
+          this.getBoard(), evalGoal + 100, eval);
+//      System.out.println(proofNumberNextEval + " " + evalGoal + " " + eval);
     }
+    assert(proofNumberCurEval <= proofNumberNextEval);
+    assert(disproofNumberCurEval <= disproofNumberNextEval);
+
+    assert((proofNumberCurEval == 0) == (disproofNumberNextEval == Double.POSITIVE_INFINITY));
+    assert((proofNumberCurEval == Double.POSITIVE_INFINITY) == (disproofNumberNextEval == 0));
+    assert((proofNumberNextEval == 0) == (disproofNumberCurEval == Double.POSITIVE_INFINITY));
+    assert((proofNumberNextEval == Double.POSITIVE_INFINITY) == (disproofNumberCurEval == 0));
   }
   
-  public final void updateEval(int newEval, float variance) {
+  public final void updateEval(int newEval, int evalGoal) {
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
-
-    for (int i = 0; i < samples.length; i++) {
-      this.samples[i] = (short) Math.max(this.lower, Math.min(
-          this.upper,
-          (int) (newEval + RANDOM.next() * variance + 0.5)));
-    }
-  }
-  
-  public final void updateEval(int newEval, float variance, int deltas[]) {
-    this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
-
-    for (int i = 0; i < samples.length; i++) {
-//      System.out.println(deltas[i]);
-      this.samples[i] = (short) Math.round(Math.max(this.lower, Math.min(
-          this.upper,
-          newEval + RANDOM.next() * variance * Constants.WEIGHT_CORRELATION_NEW -
-              deltas[i] * Constants.WEIGHT_CORRELATION_OLD)));
-    }
-    this.bestVariationOpponent = eval;
-    this.bestVariationPlayer = eval;
+    this.setEvalGoalForLeaf(evalGoal);
   }
 
   @Override
   public String toString() {
     String str = new Board(player, opponent).toString() + eval + "\n";
-    for (int i = 0; i < samples.length; i++) {
-      str += samples[i] + " ";
-    }
-    return str + "\n" + this.lower + "(" + this.bestVariationPlayer + ") " + this.upper + "(" + this.bestVariationOpponent + ")\n";
+    return str;// + "\n" + this.lower + "(" + this.bestVariationPlayer + ") " + this.upper + "(" + this.bestVariationOpponent + ")\n";
   }
   
   public boolean isSolved() {
@@ -173,17 +153,11 @@ public class StoredBoard {
 
   public int getUpperBound() {
     int result = eval;
-    for (short s : samples) {
-      result = Math.max(result, s);
-    }
     return result;
   }
 
   public int getLowerBound() {
     int result = eval;
-    for (short s : samples) {
-      result = Math.min(result, s);
-    }
     return result;
   }
 
@@ -197,8 +171,8 @@ public class StoredBoard {
     
     for (StoredBoard child : children) {
       if (bestChild == null ||
-          child.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(descendants) / child.descendants)) < 
-          bestChild.disproofNumber / Math.exp(Math.sqrt(4 * Math.log(descendants) / bestChild.descendants))) {
+          child.disproofNumberCurEval / Math.exp(Math.sqrt(4 * Math.log(descendants) / child.descendants)) < 
+          bestChild.disproofNumberCurEval / Math.exp(Math.sqrt(4 * Math.log(descendants) / bestChild.descendants))) {
         bestChild = child;
       }
     }
@@ -217,28 +191,32 @@ public class StoredBoard {
     eval = Short.MIN_VALUE;
     lower = Short.MIN_VALUE;
     upper = Short.MIN_VALUE;
-    bestVariationPlayer = Short.MIN_VALUE;
-    bestVariationOpponent = Short.MIN_VALUE;
+//    bestVariationPlayer = Short.MIN_VALUE;
+//    bestVariationOpponent = Short.MIN_VALUE;
 
-    bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
-    proofNumber = Long.MAX_VALUE;
-    disproofNumber = 0;
+//    bestVariationOpponent = (short) -bestChild.bestVariationPlayer;
+    proofNumberCurEval = Double.POSITIVE_INFINITY;
+    proofNumberNextEval = Double.POSITIVE_INFINITY;
+    disproofNumberCurEval = 0;
+    disproofNumberNextEval = 0;
 
     for (StoredBoard child : children) {
       eval = (short) Math.max(eval, -child.eval);
-      bestVariationPlayer = (short) Math.max(bestVariationPlayer,
-          -child.bestVariationOpponent);
+//      bestVariationPlayer = (short) Math.max(bestVariationPlayer,
+//          -child.bestVariationOpponent);
       lower = (short) Math.max(lower, -child.upper);
       upper = (short) Math.max(upper, -child.lower);
-      proofNumber = Math.min(proofNumber, child.disproofNumber);
-      disproofNumber += child.proofNumber;
+      proofNumberCurEval = Math.min(proofNumberCurEval, child.disproofNumberCurEval);
+      proofNumberNextEval = Math.min(proofNumberNextEval, child.disproofNumberNextEval);
+      disproofNumberCurEval += child.proofNumberCurEval;
+      disproofNumberNextEval += child.proofNumberNextEval;
     }
-    for (int i = 0; i < Constants.N_SAMPLES; ++i) {
-      short tmp = Short.MIN_VALUE;
-      for (StoredBoard child : children) {
-        tmp = (short) Math.max(tmp, -child.samples[i]);
-      }
-      samples[i] = tmp;
-    }
+    assert(proofNumberCurEval <= proofNumberNextEval);
+    assert(disproofNumberCurEval <= disproofNumberNextEval);
+
+    assert((proofNumberCurEval == 0) == (disproofNumberNextEval == Double.POSITIVE_INFINITY));
+    assert((proofNumberCurEval == Double.POSITIVE_INFINITY) == (disproofNumberNextEval == 0));
+    assert((proofNumberNextEval == 0) == (disproofNumberCurEval == Double.POSITIVE_INFINITY));
+    assert((proofNumberNextEval == Double.POSITIVE_INFINITY) == (disproofNumberCurEval == 0));
   }
 }

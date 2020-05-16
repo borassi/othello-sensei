@@ -27,6 +27,10 @@ public class GetMovesCache {
   public static abstract class Flipper {
     public abstract long run();
   }
+  private static final long[] flipHorizontalLast = new long[64 * 256];
+  private static final long[] flipVerticalLast = new long[64 * 256];
+  private static final long[] flipDiagonalLast = new long[64 * 256];
+  private static final long[] flipReverseDiagonalLast = new long[64 * 256];
   
   private static final long CORNERS = BitPattern.parsePattern(
       "X------X" +
@@ -52,7 +56,115 @@ public class GetMovesCache {
   public GetMovesCache() {
     if (!init) {
       init = true;
-      new GetFlip();
+      initMoves();
+    }
+  }
+  
+  static int hashDiagonal(int move, long player) {
+    long bitPattern = BitPattern.getDiag9(move);
+    return BitPattern.anyDiagonalToFirstRow(player & bitPattern);
+  }
+  static int hashRevDiagonal(int move, long player) {
+    long bitPattern = BitPattern.getDiag7(move);
+    return BitPattern.anyDiagonalToFirstRow(player & bitPattern);
+  }
+  static int hashRow(int move, long player) {
+    long bitPattern = BitPattern.getRow(move);
+    return BitPattern.anyRowToFirstRow(player & bitPattern, move / 8);
+  }
+  static int hashColumn(int move, long player) {
+    long bitPattern = BitPattern.getColumn(move);
+    return BitPattern.anyColumnToFirstRow(player & bitPattern, move % 8);
+  }
+
+  private static int hashGeneric(int move, long player, long bitPattern) {
+    if (bitPattern == BitPattern.getDiag9(move)) {
+      return hashDiagonal(move, player);
+    }
+    if (bitPattern == BitPattern.getDiag7(move)) {
+      return hashRevDiagonal(move, player);
+    }
+    if (bitPattern == BitPattern.getRow(move)) {
+      return hashRow(move, player);
+    }
+    if (bitPattern == BitPattern.getColumn(move)) {
+      return hashColumn(move, player);
+    }
+    assert(false);
+    return 0;
+  }
+
+  /**
+   * The same as possibleMoves, but with a basic algorithm (used for testing).
+   * @param b the board.
+   * @return the list of moves.
+   */
+  public static final ArrayList<Long> possibleMovesBasic(Board b) {
+    ArrayList<Long> moves = new ArrayList<>();
+    int[][] directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, 
+                           {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+    char player = 'X';
+    char opponent = 'O';
+
+    for (int i = 0; i < 8; i++) {
+      for (int j = 0; j < 8; j++) {
+        if (b.getCase(i, j, true) != '-') {
+          continue;
+        }
+        long currentMove = 0;
+        for (int[] direction : directions) {
+          if (b.getCase(i + direction[0], j + direction[1], true) != opponent) {
+            continue;
+          }
+          for (int steps = 2; steps < 8; steps++) {
+            if (b.getCase(i + steps * direction[0], j + steps * direction[1], true) == player) {
+              for (int backSteps = steps; backSteps > 0; backSteps--) {
+                currentMove = currentMove | BitPattern.moveToBit(
+                        i + backSteps * direction[0], j + backSteps * direction[1]);
+              }
+            }
+            if (b.getCase(i + steps * direction[0], j + steps * direction[1], true) != opponent) {
+              break;
+            }              
+          }
+        }
+        if (currentMove != 0) {
+          currentMove = currentMove | BitPattern.moveToBit(i, j);
+          moves.add(currentMove);
+        }
+      }
+    }
+    return moves;
+  }
+  
+  private void initMoves() {
+    for (int position = 0; position < 64; position++) {
+      long bitPatterns[] = {BitPattern.getRow(position), 
+        BitPattern.getColumn(position), BitPattern.getDiag7(position),
+        BitPattern.getDiag9(position)};
+      long[][] flipsLast = {flipHorizontalLast, flipVerticalLast, flipReverseDiagonalLast, flipDiagonalLast};
+
+      for (int i = 0; i < bitPatterns.length; i++) {
+        long bitPattern = bitPatterns[i];
+        long[] flipLast = flipsLast[i];
+        for (Board board : Board.existingBoardsInBitPattern(bitPattern)) {
+          ArrayList<Long> possibleMoves = possibleMovesBasic(board);
+
+          for (int j = 0; j < possibleMoves.size(); j++) {
+            long curFlip = possibleMoves.get(j);          
+            int thisMovePosition = Long.numberOfTrailingZeros(
+              curFlip & (~board.getPlayer()) & (~board.getOpponent()));
+            if (thisMovePosition == position) {
+              if ((curFlip | board.getPlayer() | board.getOpponent()) == bitPattern) {
+                int newHash = hashGeneric(
+                  position, board.getOpponent(), bitPattern);
+//                assert(flipLast[position * 256 + newHash] == 0);
+                flipLast[position * 256 + newHash] = curFlip;
+              }
+            }
+          }
+        }
+      }
     }
   }
   
@@ -1081,10 +1193,10 @@ public class GetMovesCache {
   public long getFlip(int move) {
     int moveShifted = move << 8;
     return
-        GetFlip.flipHorizontalLast[moveShifted + GetFlip.hashRow(move, opponentNearPlayer1)] |
-        GetFlip.flipVerticalLast[moveShifted + GetFlip.hashColumn(move, opponentNearPlayer8)] |
-        GetFlip.flipDiagonalLast[moveShifted + GetFlip.hashDiagonal(move, opponentNearPlayer9)] |
-        GetFlip.flipReverseDiagonalLast[moveShifted + GetFlip.hashRevDiagonal(move, opponentNearPlayer7)];
+        flipHorizontalLast[moveShifted + hashRow(move, opponentNearPlayer1)] |
+        flipVerticalLast[moveShifted + hashColumn(move, opponentNearPlayer8)] |
+        flipDiagonalLast[moveShifted + hashDiagonal(move, opponentNearPlayer9)] |
+        flipReverseDiagonalLast[moveShifted + hashRevDiagonal(move, opponentNearPlayer7)];
   }
 
 

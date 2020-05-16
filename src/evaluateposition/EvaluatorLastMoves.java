@@ -35,23 +35,20 @@ public class EvaluatorLastMoves {
   int nVisited = 0;
   int baseOffset;
   
-  long tmp[] = new long[0];
   long masksTmp[];
   long firstLastInEdges[];
 
-  private final GetFlip flipper;
   private final GetMovesCache movers[] = new GetMovesCache[63];
   private final GetMovesCache mover5 = new GetMovesCache();
   private final GetMovesCache mover4 = new GetMovesCache();
   private final GetMovesCache mover3 = new GetMovesCache();
   
-  public EvaluatorLastMoves(GetFlip flipper, FindStableDisks stableDisks) {
-    this.flipper = flipper;
+  public EvaluatorLastMoves(FindStableDisks stableDisks) {
     this.stableDisks = stableDisks;
     setup();
   }
   public EvaluatorLastMoves() {
-    this(GetFlip.load(), new FindStableDisks());
+    this(new FindStableDisks());
   }
   
   private void setup() {

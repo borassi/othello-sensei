@@ -28,6 +28,7 @@ import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
+import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,7 +48,6 @@ public class Main {
   private int depth = -1;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
-  private final GetFlip FLIPPER;
   private final EvaluatorMidgame EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
   /**
@@ -64,10 +64,12 @@ public class Main {
    * Creates a new UI and sets the initial position.
    */
   public Main() {
+    this(1000000);
+  }
+  public Main(int hashMapSize) {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-    FLIPPER = GetFlip.load();
-    EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, FLIPPER);
+    EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, new HashMap(hashMapSize * 2, hashMapSize));
     EVALUATOR = new EvaluatorMCTS(1000, 1000000, 2000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
 //    EVALUATOR = new EvaluatorMCTS(1000000000L, 4000000, 1000000000L);
   }
@@ -75,7 +77,7 @@ public class Main {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(42), true); // 37
+    setBoard(EndgameTest.readIthBoard(46), true); // 37
   }
 
   public final void changeDepth(int depth) {
@@ -147,20 +149,28 @@ public class Main {
   }
   
   public static String prettyPrintDouble(double l) {
-    if (l < 1000) {
-      return String.format("%f", l);      
-    } else if (l < 10000) {
-      return String.format("%.1fK", l / 1000.);      
-    } else if (l < 1000000) {
-      return String.format("%.0fK", l / 1000);      
-    } else if (l < 10000000) {
-      return String.format("%.1fM", l / 1000000.);      
-    } else if (l < 1000000000) {
-      return String.format("%.0fM", l / 1000000);      
-    } else if (l < 10000000000L) {
-      return String.format("%.1fG", l / 1000000000.);      
+    if (l < 1.E3) {
+      return String.format("%.0f", l);
+    } else if (l == Double.POSITIVE_INFINITY) {
+      return "+Inf";
+    } else if (l == Double.NEGATIVE_INFINITY) {
+      return "-Inf";
+    } else if (l < 1.E4) {
+      return String.format("%.1fK", l / 1.E3);
+    } else if (l < 1.E6) {
+      return String.format("%.0fK", l / 1.E3);
+    } else if (l < 1.E7) {
+      return String.format("%.1fM", l / 1.E6);
+    } else if (l < 1.E9) {
+      return String.format("%.0fM", l / 1.E6);
+    } else if (l < 1.E10) {
+      return String.format("%.1fG", l / 1.E9); 
+    } else if (l < 1.E12) {
+      return String.format("%.0fG", l / 1.E9);
+    } else if (l < 1.E13) {
+      return String.format("%.1fT", l / 1.E12); 
     } else {
-      return String.format("%.0fG", l / 1000000000);      
+      return String.format("%.0fT", l / 1.E12);
     }
   }
   
@@ -188,18 +198,20 @@ public class Main {
 //        annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false);
         annotations.lower = -evaluation.upper / 100F;
         annotations.upper = -evaluation.lower / 100F;
-        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
-        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
+//        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
+//        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
         annotations.nVisited = evaluation.descendants;
 //        annotations.otherAnnotations = evaluation.getInterestingProbabilities((Math.random() > 0.5 ? -1 : 1) * EVALUATOR.firstPosition.eval);
 //            String.format(
 //            "%d %d\n", EVALUATOR.getEvalGoal() / 100, evaluation.expectedToSolve);
-        annotations.otherAnnotations = prettyPrintDouble(evaluation.disproofNumber) + " " + prettyPrintDouble(evaluation.proofNumber) + "\n";
+        annotations.otherAnnotations =
+            prettyPrintDouble(evaluation.proofNumberCurEval) + " " + prettyPrintDouble(evaluation.proofNumberNextEval) + "\n" +
+            prettyPrintDouble(evaluation.disproofNumberNextEval) + " " + prettyPrintDouble(evaluation.disproofNumberCurEval) + "\n";
         
-        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
-          annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
-              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
-        }
+//        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
+//          annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
+//              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
+//        }
         ui.setAnnotations(annotations, ij);
       }
     }
@@ -284,8 +296,8 @@ public class Main {
       CaseAnnotations annotations = new CaseAnnotations();
       annotations.eval = -evaluation.getEval() / 100F;
 //      annotations.safeEval = -evaluation.getSafeEval() / 100F;
-//      annotations.costUntilLeafAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true) + evaluation.costUntilLeafDefense;
-//      annotations.costUntilLeafDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false) + evaluation.costUntilLeafAttack;
+//      annotations.costUntilLeafAttack = evaluation.disproofNumberCurEval;
+//      annotations.costUntilLeafDefense = evaluation.proofNumberCurEval;
 //      annotations.edgeCostAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
 //      annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
       annotations.isBestMove = ij.equals(bestIJ);
@@ -294,6 +306,9 @@ public class Main {
 //      annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
 //      annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
       annotations.nVisited = evaluation.descendants;
+      annotations.otherAnnotations =
+          prettyPrintDouble(evaluation.proofNumberCurEval) + " " + prettyPrintDouble(evaluation.proofNumberNextEval) + "\n" +
+          prettyPrintDouble(evaluation.disproofNumberNextEval) + " " + prettyPrintDouble(evaluation.disproofNumberCurEval) + "\n";
 
       ui.setAnnotations(annotations, ij);
     }

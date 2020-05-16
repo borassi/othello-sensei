@@ -39,6 +39,7 @@ import board.Board;
 import java.util.Arrays;
 import javax.swing.SpinnerListModel;
 import main.Main;
+import static main.Main.prettyPrintDouble;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
 
@@ -99,7 +100,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       annotationsString += String.format("\n%.2f  %.2f", annotations.lower, annotations.upper);
     }
     if (annotations.nVisited != 0) {
-      annotationsString += String.format("\n%d", annotations.nVisited);
+      annotationsString += "\n" + Main.prettyPrintDouble(annotations.nVisited);
     }
     if (annotations.otherAnnotations != "") {
       annotationsString += "\n" + annotations.otherAnnotations;

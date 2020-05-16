@@ -83,7 +83,7 @@ public class HashMap {
   int size;
   
   public HashMap() {
-    this(10000001, 5000000);
+    this(400001, 200000);
   }
   
   public HashMap(int arraySize, int maxSize) {
