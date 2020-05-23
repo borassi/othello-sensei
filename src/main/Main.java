@@ -77,7 +77,7 @@ public class Main {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(46), true); // 37
+    setBoard(EndgameTest.readIthBoard(44), true); // 37
   }
 
   public final void changeDepth(int depth) {

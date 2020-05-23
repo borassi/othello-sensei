@@ -24,8 +24,6 @@ public class StoredBoard {
   public short eval;
   public short lower = -6400;
   public short upper = 6400;
-//  public short bestVariationPlayer;
-//  public short bestVariationOpponent;
   
   public boolean playerIsStartingPlayer;
   public long descendants;
@@ -121,7 +119,6 @@ public class StoredBoard {
           this.getBoard(), evalGoal + 100, eval);
       disproofNumberCurEval = EndgameTimeEstimator.disproofNumber(
           this.getBoard(), evalGoal + 100, eval);
-//      System.out.println(proofNumberNextEval + " " + evalGoal + " " + eval);
     }
     assert(proofNumberCurEval <= proofNumberNextEval);
     assert(disproofNumberCurEval <= disproofNumberNextEval);
@@ -164,20 +161,6 @@ public class StoredBoard {
   public int getEval() {
     return eval;
   }
-  
-  protected StoredBoard bestChild() {
-    // Idea: maximize lower bound of "acceptables".
-    StoredBoard bestChild = null;
-    
-    for (StoredBoard child : children) {
-      if (bestChild == null ||
-          child.disproofNumberCurEval / Math.exp(Math.sqrt(4 * Math.log(descendants) / child.descendants)) < 
-          bestChild.disproofNumberCurEval / Math.exp(Math.sqrt(4 * Math.log(descendants) / bestChild.descendants))) {
-        bestChild = child;
-      }
-    }
-    return bestChild;
-  }
 
   protected synchronized void updateFathers() {
     for (StoredBoard father : fathers) {
@@ -187,7 +170,6 @@ public class StoredBoard {
   }
   
   protected synchronized void updateFather() {
-    StoredBoard bestChild = bestChild();
     eval = Short.MIN_VALUE;
     lower = Short.MIN_VALUE;
     upper = Short.MIN_VALUE;

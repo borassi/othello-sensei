@@ -135,18 +135,17 @@ public class HashMapVisitedPositions {
     
       for (StoredBoard child : father.children) {
         if (best == null ||
-            child.disproofNumberNextEval / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / child.descendants)) < 
-            best.disproofNumberNextEval / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / best.descendants))) {
+            child.disproofNumberNextEval / Math.exp(Math.sqrt(10 * Math.log(father.disproofNumberCurEval) / child.descendants)) < 
+            best.disproofNumberNextEval / Math.exp(Math.sqrt(10 * Math.log(father.disproofNumberCurEval) / best.descendants))) {
           best = child;
         }
       }
     } else {
       // Opponent variates:
-    
       for (StoredBoard child : father.children) {
         if (best == null ||
-            child.disproofNumberCurEval / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / child.descendants)) < 
-            best.disproofNumberCurEval / Math.exp(Math.sqrt(4 * Math.log(father.descendants) / best.descendants))) {
+            child.disproofNumberCurEval / Math.exp(Math.log(father.proofNumberCurEval) / Math.sqrt(10 * child.descendants)) < 
+            best.disproofNumberCurEval / Math.exp(Math.log(father.proofNumberCurEval) / Math.sqrt(10 * best.descendants))) {
           best = child;
         }
       }
@@ -213,7 +212,7 @@ public class HashMapVisitedPositions {
 
 
   protected synchronized PositionToImprove nextPositionToImprove() {
-    ArrayList<StoredBoard> parents = new ArrayList<StoredBoard>();
+    ArrayList<StoredBoard> parents = new ArrayList<>();
     StoredBoard positionToEvaluateLocal = this.firstPosition;
     if (positionToEvaluateLocal.isSolved()) {
       return null;
@@ -238,6 +237,13 @@ public class HashMapVisitedPositions {
 //    assert(positionToEvaluateLocal.isPartiallySolved());
 
     boolean playerVariates;
+//    if (positionToEvaluateLocal.proofNumberCurEval == 0) {
+//      playerVariates = true;
+//    } else if (positionToEvaluateLocal.disproofNumberCurEval == 0) {
+//      playerVariates = false;
+//    } else {
+//      playerVariates = Math.random() > 0.5;
+//    }
 //    if (positionToEvaluateLocal.bestVariationPlayer < -6400) {
 //      assert(positionToEvaluateLocal.bestVariationOpponent <= 6400);
 //      playerVariates = false;
