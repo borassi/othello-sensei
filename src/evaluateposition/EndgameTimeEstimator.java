@@ -30,8 +30,8 @@ public class EndgameTimeEstimator {
   }
   public static double logProofNumber(Board board, int lower, int approxEval) {
     int empties = board.getEmptySquares();
-    return 0.3096 + 0.4138 * empties + 0.0993 * empties * Math.log(2 + GetMoves.getNMoves(board.getOpponent(), board.getPlayer()))
-        +0.000597 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval, 400)), 10), -10);
+    return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(board.getOpponent(), board.getPlayer()))
+        +0.000603 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval, 400)), 10), -10);
   }
   public static double disproofNumber(Board board, int lower, int approxEval) {
     return Math.max(1, Math.min(1.27E89, Math.exp(logDisproofNumber(board, lower, approxEval))));
@@ -39,8 +39,8 @@ public class EndgameTimeEstimator {
   public static double logDisproofNumber(Board board, int lower, int approxEval) {
     int empties = board.getEmptySquares();
     
-    return 1.5183 + 0.1152 * empties + 0.2137 * empties * Math.log(2 + GetMoves.getNMoves(board.getPlayer(), board.getOpponent()))
-        -0.000496 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval, 400)), 10), -10);
+    return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(board.getPlayer(), board.getOpponent()))
+        -0.0005 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval, 400)), 10), -10);
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
@@ -74,6 +74,6 @@ public class EndgameTimeEstimator {
   }
   
   public static void main(String args[]) {
-    buildDataset(11, 20, 0.01);
+    buildDataset(14, 26, 0.001);
   }
 }

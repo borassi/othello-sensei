@@ -176,13 +176,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorI
       } else if (this.size < this.maxSize) {
         seenPositions = this.addPositions(next);
       } else {
+//        System.out.println("HELLO!" + next.getBoard());
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), 2, nextPos.alpha, nextPos.beta);
         int d;
-        for (d = 4; evaluatorMidgame.getNVisited() < next.descendants; d += 2) {
-          if (next.getBoard().getEmptySquares() - d < Constants.EMPTIES_FOR_ENDGAME) {
-            d = next.getBoard().getEmptySquares();
+        for (d = 4; evaluatorMidgame.getNVisited() < next.descendants * 2 && d < nEmpties; d += 2) {
+          if (nEmpties - d < Constants.EMPTIES_FOR_ENDGAME) {
+            d = nEmpties;
           }
           curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), d, nextPos.alpha, nextPos.beta);

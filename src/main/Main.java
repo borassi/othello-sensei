@@ -24,6 +24,7 @@ import javax.swing.SwingUtilities;
 import board.Board;
 import board.GetFlip;
 import board.PossibleMovesFinderImproved;
+import constants.Constants;
 import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorMCTS;
@@ -77,13 +78,13 @@ public class Main {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(44), true); // 37
+    setBoard(EndgameTest.readIthBoard(41), true); // 37
   }
 
   public final void changeDepth(int depth) {
     this.depth = depth;
     if (depth > 0) {
-      EVALUATOR = new EvaluatorMCTS(depth, 1000000, 2000000, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+      EVALUATOR = new EvaluatorMCTS(depth, Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     }
   }
 

@@ -132,20 +132,22 @@ public class HashMapVisitedPositions {
     StoredBoard best = null; 
     if (playerVariates) {
       // Player variates: maximize upper bound (lower bound next move).
+      double tmp = 0.1 * Math.pow(father.disproofNumberCurEval, 0.35);
     
       for (StoredBoard child : father.children) {
         if (best == null ||
-            child.disproofNumberNextEval / Math.exp(Math.sqrt(10 * Math.log(father.disproofNumberCurEval) / child.descendants)) < 
-            best.disproofNumberNextEval / Math.exp(Math.sqrt(10 * Math.log(father.disproofNumberCurEval) / best.descendants))) {
+            child.disproofNumberNextEval / Math.min(1.E20, Math.exp(tmp / Math.sqrt(child.descendants))) < 
+            best.disproofNumberNextEval / Math.min(1.E20, Math.exp(tmp / Math.sqrt(best.descendants)))) {
           best = child;
         }
       }
     } else {
+      double tmp = 0.1 * Math.pow(father.proofNumberCurEval, 0.35);
       // Opponent variates:
       for (StoredBoard child : father.children) {
         if (best == null ||
-            child.disproofNumberCurEval / Math.exp(Math.log(father.proofNumberCurEval) / Math.sqrt(10 * child.descendants)) < 
-            best.disproofNumberCurEval / Math.exp(Math.log(father.proofNumberCurEval) / Math.sqrt(10 * best.descendants))) {
+            child.disproofNumberCurEval / Math.min(1.E20, Math.exp(tmp / Math.sqrt(child.descendants))) < 
+            best.disproofNumberCurEval / Math.min(1.E20, Math.exp(tmp / Math.sqrt(best.descendants)))) {
           best = child;
         }
       }
