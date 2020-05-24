@@ -36,10 +36,10 @@ import javax.swing.JToolBar;
 import javax.swing.SpinnerModel;
 
 import board.Board;
+import helpers.Utils;
 import java.util.Arrays;
 import javax.swing.SpinnerListModel;
 import main.Main;
-import static main.Main.prettyPrintDouble;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
 
@@ -73,6 +73,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JButton newGame = new JButton("New game");
   private final JButton retrain = new JButton("Retrain");
+  private final JButton stop = new JButton("Stop");
   private final JButton selftrain = new JButton("Self-train");
   private final JButton improveDataset = new JButton("Improve dataset");
   private final JSpinner spinner;
@@ -100,14 +101,14 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       annotationsString += String.format("\n%.2f  %.2f", annotations.lower, annotations.upper);
     }
     if (annotations.nVisited != 0) {
-      annotationsString += "\n" + Main.prettyPrintDouble(annotations.nVisited);
+      annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
     }
     if (annotations.otherAnnotations != "") {
       annotationsString += "\n" + annotations.otherAnnotations;
     }
     cases[ij.i][ij.j].setAnnotations(annotationsString);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
-    cases[ij.i][ij.j].repaint();
+    cases[ij.i][ij.j].repaint();    
   }
   
 //  @Override
@@ -157,12 +158,14 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(newGame);
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
-    commands.add(retrain);
-    commands.add(selftrain);
-    commands.add(improveDataset);
+    commands.add(stop);
     
     newGame.addActionListener((ActionEvent e) -> {
       main.newGame();
+    });
+    
+    stop.addActionListener((ActionEvent e) -> {
+      main.stop();
     });
     
 //    improveDataset.addActionListener((ActionEvent e) -> {
@@ -187,7 +190,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       {"0", "1", "100", "1000", "10000", "100000", "1000000", "2000000", "5000000", "10000000",
       "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000"
     }));
-    depth.setValue("100000");
+    depth.setValue("10000000");
     spinner = new JSpinner(depth);
 
     commands.add(spinner);
@@ -227,8 +230,5 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void componentShown(ComponentEvent e) {
-    // TODO Auto-generated method stub
-    
-  }
+  public void componentShown(ComponentEvent e) {}
 }

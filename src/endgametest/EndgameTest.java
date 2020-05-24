@@ -85,7 +85,7 @@ public class EndgameTest {
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
   EvaluatorMidgame evalMidgame = new EvaluatorMidgame(PatternEvaluatorImproved.load(), new HashMap(2 * Constants.HASH_MAP_SIZE, Constants.HASH_MAP_SIZE));
-  EvaluatorMCTS eval = new EvaluatorMCTS(100000000000L, Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, new PossibleMovesFinderImproved(), evalMidgame);
+  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, new PossibleMovesFinderImproved(), evalMidgame);
 
   public static Board readIthBoard(int i) {
     String[] boards = POSITIONS[i - 1].split(" ");
@@ -100,8 +100,8 @@ public class EndgameTest {
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long t = System.currentTimeMillis();
-//      eval.resetNVisitedPositions();
-      int result = -eval.evaluatePosition(b, b.getEmptySquares());//, -6400, 6400);
+      eval.setBoard(b);
+      int result = -eval.evaluatePosition(Long.MAX_VALUE, Long.MAX_VALUE);//, -6400, 6400);
       t = System.currentTimeMillis() - t;
       
 //      eval.resetHashMapVisitedPositions();

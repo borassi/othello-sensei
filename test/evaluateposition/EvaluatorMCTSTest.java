@@ -39,7 +39,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testPass() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     StoredBoard pass = new StoredBoard(Board.pass(), 0, 0);
 //    pass.bestVariationPlayer = 5;
 //    pass.bestVariationOpponent = 3;
@@ -58,7 +58,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testDoublePass() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
     StoredBoard pass = new StoredBoard(Board.bothPass(), 0, 6);
 //    pass.bestVariationPlayer = 5;
 //    pass.bestVariationOpponent = 3;
@@ -100,7 +100,7 @@ public class EvaluatorMCTSTest {
   // -66 +66   -16 -16
   @Test
   public void testTree() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(30, 30, 30, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(30, 30, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
 
     StoredBoard e6 = new StoredBoard(Board.e6(), 0, 0);
 
@@ -137,21 +137,21 @@ public class EvaluatorMCTSTest {
     
     testBoard(e6, 2000, 1600, 2400);
     
-    HashMapVisitedPositions.PositionToImprove nextPosition = 
-        evaluator.nextPositionToImproveEndgame(e6, true, true, new ArrayList<>());
-    assertEquals(e6f4c3d6, nextPosition.board);
-    assertEquals(-2001, nextPosition.alpha);
-    assertEquals(-2000, nextPosition.beta);
+//    HashMapVisitedPositions.PositionToImprove nextPosition = 
+//        evaluator.nextPositionToImproveEndgame(e6, true, true, new ArrayList<>());
+//    assertEquals(e6f4c3d6, nextPosition.board);
+//    assertEquals(-2001, nextPosition.alpha);
+//    assertEquals(-2000, nextPosition.beta);
+//
+//    nextPosition =
+//        evaluator.nextPositionToImproveEndgame(e6, false, true, new ArrayList<>());
+//    assertEquals(e6f4e3, nextPosition.board);
+//    assertEquals(true, nextPosition.playerIsStartingPlayer);
+//    assertEquals(+1999, nextPosition.alpha);
+//    assertEquals(+2000, nextPosition.beta);
 
-    nextPosition =
-        evaluator.nextPositionToImproveEndgame(e6, false, true, new ArrayList<>());
-    assertEquals(e6f4e3, nextPosition.board);
-    assertEquals(true, nextPosition.playerIsStartingPlayer);
-    assertEquals(+1999, nextPosition.alpha);
-    assertEquals(+2000, nextPosition.beta);
-
-    evaluator.updateEndgame(nextPosition, +2200);
-    testBoard(e6f4e3, +2400, +2400, +6600);
-    testBoard(e6, 2000, 1600, 6600);    
+//    evaluator.updateEndgame(nextPosition, +2200);
+//    testBoard(e6f4e3, +2400, +2400, +6600);
+//    testBoard(e6, 2000, 1600, 6600);    
   }
 }

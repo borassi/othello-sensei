@@ -26,10 +26,9 @@ public class HashMapVisitedPositions {
   public StoredBoard evaluationsHashMap[];
   protected StoredBoard firstPosition;
   private int arraySize;
-  long maxNVisited;
   long maxSize;
   long size;
-  int evalGoal = 7000;
+  int evalGoal = 0;
   
   class PositionToImprove {
     StoredBoard board;
@@ -78,13 +77,12 @@ public class HashMapVisitedPositions {
   }
   
   public HashMapVisitedPositions() {
-    this(2000000, 1000000, 2000000, PossibleMovesFinderImproved.load());
+    this(1000000, 2000000, PossibleMovesFinderImproved.load());
   }
   
-  public HashMapVisitedPositions(long maxNVisited, int maxSize, int arraySize, PossibleMovesFinderImproved possibleMovesFinder) {
+  public HashMapVisitedPositions(int maxSize, int arraySize, PossibleMovesFinderImproved possibleMovesFinder) {
     this.arraySize = arraySize;
     this.maxSize = maxSize;
-    this.maxNVisited = maxNVisited;
     this.possibleMovesFinder = possibleMovesFinder;
     empty();
   }
@@ -378,10 +376,10 @@ public class HashMapVisitedPositions {
     return null;
   }
   
-  public StoredBoard first() {
+  protected StoredBoard first() {
     return next(-1);
   }
-  public StoredBoard next(long player, long opponent) {
+  protected StoredBoard next(long player, long opponent) {
     StoredBoard b = getFull(player, opponent);
     if (b.next != null) {
       return b.next;
