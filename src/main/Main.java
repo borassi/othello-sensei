@@ -138,7 +138,7 @@ public class Main implements Runnable {
   }
   
   @Override
-  public synchronized void run() {
+  public void run() {
     int nUpdate = 0;
     while (true) {
       EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
@@ -191,42 +191,15 @@ public class Main implements Runnable {
         CaseAnnotations annotations = new CaseAnnotations();
         annotations.eval = -evaluation.getEval() / 100F;
         annotations.isBestMove = ij.equals(bestIJ);
-//        annotations.safeEval = -evaluation.getSafeEval() / 100F;
-//        annotations.costUntilLeafAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true) + evaluation.costUntilLeafDefense;
-//        annotations.costUntilLeafDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false) + evaluation.costUntilLeafAttack;
-//        annotations.edgeCostAttack = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, true);
-//        annotations.edgeCostDefense = StoredBoard.edgeCost(EVALUATOR.get(board), evaluation, false);
         annotations.lower = -evaluation.upper / 100F;
         annotations.upper = -evaluation.lower / 100F;
-//        annotations.bestVariationPlayer = -evaluation.bestVariationOpponent / 100F;
-//        annotations.bestVariationOpponent = -evaluation.bestVariationPlayer / 100F;
         annotations.nVisited = evaluation.descendants;
-//        annotations.otherAnnotations = evaluation.getInterestingProbabilities((Math.random() > 0.5 ? -1 : 1) * EVALUATOR.firstPosition.eval);
-//            String.format(
-//            "%d %d\n", EVALUATOR.getEvalGoal() / 100, evaluation.expectedToSolve);
         annotations.otherAnnotations =
             Utils.prettyPrintDouble(evaluation.proofNumberCurEval) + " " + Utils.prettyPrintDouble(evaluation.proofNumberNextEval) + "\n" +
             Utils.prettyPrintDouble(evaluation.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(evaluation.disproofNumberCurEval) + "\n";
-        
-//        for (int i = 0; i < evaluation.samples.length / 3 * 3; i += 3) {
-//          annotations.otherAnnotations += String.format("%.1f  %.1f  %.1f\n", -evaluation.samples[i] / 100F,
-//              -evaluation.samples[i+1] / 100F, -evaluation.samples[i+2] / 100F);
-//        }
         ui.setAnnotations(annotations, ij);
       }
     }
-//    StoredBoard cur = EVALUATOR.get(board);
-//    System.out.println(cur.eval + " (" + cur.lower + ", " + cur.upper + ")");
-//    for (int i = 63; i >= 0; --i) {
-////      String.format("%d:%.2g (%.2g)\n", -offsetToEval(i) / 100, 1 - probEvalGreaterThan[i],
-////            fathers.size() > 0 ? maxLogDerivativeDescendants(i, fathers.get(0)) : 0);
-//      System.out.println(-StoredBoard.offsetToEval(i) / 100 + " " + (1 - cur.probEvalGreaterThan[i]) + " " +
-//          (cur.fathers.size() > 0 ? cur.maxLogDerivativeDescendants(i, cur.fathers.get(0)) : 0) + " " + cur.maxChildrenLogDerivative[i]);
-//    }
-//    
-//    if (bestIJ.i >= 0) {
-//      ui.setBestMove(bestIJ);
-//    }
   }
   
   private PositionIJ moveFromBoard(Board father, StoredBoard child) {
