@@ -171,7 +171,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //      return;
 //    }
     assert(evalGoal >= -6400 && evalGoal <= 6400);
-    this.nextUpdateEvalGoal = (long) (this.firstPosition.descendants * 1.1);
+    this.nextUpdateEvalGoal = (long) (this.firstPosition.descendants * 1.05);
+    this.firstPosition.updateAllDescendantsRecursive(roundEval(evalGoal));
   }
   
   public void updateEvalGoalIfNeeded() {
