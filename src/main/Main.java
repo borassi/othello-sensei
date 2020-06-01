@@ -93,7 +93,7 @@ public class Main implements Runnable {
   public synchronized void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(42), true); // 37
+    setBoard(EndgameTest.readIthBoard(45), true); // 37
   }
 
   /**
@@ -182,7 +182,11 @@ public class Main implements Runnable {
   
   private void showHashMapEvaluations() {
     long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(board);
-    StoredBoard[] evaluations = EVALUATOR.get(board).children;
+    StoredBoard current = EVALUATOR.get(board);
+    if (current == null) {
+      return;
+    }
+    StoredBoard[] evaluations = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(evaluations);
     for (StoredBoard evaluation : evaluations) {
       if (evaluation != null) {
@@ -191,19 +195,19 @@ public class Main implements Runnable {
         CaseAnnotations annotations = new CaseAnnotations();
         annotations.eval = -evaluation.getEval() / 100F;
         annotations.isBestMove = ij.equals(bestIJ);
-        annotations.lower = -evaluation.upper / 100F;
-        annotations.upper = -evaluation.lower / 100F;
-        annotations.nVisited = evaluation.descendants;
+        annotations.lower = -evaluation.getUpper() / 100F;
+        annotations.upper = -evaluation.getLower() / 100F;
+        annotations.nVisited = evaluation.getDescendants();
         annotations.otherAnnotations =
-            Utils.prettyPrintDouble(evaluation.proofNumberCurEval) + " " + Utils.prettyPrintDouble(evaluation.proofNumberNextEval) + "\n" +
-            Utils.prettyPrintDouble(evaluation.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(evaluation.disproofNumberCurEval) + "\n";
+            Utils.prettyPrintDouble(evaluation.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(evaluation.getProofNumberNextEval()) + "\n" +
+            Utils.prettyPrintDouble(evaluation.getDisproofNumberNextEval()) + " " + Utils.prettyPrintDouble(evaluation.getDisproofNumberCurEval()) + "\n";
         ui.setAnnotations(annotations, ij);
       }
     }
   }
   
   private PositionIJ moveFromBoard(Board father, StoredBoard child) {
-    long move = (child.player | child.opponent) & ~(father.getPlayer() | father.getOpponent());
+    long move = (child.getPlayer() | child.getOpponent()) & ~(father.getPlayer() | father.getOpponent());
     
     return BitPattern.bitToMove(move);
   }
@@ -244,7 +248,7 @@ public class Main implements Runnable {
       return;
     }
 
-    EVALUATOR.setBoard(board, 1599, 1601);
+    EVALUATOR.setBoard(board);
     evaluatorThread = new Thread(this);
     evaluatorThread.start();
   }
@@ -259,11 +263,10 @@ public class Main implements Runnable {
       CaseAnnotations annotations = new CaseAnnotations();
       annotations.eval = -evaluation.getEval() / 100F;
       annotations.isBestMove = ij.equals(bestIJ);
-      annotations.nVisited = evaluation.descendants;
+      annotations.nVisited = evaluation.getDescendants();
       annotations.otherAnnotations =
-          Utils.prettyPrintDouble(evaluation.proofNumberCurEval) + " " + Utils.prettyPrintDouble(evaluation.proofNumberNextEval) + "\n" +
-          Utils.prettyPrintDouble(evaluation.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(evaluation.disproofNumberCurEval) + "\n";
-
+         Utils.prettyPrintDouble(evaluation.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(evaluation.getProofNumberNextEval()) + "\n" +
+         Utils.prettyPrintDouble(evaluation.getDisproofNumberNextEval()) + " " + Utils.prettyPrintDouble(evaluation.getDisproofNumberCurEval()) + "\n";
       ui.setAnnotations(annotations, ij);
     }
   }

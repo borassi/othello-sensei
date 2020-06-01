@@ -311,22 +311,26 @@ public class EvaluatorMidgame {
    * @param upper 
    */
   public int evaluatePosition(Board current, int depth, int lower, int upper) {
+    return evaluatePosition(current.getPlayer(), current.getOpponent(), depth, lower, upper);
+  }
+
+  public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
 //    assert(current.isLeaf());
 //    evaluatePositionWithHashMap(current.getBoard(), depth - 4, lower, upper);
-    depthOneEvaluator.setup(current.getPlayer(), current.getOpponent());
+    depthOneEvaluator.setup(player, opponent);
     if (depth == 0) {
       return depthOneEvaluator.eval();
     }
-    depth = Math.min(depth, current.getEmptySquares());
+    depth = Math.min(depth, 64 - Long.bitCount(player | opponent));
 //    this.resetNVisitedPositions();
     if (depth <= 3) {
-      return evaluatePositionQuick(current.getPlayer(), current.getOpponent(), depth,
+      return evaluatePositionQuick(player, opponent, depth,
         lower, upper, false, 64);
     }
     evaluatePositionSlow(
-        current.getPlayer(), current.getOpponent(), depth - Constants.EMPTIES_FOR_ENDGAME - 1,
+        player, opponent, depth - Constants.EMPTIES_FOR_ENDGAME - 1,
         lower, upper, false, false);
-    return evaluatePositionSlow(current.getPlayer(), current.getOpponent(), depth, lower, upper, false, true);
+    return evaluatePositionSlow(player, opponent, depth, lower, upper, false, true);
   }
 
   public void resetNVisitedPositions() {

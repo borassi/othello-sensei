@@ -91,7 +91,7 @@ public class EndgameThor {
         System.out.println("Visited / endgame: " + numberFormat.format((int) (nVisited / eval.nEndgames)));
       }
       int d = be.board.getEmptySquares();
-      if (d != 17 || pmf.haveToPass(be.board)) {
+      if (d != 12 || pmf.haveToPass(be.board)) {
         continue;
       }
       i++;

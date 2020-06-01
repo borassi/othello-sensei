@@ -149,13 +149,16 @@ public class Board implements Serializable {
     final Board other = (Board) otherBoard;
     return player == other.player && opponent == other.opponent;
   }
+  
+  public static int hash(long player, long opponent) {
+    player = (player ^ (player >>> 32));
+    opponent = (opponent ^ (opponent >>> 32));
+    return Math.abs((int) (player ^ (opponent << 3)));
+  }
 
   @Override
   public int hashCode() {
-    int newPlayer = (int) ((player + (player >> 32)) * 541725397157L);
-    int newOpponent = (int) ((opponent + (opponent >> 32)) * 541725397157L);
-    //System.out.println((int) (player + (player >> 32)) + " " + (3 * newPlayer + 17 * newOpponent));
-    return 3 * newPlayer + 17 * newOpponent;
+    return hash(player, opponent);
   }
   
   /**

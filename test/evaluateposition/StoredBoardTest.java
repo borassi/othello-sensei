@@ -27,7 +27,7 @@ public class StoredBoardTest {
   @Test
   public void testUpdateEval() {
     StoredBoard sb = new StoredBoard(new Board(1, 2), 10, 0);
-    sb.updateEval(0, 0);//, new int[StoredBoard.N_SAMPLES]);
+    sb.setEval(0, 0);//, new int[StoredBoard.N_SAMPLES]);
     
   }
 }

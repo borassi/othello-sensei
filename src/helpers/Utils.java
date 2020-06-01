@@ -33,7 +33,6 @@ public class Utils {
     if (orderOfMagnitude / 3 >= suffixes.length) {
       return String.format("%s%.1f", sign, l);
     }
-    System.out.println(l);
     String suffix = suffixes[orderOfMagnitude / 3];
     
     double rescaledL = l / Math.pow(10, (orderOfMagnitude / 3) * 3);
@@ -42,5 +41,14 @@ public class Utils {
       return String.format("%s%.1f%s", sign, rescaledL, suffix);
     }
     return String.format("%s%.0f%s", sign, rescaledL, suffix);
+  }
+  
+  public static boolean arrayContains(Object[] array, Object elem) {
+    for (Object obj : array) {
+      if (elem == obj) {
+        return true;
+      }
+    }
+    return false;
   }
 }

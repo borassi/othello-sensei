@@ -224,7 +224,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public void componentResized(ComponentEvent e) {
-    System.out.println(this.getHeight() + " " + this.getWidth());
     casesContainer.setSize(this.getHeight() / 2, this.getHeight() / 2);
     casesContainer.setVisible(true);
   }
