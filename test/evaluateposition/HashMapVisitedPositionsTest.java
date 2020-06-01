@@ -282,9 +282,9 @@ public class HashMapVisitedPositionsTest {
         if (!evaluator.allCorrect()) {
           assert(false);
         }
-        if (Math.random() < 0.2) {
-          evaluator.setEvalGoal((int) (Math.random() * 3200));
-        }
+//        if (Math.random() < 0.2) {
+//          evaluator.setEvalGoal((int) (Math.random() * 3200));
+//        }
         boolean playerVariates = Math.random() > 0.5;
 //        if (playerVariates && evaluator.firstPosition.bestVariationPlayer == -6600) {
 //          continue;
@@ -395,9 +395,9 @@ public class HashMapVisitedPositionsTest {
           nextBoards[m] = new StoredBoard(b, eval, (int) (Math.random() * 100));
         }
         evaluator.add(nextBoards, next);
-        if (Math.random() < 0.2) {
-          evaluator.setEvalGoal((int) (Math.random() * 3200));
-        }
+//        if (Math.random() < 0.2) {
+//          evaluator.setEvalGoal((int) (Math.random() * 3200));
+//        }
         if (!evaluator.allCorrect()) {
           System.out.println(start.toString().replaceAll("\n", ""));
           System.out.println(evaluator);

@@ -101,7 +101,7 @@ public class EndgameTest {
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long t = System.currentTimeMillis();
       eval.setBoard(b);
-      int result = -eval.evaluatePosition(Long.MAX_VALUE, Long.MAX_VALUE);//, -6400, 6400);
+      int result = -eval.evaluatePosition();//, -6400, 6400);
       t = System.currentTimeMillis() - t;
       
 //      eval.resetHashMapVisitedPositions();
@@ -120,14 +120,10 @@ public class EndgameTest {
       System.out.print(String.format("%7.0f", evalMidgame.nVisitedEndgames / (double) evalMidgame.nEndgames));
       System.out.print(String.format("%7.0f", eval.nVisitedEndgames / (double) eval.nEndgames));
 //      System.out.print(String.format("%15.0f", eval.size() * 1000. / t));eval.getNVisited()
-      System.out.print(String.format("%6d", result / 100));
-      System.out.println(String.format("  %5.3f", eval.nWeirdEndgames / (double) eval.nEndgames));
+      System.out.println(String.format("%6d", result / 100));
 //      System.out.println("\n");
       evalMidgame.nEndgames = 0;
       evalMidgame.nVisitedEndgames = 0;
-      eval.nEndgames = 0;
-      eval.nVisitedEndgames = 0;
-      eval.nWeirdEndgames = 0;
     }
   }
 

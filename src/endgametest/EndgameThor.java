@@ -17,6 +17,7 @@ import board.Board;
 import board.GetFlip;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
+import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import helpers.LoadDataset;
 import java.lang.management.ManagementFactory;
@@ -32,9 +33,9 @@ import java.util.Random;
  */
 public class EndgameThor {
   public ArrayList<BoardWithEvaluation> boards;
-//  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
+  EvaluatorMCTS eval = new EvaluatorMCTS(2000000, 4000000);
 //  EvaluatorLastMoves eval = new EvaluatorLastMoves();
-  EvaluatorMidgame eval = new EvaluatorMidgame();
+//  EvaluatorMidgame eval = new EvaluatorMidgame();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
 	ThreadMXBean thread = ManagementFactory.getThreadMXBean();
   
@@ -47,24 +48,31 @@ public class EndgameThor {
   public boolean runSingleBoard(BoardWithEvaluation be) {
     Board b = be.board;
     Random generator = new Random(1234);
-    int alpha = -6400;//(int) (generator.nextDouble() * 120 - 60);
-    int beta = 6400;//(int) (alpha + generator.nextDouble() * 6);
+    int alpha = (int) (generator.nextDouble() * 120 - 60);
+    int beta = (int) (alpha + generator.nextDouble() * 6);
 //    int result = eval1.evaluatePosition(b, 60, alpha, beta);
     t -= System.currentTimeMillis();
     cpuT -= thread.getCurrentThreadCpuTime();
-    int result = eval.evaluatePosition(b, 60, alpha, beta);
+    eval.setBoard(b, alpha, beta);
+    int result = -eval.evaluatePosition();
 //    int result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), alpha, beta, 64);
     cpuT += thread.getCurrentThreadCpuTime();
     t += System.currentTimeMillis();
-//    if (alpha < be.evaluation && be.evaluation < beta) {
-//      if (result - be.evaluation > 0) {
-//        System.out.println(b);
-//        System.out.println(b.toString().replace("\n", ""));
-//        System.out.println(result);
-//        System.out.println(be.evaluation);
-//        return false;
-//      }
-//    }
+    if (alpha < be.evaluation && be.evaluation < beta) {
+      if (result - be.evaluation > 0) {
+        System.out.println(b);
+        System.out.println(b.toString().replace("\n", ""));
+        System.out.println(result);
+        System.out.println(be.evaluation);
+        return false;
+      }
+    }
+    if (be.evaluation > alpha && result <= alpha) {
+      return false;
+    }
+    if (be.evaluation < beta && result >= beta) {
+      return false;
+    }
     return true;
   }
   
@@ -72,17 +80,18 @@ public class EndgameThor {
     NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
     int i = 0;
     int j = 0;
+    long nVisited = 0;
     for (BoardWithEvaluation be : boards) {
       if (j++ % 100 == 0 && i > 0) {
         System.out.println(j + " / " + boards.size());
 //        System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
-        System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
-        System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
-        System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
-        System.out.println("Visited / endgame: " + numberFormat.format((int) (eval.getNVisited() / eval.nEndgames)));
+        System.out.println("Visited / pos: " + numberFormat.format((int) (nVisited / i)));
+        System.out.println("Visited / CPUs: " + numberFormat.format((int) (nVisited * 1000000000. / cpuT)));
+        System.out.println("Visited / s: " + numberFormat.format((int) (nVisited * 1000. / t)));
+        System.out.println("Visited / endgame: " + numberFormat.format((int) (nVisited / eval.nEndgames)));
       }
       int d = be.board.getEmptySquares();
-      if (d != 14 || pmf.haveToPass(be.board)) {
+      if (d != 17 || pmf.haveToPass(be.board)) {
         continue;
       }
       i++;
@@ -90,6 +99,7 @@ public class EndgameThor {
         System.out.println("FAIL");
         break;
       }
+      nVisited += eval.getNVisited();
     }
     System.out.println(t + " " + numberFormat.format(eval.getNVisited()) + " " + i);
 //    System.out.println("Visited1 / s: " + numberFormat.format((int) (eval1.getNVisited() * 1000. / t)));

@@ -142,10 +142,10 @@ public class Main implements Runnable {
     int nUpdate = 0;
     while (true) {
       EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
+      updateEvals();
       if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
         break;
       }
-      updateEvals();
     }
     
     if ((ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn)) {
@@ -244,7 +244,7 @@ public class Main implements Runnable {
       return;
     }
 
-    EVALUATOR.setBoard(board);
+    EVALUATOR.setBoard(board, 1599, 1601);
     evaluatorThread = new Thread(this);
     evaluatorThread.start();
   }

@@ -15,6 +15,8 @@ package evaluateposition;
 
 import board.Board;
 import board.GetMoves;
+import board.PossibleMovesFinderImproved;
+import constants.Constants;
 import evaluatedepthone.BoardWithEvaluation;
 import helpers.Gaussian;
 import helpers.LoadDataset;
@@ -30,21 +32,29 @@ public class EndgameTimeEstimator {
   }
   public static double logProofNumber(Board board, int lower, int approxEval) {
     int empties = board.getEmptySquares();
+    if (empties > 30) {
+      return 10;
+    }
     return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(board.getOpponent(), board.getPlayer()))
-        +0.000603 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval, 400)), 10), -10);
+        +0.000603 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval, 400)), 0), -20);
   }
   public static double disproofNumber(Board board, int lower, int approxEval) {
     return Math.max(1, Math.min(1.27E89, Math.exp(logDisproofNumber(board, lower, approxEval))));
   }
   public static double logDisproofNumber(Board board, int lower, int approxEval) {
     int empties = board.getEmptySquares();
+    if (empties > 30) {
+      return 10;
+    }
     
     return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(board.getPlayer(), board.getOpponent()))
-        -0.0005 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval, 400)), 10), -10);
+        -0.0005 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval, 400)), 0), -20);
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
-    EvaluatorMidgame evaluator = new EvaluatorMidgame();
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, new PossibleMovesFinderImproved());
+    EvaluatorMidgame evaluatorMidgame = new EvaluatorMidgame();
+
     ArrayList<BoardWithEvaluation> training = LoadDataset.loadTrainingSet(1990, 2000);
     double sumErrorSquared = 0;
     double nBoards = 0;
@@ -56,9 +66,9 @@ public class EndgameTimeEstimator {
         continue;
       }
       int lower = (int) ((Math.random() - 0.5) * 12800);
-      int approxEval = evaluator.evaluatePosition(b.board, 4, -6400, 6400);
-      evaluator.resetNVisitedPositions();
-      int eval = evaluator.evaluatePosition(b.board, empties, lower, lower+1);
+      evaluator.setBoard(b.board, lower, lower + 1);
+      int approxEval = evaluatorMidgame.evaluatePosition(b.board, 2, -6400, 6400);
+      int eval = evaluator.evaluatePosition();
       double logNVisited = Math.log(evaluator.getNVisited());
       double predicted = eval > lower ? logProofNumber(b.board, lower, approxEval) : logDisproofNumber(b.board, lower, approxEval);
       if (logNVisited > 0) {

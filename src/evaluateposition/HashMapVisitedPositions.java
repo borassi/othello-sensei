@@ -69,13 +69,6 @@ public class HashMapVisitedPositions {
     this.evalGoal = evalGoal;
   }
   
-  protected void setEvalGoal(int evalGoal) {
-    assert(evalGoal <= 6400 && evalGoal >= -6400);
-//    System.out.println("GOAL: " + evalGoal);
-    this.evalGoal = evalGoal;
-    this.updateAllDescendants();
-  }
-  
   public HashMapVisitedPositions() {
     this(1000000, 2000000, PossibleMovesFinderImproved.load());
   }
@@ -140,6 +133,7 @@ public class HashMapVisitedPositions {
         }
       }
     } else {
+//      System.out.println(father.proofNumberCurEval);
       double tmp = 0.1 * Math.pow(father.proofNumberCurEval, 0.35);
       // Opponent variates:
       for (StoredBoard child : father.children) {
@@ -209,60 +203,6 @@ public class HashMapVisitedPositions {
 //    }
 //    return nextPositionToImproveTemp(best, -evalGoal, !playerIsStartingPlayer, parents);
 //  }
-
-
-  protected synchronized PositionToImprove nextPositionToImprove() {
-    ArrayList<StoredBoard> parents = new ArrayList<>();
-    StoredBoard positionToEvaluateLocal = this.firstPosition;
-    if (positionToEvaluateLocal.isSolved()) {
-      return null;
-    }
-//    if (!positionToEvaluateLocal.isPartiallySolved()) {
-//      int evalGoal = positionToEvaluateLocal.eval + (int) (Math.random() * 200 - 100);
-//      
-//      return nextPositionToImproveTemp(positionToEvaluateLocal, evalGoal, true,
-//          parents);
-//    }
-//    
-//    int sample = (int) (Math.random() * Constants.N_SAMPLES);
-//    for (int i = 0; i < Constants.N_SAMPLES; i++) {
-//      if (positionToEvaluateLocal.samples[sample] != positionToEvaluateLocal.eval) {
-//      
-//        return nextPositionToImproveStandard(positionToEvaluateLocal, sample, 
-//            positionToEvaluateLocal.samples[sample] > positionToEvaluateLocal.eval, true,
-//          parents);
-//      }
-//      sample = (sample + 1) % Constants.N_SAMPLES;
-//    }
-//    assert(positionToEvaluateLocal.isPartiallySolved());
-
-    boolean playerVariates;
-//    if (positionToEvaluateLocal.proofNumberCurEval == 0) {
-//      playerVariates = true;
-//    } else if (positionToEvaluateLocal.disproofNumberCurEval == 0) {
-//      playerVariates = false;
-//    } else {
-//      playerVariates = Math.random() > 0.5;
-//    }
-//    if (positionToEvaluateLocal.bestVariationPlayer < -6400) {
-//      assert(positionToEvaluateLocal.bestVariationOpponent <= 6400);
-//      playerVariates = false;
-//    } else if (positionToEvaluateLocal.bestVariationOpponent > 6400) {
-//      playerVariates = true;
-//    } else {
-//      int playerDelta = positionToEvaluateLocal.bestVariationPlayer - positionToEvaluateLocal.eval;
-//      int opponentDelta = positionToEvaluateLocal.eval - positionToEvaluateLocal.bestVariationOpponent;
-//      if (playerDelta > opponentDelta) {
-//        playerVariates = true;
-//      } else {
-//        playerVariates = false;
-//      }
-//    }
-    playerVariates = Math.max(positionToEvaluateLocal.proofNumberCurEval, positionToEvaluateLocal.disproofNumberNextEval) >
-        Math.max(positionToEvaluateLocal.proofNumberNextEval, positionToEvaluateLocal.disproofNumberCurEval);
-//    System.out.println("Endgame: " + playerVariates);
-    return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
-  }
 
   private void empty() {
     evaluationsHashMap = new StoredBoard[arraySize];
