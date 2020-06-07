@@ -18,15 +18,14 @@ package constants;
  * @author michele
  */
 public class Constants {
-  public final static int N_SAMPLES = 10;
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
-  public final static double WEIGHT_CORRELATION_NEW = 0.8;
-  public final static double WEIGHT_CORRELATION_OLD = Math.sqrt(1 - WEIGHT_CORRELATION_NEW * WEIGHT_CORRELATION_NEW);
+  public final static double C_PLAYER_VARIATES = 0.02;
+  public final static double C_OPPONENT_VARIATES = 0.5;
   public final static int EMPTIES_FOR_FORCED_MIDGAME = 14;
-  public final static int PROOF_NUMBER_FOR_ENDGAME = 10000;
+  public final static int PROOF_NUMBER_FOR_ENDGAME = 20000;
   public final static int HASH_MAP_SIZE = 10000000;
-  public final static int MCTS_SIZE = 2000000;
+  public final static int MCTS_SIZE = 6000000;
   public final static int EMPTIES_FOR_ENDGAME = 8;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;
   public final static int TRY_SC_LAST_5_CORNER = 2200;

@@ -153,7 +153,7 @@ public class Board implements Serializable {
   public static int hash(long player, long opponent) {
     player = (player ^ (player >>> 32));
     opponent = (opponent ^ (opponent >>> 32));
-    return Math.abs((int) (player ^ (opponent << 3)));
+    return (int) (player ^ (opponent << 3)) & Integer.MAX_VALUE;
   }
 
   @Override

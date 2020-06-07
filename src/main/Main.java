@@ -93,7 +93,7 @@ public class Main implements Runnable {
   public synchronized void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(45), true); // 37
+    setBoard(EndgameTest.readIthBoard(41), true); // 37
   }
 
   /**
@@ -141,10 +141,15 @@ public class Main implements Runnable {
   public void run() {
     int nUpdate = 0;
     while (true) {
-      EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
-      updateEvals();
-      if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
-        break;
+      System.out.println("STARTED!");
+      try {
+        EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
+        updateEvals();
+        if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
+          break;
+        }
+      } catch (AssertionError ex) {
+        ex.printStackTrace();
       }
     }
     
@@ -188,19 +193,24 @@ public class Main implements Runnable {
     }
     StoredBoard[] evaluations = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(evaluations);
-    for (StoredBoard evaluation : evaluations) {
-      if (evaluation != null) {
-        PositionIJ ij = moveFromBoard(board, evaluation);
+    for (StoredBoard child : evaluations) {
+      if (child != null) {
+        PositionIJ ij = moveFromBoard(board, child);
 
         CaseAnnotations annotations = new CaseAnnotations();
-        annotations.eval = -evaluation.getEval() / 100F;
+        annotations.eval = -child.getEval() / 100F;
         annotations.isBestMove = ij.equals(bestIJ);
-        annotations.lower = -evaluation.getUpper() / 100F;
-        annotations.upper = -evaluation.getLower() / 100F;
-        annotations.nVisited = evaluation.getDescendants();
+        annotations.lower = -child.getUpper() / 100F;
+        annotations.upper = -child.getLower() / 100F;
+        annotations.nVisited = child.getDescendants();
         annotations.otherAnnotations =
-            Utils.prettyPrintDouble(evaluation.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(evaluation.getProofNumberNextEval()) + "\n" +
-            Utils.prettyPrintDouble(evaluation.getDisproofNumberNextEval()) + " " + Utils.prettyPrintDouble(evaluation.getDisproofNumberCurEval()) + "\n";
+            Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
+            Utils.prettyPrintDouble(child.getDisproofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberNextEval()) + "\n" +
+            Utils.prettyPrintDouble(child.getProofNumberNextEval()) + " " + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + "\n" +
+          Utils.prettyPrintDouble(
+              current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
+          + " " + Utils.prettyPrintDouble(
+              current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
         ui.setAnnotations(annotations, ij);
       }
     }
@@ -254,19 +264,25 @@ public class Main implements Runnable {
   }
   
   private void updateEvals() {
-    StoredBoard[] evaluations = EVALUATOR.getEvaluations();
+    StoredBoard current = EVALUATOR.getFirstPosition();
+    StoredBoard[] children = current.getChildren();
 
-    PositionIJ bestIJ = findBestMove(evaluations);
+    PositionIJ bestIJ = findBestMove(children);
      
-    for (StoredBoard evaluation : evaluations) {
-      PositionIJ ij = moveFromBoard(board, evaluation);
+    for (StoredBoard child : children) {
+      PositionIJ ij = moveFromBoard(board, child);
       CaseAnnotations annotations = new CaseAnnotations();
-      annotations.eval = -evaluation.getEval() / 100F;
+      annotations.eval = -child.getEval() / 100F;
       annotations.isBestMove = ij.equals(bestIJ);
-      annotations.nVisited = evaluation.getDescendants();
+      annotations.nVisited = child.getDescendants();
       annotations.otherAnnotations =
-         Utils.prettyPrintDouble(evaluation.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(evaluation.getProofNumberNextEval()) + "\n" +
-         Utils.prettyPrintDouble(evaluation.getDisproofNumberNextEval()) + " " + Utils.prettyPrintDouble(evaluation.getDisproofNumberCurEval()) + "\n";
+          Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
+          Utils.prettyPrintDouble(child.getDisproofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberNextEval()) + "\n" +
+          Utils.prettyPrintDouble(child.getProofNumberNextEval()) + " " + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + "\n" +
+          Utils.prettyPrintDouble(
+              current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
+          + " " + Utils.prettyPrintDouble(
+              current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
       ui.setAnnotations(annotations, ij);
     }
   }

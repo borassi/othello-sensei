@@ -32,9 +32,6 @@ public class EndgameTimeEstimator {
   }
   public static double logProofNumber(Board board, int lower, int approxEval) {
     int empties = board.getEmptySquares();
-    if (empties > 30) {
-      return 10;
-    }
     return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(board.getOpponent(), board.getPlayer()))
         +0.000603 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval, 400)), 0), -20);
   }
@@ -43,10 +40,6 @@ public class EndgameTimeEstimator {
   }
   public static double logDisproofNumber(Board board, int lower, int approxEval) {
     int empties = board.getEmptySquares();
-    if (empties > 30) {
-      return 10;
-    }
-    
     return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(board.getPlayer(), board.getOpponent()))
         -0.0005 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval, 400)), 0), -20);
   }

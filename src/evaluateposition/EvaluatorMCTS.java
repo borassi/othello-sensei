@@ -134,8 +134,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         evaluatorMidgame.resetNVisitedPositions();
         int eval = evaluatorMidgame.evaluatePosition(newPlayer, newOpponent, depth, -6400, 6400);
         long visited = evaluatorMidgame.getNVisited() + 1;
-        child = StoredBoard.childStoredBoard(newPlayer, newOpponent, father, eval);
-        child.descendants = visited;
+        child = StoredBoard.childStoredBoard(newPlayer, newOpponent, father, eval, visited);
         addedPositions += visited;
         super.add(child);
       } else {
@@ -171,8 +170,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //      return;
 //    }
     assert(evalGoal >= -6400 && evalGoal <= 6400);
-    this.nextUpdateEvalGoal = (long) (this.firstPosition.descendants * 1.05);
-    this.firstPosition.updateAllDescendantsRecursive(roundEval(evalGoal));
+    this.nextUpdateEvalGoal = (long) (this.firstPosition.descendants * 1.1);
+    this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
   }
   
   public void updateEvalGoalIfNeeded() {
@@ -213,15 +212,17 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert(lower < upper);
     this.lower = lower;
     this.upper = upper;
+    evaluatorMidgame.resetNVisitedPositions();
     int quickEval = evaluatorMidgame.evaluatePosition(board, 4, -6400, 6400);
-    StoredBoard currentStored = StoredBoard.initialStoredBoard(board.getPlayer(), board.getOpponent(), quickEval, roundEval(quickEval));
+    StoredBoard currentStored = StoredBoard.initialStoredBoard(
+        board.getPlayer(), board.getOpponent(), quickEval, roundEval(quickEval),
+        evaluatorMidgame.getNVisited());
 
     if (reset) {
       reset();
     }
 //    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
     super.addFirstPosition(currentStored);
-    currentStored.descendants = evaluatorMidgame.getNVisited();
     this.evaluatorMidgame.resetNVisitedPositions();
     setEvalGoal(quickEval);
   }
@@ -237,6 +238,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     ArrayList<StoredBoard> parents = new ArrayList<>();
     StoredBoard positionToEvaluateLocal = this.firstPosition;
     boolean playerVariates;
+    if (!positionToEvaluateLocal.isPartiallySolved()) {
+      return nextPositionToImproveMidgame(
+          positionToEvaluateLocal, this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates, true, parents);
+    }
     if (firstPosition.getEvalGoal() >= upper) {
       playerVariates = false;
     } else if (firstPosition.getEvalGoal() <= lower) {
@@ -246,6 +251,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           Math.max(positionToEvaluateLocal.getProofNumberCurEval(), positionToEvaluateLocal.getDisproofNumberNextEval()) >
           Math.max(positionToEvaluateLocal.getProofNumberNextEval(), positionToEvaluateLocal.getDisproofNumberCurEval());      
     }
+    
+//    if (firstPosition.getEvalGoal() >= upper || positionToEvaluateLocal.getProofNumberPlayerVariates() == 0) {
+//      playerVariates = true;
+//    } else if (firstPosition.getEvalGoal() <= lower || positionToEvaluateLocal.getDisproofNumberOpponentVariates() == Double.POSITIVE_INFINITY) {
+//      playerVariates = true;
+//    } else {
+//      playerVariates = Math.random() > 0.5;
+//          Math.max(positionToEvaluateLocal.getProofNumberOpponentVariates(), positionToEvaluateLocal.getDisproofNumberOpponentVariates()) >
+//          Math.max(positionToEvaluateLocal.getProofNumberPlayerVariates(), positionToEvaluateLocal.getDisproofNumberPlayerVariates());      
+//    }
     return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
   }
 
@@ -260,9 +275,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       StoredBoard next = nextPos.board;
       int nEmpties = next.getBoard().getEmptySquares();
 
+      // TODO: FIX
       if (next != this.firstPosition && (
-          next.getDisproofNumberCurEval() < Constants.PROOF_NUMBER_FOR_ENDGAME || next.getDisproofNumberCurEval() < Constants.PROOF_NUMBER_FOR_ENDGAME ||
-          nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME)) {
+          (next.getProofNumberCurEval() < Constants.PROOF_NUMBER_FOR_ENDGAME && next.getEval() > next.getEvalGoal() + 2000) ||
+          (next.getDisproofNumberCurEval() < Constants.PROOF_NUMBER_FOR_ENDGAME && next.getEval() < next.getEvalGoal() - 2000) ||
+          nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME)
+          && nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3) {
         this.evaluatorMidgame.resetNVisitedPositions();
         evaluatorMidgame.evaluatePosition(
             next.getBoard(), nEmpties - Constants.EMPTIES_FOR_ENDGAME - 1, nextPos.alpha, nextPos.beta);

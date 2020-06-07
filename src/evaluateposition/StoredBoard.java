@@ -16,6 +16,7 @@ package evaluateposition;
 
 import board.Board;
 import board.GetMoves;
+import constants.Constants;
 import helpers.Utils;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,10 +31,16 @@ public class StoredBoard {
   private int eval;
   private int lower;
   private int upper;
-  private double disproofNumberCurEval;
-  private double proofNumberCurEval;
-  private double disproofNumberNextEval;
-  private double proofNumberNextEval;
+  // Positions to prove that eval >= evalGoal.
+  double proofNumberCurEval;
+  // Positions to prove that eval > evalGoal.
+  double proofNumberNextEval;
+  // Positions to prove that eval <= evalGoal.
+  double disproofNumberCurEval;
+  // Positions to prove that eval < evalGoal.
+  double disproofNumberNextEval;
+  public double minLogDerivativePlayerVariates;
+  public double minLogDerivativeOpponentVariates;
   private int evalGoal;
   private final boolean playerIsStartingPlayer;
   protected long descendants;
@@ -43,7 +50,7 @@ public class StoredBoard {
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
-  private StoredBoard(long player, long opponent, int eval, int evalGoal, boolean playerIsStartingPlayer) {
+  private StoredBoard(long player, long opponent, int eval, int evalGoal, boolean playerIsStartingPlayer, long descendants) {
     this.player = player;
     this.opponent = opponent;
     this.playerIsStartingPlayer = playerIsStartingPlayer;
@@ -54,15 +61,16 @@ public class StoredBoard {
     this.evalGoal = evalGoal;
     this.prev = null;
     this.next = null;
+    this.descendants = descendants;
     this.setEval(eval);
   }
   
-  public static StoredBoard initialStoredBoard(long player, long opponent, int eval, int evalGoal) {
-    return new StoredBoard(player, opponent, eval, evalGoal, true);
+  public static StoredBoard initialStoredBoard(long player, long opponent, int eval, int evalGoal, long descendants) {
+    return new StoredBoard(player, opponent, eval, evalGoal, true, descendants);
   }
   
-  public static StoredBoard childStoredBoard(long player, long opponent, StoredBoard father, int eval) {
-    StoredBoard result = new StoredBoard(player, opponent, eval, -father.evalGoal, !father.playerIsStartingPlayer);
+  public static StoredBoard childStoredBoard(long player, long opponent, StoredBoard father, int eval, long descendants) {
+    StoredBoard result = new StoredBoard(player, opponent, eval, -father.evalGoal, !father.playerIsStartingPlayer, descendants);
     result.addFather(father);
     return result;
   }
@@ -105,6 +113,10 @@ public class StoredBoard {
 
   public double getDisproofNumberNextEval() {
     return disproofNumberNextEval;
+  }
+  
+  public boolean isPartiallySolved() {
+    return descendants >= 0.05 * (proofNumberCurEval + disproofNumberCurEval);
   }
   
   public int getLower() {
@@ -153,7 +165,7 @@ public class StoredBoard {
     assert(areThisBoardEvalsOK());
   }
   
-  protected void updateAllDescendantsRecursive(int evalGoal) {
+  protected void setEvalGoalRecursive(int evalGoal) {
     if (evalGoal == this.evalGoal) {
       return;
     }
@@ -163,7 +175,7 @@ public class StoredBoard {
       return;
     }
     for (StoredBoard child : children) {
-      child.updateAllDescendantsRecursive(-evalGoal);
+      child.setEvalGoalRecursive(-evalGoal);
     }
     updateFather();
     assert areChildrenOK();
@@ -188,7 +200,27 @@ public class StoredBoard {
       disproofNumberCurEval += child.proofNumberCurEval;
       disproofNumberNextEval += child.proofNumberNextEval;
     }
+    minLogDerivativePlayerVariates = Double.MAX_VALUE;
+    minLogDerivativeOpponentVariates = Double.MAX_VALUE;
+    for (StoredBoard child : children) {
+      minLogDerivativePlayerVariates = Math.min(
+          minLogDerivativePlayerVariates,
+          child.minLogDerivativeOpponentVariates + logDerivativePlayerVariates(child));
+      minLogDerivativeOpponentVariates = Math.min(
+          minLogDerivativeOpponentVariates,
+          child.minLogDerivativePlayerVariates + logDerivativeOpponentVariates(child));
+    }
     assert(areThisBoardEvalsOK());
+  }
+  
+  public double logDerivativePlayerVariates(StoredBoard child) {
+    assert Utils.arrayContains(children, child);
+    return Math.log(children.length) + Constants.C_PLAYER_VARIATES * (eval + child.eval);
+  }
+  
+  public double logDerivativeOpponentVariates(StoredBoard child) {
+    assert Utils.arrayContains(children, child);
+    return Math.log(children.length) + Constants.C_OPPONENT_VARIATES * (eval + child.eval);
   }
 
   protected void updateFathers() {
@@ -201,15 +233,18 @@ public class StoredBoard {
   public final void setProofNumbersForLeaf() {
     assert(this.isLeaf());
     assert(evalGoal <= 6400 && evalGoal >= -6400);
+    assert(descendants > 0);
+    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
+    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
     if (lower > evalGoal - 100) {
       proofNumberCurEval = 0;
       disproofNumberNextEval = Double.POSITIVE_INFINITY;
     } else if (upper < evalGoal - 100) {
       proofNumberCurEval = Double.POSITIVE_INFINITY;
-      this.disproofNumberNextEval = 0;
+      disproofNumberNextEval = 0;
     } else {
       proofNumberCurEval = EndgameTimeEstimator.proofNumber(
-          this.getBoard(), evalGoal - 100, this.eval);   
+          this.getBoard(), evalGoal - 100, this.eval);
       disproofNumberNextEval = EndgameTimeEstimator.disproofNumber(
           this.getBoard(), evalGoal - 100, this.eval);
     }
@@ -218,7 +253,7 @@ public class StoredBoard {
       disproofNumberCurEval = 0;
     } else if (lower > evalGoal + 100) {
       proofNumberNextEval = 0;
-      disproofNumberCurEval = Double.POSITIVE_INFINITY;    
+      disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
       proofNumberNextEval = EndgameTimeEstimator.proofNumber(
           this.getBoard(), evalGoal + 100, eval);
@@ -249,6 +284,73 @@ public class StoredBoard {
     return children;
   }
 
+  public StoredBoard bestChildMidgameOpponentVariates() {
+    assert !isLeaf();
+    StoredBoard best = null;
+    for (StoredBoard child : children) {
+      if (best == null ||
+          logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates <
+          logDerivativeOpponentVariates(best) + best.minLogDerivativePlayerVariates) {
+        best = child;
+      }
+    }
+    assert best != null;
+    return best;
+  }
+
+  public StoredBoard bestChildMidgamePlayerVariates() {
+    assert !isLeaf();
+    StoredBoard best = null;
+    for (StoredBoard child : children) {
+      if (best == null ||
+          logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates <
+          logDerivativePlayerVariates(best) + best.minLogDerivativeOpponentVariates) {
+        best = child;
+      }
+    }
+    assert best != null;
+    return best;
+  }
+  
+  public double childValuePlayerVariates(StoredBoard child) {
+    assert Utils.arrayContains(children, child);
+    return child.disproofNumberNextEval / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberCurEval, 0.35) / Math.sqrt(child.descendants)));
+  }
+  
+  public double childValueOpponentVariates(StoredBoard child) {
+    assert Utils.arrayContains(children, child);
+    return child.disproofNumberCurEval / Math.exp(0.1 * Math.pow(proofNumberCurEval, 0.35) / Math.sqrt(child.descendants));
+  }
+
+  // Minimize proofNumberNextEval (= min disproofNumberNextEval of children).
+  // No error because we are trying to 
+  public StoredBoard bestChildPlayerVariates() {
+    assert !isLeaf();
+    StoredBoard best = null;
+    for (StoredBoard child : children) {
+      if (best == null ||
+          childValuePlayerVariates(child) < childValuePlayerVariates(best)) {
+        best = child;
+      }
+    }
+    assert best != null;
+    return best;
+  }
+  
+  // Minimize proofNumberCurEval (= min disproofNumberCurEval of children).
+  public StoredBoard bestChildOpponentVariates() {
+    assert !isLeaf();
+    StoredBoard best = null;
+    for (StoredBoard child : children) {
+      if (best == null ||
+          childValueOpponentVariates(child) < childValueOpponentVariates(best)) {
+        best = child;
+      }
+    }
+    assert best != null;
+    return best;
+  }
+
   public boolean areThisBoardEvalsOK() {
     return
         this.lower <= this.eval && this.eval <= this.upper 
@@ -277,7 +379,10 @@ public class StoredBoard {
         return false;
       }
     }
-    if (children.length != Long.bitCount(GetMoves.getMoves(player, opponent))) {
+    if (children.length != Long.bitCount(GetMoves.getMoves(player, opponent)) && !(
+        Long.bitCount(GetMoves.getMoves(player, opponent)) == 0
+        && Long.bitCount(GetMoves.getMoves(opponent, player)) != 0
+        && children.length == 1)) {
       return false;
     }
     return true;

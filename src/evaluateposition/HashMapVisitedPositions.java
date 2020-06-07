@@ -61,6 +61,10 @@ public class HashMapVisitedPositions {
           alpha--;
         }
       }
+      if (!firstPosition.isPartiallySolved()) {
+        alpha = -6400;
+        beta = 6400;
+      }
     }
   }
   
@@ -106,6 +110,23 @@ public class HashMapVisitedPositions {
 //    return null;
 //  }
 
+  protected synchronized PositionToImprove nextPositionToImproveMidgame(
+      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
+      ArrayList<StoredBoard> parents) {
+    parents.add(father);
+//    System.out.println("ENDGAME");
+//    lastEndgame = true;
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
+    }
+    if (playerVariates) {
+      return nextPositionToImproveMidgame(father.bestChildMidgamePlayerVariates(), !playerVariates, !playerIsStartingPlayer, parents);
+    } else {
+      return nextPositionToImproveMidgame(father.bestChildMidgameOpponentVariates(), !playerVariates, !playerIsStartingPlayer, parents);
+    }
+//    return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer, parents);
+  }
+
   protected synchronized PositionToImprove nextPositionToImproveEndgame(
       StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
       ArrayList<StoredBoard> parents) {
@@ -115,31 +136,12 @@ public class HashMapVisitedPositions {
     if (father.isLeaf()) {
       return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
     }
-    StoredBoard best = null; 
     if (playerVariates) {
-      // Player variates: maximize upper bound (lower bound next move).
-      double tmp = 0.1 * Math.pow(father.getDisproofNumberCurEval(), 0.35);
-    
-      for (StoredBoard child : father.getChildren()) {
-        if (best == null ||
-            child.getDisproofNumberNextEval() / Math.min(1.E20, Math.exp(tmp / Math.sqrt(child.descendants))) < 
-            best.getDisproofNumberNextEval() / Math.min(1.E20, Math.exp(tmp / Math.sqrt(best.descendants)))) {
-          best = child;
-        }
-      }
+      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, !playerIsStartingPlayer, parents);
     } else {
-//      System.out.println(father.proofNumberCurEval);
-      double tmp = 0.1 * Math.pow(father.getProofNumberCurEval(), 0.35);
-      // Opponent variates:
-      for (StoredBoard child : father.getChildren()) {
-        if (best == null ||
-            child.getDisproofNumberCurEval() / Math.min(1.E20, Math.exp(tmp / Math.sqrt(child.descendants))) < 
-            best.getDisproofNumberCurEval() / Math.min(1.E20, Math.exp(tmp / Math.sqrt(best.descendants)))) {
-          best = child;
-        }
-      }
+      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, !playerIsStartingPlayer, parents);
     }
-    return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer, parents);
+//    return nextPositionToImproveEndgame(best, !playerVariates, !playerIsStartingPlayer, parents);
   }
 //  boolean lastEndgame = false;
 //  protected synchronized PositionToImprove nextPositionToImproveStandard(

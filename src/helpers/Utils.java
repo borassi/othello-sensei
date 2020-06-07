@@ -27,13 +27,15 @@ public class Utils {
       sign = "-";
       l = -l;
     }
-    String[] suffixes = {"", "k", "M", "G", "T", "P", "E", "Z", "Y"};
+    String[] suffixes = {"p", "n", "μ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y"};
     int orderOfMagnitude = (int) Math.log10(l);
+    int suffixesPosition = orderOfMagnitude / 3 + 4;
     
-    if (orderOfMagnitude / 3 >= suffixes.length) {
-      return String.format("%s%.1f", sign, l);
+//    System.out.println(orderOfMagnitude + " " + l);
+    if (suffixesPosition >= suffixes.length || suffixesPosition < 0) {
+      return String.format("%s%f", sign, l);
     }
-    String suffix = suffixes[orderOfMagnitude / 3];
+    String suffix = suffixes[suffixesPosition];
     
     double rescaledL = l / Math.pow(10, (orderOfMagnitude / 3) * 3);
     
