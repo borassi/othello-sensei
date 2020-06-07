@@ -141,15 +141,10 @@ public class Main implements Runnable {
   public void run() {
     int nUpdate = 0;
     while (true) {
-      System.out.println("STARTED!");
-      try {
-        EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
-        updateEvals();
-        if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
-          break;
-        }
-      } catch (AssertionError ex) {
-        ex.printStackTrace();
+      EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
+      updateEvals();
+      if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
+        break;
       }
     }
     
