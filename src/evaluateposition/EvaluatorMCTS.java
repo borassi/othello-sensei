@@ -208,12 +208,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     setBoard(board, lower, upper, true);
   }
   
-  public void setBoard(Board board, int lower, int upper, boolean reset) {
+  public synchronized void setBoard(Board board, int lower, int upper, boolean reset) {
     assert(lower < upper);
     this.lower = lower;
     this.upper = upper;
     evaluatorMidgame.resetNVisitedPositions();
-    int quickEval = evaluatorMidgame.evaluatePosition(board, 4, -6400, 6400);
+    int quickEval = evaluatorMidgame.evaluatePosition(board, 2, -6400, 6400);
     StoredBoard currentStored = StoredBoard.initialStoredBoard(
         board.getPlayer(), board.getOpponent(), quickEval, roundEval(quickEval),
         evaluatorMidgame.getNVisited());
@@ -264,7 +264,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
   }
 
-  public short evaluatePosition(long maxNVisited, long maxTimeMillis) {
+  public synchronized short evaluatePosition(long maxNVisited, long maxTimeMillis) {
     status = Status.RUNNING;
     long seenPositions = 0;
     long startTime = System.currentTimeMillis();
@@ -282,8 +282,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME)
           && nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3) {
         this.evaluatorMidgame.resetNVisitedPositions();
-        evaluatorMidgame.evaluatePosition(
-            next.getBoard(), nEmpties - Constants.EMPTIES_FOR_ENDGAME - 1, nextPos.alpha, nextPos.beta);
         int curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), nEmpties, nextPos.alpha, nextPos.beta);
         seenPositions = evaluatorMidgame.getNVisited() + 1;

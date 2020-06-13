@@ -197,7 +197,7 @@ public class EvaluatorMidgame {
     if (stabilityCutoffUpper <= lower) {
       return stabilityCutoffUpper;
     }
-    int nEmpties = Long.bitCount(~(player | opponent)) - 1;
+    int nEmpties = Long.bitCount(~(player | opponent));
     int move;
     long flip;
     boolean pass = true;
@@ -315,15 +315,15 @@ public class EvaluatorMidgame {
   }
 
   public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
-//    assert(current.isLeaf());
-//    evaluatePositionWithHashMap(current.getBoard(), depth - 4, lower, upper);
     depthOneEvaluator.setup(player, opponent);
     if (depth == 0) {
       return depthOneEvaluator.eval();
     }
     depth = Math.min(depth, 64 - Long.bitCount(player | opponent));
-//    this.resetNVisitedPositions();
-    if (depth <= 3) {
+    int empties = Long.bitCount(~(player | opponent));
+    if (empties <= Constants.EMPTIES_FOR_ENDGAME && depth >= empties) {
+      return evaluatePositionSlow(player, opponent, Constants.EMPTIES_FOR_ENDGAME + 2, lower, upper, false, true);
+    } else if (depth <= 3) {
       return evaluatePositionQuick(player, opponent, depth,
         lower, upper, false, 64);
     }

@@ -21,10 +21,10 @@ public class CaseAnnotations {
   public float eval = 0;
   public boolean isBestMove = false;
   public float safeEval = Float.NEGATIVE_INFINITY;
-  public double edgeCostAttack = Double.NEGATIVE_INFINITY;
-  public double edgeCostDefense = Double.NEGATIVE_INFINITY;
-  public double costUntilLeafAttack = Double.NEGATIVE_INFINITY;
-  public double costUntilLeafDefense = Double.NEGATIVE_INFINITY;
+  public double proofNumberCurEval = Double.NEGATIVE_INFINITY;
+  public double proofNumberNextEval = Double.NEGATIVE_INFINITY;
+  public double disproofNumberCurEval = Double.NEGATIVE_INFINITY;
+  public double disproofNumberNextEval = Double.NEGATIVE_INFINITY;
   public float lower = Float.NEGATIVE_INFINITY;
   public float upper = Float.NEGATIVE_INFINITY;
   public float bestVariationPlayer = Float.NEGATIVE_INFINITY;

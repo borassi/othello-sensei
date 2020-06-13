@@ -16,13 +16,9 @@ package main;
 
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
-import javax.swing.SwingUtilities;
-
 import board.Board;
-import board.GetFlip;
 import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import endgametest.EndgameTest;
@@ -34,8 +30,8 @@ import evaluateposition.StoredBoard;
 import helpers.Utils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import ui.CaseAnnotations;
 import ui.DesktopUI;
 import ui.UI;
@@ -49,12 +45,11 @@ public class Main implements Runnable {
   ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
   ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
-  private int depth = -1;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
   private final EvaluatorMidgame EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
-  private Thread evaluatorThread = null;
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
   /**
    * The board, as a pair of bitpattern.
    */
@@ -80,20 +75,12 @@ public class Main implements Runnable {
   
   public synchronized void stop() {
     EVALUATOR.stop();
-    if (evaluatorThread != null) {
-      try {
-        evaluatorThread.join();
-        evaluatorThread = null;
-      } catch (InterruptedException ex) {
-        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-      }
-    }
   }
   
   public synchronized void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(41), true); // 37
+    setBoard(EndgameTest.readIthBoard(1), true); // 37
   }
 
   /**
@@ -125,16 +112,11 @@ public class Main implements Runnable {
    * Action to perform when the case (i, j) was clicked.
    * Performs the move.
    * @param ij: the row and the column (from 0 to 7)
-   * @param e the MouseEvent
    */
-  public synchronized void getClick(PositionIJ ij, MouseEvent e) {
+  public synchronized void play(PositionIJ ij) {
     stop();
-    if (SwingUtilities.isLeftMouseButton(e)) {
-      playMoveIfPossible(ij);
-      evaluate();
-    } else if (SwingUtilities.isRightMouseButton(e)) {
-      undo();
-    }
+    playMoveIfPossible(ij);
+    evaluate();
   }
   
   @Override
@@ -162,7 +144,7 @@ public class Main implements Runnable {
    * 
    * @param ij the row and the column (from 0 to 7)
    */
-  private synchronized void playMoveIfPossible(PositionIJ ij) {
+  private void playMoveIfPossible(PositionIJ ij) {
     Board oldBoard = board.deepCopy();
     try {
       board = POSSIBLE_MOVES_FINDER.moveIfPossible(board, ij);
@@ -198,10 +180,12 @@ public class Main implements Runnable {
         annotations.lower = -child.getUpper() / 100F;
         annotations.upper = -child.getLower() / 100F;
         annotations.nVisited = child.getDescendants();
+        annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
+        annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
+        annotations.disproofNumberCurEval = child.getProofNumberCurEval();
+        annotations.disproofNumberNextEval = child.getProofNumberNextEval();
         annotations.otherAnnotations =
             Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
-            Utils.prettyPrintDouble(child.getDisproofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberNextEval()) + "\n" +
-            Utils.prettyPrintDouble(child.getProofNumberNextEval()) + " " + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + "\n" +
           Utils.prettyPrintDouble(
               current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
           + " " + Utils.prettyPrintDouble(
@@ -240,7 +224,7 @@ public class Main implements Runnable {
   
   private final int updateTimes[] = {50, 100, 500, 1000};
   
-  private void evaluate() {
+  private synchronized void evaluate() {
     if (ui.depth() <= 0) {
       showHashMapEvaluations();
       return;
@@ -252,32 +236,36 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-
     EVALUATOR.setBoard(board);
-    evaluatorThread = new Thread(this);
-    evaluatorThread.start();
+    executor.execute(this);
   }
   
-  private void updateEvals() {
+  private synchronized void updateEvals() {
     StoredBoard current = EVALUATOR.getFirstPosition();
+    if (board.getPlayer() != current.getPlayer() || board.getOpponent() != current.getOpponent() || current.getChildren() == null) {
+      return;
+    }
     StoredBoard[] children = current.getChildren();
 
     PositionIJ bestIJ = findBestMove(children);
      
     for (StoredBoard child : children) {
       PositionIJ ij = moveFromBoard(board, child);
+
       CaseAnnotations annotations = new CaseAnnotations();
       annotations.eval = -child.getEval() / 100F;
       annotations.isBestMove = ij.equals(bestIJ);
       annotations.nVisited = child.getDescendants();
+      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
+      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
+      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
+      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
           Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
-          Utils.prettyPrintDouble(child.getDisproofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberNextEval()) + "\n" +
-          Utils.prettyPrintDouble(child.getProofNumberNextEval()) + " " + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + "\n" +
-          Utils.prettyPrintDouble(
-              current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
-          + " " + Utils.prettyPrintDouble(
-              current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
+        Utils.prettyPrintDouble(
+            current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
+        + " " + Utils.prettyPrintDouble(
+            current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
       ui.setAnnotations(annotations, ij);
     }
   }

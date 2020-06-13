@@ -39,6 +39,7 @@ import board.Board;
 import helpers.Utils;
 import java.util.Arrays;
 import javax.swing.SpinnerListModel;
+import javax.swing.SwingUtilities;
 import main.Main;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
@@ -79,7 +80,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner spinner;
   
   public void getClick(PositionIJ ij, MouseEvent e) {
-    main.getClick(ij, e);
+    if (SwingUtilities.isLeftMouseButton(e)) {
+      main.play(ij);
+    } else if (SwingUtilities.isRightMouseButton(e)) {
+      main.undo();
+    }
   }
   
   @Override
@@ -90,16 +95,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (annotations.bestVariationPlayer != Float.NEGATIVE_INFINITY && annotations.bestVariationOpponent != Float.NEGATIVE_INFINITY) {
       annotationsString += String.format("\n%.2f  %.2f", annotations.bestVariationPlayer, annotations.bestVariationOpponent);
     }
-        
-    if (annotations.costUntilLeafAttack != Float.NEGATIVE_INFINITY && annotations.costUntilLeafDefense != Float.NEGATIVE_INFINITY) {
-      annotationsString += String.format("\n%.2f %.2f\n%.2f %.2f",
-          annotations.costUntilLeafAttack, annotations.costUntilLeafDefense,
-              annotations.edgeCostAttack, annotations.edgeCostDefense);
-    }
 
-    if (annotations.lower != Float.NEGATIVE_INFINITY && annotations.upper != Float.NEGATIVE_INFINITY) {
-      annotationsString += String.format("\n%.2f  %.2f", annotations.lower, annotations.upper);
-    }
+    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval) + " " + Utils.prettyPrintDouble(annotations.proofNumberNextEval);
+    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(annotations.disproofNumberCurEval);
     if (annotations.nVisited != 0) {
       annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
     }
