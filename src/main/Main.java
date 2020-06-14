@@ -19,6 +19,8 @@ import bitpattern.PositionIJ;
 import java.util.ArrayList;
 
 import board.Board;
+import board.GetMoves;
+import board.GetMovesCache;
 import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import endgametest.EndgameTest;
@@ -47,6 +49,7 @@ public class Main implements Runnable {
   boolean blackTurn = true;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
+  private final HashMap HASH_MAP;
   private final EvaluatorMidgame EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -64,12 +67,13 @@ public class Main implements Runnable {
    * Creates a new UI and sets the initial position.
    */
   public Main() {
-    this(1000000);
+    this(Constants.HASH_MAP_SIZE);
   }
   public Main(int hashMapSize) {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-    EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, new HashMap(hashMapSize * 2, hashMapSize));
+    HASH_MAP = new HashMap(hashMapSize * 2, hashMapSize);
+    EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, HASH_MAP);
     EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
   }
   
@@ -80,7 +84,7 @@ public class Main implements Runnable {
   public synchronized void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(1), true); // 37
+    setBoard(EndgameTest.readIthBoard(55), true);
   }
 
   /**
@@ -163,9 +167,44 @@ public class Main implements Runnable {
   }
   
   private void showHashMapEvaluations() {
-    long[] moves = POSSIBLE_MOVES_FINDER.possibleMoves(board);
+    GetMovesCache mover = new GetMovesCache();
+    long player = board.getPlayer();
+    long opponent = board.getOpponent();
+    long movesBit = mover.getMoves(board.getPlayer(), board.getOpponent());
+    long flip;
+    int move;
+    
+    while (movesBit != 0) {
+      flip = Long.lowestOneBit(movesBit);
+      move = Long.numberOfTrailingZeros(flip);      
+      movesBit = movesBit & (~flip);
+      flip = mover.getFlip(move);
+      HashMap.BoardInHash child = this.HASH_MAP.getStoredBoardNoUpdate(opponent & ~flip, player | flip);
+      if (child == null) {
+        continue;
+      }
+
+      CaseAnnotations annotations = new CaseAnnotations();
+      annotations.eval = -child.lower / 100F;
+//      annotations.isBestMove = ij.equals(bestIJ);
+//      annotations.lower = -child.upper / 100F;
+//      annotations.upper = -child.lower / 100F;
+//      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
+//      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
+//      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
+//      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
+      annotations.otherAnnotations =
+          ">" + Utils.prettyPrintDouble(-child.upper / 100) + "@" + child.depthUpper + "\n" +
+          "<" + Utils.prettyPrintDouble(-child.lower / 100) + "@" + child.depthLower;
+//      System.out.println(new PositionIJ(move));
+      ui.setAnnotations(annotations, new PositionIJ(move));
+    }
+  }
+  
+  private void showMCTSEvaluations() {
     StoredBoard current = EVALUATOR.get(board);
-    if (current == null) {
+    if (current == null || current.getChildren() == null) {
+      showHashMapEvaluations();
       return;
     }
     StoredBoard[] evaluations = current.getChildren();
@@ -186,9 +225,9 @@ public class Main implements Runnable {
         annotations.disproofNumberNextEval = child.getProofNumberNextEval();
         annotations.otherAnnotations =
             Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
-          Utils.prettyPrintDouble(
+            Utils.prettyPrintDouble(
               current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
-          + " " + Utils.prettyPrintDouble(
+            + " " + Utils.prettyPrintDouble(
               current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
         ui.setAnnotations(annotations, ij);
       }
@@ -226,7 +265,7 @@ public class Main implements Runnable {
   
   private synchronized void evaluate() {
     if (ui.depth() <= 0) {
-      showHashMapEvaluations();
+      showMCTSEvaluations();
       return;
     }
     if (ui.playBlackMoves() && !blackTurn) {

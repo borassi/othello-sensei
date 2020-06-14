@@ -29,16 +29,16 @@ public class PositionIJ {
   
   /**
    * Constructor.
-   * @param i The column (from 0 to 7).
-   * @param j The row (from 0 to 7).
+   * @param i The row (from 0 to 7).
+   * @param j The column (from 0 to 7).
    */
   public PositionIJ(int i, int j) {
     this.i = i;
     this.j = j;
   }
   
-  public PositionIJ(long bitPattern) {
-    
+  public PositionIJ(int move) {
+    this(7 - move / 8, 7 - move % 8);
   }
   
   @Override

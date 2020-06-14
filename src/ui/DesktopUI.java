@@ -90,14 +90,19 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public void setAnnotations(CaseAnnotations annotations, PositionIJ ij) {
     
-    String annotationsString = String.format("%.2f", annotations.eval);
+    String annotationsString = "";
+    if (annotations.eval != Float.NEGATIVE_INFINITY) {
+      annotationsString += String.format("%.2f", annotations.eval);
+    }
 
     if (annotations.bestVariationPlayer != Float.NEGATIVE_INFINITY && annotations.bestVariationOpponent != Float.NEGATIVE_INFINITY) {
       annotationsString += String.format("\n%.2f  %.2f", annotations.bestVariationPlayer, annotations.bestVariationOpponent);
     }
 
-    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval) + " " + Utils.prettyPrintDouble(annotations.proofNumberNextEval);
-    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(annotations.disproofNumberCurEval);
+    if (annotations.proofNumberCurEval != Double.NEGATIVE_INFINITY && annotations.proofNumberNextEval != Double.NEGATIVE_INFINITY) {
+      annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval) + " " + Utils.prettyPrintDouble(annotations.proofNumberNextEval);
+      annotationsString += "\n" + Utils.prettyPrintDouble(annotations.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(annotations.disproofNumberCurEval);
+    }
     if (annotations.nVisited != 0) {
       annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
     }

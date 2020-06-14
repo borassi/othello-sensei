@@ -28,19 +28,25 @@ import java.util.ArrayList;
  */
 public class EndgameTimeEstimator {
   public static double proofNumber(Board board, int lower, int approxEval) {
-    return Math.max(1, Math.min(1.27E89, Math.exp(logProofNumber(board, lower, approxEval))));
+    return proofNumber(board.getPlayer(), board.getOpponent(), lower, approxEval);
   }
-  public static double logProofNumber(Board board, int lower, int approxEval) {
-    int empties = board.getEmptySquares();
-    return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(board.getOpponent(), board.getPlayer()))
+  public static double proofNumber(long player, long opponent, int lower, int approxEval) {
+    return Math.max(1, Math.min(1.27E89, Math.exp(logProofNumber(player, opponent, lower, approxEval))));
+  }
+  public static double logProofNumber(long player, long opponent, int lower, int approxEval) {
+    int empties = 64 - Long.bitCount(player | opponent);
+    return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(opponent, player))
         +0.000603 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval, 400)), 0), -20);
   }
   public static double disproofNumber(Board board, int lower, int approxEval) {
-    return Math.max(1, Math.min(1.27E89, Math.exp(logDisproofNumber(board, lower, approxEval))));
+    return disproofNumber(board.getPlayer(), board.getOpponent(), lower, approxEval);
   }
-  public static double logDisproofNumber(Board board, int lower, int approxEval) {
-    int empties = board.getEmptySquares();
-    return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(board.getPlayer(), board.getOpponent()))
+  public static double disproofNumber(long player, long opponent, int lower, int approxEval) {
+    return Math.max(1, Math.min(1.27E89, Math.exp(logDisproofNumber(player, opponent, lower, approxEval))));
+  }
+  public static double logDisproofNumber(long player, long opponent, int lower, int approxEval) {
+    int empties = 64 - Long.bitCount(player | opponent);
+    return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(player, opponent))
         -0.0005 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval, 400)), 0), -20);
   }
   
@@ -63,7 +69,9 @@ public class EndgameTimeEstimator {
       int approxEval = evaluatorMidgame.evaluatePosition(b.board, 2, -6400, 6400);
       int eval = evaluator.evaluatePosition();
       double logNVisited = Math.log(evaluator.getNVisited());
-      double predicted = eval > lower ? logProofNumber(b.board, lower, approxEval) : logDisproofNumber(b.board, lower, approxEval);
+      double predicted = eval > lower ?
+          logProofNumber(b.board.getPlayer(), b.board.getOpponent(), lower, approxEval) :
+          logDisproofNumber(b.board.getPlayer(), b.board.getOpponent(), lower, approxEval);
       if (logNVisited > 0) {
         System.out.println(
             empties + " " + lower + " " + approxEval + " " + evaluator.getNVisited() +

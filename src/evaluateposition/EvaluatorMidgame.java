@@ -137,6 +137,94 @@ public class EvaluatorMidgame {
     this.depthOneEvaluator.invert();
     return bestEval;    
   }
+
+  public double getDisproofNumber(
+      long player, long opponent, int depth, int evalGoal, double bestProofNumber, boolean passed) {
+    assert (evalGoal + 200000) % 200 == 100;
+    long movesBit = GetMoves.getMoves(player, opponent);
+    int move;
+    long flip;
+    boolean pass = true;
+    nComputedMoves++;
+    double result = 0;
+    int currentEval;
+    int depthZeroEval = depthOneEvaluator.eval();
+
+    depthOneEvaluator.invert();
+    while (movesBit != 0) {
+      flip = Long.lowestOneBit(movesBit);
+      move = Long.numberOfTrailingZeros(flip);      
+      movesBit = movesBit & (~flip);
+      flip = GetMoves.getFlip(move, player, opponent);
+
+//      nVisitedPositions++;
+      pass = false;
+      depthOneEvaluator.update(move, flip);
+      if (depth > 1) {
+        result += getProofNumber(opponent & ~flip, player | flip, depth - 1, -evalGoal, bestProofNumber, false);
+      } else {
+        currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
+            (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
+        result += EndgameTimeEstimator.disproofNumber(player, opponent, evalGoal, currentEval);          
+      }
+      depthOneEvaluator.undoUpdate(move, flip);
+    }
+
+    if (pass) {
+      if (passed) {
+        result = BitPattern.getEvaluationGameOver(player, opponent) > evalGoal ? Double.POSITIVE_INFINITY : 0;
+      } else {
+        result = getProofNumber(opponent, player, depth, -evalGoal, bestProofNumber, true);
+      }
+    }
+    
+    depthOneEvaluator.invert();
+    return result;    
+  }
+
+  public double getProofNumber(
+      long player, long opponent, int depth, int evalGoal, double bestProofNumber, boolean passed) {
+    assert (evalGoal + 200000) % 200 == 100;
+    long movesBit = GetMoves.getMoves(player, opponent);
+    int move;
+    long flip;
+    boolean pass = true;
+    nComputedMoves++;
+    double result = Double.POSITIVE_INFINITY;
+    int currentEval;
+    int depthZeroEval = depthOneEvaluator.eval();
+
+    depthOneEvaluator.invert();
+    while (movesBit != 0) {
+      flip = Long.lowestOneBit(movesBit);
+      move = Long.numberOfTrailingZeros(flip);      
+      movesBit = movesBit & (~flip);
+      flip = GetMoves.getFlip(move, player, opponent);
+//      nVisitedPositions++;
+      pass = false;
+      depthOneEvaluator.update(move, flip);
+//      depthOneEvaluator.setup(opponent & ~flip, player | flip);
+      if (depth > 1) {
+        result = Math.min(result, getDisproofNumber(opponent & ~flip, player | flip, depth - 1, -evalGoal, Math.min(result, bestProofNumber), false));
+      } else {
+        currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
+            (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
+        result = Math.min(result, EndgameTimeEstimator.proofNumber(player, opponent, evalGoal, currentEval));          
+      }
+      depthOneEvaluator.undoUpdate(move, flip);
+    }
+
+    if (pass) {
+      if (passed) {
+        result = BitPattern.getEvaluationGameOver(player, opponent) > evalGoal ? 0 : Double.POSITIVE_INFINITY;
+      } else {
+        result = getDisproofNumber(opponent, player, depth, -evalGoal, Double.POSITIVE_INFINITY, true);
+      }
+    }
+    
+    this.depthOneEvaluator.invert();
+    return result;    
+  }
   
 
   int getMoves(long player, long opponent, int lower, int upper, int depth, HashMap.BoardInHash boardInHash, Move[] output) {
@@ -157,17 +245,38 @@ public class EvaluatorMidgame {
       Move curMove = output[nMoves++];
       curMove.move = move;
       curMove.flip = flip;
-      if (boardInHash != null && move == boardInHash.bestMove) {
-        value = 1 << 30;
-      } else if (boardInHash != null && move == boardInHash.secondBestMove) {
-        value = 1 << 29;
+//      if (boardInHash != null && move == boardInHash.bestMove) {
+////        System.out.println("Best: " + move);
+//        value = 1 << 30;
+//      } else if (boardInHash != null && move == boardInHash.secondBestMove) {
+////        System.out.println("Second best: " + move);
+//        value = 1 << 29;
+//      } else
+//      if (depth > Constants.EMPTIES_FOR_ENDGAME + 20) {
+//        this.depthOneEvaluator.update(move, flip);
+//        value = -(int) (100000 * Math.log(getDisproofNumber(opponent & ~flip, player | flip, 
+//            3, (lower + upper) / 2, Double.POSITIVE_INFINITY, false)));
+////        System.out.println(getDisproofNumber(opponent & ~flip, player | flip, 
+////            depth - Constants.EMPTIES_FOR_ENDGAME - 4, (lower + upper) / 2, Double.POSITIVE_INFINITY, false) + ":\n" + new Board(opponent &~flip, player|flip));
+////        System.out.println(lower + " " + upper);
+//        this.depthOneEvaluator.undoUpdate(move, flip);     
+//      } else if (depth > Constants.EMPTIES_FOR_ENDGAME + 1) {
+//        this.depthOneEvaluator.update(move, flip);
+//        int eval = (this.depthOneEvaluator.eval());
+//        value = -(int) (100000 * Math.log(EndgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, lower, eval)));   
+//        this.depthOneEvaluator.undoUpdate(move, flip);   
+//      } else
+      if (depth > Constants.EMPTIES_FOR_ENDGAME + 9) {
+        this.depthOneEvaluator.update(move, flip);
+        value = -(int) (100000 * Math.log(getDisproofNumber(opponent & ~flip, player | flip, 2, (lower + upper) / 2, Double.POSITIVE_INFINITY, false)));   
+        this.depthOneEvaluator.undoUpdate(move, flip);     
+      } else if (depth > Constants.EMPTIES_FOR_ENDGAME + 5) {
+        this.depthOneEvaluator.update(move, flip);
+        int eval = (this.depthOneEvaluator.eval());
+        value = -(int) (100000 * EndgameTimeEstimator.logDisproofNumber(opponent & ~flip, player | flip, lower, eval));   
+        this.depthOneEvaluator.undoUpdate(move, flip);     
       } else {
         value = -(GetMoves.getWeightedNMoves(opponent & ~flip, player | flip) << 16);
-//        if (depth > Constants.EMPTIES_FOR_ENDGAME + 3) {
-//          this.depthOneEvaluator.update(move, flip);
-//          value += -(this.depthOneEvaluator.eval() << 7);
-//          this.depthOneEvaluator.undoUpdate(move, flip);
-//        }
         value |= SQUARE_VALUE[move];
       }
       curMove.value = value;
@@ -327,9 +436,9 @@ public class EvaluatorMidgame {
       return evaluatePositionQuick(player, opponent, depth,
         lower, upper, false, 64);
     }
-    evaluatePositionSlow(
-        player, opponent, depth - Constants.EMPTIES_FOR_ENDGAME - 1,
-        lower, upper, false, false);
+//    evaluatePositionSlow(
+//        player, opponent, depth - Constants.EMPTIES_FOR_ENDGAME - 1,
+//        lower, upper, false, false);
     return evaluatePositionSlow(player, opponent, depth, lower, upper, false, true);
   }
 

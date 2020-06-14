@@ -78,13 +78,14 @@ public class EndgameTest {
           "----O-X------X-----XXXO-OXXXXXOO-XXOOXOOXXOXXXOO--OOOO-O----OO-- O",
           "---X-------OX--X--XOOXXXXXXOXXXXXXXOOXXXXXXOOOXX--XO---X-------- O",
           "----OO-----OOO---XXXXOOO--XXOOXO-XXXXXOO--OOOXOO--X-OX-O-----X-- X",
-          "--OOO---XXOO----XXXXOOOOXXXXOX--XXXOXX--XXOOO------OOO-----O---- X",
+          "--OOO---XXOO----XXXXOOOOXXXXOX--XXXOXX--XXOOO------OOO-----O---- X", // 55
           "--------X-X------XXXXOOOOOXOXX--OOOXXXX-OOXXXX--O-OOOX-----OO--- O",
           "--XXXXX---XXXX---OOOXX---OOXOX---OXXXXX-OOOOOXO----OXX---------- O",
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
   EvaluatorMidgame evalMidgame = new EvaluatorMidgame(PatternEvaluatorImproved.load(), new HashMap(2 * Constants.HASH_MAP_SIZE, Constants.HASH_MAP_SIZE));
+//  EvaluatorMidgame eval = evalMidgame;
   EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, new PossibleMovesFinderImproved(), evalMidgame);
 
   public static Board readIthBoard(int i) {
@@ -99,7 +100,9 @@ public class EndgameTest {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
+      evalMidgame.resetNVisitedPositions();
       long t = System.currentTimeMillis();
+//      int result = evalMidgame.evaluatePosition(b, b.getEmptySquares(), 1, 199);
       eval.setBoard(b);
       int result = -eval.evaluatePosition();//, -6400, 6400);
       t = System.currentTimeMillis() - t;
@@ -119,9 +122,7 @@ public class EndgameTest {
       System.out.print(String.format("%10d", eval.getNStored()));
       System.out.print(String.format("%7.0f", evalMidgame.nVisitedEndgames / (double) evalMidgame.nEndgames));
       System.out.print(String.format("%7.0f", eval.nVisitedEndgames / (double) eval.nEndgames));
-//      System.out.print(String.format("%15.0f", eval.size() * 1000. / t));eval.getNVisited()
       System.out.println(String.format("%6d", result / 100));
-//      System.out.println("\n");
       evalMidgame.nEndgames = 0;
       evalMidgame.nVisitedEndgames = 0;
     }

@@ -15,6 +15,7 @@
 package evaluateposition;
 
 import board.Board;
+import constants.Constants;
 import java.util.ArrayList;
 
 public class HashMap {
@@ -32,6 +33,8 @@ public class HashMap {
     public BoardInHash nextToRemove;
     public int bestMove;
     public int secondBestMove;
+    public double proofNumber;
+    public double disproofNumber;
     
     public EvaluatedBoard toEvaluatedBoard() {
       if (player == 0 && opponent == 0) {
@@ -83,7 +86,7 @@ public class HashMap {
   int size;
   
   public HashMap() {
-    this(400001, 200000);
+    this(Constants.HASH_MAP_SIZE * 2 + 1, Constants.HASH_MAP_SIZE);
   }
   
   public HashMap(int arraySize, int maxSize) {
@@ -140,8 +143,8 @@ public class HashMap {
     insertBefore(b, evaluationsHashMap[hash]);
     evaluationsHashMap[hash] = b;
     addBeforeToRemove(b, lastToRemove);
-    assert(evaluationsHashMap[hash].prev == null);
-    assert(allOk());
+    assert evaluationsHashMap[hash].prev == null;
+    assert allOk();
     return b;
   }
   

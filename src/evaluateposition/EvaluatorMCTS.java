@@ -294,7 +294,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
             next.getBoard(), 2, nextPos.alpha, nextPos.beta);
-        int d;
+        int d; // = next.getBoard().getEmptySquares();
         for (d = 4; evaluatorMidgame.getNVisited() < next.descendants * 2 && d < nEmpties; d += 2) {
           if (nEmpties - d < Constants.EMPTIES_FOR_ENDGAME) {
             d = nEmpties;
