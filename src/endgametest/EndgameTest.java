@@ -86,7 +86,7 @@ public class EndgameTest {
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
   EvaluatorMidgame evalMidgame = new EvaluatorMidgame(PatternEvaluatorImproved.load(), new HashMap(2 * Constants.HASH_MAP_SIZE, Constants.HASH_MAP_SIZE));
 //  EvaluatorMidgame eval = evalMidgame;
-  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, new PossibleMovesFinderImproved(), evalMidgame);
+  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, evalMidgame);
 
   public static Board readIthBoard(int i) {
     String[] boards = POSITIONS[i - 1].split(" ");

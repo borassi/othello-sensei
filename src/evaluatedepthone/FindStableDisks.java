@@ -18,12 +18,19 @@ import static bitpattern.BitPattern.FIRST_ROW_BIT_PATTERN;
 import board.Board;
 import static bitpattern.BitPattern.MAIN_DIAG9_BIT_PATTERN;
 import static bitpattern.BitPattern.MAIN_DIAG7_BIT_PATTERN;
+import static evaluatedepthone.PatternEvaluatorImproved.DEPTH_ONE_EVALUATOR_FILEPATTERN;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.Arrays;
+import main.Main;
 
 /**
  *
  * @author michele
  */
-public class FindStableDisks {
+public class FindStableDisks implements Serializable {
   final static long TOP_EDGE_PATTERN = BitPattern.parsePattern(
             "XXXXXXXX\n"
           + "--------\n"
@@ -133,14 +140,49 @@ public class FindStableDisks {
           + "-XXXXXX-\n" 
           + "--------\n");
   final long STABLE_DISKS[];
+  public static final String STABLE_DISKS_FILEPATTERN = 
+      "coefficients/stable_disks.sar";
+  
+  public void save() {
+    save(STABLE_DISKS_FILEPATTERN);
+  }
+  public void save(String file) {
+    try {
+       ObjectOutputStream out = Main.fileAccessor.outputFile(file);
+       out.writeObject(this);
+       out.close();
+       System.out.println("Saved stable disks.");
+    } catch (IOException e) {
+       e.printStackTrace();
+    }
+  }
+
+  public static FindStableDisks load() {
+    return load(STABLE_DISKS_FILEPATTERN);
+  }
+
+  /**
+   * Loads a PatternEvaluatorImproved.
+   * @param filepath the file (obtained by calling save() on another multilinear regression).
+   * @return The PatternEvaluatorImproved loaded, or an empty MultilinearRegression if errors occurred.
+   */
+  public static FindStableDisks load(String filepath) {
+    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
+      return (FindStableDisks) in.readObject();
+    } catch (IOException | ClassNotFoundException | ClassCastException e) {
+      System.out.println("Error when loading the FindStableDisks:\n" + 
+                         Arrays.toString(e.getStackTrace()));
+      return new FindStableDisks();
+    }
+  }
   
   private final static int hash(long player, long opponent) {
-    assert(player < 256);
-    assert(opponent < 256);
+    assert player < 256;
+    assert opponent < 256;
     return (int) (player | opponent << 8);
   }
   
-  public FindStableDisks() {
+  private FindStableDisks() {
     STABLE_DISKS = new long[65536]; // 2^16
     for (long player : BitPattern.allSubBitPatterns(BOTTOM_EDGE_PATTERN)) {
       for (long opponent : BitPattern.allSubBitPatterns(BOTTOM_EDGE_PATTERN)) {
@@ -150,6 +192,7 @@ public class FindStableDisks {
         }
       }
     }
+    save();
   }
   
   public long getStableDisksEdges(long player, long opponent) {

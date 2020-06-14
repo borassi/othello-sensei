@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import board.Board;
 import board.GetMoves;
 import board.GetMovesCache;
-import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
@@ -48,7 +47,6 @@ public class Main implements Runnable {
   ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
-  private final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER;
   private final HashMap HASH_MAP;
   private final EvaluatorMidgame EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
@@ -71,10 +69,9 @@ public class Main implements Runnable {
   }
   public Main(int hashMapSize) {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
-    POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
     HASH_MAP = new HashMap(hashMapSize * 2, hashMapSize);
     EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, HASH_MAP);
-    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
+    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, EVALUATOR_MIDGAME);
   }
   
   public synchronized void stop() {
@@ -84,7 +81,7 @@ public class Main implements Runnable {
   public synchronized void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(55), true);
+    setBoard(EndgameTest.readIthBoard(56), true);
   }
 
   /**
@@ -151,7 +148,7 @@ public class Main implements Runnable {
   private void playMoveIfPossible(PositionIJ ij) {
     Board oldBoard = board.deepCopy();
     try {
-      board = POSSIBLE_MOVES_FINDER.moveIfPossible(board, ij);
+      board = GetMovesCache.moveIfPossible(board, ij.toMove());
     } catch (IllegalArgumentException ex) {
       return;
     }
@@ -159,7 +156,7 @@ public class Main implements Runnable {
     oldBlackTurns.add(blackTurn);
     blackTurn = !blackTurn;
 
-    if (POSSIBLE_MOVES_FINDER.haveToPass(board)) {
+    if (GetMovesCache.haveToPass(board)) {
       board = board.move(0);
       blackTurn = !blackTurn;
     }

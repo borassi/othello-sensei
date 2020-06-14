@@ -24,8 +24,8 @@ public class Constants {
   public final static double C_OPPONENT_VARIATES = 0.5;
   public final static int EMPTIES_FOR_FORCED_MIDGAME = 14;
   public final static int PROOF_NUMBER_FOR_ENDGAME = 20000;
-  public final static int HASH_MAP_SIZE = 1000000;
-  public final static int MCTS_SIZE = 20000000;
+  public final static int HASH_MAP_SIZE = 500000;
+  public final static int MCTS_SIZE = 10000000;
   public final static int EMPTIES_FOR_ENDGAME = 8;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;
   public final static int TRY_SC_LAST_5_CORNER = 2200;

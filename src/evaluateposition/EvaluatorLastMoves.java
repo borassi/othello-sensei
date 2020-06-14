@@ -48,7 +48,7 @@ public class EvaluatorLastMoves {
     setup();
   }
   public EvaluatorLastMoves() {
-    this(new FindStableDisks());
+    this(FindStableDisks.load());
   }
   
   private void setup() {

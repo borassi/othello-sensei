@@ -15,7 +15,6 @@ package evaluatedepthone;
 
 import board.Board;
 import bitpattern.BitPattern;
-//import evaluatedepthone.patternhasher.StableDisksMiddle;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;

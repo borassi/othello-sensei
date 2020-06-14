@@ -17,7 +17,6 @@ package evaluateposition;
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
-import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import java.util.ArrayList;
 
@@ -43,18 +42,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long nextUpdateEvalGoal;
 
   public EvaluatorMCTS(int maxSize, int arraySize) {
-    this(maxSize, arraySize, PossibleMovesFinderImproved.load());
-  }
-
-  public EvaluatorMCTS(int maxSize, int arraySize, 
-                        PossibleMovesFinderImproved possibleMovesFinder) {
-    this(maxSize, arraySize, possibleMovesFinder, new EvaluatorMidgame());
+    this(maxSize, arraySize, new EvaluatorMidgame());
   }
 
   public EvaluatorMCTS(int maxSize, int arraySize,
-                       PossibleMovesFinderImproved possibleMovesFinder,
                        EvaluatorMidgame evaluatorMidgame) {
-    super(maxSize, arraySize, possibleMovesFinder);
+    super(maxSize, arraySize);
 //    this.depthOneEval = depthOneEvaluator;
     this.evaluatorMidgame = evaluatorMidgame;
   }

@@ -41,6 +41,10 @@ public class PositionIJ {
     this(7 - move / 8, 7 - move % 8);
   }
   
+  public int toMove() {
+    return 7 - j + 8 * (7 - i);
+  }
+  
   @Override
   public boolean equals(Object other) {
     if (!PositionIJ.class.isAssignableFrom(other.getClass())) {

@@ -85,6 +85,20 @@ public class GetMovesCacheTest {
     }
   }
   @Test
+  public void testAllMoves() {
+    int n = 10000;
+    GetMovesCache getMoves = new GetMovesCache();
+    for (int i = 0; i < n; i++) {
+      Board b = Board.randomBoard();
+      ArrayList<Long> flipBasic = PossibleMovesFinderImproved.possibleMovesBasic(b);
+      long[] flips = getMoves.getAllMoves(b.getPlayer(), b.getOpponent());
+      assertEquals(flips.length, flipBasic.size());
+      for (long flip : flips) {
+        assert flipBasic.contains(flip);
+      }
+    }
+  }
+  @Test
   public void maxNFlipsTest() {
     assertEquals(GetMoves.maxNFlips(0, 1), 6);
     assertEquals(GetMoves.maxNFlips(1, 1), 5);

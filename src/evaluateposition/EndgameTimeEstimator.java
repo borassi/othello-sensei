@@ -15,7 +15,6 @@ package evaluateposition;
 
 import board.Board;
 import board.GetMoves;
-import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import evaluatedepthone.BoardWithEvaluation;
 import helpers.Gaussian;
@@ -51,7 +50,7 @@ public class EndgameTimeEstimator {
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, new PossibleMovesFinderImproved());
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE);
     EvaluatorMidgame evaluatorMidgame = new EvaluatorMidgame();
 
     ArrayList<BoardWithEvaluation> training = LoadDataset.loadTrainingSet(1990, 2000);

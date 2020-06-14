@@ -53,7 +53,7 @@ public class EvaluatorMidgame {
   private long nComputedMoves = 0;
   private final EvaluatorLastMoves lastMovesEvaluator;
   private final HashMap hashMap;
-  private final FindStableDisks findStableDisks = new FindStableDisks();
+  private final FindStableDisks findStableDisks = FindStableDisks.load();
   Move[][] moves = new Move[64][64];
 
   public EvaluatorMidgame() {

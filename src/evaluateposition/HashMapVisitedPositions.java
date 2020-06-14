@@ -14,12 +14,9 @@
 package evaluateposition;
 
 import board.Board;
-import board.PossibleMovesFinderImproved;
 import java.util.ArrayList;
 
 public class HashMapVisitedPositions {
-  protected final PossibleMovesFinderImproved possibleMovesFinder;
-
   public StoredBoard evaluationsHashMap[];
   protected StoredBoard firstPosition;
   private int arraySize;
@@ -66,13 +63,12 @@ public class HashMapVisitedPositions {
   }
   
   public HashMapVisitedPositions() {
-    this(1000000, 2000000, PossibleMovesFinderImproved.load());
+    this(1000000, 2000000);
   }
   
-  public HashMapVisitedPositions(int maxSize, int arraySize, PossibleMovesFinderImproved possibleMovesFinder) {
+  public HashMapVisitedPositions(int maxSize, int arraySize) {
     this.arraySize = arraySize;
     this.maxSize = maxSize;
-    this.possibleMovesFinder = possibleMovesFinder;
     empty();
   }
 

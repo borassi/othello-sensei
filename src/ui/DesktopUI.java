@@ -215,8 +215,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public int depth() {
-    return Integer.parseInt((String) spinner.getValue());
+  public long depth() {
+    return Long.parseLong((String) spinner.getValue());
   }
   
   @Override

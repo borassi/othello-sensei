@@ -14,23 +14,38 @@
 package board;
 
 import bitpattern.BitPattern;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author michele
  */
-public class GetMovesCache {
+public class GetMovesCache implements Serializable {
+  /**
+   * Needed to implement Serializable.
+   */
+  private static final long serialVersionUID = 1L;
+//  public final static int EVAL_SHIFT = 32;
+  public static final String GET_MOVES_FILEPATTERN = 
+      "coefficients/get_moves.sar";
   
   public static abstract class Flipper {
     public abstract long run();
   }
-  private static final long[] flipHorizontalLast = new long[64 * 256];
-  private static final long[] flipVerticalLast = new long[64 * 256];
-  private static final long[] flipDiagonalLast = new long[64 * 256];
-  private static final long[] flipReverseDiagonalLast = new long[64 * 256];
+  private static long[] flipHorizontalLast = new long[64 * 256];
+  private static long[] flipVerticalLast = new long[64 * 256];
+  private static long[] flipDiagonalLast = new long[64 * 256];
+  private static long[] flipReverseDiagonalLast = new long[64 * 256];
   
   private static final long CORNERS = BitPattern.parsePattern(
       "X------X" +
@@ -55,9 +70,40 @@ public class GetMovesCache {
   private static boolean init = false;
   public GetMovesCache() {
     if (!init) {
+      try {
+        loadFlips();
+      } catch (IOException | ClassNotFoundException ex) {
+        initMoves();
+        try {
+          saveFlips();
+        } catch (IOException ex1) {
+          Logger.getLogger(GetMovesCache.class.getName()).log(Level.WARNING, null, ex1);
+        }
+      }
       init = true;
-      initMoves();
     }
+  }
+  
+  
+  private static void saveFlips() throws IOException {
+    ObjectOutputStream out = new ObjectOutputStream(
+        new FileOutputStream(GET_MOVES_FILEPATTERN)
+    );
+    out.writeObject(flipHorizontalLast);
+    out.writeObject(flipVerticalLast);
+    out.writeObject(flipDiagonalLast);
+    out.writeObject(flipReverseDiagonalLast);
+    out.flush();
+    out.close();
+  }
+
+  private static void loadFlips() throws IOException, ClassNotFoundException {
+    ObjectInputStream in = new ObjectInputStream(new FileInputStream(GET_MOVES_FILEPATTERN));
+    flipHorizontalLast = (long[]) in.readObject();
+    flipVerticalLast = (long[]) in.readObject();
+    flipDiagonalLast = (long[]) in.readObject();
+    flipReverseDiagonalLast = (long[]) in.readObject();
+    in.close();
   }
   
   static int hashDiagonal(int move, long player) {
@@ -265,6 +311,47 @@ public class GetMovesCache {
     return Long.bitCount(moves) + Long.bitCount(moves & CORNERS);
   }
 
+  public static Board moveIfPossible(Board b, int move) {
+    GetMovesCache mover = new GetMovesCache();
+    long movesBit = mover.getMoves(b.getPlayer(), b.getOpponent());
+    if (((1L << move) & movesBit) == 0) {
+      throw new IllegalArgumentException("Invalid move.");
+    }
+    return b.move(mover.getFlip(move));
+  }  
+
+  public static boolean haveToPass(Board b) {
+    return haveToPass(b.getPlayer(), b.getOpponent());
+  }  
+  
+  public static boolean haveToPass(long player, long opponent) {
+    long[] moves = getAllMoves(player, opponent);
+    return moves.length == 1 && moves[0] == 0;
+  }
+
+  public static long[] getAllMoves(Board b) {
+    return getAllMoves(b.getPlayer(), b.getOpponent());
+  }  
+
+  public static long[] getAllMoves(long player, long opponent) {
+    GetMovesCache mover = new GetMovesCache();
+    long movesBit = mover.getMoves(player, opponent);
+    long moves[] = new long[Long.bitCount(movesBit)];
+    int move;
+    int nMoves = Long.bitCount(movesBit);
+    for (int i = 0; i < nMoves; ++i) {
+      move = Long.numberOfTrailingZeros(movesBit);
+      movesBit = movesBit & ~(1L << move);
+      moves[i] = mover.getFlip(move) & ~player;
+    }
+    if (moves.length == 0) {
+      if (mover.getMoves(opponent, player) == 0) {
+        return null;
+      }
+      return new long[] {0};
+    }
+    return moves;
+  }
 //  private class Flipper0 extends Flipper {
 //    @Override
 //    public long run() {

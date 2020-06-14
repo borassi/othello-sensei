@@ -25,5 +25,5 @@ public interface UI {
   public void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
   public boolean playBlackMoves();
   public boolean playWhiteMoves();
-  public int depth();
+  public long depth();
 }
