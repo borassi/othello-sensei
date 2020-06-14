@@ -266,7 +266,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     while (true) {
       nextPos = nextPositionToImprove();
       StoredBoard next = nextPos.board;
-      int nEmpties = next.getBoard().getEmptySquares();
+      int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
       // TODO: FIX
       if (next != this.firstPosition && (
@@ -276,7 +276,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           && nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3) {
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
-            next.getBoard(), nEmpties, nextPos.alpha, nextPos.beta);
+            next.getPlayer(), next.getOpponent(), nEmpties, nextPos.alpha, nextPos.beta);
         seenPositions = evaluatorMidgame.getNVisited() + 1;
         updateEndgame(nextPos, curEval);
         nEndgames++;
@@ -286,17 +286,17 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       } else {
         this.evaluatorMidgame.resetNVisitedPositions();
         int curEval = evaluatorMidgame.evaluatePosition(
-            next.getBoard(), 2, nextPos.alpha, nextPos.beta);
-        int d; // = next.getBoard().getEmptySquares();
+            next.getPlayer(), next.getOpponent(), 2, nextPos.alpha, nextPos.beta);
+        int d; // = nEmpties;
         for (d = 4; evaluatorMidgame.getNVisited() < next.descendants * 2 && d < nEmpties; d += 2) {
           if (nEmpties - d < Constants.EMPTIES_FOR_ENDGAME) {
             d = nEmpties;
           }
           curEval = evaluatorMidgame.evaluatePosition(
-            next.getBoard(), d, nextPos.alpha, nextPos.beta);
+            next.getPlayer(), next.getOpponent(), d, nextPos.alpha, nextPos.beta);
         }
         seenPositions = evaluatorMidgame.getNVisited() + 1;
-        if (d >= next.getBoard().getEmptySquares()) {
+        if (d >= nEmpties) {
           updateEndgame(nextPos, curEval);
         } else {
           nextPos.board.setEval(curEval);

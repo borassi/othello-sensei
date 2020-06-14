@@ -244,9 +244,9 @@ public class StoredBoard {
       disproofNumberNextEval = 0;
     } else {
       proofNumberCurEval = EndgameTimeEstimator.proofNumber(
-          this.getBoard(), evalGoal - 100, this.eval);
+          player, opponent, evalGoal - 100, this.eval);
       disproofNumberNextEval = EndgameTimeEstimator.disproofNumber(
-          this.getBoard(), evalGoal - 100, this.eval);
+          player, opponent, evalGoal - 100, this.eval);
     }
     if (upper < evalGoal + 100) {
       proofNumberNextEval = Double.POSITIVE_INFINITY;
@@ -256,9 +256,9 @@ public class StoredBoard {
       disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
       proofNumberNextEval = EndgameTimeEstimator.proofNumber(
-          this.getBoard(), evalGoal + 100, eval);
+          player, opponent, evalGoal + 100, eval);
       disproofNumberCurEval = EndgameTimeEstimator.disproofNumber(
-          this.getBoard(), evalGoal + 100, eval);
+          player, opponent, evalGoal + 100, eval);
     }
     assert areThisBoardEvalsOK();
   }
