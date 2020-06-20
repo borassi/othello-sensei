@@ -326,7 +326,7 @@ public class GetMovesCache implements Serializable {
   
   public static boolean haveToPass(long player, long opponent) {
     long[] moves = getAllMoves(player, opponent);
-    return moves.length == 1 && moves[0] == 0;
+    return moves != null && moves.length == 1 && moves[0] == 0;
   }
 
   public static long[] getAllMoves(Board b) {

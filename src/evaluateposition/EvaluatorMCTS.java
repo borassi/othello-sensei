@@ -50,6 +50,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     super(maxSize, arraySize);
 //    this.depthOneEval = depthOneEvaluator;
     this.evaluatorMidgame = evaluatorMidgame;
+    this.firstPosition = StoredBoard.initialStoredBoard(0, 0, 0, 0, 0);
   }
   
   public synchronized float getEval() {
@@ -194,35 +195,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     nVisitedEndgames = 0;
   }
   
-  public void setBoard(Board board) {
-    setBoard(board, -6400, 6400);
-  }
-  public void setBoard(Board board, int lower, int upper) {
-    setBoard(board, lower, upper, true);
-  }
-  
-  public synchronized void setBoard(Board board, int lower, int upper, boolean reset) {
-    assert(lower < upper);
-    this.lower = lower;
-    this.upper = upper;
-    evaluatorMidgame.resetNVisitedPositions();
-    int quickEval = evaluatorMidgame.evaluatePosition(board, 2, -6400, 6400);
-    StoredBoard currentStored = StoredBoard.initialStoredBoard(
-        board.getPlayer(), board.getOpponent(), quickEval, roundEval(quickEval),
-        evaluatorMidgame.getNVisited());
-
-    if (reset) {
-      reset();
-    }
-//    StoredBoard currentStored = new StoredBoard(current, this.depthOneEval.eval(current), 800);
-    super.addFirstPosition(currentStored);
-    this.evaluatorMidgame.resetNVisitedPositions();
-    setEvalGoal(quickEval);
-  }
-  
-  public short evaluatePosition() {
-    return evaluatePosition(Long.MAX_VALUE, Long.MAX_VALUE);
-  }
   public void stop() {
     status = Status.KILLING;
   }
@@ -257,8 +229,35 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
   }
 
-  public synchronized short evaluatePosition(long maxNVisited, long maxTimeMillis) {
+  public synchronized short evaluatePosition(Board board) {
+    return evaluatePosition(board, -6400, 6400, Long.MAX_VALUE, Long.MAX_VALUE);
+  }
+
+  public synchronized short evaluatePosition(Board board, long maxNVisited, long maxTimeMillis) {
+    return evaluatePosition(board, -6400, 6400, maxNVisited, maxTimeMillis);
+  }
+
+  public synchronized short evaluatePosition(
+      Board board, int lower, int upper, long maxNVisited, long maxTimeMillis) {
     status = Status.RUNNING;
+    assert(lower < upper);
+    this.lower = lower;
+    this.upper = upper;
+    evaluatorMidgame.resetNVisitedPositions();
+
+    if (firstPosition.getPlayer() != board.getPlayer() ||
+        firstPosition.getOpponent() != board.getOpponent()) {
+      int quickEval = evaluatorMidgame.evaluatePosition(board, 2, -6400, 6400);
+      StoredBoard currentStored = StoredBoard.initialStoredBoard(
+          board.getPlayer(), board.getOpponent(), quickEval, roundEval(quickEval),
+          evaluatorMidgame.getNVisited());
+      evaluatorMidgame.resetNVisitedPositions();
+      empty();
+      add(currentStored);
+      firstPosition = currentStored;
+      setEvalGoal(quickEval);
+    }
+
     long seenPositions = 0;
     long startTime = System.currentTimeMillis();
     HashMapVisitedPositions.PositionToImprove nextPos;

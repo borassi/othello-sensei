@@ -15,6 +15,7 @@ package evaluateposition;
 
 import board.Board;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class HashMapVisitedPositions {
   public StoredBoard evaluationsHashMap[];
@@ -69,6 +70,7 @@ public class HashMapVisitedPositions {
   public HashMapVisitedPositions(int maxSize, int arraySize) {
     this.arraySize = arraySize;
     this.maxSize = maxSize;
+    evaluationsHashMap = new StoredBoard[arraySize];
     empty();
   }
 
@@ -100,15 +102,10 @@ public class HashMapVisitedPositions {
     }
   }
 
-  private void empty() {
-    evaluationsHashMap = new StoredBoard[arraySize];
+  protected void empty() {
+    Arrays.fill(evaluationsHashMap, null);
+    System.gc();
     size = 0;
-  }
-  
-  public void addFirstPosition(StoredBoard b) {
-    empty();
-    add(b);
-    this.firstPosition = b;
   }
   
   protected void add(StoredBoard b) {

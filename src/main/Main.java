@@ -74,39 +74,46 @@ public class Main implements Runnable {
     EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, EVALUATOR_MIDGAME);
   }
   
-  public synchronized void stop() {
+  public void stop() {
     EVALUATOR.stop();
   }
   
   public synchronized void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(56), true);
+    setBoard(EndgameTest.readIthBoard(1), true);
   }
 
   /**
    * Undos a move, if possible.
    */
-  public synchronized void undo() {
-    if (oldBoards.size() > 0) {
-      board = oldBoards.remove(oldBoards.size() - 1);
-      blackTurn = oldBlackTurns.remove(oldBlackTurns.size() - 1);
-      ui.setCases(board, blackTurn);
+  public void undo() {
+    stop();
+    synchronized(this) {
+      if (oldBoards.size() > 0) {
+        board = oldBoards.remove(oldBoards.size() - 1);
+        blackTurn = oldBlackTurns.remove(oldBlackTurns.size() - 1);
+        ui.setCases(board, blackTurn);
+      }
     }
   }
   
-  public synchronized void newGame() {
+  public void newGame() {
     stop();
-    setBoard(new Board(), true);
+    synchronized(this) {
+      setBoard(new Board(), true);
+    }
   }
   
-  public synchronized void setBoard(Board b, boolean blackTurn) {
+  public void setBoard(Board b, boolean blackTurn) {
     stop();
-    this.board = b;
-    this.blackTurn = blackTurn;
-    this.oldBoards.clear();
-    this.oldBlackTurns.clear();
-    ui.setCases(board, blackTurn);
+    synchronized(this) {
+      this.board = b;
+      this.blackTurn = blackTurn;
+      this.oldBoards.clear();
+      this.oldBlackTurns.clear();
+      ui.setCases(board, blackTurn);
+    }
   }
   
   /**
@@ -114,17 +121,19 @@ public class Main implements Runnable {
    * Performs the move.
    * @param ij: the row and the column (from 0 to 7)
    */
-  public synchronized void play(PositionIJ ij) {
+  public void play(PositionIJ ij) {
     stop();
-    playMoveIfPossible(ij);
-    evaluate();
+    synchronized(this) {
+      playMoveIfPossible(ij);
+      evaluate();
+    }
   }
   
   @Override
-  public void run() {
+  public synchronized void run() {
     int nUpdate = 0;
     while (true) {
-      EVALUATOR.evaluatePosition(ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
+      EVALUATOR.evaluatePosition(board, ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
       updateEvals();
       if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
         break;
@@ -145,7 +154,7 @@ public class Main implements Runnable {
    * 
    * @param ij the row and the column (from 0 to 7)
    */
-  private void playMoveIfPossible(PositionIJ ij) {
+  private synchronized void playMoveIfPossible(PositionIJ ij) {
     Board oldBoard = board.deepCopy();
     try {
       board = GetMovesCache.moveIfPossible(board, ij.toMove());
@@ -163,7 +172,7 @@ public class Main implements Runnable {
     ui.setCases(board, blackTurn);
   }
   
-  private void showHashMapEvaluations() {
+  private synchronized void showHashMapEvaluations() {
     GetMovesCache mover = new GetMovesCache();
     long player = board.getPlayer();
     long opponent = board.getOpponent();
@@ -198,7 +207,7 @@ public class Main implements Runnable {
     }
   }
   
-  private void showMCTSEvaluations() {
+  private synchronized void showMCTSEvaluations() {
     StoredBoard current = EVALUATOR.get(board);
     if (current == null || current.getChildren() == null) {
       showHashMapEvaluations();
@@ -272,7 +281,6 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-    EVALUATOR.setBoard(board);
     executor.execute(this);
   }
   
