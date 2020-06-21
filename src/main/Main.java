@@ -31,6 +31,8 @@ import evaluateposition.StoredBoard;
 import helpers.Utils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,6 +62,7 @@ public class Main implements Runnable {
   private EvaluatorMCTS EVALUATOR;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   Future future = null;
+  private long startTime;
   /**
    * The board, as a pair of bitpattern.
    */
@@ -84,6 +87,7 @@ public class Main implements Runnable {
   }
   
   public void stop() {
+    stopping = true;
     if (future == null) {
       return;
     }
@@ -102,7 +106,7 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(48), true);
+    setBoard(EndgameTest.readIthBoard(56), true);
   }
 
   /**
@@ -142,17 +146,87 @@ public class Main implements Runnable {
     evaluate();
   }
   
+  public void evaluatePosition(Board b, int updateTime, boolean reset) {
+    if (stopping) {
+      return;
+    }
+    EVALUATOR.evaluatePosition(
+        b, -6600, 6600, ui.depth(), updateTime, reset);
+  }
+  
+  private boolean stopping = false;
+
+  private PriorityQueue<StoredBoard> childrenToEvaluate(int delta) {
+    PriorityQueue<StoredBoard> toEvaluate = new PriorityQueue<>(
+        new Comparator<StoredBoard>() {
+            @Override
+            public int compare(StoredBoard t, StoredBoard t1) {
+              return Integer.compare(t.getEval(), t1.getEval());
+            }
+          });
+    StoredBoard firstPosition = EVALUATOR.getFirstPosition();
+    if (firstPosition.getChildren() == null) {
+      return toEvaluate;
+    }
+    for (StoredBoard child : firstPosition.getChildren()) {
+      if (!child.isSolved()
+          && -child.getEval() >= firstPosition.getEval() - delta) {
+        toEvaluate.add(child);
+      }
+    }
+    if (toEvaluate.isEmpty()) {
+      StoredBoard bestUnsolved = null;
+      for (StoredBoard child : firstPosition.getChildren()) {
+        if (!child.isSolved()
+            && (bestUnsolved == null || -child.getEval() >= -bestUnsolved.getEval())) {
+          bestUnsolved = child;
+        }
+      }
+      if (bestUnsolved != null) {
+        toEvaluate.add(bestUnsolved);
+      }
+    }
+    return toEvaluate;
+  }
+  
+  private final int updateTimes[] = {100, 1000};
+  
   @Override
   public synchronized void run() {
+    stopping = false;
     int nUpdate = 0;
-    while (true) {
-      EVALUATOR.evaluatePosition(
-          board, -6600, 6600, ui.depth(),
-          updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
+    startTime = System.currentTimeMillis();
+    
+    evaluatePosition(board, (int) (updateTimes[0] * 0.5), true);
+    while (!stopping) {
+      int updateTime = updateTimes[Math.min(updateTimes.length-1, nUpdate++)];
+
+      evaluatePosition(board, (int) (updateTime * 0.1), false);
       updateEvals();
-      if (EVALUATOR.getStatus() != EvaluatorMCTS.Status.STOPPED_TIME) {
-        break;
+      switch (EVALUATOR.getStatus()) {
+        case NONE:
+        case RUNNING:
+          throw new RuntimeException("Bad state " + EVALUATOR.getStatus() + " for EvaluatorMCTS.");
+        case KILLING:
+        case KILLED:
+        case STOPPED_POSITIONS:
+          stopping = true;
+          break;
+        case SOLVED:
+        case STOPPED_TIME:
+          break;
       }
+      PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
+      int timeEachPosition = (int) (0.9 * updateTime / toEvaluate.size());
+      if (toEvaluate.isEmpty()) {
+        return;
+      }
+
+      while (!toEvaluate.isEmpty()) {
+        StoredBoard child = toEvaluate.poll();
+        evaluatePosition(child.getBoard(), timeEachPosition, false);
+      }
+      nUpdate++;
     }
     
     if ((ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn)) {
@@ -217,7 +291,6 @@ public class Main implements Runnable {
       annotations.otherAnnotations =
           ">" + Utils.prettyPrintDouble(-child.upper / 100) + "@" + child.depthUpper + "\n" +
           "<" + Utils.prettyPrintDouble(-child.lower / 100) + "@" + child.depthLower;
-//      System.out.println(new PositionIJ(move));
       ui.setAnnotations(annotations, new PositionIJ(move));
     }
   }
@@ -283,8 +356,6 @@ public class Main implements Runnable {
     return bestIJ;
   }
   
-  private final int updateTimes[] = {50, 100, 500, 1000};
-  
   private void evaluate() {
     if (ui.depth() <= 0) {
       showMCTSEvaluations();
@@ -308,16 +379,20 @@ public class Main implements Runnable {
     StoredBoard[] children = current.getChildren();
 
     PositionIJ bestIJ = findBestMove(children);
+    double nVisited = 0;
      
     for (StoredBoard child : children) {
-      if (child == null ||
-          (-child.getEval() < current.getEval() - 100 * ui.delta() && !child.isSolved())) {
+      nVisited += child.getDescendants();
+      PositionIJ ij = moveFromBoard(board, child);
+      if (child == null) {
+        ui.setAnnotations(null, ij);
         continue;
       }
-      PositionIJ ij = moveFromBoard(board, child);
 
       CaseAnnotations annotations = new CaseAnnotations();
       annotations.eval = -child.getEval() / 100F;
+      annotations.lower = -child.getUpper() / 100F;
+      annotations.upper = -child.getLower() / 100F;
       annotations.isBestMove = ij.equals(bestIJ);
       annotations.nVisited = child.getDescendants();
       annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
@@ -332,6 +407,7 @@ public class Main implements Runnable {
             current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
       ui.setAnnotations(annotations, ij);
     }
+    ui.setMovesPerSecond(nVisited * 1000. / (System.currentTimeMillis() - startTime));
   }
   
   // The entry main() method

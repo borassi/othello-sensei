@@ -53,7 +53,7 @@ public class EndgameThor {
 //    int result = eval1.evaluatePosition(b, 60, alpha, beta);
     t -= System.currentTimeMillis();
     cpuT -= thread.getCurrentThreadCpuTime();
-    int result = -eval.evaluatePosition(b, alpha, beta, Long.MAX_VALUE, Long.MAX_VALUE);
+    int result = -eval.evaluatePosition(b, alpha, beta, Long.MAX_VALUE, Long.MAX_VALUE, true);
 //    int result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), alpha, beta, 64);
     cpuT += thread.getCurrentThreadCpuTime();
     t += System.currentTimeMillis();

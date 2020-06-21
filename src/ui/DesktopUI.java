@@ -38,6 +38,7 @@ import board.Board;
 import helpers.Utils;
 import java.util.Arrays;
 import javax.swing.Box;
+import javax.swing.JLabel;
 import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
@@ -78,6 +79,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JButton stop = new JButton("Stop");
   private final JSpinner depth;
   private final JSpinner delta;
+  private final JLabel empties;
+  private final JLabel posPerSec;
   
   public void getClick(PositionIJ ij, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -95,8 +98,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       setAnnotationsLarge(annotations, ij);
     }
   }
-  public void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
+  private void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
     String annotationsString = String.format("%+.1f", annotations.eval);
+    if (annotations.lower == annotations.eval && annotations.eval == annotations.upper) {
+      annotationsString = String.format("%+.0f", annotations.eval);
+    }
     annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
     annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval + annotations.disproofNumberCurEval);
     cases[ij.i][ij.j].setAnnotations(annotationsString);
@@ -105,16 +111,20 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     cases[ij.i][ij.j].repaint();    
   }
   
-  public void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
+  private void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
     cases[ij.i][ij.j].setFontSizes(new double[] {0.13});
     
     String annotationsString = "";
     if (annotations.eval != Float.NEGATIVE_INFINITY) {
-      annotationsString += String.format("%.2f", annotations.eval);
+      if (annotations.lower == annotations.eval && annotations.eval == annotations.upper) {
+        annotationsString = String.format("%+.0f", annotations.eval);
+      } else {
+        annotationsString += String.format("%+.2f", annotations.eval);
+      }
     }
 
-    if (annotations.bestVariationPlayer != Float.NEGATIVE_INFINITY && annotations.bestVariationOpponent != Float.NEGATIVE_INFINITY) {
-      annotationsString += String.format("\n%.2f  %.2f", annotations.bestVariationPlayer, annotations.bestVariationOpponent);
+    if (annotations.lower != Float.NEGATIVE_INFINITY && annotations.upper != Float.NEGATIVE_INFINITY) {
+      annotationsString += String.format("\n%.1f  %.1f", annotations.lower, annotations.upper);
     }
 
     if (annotations.proofNumberCurEval != Double.NEGATIVE_INFINITY && annotations.proofNumberNextEval != Double.NEGATIVE_INFINITY) {
@@ -151,6 +161,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         cases[i][j].update(cases[i][j].getGraphics());
       }
     }
+    empties.setText("Empties: " + board.getEmptySquares());
   }
   
   
@@ -205,6 +216,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
 
+    empties = new JLabel();
+    commands.add(empties);
+    posPerSec = new JLabel();
+    commands.add(posPerSec);
+    
     setSize(1200, 800);
 
     setVisible(true);
@@ -243,5 +259,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public int delta() {
     return (int) delta.getValue();
+  }
+
+  @Override
+  public void setMovesPerSecond(double nMovesPerSec) {
+    this.posPerSec.setText("Pos/s: " + Utils.prettyPrintDouble(nMovesPerSec));
   }
 }

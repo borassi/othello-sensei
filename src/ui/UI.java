@@ -23,6 +23,7 @@ import board.Board;
 public interface UI {
   public void setCases(Board board, boolean blackTurn);
   public void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
+  public void setMovesPerSecond(double nMovesPerSecond);
   public boolean playBlackMoves();
   public boolean playWhiteMoves();
   public long depth();

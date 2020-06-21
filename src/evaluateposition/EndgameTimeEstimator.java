@@ -65,7 +65,7 @@ public class EndgameTimeEstimator {
       }
       int lower = (int) ((Math.random() - 0.5) * 12800);
       int approxEval = evaluatorMidgame.evaluatePosition(b.board, 2, -6400, 6400);
-      int eval = evaluator.evaluatePosition(b.board, lower, lower + 1, Long.MAX_VALUE, Long.MAX_VALUE);
+      int eval = evaluator.evaluatePosition(b.board, lower, lower + 1, Long.MAX_VALUE, Long.MAX_VALUE, true);
       double logNVisited = Math.log(evaluator.getNVisited());
       double predicted = eval > lower ?
           logProofNumber(b.board.getPlayer(), b.board.getOpponent(), lower, approxEval) :

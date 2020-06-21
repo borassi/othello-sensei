@@ -144,7 +144,7 @@ public class StoredBoard {
 
   public final void setLower(int newLower) {
     assert(isLeaf());
-    this.lower = (short) newLower;
+    this.lower = (short) Math.max(lower, newLower);
     this.eval = (short) Math.max(newLower, eval);
     this.setProofNumbersForLeaf();
     assert(areThisBoardEvalsOK());
@@ -152,7 +152,7 @@ public class StoredBoard {
 
   public final void setUpper(int newUpper) {
     assert(isLeaf());
-    this.upper = (short) newUpper;
+    this.upper = (short) Math.min(upper, newUpper);
     this.eval = (short) Math.min(newUpper, eval);
     this.setProofNumbersForLeaf();
     assert(areThisBoardEvalsOK());
@@ -166,7 +166,10 @@ public class StoredBoard {
   }
   
   protected void setEvalGoalRecursive(int evalGoal) {
-    if (evalGoal == this.evalGoal) {
+    setEvalGoalRecursive(evalGoal, new HashSet<>());
+  }
+  protected void setEvalGoalRecursive(int evalGoal, HashSet<StoredBoard> done) {
+    if (done.contains(this)) {
       return;
     }
     this.evalGoal = evalGoal;
@@ -175,31 +178,35 @@ public class StoredBoard {
       return;
     }
     for (StoredBoard child : children) {
-      child.setEvalGoalRecursive(-evalGoal);
+      child.setEvalGoalRecursive(-evalGoal, done);
     }
     updateFather();
+    done.add(this);
     assert areChildrenOK();
   }
 
   protected void updateFather() {
     assert(!isLeaf());
     eval = Short.MIN_VALUE;
-    lower = Short.MIN_VALUE;
-    upper = Short.MIN_VALUE;
+    int lower = Short.MIN_VALUE;
+    int upper = Short.MIN_VALUE;
     proofNumberCurEval = Double.POSITIVE_INFINITY;
     proofNumberNextEval = Double.POSITIVE_INFINITY;
     disproofNumberCurEval = 0;
     disproofNumberNextEval = 0;
 
     for (StoredBoard child : children) {
-      eval = (short) Math.max(eval, -child.eval);
-      lower = (short) Math.max(lower, -child.upper);
-      upper = (short) Math.max(upper, -child.lower);
+      eval = Math.max(eval, -child.eval);
+      lower = Math.max(lower, -child.upper);
+      upper = Math.max(upper, -child.lower);
       proofNumberCurEval = Math.min(proofNumberCurEval, child.disproofNumberCurEval);
       proofNumberNextEval = Math.min(proofNumberNextEval, child.disproofNumberNextEval);
       disproofNumberCurEval += child.proofNumberCurEval;
       disproofNumberNextEval += child.proofNumberNextEval;
     }
+    this.lower = Math.max(lower, this.lower);
+    this.upper = Math.min(upper, this.upper);
+
     minLogDerivativePlayerVariates = Double.MAX_VALUE;
     minLogDerivativeOpponentVariates = Double.MAX_VALUE;
     for (StoredBoard child : children) {
