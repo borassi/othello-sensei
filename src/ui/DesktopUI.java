@@ -72,6 +72,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final Main main;
   private final JCheckBox playBlackMoves = new JCheckBox("Play black moves");
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
+  private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
   private final JButton newGame = new JButton("New game");
   private final JButton retrain = new JButton("Retrain");
   private final JButton stop = new JButton("Stop");
@@ -86,9 +87,27 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       main.undo();
     }
   }
-  
+
   @Override
   public void setAnnotations(CaseAnnotations annotations, PositionIJ ij) {
+    if (debugMode.isSelected()) {
+      setAnnotationsDebug(annotations, ij);
+    } else {
+      setAnnotationsLarge(annotations, ij);
+    }
+  }
+  public void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
+    String annotationsString = String.format("%+.1f", annotations.eval);
+    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
+    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval + annotations.disproofNumberCurEval);
+    cases[ij.i][ij.j].setAnnotations(annotationsString);
+    cases[ij.i][ij.j].setFontSizes(new double[] {0.3, 0.16});
+    cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
+    cases[ij.i][ij.j].repaint();    
+  }
+  
+  public void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
+    cases[ij.i][ij.j].setFontSizes(new double[] {0.13});
     
     String annotationsString = "";
     if (annotations.eval != Float.NEGATIVE_INFINITY) {
@@ -161,6 +180,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(newGame);
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
+    commands.add(debugMode);
     commands.add(stop);
     
     newGame.addActionListener((ActionEvent e) -> {

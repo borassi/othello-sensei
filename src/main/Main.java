@@ -31,8 +31,16 @@ import evaluateposition.StoredBoard;
 import helpers.Utils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import ui.CaseAnnotations;
 import ui.DesktopUI;
 import ui.UI;
@@ -51,6 +59,7 @@ public class Main implements Runnable {
   private final EvaluatorMidgame EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  Future future = null;
   /**
    * The board, as a pair of bitpattern.
    */
@@ -75,13 +84,25 @@ public class Main implements Runnable {
   }
   
   public void stop() {
-    EVALUATOR.stop();
+    if (future == null) {
+      return;
+    }
+    while (true) {
+      EVALUATOR.stop();
+      try {
+        future.get(100, TimeUnit.MILLISECONDS);
+        future = null;
+        break;
+      } catch (InterruptedException | ExecutionException ex) {
+        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+      } catch (TimeoutException ex) {}
+    }
   }
   
-  public synchronized void setUI(UI ui) {
+  public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(1), true);
+    setBoard(EndgameTest.readIthBoard(56), true);
   }
 
   /**
@@ -89,31 +110,25 @@ public class Main implements Runnable {
    */
   public void undo() {
     stop();
-    synchronized(this) {
-      if (oldBoards.size() > 0) {
-        board = oldBoards.remove(oldBoards.size() - 1);
-        blackTurn = oldBlackTurns.remove(oldBlackTurns.size() - 1);
-        ui.setCases(board, blackTurn);
-      }
+    if (oldBoards.size() > 0) {
+      board = oldBoards.remove(oldBoards.size() - 1);
+      blackTurn = oldBlackTurns.remove(oldBlackTurns.size() - 1);
+      ui.setCases(board, blackTurn);
     }
   }
   
   public void newGame() {
     stop();
-    synchronized(this) {
-      setBoard(new Board(), true);
-    }
+    setBoard(new Board(), true);
   }
   
   public void setBoard(Board b, boolean blackTurn) {
     stop();
-    synchronized(this) {
-      this.board = b;
-      this.blackTurn = blackTurn;
-      this.oldBoards.clear();
-      this.oldBlackTurns.clear();
-      ui.setCases(board, blackTurn);
-    }
+    this.board = b;
+    this.blackTurn = blackTurn;
+    this.oldBoards.clear();
+    this.oldBlackTurns.clear();
+    ui.setCases(board, blackTurn);
   }
   
   /**
@@ -123,10 +138,8 @@ public class Main implements Runnable {
    */
   public void play(PositionIJ ij) {
     stop();
-    synchronized(this) {
-      playMoveIfPossible(ij);
-      evaluate();
-    }
+    playMoveIfPossible(ij);
+    evaluate();
   }
   
   @Override
@@ -135,7 +148,7 @@ public class Main implements Runnable {
     while (true) {
       EVALUATOR.evaluatePosition(board, ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
       updateEvals();
-      if (EVALUATOR.status != EvaluatorMCTS.Status.STOPPED_TIME) {
+      if (EVALUATOR.getStatus() != EvaluatorMCTS.Status.STOPPED_TIME) {
         break;
       }
     }
@@ -154,7 +167,7 @@ public class Main implements Runnable {
    * 
    * @param ij the row and the column (from 0 to 7)
    */
-  private synchronized void playMoveIfPossible(PositionIJ ij) {
+  private void playMoveIfPossible(PositionIJ ij) {
     Board oldBoard = board.deepCopy();
     try {
       board = GetMovesCache.moveIfPossible(board, ij.toMove());
@@ -172,7 +185,7 @@ public class Main implements Runnable {
     ui.setCases(board, blackTurn);
   }
   
-  private synchronized void showHashMapEvaluations() {
+  private void showHashMapEvaluations() {
     GetMovesCache mover = new GetMovesCache();
     long player = board.getPlayer();
     long opponent = board.getOpponent();
@@ -207,7 +220,7 @@ public class Main implements Runnable {
     }
   }
   
-  private synchronized void showMCTSEvaluations() {
+  private void showMCTSEvaluations() {
     StoredBoard current = EVALUATOR.get(board);
     if (current == null || current.getChildren() == null) {
       showHashMapEvaluations();
@@ -269,7 +282,7 @@ public class Main implements Runnable {
   
   private final int updateTimes[] = {50, 100, 500, 1000};
   
-  private synchronized void evaluate() {
+  private void evaluate() {
     if (ui.depth() <= 0) {
       showMCTSEvaluations();
       return;
@@ -281,10 +294,10 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-    executor.execute(this);
+    future = executor.submit(this);
   }
   
-  private synchronized void updateEvals() {
+  private void updateEvals() {
     StoredBoard current = EVALUATOR.getFirstPosition();
     if (board.getPlayer() != current.getPlayer() || board.getOpponent() != current.getOpponent() || current.getChildren() == null) {
       return;

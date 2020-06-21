@@ -19,9 +19,14 @@ import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorMidgame evaluatorMidgame;
+  
+  private final LinkedList<Board> positionsToEvaluate = new LinkedList<>();
 
   public long nEndgames;
   public long nVisitedEndgames;
@@ -38,7 +43,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     KILLING,
     KILLED,
   }
-  public Status status = Status.NONE;
+  private Status status = Status.KILLED;
   private long nextUpdateEvalGoal;
 
   public EvaluatorMCTS(int maxSize, int arraySize) {
@@ -53,7 +58,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     this.firstPosition = StoredBoard.initialStoredBoard(0, 0, 0, 0, 0);
   }
   
-  public synchronized float getEval() {
+  public float getEval() {
     return get(super.firstPosition.getBoard()).getEval();
   }
 
@@ -199,7 +204,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     status = Status.KILLING;
   }
   
-  protected synchronized PositionToImprove nextPositionToImprove() {
+  protected PositionToImprove nextPositionToImprove() {
     ArrayList<StoredBoard> parents = new ArrayList<>();
     StoredBoard positionToEvaluateLocal = this.firstPosition;
     boolean playerVariates;
@@ -216,28 +221,22 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           Math.max(positionToEvaluateLocal.getProofNumberCurEval(), positionToEvaluateLocal.getDisproofNumberNextEval()) >
           Math.max(positionToEvaluateLocal.getProofNumberNextEval(), positionToEvaluateLocal.getDisproofNumberCurEval());      
     }
-    
-//    if (firstPosition.getEvalGoal() >= upper || positionToEvaluateLocal.getProofNumberPlayerVariates() == 0) {
-//      playerVariates = true;
-//    } else if (firstPosition.getEvalGoal() <= lower || positionToEvaluateLocal.getDisproofNumberOpponentVariates() == Double.POSITIVE_INFINITY) {
-//      playerVariates = true;
-//    } else {
-//      playerVariates = Math.random() > 0.5;
-//          Math.max(positionToEvaluateLocal.getProofNumberOpponentVariates(), positionToEvaluateLocal.getDisproofNumberOpponentVariates()) >
-//          Math.max(positionToEvaluateLocal.getProofNumberPlayerVariates(), positionToEvaluateLocal.getDisproofNumberPlayerVariates());      
-//    }
     return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
   }
 
-  public synchronized short evaluatePosition(Board board) {
+  public short evaluatePosition(Board board) {
     return evaluatePosition(board, -6400, 6400, Long.MAX_VALUE, Long.MAX_VALUE);
   }
 
-  public synchronized short evaluatePosition(Board board, long maxNVisited, long maxTimeMillis) {
+  public short evaluatePosition(Board board, long maxNVisited, long maxTimeMillis) {
     return evaluatePosition(board, -6400, 6400, maxNVisited, maxTimeMillis);
   }
+  
+  public Status getStatus() {
+    return status;
+  }
 
-  public synchronized short evaluatePosition(
+  public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis) {
     status = Status.RUNNING;
     assert(lower < upper);

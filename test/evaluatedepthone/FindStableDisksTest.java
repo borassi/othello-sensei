@@ -15,7 +15,6 @@
 package evaluatedepthone;
 
 import bitpattern.BitPattern;
-import evaluatedepthone.patternhasher.*;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import java.util.Arrays;
@@ -27,7 +26,7 @@ import org.junit.Test;
  * @author michele
  */
 public class FindStableDisksTest {
-  private final FindStableDisks STABLE_DISKS = new FindStableDisks();
+  private final FindStableDisks STABLE_DISKS = FindStableDisks.load();
   
   @Test
   public void testSimple() {

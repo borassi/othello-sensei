@@ -20,6 +20,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
@@ -55,6 +56,8 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
    */
   private Color annotationsColor = Color.BLACK;
   
+  private double fontSizes[] = {0.11};
+
   /**
    * Constructor.
    * @param ui the UI that uses this case
@@ -91,30 +94,40 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
     this.annotationsColor = color;
   }
 
+  public void setFontSizes(double fontSizes[]) {
+    this.fontSizes = fontSizes;
+  }
+  
   @Override
   public void paintComponent(Graphics g) {
     this.size = this.getHeight() + 1;
-    Font font = new Font("Serif", Font.PLAIN, size / 9);
-    g.setFont(font); 
     
     g.setColor(Color.BLACK);
     g.fillRect(0, 0, size, size);
-    g.setColor(new Color(50, 200, 50));
+    g.setColor(new Color(80, 200, 80));
     g.fillRect(1, 1, size - 2, size - 2);
 
-    FontMetrics metrics = g.getFontMetrics();
     g.setColor(annotationsColor);
     
     String annotationLines[] = annotations.split("\n");
-    
-    int position = Math.max(metrics.getHeight(),
-      size / 2 - (annotationLines.length - 2) * metrics.getHeight() / 2);
-
-    for (String annotationLine : annotationLines) {
+   
+    int position = (int) (size * this.fontSizes[0] * 0.3);
+    for (int i = 0; i < annotationLines.length; ++i) {
+      String annotationLine = annotationLines[i];
+      
+//DialogInput
+//Dialog
+//SansSerif
+//Serif
+//Monospaced
+      Font font = new Font("Dialog", i == 0 ? Font.BOLD : Font.PLAIN, 
+          (int) (size * this.fontSizes[Math.min(i, this.fontSizes.length-1)]));
+      g.setFont(font); 
+      FontMetrics metrics = g.getFontMetrics();
+      position += metrics.getHeight();
       g.drawString(
         annotationLine, (size - metrics.stringWidth(annotationLine)) / 2, 
               position);
-      position += g.getFontMetrics().getHeight();
     }
     
     switch (state) {
