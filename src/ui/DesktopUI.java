@@ -22,7 +22,6 @@ import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
@@ -38,7 +37,9 @@ import javax.swing.SpinnerModel;
 import board.Board;
 import helpers.Utils;
 import java.util.Arrays;
+import javax.swing.Box;
 import javax.swing.SpinnerListModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import main.Main;
 
@@ -74,11 +75,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
   private final JButton newGame = new JButton("New game");
-  private final JButton retrain = new JButton("Retrain");
   private final JButton stop = new JButton("Stop");
-  private final JButton selftrain = new JButton("Self-train");
-  private final JButton improveDataset = new JButton("Improve dataset");
-  private final JSpinner spinner;
+  private final JSpinner depth;
+  private final JSpinner delta;
   
   public void getClick(PositionIJ ij, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -191,32 +190,19 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       main.stop();
     });
     
-//    improveDataset.addActionListener((ActionEvent e) -> {
-//      main.improveDataset();
-//    });
-    
-//    selftrain.addActionListener(new ActionListener() {
-//      @Override
-//      public void actionPerformed(ActionEvent e) {
-//        main.selfTrain();
-//      }
-//    });
-    
-//    retrain.addActionListener(new ActionListener() {
-//      @Override
-//      public void actionPerformed(ActionEvent e) {
-//        main.retrain();
-//      }
-//    });
-    
-    SpinnerModel depth = new SpinnerListModel(Arrays.asList(new String[] 
+    SpinnerModel allowedDepths = new SpinnerListModel(Arrays.asList(new String[] 
       {"0", "1", "100", "1000", "10000", "100000", "1000000", "2000000", "5000000", "10000000",
       "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000"
     }));
+    depth = new JSpinner(allowedDepths);
     depth.setValue("10000000");
-    spinner = new JSpinner(depth);
-
-    commands.add(spinner);
+    depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
+    commands.add(depth);
+    
+    SpinnerModel allowedDeltas = new SpinnerNumberModel(0, 0, 64, 1);
+    delta = new JSpinner(allowedDeltas);
+    delta.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * delta.getPreferredSize().height));
+    commands.add(delta);
     add(commands, BorderLayout.LINE_END);
 
     setSize(1200, 800);
@@ -236,7 +222,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public long depth() {
-    return Long.parseLong((String) spinner.getValue());
+    return Long.parseLong((String) depth.getValue());
   }
   
   @Override
@@ -253,4 +239,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public void componentShown(ComponentEvent e) {}
+
+  @Override
+  public int delta() {
+    return (int) delta.getValue();
+  }
 }

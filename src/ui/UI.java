@@ -26,4 +26,5 @@ public interface UI {
   public boolean playBlackMoves();
   public boolean playWhiteMoves();
   public long depth();
+  public int delta();
 }

@@ -19,20 +19,15 @@ import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorMidgame evaluatorMidgame;
-  
-  private final LinkedList<Board> positionsToEvaluate = new LinkedList<>();
 
   public long nEndgames;
   public long nVisitedEndgames;
   
-  public int lower;
-  public int upper;
+  private int lower;
+  private int upper;
   
   public enum Status {
     NONE,
@@ -59,7 +54,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   
   public float getEval() {
-    return get(super.firstPosition.getBoard()).getEval();
+    return get(firstPosition.getBoard()).getEval();
   }
 
   public long getNVisited() {
@@ -69,36 +64,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public long getNStored() {
     return this.size;
   }
-
-//  int[] deltas = new int[Constants.N_SAMPLES];
-//  protected int addPositions(StoredBoard father) {
-//    long player = father.getPlayer();
-//    long opponent = father.getOpponent();
-//    long[] moves = possibleMovesFinder.possibleMovesAdvanced(player, opponent);
-////     TODO
-////    this.depthOneEval.setup(player, opponent);
-////    this.depthOneEval.invert();
-//    int addedPositions = 0;
-//    if (moves.length == 0) {
-//      StoredBoard b = getFull(player, opponent);
-//      b.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
-//    } else {
-//      StoredBoard[] children = new StoredBoard[moves.length];
-//      for (int i = 0; i < moves.length; i++) {
-//        long move = moves[i];
-//        Board childBoard = father.getBoard().move(move);
-//        int depth = 2;//childBoard.getEmptySquares() <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 2 ? 2 : 2;
-//        evaluatorMidgame.resetNVisitedPositions();
-//        int result = evaluatorMidgame.evaluatePosition(childBoard, depth, -6400, 6400);
-//        long visited = evaluatorMidgame.getNVisited() + 1;
-//        children[i] = new StoredBoard(childBoard, result);
-//        children[i].descendants += visited;
-//        addedPositions += visited;
-//      }
-//      super.add(children, father);
-//    }
-//    return addedPositions;
-//  }
   
   public long addChildren(StoredBoard father) { 
     GetMovesCache mover = new GetMovesCache();
@@ -203,14 +168,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public void stop() {
     status = Status.KILLING;
   }
-  
+
   protected PositionToImprove nextPositionToImprove() {
     ArrayList<StoredBoard> parents = new ArrayList<>();
-    StoredBoard positionToEvaluateLocal = this.firstPosition;
+    StoredBoard firstPositionLocal = this.firstPosition;
     boolean playerVariates;
-    if (!positionToEvaluateLocal.isPartiallySolved()) {
+    
+    if (!firstPositionLocal.isPartiallySolved()) {
       return nextPositionToImproveMidgame(
-          positionToEvaluateLocal, this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates, true, parents);
+          firstPositionLocal,
+          this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
+          true, 
+          parents);
     }
     if (firstPosition.getEvalGoal() >= upper) {
       playerVariates = false;
@@ -218,10 +187,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       playerVariates = true;
     } else {
       playerVariates = 
-          Math.max(positionToEvaluateLocal.getProofNumberCurEval(), positionToEvaluateLocal.getDisproofNumberNextEval()) >
-          Math.max(positionToEvaluateLocal.getProofNumberNextEval(), positionToEvaluateLocal.getDisproofNumberCurEval());      
+          Math.max(firstPositionLocal.getProofNumberCurEval(), firstPositionLocal.getDisproofNumberNextEval()) >
+          Math.max(firstPositionLocal.getProofNumberNextEval(), firstPositionLocal.getDisproofNumberCurEval());      
     }
-    return nextPositionToImproveEndgame(positionToEvaluateLocal, playerVariates, true, parents);
+    return nextPositionToImproveEndgame(firstPositionLocal, playerVariates, true, parents);
   }
 
   public short evaluatePosition(Board board) {

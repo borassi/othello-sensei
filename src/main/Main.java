@@ -102,7 +102,7 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(56), true);
+    setBoard(EndgameTest.readIthBoard(48), true);
   }
 
   /**
@@ -146,7 +146,9 @@ public class Main implements Runnable {
   public synchronized void run() {
     int nUpdate = 0;
     while (true) {
-      EVALUATOR.evaluatePosition(board, ui.depth(), updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
+      EVALUATOR.evaluatePosition(
+          board, -6600, 6600, ui.depth(),
+          updateTimes[Math.min(updateTimes.length-1, nUpdate++)]);
       updateEvals();
       if (EVALUATOR.getStatus() != EvaluatorMCTS.Status.STOPPED_TIME) {
         break;
@@ -229,27 +231,28 @@ public class Main implements Runnable {
     StoredBoard[] evaluations = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(evaluations);
     for (StoredBoard child : evaluations) {
-      if (child != null) {
-        PositionIJ ij = moveFromBoard(board, child);
-
-        CaseAnnotations annotations = new CaseAnnotations();
-        annotations.eval = -child.getEval() / 100F;
-        annotations.isBestMove = ij.equals(bestIJ);
-        annotations.lower = -child.getUpper() / 100F;
-        annotations.upper = -child.getLower() / 100F;
-        annotations.nVisited = child.getDescendants();
-        annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
-        annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
-        annotations.disproofNumberCurEval = child.getProofNumberCurEval();
-        annotations.disproofNumberNextEval = child.getProofNumberNextEval();
-        annotations.otherAnnotations =
-            Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
-            Utils.prettyPrintDouble(
-              current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
-            + " " + Utils.prettyPrintDouble(
-              current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
-        ui.setAnnotations(annotations, ij);
+      if (child == null) {
+        continue;
       }
+      PositionIJ ij = moveFromBoard(board, child);
+
+      CaseAnnotations annotations = new CaseAnnotations();
+      annotations.eval = -child.getEval() / 100F;
+      annotations.isBestMove = ij.equals(bestIJ);
+      annotations.lower = -child.getUpper() / 100F;
+      annotations.upper = -child.getLower() / 100F;
+      annotations.nVisited = child.getDescendants();
+      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
+      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
+      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
+      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
+      annotations.otherAnnotations =
+          Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
+          Utils.prettyPrintDouble(
+            current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
+          + " " + Utils.prettyPrintDouble(
+            current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
+      ui.setAnnotations(annotations, ij);
     }
   }
   
@@ -307,6 +310,10 @@ public class Main implements Runnable {
     PositionIJ bestIJ = findBestMove(children);
      
     for (StoredBoard child : children) {
+      if (child == null ||
+          (-child.getEval() < current.getEval() - 100 * ui.delta() && !child.isSolved())) {
+        continue;
+      }
       PositionIJ ij = moveFromBoard(board, child);
 
       CaseAnnotations annotations = new CaseAnnotations();
