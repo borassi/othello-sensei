@@ -263,6 +263,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public void setMovesPerSecond(double nMovesPerSec) {
-    this.posPerSec.setText("Pos/s: " + Utils.prettyPrintDouble(nMovesPerSec));
+    Runnable tmp = new Runnable() {
+      public void run() {
+        posPerSec.setText("Pos/s: " + Utils.prettyPrintDouble(nMovesPerSec));
+      }
+    };
+    SwingUtilities.invokeLater(tmp);
   }
 }
