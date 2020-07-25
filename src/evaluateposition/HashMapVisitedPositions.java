@@ -24,7 +24,7 @@ public class HashMapVisitedPositions {
   long maxSize;
   long size;
   
-  class PositionToImprove {
+  public class PositionToImprove {
     StoredBoard board;
     boolean playerIsStartingPlayer;
     boolean playerVariates;
@@ -74,6 +74,18 @@ public class HashMapVisitedPositions {
     empty();
   }
 
+  protected synchronized PositionToImprove nextPositionToImproveRandom(
+      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
+      ArrayList<StoredBoard> parents) {
+    parents.add(father);
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
+    }
+    StoredBoard[] children = father.getChildren();
+    
+    return nextPositionToImproveRandom(children[(int) (Math.random() * children.length)], !playerVariates, !playerIsStartingPlayer, parents);
+  }
+
   protected synchronized PositionToImprove nextPositionToImproveMidgame(
       StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
       ArrayList<StoredBoard> parents) {
@@ -102,13 +114,13 @@ public class HashMapVisitedPositions {
     }
   }
 
-  protected void empty() {
+  protected final void empty() {
     Arrays.fill(evaluationsHashMap, null);
-    System.gc();
+//    System.gc();
     size = 0;
   }
   
-  protected void add(StoredBoard b) {
+  public void add(StoredBoard b) {
     int hash = hash(b);
 
     StoredBoard first = evaluationsHashMap[hash];
@@ -137,7 +149,7 @@ public class HashMapVisitedPositions {
     return Board.hash(player, opponent) % arraySize;
   }
   
-  protected StoredBoard get(long player, long opponent) {
+  public StoredBoard get(long player, long opponent) {
     for (StoredBoard b = evaluationsHashMap[hash(player, opponent)]; b != null; b = b.next) {
       assert(b != b.next);
       if (b.getPlayer() == player && b.getOpponent() == opponent) {
@@ -156,17 +168,6 @@ public class HashMapVisitedPositions {
       }
     }
     return null;
-  }
-  
-  protected StoredBoard first() {
-    return next(-1);
-  }
-  protected StoredBoard next(long player, long opponent) {
-    StoredBoard b = get(player, opponent);
-    if (b.next != null) {
-      return b.next;
-    }
-    return next(hash(player, opponent));
   }
   
   @Override

@@ -15,12 +15,13 @@
 package evaluatedepthone;
 
 import board.Board;
+import evaluateposition.EvaluatorInterface;
 
 /**
  * @author michele
  * Trivial evaluator that returns the disk difference. Used for tests.
  */
-public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
+public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator, EvaluatorInterface {
 
   Board b = new Board();
 
@@ -70,5 +71,15 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator {
     int result = this.eval();
     this.setup(oldB.getPlayer(), oldB.getOpponent());
     return result;
+  }
+
+  @Override
+  public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
+    return Math.max(lower, Math.min(upper, eval(player, opponent)));
+  }
+
+  @Override
+  public long getNVisited() {
+    return 1;
   }
 }

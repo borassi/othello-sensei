@@ -25,6 +25,6 @@ import board.Board;
  * @author michele
  */
 public interface EvaluatorInterface {
-  public int evaluatePosition(Board current, int depth, int alpha, int beta);
+  public int evaluatePosition(long player, long opponent, int depth, int lower, int upper);
   public long getNVisited();
 }

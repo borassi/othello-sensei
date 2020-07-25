@@ -14,8 +14,10 @@
 
 package evaluateposition;
 
+import bitpattern.BitPattern;
 import board.Board;
 import board.GetMoves;
+import board.GetMovesCache;
 import constants.Constants;
 import helpers.Utils;
 import java.util.ArrayList;
@@ -25,12 +27,12 @@ public class StoredBoard {
   private final long player;
   private final long opponent;
 
-  private final ArrayList<StoredBoard> fathers;
-  private StoredBoard[] children;
+  final ArrayList<StoredBoard> fathers;
+  StoredBoard[] children;
   
-  private int eval;
-  private int lower;
-  private int upper;
+  int eval;
+  int lower;
+  int upper;
   // Positions to prove that eval >= evalGoal.
   double proofNumberCurEval;
   // Positions to prove that eval > evalGoal.
@@ -41,12 +43,12 @@ public class StoredBoard {
   double disproofNumberNextEval;
   public double minLogDerivativePlayerVariates;
   public double minLogDerivativeOpponentVariates;
-  private int evalGoal;
-  private final boolean playerIsStartingPlayer;
-  protected long descendants;
+  int evalGoal;
+  final boolean playerIsStartingPlayer;
+  long descendants;
 
-  protected StoredBoard next;
-  protected StoredBoard prev;
+  StoredBoard next;
+  StoredBoard prev;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
@@ -65,8 +67,16 @@ public class StoredBoard {
     this.setEval(eval);
   }
   
+  public static StoredBoard initialStoredBoard(Board b, int eval, int evalGoal, long descendants) {
+    return initialStoredBoard(b.getPlayer(), b.getOpponent(), eval, evalGoal, descendants);
+  }
+  
   public static StoredBoard initialStoredBoard(long player, long opponent, int eval, int evalGoal, long descendants) {
     return new StoredBoard(player, opponent, eval, evalGoal, true, descendants);
+  }
+
+  public static StoredBoard childStoredBoard(Board b, StoredBoard father, int eval, long descendants) {
+    return childStoredBoard(b.getPlayer(), b.getOpponent(), father, eval, descendants);
   }
   
   public static StoredBoard childStoredBoard(long player, long opponent, StoredBoard father, int eval, long descendants) {
@@ -136,10 +146,13 @@ public class StoredBoard {
   }
 
   public final void setSolved(int newEval) {
-    assert(isLeaf());
-    this.setLower(newEval);
-    this.setUpper(newEval);
-    assert(areThisBoardEvalsOK());
+    assert isLeaf();
+    this.lower = newEval;
+    this.eval = newEval;
+    this.upper = newEval;
+    this.setProofNumbersForLeaf();
+    this.updateFathers();
+    assert areThisBoardEvalsOK();
   }
 
   public final void setLower(int newLower) {
@@ -147,7 +160,8 @@ public class StoredBoard {
     this.lower = (short) Math.max(lower, newLower);
     this.eval = (short) Math.max(newLower, eval);
     this.setProofNumbersForLeaf();
-    assert(areThisBoardEvalsOK());
+    this.updateFathers();
+    assert areThisBoardEvalsOK();
   }
 
   public final void setUpper(int newUpper) {
@@ -155,14 +169,16 @@ public class StoredBoard {
     this.upper = (short) Math.min(upper, newUpper);
     this.eval = (short) Math.min(newUpper, eval);
     this.setProofNumbersForLeaf();
-    assert(areThisBoardEvalsOK());
+    this.updateFathers();
+    assert areThisBoardEvalsOK();
   }
   
   public final void setEval(int newEval) {
     assert(isLeaf());
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
+    this.updateFathers();
     this.setProofNumbersForLeaf();
-    assert(areThisBoardEvalsOK());
+    assert areThisBoardEvalsOK();
   }
   
   protected void setEvalGoalRecursive(int evalGoal) {
@@ -188,8 +204,8 @@ public class StoredBoard {
   protected void updateFather() {
     assert(!isLeaf());
     eval = Short.MIN_VALUE;
-    int lower = Short.MIN_VALUE;
-    int upper = Short.MIN_VALUE;
+    lower = Short.MIN_VALUE;
+    upper = Short.MIN_VALUE;
     proofNumberCurEval = Double.POSITIVE_INFINITY;
     proofNumberNextEval = Double.POSITIVE_INFINITY;
     disproofNumberCurEval = 0;
@@ -204,8 +220,6 @@ public class StoredBoard {
       disproofNumberCurEval += child.proofNumberCurEval;
       disproofNumberNextEval += child.proofNumberNextEval;
     }
-    this.lower = Math.max(lower, this.lower);
-    this.upper = Math.min(upper, this.upper);
 
     minLogDerivativePlayerVariates = Double.MAX_VALUE;
     minLogDerivativeOpponentVariates = Double.MAX_VALUE;
@@ -217,7 +231,8 @@ public class StoredBoard {
           minLogDerivativeOpponentVariates,
           child.minLogDerivativePlayerVariates + logDerivativeOpponentVariates(child));
     }
-    assert(areThisBoardEvalsOK());
+    assert areThisBoardEvalsOK();
+    assert isEvalOK();
   }
   
   public double logDerivativePlayerVariates(StoredBoard child) {
@@ -238,9 +253,9 @@ public class StoredBoard {
   }
   
   public final void setProofNumbersForLeaf() {
-    assert(this.isLeaf());
-    assert(evalGoal <= 6400 && evalGoal >= -6400);
-    assert(descendants > 0);
+    assert this.isLeaf();
+    assert evalGoal <= 6400 && evalGoal >= -6400;
+    assert descendants > 0;
     this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
     this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
     if (lower > evalGoal - 100) {
@@ -358,7 +373,7 @@ public class StoredBoard {
     return best;
   }
 
-  public boolean areThisBoardEvalsOK() {
+  boolean areThisBoardEvalsOK() {
     return
         this.lower <= this.eval && this.eval <= this.upper 
         && proofNumberCurEval <= proofNumberNextEval
@@ -369,18 +384,30 @@ public class StoredBoard {
         && ((proofNumberNextEval == Double.POSITIVE_INFINITY) == (disproofNumberCurEval == 0));
   }
 
-  public boolean isChildOK(StoredBoard child) {
+  boolean isChildOK(StoredBoard child) {
+    boolean found = false;
+    for (StoredBoard father : child.fathers) {
+      if (father == this) {
+        if (found) {
+          return false;
+        }
+        found = true;
+      }
+    }
     return 
         child.playerIsStartingPlayer == !playerIsStartingPlayer
         && eval >= -child.eval
         && lower >= -child.upper
         && upper >= -child.lower
         && evalGoal == -child.evalGoal
-        && child.fathers.contains(this)
+        && found
         && Utils.arrayContains(children, child);
   }
 
-  public boolean areChildrenOK() {
+  boolean areChildrenOK() {
+    if (children == null) {
+      return true;
+    }
     for (StoredBoard child : children) {
       if (!isChildOK(child)) {
         return false;
@@ -395,11 +422,39 @@ public class StoredBoard {
     return true;
   }
 
-  public boolean isPrevNextOK() {
+  boolean isPrevNextOK() {
     return 
         prev != this
         && next != this
         && (prev == null || prev.next == this)
         && (next == null || next.prev == this);
+  }
+  
+  boolean isEvalOK() {
+    if ((new GetMovesCache()).getNMoves(player, opponent) == 0
+        && (new GetMovesCache()).getNMoves(opponent, player) == 0
+        && (this.getProofNumberCurEval() == 0 || this.getProofNumberCurEval() == Double.POSITIVE_INFINITY)) {
+      int correctEval = BitPattern.getEvaluationGameOver(player, opponent);
+      return eval == correctEval && lower == correctEval && upper == correctEval;
+    }
+    if (children == null) {
+      return true;
+    }
+    int correctEval = Integer.MIN_VALUE;
+    int correctLower = Integer.MIN_VALUE;
+    int correctUpper = Integer.MIN_VALUE;
+//    int minDescendants = 1;
+    for (StoredBoard child : children) {
+      correctEval = Math.max(correctEval, -child.getEval());
+      correctLower = Math.max(correctLower, -child.getUpper());
+      correctUpper = Math.max(correctUpper, -child.getLower());
+//      minDescendants += child.descendants;
+    }
+//    System.out.println(eval + " " + correctEval + " " + lower + " " + correctLower + " " + descendants + " " + minDescendants);
+    return eval == correctEval && lower == correctLower && upper == correctUpper; // && descendants >= minDescendants;
+  }
+  
+  boolean isAllOK() {
+    return isPrevNextOK() && areChildrenOK() && areThisBoardEvalsOK() && isEvalOK();
   }
 }

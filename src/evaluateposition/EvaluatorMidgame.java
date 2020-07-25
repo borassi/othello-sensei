@@ -25,7 +25,7 @@ import evaluatedepthone.FindStableDisks;
 import evaluatedepthone.PatternEvaluatorImproved;
 import java.util.Arrays;
 
-public class EvaluatorMidgame {
+public class EvaluatorMidgame implements EvaluatorInterface {
   static final int SQUARE_VALUE[] = {
     // JCW's score:
     18,  4,  16, 12, 12, 16,  4, 18,
@@ -425,6 +425,7 @@ public class EvaluatorMidgame {
 
   public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
     depthOneEvaluator.setup(player, opponent);
+    this.resetNVisitedPositions();
     
     depth = Math.min(depth, 64 - Long.bitCount(player | opponent));
     int empties = Long.bitCount(~(player | opponent));

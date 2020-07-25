@@ -15,18 +15,21 @@
 package evaluateposition;
 
 import bitpattern.BitPattern;
-import bitpattern.PositionIJ;
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import constants.Constants;
 import evaluatedepthone.DepthOneEvaluator;
+import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import java.util.ArrayList;
 
 public class EvaluatorBasic implements EvaluatorInterface {
   private final DepthOneEvaluator depthOneEvaluator;
-  private PossibleMovesFinderImproved possibleMovesFinder = new PossibleMovesFinderImproved();
+  private PossibleMovesFinderImproved possibleMovesFinder;
   private int nVisitedPositions = 0;
   private long nComputedMoves = 0;
+
+  public EvaluatorBasic() {
+    this(new DiskDifferenceEvaluatorPlusTwo(), PossibleMovesFinderImproved.load());
+  }
 
   public EvaluatorBasic(DepthOneEvaluator depthOneEvaluator, PossibleMovesFinderImproved possibleMovesFinder) {
     this.depthOneEvaluator = depthOneEvaluator;
@@ -47,8 +50,8 @@ public class EvaluatorBasic implements EvaluatorInterface {
   }
 
   @Override
-  public int evaluatePosition(Board current, int depth, int alpha, int beta) {
-    return evaluatePosition(current, depth);
+  public int evaluatePosition(long player, long opponent, int depth, int alpha, int beta) {
+    return evaluatePosition(new Board(player, opponent), depth);
   }
   
   public int evaluatePosition(Board current, int depth) {

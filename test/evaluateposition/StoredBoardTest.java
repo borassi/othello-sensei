@@ -28,7 +28,7 @@ public class StoredBoardTest {
   public void testUpdateEval() {
     Board.e6();
     
-    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 1);
+    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 5);
     StoredBoard child1 = StoredBoard.childStoredBoard(Board.e6f4().getPlayer(), Board.e6f4().getOpponent(), father, -100, 1);
     StoredBoard child2 = StoredBoard.childStoredBoard(Board.e6f6().getPlayer(), Board.e6f6().getOpponent(), father, 0, 1);
     StoredBoard child3 = StoredBoard.childStoredBoard(Board.e6d6().getPlayer(), Board.e6d6().getOpponent(), father, 800, 1);
@@ -40,7 +40,7 @@ public class StoredBoardTest {
   public void testProofNumbers() {
     Board.e6();
     
-    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 1);
+    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 5);
     StoredBoard child1 = StoredBoard.childStoredBoard(Board.e6f4().getPlayer(), Board.e6f4().getOpponent(), father, -100, 1);
     StoredBoard child2 = StoredBoard.childStoredBoard(Board.e6f6().getPlayer(), Board.e6f6().getOpponent(), father, 0, 1);
     StoredBoard child3 = StoredBoard.childStoredBoard(Board.e6d6().getPlayer(), Board.e6d6().getOpponent(), father, 800, 1);
@@ -72,7 +72,7 @@ public class StoredBoardTest {
 
   @Test
   public void testEvalGoalForLeaf() {
-    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 1);
+    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 4);
     StoredBoard child1 = StoredBoard.childStoredBoard(Board.e6f4().getPlayer(), Board.e6f4().getOpponent(), father, -100, 1);
     StoredBoard child2 = StoredBoard.childStoredBoard(Board.e6f6().getPlayer(), Board.e6f6().getOpponent(), father, 0, 1);
     StoredBoard child3 = StoredBoard.childStoredBoard(Board.e6d6().getPlayer(), Board.e6d6().getOpponent(), father, 800, 1);
@@ -94,5 +94,110 @@ public class StoredBoardTest {
     assert child1.proofNumberNextEval > child3.proofNumberNextEval;
     assert child1.disproofNumberCurEval < child3.disproofNumberCurEval;
     assert child1.disproofNumberNextEval < child3.disproofNumberNextEval;
+  }
+  
+  @Test
+  public void testBoardChildrenAreCorrect() {
+    StoredBoard firstMove = StoredBoard.initialStoredBoard(Board.e6(), 0, 0, 34);
+    firstMove.lower = -1;
+    firstMove.upper = 1;
+ 
+    StoredBoard diag = StoredBoard.childStoredBoard(Board.e6f6(), firstMove, 0, 10);
+    diag.lower = -1;
+    diag.upper = 1;
+    
+    StoredBoard perp = StoredBoard.childStoredBoard(Board.e6f4(), firstMove, 2, 11);
+    perp.lower = 2;
+    perp.upper = 2;
+ 
+    StoredBoard par = StoredBoard.childStoredBoard(Board.e6d6(), firstMove, 8, 12);
+    par.lower = 8;
+    par.upper = 8;
+
+    firstMove.children = new StoredBoard[]{diag, perp, par};
+
+    assert(firstMove.isAllOK());
+
+    firstMove.eval = 1;
+    assert(!firstMove.isAllOK());
+    firstMove.eval = 0;
+    
+    firstMove.lower = 12;
+    assert(!firstMove.isAllOK());
+    firstMove.lower = -1;
+    
+    firstMove.upper = 124;
+    assert(!firstMove.isAllOK());
+    firstMove.upper = 1;
+    
+    diag.fathers.clear();
+    assert(!firstMove.isAllOK());
+    diag.fathers.add(firstMove);
+
+    diag.fathers.add(firstMove);
+    assert(!firstMove.isAllOK());
+    diag.fathers.remove(diag.fathers.size() - 1);
+    
+    firstMove.children = new StoredBoard[] {par, perp};
+    assert(!firstMove.isAllOK());
+    firstMove.children = new StoredBoard[] {par, par, perp};
+    assert(!firstMove.isAllOK());
+    firstMove.children = new StoredBoard[] {par, par, diag, perp};
+    assert(!firstMove.isAllOK());
+    firstMove.children = new StoredBoard[] {par, diag, perp};
+
+    firstMove.descendants = 3;
+    assert(!firstMove.isAllOK());
+    firstMove.descendants = 34;
+    
+    firstMove.setEvalGoalRecursive(-6);
+    assert(firstMove.isAllOK());
+  }
+
+  @Test
+  public void testBoardChildrenAreCorrectPass() {
+    StoredBoard pass = StoredBoard.initialStoredBoard(Board.pass(), 200, 0, 2);
+    StoredBoard afterPass = StoredBoard.childStoredBoard(Board.pass().move(0), pass, -200, 1);
+
+    pass.children = new StoredBoard[] {afterPass};
+
+    assert pass.isAllOK();
+
+    pass.eval = 100;
+    assert(!pass.isAllOK());
+    pass.eval = -200;
+    
+    afterPass.fathers.clear();
+    assert(!pass.isAllOK());
+    afterPass.fathers.add(pass);
+    
+    pass.children = new StoredBoard[0];
+    assert(!pass.isAllOK());
+    pass.children = new StoredBoard[] {pass};
+    assert(!pass.isAllOK());
+    pass.children = new StoredBoard[] {afterPass};
+  }
+
+  @Test
+  public void testBoardChildrenAreCorrectBothPass() {
+    StoredBoard bothPass = StoredBoard.initialStoredBoard(Board.bothPass(), -5600, 0, 1);
+    
+    bothPass.lower = -5600;
+    bothPass.upper = -5600;
+    bothPass.children = new StoredBoard[0];
+    bothPass.proofNumberCurEval = Double.POSITIVE_INFINITY;
+    bothPass.proofNumberNextEval = Double.POSITIVE_INFINITY;
+    bothPass.disproofNumberCurEval = 0;
+    bothPass.disproofNumberNextEval = 0;
+    
+    assert bothPass.isAllOK();
+
+    bothPass.eval = 500;
+    assert !bothPass.isAllOK();
+    bothPass.eval = -5600;
+        
+    bothPass.children = new StoredBoard[] {bothPass};
+    assert !bothPass.isAllOK();
+    bothPass.children = new StoredBoard[0];
   }
 }

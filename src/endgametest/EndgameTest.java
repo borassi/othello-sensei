@@ -96,7 +96,7 @@ public class EndgameTest {
   public void run() {
     
     System.out.println(" num empties        t       nVisPos   nVisPos/sec   nStored  n/end  n/mid  eval");
-    for (int i = 48; i <= 48; i++) { //POSITIONS.length; i++) {
+    for (int i = 41; i <= 59; i++) { //POSITIONS.length; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
@@ -115,6 +115,13 @@ public class EndgameTest {
 //      eval.evaluateAlphaBetaWithHashMap(b, b.getEmptySquares(), result - 0.01F);
 //      eval.evaluateAlphaBetaWithHashMap(b, b.getEmptySquares(), result + 0.01F);
 
+//      System.out.print(String.format("%9.3f", t / 1000.));
+//      System.out.print(String.format("%14d", evalMidgame.getNVisited()));
+//      System.out.print(String.format("%14.0f", evalMidgame.getNVisited() * 1000. / t));
+//      System.out.print(String.format("%10d", 0));
+//      System.out.print(String.format("%7.0f", evalMidgame.nVisitedEndgames / (double) evalMidgame.nEndgames));
+//      System.out.print(String.format("%7.0f", 0.));
+//      System.out.println(String.format("%6d", result / 100));
       System.out.print(String.format("%9.3f", t / 1000.));
       System.out.print(String.format("%14d", eval.getNVisited()));
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));

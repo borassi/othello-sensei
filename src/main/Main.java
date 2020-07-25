@@ -106,7 +106,7 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(56), true);
+    setBoard(EndgameTest.readIthBoard(46), true);
   }
 
   /**
@@ -197,11 +197,11 @@ public class Main implements Runnable {
     int nUpdate = 0;
     startTime = System.currentTimeMillis();
     
-    evaluatePosition(board, (int) (updateTimes[0] * 0.5), true);
+//    evaluatePosition(board, (int) (updateTimes[0] * 0.5), true);
     while (!stopping) {
       int updateTime = updateTimes[Math.min(updateTimes.length-1, nUpdate++)];
 
-      evaluatePosition(board, (int) (updateTime * 0.1), false);
+      evaluatePosition(board, (int) (updateTime), false);
       updateEvals();
       switch (EVALUATOR.getStatus()) {
         case NONE:
@@ -210,9 +210,9 @@ public class Main implements Runnable {
         case KILLING:
         case KILLED:
         case STOPPED_POSITIONS:
+        case SOLVED:
           stopping = true;
           break;
-        case SOLVED:
         case STOPPED_TIME:
           break;
       }

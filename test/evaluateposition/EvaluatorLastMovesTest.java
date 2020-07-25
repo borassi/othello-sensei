@@ -133,7 +133,7 @@ public class EvaluatorLastMovesTest {
       if (i % 1000 == 0) {
         System.out.println(i);
       }
-      float result = eval.evaluatePosition(b, b.getEmptySquares() + 3, -6400, 6400);
+      float result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), b.getEmptySquares() + 3, -6400, 6400);
       int alpha = (int) (result + (Math.random() - 0.5) * 1600);
       int beta = alpha + 1 + (int) (Math.random() * 800);
 
