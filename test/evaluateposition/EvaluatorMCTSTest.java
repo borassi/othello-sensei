@@ -32,23 +32,17 @@ import static org.junit.Assert.*;
 public class EvaluatorMCTSTest {
   EvaluatorInterface EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-  
-  public void testBoard(StoredBoard b, int eval, int bestVariationPlayer, int bestVariationOpponent) {
-    assertEquals(eval, b.getEval());
-//    assertEquals(bestVariationPlayer, b.bestVariationPlayer);
-//    assertEquals(bestVariationOpponent, b.bestVariationOpponent);
-  }
 
   private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, Board board) {
     StoredBoard b = evaluator.get(board);
     ArrayList<StoredBoard> fathers = new ArrayList<>();
     StoredBoard curFather = b;
-    
+
     while (curFather.fathers != null && !curFather.fathers.isEmpty()) {
       curFather = curFather.fathers.get((int) (curFather.fathers.size() * Math.random()));
       fathers.add(curFather);
     }
-    
+
     return new HashMapVisitedPositions.PositionToImprove(b, Math.random() > 0.5, fathers);
   }
 
@@ -115,54 +109,126 @@ public class EvaluatorMCTSTest {
     assertEquals(eval * 100, passSB.lower);
     assertEquals(eval * 100, passSB.upper);
   }
-//
-//  //                  e6        e6
-//  //                  +20   ->  +20
-//  //                +16 +24   +16 +66
-//  //               ____|________________________________
-//  //              |                        |            |
-//  //             e6f4      e6f4           e6f6         e6d6
-//  //             -20   ->  -20            -14          -12
-//  //           -24 -16   -66 -16        -30 -14      -12 -12
-//  //          _____|______
-//  //         |         ___|___
-//  //       e6f4c3     |e6f4e3 |    e6f4e3 >= +22
-//  //        +20       |  +24  | ->   +24
-//  //      +16 +66     |+24 +24|    +24 +66
-//  //     ____|_____   |_______|
-//  //    |          |
-//  // e6f4c3c4  e6f4c3d6 <=-14
-//  //   -20       -16
-//  // -66 +66   -16 -16
-//  @Test
-//  public void testTree() {
-//    EvaluatorMCTS evaluator = new EvaluatorMCTS(30, 30, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
-//
-//    StoredBoard e6 = new StoredBoard(Board.e6(), 0, 0);
-//
-//    StoredBoard e6f4 = new StoredBoard(Board.e6f4(), 0, 0);
-//    StoredBoard e6f6 = new StoredBoard(Board.e6f6(), -1400, 0);
-//    StoredBoard e6d6 = new StoredBoard(Board.e6d6(), -1200, 0);
-//
-//    StoredBoard e6f4c3 = new StoredBoard(new Board("e6f4c3"), 0, 0);
-//    StoredBoard e6f4e3 = new StoredBoard(new Board("e6f4e3"), 2400, 0);
-//    
-//    StoredBoard e6f4c3c4 = new StoredBoard(new Board("e6f4c3c4"), 0, 0);
-//    e6f4c3c4.setSolved(-2000, 7000);
-//    StoredBoard e6f4c3d6 = new StoredBoard(new Board("e6f4c3d6"), -1600, 0);
-//    e6f4c3d6.setUpper(-1400, 7000);
-//
-//    evaluator.addFirstPosition(e6);
-//    evaluator.add(new StoredBoard[] {e6f4, e6f6, e6d6}, e6);
-//    evaluator.add(new StoredBoard[] {e6f4c3, e6f4e3}, e6f4);
-//    evaluator.add(new StoredBoard[] {e6f4c3c4, e6f4c3d6}, e6f4c3);
-//    
-//    assertEquals(evaluator.get(e6.getBoard()), e6);
-//    assertEquals(evaluator.get(e6f4c3c4.getBoard()), e6f4c3c4);
-//    evaluator.setEvalGoal(2000);
-//    
-//    testBoard(e6f4c3c4, -2000, -6600, +6600);
-//    testBoard(e6f4c3d6, -1600, -1600, -1600);
+  
+  public void testBoard(StoredBoard b, int eval, double proofNumberCurEval, double proofNumberNextEval,
+      double disproofNumberNextEval, double disproofNumberCurEval) {
+    assertEquals(eval, b.getEval());
+    assertEquals(proofNumberCurEval, b.getProofNumberCurEval(), 1);
+    assertEquals(proofNumberNextEval, b.getProofNumberNextEval(), 1);
+    assertEquals(disproofNumberCurEval, b.getDisproofNumberCurEval(), 1);
+    assertEquals(disproofNumberNextEval, b.getDisproofNumberNextEval(), 1);
+  }
+
+  private void addChildrenWorstEvaluation(EvaluatorMCTS evaluator, String board) {
+    HashMapVisitedPositions.PositionToImprove pos = getPositionToImprove(evaluator, board);
+    evaluator.addChildren(pos);
+    for (StoredBoard child : pos.board.children) {
+      child.setSolved(6400);
+    }
+  }
+  
+  class EndgameTimeEstimatorForTests extends EndgameTimeEstimatorInterface {
+    
+    @Override
+    public double proofNumber(long player, long opponent, int lower, int approxEval) {
+      Board b = new Board(player, opponent);
+      if (b.equals(new Board("e6f4c3d6"))) {
+        if (lower == -2100) return 10;
+        if (lower == -1900) return 20;
+      } else if (b.equals(new Board("e6f4e3"))) {
+        if (lower == 1900) return 30;
+        if (lower == 2100) return 40;
+      } else if (b.equals(new Board("e6d6"))) {
+        if (lower == -1900) return 1;
+      }
+      return 1000000;
+    }
+    @Override
+    public double disproofNumber(long player, long opponent, int lower, int approxEval) {
+      Board b = new Board(player, opponent);
+      if (b.equals(new Board("e6f4c3d6"))) {
+        if (lower == -2100) return 1000;
+        if (lower == -1900) return 1000;
+      } else if (b.equals(new Board("e6f4e3"))) {
+        if (lower == 1900) return 1000;
+        if (lower == 2100) return 1000;
+      } else if (b.equals(new Board("e6d6"))) {
+        if (lower == -1900) return 1000;
+      }
+      return 1000000;
+    }    
+  }
+
+  // EvalGoal: +20.
+  //                  e6         e6
+  //                  +20   ->   +20
+  //                 30 1040   +16 +66
+  //               1001   10   +16 +66
+  //               ____|________________________________
+  //              |                        |            |
+  //             e6f4      e6f4           e6f6         e6d6
+  //             -20   ->  -20            -14          -12
+  //            10  1K   -66 -16          0   0        0  1
+  //          1040  30   -66 -16        INF INF      INF 1K
+  //          _____|______
+  //         |         ___|___
+  //       e6f4c3     |e6f4e3 |     e6f4e3 >= +22
+  //        +20       |  +24  | ->    +24
+  //        0  1K     | 30 40 |      0   0
+  //      INF  10     | 1K 1K |    INF INF
+  //     ____|_____   |_______|
+  //    |          |
+  // e6f4c3c4  e6f4c3d6 <=-14
+  //    -20       -16
+  //    0 INF    10  20
+  //  INF   0    1K  1K
+  @Test
+  public void testTree() {
+    StoredBoard.endgameTimeEstimator = new EndgameTimeEstimatorForTests();
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(100, 100, EVALUATOR_BASIC);
+    evaluator.lower = -6400;
+    evaluator.upper = 6400;
+    
+    evaluator.setFirstPosition(new Board("e6"));
+    addChildrenWorstEvaluation(evaluator, "e6");
+    addChildrenWorstEvaluation(evaluator, "e6f4");
+    addChildrenWorstEvaluation(evaluator, "e6f4c3");
+
+    StoredBoard e6 = evaluator.get(new Board("e6"));
+    StoredBoard e6f4 = evaluator.get(new Board("e6f4"));
+    StoredBoard e6f4c3 = evaluator.get(new Board("e6f4c3"));
+    StoredBoard e6f4c3c4 = evaluator.get(new Board("e6f4c3c4"));
+    e6f4c3c4.setSolved(-2000);
+
+    StoredBoard e6f4c3d6 = evaluator.get(new Board("e6f4c3d6"));
+    e6f4c3d6.eval = -1600;
+    e6f4c3d6.lower = -6400;
+    e6f4c3d6.upper = 6400;
+    
+    StoredBoard e6f4e3 = evaluator.get(new Board("e6f4e3"));
+    e6f4e3.eval = 2400;
+    e6f4e3.lower = -6400;
+    e6f4e3.upper = 6400;
+    
+    StoredBoard e6f6 = evaluator.get(new Board("e6f6"));
+    e6f6.eval = -1400;
+    e6f6.lower = -1400;
+    e6f6.upper = -1400;
+    
+    StoredBoard e6d6 = evaluator.get(new Board("e6d6"));
+    e6d6.eval = -1200;
+    e6d6.lower = -2000;
+    e6d6.upper = 6400;
+
+    evaluator.setEvalGoal(2000);
+
+    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
+    testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
+    testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
+    testBoard(e6f4, -2000, 10, 1000, 1040, 30);
+    testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+    testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
+    testBoard(e6, 2000, 30, 1040, 1001, 10);
 //
 //    testBoard(e6f4c3, +2000, +1600, +6600);
 //    testBoard(e6f4e3, +2400, +2400, +2400);
@@ -188,8 +254,9 @@ public class EvaluatorMCTSTest {
 //
 ////    evaluator.updateEndgame(nextPosition, +2200);
 ////    testBoard(e6f4e3, +2400, +2400, +6600);
-////    testBoard(e6, 2000, 1600, 6600);    
-//  }
+////    testBoard(e6, 2000, 1600, 6600);
+    StoredBoard.endgameTimeEstimator = new EndgameTimeEstimator();
+  }
   
   public void assertIsAllOK(EvaluatorMCTS eval) {
     for (StoredBoard firstBoard : eval.evaluationsHashMap) {

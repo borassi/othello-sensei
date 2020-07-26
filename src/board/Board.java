@@ -17,6 +17,7 @@ package board;
 import java.io.Serializable;
 
 import bitpattern.BitPattern;
+import bitpattern.PositionIJ;
 import java.util.ArrayList;
 
 public class Board implements Serializable {
@@ -142,10 +143,9 @@ public class Board implements Serializable {
    * @param sequence The sequence (e.g., "e6f4c3c4d3").
    */
   public Board(String sequence) {
-    PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
     Board b = new Board();
     for (int i = 0; i < sequence.length(); i += 2) {
-      b = pmf.moveIfPossible(b, sequence.substring(i, i+2));
+      b = GetMovesCache.moveIfPossible(b, new PositionIJ(sequence.substring(i, i+2)).toMove());
     }
     this.player = b.player;
     this.opponent = b.opponent;

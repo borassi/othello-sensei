@@ -17,6 +17,7 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import evaluatedepthone.PatternEvaluatorImproved;
+import evaluateposition.EndgameTimeEstimator;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import evaluateposition.HashMap;

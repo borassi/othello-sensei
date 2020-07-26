@@ -49,7 +49,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
                        EvaluatorInterface evaluatorMidgame) {
     super(maxSize, arraySize);
     this.evaluatorMidgame = evaluatorMidgame;
-    this.firstPosition = StoredBoard.initialStoredBoard(0, 0, 0, 0, 1);
+    this.firstPosition = StoredBoard.initialStoredBoard(new Board(), 0, 0, 1);
   }
   
   public float getEval() {
@@ -285,7 +285,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       StoredBoard next = nextPos.board;
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
-      // TODO: FIX
       if (next != this.firstPosition
           && nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
           && (

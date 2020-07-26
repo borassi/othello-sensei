@@ -41,6 +41,11 @@ public class PositionIJ {
     this(7 - move / 8, 7 - move % 8);
   }
   
+  public PositionIJ(String move) {
+    j = move.charAt(0) - 'a';
+    i = move.charAt(1) - '1';
+  }
+  
   public int toMove() {
     return 7 - j + 8 * (7 - i);
   }

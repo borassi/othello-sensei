@@ -24,6 +24,7 @@ import board.GetMovesCache;
 import constants.Constants;
 import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
+import evaluateposition.EndgameTimeEstimator;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import evaluateposition.HashMap;

@@ -27,6 +27,7 @@ public class StoredBoard {
   private final long player;
   private final long opponent;
 
+  static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
   final ArrayList<StoredBoard> fathers;
   StoredBoard[] children;
   
@@ -156,7 +157,7 @@ public class StoredBoard {
   }
 
   public final void setLower(int newLower) {
-    assert(isLeaf());
+    assert isLeaf();
     this.lower = (short) Math.max(lower, newLower);
     this.eval = (short) Math.max(newLower, eval);
     this.setProofNumbersForLeaf();
@@ -165,7 +166,7 @@ public class StoredBoard {
   }
 
   public final void setUpper(int newUpper) {
-    assert(isLeaf());
+    assert isLeaf();
     this.upper = (short) Math.min(upper, newUpper);
     this.eval = (short) Math.min(newUpper, eval);
     this.setProofNumbersForLeaf();
@@ -174,7 +175,7 @@ public class StoredBoard {
   }
   
   public final void setEval(int newEval) {
-    assert(isLeaf());
+    assert isLeaf();
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
     this.updateFathers();
     this.setProofNumbersForLeaf();
@@ -266,9 +267,9 @@ public class StoredBoard {
       proofNumberCurEval = Double.POSITIVE_INFINITY;
       disproofNumberNextEval = 0;
     } else {
-      proofNumberCurEval = EndgameTimeEstimator.proofNumber(
+      proofNumberCurEval = endgameTimeEstimator.proofNumber(
           player, opponent, evalGoal - 100, this.eval);
-      disproofNumberNextEval = EndgameTimeEstimator.disproofNumber(
+      disproofNumberNextEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal - 100, this.eval);
     }
     if (upper < evalGoal + 100) {
@@ -278,9 +279,9 @@ public class StoredBoard {
       proofNumberNextEval = 0;
       disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
-      proofNumberNextEval = EndgameTimeEstimator.proofNumber(
+      proofNumberNextEval = endgameTimeEstimator.proofNumber(
           player, opponent, evalGoal + 100, eval);
-      disproofNumberCurEval = EndgameTimeEstimator.disproofNumber(
+      disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal + 100, eval);
     }
     assert areThisBoardEvalsOK();
@@ -378,11 +379,13 @@ public class StoredBoard {
     if (this.lower > this.eval || this.eval > this.upper) {
       throw new AssertionError("Wrong lower:" + lower + " / eval:" + eval + " / upper:" + upper + " for board\n" + this.getBoard());
     }
+    if (proofNumberCurEval > proofNumberNextEval
+        || disproofNumberCurEval > disproofNumberNextEval) {
+      throw new AssertionError("Wrong proof/disproof numbers:\n" + proofNumberCurEval + " " + proofNumberNextEval + "\n"
+          + disproofNumberCurEval + " " + disproofNumberNextEval + " for board\n" + this.getBoard());
+    }
     return
-        this.lower <= this.eval && this.eval <= this.upper 
-        && proofNumberCurEval <= proofNumberNextEval
-        && disproofNumberCurEval <= disproofNumberNextEval
-        && ((proofNumberCurEval == 0) == (disproofNumberNextEval == Double.POSITIVE_INFINITY))
+        ((proofNumberCurEval == 0) == (disproofNumberNextEval == Double.POSITIVE_INFINITY))
         && ((proofNumberCurEval == Double.POSITIVE_INFINITY) == (disproofNumberNextEval == 0))
         && ((proofNumberNextEval == 0) == (disproofNumberCurEval == Double.POSITIVE_INFINITY))
         && ((proofNumberNextEval == Double.POSITIVE_INFINITY) == (disproofNumberCurEval == 0));

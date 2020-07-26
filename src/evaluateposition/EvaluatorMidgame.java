@@ -165,7 +165,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       } else {
         currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
             (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
-        result += EndgameTimeEstimator.disproofNumber(player, opponent, evalGoal, currentEval);          
+        result += StoredBoard.endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, currentEval);          
       }
       depthOneEvaluator.undoUpdate(move, flip);
     }
@@ -209,7 +209,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       } else {
         currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
             (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
-        result = Math.min(result, EndgameTimeEstimator.proofNumber(player, opponent, evalGoal, currentEval));          
+        result = Math.min(result, StoredBoard.endgameTimeEstimator.proofNumber(player, opponent, evalGoal, currentEval));          
       }
       depthOneEvaluator.undoUpdate(move, flip);
     }
@@ -273,7 +273,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       } else if (depth > Constants.EMPTIES_FOR_ENDGAME + 5) {
         this.depthOneEvaluator.update(move, flip);
         int eval = (this.depthOneEvaluator.eval());
-        value = -(int) (100000 * EndgameTimeEstimator.logDisproofNumber(opponent & ~flip, player | flip, lower, eval));   
+        value = -(int) (100000 * Math.log(StoredBoard.endgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, lower, eval)));   
         this.depthOneEvaluator.undoUpdate(move, flip);     
       } else {
         value = -(GetMoves.getWeightedNMoves(opponent & ~flip, player | flip) << 16);

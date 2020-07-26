@@ -69,13 +69,13 @@ public class StoredBoardTest {
     father.setEvalGoalRecursive(1000);
     
     // Proves >= -11.
-    assertEquals(child1.proofNumberCurEval, EndgameTimeEstimator.proofNumber(new Board("e6f4"), -1100, -100), 1);
+    assertEquals(child1.proofNumberCurEval, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -1100, -100), 1);
     // Proves >= -9.
-    assertEquals(child1.proofNumberNextEval, EndgameTimeEstimator.proofNumber(new Board("e6f4"), -900, -100), 1);
+    assertEquals(child1.proofNumberNextEval, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -900, -100), 1);
     // Proves <= -9.
-    assertEquals(child1.disproofNumberCurEval, EndgameTimeEstimator.disproofNumber(new Board("e6f4"), -900, -100), 1);
+    assertEquals(child1.disproofNumberCurEval, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -900, -100), 1);
     // Proves <= -11.
-    assertEquals(child1.disproofNumberNextEval, EndgameTimeEstimator.disproofNumber(new Board("e6f4"), -1100, -100), 1);
+    assertEquals(child1.disproofNumberNextEval, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -1100, -100), 1);
 
     // Child1 is much better than child3. This means that proof numbers (for the
     // opponent) are harder.
