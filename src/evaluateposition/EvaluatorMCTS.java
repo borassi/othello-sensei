@@ -63,56 +63,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public long getNStored() {
     return this.size;
   }
-  
-  public void addChildren(PositionToImprove fatherPos) {
-    StoredBoard father = fatherPos.board;
-    GetMovesCache mover = new GetMovesCache();
-    long player = father.getPlayer();
-    long opponent = father.getOpponent();
-    
-    long curMoves = mover.getMoves(father.getPlayer(), father.getOpponent());
-    int nMoves = Long.bitCount(curMoves);
-    
-    if (nMoves == 0) {
-      if (mover.getNMoves(opponent, player) == 0) {
-        father.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
-        assert father.isAllOK();
-        return;
-      } else {
-        ++nMoves;
-      }
-    }
-    
-    StoredBoard[] children = new StoredBoard[nMoves];
-    long addedPositions = 0;
-
-    for (int i = 0; i < nMoves; ++i) {
-      int move = Long.numberOfTrailingZeros(curMoves);
-      long moveBit = 1L << move;
-      curMoves = curMoves & (~moveBit);
-      long flip = move == 64 ? 0 : mover.getFlip(move) & (opponent | moveBit);
-      long newPlayer = opponent & ~flip;
-      long newOpponent = player | flip;
-      StoredBoard child = this.get(newPlayer, newOpponent);
-      if (child == null) {
-        int depth = 2;
-        int eval = evaluatorMidgame.evaluatePosition(newPlayer, newOpponent, depth, -6400, 6400);
-        long visited = evaluatorMidgame.getNVisited() + 1;
-        child = StoredBoard.childStoredBoard(newPlayer, newOpponent, father, eval, visited);
-        addedPositions += visited;
-        super.add(child);
-      } else {
-        child.addFather(father);
-        if (father.getEvalGoal() != -child.getEvalGoal()) {
-          child.setEvalGoalRecursive(-father.getEvalGoal());
-        }
-      }
-      children[i] = child;
-    }
-    fatherPos.addVisitedPositions(addedPositions);
-    father.setChildren(children);
-    assert father.isAllOK();
-  }
 
   private int roundEval(int eval) {
     eval = Math.max(Math.min(eval, upper - 1), lower + 1);
@@ -204,6 +154,56 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         evaluatorMidgame.getNVisited() + 1);
     add(boardStored);
     this.firstPosition = boardStored;
+  }
+  
+  public void addChildren(PositionToImprove fatherPos) {
+    StoredBoard father = fatherPos.board;
+    GetMovesCache mover = new GetMovesCache();
+    long player = father.getPlayer();
+    long opponent = father.getOpponent();
+    
+    long curMoves = mover.getMoves(father.getPlayer(), father.getOpponent());
+    int nMoves = Long.bitCount(curMoves);
+    
+    if (nMoves == 0) {
+      if (mover.getNMoves(opponent, player) == 0) {
+        father.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
+        assert father.isAllOK();
+        return;
+      } else {
+        ++nMoves;
+      }
+    }
+    
+    StoredBoard[] children = new StoredBoard[nMoves];
+    long addedPositions = 0;
+
+    for (int i = 0; i < nMoves; ++i) {
+      int move = Long.numberOfTrailingZeros(curMoves);
+      long moveBit = 1L << move;
+      curMoves = curMoves & (~moveBit);
+      long flip = move == 64 ? 0 : mover.getFlip(move) & (opponent | moveBit);
+      long newPlayer = opponent & ~flip;
+      long newOpponent = player | flip;
+      StoredBoard child = this.get(newPlayer, newOpponent);
+      if (child == null) {
+        int depth = 2;
+        int eval = evaluatorMidgame.evaluatePosition(newPlayer, newOpponent, depth, -6400, 6400);
+        long visited = evaluatorMidgame.getNVisited() + 1;
+        child = StoredBoard.childStoredBoard(newPlayer, newOpponent, father, eval, visited);
+        addedPositions += visited;
+        super.add(child);
+      } else {
+        child.addFather(father);
+        if (father.getEvalGoal() != -child.getEvalGoal()) {
+          child.setEvalGoalRecursive(-father.getEvalGoal());
+        }
+      }
+      children[i] = child;
+    }
+    fatherPos.addVisitedPositions(addedPositions);
+    father.setChildren(children);
+    assert father.isAllOK();
   }
   
   public void solvePosition(PositionToImprove position, int nEmpties) {
