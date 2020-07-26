@@ -152,7 +152,7 @@ public class Main implements Runnable {
       return;
     }
     EVALUATOR.evaluatePosition(
-        b, -6600, 6600, ui.depth(), updateTime, reset);
+        b, -6400, 6400, ui.depth(), updateTime, reset);
   }
   
   private boolean stopping = false;

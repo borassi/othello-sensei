@@ -107,6 +107,56 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     status = Status.KILLING;
   }
 
+  protected synchronized PositionToImprove nextPositionToImproveMidgame(
+      StoredBoard father, boolean playerVariates,
+      ArrayList<StoredBoard> parents) {
+    parents.add(father);
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerVariates, parents);
+    }
+    if (playerVariates) {
+      return nextPositionToImproveMidgame(father.bestChildMidgamePlayerVariates(), !playerVariates, parents);
+    } else {
+      return nextPositionToImproveMidgame(father.bestChildMidgameOpponentVariates(), !playerVariates, parents);
+    }
+  }
+
+  private boolean positionToImproveAndEvalGoalAreOk(StoredBoard position, boolean playerVariates) {
+    int evalGoal = position.evalGoal;
+    int posUpper = position.playerIsStartingPlayer ? upper : -lower;
+    int posLower = position.playerIsStartingPlayer ? lower : -upper;
+    System.out.println(posLower + " " + evalGoal + " " + posUpper + " " + playerVariates + " " + position.playerIsStartingPlayer);
+    if (playerVariates) {
+      if (evalGoal >= posUpper) {
+        throw new AssertionError(
+            "Player should not try to prove that [value > ] evalGoal (" + evalGoal
+            + ") >= upper (" + posUpper + ") in board\n" + position.getBoard());
+      }      
+    } else {
+      if (evalGoal <= posLower) {
+        throw new AssertionError(
+            "Opponent should not try to prove that [value < ] evalGoal (" + evalGoal
+            + ") <= lower (" + posLower + ") in board\n" + position.getBoard());
+      }
+    }
+    return true;
+  }
+  
+  protected synchronized PositionToImprove nextPositionToImproveEndgame(
+      StoredBoard father, boolean playerVariates,
+      ArrayList<StoredBoard> parents) {
+    assert positionToImproveAndEvalGoalAreOk(father, playerVariates);
+    parents.add(father);
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerVariates, parents);
+    }
+    if (playerVariates) {
+      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, parents);
+    } else {
+      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
+    }
+  }
+
   protected PositionToImprove nextPositionToImprove() {
     ArrayList<StoredBoard> parents = new ArrayList<>();
     StoredBoard firstPositionLocal = this.firstPosition;
@@ -252,6 +302,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     position.addVisitedPositions(seenPositions);
   }
   
+  public boolean isSolved() {
+    return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;
+  }
+  
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
     status = Status.RUNNING;
@@ -299,7 +353,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       updateEvalGoalIfNeeded();
 
-      if (this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper || this.firstPosition.isSolved()) {
+      if (isSolved()) {
         status = Status.SOLVED;
         break;
       }

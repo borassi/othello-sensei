@@ -319,6 +319,7 @@ public class StoredBoard {
       }
     }
     assert best != null;
+    assert logDerivativeOpponentVariates(best) + best.minLogDerivativePlayerVariates > 0;
     return best;
   }
 
@@ -333,6 +334,7 @@ public class StoredBoard {
       }
     }
     assert best != null;
+    assert logDerivativePlayerVariates(best) + best.minLogDerivativeOpponentVariates > 0;
     return best;
   }
   
@@ -347,11 +349,11 @@ public class StoredBoard {
   }
 
   // Minimize proofNumberNextEval (= min disproofNumberNextEval of children).
-  // No error because we are trying to 
   public StoredBoard bestChildPlayerVariates() {
     assert !isLeaf();
     StoredBoard best = null;
     for (StoredBoard child : children) {
+      if (child.disproofNumberNextEval == 0 || child.disproofNumberNextEval == Double.POSITIVE_INFINITY) continue;
       if (best == null ||
           childValuePlayerVariates(child) < childValuePlayerVariates(best)) {
         best = child;
@@ -366,6 +368,7 @@ public class StoredBoard {
     assert !isLeaf();
     StoredBoard best = null;
     for (StoredBoard child : children) {
+      if (child.disproofNumberCurEval == 0 || child.disproofNumberCurEval == Double.POSITIVE_INFINITY) continue;
       if (best == null ||
           childValueOpponentVariates(child) < childValueOpponentVariates(best)) {
         best = child;

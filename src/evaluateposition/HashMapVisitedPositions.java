@@ -89,34 +89,6 @@ public class HashMapVisitedPositions {
     return nextPositionToImproveRandom(children[(int) (Math.random() * children.length)], !playerVariates, parents);
   }
 
-  protected synchronized PositionToImprove nextPositionToImproveMidgame(
-      StoredBoard father, boolean playerVariates,
-      ArrayList<StoredBoard> parents) {
-    parents.add(father);
-    if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, parents);
-    }
-    if (playerVariates) {
-      return nextPositionToImproveMidgame(father.bestChildMidgamePlayerVariates(), !playerVariates, parents);
-    } else {
-      return nextPositionToImproveMidgame(father.bestChildMidgameOpponentVariates(), !playerVariates, parents);
-    }
-  }
-
-  protected synchronized PositionToImprove nextPositionToImproveEndgame(
-      StoredBoard father, boolean playerVariates,
-      ArrayList<StoredBoard> parents) {
-    parents.add(father);
-    if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, parents);
-    }
-    if (playerVariates) {
-      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, parents);
-    } else {
-      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
-    }
-  }
-
   protected final void empty() {
     Arrays.fill(evaluationsHashMap, null);
 //    System.gc();

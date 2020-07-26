@@ -224,37 +224,39 @@ public class EvaluatorMCTSTest {
 
     testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
     testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
+    testBoard(e6f4e3, 2400, 30, 40, 1000, 1000);
     testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
     testBoard(e6f4, -2000, 10, 1000, 1040, 30);
     testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
     testBoard(e6, 2000, 30, 1040, 1001, 10);
-//
-//    testBoard(e6f4c3, +2000, +1600, +6600);
-//    testBoard(e6f4e3, +2400, +2400, +2400);
-//    
-//    testBoard(e6f4, -2000, -2400, -1600);
-//    testBoard(e6f6, -1400, -1400, -1400);
-//    testBoard(e6d6, -1200, -1200, -1200);
-//    
-//    testBoard(e6, 2000, 1600, 2400);
-//    
-////    HashMapVisitedPositions.PositionToImprove nextPosition = 
-////        evaluator.nextPositionToImproveEndgame(e6, true, true, new ArrayList<>());
-////    assertEquals(e6f4c3d6, nextPosition.board);
-////    assertEquals(-2001, nextPosition.alpha);
-////    assertEquals(-2000, nextPosition.beta);
-////
-////    nextPosition =
-////        evaluator.nextPositionToImproveEndgame(e6, false, true, new ArrayList<>());
-////    assertEquals(e6f4e3, nextPosition.board);
-////    assertEquals(true, nextPosition.playerIsStartingPlayer);
-////    assertEquals(+1999, nextPosition.alpha);
-////    assertEquals(+2000, nextPosition.beta);
-//
-////    evaluator.updateEndgame(nextPosition, +2200);
-////    testBoard(e6f4e3, +2400, +2400, +6600);
-////    testBoard(e6, 2000, 1600, 6600);
+    assert !evaluator.isSolved();
+
+    assertEquals(e6f4c3d6, evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, true, new ArrayList<>()).board);
+    assertEquals(e6f4e3, evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, false, new ArrayList<>()).board);
+    e6f4e3.setLower(2200);
+    
+    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
+    testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
+    testBoard(e6f4e3, 2400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+    testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
+    testBoard(e6f4, -2000, 10, Double.POSITIVE_INFINITY, 1000, 0);
+    testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+    testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
+    testBoard(e6, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
+    assert !evaluator.isSolved();
+    
+    evaluator.upper = 2100;
+    assert !evaluator.isSolved();
+
+    evaluator.upper = 2000;
+    assert evaluator.isSolved();
+    boolean raisedError = true;
+    try {
+      evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, true, new ArrayList<>());
+      raisedError = false;
+    } catch (AssertionError e) {}
+    assert raisedError;
     StoredBoard.endgameTimeEstimator = new EndgameTimeEstimator();
   }
   
