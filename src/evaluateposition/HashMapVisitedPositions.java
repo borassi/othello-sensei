@@ -24,41 +24,44 @@ public class HashMapVisitedPositions {
   long maxSize;
   long size;
   
-  public class PositionToImprove {
+  public static class PositionToImprove {
     StoredBoard board;
-    boolean playerIsStartingPlayer;
     boolean playerVariates;
-    int alpha;
-    int beta;
+//    int alpha;
+//    int beta;
     ArrayList<StoredBoard> parents;
     
     public PositionToImprove(StoredBoard board, boolean playerVariates,
-        boolean playerIsStartingPlayer, StoredBoard firstPosition,
         ArrayList<StoredBoard> parents) {
       this.board = board;
-      this.playerIsStartingPlayer = playerIsStartingPlayer;
+      this.playerVariates = playerVariates;
       this.parents = parents;
-      this.setAlphaBeta(firstPosition, playerVariates);
+//      this.setAlphaBeta(firstPosition, playerVariates);
     }
   
-    private void setAlphaBeta(StoredBoard firstPosition, boolean playerVariates) {
-      if (playerIsStartingPlayer) {
-        alpha = firstPosition.getEvalGoal();
-        beta = firstPosition.getEvalGoal();
-      } else {
-        alpha = -firstPosition.getEvalGoal();
-        beta = -firstPosition.getEvalGoal();
-      }
-      if (alpha == beta) {
-        if (playerVariates) {
-          beta++;
-        } else {
-          alpha--;
-        }
-      }
-      if (!firstPosition.isPartiallySolved()) {
-        alpha = -6400;
-        beta = 6400;
+    public int getAlpha() {
+      return board.getEvalGoal() - (playerVariates ? 0 : 1);
+    }
+  
+    public int getBeta() {
+      return board.getEvalGoal() + (playerVariates ? 1 : 0);
+    }
+//    private void setAlphaBeta(boolean playerVariates) {
+//      alpha = board.getEvalGoal();
+//      beta = board.getEvalGoal();
+//      if (playerVariates) {
+//        beta++;
+//      } else {
+//        alpha--;
+//      }
+//      if (!firstPosition.isPartiallySolved()) {
+//        alpha = -6400;
+//        beta = 6400;
+//      }
+//    }
+    public void addVisitedPositions(long visitedPositions) {
+      for (StoredBoard b : parents) {
+        b.descendants += visitedPositions;
       }
     }
   }
@@ -75,42 +78,42 @@ public class HashMapVisitedPositions {
   }
 
   protected synchronized PositionToImprove nextPositionToImproveRandom(
-      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
+      StoredBoard father, boolean playerVariates, 
       ArrayList<StoredBoard> parents) {
     parents.add(father);
     if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
+      return new PositionToImprove(father, playerVariates, parents);
     }
     StoredBoard[] children = father.getChildren();
     
-    return nextPositionToImproveRandom(children[(int) (Math.random() * children.length)], !playerVariates, !playerIsStartingPlayer, parents);
+    return nextPositionToImproveRandom(children[(int) (Math.random() * children.length)], !playerVariates, parents);
   }
 
   protected synchronized PositionToImprove nextPositionToImproveMidgame(
-      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
+      StoredBoard father, boolean playerVariates,
       ArrayList<StoredBoard> parents) {
     parents.add(father);
     if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
+      return new PositionToImprove(father, playerVariates, parents);
     }
     if (playerVariates) {
-      return nextPositionToImproveMidgame(father.bestChildMidgamePlayerVariates(), !playerVariates, !playerIsStartingPlayer, parents);
+      return nextPositionToImproveMidgame(father.bestChildMidgamePlayerVariates(), !playerVariates, parents);
     } else {
-      return nextPositionToImproveMidgame(father.bestChildMidgameOpponentVariates(), !playerVariates, !playerIsStartingPlayer, parents);
+      return nextPositionToImproveMidgame(father.bestChildMidgameOpponentVariates(), !playerVariates, parents);
     }
   }
 
   protected synchronized PositionToImprove nextPositionToImproveEndgame(
-      StoredBoard father, boolean playerVariates, boolean playerIsStartingPlayer,
+      StoredBoard father, boolean playerVariates,
       ArrayList<StoredBoard> parents) {
     parents.add(father);
     if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, playerIsStartingPlayer, this.firstPosition, parents);
+      return new PositionToImprove(father, playerVariates, parents);
     }
     if (playerVariates) {
-      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, !playerIsStartingPlayer, parents);
+      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, parents);
     } else {
-      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, !playerIsStartingPlayer, parents);
+      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
     }
   }
 

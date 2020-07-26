@@ -159,8 +159,8 @@ public class BoardTest {
 
   @Test
   public void boardFromString() {
-    assertEquals(new Board("e6"), Board.e6());
-    assertEquals(new Board("e6f4"), Board.e6f4());
+    assertEquals(new Board("e6"), new Board("e6"));
+    assertEquals(new Board("e6f4"), new Board("e6f4"));
   }
 
   @Test

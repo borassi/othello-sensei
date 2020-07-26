@@ -40,43 +40,42 @@ public class EvaluatorMCTSTest {
 //    assertEquals(bestVariationOpponent, b.bestVariationOpponent);
   }
 
-//  @Test
-//  public void testMultipleInsert() {
-//    StoredBoard e6f4 = StoredBoard.initialStoredBoard(Board.e6f4(), 123, 0, 10);
-//    
-//    Board e6f4c3B = POSSIBLE_MOVES_FINDER.moveIfPossible(e6f4.getBoard(), "c3");
-//    Board e6f4c3c4B = POSSIBLE_MOVES_FINDER.moveIfPossible(e6f4c3B, "c4");
-//    Board e6f4c3c4d3B = POSSIBLE_MOVES_FINDER.moveIfPossible(e6f4c3c4B, "d3");
-//    Board e6f4d3B = POSSIBLE_MOVES_FINDER.moveIfPossible(e6f4.getBoard(), "d3");
-//    Board e6f4d3c4B = POSSIBLE_MOVES_FINDER.moveIfPossible(e6f4d3B, "c4");
-//    Board e6f4d3c4c3B = POSSIBLE_MOVES_FINDER.moveIfPossible(e6f4d3c4B, "c3");
-//
-//    StoredBoard e6f4c3 = StoredBoard.childStoredBoard(e6f4c3B, e6f4, 0, 10);
-//    StoredBoard e6f4c3c4 = StoredBoard.childStoredBoard(e6f4c3c4B, e6f4c3, 0, 10);
-//    StoredBoard e6f4c3c4d3 = StoredBoard.childStoredBoard(e6f4c3c4d3B, e6f4c3c4, 0, 10);
-//
-//    StoredBoard e6f4d3 = StoredBoard.childStoredBoard(e6f4d3B, e6f4, 0, 10);
-//    StoredBoard e6f4d3c4 = StoredBoard.childStoredBoard(e6f4d3c4B, e6f4c3, 0, 10);
-//    StoredBoard e6f4d3c4c3 = StoredBoard.childStoredBoard(e6f4d3c4c3B, e6f4c3c4, 0, 10);
-//    
-//    HashMapVisitedPositions evaluator = new HashMapVisitedPositions(30, 30);
-//    evaluator.add(e6f4);
-//    evaluator.add(e6f4c3);
-//    evaluator.add(evaluator.get(e6f4c3c4B));
-//    evaluator.add(evaluator.get(e6f4d3B));
-//    evaluator.add(evaluator.get(e6f4d3c4B));
-//    
-//    StoredBoard doubleFather = evaluator.get(e6f4c3c4d3B);
-//    assertEquals(1, doubleFather.fathers.size());
-//    assertEquals(evaluator.get(e6f4c3c4B).toString(), doubleFather.fathers.get(0).toString());
-//
-//    evaluator.addPositionsIfPossible(evaluator.get(e6f4d3c4));
-//    
-//    doubleFather = evaluator.get(e6f4c3c4d3);
-//    assertEquals(2, doubleFather.fathers.size());
-//    assertEquals(evaluator.get(e6f4c3c4B).toString(), doubleFather.fathers.get(0).toString());
-//    assertEquals(evaluator.get(e6f4d3c4B).toString(), doubleFather.fathers.get(1).toString());
-//  }
+  private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
+    StoredBoard b = evaluator.get(new Board(sequence));
+    ArrayList<StoredBoard> fathers = new ArrayList<>();
+    StoredBoard curFather = b;
+    
+    while (curFather.fathers != null && !curFather.fathers.isEmpty()) {
+      curFather = curFather.fathers.get((int) (curFather.fathers.size() * Math.random()));
+      fathers.add(curFather);
+    }
+    
+    return new HashMapVisitedPositions.PositionToImprove(b, Math.random() > 0.5, fathers);
+  }
+  
+  @Test
+  public void testDoubleFather() {
+    EvaluatorInterface evaluatorBasic = new DiskDifferenceEvaluatorPlusTwo();
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(20, 20, evaluatorBasic);
+    Board e6f4 = new Board("e6f4");
+    
+    evaluator.setFirstPosition(e6f4.getPlayer(), e6f4.getOpponent());
+    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4"));
+    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4c3"));
+    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4c3c4"));
+
+    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4d3"));
+    
+    StoredBoard doubleFather = evaluator.get(new Board("e6f4c3c4d3"));
+    assertEquals(1, doubleFather.fathers.size());
+    assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
+
+    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4d3c4"));
+
+    assertEquals(2, doubleFather.fathers.size());
+    assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
+    assertEquals(evaluator.get(new Board("e6f4d3c4")), doubleFather.fathers.get(1));
+  }
 //  
 //  @Test
 //  public void testPass() {
@@ -228,7 +227,7 @@ public class EvaluatorMCTSTest {
       
       for (int j = 0; j < nElements; j++) {
         HashMapVisitedPositions.PositionToImprove nextPos = evaluator.nextPositionToImproveRandom(
-            evaluator.firstPosition, Math.random() > 0.5, true, new ArrayList<StoredBoard>());
+            evaluator.firstPosition, Math.random() > 0.5, new ArrayList<>());
 
         if (nextPos == null) {
           break;
@@ -258,7 +257,7 @@ public class EvaluatorMCTSTest {
           next.updateFathers();
           continue;
         }
-        evaluator.addChildren(next);
+        evaluator.addChildren(nextPos);
         if (Math.random() < 0.1) {
           assertIsAllOK(evaluator);
         }
@@ -274,7 +273,6 @@ public class EvaluatorMCTSTest {
           }
         }
         if (!allLeaves) {
-  //        assert(!evaluator.allCorrect());
           evaluator.setEvalGoal((int) (evaluator.lower + (Math.random() * (evaluator.upper - evaluator.lower))));
           assertIsAllOK(evaluator);
         }

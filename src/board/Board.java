@@ -48,50 +48,6 @@ public class Board implements Serializable {
                                          + "--------\n"
                                          + "--------\n";
   /**
-   * A string that represents the board after the first move
-   */
-  final static String E6 = "--------\n"
-                         + "--------\n" 
-                         + "--------\n"
-                         + "---XO---\n"
-                         + "---OO---\n"
-                         + "----O---\n"
-                         + "--------\n"
-                         + "--------\n";
-  /**
-   * Perpendicolar opening
-   */
-  final static String E6F4 = "--------\n"
-                           + "--------\n" 
-                           + "--------\n"
-                           + "---OOO--\n"
-                           + "---XX---\n"
-                           + "----X---\n"
-                           + "--------\n"
-                           + "--------\n";
-  /**
-   * Diagonal opening
-   */
-  final static String E6F6 = "--------\n"
-                           + "--------\n" 
-                           + "--------\n"
-                           + "---OX---\n"
-                           + "---XO---\n"
-                           + "----XO--\n"
-                           + "--------\n"
-                           + "--------\n";
-  /**
-   * Parallel opening
-   */
-  final static String E6D6 = "--------\n"
-                           + "--------\n" 
-                           + "--------\n"
-                           + "---OX---\n"
-                           + "---OX---\n"
-                           + "---OX---\n"
-                           + "--------\n"
-                           + "--------\n";
-  /**
    * Board where player has to pass
    */
   final static String PASS = "--------\n"
@@ -162,6 +118,13 @@ public class Board implements Serializable {
   }
   
   /**
+   * The starting board.
+   */
+  public Board() {
+    this(START_BOARD_STRING, true);
+  }
+  
+  /**
    * Creates a board with the given black and white disks.
    * 
    * @param player
@@ -211,34 +174,9 @@ public class Board implements Serializable {
     opponent = blackTurn ? white : black;
   }
   
-  /**
-   * The starting board.
-   */
-  public Board() {
-    this(START_BOARD_STRING, true);
-  }
-  
   public static Board start() {
     return new Board(START_BOARD_STRING, true);
   }
-  
-  public static Board e6() {
-    return new Board(E6, true);
-  }
-  
-  public static Board e6d6() {
-    return new Board(E6D6, true);
-  }
-  
-  public static Board e6f4() {
-    return new Board(E6F4, true);
-  }
-  
-  
-  public static Board e6f6() {
-    return new Board(E6F6, true);
-  }
-  
   
   public static Board pass() {
     return new Board(PASS, true);
@@ -502,8 +440,7 @@ public class Board implements Serializable {
     
     return new Board(randomBoardString(percBlack / tot, percWhite / tot), Math.random() > 0.5);
   }
-  
-  
+
   /*
    * Returns all the possible boards that are empty outside the bitPattern
    * provided.

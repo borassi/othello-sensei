@@ -233,6 +233,7 @@ public class StoredBoard {
     }
     assert areThisBoardEvalsOK();
     assert isEvalOK();
+    assert areDescendantsOK();
   }
   
   public double logDerivativePlayerVariates(StoredBoard child) {
@@ -374,6 +375,9 @@ public class StoredBoard {
   }
 
   boolean areThisBoardEvalsOK() {
+    if (this.lower > this.eval || this.eval > this.upper) {
+      throw new AssertionError("Wrong lower:" + lower + " / eval:" + eval + " / upper:" + upper + " for board\n" + this.getBoard());
+    }
     return
         this.lower <= this.eval && this.eval <= this.upper 
         && proofNumberCurEval <= proofNumberNextEval
@@ -384,12 +388,30 @@ public class StoredBoard {
         && ((proofNumberNextEval == Double.POSITIVE_INFINITY) == (disproofNumberCurEval == 0));
   }
 
+  boolean areDescendantsOK() {
+    if (fathers.isEmpty()) {
+      return true;
+    }
+    int maxDescendants = 0;
+    String fatherDesc = "";
+    for (StoredBoard father : fathers) {
+      maxDescendants += father.getDescendants();
+      fatherDesc += " " + father.getDescendants();
+    }
+    if (descendants > maxDescendants) {
+      throw new AssertionError(
+          "Bad number of descendants " + descendants + " > SUM_father descendants = "
+              + maxDescendants + ". Father descendants: " + fatherDesc);
+    }
+    return true;
+  }
+
   boolean isChildOK(StoredBoard child) {
     boolean found = false;
     for (StoredBoard father : child.fathers) {
       if (father == this) {
         if (found) {
-          return false;
+          throw new AssertionError("Found the same father twice. Father:\n" + this + "\nchild:\n" + child);
         }
         found = true;
       }
@@ -443,18 +465,21 @@ public class StoredBoard {
     int correctEval = Integer.MIN_VALUE;
     int correctLower = Integer.MIN_VALUE;
     int correctUpper = Integer.MIN_VALUE;
-//    int minDescendants = 1;
+    String childEval = "";
     for (StoredBoard child : children) {
       correctEval = Math.max(correctEval, -child.getEval());
       correctLower = Math.max(correctLower, -child.getUpper());
       correctUpper = Math.max(correctUpper, -child.getLower());
-//      minDescendants += child.descendants;
     }
-//    System.out.println(eval + " " + correctEval + " " + lower + " " + correctLower + " " + descendants + " " + minDescendants);
-    return eval == correctEval && lower == correctLower && upper == correctUpper; // && descendants >= minDescendants;
+    if (eval != correctEval || lower != correctLower || upper != correctUpper) {
+      throw new AssertionError(
+          "Wrong eval/lower/upper. Expected: " + correctEval + "/" + correctLower + "/" + correctUpper + 
+          ". Got: " + eval + "/" + lower + "/" + upper + ".\nChildren eval/lower/upper:\n" + childEval);
+    }
+    return true;
   }
   
   boolean isAllOK() {
-    return isPrevNextOK() && areChildrenOK() && areThisBoardEvalsOK() && isEvalOK();
+    return isPrevNextOK() && areChildrenOK() && areThisBoardEvalsOK() && isEvalOK() && areDescendantsOK();
   }
 }

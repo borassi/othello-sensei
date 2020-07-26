@@ -25,7 +25,7 @@ public class HashMapVisitedPositionsTest extends TestCase {
   @Test
   public void testAddGet() {
     StoredBoard s = StoredBoard.initialStoredBoard(new Board(), 123, 0, 3);
-    StoredBoard t = StoredBoard.childStoredBoard(Board.e6(), s, 456, 1);
+    StoredBoard t = StoredBoard.childStoredBoard(new Board("e6"), s, 456, 1);
     HashMapVisitedPositions visitedPositions = new HashMapVisitedPositions(11, 5);
 
     assertEquals(0, visitedPositions.size);

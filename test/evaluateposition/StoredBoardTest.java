@@ -25,25 +25,14 @@ import static org.junit.Assert.*;
 public class StoredBoardTest {
 
   @Test
-  public void testUpdateEval() {
-    Board.e6();
-    
-    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 5);
-    StoredBoard child1 = StoredBoard.childStoredBoard(Board.e6f4().getPlayer(), Board.e6f4().getOpponent(), father, -100, 1);
-    StoredBoard child2 = StoredBoard.childStoredBoard(Board.e6f6().getPlayer(), Board.e6f6().getOpponent(), father, 0, 1);
-    StoredBoard child3 = StoredBoard.childStoredBoard(Board.e6d6().getPlayer(), Board.e6d6().getOpponent(), father, 800, 1);
+  public void testInitialBoard() {
+    StoredBoard father = StoredBoard.initialStoredBoard(new Board("e6"), 10, 20, 5);
+    StoredBoard child1 = StoredBoard.childStoredBoard(new Board("e6f4"), father, -100, 1);
+    StoredBoard child2 = StoredBoard.childStoredBoard(new Board("e6f6"), father, 0, 1);
+    StoredBoard child3 = StoredBoard.childStoredBoard(new Board("e6d6"), father, 800, 1);
+
     father.setChildren(new StoredBoard[] {child1, child2, child3});
     assertEquals(father.getEval(), 100);
-  }
-
-  @Test
-  public void testProofNumbers() {
-    Board.e6();
-    
-    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 5);
-    StoredBoard child1 = StoredBoard.childStoredBoard(Board.e6f4().getPlayer(), Board.e6f4().getOpponent(), father, -100, 1);
-    StoredBoard child2 = StoredBoard.childStoredBoard(Board.e6f6().getPlayer(), Board.e6f6().getOpponent(), father, 0, 1);
-    StoredBoard child3 = StoredBoard.childStoredBoard(Board.e6d6().getPlayer(), Board.e6d6().getOpponent(), father, 800, 1);
     
     child1.proofNumberCurEval = 1000;
     child1.proofNumberNextEval = 2200;
@@ -72,21 +61,21 @@ public class StoredBoardTest {
 
   @Test
   public void testEvalGoalForLeaf() {
-    StoredBoard father = StoredBoard.initialStoredBoard(Board.e6().getPlayer(), Board.e6().getOpponent(), 10, 20, 4);
-    StoredBoard child1 = StoredBoard.childStoredBoard(Board.e6f4().getPlayer(), Board.e6f4().getOpponent(), father, -100, 1);
-    StoredBoard child2 = StoredBoard.childStoredBoard(Board.e6f6().getPlayer(), Board.e6f6().getOpponent(), father, 0, 1);
-    StoredBoard child3 = StoredBoard.childStoredBoard(Board.e6d6().getPlayer(), Board.e6d6().getOpponent(), father, 800, 1);
+    StoredBoard father = StoredBoard.initialStoredBoard(new Board("e6"), 10, 20, 5);
+    StoredBoard child1 = StoredBoard.childStoredBoard(new Board("e6f4"), father, -100, 1);
+    StoredBoard child2 = StoredBoard.childStoredBoard(new Board("e6f6"), father, 0, 1);
+    StoredBoard child3 = StoredBoard.childStoredBoard(new Board("e6d6"), father, 800, 1);
     father.setChildren(new StoredBoard[] {child1, child2, child3});
     father.setEvalGoalRecursive(1000);
     
     // Proves >= -11.
-    assertEquals(child1.proofNumberCurEval, EndgameTimeEstimator.proofNumber(Board.e6f4(), -1100, -100), 1);
+    assertEquals(child1.proofNumberCurEval, EndgameTimeEstimator.proofNumber(new Board("e6f4"), -1100, -100), 1);
     // Proves >= -9.
-    assertEquals(child1.proofNumberNextEval, EndgameTimeEstimator.proofNumber(Board.e6f4(), -900, -100), 1);
+    assertEquals(child1.proofNumberNextEval, EndgameTimeEstimator.proofNumber(new Board("e6f4"), -900, -100), 1);
     // Proves <= -9.
-    assertEquals(child1.disproofNumberCurEval, EndgameTimeEstimator.disproofNumber(Board.e6f4(), -900, -100), 1);
+    assertEquals(child1.disproofNumberCurEval, EndgameTimeEstimator.disproofNumber(new Board("e6f4"), -900, -100), 1);
     // Proves <= -11.
-    assertEquals(child1.disproofNumberNextEval, EndgameTimeEstimator.disproofNumber(Board.e6f4(), -1100, -100), 1);
+    assertEquals(child1.disproofNumberNextEval, EndgameTimeEstimator.disproofNumber(new Board("e6f4"), -1100, -100), 1);
 
     // Child1 is much better than child3. This means that proof numbers (for the
     // opponent) are harder.
@@ -98,19 +87,19 @@ public class StoredBoardTest {
   
   @Test
   public void testBoardChildrenAreCorrect() {
-    StoredBoard firstMove = StoredBoard.initialStoredBoard(Board.e6(), 0, 0, 34);
+    StoredBoard firstMove = StoredBoard.initialStoredBoard(new Board("e6"), 0, 0, 34);
     firstMove.lower = -1;
     firstMove.upper = 1;
  
-    StoredBoard diag = StoredBoard.childStoredBoard(Board.e6f6(), firstMove, 0, 10);
+    StoredBoard diag = StoredBoard.childStoredBoard(new Board("e6f6"), firstMove, 0, 10);
     diag.lower = -1;
     diag.upper = 1;
     
-    StoredBoard perp = StoredBoard.childStoredBoard(Board.e6f4(), firstMove, 2, 11);
+    StoredBoard perp = StoredBoard.childStoredBoard(new Board("e6f4"), firstMove, 2, 11);
     perp.lower = 2;
     perp.upper = 2;
  
-    StoredBoard par = StoredBoard.childStoredBoard(Board.e6d6(), firstMove, 8, 12);
+    StoredBoard par = StoredBoard.childStoredBoard(new Board("e6d6"), firstMove, 8, 12);
     par.lower = 8;
     par.upper = 8;
 
