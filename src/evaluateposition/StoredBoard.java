@@ -457,7 +457,12 @@ public class StoredBoard {
         && (new GetMovesCache()).getNMoves(opponent, player) == 0
         && (this.getProofNumberCurEval() == 0 || this.getProofNumberCurEval() == Double.POSITIVE_INFINITY)) {
       int correctEval = BitPattern.getEvaluationGameOver(player, opponent);
-      return eval == correctEval && lower == correctEval && upper == correctEval;
+      if (eval != correctEval || lower != correctEval || upper != correctEval) {
+        throw new AssertionError(
+            "Got wrong eval/lower/upper = " + eval + "/" + lower + "/" + upper + 
+            " (expected " + correctEval + ") for board\n" + this.getBoard());
+      }
+      return true;
     }
     if (children == null) {
       return true;

@@ -30,9 +30,8 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class EvaluatorMCTSTest {
+  EvaluatorInterface EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
-  DepthOneEvaluator DEPTH_ONE_EVALUATOR = new DiskDifferenceEvaluatorPlusTwo();
-//  EvaluatorMidgame EVALUATOR_MIDGAME = new EvaluatorMidgame();
   
   public void testBoard(StoredBoard b, int eval, int bestVariationPlayer, int bestVariationOpponent) {
     assertEquals(eval, b.getEval());
@@ -40,8 +39,8 @@ public class EvaluatorMCTSTest {
 //    assertEquals(bestVariationOpponent, b.bestVariationOpponent);
   }
 
-  private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
-    StoredBoard b = evaluator.get(new Board(sequence));
+  private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, Board board) {
+    StoredBoard b = evaluator.get(board);
     ArrayList<StoredBoard> fathers = new ArrayList<>();
     StoredBoard curFather = b;
     
@@ -52,14 +51,16 @@ public class EvaluatorMCTSTest {
     
     return new HashMapVisitedPositions.PositionToImprove(b, Math.random() > 0.5, fathers);
   }
+
+  private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
+    return getPositionToImprove(evaluator, new Board(sequence));
+  }
   
   @Test
   public void testDoubleFather() {
-    EvaluatorInterface evaluatorBasic = new DiskDifferenceEvaluatorPlusTwo();
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(20, 20, evaluatorBasic);
-    Board e6f4 = new Board("e6f4");
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(20, 20, EVALUATOR_BASIC);
     
-    evaluator.setFirstPosition(e6f4.getPlayer(), e6f4.getOpponent());
+    evaluator.setFirstPosition(new Board("e6f4"));
     evaluator.addChildren(getPositionToImprove(evaluator, "e6f4"));
     evaluator.addChildren(getPositionToImprove(evaluator, "e6f4c3"));
     evaluator.addChildren(getPositionToImprove(evaluator, "e6f4c3c4"));
@@ -76,49 +77,44 @@ public class EvaluatorMCTSTest {
     assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
     assertEquals(evaluator.get(new Board("e6f4d3c4")), doubleFather.fathers.get(1));
   }
-//  
-//  @Test
-//  public void testPass() {
-//    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10);
-//    StoredBoard pass = new StoredBoard(Board.pass(), 0, 0, true, 0);
-////    pass.bestVariationPlayer = 5;
-////    pass.bestVariationOpponent = 3;
-//    evaluator.addFirstPosition(pass);
-//    evaluator.addPositions(pass);
-//    StoredBoard afterPass = evaluator.get(pass.opponent, pass.player);
-//    assert(afterPass != null);
-//    assertEquals(afterPass.player, pass.opponent);
-//    assertEquals(afterPass.opponent, pass.player);
-//    assertEquals(afterPass.fathers.size(), 1);    
-//    assertEquals(afterPass.fathers.get(0), evaluator.get(pass.getBoard()));
-//    assertEquals(evaluator.get(pass.getBoard()).children.length, 1);    
-//    assertEquals(evaluator.get(pass.getBoard()).children[0],
-//                 evaluator.get(afterPass.getBoard()));
-//  }
-//  
-//  @Test
-//  public void testDoublePass() {
-//    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, POSSIBLE_MOVES_FINDER, EVALUATOR_MIDGAME);
-//    StoredBoard pass = new StoredBoard(Board.bothPass(), 0, 6);
-////    pass.bestVariationPlayer = 5;
-////    pass.bestVariationOpponent = 3;
-//    evaluator.addFirstPosition(pass);
-//    evaluator.addPositions(pass);
-//    assertEquals(1, evaluator.size);
-//    int eval = (pass.getBoard().getPlayerDisks() - 
-//                  pass.getBoard().getOpponentDisks()) + 
-//                 pass.getBoard().getEmptySquares() * (int) Math.signum(
-//                   pass.getBoard().getPlayerDisks() - 
-//                   pass.getBoard().getOpponentDisks());
-//    
-//    StoredBoard passSB = evaluator.get(pass.getBoard());
-//    assertEquals(eval * 100, passSB.eval);
-////    for (short sample : passSB.samples) {
-////      assertEquals(sample, (short) (eval * 100));
-////    }
-//    assertEquals(eval * 100, passSB.lower);
-//    assertEquals(eval * 100, passSB.upper);
-//  }
+  
+  @Test
+  public void testPass() {
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, EVALUATOR_BASIC);
+    Board passB = Board.pass();
+    evaluator.setFirstPosition(passB);
+    evaluator.addChildren(getPositionToImprove(evaluator, passB));
+
+    StoredBoard pass = evaluator.get(passB);
+    StoredBoard afterPass = evaluator.get(passB.getOpponent(), passB.getPlayer());
+    assert afterPass != null;
+    assertEquals(afterPass.getPlayer(), pass.getOpponent());
+    assertEquals(afterPass.getOpponent(), pass.getPlayer());
+    assertEquals(afterPass.fathers.size(), 1);    
+    assertEquals(afterPass.fathers.get(0), evaluator.get(pass.getPlayer(), pass.getOpponent()));
+    assertEquals(evaluator.get(pass.getBoard()).children.length, 1);    
+    assertEquals(evaluator.get(pass.getBoard()).children[0],
+                 evaluator.get(afterPass.getBoard()));
+  }
+  
+  @Test
+  public void testDoublePass() {
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, EVALUATOR_BASIC);
+    Board passB = Board.bothPass();
+    evaluator.setFirstPosition(passB);
+    evaluator.addChildren(getPositionToImprove(evaluator, passB));
+    assertEquals(1, evaluator.size);
+
+    int eval = passB.getPlayerDisks() - passB.getOpponentDisks() + 
+               passB.getEmptySquares() * (int) Math.signum(
+                   passB.getPlayerDisks() - 
+                   passB.getOpponentDisks());
+    
+    StoredBoard passSB = evaluator.get(passB);
+    assertEquals(eval * 100, passSB.eval);
+    assertEquals(eval * 100, passSB.lower);
+    assertEquals(eval * 100, passSB.upper);
+  }
 //
 //  //                  e6        e6
 //  //                  +20   ->  +20
@@ -208,7 +204,6 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testTreeIsCorrectAfterUpdates() {
-    EvaluatorInterface evaluatorBasic = new DiskDifferenceEvaluatorPlusTwo();
     for (int i = 0; i < 10000; i++) {
       if (i % 100 == 0) {
         System.out.println("Done " + i);
@@ -216,7 +211,7 @@ public class EvaluatorMCTSTest {
       int nElements = 5 + (int) (Math.random() * 100);
       int totalSize = nElements + (int) (Math.random() * 100);
 
-      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, evaluatorBasic);
+      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, EVALUATOR_BASIC);
       Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;

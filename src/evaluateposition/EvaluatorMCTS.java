@@ -76,6 +76,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (nMoves == 0) {
       if (mover.getNMoves(opponent, player) == 0) {
         father.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
+        assert father.isAllOK();
+        return;
       } else {
         ++nMoves;
       }
@@ -188,6 +190,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public Status getStatus() {
     return status;
+  }
+
+  void setFirstPosition(Board b) {
+    setFirstPosition(b.getPlayer(), b.getOpponent());
   }
 
   void setFirstPosition(long player, long opponent) {
