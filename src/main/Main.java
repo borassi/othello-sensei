@@ -89,17 +89,19 @@ public class Main implements Runnable {
   
   public void stop() {
     stopping = true;
-    if (future == null) {
-      return;
-    }
     while (true) {
+      if (future == null) {
+        return;
+      }
       EVALUATOR.stop();
       try {
+        System.out.println(future);
         future.get(100, TimeUnit.MILLISECONDS);
         future = null;
         break;
       } catch (InterruptedException | ExecutionException ex) {
         Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        break;
       } catch (TimeoutException ex) {}
     }
   }
@@ -153,6 +155,8 @@ public class Main implements Runnable {
     }
     EVALUATOR.evaluatePosition(
         b, -6400, 6400, ui.depth(), updateTime, reset);
+//    EVALUATOR.evaluatePosition(
+//        b, 0, 1, ui.depth(), updateTime, reset);
   }
   
   private boolean stopping = false;
@@ -217,16 +221,16 @@ public class Main implements Runnable {
         case STOPPED_TIME:
           break;
       }
-      PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
-      int timeEachPosition = (int) (0.9 * updateTime / toEvaluate.size());
-      if (toEvaluate.isEmpty()) {
-        return;
-      }
-
-      while (!toEvaluate.isEmpty()) {
-        StoredBoard child = toEvaluate.poll();
-        evaluatePosition(child.getBoard(), timeEachPosition, false);
-      }
+//      PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
+//      int timeEachPosition = (int) (0.9 * updateTime / toEvaluate.size());
+//      if (toEvaluate.isEmpty()) {
+//        return;
+//      }
+//
+//      while (!toEvaluate.isEmpty()) {
+//        StoredBoard child = toEvaluate.poll();
+//        evaluatePosition(child.getBoard(), timeEachPosition, false);
+//      }
       nUpdate++;
     }
     

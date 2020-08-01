@@ -78,20 +78,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public void updateEvalGoalIfNeeded() {
     int evalGoal = firstPosition.getEvalGoal();
-    if (this.firstPosition.getProofNumberNextEval() == 0) {
+    if (this.firstPosition.getProofNumberNextEval() == 0 && evalGoal + 200 <= upper) {
       this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
-    if (this.firstPosition.getDisproofNumberNextEval() == 0) {
+    if (this.firstPosition.getDisproofNumberNextEval() == 0 && evalGoal - 200 >= lower) {
       this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.descendants > nextUpdateEvalGoal) {
-      if (this.firstPosition.getEval() >= evalGoal + 200) {
+      if (this.firstPosition.getEval() >= evalGoal + 200 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      if (this.firstPosition.getEval() <= evalGoal - 200) {
+      if (this.firstPosition.getEval() <= evalGoal - 200 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
@@ -125,7 +125,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     int evalGoal = position.evalGoal;
     int posUpper = position.playerIsStartingPlayer ? upper : -lower;
     int posLower = position.playerIsStartingPlayer ? lower : -upper;
-    System.out.println(posLower + " " + evalGoal + " " + posUpper + " " + playerVariates + " " + position.playerIsStartingPlayer);
+
     if (playerVariates) {
       if (evalGoal >= posUpper) {
         throw new AssertionError(
@@ -162,12 +162,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     StoredBoard firstPositionLocal = this.firstPosition;
     boolean playerVariates;
     
-    if (!firstPositionLocal.isPartiallySolved()) {
-      return nextPositionToImproveMidgame(
-          firstPositionLocal,
-          this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
-          parents);
-    }
+//    if (!firstPositionLocal.isPartiallySolved()) {
+//      return nextPositionToImproveMidgame(
+//          firstPositionLocal,
+//          this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
+//          parents);
+//    }
     if (firstPosition.getEvalGoal() >= upper) {
       playerVariates = false;
     } else if (firstPosition.getEvalGoal() <= lower) {
@@ -260,13 +260,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     StoredBoard board = position.board;
     int alpha;
     int beta;
-    if (firstPosition.isPartiallySolved()) {
+//    if (firstPosition.isPartiallySolved()) {
       alpha = position.getAlpha();
       beta = position.getBeta();
-    } else {
-      alpha = -6400;
-      beta = 6400;
-    }
+//    } else {
+//      alpha = -6400;
+//      beta = 6400;
+//    }
     int eval = evaluatorMidgame.evaluatePosition(
         board.getPlayer(), board.getOpponent(), nEmpties, alpha, beta);
     if (eval <= alpha) {
@@ -309,9 +309,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
     status = Status.RUNNING;
-    assert(lower < upper);
-    this.lower = lower;
-    this.upper = upper;
+    this.lower = Math.floorDiv(lower, 200) * 200;
+    this.upper = (int) Math.ceil(upper / 200.0) * 200;
+    assert(this.lower < this.upper);
 
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent()) {
@@ -324,7 +324,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (boardStored == null) {
         setFirstPosition(board.getPlayer(), board.getOpponent());
       }
-      setEvalGoal(firstPosition.getEval());
+      setEvalGoal(Math.max(lower, Math.min(upper, firstPosition.getEval())));
     }
     if (firstPosition.isSolved()) {
       status = Status.SOLVED;
