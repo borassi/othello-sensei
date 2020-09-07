@@ -203,7 +203,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     
     SpinnerModel allowedDepths = new SpinnerListModel(Arrays.asList(new String[] 
       {"0", "1", "100", "1000", "10000", "100000", "1000000", "2000000", "5000000", "10000000",
-      "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000"
+      "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000", "100000000000000"
     }));
     depth = new JSpinner(allowedDepths);
     depth.setValue("10000000");

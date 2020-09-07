@@ -19,6 +19,7 @@ import board.Board;
 import board.GetMoves;
 import board.GetMovesCache;
 import constants.Constants;
+import helpers.Gaussian;
 import helpers.Utils;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -221,7 +222,7 @@ public class StoredBoard {
       disproofNumberCurEval += child.proofNumberCurEval;
       disproofNumberNextEval += child.proofNumberNextEval;
     }
-
+    
     minLogDerivativePlayerVariates = Double.MAX_VALUE;
     minLogDerivativeOpponentVariates = Double.MAX_VALUE;
     for (StoredBoard child : children) {
@@ -260,6 +261,7 @@ public class StoredBoard {
     assert descendants > 0;
     this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
     this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
+    double winProbability = Math.max(1.E-5, 1 - Math.max(1.E-5, Gaussian.CDF(evalGoal, eval, 400)));
     if (lower > evalGoal - 100) {
       proofNumberCurEval = 0;
       disproofNumberNextEval = Double.POSITIVE_INFINITY;
@@ -268,9 +270,9 @@ public class StoredBoard {
       disproofNumberNextEval = 0;
     } else {
       proofNumberCurEval = endgameTimeEstimator.proofNumber(
-          player, opponent, evalGoal - 100, this.eval);
+          player, opponent, evalGoal - 100, this.eval) / winProbability;
       disproofNumberNextEval = endgameTimeEstimator.disproofNumber(
-          player, opponent, evalGoal - 100, this.eval);
+          player, opponent, evalGoal - 100, this.eval) / (1-winProbability);
     }
     if (upper < evalGoal + 100) {
       proofNumberNextEval = Double.POSITIVE_INFINITY;
@@ -280,9 +282,9 @@ public class StoredBoard {
       disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
       proofNumberNextEval = endgameTimeEstimator.proofNumber(
-          player, opponent, evalGoal + 100, eval);
+          player, opponent, evalGoal + 100, eval) / winProbability;
       disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
-          player, opponent, evalGoal + 100, eval);
+          player, opponent, evalGoal + 100, eval) / (1-winProbability);
     }
     assert areThisBoardEvalsOK();
   }

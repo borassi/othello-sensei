@@ -35,7 +35,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   public double logProofNumber(long player, long opponent, int lower, int approxEval) {
     int empties = 64 - Long.bitCount(player | opponent);
     return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(opponent, player))
-        +0.000603 * (lower - approxEval) - Math.max(Math.min(Math.log(1 - Gaussian.CDF(lower, approxEval - 200, 400)), 0), -20);
+        +0.000603 * (lower - approxEval);
   }
 
   @Override
@@ -46,7 +46,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   public double logDisproofNumber(long player, long opponent, int lower, int approxEval) {
     int empties = 64 - Long.bitCount(player | opponent);
     return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(player, opponent))
-        -0.0005 * (lower - approxEval) - Math.max(Math.min(Math.log(Gaussian.CDF(lower, approxEval + 200, 400)), 0), -20);
+        -0.0005 * (lower - approxEval);
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
