@@ -35,6 +35,8 @@ public class StoredBoard {
   int eval;
   int lower;
   int upper;
+  public double loseProbabilityCurEval;
+  public double loseProbabilityNextEval;
   // Positions to prove that eval >= evalGoal.
   double proofNumberCurEval;
   // Positions to prove that eval > evalGoal.
@@ -209,7 +211,9 @@ public class StoredBoard {
     lower = Short.MIN_VALUE;
     upper = Short.MIN_VALUE;
     proofNumberCurEval = Double.POSITIVE_INFINITY;
+    loseProbabilityCurEval = 1;
     proofNumberNextEval = Double.POSITIVE_INFINITY;
+    loseProbabilityNextEval = 1;
     disproofNumberCurEval = 0;
     disproofNumberNextEval = 0;
 
@@ -221,7 +225,11 @@ public class StoredBoard {
       proofNumberNextEval = Math.min(proofNumberNextEval, child.disproofNumberNextEval);
       disproofNumberCurEval += child.proofNumberCurEval;
       disproofNumberNextEval += child.proofNumberNextEval;
+      loseProbabilityCurEval *= 1 - child.loseProbabilityNextEval;
+      loseProbabilityNextEval *= 1 - child.loseProbabilityCurEval;
     }
+//    loseProbabilityCurEval = 1 - loseProbabilityCurEval;
+//    loseProbabilityNextEval = 1 - loseProbabilityNextEval;
     
     minLogDerivativePlayerVariates = Double.MAX_VALUE;
     minLogDerivativeOpponentVariates = Double.MAX_VALUE;
@@ -264,25 +272,31 @@ public class StoredBoard {
     double winProbability = Math.max(1.E-5, 1 - Math.max(1.E-5, Gaussian.CDF(evalGoal, eval, 400)));
     if (lower > evalGoal - 100) {
       proofNumberCurEval = 0;
+      loseProbabilityCurEval = 0;
       disproofNumberNextEval = Double.POSITIVE_INFINITY;
     } else if (upper < evalGoal - 100) {
       proofNumberCurEval = Double.POSITIVE_INFINITY;
+      loseProbabilityCurEval = 1;
       disproofNumberNextEval = 0;
     } else {
       proofNumberCurEval = endgameTimeEstimator.proofNumber(
           player, opponent, evalGoal - 100, this.eval) / winProbability;
+      loseProbabilityCurEval = 1-winProbability;
       disproofNumberNextEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal - 100, this.eval) / (1-winProbability);
     }
     if (upper < evalGoal + 100) {
       proofNumberNextEval = Double.POSITIVE_INFINITY;
+      loseProbabilityNextEval = 1;
       disproofNumberCurEval = 0;
     } else if (lower > evalGoal + 100) {
       proofNumberNextEval = 0;
+      loseProbabilityNextEval = 0;
       disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
       proofNumberNextEval = endgameTimeEstimator.proofNumber(
           player, opponent, evalGoal + 100, eval) / winProbability;
+      loseProbabilityNextEval = 1-winProbability;
       disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal + 100, eval) / (1-winProbability);
     }

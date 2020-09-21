@@ -109,7 +109,7 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(56), true);
+    setBoard(EndgameTest.readIthBoard(46), true);
   }
 
   /**
@@ -325,10 +325,11 @@ public class Main implements Runnable {
       annotations.disproofNumberCurEval = child.getProofNumberCurEval();
       annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
-          Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
-          Utils.prettyPrintDouble(
+          String.format("%.3f %.3f\n", 1 - child.loseProbabilityNextEval, 1 - child.loseProbabilityCurEval)
+        + Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
+        + Utils.prettyPrintDouble(
             current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
-          + " " + Utils.prettyPrintDouble(
+        + " " + Utils.prettyPrintDouble(
             current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
       ui.setAnnotations(annotations, ij);
     }
@@ -405,8 +406,9 @@ public class Main implements Runnable {
       annotations.disproofNumberCurEval = child.getProofNumberCurEval();
       annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
-          Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n" +
-        Utils.prettyPrintDouble(
+          String.format("%.3f %.3f\n", 1 - child.loseProbabilityNextEval, 1 - child.loseProbabilityCurEval)
+        +  Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
+        + Utils.prettyPrintDouble(
             current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
         + " " + Utils.prettyPrintDouble(
             current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
