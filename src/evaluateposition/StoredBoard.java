@@ -35,8 +35,8 @@ public class StoredBoard {
   int eval;
   int lower;
   int upper;
-  public double loseProbabilityCurEval;
-  public double loseProbabilityNextEval;
+  public double probGreaterEqualEvalGoal;
+  public double probStrictlyGreaterEvalGoal;
   // Positions to prove that eval >= evalGoal.
   double proofNumberCurEval;
   // Positions to prove that eval > evalGoal.
@@ -211,9 +211,9 @@ public class StoredBoard {
     lower = Short.MIN_VALUE;
     upper = Short.MIN_VALUE;
     proofNumberCurEval = Double.POSITIVE_INFINITY;
-    loseProbabilityCurEval = 1;
+    probGreaterEqualEvalGoal = 1 - children.length;
     proofNumberNextEval = Double.POSITIVE_INFINITY;
-    loseProbabilityNextEval = 1;
+    probStrictlyGreaterEvalGoal = 1 - children.length;
     disproofNumberCurEval = 0;
     disproofNumberNextEval = 0;
 
@@ -225,14 +225,14 @@ public class StoredBoard {
       proofNumberNextEval = Math.min(proofNumberNextEval, child.disproofNumberNextEval);
       disproofNumberCurEval += child.proofNumberCurEval;
       disproofNumberNextEval += child.proofNumberNextEval;
-      loseProbabilityCurEval *= 1 - child.loseProbabilityNextEval;
-      loseProbabilityNextEval *= 1 - child.loseProbabilityCurEval;
+      probGreaterEqualEvalGoal += Math.pow(child.probStrictlyGreaterEvalGoal, Constants.LAMBDA);
+      probStrictlyGreaterEvalGoal += Math.pow(child.probGreaterEqualEvalGoal, Constants.LAMBDA);
     }
-//    loseProbabilityCurEval = 1 - loseProbabilityCurEval;
-//    loseProbabilityNextEval = 1 - loseProbabilityNextEval;
-    
-    minLogDerivativePlayerVariates = Double.MAX_VALUE;
-    minLogDerivativeOpponentVariates = Double.MAX_VALUE;
+    probGreaterEqualEvalGoal = 1 - Math.pow(probGreaterEqualEvalGoal, 1 / Constants.LAMBDA);
+    probStrictlyGreaterEvalGoal = 1 - Math.pow(probStrictlyGreaterEvalGoal, 1 / Constants.LAMBDA);
+
+    minLogDerivativePlayerVariates = Double.POSITIVE_INFINITY;
+    minLogDerivativeOpponentVariates = Double.POSITIVE_INFINITY;
     for (StoredBoard child : children) {
       minLogDerivativePlayerVariates = Math.min(
           minLogDerivativePlayerVariates,
@@ -248,12 +248,24 @@ public class StoredBoard {
   
   public double logDerivativePlayerVariates(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    return Math.log(children.length) + Constants.C_PLAYER_VARIATES * (eval + child.eval);
+    if (child.probGreaterEqualEvalGoal == 0) {
+      return Double.POSITIVE_INFINITY;
+    }
+    if (-Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal) < 0) {
+      System.out.println("BIG MISTAKE!");
+    }
+    return -Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal);
   }
   
   public double logDerivativeOpponentVariates(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    return Math.log(children.length) + Constants.C_OPPONENT_VARIATES * (eval + child.eval);
+    if (child.probStrictlyGreaterEvalGoal == 0) {
+      return Double.POSITIVE_INFINITY;
+    }
+    if (-Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal) < 0) {
+      System.out.println("BIG MISTAKE!");
+    }
+    return -Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal);
   }
 
   protected void updateFathers() {
@@ -267,38 +279,37 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0;
-    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
-    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
-    double winProbability = Math.max(1.E-5, 1 - Math.max(1.E-5, Gaussian.CDF(evalGoal, eval, 400)));
+    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : 0;//Math.log(this.descendants);
+    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : 0;//Math.log(this.descendants);
+    probGreaterEqualEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal-100, eval, 400)));
+    probStrictlyGreaterEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal+100, eval, 400)));
     if (lower > evalGoal - 100) {
       proofNumberCurEval = 0;
-      loseProbabilityCurEval = 0;
+      probGreaterEqualEvalGoal = 1;
       disproofNumberNextEval = Double.POSITIVE_INFINITY;
     } else if (upper < evalGoal - 100) {
       proofNumberCurEval = Double.POSITIVE_INFINITY;
-      loseProbabilityCurEval = 1;
+      probGreaterEqualEvalGoal = 0;
       disproofNumberNextEval = 0;
     } else {
       proofNumberCurEval = endgameTimeEstimator.proofNumber(
-          player, opponent, evalGoal - 100, this.eval) / winProbability;
-      loseProbabilityCurEval = 1-winProbability;
+          player, opponent, evalGoal - 100, this.eval) / probGreaterEqualEvalGoal;
       disproofNumberNextEval = endgameTimeEstimator.disproofNumber(
-          player, opponent, evalGoal - 100, this.eval) / (1-winProbability);
+          player, opponent, evalGoal - 100, this.eval) / (1-probGreaterEqualEvalGoal);
     }
     if (upper < evalGoal + 100) {
       proofNumberNextEval = Double.POSITIVE_INFINITY;
-      loseProbabilityNextEval = 1;
+      probStrictlyGreaterEvalGoal = 0;
       disproofNumberCurEval = 0;
     } else if (lower > evalGoal + 100) {
       proofNumberNextEval = 0;
-      loseProbabilityNextEval = 0;
+      probStrictlyGreaterEvalGoal = 1;
       disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
       proofNumberNextEval = endgameTimeEstimator.proofNumber(
-          player, opponent, evalGoal + 100, eval) / winProbability;
-      loseProbabilityNextEval = 1-winProbability;
+          player, opponent, evalGoal + 100, eval) / probStrictlyGreaterEvalGoal;
       disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
-          player, opponent, evalGoal + 100, eval) / (1-winProbability);
+          player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
     }
     assert areThisBoardEvalsOK();
   }

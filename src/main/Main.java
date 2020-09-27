@@ -320,16 +320,15 @@ public class Main implements Runnable {
       annotations.lower = -child.getUpper() / 100F;
       annotations.upper = -child.getLower() / 100F;
       annotations.nVisited = child.getDescendants();
-      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
-      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
-      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
-      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
+//      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
+//      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
+//      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
+//      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
-          String.format("%.3f %.3f\n", 1 - child.loseProbabilityNextEval, 1 - child.loseProbabilityCurEval)
-        + Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
-        + Utils.prettyPrintDouble(
-            current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
-        + " " + Utils.prettyPrintDouble(
+          Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
+        + String.format("%.3f %.3f\n", 1 - child.probStrictlyGreaterEvalGoal, 1 - child.probGreaterEqualEvalGoal) 
+        + String.format("%.3f %.3f\n",
+            current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates,
             current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
       ui.setAnnotations(annotations, ij);
     }
@@ -401,12 +400,12 @@ public class Main implements Runnable {
       annotations.upper = -child.getLower() / 100F;
       annotations.isBestMove = ij.equals(bestIJ);
       annotations.nVisited = child.getDescendants();
-      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
-      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
-      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
-      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
+//      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
+//      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
+//      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
+//      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
-          String.format("%.3f %.3f\n", 1 - child.loseProbabilityNextEval, 1 - child.loseProbabilityCurEval)
+          String.format("%.3f %.3f\n", 1 - child.probStrictlyGreaterEvalGoal, 1 - child.probGreaterEqualEvalGoal)
         +  Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
         + Utils.prettyPrintDouble(
             current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)

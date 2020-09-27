@@ -35,4 +35,7 @@ public class Constants {
   public final static int TRY_SC_LAST_4_CORNER = 2000;
   public final static int TRY_SC_LAST_3_NO_CORNER = 600;
   public final static int TRY_SC_LAST_3_CORNER = 1600;
+  
+  public final static double MIN_COST_LEAF = 0.0001;
+  public final static double LAMBDA = -14;
 }

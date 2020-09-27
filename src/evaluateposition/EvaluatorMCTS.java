@@ -162,12 +162,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     StoredBoard firstPositionLocal = this.firstPosition;
     boolean playerVariates;
     
-//    if (!firstPositionLocal.isPartiallySolved()) {
-//      return nextPositionToImproveMidgame(
-//          firstPositionLocal,
-//          this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
-//          parents);
-//    }
+    if (!firstPositionLocal.isPartiallySolved()) {
+      return nextPositionToImproveMidgame(
+          firstPositionLocal,
+          this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
+          parents);
+    }
     if (firstPosition.getEvalGoal() >= upper) {
       playerVariates = false;
     } else if (firstPosition.getEvalGoal() <= lower) {
