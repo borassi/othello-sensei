@@ -251,10 +251,14 @@ public class StoredBoard {
     if (child.probGreaterEqualEvalGoal == 0) {
       return Double.POSITIVE_INFINITY;
     }
-    if (-Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal) < 0) {
-      System.out.println("BIG MISTAKE!");
+    if (-Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal) < -1.E-8) {
+      System.out.print(1 - probStrictlyGreaterEvalGoal + " > ");
+      for (StoredBoard child1 : children) {
+        System.out.print(child1.probGreaterEqualEvalGoal + ", ");
+      }
+      System.out.println("BIG MISTAKE!!");
     }
-    return -Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal);
+    return Math.max(0, -Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal));
   }
   
   public double logDerivativeOpponentVariates(StoredBoard child) {
@@ -262,10 +266,10 @@ public class StoredBoard {
     if (child.probStrictlyGreaterEvalGoal == 0) {
       return Double.POSITIVE_INFINITY;
     }
-    if (-Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal) < 0) {
+    if (-Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal) < -1.E-8) {
       System.out.println("BIG MISTAKE!");
     }
-    return -Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal);
+    return Math.max(0, -Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal));
   }
 
   protected void updateFathers() {
@@ -279,8 +283,6 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0;
-    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : 0;//Math.log(this.descendants);
-    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : 0;//Math.log(this.descendants);
     probGreaterEqualEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal-100, eval, 400)));
     probStrictlyGreaterEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal+100, eval, 400)));
     if (lower > evalGoal - 100) {
@@ -311,6 +313,8 @@ public class StoredBoard {
       disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
     }
+    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
+    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
     assert areThisBoardEvalsOK();
   }
 

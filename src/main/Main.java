@@ -328,8 +328,8 @@ public class Main implements Runnable {
           Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
         + String.format("%.3f %.3f\n", 1 - child.probStrictlyGreaterEvalGoal, 1 - child.probGreaterEqualEvalGoal) 
         + String.format("%.3f %.3f\n",
-            current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates,
-            current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
+            1 / Math.exp(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates),
+            1 / Math.exp(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates));
       ui.setAnnotations(annotations, ij);
     }
   }
@@ -385,7 +385,7 @@ public class Main implements Runnable {
 
     PositionIJ bestIJ = findBestMove(children);
     double nVisited = 0;
-     
+
     for (StoredBoard child : children) {
       nVisited += child.getDescendants();
       PositionIJ ij = moveFromBoard(board, child);
@@ -404,14 +404,14 @@ public class Main implements Runnable {
 //      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
 //      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
 //      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
+      
       annotations.otherAnnotations =
-          String.format("%.3f %.3f\n", 1 - child.probStrictlyGreaterEvalGoal, 1 - child.probGreaterEqualEvalGoal)
-        +  Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
-        + Utils.prettyPrintDouble(
-            current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)
-        + " " + Utils.prettyPrintDouble(
-            current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates);
+          Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
+        + String.format("%.3f %.3f\n", 1 - child.probStrictlyGreaterEvalGoal, 1 - child.probGreaterEqualEvalGoal) 
+        + Utils.prettyPrintDouble(1. / Math.exp(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)) + " "
+        + Utils.prettyPrintDouble(1. / Math.exp(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates));
       ui.setAnnotations(annotations, ij);
+//      System.out.println(1. / Math.exp(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates));
     }
     ui.setMovesPerSecond(nVisited * 1000. / (System.currentTimeMillis() - startTime));
   }

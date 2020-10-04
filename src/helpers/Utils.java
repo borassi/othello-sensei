@@ -19,7 +19,7 @@ public class Utils {
       return "+Inf";
     } else if (l == Double.NEGATIVE_INFINITY) {
       return "-Inf";
-    } else if (l == 0) {
+    } else if (Math.abs(l) < 1.E-12) {
       return "0";
     }
     String sign = "";
@@ -29,15 +29,14 @@ public class Utils {
     }
     String[] suffixes = {"p", "n", "μ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y"};
     int orderOfMagnitude = (int) Math.log10(l);
-    int suffixesPosition = orderOfMagnitude / 3 + 4;
-    
-//    System.out.println(orderOfMagnitude + " " + l);
+    int suffixesPosition = (int) (orderOfMagnitude + 12) / 3;
+
     if (suffixesPosition >= suffixes.length || suffixesPosition < 0) {
       return String.format("%s%f", sign, l);
     }
     String suffix = suffixes[suffixesPosition];
     
-    double rescaledL = l / Math.pow(10, (orderOfMagnitude / 3) * 3);
+    double rescaledL = l / Math.pow(10, ((orderOfMagnitude + 12) / 3) * 3 - 12);
     
     if (orderOfMagnitude % 3 == 0) {
       return String.format("%s%.1f%s", sign, rescaledL, suffix);
@@ -52,5 +51,8 @@ public class Utils {
       }
     }
     return false;
+  }
+  public static void main(String args[]) {
+    System.out.println(Utils.prettyPrintDouble(10000));
   }
 }
