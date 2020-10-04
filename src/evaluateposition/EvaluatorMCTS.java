@@ -162,22 +162,22 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     StoredBoard firstPositionLocal = this.firstPosition;
     boolean playerVariates;
     
-    if (!firstPositionLocal.isPartiallySolved()) {
+//    if (!firstPositionLocal.isPartiallySolved()) {
       return nextPositionToImproveMidgame(
           firstPositionLocal,
           this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
           parents);
-    }
-    if (firstPosition.getEvalGoal() >= upper) {
-      playerVariates = false;
-    } else if (firstPosition.getEvalGoal() <= lower) {
-      playerVariates = true;
-    } else {
-      playerVariates = 
-          Math.max(firstPositionLocal.getProofNumberCurEval(), firstPositionLocal.getDisproofNumberNextEval()) >
-          Math.max(firstPositionLocal.getProofNumberNextEval(), firstPositionLocal.getDisproofNumberCurEval());      
-    }
-    return nextPositionToImproveEndgame(firstPositionLocal, playerVariates, parents);
+//    }
+//    if (firstPosition.getEvalGoal() >= upper) {
+//      playerVariates = false;
+//    } else if (firstPosition.getEvalGoal() <= lower) {
+//      playerVariates = true;
+//    } else {
+//      playerVariates = 
+//          Math.max(firstPositionLocal.getProofNumberCurEval(), firstPositionLocal.getDisproofNumberNextEval()) >
+//          Math.max(firstPositionLocal.getProofNumberNextEval(), firstPositionLocal.getDisproofNumberCurEval());      
+//    }
+//    return nextPositionToImproveEndgame(firstPositionLocal, playerVariates, parents);
   }
 
   public short evaluatePosition(Board board) {
@@ -241,7 +241,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         int eval = evaluatorMidgame.evaluatePosition(newPlayer, newOpponent, depth, -6400, 6400);
         long visited = evaluatorMidgame.getNVisited() + 1;
         child = StoredBoard.childStoredBoard(
-            newPlayer, newOpponent, father, eval, visited, fatherPos.playerVariates);
+            newPlayer, newOpponent, father, eval, visited);
         addedPositions += visited;
         super.add(child);
       } else {

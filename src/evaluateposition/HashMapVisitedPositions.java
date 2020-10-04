@@ -61,12 +61,7 @@ public class HashMapVisitedPositions {
 //    }
     public void addVisitedPositions(long visitedPositions) {
       for (StoredBoard b : parents) {
-        if ((playerVariates && (b.playerIsStartingPlayer == board.playerIsStartingPlayer)) ||
-            (!playerVariates && (b.playerIsStartingPlayer == board.playerIsStartingPlayer))) {
-          b.descendantsPlayerVariates += visitedPositions;
-        } else {
-          b.descendantsOpponentVariates += visitedPositions;          
-        }
+        b.descendants += visitedPositions;
       }
     }
   }

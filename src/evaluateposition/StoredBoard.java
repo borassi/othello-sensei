@@ -49,8 +49,7 @@ public class StoredBoard {
   public double minLogDerivativeOpponentVariates;
   int evalGoal;
   final boolean playerIsStartingPlayer;
-  long descendantsPlayerVariates;
-  long descendantsOpponentVariates;
+  long descendants;
 
   StoredBoard next;
   StoredBoard prev;
@@ -59,8 +58,7 @@ public class StoredBoard {
 
   private StoredBoard(
       long player, long opponent, int eval, int evalGoal,
-      boolean playerIsStartingPlayer, long descendantsPlayerVariates,
-      long descendantsOpponentVariates) {
+      boolean playerIsStartingPlayer, long descendants) {
     this.player = player;
     this.opponent = opponent;
     this.playerIsStartingPlayer = playerIsStartingPlayer;
@@ -71,8 +69,7 @@ public class StoredBoard {
     this.evalGoal = evalGoal;
     this.prev = null;
     this.next = null;
-    this.descendantsPlayerVariates = descendantsPlayerVariates;
-    this.descendantsOpponentVariates = descendantsOpponentVariates;
+    this.descendants = descendants;
     this.setEval(eval);
   }
   
@@ -83,20 +80,19 @@ public class StoredBoard {
   public static StoredBoard initialStoredBoard(
       long player, long opponent, int eval, int evalGoal, long descendants) {
     return new StoredBoard(
-        player, opponent, eval, evalGoal, true, descendants / 2, descendants - descendants / 2);
+        player, opponent, eval, evalGoal, true, descendants);
   }
 
   public static StoredBoard childStoredBoard(
-      Board b, StoredBoard father, int eval, long descendants, boolean playerVariates) {
-    return childStoredBoard(b.getPlayer(), b.getOpponent(), father, eval, descendants, playerVariates);
+      Board b, StoredBoard father, int eval, long descendants) {
+    return childStoredBoard(b.getPlayer(), b.getOpponent(), father, eval, descendants);
   }
   
   public static StoredBoard childStoredBoard(
-      long player, long opponent, StoredBoard father, int eval,
-      long descendants, boolean playerVariates) {
+      long player, long opponent, StoredBoard father, int eval, long descendants) {
     StoredBoard result = new StoredBoard(
         player, opponent, eval, -father.evalGoal, !father.playerIsStartingPlayer,
-        playerVariates ? descendants : 0, playerVariates ? 0 : descendants);
+        descendants);
     result.addFather(father);
     return result;
   }
@@ -154,15 +150,7 @@ public class StoredBoard {
   }
   
   public long getDescendants() {
-    return descendantsPlayerVariates + descendantsOpponentVariates;
-  }
-  
-  public long getDescendantsPlayerVariates() {
-    return descendantsPlayerVariates;
-  }
-  
-  public long getDescendantsOpponentVariates() {
-    return descendantsOpponentVariates;
+    return descendants;
   }
   
   public int getEvalGoal() {
@@ -302,7 +290,7 @@ public class StoredBoard {
   public final void setProofNumbersForLeaf() {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
-    assert descendantsPlayerVariates + descendantsOpponentVariates > 0;
+    assert descendants > 0;
     probGreaterEqualEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal-100, eval, 400)));
     probStrictlyGreaterEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal+100, eval, 400)));
     if (lower > evalGoal - 100) {
@@ -334,9 +322,9 @@ public class StoredBoard {
           player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
     }
     this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY :
-        Math.log(this.descendantsOpponentVariates+1) - Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
+        Math.log(this.descendants) - Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
     this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY :
-        Math.log(this.descendantsPlayerVariates+1) - Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
+        Math.log(this.descendants) - Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
     assert areThisBoardEvalsOK();
   }
 
