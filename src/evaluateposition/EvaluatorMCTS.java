@@ -57,7 +57,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public long getNVisited() {
-    return this.firstPosition.descendants;
+    return this.firstPosition.getDescendants();
   }
   
   public long getNStored() {
@@ -72,7 +72,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   protected void setEvalGoal(int evalGoal) {
     assert(evalGoal >= lower && evalGoal <= upper);
-    this.nextUpdateEvalGoal = (long) (this.firstPosition.descendants * 1.1);
+    this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
     this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
   }
   
@@ -86,7 +86,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
-    if (this.firstPosition.descendants > nextUpdateEvalGoal) {
+    if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
       if (this.firstPosition.getEval() >= evalGoal + 200 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
@@ -240,7 +240,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         int depth = 2;
         int eval = evaluatorMidgame.evaluatePosition(newPlayer, newOpponent, depth, -6400, 6400);
         long visited = evaluatorMidgame.getNVisited() + 1;
-        child = StoredBoard.childStoredBoard(newPlayer, newOpponent, father, eval, visited);
+        child = StoredBoard.childStoredBoard(
+            newPlayer, newOpponent, father, eval, visited, fatherPos.playerVariates);
         addedPositions += visited;
         super.add(child);
       } else {
@@ -289,7 +290,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           board.getPlayer(), board.getOpponent(), 2, -6400, 6400);
     int d;
     long seenPositions = 0;
-    for (d = 4; seenPositions < board.descendants * 2; d += 2) {
+    for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
       if (nEmpties - d < Constants.EMPTIES_FOR_ENDGAME) {
         solvePosition(position, nEmpties);
         return;
@@ -361,7 +362,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         status = Status.KILLED;
         break;
       }
-      if (this.firstPosition.descendants > maxNVisited) {
+      if (this.firstPosition.getDescendants() > maxNVisited) {
         status = Status.STOPPED_POSITIONS;
         break;
       }

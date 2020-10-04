@@ -49,14 +49,18 @@ public class StoredBoard {
   public double minLogDerivativeOpponentVariates;
   int evalGoal;
   final boolean playerIsStartingPlayer;
-  long descendants;
+  long descendantsPlayerVariates;
+  long descendantsOpponentVariates;
 
   StoredBoard next;
   StoredBoard prev;
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
-  private StoredBoard(long player, long opponent, int eval, int evalGoal, boolean playerIsStartingPlayer, long descendants) {
+  private StoredBoard(
+      long player, long opponent, int eval, int evalGoal,
+      boolean playerIsStartingPlayer, long descendantsPlayerVariates,
+      long descendantsOpponentVariates) {
     this.player = player;
     this.opponent = opponent;
     this.playerIsStartingPlayer = playerIsStartingPlayer;
@@ -67,7 +71,8 @@ public class StoredBoard {
     this.evalGoal = evalGoal;
     this.prev = null;
     this.next = null;
-    this.descendants = descendants;
+    this.descendantsPlayerVariates = descendantsPlayerVariates;
+    this.descendantsOpponentVariates = descendantsOpponentVariates;
     this.setEval(eval);
   }
   
@@ -75,16 +80,23 @@ public class StoredBoard {
     return initialStoredBoard(b.getPlayer(), b.getOpponent(), eval, evalGoal, descendants);
   }
   
-  public static StoredBoard initialStoredBoard(long player, long opponent, int eval, int evalGoal, long descendants) {
-    return new StoredBoard(player, opponent, eval, evalGoal, true, descendants);
+  public static StoredBoard initialStoredBoard(
+      long player, long opponent, int eval, int evalGoal, long descendants) {
+    return new StoredBoard(
+        player, opponent, eval, evalGoal, true, descendants / 2, descendants - descendants / 2);
   }
 
-  public static StoredBoard childStoredBoard(Board b, StoredBoard father, int eval, long descendants) {
-    return childStoredBoard(b.getPlayer(), b.getOpponent(), father, eval, descendants);
+  public static StoredBoard childStoredBoard(
+      Board b, StoredBoard father, int eval, long descendants, boolean playerVariates) {
+    return childStoredBoard(b.getPlayer(), b.getOpponent(), father, eval, descendants, playerVariates);
   }
   
-  public static StoredBoard childStoredBoard(long player, long opponent, StoredBoard father, int eval, long descendants) {
-    StoredBoard result = new StoredBoard(player, opponent, eval, -father.evalGoal, !father.playerIsStartingPlayer, descendants);
+  public static StoredBoard childStoredBoard(
+      long player, long opponent, StoredBoard father, int eval,
+      long descendants, boolean playerVariates) {
+    StoredBoard result = new StoredBoard(
+        player, opponent, eval, -father.evalGoal, !father.playerIsStartingPlayer,
+        playerVariates ? descendants : 0, playerVariates ? 0 : descendants);
     result.addFather(father);
     return result;
   }
@@ -130,7 +142,7 @@ public class StoredBoard {
   }
   
   public boolean isPartiallySolved() {
-    return descendants >= 0.05 * (proofNumberCurEval + disproofNumberCurEval);
+    return getDescendants() >= 0.05 * (proofNumberCurEval + disproofNumberCurEval);
   }
   
   public int getLower() {
@@ -142,7 +154,15 @@ public class StoredBoard {
   }
   
   public long getDescendants() {
-    return descendants;
+    return descendantsPlayerVariates + descendantsOpponentVariates;
+  }
+  
+  public long getDescendantsPlayerVariates() {
+    return descendantsPlayerVariates;
+  }
+  
+  public long getDescendantsOpponentVariates() {
+    return descendantsOpponentVariates;
   }
   
   public int getEvalGoal() {
@@ -282,7 +302,7 @@ public class StoredBoard {
   public final void setProofNumbersForLeaf() {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
-    assert descendants > 0;
+    assert descendantsPlayerVariates + descendantsOpponentVariates > 0;
     probGreaterEqualEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal-100, eval, 400)));
     probStrictlyGreaterEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal+100, eval, 400)));
     if (lower > evalGoal - 100) {
@@ -313,8 +333,10 @@ public class StoredBoard {
       disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
     }
-    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
-    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY : Math.log(this.descendants);
+    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY :
+        Math.log(this.descendantsOpponentVariates+1) - Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
+    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY :
+        Math.log(this.descendantsPlayerVariates+1) - Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
     assert areThisBoardEvalsOK();
   }
 
@@ -371,12 +393,12 @@ public class StoredBoard {
   
   public double childValuePlayerVariates(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    return child.disproofNumberNextEval / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberCurEval, 0.35) / Math.sqrt(child.descendants)));
+    return child.disproofNumberNextEval / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberCurEval, 0.35) / Math.sqrt(child.getDescendants())));
   }
   
   public double childValueOpponentVariates(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    return child.disproofNumberCurEval / Math.exp(0.1 * Math.pow(proofNumberCurEval, 0.35) / Math.sqrt(child.descendants));
+    return child.disproofNumberCurEval / Math.exp(0.1 * Math.pow(proofNumberCurEval, 0.35) / Math.sqrt(child.getDescendants()));
   }
 
   // Minimize proofNumberNextEval (= min disproofNumberNextEval of children).
@@ -435,9 +457,9 @@ public class StoredBoard {
       maxDescendants += father.getDescendants();
       fatherDesc += " " + father.getDescendants();
     }
-    if (descendants > maxDescendants) {
+    if (getDescendants() > maxDescendants) {
       throw new AssertionError(
-          "Bad number of descendants " + descendants + " > SUM_father descendants = "
+          "Bad number of descendants " + getDescendants() + " > SUM_father descendants = "
               + maxDescendants + ". Father descendants: " + fatherDesc);
     }
     return true;
