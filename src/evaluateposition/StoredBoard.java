@@ -239,13 +239,13 @@ public class StoredBoard {
     probGreaterEqualEvalGoal = 1 - Math.pow(probGreaterEqualEvalGoal, 1 / Constants.LAMBDA);
     probStrictlyGreaterEvalGoal = 1 - Math.pow(probStrictlyGreaterEvalGoal, 1 / Constants.LAMBDA);
 
-    minLogDerivativePlayerVariates = Double.POSITIVE_INFINITY;
-    minLogDerivativeOpponentVariates = Double.POSITIVE_INFINITY;
+    minLogDerivativePlayerVariates = Double.NEGATIVE_INFINITY;
+    minLogDerivativeOpponentVariates = Double.NEGATIVE_INFINITY;
     for (StoredBoard child : children) {
-      minLogDerivativePlayerVariates = Math.min(
+      minLogDerivativePlayerVariates = Math.max(
           minLogDerivativePlayerVariates,
           child.minLogDerivativeOpponentVariates + logDerivativePlayerVariates(child));
-      minLogDerivativeOpponentVariates = Math.min(
+      minLogDerivativeOpponentVariates = Math.max(
           minLogDerivativeOpponentVariates,
           child.minLogDerivativePlayerVariates + logDerivativeOpponentVariates(child));
     }
@@ -257,27 +257,27 @@ public class StoredBoard {
   public double logDerivativePlayerVariates(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     if (child.probGreaterEqualEvalGoal == 0) {
-      return Double.POSITIVE_INFINITY;
+      return Double.NEGATIVE_INFINITY;
     }
-    if (-Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal) < -1.E-8) {
+    if (Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal) > 1.E-8) {
       System.out.print(1 - probStrictlyGreaterEvalGoal + " > ");
       for (StoredBoard child1 : children) {
         System.out.print(child1.probGreaterEqualEvalGoal + ", ");
       }
       System.out.println("BIG MISTAKE!!");
     }
-    return Math.max(0, -Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal));
+    return Math.min(0, (1 - Constants.LAMBDA) * Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal));
   }
   
   public double logDerivativeOpponentVariates(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     if (child.probStrictlyGreaterEvalGoal == 0) {
-      return Double.POSITIVE_INFINITY;
+      return Double.NEGATIVE_INFINITY;
     }
     if (-Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal) < -1.E-8) {
       System.out.println("BIG MISTAKE!");
     }
-    return Math.max(0, -Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal));
+    return Math.min(0, (1 - Constants.LAMBDA) * Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal));
   }
 
   protected void updateFathers() {
@@ -321,10 +321,10 @@ public class StoredBoard {
       disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
           player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
     }
-    this.minLogDerivativePlayerVariates = lower == upper ? Double.POSITIVE_INFINITY :
-        Math.log(this.descendants) - Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
-    this.minLogDerivativeOpponentVariates = lower == upper ? Double.POSITIVE_INFINITY :
-        Math.log(this.descendants) - Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
+    this.minLogDerivativePlayerVariates = lower > evalGoal + 100 ? Double.NEGATIVE_INFINITY :
+        -Math.log(this.descendants) + Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
+    this.minLogDerivativeOpponentVariates = lower > evalGoal - 100 ? Double.NEGATIVE_INFINITY :
+        -Math.log(this.descendants) + Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
     assert areThisBoardEvalsOK();
   }
 
@@ -354,13 +354,13 @@ public class StoredBoard {
     StoredBoard best = null;
     for (StoredBoard child : children) {
       if (best == null ||
-          logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates <
+          logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates >
           logDerivativeOpponentVariates(best) + best.minLogDerivativePlayerVariates) {
         best = child;
       }
     }
     assert best != null;
-    assert logDerivativeOpponentVariates(best) + best.minLogDerivativePlayerVariates > 0;
+    assert logDerivativeOpponentVariates(best) + best.minLogDerivativePlayerVariates < 0;
     return best;
   }
 
@@ -369,13 +369,13 @@ public class StoredBoard {
     StoredBoard best = null;
     for (StoredBoard child : children) {
       if (best == null ||
-          logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates <
+          logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates >
           logDerivativePlayerVariates(best) + best.minLogDerivativeOpponentVariates) {
         best = child;
       }
     }
     assert best != null;
-    assert logDerivativePlayerVariates(best) + best.minLogDerivativeOpponentVariates > 0;
+    assert logDerivativePlayerVariates(best) + best.minLogDerivativeOpponentVariates < 0;
     return best;
   }
   
@@ -389,35 +389,35 @@ public class StoredBoard {
     return child.disproofNumberCurEval / Math.exp(0.1 * Math.pow(proofNumberCurEval, 0.35) / Math.sqrt(child.getDescendants()));
   }
 
-  // Minimize proofNumberNextEval (= min disproofNumberNextEval of children).
-  public StoredBoard bestChildPlayerVariates() {
-    assert !isLeaf();
-    StoredBoard best = null;
-    for (StoredBoard child : children) {
-      if (child.disproofNumberNextEval == 0 || child.disproofNumberNextEval == Double.POSITIVE_INFINITY) continue;
-      if (best == null ||
-          childValuePlayerVariates(child) < childValuePlayerVariates(best)) {
-        best = child;
-      }
-    }
-    assert best != null;
-    return best;
-  }
-  
-  // Minimize proofNumberCurEval (= min disproofNumberCurEval of children).
-  public StoredBoard bestChildOpponentVariates() {
-    assert !isLeaf();
-    StoredBoard best = null;
-    for (StoredBoard child : children) {
-      if (child.disproofNumberCurEval == 0 || child.disproofNumberCurEval == Double.POSITIVE_INFINITY) continue;
-      if (best == null ||
-          childValueOpponentVariates(child) < childValueOpponentVariates(best)) {
-        best = child;
-      }
-    }
-    assert best != null;
-    return best;
-  }
+//  // Minimize proofNumberNextEval (= min disproofNumberNextEval of children).
+//  public StoredBoard bestChildPlayerVariates() {
+//    assert !isLeaf();
+//    StoredBoard best = null;
+//    for (StoredBoard child : children) {
+//      if (child.disproofNumberNextEval == 0 || child.disproofNumberNextEval == Double.POSITIVE_INFINITY) continue;
+//      if (best == null ||
+//          childValuePlayerVariates(child) < childValuePlayerVariates(best)) {
+//        best = child;
+//      }
+//    }
+//    assert best != null;
+//    return best;
+//  }
+//  
+//  // Minimize proofNumberCurEval (= min disproofNumberCurEval of children).
+//  public StoredBoard bestChildOpponentVariates() {
+//    assert !isLeaf();
+//    StoredBoard best = null;
+//    for (StoredBoard child : children) {
+//      if (child.disproofNumberCurEval == 0 || child.disproofNumberCurEval == Double.POSITIVE_INFINITY) continue;
+//      if (best == null ||
+//          childValueOpponentVariates(child) < childValueOpponentVariates(best)) {
+//        best = child;
+//      }
+//    }
+//    assert best != null;
+//    return best;
+//  }
 
   boolean areThisBoardEvalsOK() {
     if (this.lower > this.eval || this.eval > this.upper) {

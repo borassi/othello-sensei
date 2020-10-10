@@ -142,20 +142,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return true;
   }
   
-  protected synchronized PositionToImprove nextPositionToImproveEndgame(
-      StoredBoard father, boolean playerVariates,
-      ArrayList<StoredBoard> parents) {
-    assert positionToImproveAndEvalGoalAreOk(father, playerVariates);
-    parents.add(father);
-    if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, parents);
-    }
-    if (playerVariates) {
-      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, parents);
-    } else {
-      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
-    }
-  }
+//  protected synchronized PositionToImprove nextPositionToImproveEndgame(
+//      StoredBoard father, boolean playerVariates,
+//      ArrayList<StoredBoard> parents) {
+//    assert positionToImproveAndEvalGoalAreOk(father, playerVariates);
+//    parents.add(father);
+//    if (father.isLeaf()) {
+//      return new PositionToImprove(father, playerVariates, parents);
+//    }
+//    if (playerVariates) {
+//      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, parents);
+//    } else {
+//      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
+//    }
+//  }
 
   protected PositionToImprove nextPositionToImprove() {
     ArrayList<StoredBoard> parents = new ArrayList<>();
@@ -165,7 +165,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //    if (!firstPositionLocal.isPartiallySolved()) {
       return nextPositionToImproveMidgame(
           firstPositionLocal,
-          this.firstPosition.minLogDerivativePlayerVariates < this.firstPosition.minLogDerivativeOpponentVariates,
+          this.firstPosition.minLogDerivativePlayerVariates > this.firstPosition.minLogDerivativeOpponentVariates,
           parents);
 //    }
 //    if (firstPosition.getEvalGoal() >= upper) {

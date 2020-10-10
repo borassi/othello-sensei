@@ -361,8 +361,8 @@ public class Main implements Runnable {
       CaseAnnotations annotations = new CaseAnnotations();
       annotations.eval = -child.getEval() / 100F;
       annotations.isBestMove = ij.equals(bestIJ);
-      annotations.lower = -child.getUpper() / 100F;
-      annotations.upper = -child.getLower() / 100F;
+//      annotations.lower = -child.getUpper() / 100F;
+//      annotations.upper = -child.getLower() / 100F;
       annotations.nVisited = child.getDescendants();
 //      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
 //      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
@@ -371,8 +371,10 @@ public class Main implements Runnable {
       annotations.otherAnnotations =
         Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
         + String.format("%.3f %.3f\n", 1 - child.probStrictlyGreaterEvalGoal, 1 - child.probGreaterEqualEvalGoal) 
-        + Utils.prettyPrintDouble(1 / Math.exp(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates)) + " "
-        + Utils.prettyPrintDouble(1 / Math.exp(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates));
+        + Utils.prettyPrintDouble(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates) + " "
+        + Utils.prettyPrintDouble(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates) + "\n"
+        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
+        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);
     }
   }
