@@ -322,9 +322,9 @@ public class StoredBoard {
           player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
     }
     this.minLogDerivativePlayerVariates = lower > evalGoal + 100 ? Double.NEGATIVE_INFINITY :
-        -Math.log(this.descendants) + Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
+        -Math.log(this.descendants) + (1 - Constants.LAMBDA) / 2 * Math.log(probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal));
     this.minLogDerivativeOpponentVariates = lower > evalGoal - 100 ? Double.NEGATIVE_INFINITY :
-        -Math.log(this.descendants) + Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
+        -Math.log(this.descendants) +(1 - Constants.LAMBDA) / 2 * Math.log(probGreaterEqualEvalGoal * (1 - probGreaterEqualEvalGoal));;
     assert areThisBoardEvalsOK();
   }
 
