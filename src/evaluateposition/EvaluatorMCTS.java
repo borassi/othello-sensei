@@ -336,6 +336,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     HashMapVisitedPositions.PositionToImprove nextPos;
     int i = 0;
     while (true) {
+//      System.out.println(this.firstPosition.descendants + "\t" + this.firstPosition.probGreaterEqualEvalGoal + "\t" + this.firstPosition.probStrictlyGreaterEvalGoal);
       nextPos = nextPositionToImprove();
       StoredBoard next = nextPos.board;
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());

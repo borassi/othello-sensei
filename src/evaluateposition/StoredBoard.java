@@ -275,6 +275,10 @@ public class StoredBoard {
       return Double.NEGATIVE_INFINITY;
     }
     if (-Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal) < -1.E-8) {
+      System.out.print(1 - probGreaterEqualEvalGoal + " > ");
+      for (StoredBoard child1 : children) {
+        System.out.print(child1.probStrictlyGreaterEvalGoal + ", ");
+      }
       System.out.println("BIG MISTAKE!");
     }
     return Math.min(0, (1 - Constants.LAMBDA) * Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal));
@@ -291,8 +295,33 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0;
-    probGreaterEqualEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal-100, eval, 400)));
-    probStrictlyGreaterEvalGoal = Math.max(Constants.MIN_COST_LEAF, 1 - Math.max(Constants.MIN_COST_LEAF, Gaussian.CDF(evalGoal+100, eval, 400)));
+    probGreaterEqualEvalGoal = 1 - Gaussian.CDF(evalGoal-100, eval, 400);
+    double maxProbGreaterEqualEvalGoal = 1 - 
+        Math.min(
+        Constants.PPN_MIN_COST_LEAF,
+        Constants.PPN_EPSILON * endgameTimeEstimator.proofNumber(
+            player, opponent, evalGoal - 100, this.eval));
+    double minProbGreaterEqualEvalGoal =
+        Math.min(
+        Constants.PPN_MIN_COST_LEAF,
+        Constants.PPN_EPSILON * endgameTimeEstimator.disproofNumber(
+            player, opponent, evalGoal - 100, this.eval));
+    probGreaterEqualEvalGoal = Math.max(minProbGreaterEqualEvalGoal, Math.min(probGreaterEqualEvalGoal, maxProbGreaterEqualEvalGoal));
+
+    probStrictlyGreaterEvalGoal = 1 - Gaussian.CDF(evalGoal+100, eval, 400);
+    double maxProbStrictlyGreaterEvalGoal = 1 - 
+        Math.min(
+        Constants.PPN_MIN_COST_LEAF,
+        Constants.PPN_EPSILON * endgameTimeEstimator.proofNumber(
+            player, opponent, evalGoal + 100, this.eval));
+    double minProbStrictlyGreaterEvalGoal =
+        Math.min(
+        Constants.PPN_MIN_COST_LEAF,
+        Constants.PPN_EPSILON * endgameTimeEstimator.disproofNumber(
+            player, opponent, evalGoal + 100, this.eval));
+
+    probStrictlyGreaterEvalGoal = Math.max(minProbStrictlyGreaterEvalGoal, Math.min(probStrictlyGreaterEvalGoal, maxProbStrictlyGreaterEvalGoal));
+
     if (lower > evalGoal - 100) {
       proofNumberCurEval = 0;
       probGreaterEqualEvalGoal = 1;
