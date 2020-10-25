@@ -106,7 +106,7 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(56), true);
+    setBoard(EndgameTest.readIthBoard(44), true);
   }
 
   /**
@@ -201,7 +201,7 @@ public class Main implements Runnable {
     while (!stopping) {
       int updateTime = updateTimes[Math.min(updateTimes.length-1, nUpdate++)];
 
-      evaluatePosition(board, (int) (updateTime * 0.1), false);
+      evaluatePosition(board, (int) (updateTime * 1), false);
       updateEvals();
       switch (EVALUATOR.getStatus()) {
         case NONE:
@@ -210,22 +210,22 @@ public class Main implements Runnable {
         case KILLING:
         case KILLED:
         case STOPPED_POSITIONS:
+        case SOLVED:
           stopping = true;
           break;
-        case SOLVED:
         case STOPPED_TIME:
           break;
       }
-      PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
-      int timeEachPosition = (int) (0.9 * updateTime / toEvaluate.size());
-      if (toEvaluate.isEmpty()) {
-        return;
-      }
-
-      while (!toEvaluate.isEmpty()) {
-        StoredBoard child = toEvaluate.poll();
-        evaluatePosition(child.getBoard(), timeEachPosition, false);
-      }
+//      PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
+//      int timeEachPosition = (int) (0.9 * updateTime / toEvaluate.size());
+//      if (toEvaluate.isEmpty()) {
+//        return;
+//      }
+//
+//      while (!toEvaluate.isEmpty()) {
+//        StoredBoard child = toEvaluate.poll();
+//        evaluatePosition(child.getBoard(), timeEachPosition, false);
+//      }
       nUpdate++;
     }
     
