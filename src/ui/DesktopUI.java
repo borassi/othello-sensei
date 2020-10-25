@@ -42,6 +42,7 @@ import javax.swing.JLabel;
 import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
 import main.Main;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
@@ -77,8 +78,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
   private final JButton newGame = new JButton("New game");
   private final JButton stop = new JButton("Stop");
+  private final JButton resetHashMaps = new JButton("Reset hash maps");
   private final JSpinner depth;
-  private final JSpinner delta;
+  private final JSpinner delta;  
+  private final JSpinner ffoPositions;
   private final JLabel empties;
   private final JLabel posPerSec;
   
@@ -192,6 +195,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(playWhiteMoves);
     commands.add(debugMode);
     commands.add(stop);
+    commands.add(resetHashMaps);
     
     newGame.addActionListener((ActionEvent e) -> {
       main.newGame();
@@ -199,6 +203,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     
     stop.addActionListener((ActionEvent e) -> {
       main.stop();
+    });
+    
+    resetHashMaps.addActionListener((ActionEvent e) -> {
+      main.resetHashMaps();
     });
     
     SpinnerModel allowedDepths = new SpinnerListModel(Arrays.asList(new String[] 
@@ -215,6 +223,13 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     delta.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * delta.getPreferredSize().height));
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
+    
+    SpinnerModel allowedFFOPositions = new SpinnerNumberModel(46, 40, 60, 1);
+    ffoPositions = new JSpinner(allowedFFOPositions);
+    commands.add(ffoPositions);
+    ffoPositions.addChangeListener((ChangeEvent e) -> {
+      main.setEndgameBoard((int) ffoPositions.getValue());
+    });
 
     empties = new JLabel();
     commands.add(empties);

@@ -89,9 +89,10 @@ public class HashMapVisitedPositions {
     return nextPositionToImproveRandom(children[(int) (Math.random() * children.length)], !playerVariates, parents);
   }
 
-  protected final void empty() {
+  public final void empty() {
     Arrays.fill(evaluationsHashMap, null);
 //    System.gc();
+    firstPosition = StoredBoard.initialStoredBoard(new Board(), 0, 0, 1);
     size = 0;
   }
   
