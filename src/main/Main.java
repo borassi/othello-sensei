@@ -106,7 +106,10 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(EndgameTest.readIthBoard(44), true);
+  }
+  
+  public void setEndgameBoard(int n) {
+    setBoard(EndgameTest.readIthBoard(n), true);    
   }
 
   /**

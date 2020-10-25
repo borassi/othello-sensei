@@ -42,6 +42,7 @@ import javax.swing.JLabel;
 import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
 import main.Main;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
@@ -78,6 +79,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JButton newGame = new JButton("New game");
   private final JButton stop = new JButton("Stop");
   private final JSpinner depth;
+  private final JSpinner ffoPositions;
   private final JSpinner delta;
   private final JLabel empties;
   private final JLabel posPerSec;
@@ -201,10 +203,18 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       main.stop();
     });
     
+    SpinnerModel allowedFFOPositions = new SpinnerNumberModel(46, 40, 60, 1);
+    ffoPositions = new JSpinner(allowedFFOPositions);
+    commands.add(ffoPositions);
+    ffoPositions.addChangeListener((ChangeEvent e) -> {
+      main.setEndgameBoard((int) ffoPositions.getValue());
+    });
+    
     SpinnerModel allowedDepths = new SpinnerListModel(Arrays.asList(new String[] 
       {"0", "1", "100", "1000", "10000", "100000", "1000000", "2000000", "5000000", "10000000",
       "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000"
     }));
+
     depth = new JSpinner(allowedDepths);
     depth.setValue("10000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
