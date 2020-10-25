@@ -102,10 +102,11 @@ public class HashMapVisitedPositions {
     }
   }
 
-  protected void empty() {
+  public void empty() {
     Arrays.fill(evaluationsHashMap, null);
     System.gc();
     size = 0;
+    this.firstPosition = StoredBoard.initialStoredBoard(0, 0, 0, 0, 0);
   }
   
   protected void add(StoredBoard b) {

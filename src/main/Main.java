@@ -137,7 +137,13 @@ public class Main implements Runnable {
     this.oldBlackTurns.clear();
     ui.setCases(board, blackTurn);
   }
-  
+
+  public void resetHashMaps() {
+    EVALUATOR.empty();
+    HASH_MAP.reset();
+    ui.setCases(board, blackTurn);
+  }
+
   /**
    * Action to perform when the case (i, j) was clicked.
    * Performs the move.

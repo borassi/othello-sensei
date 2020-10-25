@@ -50,7 +50,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     super(maxSize, arraySize);
 //    this.depthOneEval = depthOneEvaluator;
     this.evaluatorMidgame = evaluatorMidgame;
-    this.firstPosition = StoredBoard.initialStoredBoard(0, 0, 0, 0, 0);
   }
   
   public float getEval() {

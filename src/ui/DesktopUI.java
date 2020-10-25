@@ -77,7 +77,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
   private final JButton newGame = new JButton("New game");
-  private final JButton stop = new JButton("Stop");
+  private final JButton stop = new JButton("Stop");  
+  private final JButton resetHashMaps = new JButton("Reset hash maps");
   private final JSpinner depth;
   private final JSpinner ffoPositions;
   private final JSpinner delta;
@@ -194,6 +195,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(playWhiteMoves);
     commands.add(debugMode);
     commands.add(stop);
+    commands.add(resetHashMaps);
     
     newGame.addActionListener((ActionEvent e) -> {
       main.newGame();
@@ -203,6 +205,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       main.stop();
     });
     
+    resetHashMaps.addActionListener((ActionEvent e) -> {
+      main.resetHashMaps();
+    });
+
     SpinnerModel allowedFFOPositions = new SpinnerNumberModel(46, 40, 60, 1);
     ffoPositions = new JSpinner(allowedFFOPositions);
     commands.add(ffoPositions);
