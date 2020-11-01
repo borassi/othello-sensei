@@ -224,6 +224,8 @@ public class StoredBoard {
     probStrictlyGreaterEvalGoal = 1 - children.length;
     disproofNumberCurEval = 0;
     disproofNumberNextEval = 0;
+    double minProbGreaterEqualEvalGoal = 1;
+    double minProbStrictlyGreaterEvalGoal = 1;
 
     for (StoredBoard child : children) {
       eval = Math.max(eval, -child.eval);
@@ -235,9 +237,12 @@ public class StoredBoard {
       disproofNumberNextEval += child.proofNumberNextEval;
       probGreaterEqualEvalGoal += Math.pow(child.probStrictlyGreaterEvalGoal, Constants.LAMBDA);
       probStrictlyGreaterEvalGoal += Math.pow(child.probGreaterEqualEvalGoal, Constants.LAMBDA);
+      minProbGreaterEqualEvalGoal = Math.min(child.probGreaterEqualEvalGoal, minProbGreaterEqualEvalGoal);
+      minProbStrictlyGreaterEvalGoal = Math.min(child.probStrictlyGreaterEvalGoal, minProbStrictlyGreaterEvalGoal);
     }
-    probGreaterEqualEvalGoal = 1 - Math.pow(probGreaterEqualEvalGoal, 1 / Constants.LAMBDA);
-    probStrictlyGreaterEvalGoal = 1 - Math.pow(probStrictlyGreaterEvalGoal, 1 / Constants.LAMBDA);
+//    System.out.println(minProbStrictlyGreaterEvalGoal + " " + Math.pow(probGreaterEqualEvalGoal, 1 / Constants.LAMBDA));
+    probGreaterEqualEvalGoal = 1 - Math.min(minProbStrictlyGreaterEvalGoal, Math.pow(probGreaterEqualEvalGoal, 1 / Constants.LAMBDA));
+    probStrictlyGreaterEvalGoal = 1 - Math.min(minProbGreaterEqualEvalGoal, Math.pow(probStrictlyGreaterEvalGoal, 1 / Constants.LAMBDA));
 
     minLogDerivativePlayerVariates = Double.NEGATIVE_INFINITY;
     minLogDerivativeOpponentVariates = Double.NEGATIVE_INFINITY;
@@ -259,7 +264,7 @@ public class StoredBoard {
     if (child.probGreaterEqualEvalGoal == 0) {
       return Double.NEGATIVE_INFINITY;
     }
-    if (Math.log((1 - probStrictlyGreaterEvalGoal) / child.probGreaterEqualEvalGoal) > 1.E-8) {
+    if (1 - probStrictlyGreaterEvalGoal > child.probGreaterEqualEvalGoal + 1.E-12) {
       System.out.print(1 - probStrictlyGreaterEvalGoal + " > ");
       for (StoredBoard child1 : children) {
         System.out.print(child1.probGreaterEqualEvalGoal + ", ");
@@ -274,7 +279,7 @@ public class StoredBoard {
     if (child.probStrictlyGreaterEvalGoal == 0) {
       return Double.NEGATIVE_INFINITY;
     }
-    if (-Math.log((1 - probGreaterEqualEvalGoal) / child.probStrictlyGreaterEvalGoal) < -1.E-8) {
+    if (1 - probGreaterEqualEvalGoal > child.probStrictlyGreaterEvalGoal + 1.E-12) {
       System.out.print(1 - probGreaterEqualEvalGoal + " > ");
       for (StoredBoard child1 : children) {
         System.out.print(child1.probStrictlyGreaterEvalGoal + ", ");
@@ -296,29 +301,29 @@ public class StoredBoard {
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0;
     probGreaterEqualEvalGoal = 1 - Gaussian.CDF(evalGoal-100, eval, 400);
+    double proofNumberCur = endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval);
+    double disproofNumberCur = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal - 100, this.eval);
     double maxProbGreaterEqualEvalGoal = 1 - 
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
-        Constants.PPN_EPSILON * endgameTimeEstimator.proofNumber(
-            player, opponent, evalGoal - 100, this.eval));
+        Constants.PPN_EPSILON * proofNumberCur);
     double minProbGreaterEqualEvalGoal =
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
-        Constants.PPN_EPSILON * endgameTimeEstimator.disproofNumber(
-            player, opponent, evalGoal - 100, this.eval));
+        Constants.PPN_EPSILON * disproofNumberCur);
     probGreaterEqualEvalGoal = Math.max(minProbGreaterEqualEvalGoal, Math.min(probGreaterEqualEvalGoal, maxProbGreaterEqualEvalGoal));
 
     probStrictlyGreaterEvalGoal = 1 - Gaussian.CDF(evalGoal+100, eval, 400);
+    double proofNumberNext = endgameTimeEstimator.proofNumber(player, opponent, evalGoal + 100, this.eval);
+    double disproofNumberNext = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval);
     double maxProbStrictlyGreaterEvalGoal = 1 - 
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
-        Constants.PPN_EPSILON * endgameTimeEstimator.proofNumber(
-            player, opponent, evalGoal + 100, this.eval));
+        Constants.PPN_EPSILON * proofNumberNext);
     double minProbStrictlyGreaterEvalGoal =
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
-        Constants.PPN_EPSILON * endgameTimeEstimator.disproofNumber(
-            player, opponent, evalGoal + 100, this.eval));
+        Constants.PPN_EPSILON * disproofNumberNext);
 
     probStrictlyGreaterEvalGoal = Math.max(minProbStrictlyGreaterEvalGoal, Math.min(probStrictlyGreaterEvalGoal, maxProbStrictlyGreaterEvalGoal));
 
@@ -331,10 +336,8 @@ public class StoredBoard {
       probGreaterEqualEvalGoal = 0;
       disproofNumberNextEval = 0;
     } else {
-      proofNumberCurEval = endgameTimeEstimator.proofNumber(
-          player, opponent, evalGoal - 100, this.eval) / probGreaterEqualEvalGoal;
-      disproofNumberNextEval = endgameTimeEstimator.disproofNumber(
-          player, opponent, evalGoal - 100, this.eval) / (1-probGreaterEqualEvalGoal);
+      proofNumberCurEval = proofNumberCur / probGreaterEqualEvalGoal;
+      disproofNumberNextEval = disproofNumberCur / (1-probGreaterEqualEvalGoal);
     }
     if (upper < evalGoal + 100) {
       proofNumberNextEval = Double.POSITIVE_INFINITY;
@@ -345,10 +348,8 @@ public class StoredBoard {
       probStrictlyGreaterEvalGoal = 1;
       disproofNumberCurEval = Double.POSITIVE_INFINITY;
     } else {
-      proofNumberNextEval = endgameTimeEstimator.proofNumber(
-          player, opponent, evalGoal + 100, eval) / probStrictlyGreaterEvalGoal;
-      disproofNumberCurEval = endgameTimeEstimator.disproofNumber(
-          player, opponent, evalGoal + 100, eval) / (1-probStrictlyGreaterEvalGoal);
+      proofNumberNextEval = proofNumberNext / probStrictlyGreaterEvalGoal;
+      disproofNumberCurEval = disproofNumberNext / (1-probStrictlyGreaterEvalGoal);
     }
     this.minLogDerivativePlayerVariates = lower > evalGoal + 100 ? Double.NEGATIVE_INFINITY :
         //-Math.log(this.descendants)
