@@ -341,12 +341,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       StoredBoard next = nextPos.board;
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
-      if (next != this.firstPosition
-          && nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
-          && (
-          (next.getProofNumberCurEval() < Constants.PROOF_NUMBER_FOR_ENDGAME && next.getEval() > next.getEvalGoal() + 2000) ||
-          (next.getDisproofNumberCurEval() < Constants.PROOF_NUMBER_FOR_ENDGAME && next.getEval() < next.getEvalGoal() - 2000) ||
-          nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME)) {
+      if (next != this.firstPosition && next.toBeSolved()) {
         solvePosition(nextPos, nEmpties);
       } else if (this.size < this.maxSize) {
         addChildren(nextPos);
