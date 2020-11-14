@@ -305,6 +305,9 @@ public class StoredBoard {
     probGreaterEqualEvalGoal = 1 - Gaussian.CDF(evalGoal-100, eval, 400);
     double proofNumberCur = endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval);
     double disproofNumberCur = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal - 100, this.eval);
+    double proofNumberNext = endgameTimeEstimator.proofNumber(player, opponent, evalGoal + 100, this.eval);
+    double disproofNumberNext = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval);
+
     double minDistanceFrom1GE =
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
@@ -313,11 +316,14 @@ public class StoredBoard {
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
         Constants.PPN_EPSILON * disproofNumberCur);
-    probGreaterEqualEvalGoal = Math.max(minDistanceFrom0GE, Math.min(probGreaterEqualEvalGoal, 1 - minDistanceFrom1GE));
 
+    if (probGreaterEqualEvalGoal < Constants.PPN_MIN_COST_LEAF) {
+      probGreaterEqualEvalGoal = Math.min(Constants.PPN_MIN_COST_LEAF, Constants.PPN_EPSILON * disproofNumberCur);
+    } else if (probGreaterEqualEvalGoal > 1 - Constants.PPN_MIN_COST_LEAF) {
+      probGreaterEqualEvalGoal = 1 - Math.min(Constants.PPN_MIN_COST_LEAF, Constants.PPN_EPSILON * proofNumberCur);      
+    }
+//    probGreaterEqualEvalGoal = Math.max(minDistanceFrom0GE, Math.min(probGreaterEqualEvalGoal, 1 - minDistanceFrom1GE));
     probStrictlyGreaterEvalGoal = 1 - Gaussian.CDF(evalGoal+100, eval, 400);
-    double proofNumberNext = endgameTimeEstimator.proofNumber(player, opponent, evalGoal + 100, this.eval);
-    double disproofNumberNext = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval);
     double minDistanceFrom1 = 
         Math.min(
         Constants.PPN_MIN_COST_LEAF,
@@ -327,11 +333,19 @@ public class StoredBoard {
         Constants.PPN_MIN_COST_LEAF,
         Constants.PPN_EPSILON * disproofNumberNext);
 
-    probStrictlyGreaterEvalGoal = Math.max(minDistanceFrom0, Math.min(probStrictlyGreaterEvalGoal, 1 - minDistanceFrom1));
+    if (probStrictlyGreaterEvalGoal < Constants.PPN_MIN_COST_LEAF) {
+      probStrictlyGreaterEvalGoal = Math.min(Constants.PPN_MIN_COST_LEAF, Constants.PPN_EPSILON * disproofNumberNext);
+    } else if (probStrictlyGreaterEvalGoal > 1 - Constants.PPN_MIN_COST_LEAF) {
+      probStrictlyGreaterEvalGoal = 1 - Math.min(Constants.PPN_MIN_COST_LEAF, Constants.PPN_EPSILON * proofNumberNext);      
+    }
+//    probStrictlyGreaterEvalGoal = Math.max(minDistanceFrom0, Math.min(probStrictlyGreaterEvalGoal, 1 - minDistanceFrom1));
+    
+    
+    
     double c = 0; // TODO
     boolean toBeSolved = this.toBeSolved();
-    double n = 200;
-    double mult = 0.3333333;
+    double n = 400;
+    double mult = 0.15;
 
     if (lower > evalGoal - 100) {
       proofNumberCurEval = 0;
@@ -381,8 +395,8 @@ public class StoredBoard {
             probStrictlyGreaterEvalGoal * (1 - probStrictlyGreaterEvalGoal) / disproofNumberNext * n);
       } else {
         this.minLogDerivativePlayerVariates = mult * Math.log(
-            probStrictlyGreaterEvalGoal * (1 - c * minDistanceFrom1GE - probStrictlyGreaterEvalGoal) / Math.pow(proofNumberNext, 0.2)
-            + (1 - probStrictlyGreaterEvalGoal) * (probStrictlyGreaterEvalGoal - c * minDistanceFrom0GE) / Math.pow(disproofNumberNext, 0.2));
+            probStrictlyGreaterEvalGoal * (1 - c * minDistanceFrom1 - probStrictlyGreaterEvalGoal) / Math.pow(proofNumberNext, 0.2)
+            + (1 - probStrictlyGreaterEvalGoal) * (probStrictlyGreaterEvalGoal - c * minDistanceFrom0) / Math.pow(disproofNumberNext, 0.2));
       }
     }
     assert areThisBoardEvalsOK();
