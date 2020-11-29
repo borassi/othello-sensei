@@ -78,20 +78,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public void updateEvalGoalIfNeeded() {
     int evalGoal = firstPosition.getEvalGoal();
-    if (this.firstPosition.probStrictlyGreaterEvalGoal >= 1-1E-8 && evalGoal + 200 <= upper) {
+    if (this.firstPosition.probStrictlyGreater >= 1-1E-8 && evalGoal + 200 <= upper) {
       this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
-    if (this.firstPosition.probGreaterEqualEvalGoal <= 1E-8 && evalGoal - 200 >= lower) {
+    if (this.firstPosition.probGreaterEqual <= 1E-8 && evalGoal - 200 >= lower) {
       this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
-      if (this.firstPosition.probStrictlyGreaterEvalGoal >= 0.8 && evalGoal + 200 <= upper) {
+      if (this.firstPosition.probStrictlyGreater >= 0.8 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      if (this.firstPosition.probGreaterEqualEvalGoal <= 0.2 && evalGoal - 200 >= lower) {
+      if (this.firstPosition.probGreaterEqual <= 0.2 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
@@ -115,9 +115,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return new PositionToImprove(father, playerVariates, parents);
     }
     if (playerVariates) {
-      return nextPositionToImproveMidgame(father.bestChildMidgamePlayerVariates(), !playerVariates, parents);
+      return nextPositionToImproveMidgame(father.bestChildMidgameGreaterEqual(), !playerVariates, parents);
     } else {
-      return nextPositionToImproveMidgame(father.bestChildMidgameOpponentVariates(), !playerVariates, parents);
+      return nextPositionToImproveMidgame(father.bestChildMidgameStrictlyGreater(), !playerVariates, parents);
     }
   }
 
@@ -165,7 +165,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //    if (!firstPositionLocal.isPartiallySolved()) {
       return nextPositionToImproveMidgame(
           firstPositionLocal,
-          this.firstPosition.minLogDerivativePlayerVariates > this.firstPosition.minLogDerivativeOpponentVariates,
+          this.firstPosition.minLogDerivativeStrictlyGreater > this.firstPosition.minLogDerivativeGreaterEqual,
           parents);
 //    }
 //    if (firstPosition.getEvalGoal() >= upper) {

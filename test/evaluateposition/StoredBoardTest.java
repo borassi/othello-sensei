@@ -34,29 +34,29 @@ public class StoredBoardTest {
     father.setChildren(new StoredBoard[] {child1, child2, child3});
     assertEquals(father.getEval(), 100);
     
-    child1.proofNumberCurEval = 1000;
-    child1.proofNumberNextEval = 2200;
-    child1.disproofNumberCurEval = 10000;
-    child1.disproofNumberNextEval = 22000;
+    child1.proofNumberGreaterEqual = 1000;
+    child1.proofNumberStrictlyGreater = 2200;
+    child1.disproofNumberStrictlyGreater = 10000;
+    child1.disproofNumberGreaterEqual = 22000;
 
-    child2.proofNumberCurEval = 1100;
-    child2.proofNumberNextEval = 2100;
-    child2.disproofNumberCurEval = 11000;
-    child2.disproofNumberNextEval = 21000;
+    child2.proofNumberGreaterEqual = 1100;
+    child2.proofNumberStrictlyGreater = 2100;
+    child2.disproofNumberStrictlyGreater = 11000;
+    child2.disproofNumberGreaterEqual = 21000;
 
-    child3.proofNumberCurEval = 1200;
-    child3.proofNumberNextEval = 2000;
-    child3.disproofNumberCurEval = 12000;
-    child3.disproofNumberNextEval = 20000;
+    child3.proofNumberGreaterEqual = 1200;
+    child3.proofNumberStrictlyGreater = 2000;
+    child3.disproofNumberStrictlyGreater = 12000;
+    child3.disproofNumberGreaterEqual = 20000;
     
     father.setChildren(new StoredBoard[] {child1, child2, child3});
     assertEquals(father.getEval(), 100);
     // To prove father > x, we have to prove that at least a child is < x
-    assertEquals(10000, father.proofNumberCurEval, 1);
-    assertEquals(20000, father.proofNumberNextEval, 1);
+    assertEquals(10000, father.proofNumberGreaterEqual, 1);
+    assertEquals(20000, father.proofNumberStrictlyGreater, 1);
     // To prove father < x, we have to prove that all children are > x
-    assertEquals(1000 + 1100 + 1200, father.disproofNumberCurEval, 1);
-    assertEquals(2000 + 2100 + 2200, father.disproofNumberNextEval, 1);
+    assertEquals(1000 + 1100 + 1200, father.disproofNumberStrictlyGreater, 1);
+    assertEquals(2000 + 2100 + 2200, father.disproofNumberGreaterEqual, 1);
   }
 
   @Test
@@ -69,20 +69,20 @@ public class StoredBoardTest {
     father.setEvalGoalRecursive(1000);
     
     // Proves >= -11.
-    assertEquals(child1.proofNumberCurEval, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -1100, -100), 1);
+    assertEquals(child1.proofNumberGreaterEqual, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -1100, -100), 1);
     // Proves >= -9.
-    assertEquals(child1.proofNumberNextEval, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -900, -100), 1);
+    assertEquals(child1.proofNumberStrictlyGreater, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -900, -100), 1);
     // Proves <= -9.
-    assertEquals(child1.disproofNumberCurEval, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -900, -100), 1);
+    assertEquals(child1.disproofNumberStrictlyGreater, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -900, -100), 1);
     // Proves <= -11.
-    assertEquals(child1.disproofNumberNextEval, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -1100, -100), 1);
+    assertEquals(child1.disproofNumberGreaterEqual, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -1100, -100), 1);
 
     // Child1 is much better than child3. This means that proof numbers (for the
     // opponent) are harder.
-    assert child1.proofNumberCurEval > child3.proofNumberCurEval;
-    assert child1.proofNumberNextEval > child3.proofNumberNextEval;
-    assert child1.disproofNumberCurEval < child3.disproofNumberCurEval;
-    assert child1.disproofNumberNextEval < child3.disproofNumberNextEval;
+    assert child1.proofNumberGreaterEqual > child3.proofNumberGreaterEqual;
+    assert child1.proofNumberStrictlyGreater > child3.proofNumberStrictlyGreater;
+    assert child1.disproofNumberStrictlyGreater < child3.disproofNumberStrictlyGreater;
+    assert child1.disproofNumberGreaterEqual < child3.disproofNumberGreaterEqual;
   }
   
   @Test
@@ -174,10 +174,10 @@ public class StoredBoardTest {
     bothPass.lower = -5600;
     bothPass.upper = -5600;
     bothPass.children = new StoredBoard[0];
-    bothPass.proofNumberCurEval = Double.POSITIVE_INFINITY;
-    bothPass.proofNumberNextEval = Double.POSITIVE_INFINITY;
-    bothPass.disproofNumberCurEval = 0;
-    bothPass.disproofNumberNextEval = 0;
+    bothPass.proofNumberGreaterEqual = Double.POSITIVE_INFINITY;
+    bothPass.proofNumberStrictlyGreater = Double.POSITIVE_INFINITY;
+    bothPass.disproofNumberStrictlyGreater = 0;
+    bothPass.disproofNumberGreaterEqual = 0;
     
     assert bothPass.isAllOK();
 

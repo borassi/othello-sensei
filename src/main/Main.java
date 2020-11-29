@@ -381,7 +381,7 @@ public class Main implements Runnable {
 //      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
         Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
-        + Utils.prettyPrintDouble(1 - child.probGreaterEqualEvalGoal) + " " + Utils.prettyPrintDouble(child.probStrictlyGreaterEvalGoal) + "\n"
+        + Utils.prettyPrintDouble(1 - child.probGreaterEqual) + " " + Utils.prettyPrintDouble(child.probStrictlyGreater) + "\n"
         + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberCurEval());
 //        + Utils.prettyPrintDouble(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates) + " "
 //        + Utils.prettyPrintDouble(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates) + "\n"

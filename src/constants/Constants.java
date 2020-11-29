@@ -36,5 +36,6 @@ public class Constants {
   
   public final static double PPN_MIN_COST_LEAF = 0.02;
   public final static double PPN_EPSILON = 1E-14;
-  public final static double LAMBDA = -4; // TODO
+  public final static double PPN_LAMBDA = -4; // TODO
+  public final static double PPN_MU = -4; // TODO
 }
