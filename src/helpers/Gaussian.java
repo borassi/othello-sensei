@@ -25,6 +25,9 @@ public class Gaussian {
       if (x < 0) {
         return 1 - CDFStd(-x);
       }
+      if (x > 6) {
+        return 1;
+      }
       double k = 1 / (1 + 0.2316419 * x);
       double k2 = k * k;
       double k3 = k2 * k;

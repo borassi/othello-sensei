@@ -78,20 +78,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public void updateEvalGoalIfNeeded() {
     int evalGoal = firstPosition.getEvalGoal();
-    if (this.firstPosition.getProofNumberNextEval() == 0 && evalGoal + 200 <= upper) {
+    if (this.firstPosition.probStrictlyGreaterEvalGoal >= 1-1E-8 && evalGoal + 200 <= upper) {
       this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
-    if (this.firstPosition.getDisproofNumberNextEval() == 0 && evalGoal - 200 >= lower) {
+    if (this.firstPosition.probGreaterEqualEvalGoal <= 1E-8 && evalGoal - 200 >= lower) {
       this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
-      if (this.firstPosition.getEval() >= evalGoal + 200 && evalGoal + 200 <= upper) {
+      if (this.firstPosition.probStrictlyGreaterEvalGoal >= 0.8 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      if (this.firstPosition.getEval() <= evalGoal - 200 && evalGoal - 200 >= lower) {
+      if (this.firstPosition.probGreaterEqualEvalGoal <= 0.2 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }

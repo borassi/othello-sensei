@@ -97,7 +97,7 @@ public class EndgameTest {
   public void run() {
     
     System.out.println(" num empties        t       nVisPos   nVisPos/sec   nStored  n/end  n/mid  eval");
-    for (int i = 41; i <= 59; i++) { //POSITIONS.length; i++) {
+    for (int i = 41; i <= 60; i++) { //POSITIONS.length; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));

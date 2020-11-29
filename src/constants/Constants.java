@@ -20,8 +20,6 @@ package constants;
 public class Constants {
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
-  public final static double C_PLAYER_VARIATES = 0.02;
-  public final static double C_OPPONENT_VARIATES = 0.5;
   public final static int EMPTIES_FOR_FORCED_MIDGAME = 14;
   public final static int PROOF_NUMBER_FOR_ENDGAME = 20000;
 //  public final static int HASH_MAP_SIZE = 500000;
@@ -36,7 +34,7 @@ public class Constants {
   public final static int TRY_SC_LAST_3_NO_CORNER = 600;
   public final static int TRY_SC_LAST_3_CORNER = 1600;
   
-  public final static double PPN_MIN_COST_LEAF = 0.05;
+  public final static double PPN_MIN_COST_LEAF = 0.02;
   public final static double PPN_EPSILON = 1E-14;
-  public final static double LAMBDA = -2; // TODO
+  public final static double LAMBDA = -4; // TODO
 }

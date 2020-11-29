@@ -84,6 +84,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner ffoPositions;
   private final JLabel empties;
   private final JLabel posPerSec;
+  private final JLabel missingPositions;
   
   public void getClick(PositionIJ ij, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -235,6 +236,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(empties);
     posPerSec = new JLabel();
     commands.add(posPerSec);
+    missingPositions = new JLabel();
+    commands.add(missingPositions);
     
     setSize(1200, 800);
 
@@ -281,6 +284,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     Runnable tmp = new Runnable() {
       public void run() {
         posPerSec.setText("Pos/s: " + Utils.prettyPrintDouble(nMovesPerSec));
+      }
+    };
+    SwingUtilities.invokeLater(tmp);
+  }
+
+  @Override
+  public void setMissingPositions(double missingPosPlayer, double missingPosOpponent) {
+    Runnable tmp = new Runnable() {
+      public void run() {
+        missingPositions.setText("Missing: " + Utils.prettyPrintDouble(missingPosPlayer) + " + " + Utils.prettyPrintDouble(missingPosOpponent));
       }
     };
     SwingUtilities.invokeLater(tmp);

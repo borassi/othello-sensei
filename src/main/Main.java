@@ -218,6 +218,8 @@ public class Main implements Runnable {
       evaluatePosition(board, (int) (updateTime), false);
       showMCTSEvaluations();
       ui.setMovesPerSecond(EVALUATOR.getNVisited() * 1000. / (System.currentTimeMillis() - startTime));
+      StoredBoard firstBoard = EVALUATOR.get(board);
+      ui.setMissingPositions(firstBoard.getProofNumberCurEval(), firstBoard.getDisproofNumberCurEval());
       switch (EVALUATOR.getStatus()) {
         case NONE:
         case RUNNING:
@@ -380,10 +382,11 @@ public class Main implements Runnable {
       annotations.otherAnnotations =
         Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
         + Utils.prettyPrintDouble(1 - child.probGreaterEqualEvalGoal) + " " + Utils.prettyPrintDouble(child.probStrictlyGreaterEvalGoal) + "\n"
-        + Utils.prettyPrintDouble(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates) + " "
-        + Utils.prettyPrintDouble(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates) + "\n"
-        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
-        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
+        + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberCurEval());
+//        + Utils.prettyPrintDouble(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates) + " "
+//        + Utils.prettyPrintDouble(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates) + "\n"
+//        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
+//        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);
     }
   }
