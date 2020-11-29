@@ -115,9 +115,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return new PositionToImprove(father, playerVariates, parents);
     }
     if (playerVariates) {
-      return nextPositionToImproveMidgame(father.bestChildMidgameGreaterEqual(), !playerVariates, parents);
-    } else {
       return nextPositionToImproveMidgame(father.bestChildMidgameStrictlyGreater(), !playerVariates, parents);
+    } else {
+      return nextPositionToImproveMidgame(father.bestChildMidgameGreaterEqual(), !playerVariates, parents);
     }
   }
 
@@ -165,7 +165,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //    if (!firstPositionLocal.isPartiallySolved()) {
       return nextPositionToImproveMidgame(
           firstPositionLocal,
-          this.firstPosition.minLogDerivativeStrictlyGreater > this.firstPosition.minLogDerivativeGreaterEqual,
+          this.firstPosition.minLogDerivativeProbStrictlyGreater > this.firstPosition.minLogDerivativeProbGreaterEqual,
           parents);
 //    }
 //    if (firstPosition.getEvalGoal() >= upper) {
@@ -278,7 +278,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     } else {
       board.setSolved(eval);
     }
-    long seenPositions = evaluatorMidgame.getNVisited();
+    long seenPositions = evaluatorMidgame.getNVisited() + 1;
     nEndgames++;
     nVisitedEndgames += seenPositions;
     position.addVisitedPositions(seenPositions);

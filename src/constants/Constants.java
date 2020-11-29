@@ -34,8 +34,8 @@ public class Constants {
   public final static int TRY_SC_LAST_3_NO_CORNER = 600;
   public final static int TRY_SC_LAST_3_CORNER = 1600;
   
-  public final static double PPN_MIN_COST_LEAF = 0.02;
+  public final static double PPN_MIN_COST_LEAF = 0.0001;
   public final static double PPN_EPSILON = 1E-14;
-  public final static double PPN_LAMBDA = -4; // TODO
-  public final static double PPN_MU = -4; // TODO
+  public final static double PPN_LAMBDA = -4;
+  public final static double PPN_MU = -4;
 }

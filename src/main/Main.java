@@ -219,7 +219,7 @@ public class Main implements Runnable {
       showMCTSEvaluations();
       ui.setMovesPerSecond(EVALUATOR.getNVisited() * 1000. / (System.currentTimeMillis() - startTime));
       StoredBoard firstBoard = EVALUATOR.get(board);
-      ui.setMissingPositions(firstBoard.getProofNumberCurEval(), firstBoard.getDisproofNumberCurEval());
+      ui.setMissingPositions(firstBoard.getProofNumberGreaterEqual(), firstBoard.getDisproofNumberStrictlyGreater());
       switch (EVALUATOR.getStatus()) {
         case NONE:
         case RUNNING:
@@ -380,11 +380,13 @@ public class Main implements Runnable {
 //      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
 //      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
-        Utils.prettyPrintDouble(child.getEvalGoal() / 100) + "\n"
-        + Utils.prettyPrintDouble(1 - child.probGreaterEqual) + " " + Utils.prettyPrintDouble(child.probStrictlyGreater) + "\n"
-        + Utils.prettyPrintDouble(child.getProofNumberCurEval()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberCurEval());
-//        + Utils.prettyPrintDouble(current.logDerivativePlayerVariates(child) + child.minLogDerivativeOpponentVariates) + " "
-//        + Utils.prettyPrintDouble(current.logDerivativeOpponentVariates(child) + child.minLogDerivativePlayerVariates) + "\n"
+//        Utils.prettyPrintDouble(-child.getEvalGoal() / 100) + "\n"
+        Utils.prettyPrintDouble(1 - child.probGreaterEqual) + " " + Utils.prettyPrintDouble(child.probStrictlyGreater) + "\n"
+        + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + "\n"
+        + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
+        + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
+        + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
+        + Utils.prettyPrintDouble(child.minLogDerivativeDisproofNumberStrictlyGreater);
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);

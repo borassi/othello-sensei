@@ -113,9 +113,9 @@ public class EvaluatorMCTSTest {
   public void testBoard(StoredBoard b, int eval, double proofNumberCurEval, double proofNumberNextEval,
       double disproofNumberNextEval, double disproofNumberCurEval) {
     assertEquals(eval, b.getEval());
-    assertEquals(proofNumberCurEval, b.getProofNumberCurEval(), 1);
+    assertEquals(proofNumberCurEval, b.getProofNumberGreaterEqual(), 1);
     assertEquals(proofNumberNextEval, b.getProofNumberNextEval(), 1);
-    assertEquals(disproofNumberCurEval, b.getDisproofNumberCurEval(), 1);
+    assertEquals(disproofNumberCurEval, b.getDisproofNumberStrictlyGreater(), 1);
     assertEquals(disproofNumberNextEval, b.getDisproofNumberNextEval(), 1);
   }
 
