@@ -73,26 +73,32 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   protected void setEvalGoal(int evalGoal) {
     assert(evalGoal >= lower && evalGoal <= upper);
     this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
+      System.out.println("New goal " +  roundEval(evalGoal));
     this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
+      System.out.println(this.firstPosition.getEvalGoal());
   }
   
   public void updateEvalGoalIfNeeded() {
     int evalGoal = firstPosition.getEvalGoal();
     while (this.firstPosition.probStrictlyGreater >= 1-1E-8 && evalGoal + 200 <= upper) {
       this.setEvalGoal(evalGoal + 200);
+      evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     while (this.firstPosition.probGreaterEqual <= 1E-8 && evalGoal - 200 >= lower) {
       this.setEvalGoal(evalGoal - 200);
+      evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
       while (this.firstPosition.probStrictlyGreater >= 0.9 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
+        evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
       while (this.firstPosition.probGreaterEqual <= 0.1 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
+        evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
     }
@@ -347,10 +353,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
       if (next != this.firstPosition && next.toBeSolved()) {
+      System.out.println("SOLVE!");
         solvePosition(nextPos, nEmpties);
       } else if (this.size < this.maxSize) {
+      System.out.println("ADD!");
         addChildren(nextPos);
       } else {
+      System.out.println("DEEPEN!");
         deepenPosition(nextPos, nEmpties);
       }
       updateEvalGoalIfNeeded();
