@@ -381,12 +381,12 @@ public class Main implements Runnable {
 //      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
 //        Utils.prettyPrintDouble(-child.getEvalGoal() / 100) + "\n"
-        Utils.prettyPrintDouble(1 - child.probGreaterEqual) + " " + Utils.prettyPrintDouble(child.probStrictlyGreater) + "\n"
-        + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual()) + " " + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + "\n"
+        Utils.prettyPrintDouble(child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1 - child.probGreaterEqual) + "\n"
         + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
         + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
+        + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual()) + "\n"
         + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
-        + Utils.prettyPrintDouble(child.minLogDerivativeDisproofNumberStrictlyGreater);
+        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child));
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);
