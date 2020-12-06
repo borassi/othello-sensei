@@ -73,9 +73,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   protected void setEvalGoal(int evalGoal) {
     assert(evalGoal >= lower && evalGoal <= upper);
     this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
-      System.out.println("New goal " +  roundEval(evalGoal));
     this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
-      System.out.println(this.firstPosition.getEvalGoal());
   }
   
   public void updateEvalGoalIfNeeded() {
@@ -353,13 +351,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
       if (next != this.firstPosition && next.toBeSolved()) {
-      System.out.println("SOLVE!");
         solvePosition(nextPos, nEmpties);
       } else if (this.size < this.maxSize) {
-      System.out.println("ADD!");
         addChildren(nextPos);
       } else {
-      System.out.println("DEEPEN!");
         deepenPosition(nextPos, nEmpties);
       }
       updateEvalGoalIfNeeded();
