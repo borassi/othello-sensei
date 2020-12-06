@@ -331,7 +331,7 @@ public class StoredBoard {
     double proofNumberStrictlyGreater = endgameTimeEstimator.proofNumber(player, opponent, evalGoal + 100, this.eval);
 
     boolean toBeSolved = this.toBeSolved();
-    double n = 50;
+    double n = 200;
 
     if (lower >= evalGoal) {
       this.proofNumberGreaterEqual = 0;
