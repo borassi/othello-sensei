@@ -24,8 +24,8 @@ public class Constants {
   public final static int PROOF_NUMBER_FOR_ENDGAME = 20000;
 //  public final static int HASH_MAP_SIZE = 500000;
 //  public final static int MCTS_SIZE = 2000000;
-  public final static int HASH_MAP_SIZE = 10000000;
-  public final static int MCTS_SIZE = 10000000;
+  public final static int HASH_MAP_SIZE = 1000000;
+  public final static int MCTS_SIZE = 1000000;
   public final static int EMPTIES_FOR_ENDGAME = 8;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;
   public final static int TRY_SC_LAST_5_CORNER = 2200;
@@ -36,5 +36,5 @@ public class Constants {
   
   public final static double PPN_MIN_COST_LEAF = 0.0001;
   public final static double PPN_LAMBDA = -4;
-  public final static double PPN_MU = -4;
+  public final static double PPN_MU = -6;
 }

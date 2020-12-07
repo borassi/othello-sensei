@@ -111,20 +111,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     status = Status.KILLING;
   }
 
-  protected synchronized PositionToImprove nextPositionToImproveMidgame(
-      StoredBoard father, boolean playerVariates,
-      ArrayList<StoredBoard> parents) {
-    parents.add(father);
-    if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, parents);
-    }
-    if (playerVariates) {
-      return nextPositionToImproveMidgame(father.bestChildMidgameStrictlyGreater(), !playerVariates, parents);
-    } else {
-      return nextPositionToImproveMidgame(father.bestChildMidgameGreaterEqual(), !playerVariates, parents);
-    }
-  }
-
   private boolean positionToImproveAndEvalGoalAreOk(StoredBoard position, boolean playerVariates) {
     int evalGoal = position.evalGoal;
     int posUpper = position.playerIsStartingPlayer ? upper : -lower;
@@ -146,6 +132,32 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return true;
   }
   
+  protected synchronized PositionToImprove nextPositionToImproveMidgame(
+      StoredBoard father, boolean playerVariates,
+      ArrayList<StoredBoard> parents) {
+    parents.add(father);
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerVariates, parents);
+    }
+    if (playerVariates) {
+      return nextPositionToImproveMidgame(father.bestChildMidgameStrictlyGreater(), !playerVariates, parents);
+    } else {
+      return nextPositionToImproveMidgame(father.bestChildMidgameGreaterEqual(), !playerVariates, parents);
+    }
+  }
+  protected synchronized PositionToImprove nextPositionToImproveEndgame(
+      StoredBoard father, boolean playerVariates,
+      ArrayList<StoredBoard> parents) {
+    parents.add(father);
+    if (father.isLeaf()) {
+      return new PositionToImprove(father, playerVariates, parents);
+    }
+    if (playerVariates) {
+      return nextPositionToImproveEndgame(father.bestChildEndgameStrictlyGreater(), !playerVariates, parents);
+    } else {
+      return nextPositionToImproveEndgame(father.bestChildEndgameGreaterEqual(), !playerVariates, parents);
+    }
+  }
 //  protected synchronized PositionToImprove nextPositionToImproveEndgame(
 //      StoredBoard father, boolean playerVariates,
 //      ArrayList<StoredBoard> parents) {
@@ -160,22 +172,27 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
 //    }
 //  }
+  
+  public boolean playerVariates() {
+    if (firstPosition.getEvalGoal() >= upper) {
+      return false;
+    } else if (firstPosition.getEvalGoal() <= lower) {
+      return true;
+    } else if (!this.firstPosition.isPartiallySolved()) {
+      return this.firstPosition.maxLogDerivativeProbStrictlyGreater > this.firstPosition.maxLogDerivativeProbGreaterEqual;
+    }
+    return this.firstPosition.disproofNumberStrictlyGreater > this.firstPosition.proofNumberGreaterEqual;      
+  }
 
   protected PositionToImprove nextPositionToImprove() {
-    ArrayList<StoredBoard> parents = new ArrayList<>();
-    StoredBoard firstPositionLocal = this.firstPosition;
-    boolean playerVariates;
-    if (firstPosition.getEvalGoal() >= upper) {
-      playerVariates = false;
-    } else if (firstPosition.getEvalGoal() <= lower) {
-      playerVariates = true;
-    } else if (!this.firstPosition.isPartiallySolved()) {
-      playerVariates = this.firstPosition.maxLogDerivativeProbStrictlyGreater > this.firstPosition.maxLogDerivativeProbGreaterEqual;
-    } else {
-      playerVariates = this.firstPosition.maxLogDerivativeDisproofNumberStrictlyGreater > this.firstPosition.maxLogDerivativeProofNumberGreaterEqual;      
+    if ((firstPosition.getEvalGoal() >= upper || firstPosition.probStrictlyGreater == 0) &&
+        (firstPosition.getEvalGoal() <= lower || firstPosition.probGreaterEqual == 1)) {
+      return nextPositionToImproveEndgame(firstPosition, playerVariates(), new ArrayList<>());
     }
-//    if (!firstPositionLocal.isPartiallySolved()) {
-      return nextPositionToImproveMidgame(firstPositionLocal, playerVariates, parents);
+//    if (firstPosition.probGreaterEqual == 0 || firstPosition.probStrictlyGreater == 1) {
+//      System.out.println("WEIRD");
+//    }
+    return nextPositionToImproveMidgame(firstPosition, playerVariates(), new ArrayList<>());
 //    }
 //    if (firstPosition.getEvalGoal() >= upper) {
 //      playerVariates = false;

@@ -47,7 +47,7 @@ public class StoredBoard {
   public double maxLogDerivativeDisproofNumberStrictlyGreater;
   public double maxLogDerivativeProofNumberGreaterEqual;
   int evalGoal;
-  final boolean playerIsStartingPlayer;
+  public final boolean playerIsStartingPlayer;
   long descendants;
 
   StoredBoard next;
@@ -417,31 +417,59 @@ public class StoredBoard {
     return children;
   }
 
+  public double childValueStrictlyGreater(StoredBoard child) {
+    assert Utils.arrayContains(children, child);
+    return child.proofNumberGreaterEqual;
+  }
+  
+  public double childValueGreaterEqual(StoredBoard child) {
+    assert Utils.arrayContains(children, child);
+    if (child.probStrictlyGreater > 0.9) {
+      return 1E30 * (1 + child.probStrictlyGreater);
+    }
+    return child.disproofNumberStrictlyGreater / Math.exp(0.1 * Math.pow(proofNumberGreaterEqual, 0.1) / Math.sqrt(child.descendants));
+  }
+  public StoredBoard bestChildEndgameStrictlyGreater() {
+    StoredBoard best = null;
+    for (StoredBoard child : children) {
+      if (best == null ||
+          childValueStrictlyGreater(child) > childValueStrictlyGreater(best)) {
+        best = child;
+      }
+    }
+    return best;
+  }
+  public StoredBoard bestChildEndgameGreaterEqual() {
+    StoredBoard best = null;
+    for (StoredBoard child : children) {
+      if (best == null ||
+          childValueGreaterEqual(child) < childValueGreaterEqual(best)) {
+        best = child;
+      }
+    }
+    return best;
+  }
+
   public StoredBoard bestChildMidgameStrictlyGreater() {
     assert !isLeaf();
     StoredBoard best = null;
-    if (probStrictlyGreater == 0) {
-      for (StoredBoard child : children) {
-        if (best == null ||
-            logDerivativeDisproofNumberStrictlyGreater(child) > logDerivativeDisproofNumberStrictlyGreater(best)) {
-          best = child;
-        }
-      }      
-    } else if (probStrictlyGreater == 1) {
-      for (StoredBoard child : children) {
-        if (best == null ||
-            logDerivativeProofNumberGreaterEqual(child) > logDerivativeProofNumberGreaterEqual(best)) {
-          best = child;
-        }
-      }      
-    } else {
+//    if (probStrictlyGreater == 0) {
+//      for (StoredBoard child : children) {
+//        if (best == null ||
+//            childValueStrictlyGreater(child) > childValueStrictlyGreater(best)) {
+//          best = child;
+//        }
+//      }      
+//    } else if (probStrictlyGreater == 1) {
+//      throw new RuntimeException();
+//    } else {
       for (StoredBoard child : children) {
         if (best == null ||
             logDerivativeProbStrictlyGreater(child) > logDerivativeProbStrictlyGreater(best)) {
           best = child;
         }
       }
-    }
+//    }
     assert best != null;
     assert logDerivativeProbStrictlyGreater(best) + best.maxLogDerivativeProbStrictlyGreater < 0;
     return best;
@@ -450,28 +478,23 @@ public class StoredBoard {
   public StoredBoard bestChildMidgameGreaterEqual() {
     assert !isLeaf();
     StoredBoard best = null;
-    if (probGreaterEqual == 0) {
-      for (StoredBoard child : children) {
-        if (best == null ||
-            logDerivativeDisproofNumberStrictlyGreater(child) > logDerivativeDisproofNumberStrictlyGreater(best)) {
-          best = child;
-        }
-      }      
-    } else if (probGreaterEqual == 1) {
-      for (StoredBoard child : children) {
-        if (best == null ||
-            logDerivativeProofNumberGreaterEqual(child) > logDerivativeProofNumberGreaterEqual(best)) {
-          best = child;
-        }
-      }      
-    } else {
+//    if (probGreaterEqual == 0) {
+//      throw new RuntimeException();   
+//    } else if (probGreaterEqual == 1) {
+//      for (StoredBoard child : children) {
+//        if (best == null ||
+//            childValueGreaterEqual(child) < childValueGreaterEqual(best)) {
+//          best = child;
+//        }
+//      }
+//    } else {
       for (StoredBoard child : children) {
         if (best == null ||
             logDerivativeProbGreaterEqual(child) > logDerivativeProbGreaterEqual(best)) {
           best = child;
         }
       }
-    }
+//    }
     assert best != null;
     assert logDerivativeProbGreaterEqual(best) + best.maxLogDerivativeProbGreaterEqual < 0;
     return best;

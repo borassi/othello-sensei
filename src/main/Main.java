@@ -95,7 +95,6 @@ public class Main implements Runnable {
       }
       EVALUATOR.stop();
       try {
-        System.out.println(future);
         future.get(100, TimeUnit.MILLISECONDS);
         future = null;
         break;
@@ -363,6 +362,13 @@ public class Main implements Runnable {
     }
     StoredBoard[] children = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(children);
+    boolean playerVariates = EVALUATOR.playerVariates() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
+    StoredBoard bestChild;
+    if (playerVariates) {
+      bestChild = EVALUATOR.getFirstPosition().isPartiallySolved() ? current.bestChildEndgameStrictlyGreater() : current.bestChildMidgameStrictlyGreater();
+    } else {
+      bestChild = EVALUATOR.getFirstPosition().isPartiallySolved() ? current.bestChildEndgameGreaterEqual() : current.bestChildMidgameGreaterEqual();      
+    }
     for (StoredBoard child : children) {
       if (child == null) {
         continue;
@@ -385,8 +391,10 @@ public class Main implements Runnable {
         + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
         + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
         + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual()) + "\n"
+        + (bestChild == child && !playerVariates ? "*" : "")
         + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
-        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child));
+        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child))
+        + (bestChild == child && playerVariates ? "*" : "");
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);
