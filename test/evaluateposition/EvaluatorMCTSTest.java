@@ -114,9 +114,7 @@ public class EvaluatorMCTSTest {
       double disproofNumberNextEval, double disproofNumberCurEval) {
     assertEquals(eval, b.getEval());
     assertEquals(proofNumberCurEval, b.getProofNumberGreaterEqual(), 1);
-    assertEquals(proofNumberNextEval, b.getProofNumberNextEval(), 1);
     assertEquals(disproofNumberCurEval, b.getDisproofNumberStrictlyGreater(), 1);
-    assertEquals(disproofNumberNextEval, b.getDisproofNumberNextEval(), 1);
   }
 
   private void addChildrenWorstEvaluation(EvaluatorMCTS evaluator, String board) {
@@ -251,12 +249,6 @@ public class EvaluatorMCTSTest {
 
     evaluator.upper = 2000;
     assert evaluator.isSolved();
-    boolean raisedError = true;
-    try {
-      evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, true, new ArrayList<>());
-      raisedError = false;
-    } catch (AssertionError e) {}
-    assert raisedError;
     StoredBoard.endgameTimeEstimator = new EndgameTimeEstimator();
   }
   
@@ -324,6 +316,84 @@ public class EvaluatorMCTSTest {
         evaluator.addChildren(nextPos);
         if (Math.random() < 0.1) {
           assertIsAllOK(evaluator);
+        }
+      }
+      if (Math.random() < 0.1) {
+        boolean allLeaves = true;
+        for (StoredBoard firstBoard : evaluator.evaluationsHashMap) {
+          for (StoredBoard board = firstBoard; board != null; board = board.next) {
+            if (!board.isLeaf()) {
+              allLeaves = false;
+              board.eval = (short) (board.eval + (Math.random() - 0.5) * 20);
+            }
+          }
+        }
+        if (!allLeaves) {
+          evaluator.setEvalGoal((int) (evaluator.lower + (Math.random() * (evaluator.upper - evaluator.lower))));
+          assertIsAllOK(evaluator);
+        }
+      }
+    }
+  }
+  
+  @Test
+  public void testCastToEndgameAnalysis() {
+    for (int i = 0; i < 10000; i++) {
+      if (i % 100 == 0) {
+        System.out.println("Done " + i);
+      }
+      int nElements = 5 + (int) (Math.random() * 100);
+      int totalSize = nElements + (int) (Math.random() * 100);
+
+      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, EVALUATOR_BASIC);
+      Board start = Board.randomBoard();
+      if (start.getPlayer() == 0 && start.getOpponent() == 0) {
+        continue;
+      }
+      evaluator.setFirstPosition(start.getPlayer(), start.getOpponent());
+      evaluator.lower = (int) ((Math.random() - 0.5) * 3200);
+      evaluator.upper = (int) (evaluator.lower + Math.random() * 3200);
+      
+      for (int j = 0; j < nElements; j++) {
+        HashMapVisitedPositions.PositionToImprove nextPos = evaluator.nextPositionToImproveRandom(
+            evaluator.firstPosition, Math.random() > 0.5, new ArrayList<>());
+
+        if (nextPos == null) {
+          break;
+        }
+        StoredBoard next = nextPos.board;
+        double d = Math.random();
+        
+        long[] moves = POSSIBLE_MOVES_FINDER.possibleMovesAdvanced(next.getPlayer(), next.getOpponent());
+        if (moves.length == 0 && (new GetMovesCache()).getMoves(next.getOpponent(), next.getPlayer()) == 0) {
+          int correctEval = BitPattern.getEvaluationGameOver(next.getPlayer(), next.getOpponent());
+          next.setSolved(correctEval);
+          continue;
+        }
+
+        int eval = (int) ((Math.random() - 0.5) * 6400);
+        eval = Math.max(Math.min(eval, next.getUpper()), next.getLower());
+        if (d <= 0.1) {
+          next.setLower(eval);
+          next.updateFathers();
+          continue;
+        } else if (d <= 0.2) {
+          next.setUpper(eval);
+          next.updateFathers();
+          continue;
+        } else if (d <= 0.3) {
+          next.setSolved(eval);
+          next.updateFathers();
+          continue;
+        }
+        evaluator.addChildren(nextPos);
+        if (Math.random() < 0.1) {
+          assertIsAllOK(evaluator);
+        }
+        if (Math.random() < 0.01) {
+          evaluator.castToEndgameAnalysis();
+          assertIsAllOK(evaluator);
+          assert (evaluator.firstPosition instanceof StoredBoardForEndgameAnalysis);
         }
       }
       if (Math.random() < 0.1) {

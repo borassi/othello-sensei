@@ -352,6 +352,19 @@ public class GetMovesCache implements Serializable {
     }
     return moves;
   }
+//  public static Board[] getAllNextBoard(Board b) {
+//    return getAllNextBoard(b.getPlayer(), b.getOpponent());
+//  }
+//  
+//  public static Board[] getAllNextBoard(long player, long opponent) {
+//    long[] moves = getAllMoves(player, opponent);
+//    Board[] result = new Board[moves.length];
+//    for (int i = 0; i < moves.length; ++i) {
+//      result[i] = new Board(player, opponent);
+//      result[i].moveInPlace(moves[i]);
+//    }
+//    return result;
+//  }
 //  private class Flipper0 extends Flipper {
 //    @Override
 //    public long run() {

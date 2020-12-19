@@ -14,9 +14,7 @@
 
 package evaluateposition;
 
-import bitpattern.BitPattern;
 import board.Board;
-import board.GetMovesCache;
 import constants.Constants;
 import java.util.ArrayList;
 
@@ -49,7 +47,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
                        EvaluatorInterface evaluatorMidgame) {
     super(maxSize, arraySize);
     this.evaluatorMidgame = evaluatorMidgame;
-    this.firstPosition = StoredBoard.initialStoredBoard(new Board(), 0, 0, 1);
+    this.firstPosition = StoredBoard.initialStoredBoard(new Board());
   }
   
   public float getEval() {
@@ -158,21 +156,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return nextPositionToImproveEndgame(father.bestChildEndgameGreaterEqual(), !playerVariates, parents);
     }
   }
-//  protected synchronized PositionToImprove nextPositionToImproveEndgame(
-//      StoredBoard father, boolean playerVariates,
-//      ArrayList<StoredBoard> parents) {
-//    assert positionToImproveAndEvalGoalAreOk(father, playerVariates);
-//    parents.add(father);
-//    if (father.isLeaf()) {
-//      return new PositionToImprove(father, playerVariates, parents);
-//    }
-//    if (playerVariates) {
-//      return nextPositionToImproveEndgame(father.bestChildPlayerVariates(), !playerVariates, parents);
-//    } else {
-//      return nextPositionToImproveEndgame(father.bestChildOpponentVariates(), !playerVariates, parents);
-//    }
-//  }
-  
+
   public boolean playerVariates() {
     if (firstPosition.getEvalGoal() >= upper) {
       return false;
@@ -189,21 +173,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         (firstPosition.getEvalGoal() <= lower || firstPosition.probGreaterEqual == 1)) {
       return nextPositionToImproveEndgame(firstPosition, playerVariates(), new ArrayList<>());
     }
-//    if (firstPosition.probGreaterEqual == 0 || firstPosition.probStrictlyGreater == 1) {
-//      System.out.println("WEIRD");
-//    }
     return nextPositionToImproveMidgame(firstPosition, playerVariates(), new ArrayList<>());
-//    }
-//    if (firstPosition.getEvalGoal() >= upper) {
-//      playerVariates = false;
-//    } else if (firstPosition.getEvalGoal() <= lower) {
-//      playerVariates = true;
-//    } else {
-//      playerVariates = 
-//          Math.max(firstPositionLocal.getProofNumberCurEval(), firstPositionLocal.getDisproofNumberNextEval()) >
-//          Math.max(firstPositionLocal.getProofNumberNextEval(), firstPositionLocal.getDisproofNumberCurEval());      
-//    }
-//    return nextPositionToImproveEndgame(firstPositionLocal, playerVariates, parents);
   }
 
   public short evaluatePosition(Board board) {
@@ -225,61 +195,34 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   void setFirstPosition(long player, long opponent) {
     empty();
     int quickEval = evaluatorMidgame.evaluatePosition(player, opponent, 2, lower, upper);
-    StoredBoard boardStored = StoredBoard.initialStoredBoard(
-        player, opponent, quickEval, roundEval(quickEval),
-        evaluatorMidgame.getNVisited() + 1);
-    add(boardStored);
-    this.firstPosition = boardStored;
+    firstPosition = StoredBoard.initialStoredBoard(player, opponent);
+    firstPosition.eval = quickEval;
+    firstPosition.descendants = evaluatorMidgame.getNVisited() + 1;
+    firstPosition.setEvalGoalRecursive(roundEval(quickEval));
+    
+    add(firstPosition);
   }
   
   public void addChildren(PositionToImprove fatherPos) {
     StoredBoard father = fatherPos.board;
-    GetMovesCache mover = new GetMovesCache();
-    long player = father.getPlayer();
-    long opponent = father.getOpponent();
-    
-    long curMoves = mover.getMoves(father.getPlayer(), father.getOpponent());
-    int nMoves = Long.bitCount(curMoves);
-    
-    if (nMoves == 0) {
-      if (mover.getNMoves(opponent, player) == 0) {
-        father.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
-        assert father.isAllOK();
-        return;
-      } else {
-        ++nMoves;
-      }
+    father.addChildren(this);
+    if (father.children == null) {
+      // Game over.
+      assert father.isSolved();
+      return;
     }
-    
-    StoredBoard[] children = new StoredBoard[nMoves];
+    int depth = 2;
     long addedPositions = 0;
-
-    for (int i = 0; i < nMoves; ++i) {
-      int move = Long.numberOfTrailingZeros(curMoves);
-      long moveBit = 1L << move;
-      curMoves = curMoves & (~moveBit);
-      long flip = move == 64 ? 0 : mover.getFlip(move) & (opponent | moveBit);
-      long newPlayer = opponent & ~flip;
-      long newOpponent = player | flip;
-      StoredBoard child = this.get(newPlayer, newOpponent);
-      if (child == null) {
-        int depth = 2;
-        int eval = evaluatorMidgame.evaluatePosition(newPlayer, newOpponent, depth, -6400, 6400);
-        long visited = evaluatorMidgame.getNVisited() + 1;
-        child = StoredBoard.childStoredBoard(
-            newPlayer, newOpponent, father, eval, visited);
-        addedPositions += visited;
-        super.add(child);
-      } else {
-        child.addFather(father);
-        if (father.getEvalGoal() != -child.getEvalGoal()) {
-          child.setEvalGoalRecursive(-father.getEvalGoal());
-        }
+    for (StoredBoard child : father.children) {
+      if (child.descendants == 0) {
+        int eval = evaluatorMidgame.evaluatePosition(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
+        child.descendants = evaluatorMidgame.getNVisited() + 1;
+        child.setEval(eval);
+        addedPositions += child.descendants;
       }
-      children[i] = child;
     }
     fatherPos.addVisitedPositions(addedPositions);
-    father.setChildren(children);
+    father.updateFathers();
     assert father.isAllOK();
   }
   
@@ -327,6 +270,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
     board.setEval(curEval);
     position.addVisitedPositions(seenPositions);
+    board.updateFathers();
   }
   
   public boolean isSolved() {
@@ -394,6 +338,44 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
     return (short) -firstPosition.getEval();
+  }
+  
+  void castToEndgameAnalysis() {
+    StoredBoardForEndgameAnalysis[] newEvaluationsHashMap = new StoredBoardForEndgameAnalysis[this.evaluationsHashMap.length];
+    // Fix next / prev.
+    for (int i = 0; i < evaluationsHashMap.length; ++i) {
+      StoredBoard boardOld = evaluationsHashMap[i];
+      if (boardOld == null) {
+        continue;
+      }
+      StoredBoardForEndgameAnalysis boardNew = new StoredBoardForEndgameAnalysis(boardOld);
+      newEvaluationsHashMap[i] = boardNew;
+      for (boardOld = boardOld.next; boardOld != null; boardOld = boardOld.next) {
+        boardNew.next = new StoredBoardForEndgameAnalysis(boardOld);
+        boardNew.next.prev = boardNew;
+        boardNew = (StoredBoardForEndgameAnalysis) boardNew.next;
+      }
+    }
+    this.evaluationsHashMap = newEvaluationsHashMap;
+    
+    // Fix children and fathers.
+    for (StoredBoard startBoard : evaluationsHashMap) {
+      for (StoredBoard board = startBoard; board != null; board = board.next) {
+        if (board.children == null) {
+          continue;
+        }
+        StoredBoard[] newChildren = new StoredBoard[board.children.length];
+        for (int i = 0; i < board.children.length; ++i) {
+          StoredBoard child = board.children[i];
+          StoredBoard newChild = get(child.getPlayer(), child.getOpponent());
+          newChildren[i] = newChild;
+          newChild.fathers.add(board);
+        }
+        board.children = newChildren;
+        assert board.areChildrenOK();
+      }
+    }
+    this.firstPosition = get(this.firstPosition.getPlayer(), this.firstPosition.getOpponent());
   }
   
   public int getEvalGoal() {

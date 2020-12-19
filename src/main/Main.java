@@ -161,10 +161,8 @@ public class Main implements Runnable {
     if (stopping) {
       return;
     }
-    EVALUATOR.evaluatePosition(
-        b, -6400, 6400, ui.depth(), updateTime, reset);
-//    EVALUATOR.evaluatePosition(
-//        b, 0, 1, ui.depth(), updateTime, reset);
+    EVALUATOR.evaluatePosition(b, -6400, 6400, ui.depth(), updateTime, reset);
+//    EVALUATOR.evaluatePosition(b, 0, 1, ui.depth(), updateTime, reset);
   }
   
   private boolean stopping = false;

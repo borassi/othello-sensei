@@ -47,7 +47,7 @@ public class StoredBoard {
   public double maxLogDerivativeDisproofNumberStrictlyGreater;
   public double maxLogDerivativeProofNumberGreaterEqual;
   int evalGoal;
-  public final boolean playerIsStartingPlayer;
+  public boolean playerIsStartingPlayer;
   long descendants;
 
   StoredBoard next;
@@ -55,9 +55,7 @@ public class StoredBoard {
 
   public final static GaussianNumberGenerator RANDOM = new GaussianNumberGenerator();
 
-  private StoredBoard(
-      long player, long opponent, int eval, int evalGoal,
-      boolean playerIsStartingPlayer, long descendants) {
+  protected StoredBoard(long player, long opponent, boolean playerIsStartingPlayer) {
     this.player = player;
     this.opponent = opponent;
     this.playerIsStartingPlayer = playerIsStartingPlayer;
@@ -65,36 +63,90 @@ public class StoredBoard {
     this.upper = 6400;
     this.fathers = new ArrayList<>();
     this.children = null;
-    this.evalGoal = evalGoal;
     this.prev = null;
     this.next = null;
-    this.descendants = descendants;
     this.nEmpties = 64 - Long.bitCount(player | opponent);
-    this.setEval(eval);
   }
   
-  public static StoredBoard initialStoredBoard(Board b, int eval, int evalGoal, long descendants) {
-    return initialStoredBoard(b.getPlayer(), b.getOpponent(), eval, evalGoal, descendants);
+  protected StoredBoard(StoredBoard b) {
+    this.player = b.player;
+    this.opponent = b.opponent;
+    this.fathers = b.fathers;
+    this.children = b.children;
+    
+    this.eval = b.eval;
+    this.lower = b.lower;
+    this.upper = b.upper;
+    this.nEmpties = b.nEmpties;
+    
+    this.probGreaterEqual = b.probGreaterEqual;
+    this.probStrictlyGreater = b.probStrictlyGreater;
+    this.proofNumberGreaterEqual = b.proofNumberGreaterEqual;
+    this.disproofNumberStrictlyGreater = b.disproofNumberStrictlyGreater;
+    
+    this.maxLogDerivativeProbStrictlyGreater = b.maxLogDerivativeProbStrictlyGreater;
+    this.maxLogDerivativeProbGreaterEqual = b.maxLogDerivativeProbGreaterEqual;
+    this.maxLogDerivativeDisproofNumberStrictlyGreater = b.maxLogDerivativeDisproofNumberStrictlyGreater;
+    this.maxLogDerivativeProofNumberGreaterEqual = b.maxLogDerivativeProofNumberGreaterEqual;
+    
+    this.evalGoal = b.evalGoal;
+    this.playerIsStartingPlayer = b.playerIsStartingPlayer;
+    this.descendants = b.descendants;
+    
+    this.prev = b.prev;
+    this.next = b.next;
+    this.nEmpties = b.nEmpties;
   }
   
-  public static StoredBoard initialStoredBoard(
-      long player, long opponent, int eval, int evalGoal, long descendants) {
-    return new StoredBoard(
-        player, opponent, eval, evalGoal, true, descendants);
+  public static StoredBoard initialStoredBoard(Board b) {
+    return initialStoredBoard(b.getPlayer(), b.getOpponent());
   }
+  
+  public static StoredBoard initialStoredBoard(long player, long opponent) {
+    return new StoredBoard(player, opponent, true);
+  }
+  
+  StoredBoard getChild(long player, long opponent) {
+    return new StoredBoard(player, opponent, !playerIsStartingPlayer);
+  }
+  
+  public void addChildren(EvaluatorMCTS evaluator) {
+    GetMovesCache mover = new GetMovesCache();
+    
+    long curMoves = mover.getMoves(player, opponent);
+    int nMoves = Long.bitCount(curMoves);
+    
+    if (nMoves == 0) {
+      if (mover.getNMoves(opponent, player) == 0) {
+        setSolved(BitPattern.getEvaluationGameOver(player, opponent));
+        assert isAllOK();
+        return;
+      } else {
+        ++nMoves;
+      }
+    }
+    children = new StoredBoard[nMoves];
 
-  public static StoredBoard childStoredBoard(
-      Board b, StoredBoard father, int eval, long descendants) {
-    return childStoredBoard(b.getPlayer(), b.getOpponent(), father, eval, descendants);
-  }
-  
-  public static StoredBoard childStoredBoard(
-      long player, long opponent, StoredBoard father, int eval, long descendants) {
-    StoredBoard result = new StoredBoard(
-        player, opponent, eval, -father.evalGoal, !father.playerIsStartingPlayer,
-        descendants);
-    result.addFather(father);
-    return result;
+    for (int i = 0; i < nMoves; ++i) {
+      int move = Long.numberOfTrailingZeros(curMoves);
+      long moveBit = 1L << move;
+      curMoves = curMoves & (~moveBit);
+      long flip = move == 64 ? 0 : mover.getFlip(move) & (opponent | moveBit);
+      long newPlayer = opponent & ~flip;
+      long newOpponent = player | flip;
+      StoredBoard child = evaluator.get(newPlayer, newOpponent);
+      if (child == null) {
+        child = getChild(newPlayer, newOpponent);
+        child.evalGoal = -evalGoal;
+        evaluator.add(child);
+      } else {
+        if (this.getEvalGoal() != -child.getEvalGoal()) {
+          child.setEvalGoalRecursive(-this.getEvalGoal());
+        }
+      }
+      child.addFather(this);
+      children[i] = child;
+    }
   }
   
   public void addFather(StoredBoard father) {
@@ -176,7 +228,7 @@ public class StoredBoard {
   public final void setEval(int newEval) {
     assert isLeaf();
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
-    this.updateFathers();
+//    this.updateFathers();
     this.setProofNumbersForLeaf();
     assert areThisBoardEvalsOK();
   }
@@ -315,8 +367,10 @@ public class StoredBoard {
   }
 
   protected void updateFathers() {
+    if (!isLeaf()) {
+      updateFather();
+    }
     for (StoredBoard father : fathers) {
-      father.updateFather();
       father.updateFathers();
     }
   }
@@ -404,13 +458,6 @@ public class StoredBoard {
   
   public boolean isSolved() {
     return this.lower == this.upper;
-  }
-  
-  public void setChildren(StoredBoard[] children) {
-    this.children = children;
-    this.updateFather();
-    this.updateFathers();
-    assert areChildrenOK();
   }
   
   public StoredBoard[] getChildren() {
@@ -535,13 +582,17 @@ public class StoredBoard {
         found = true;
       }
     }
+    if (!found) {
+      throw new AssertionError("Did not find father\n" + child + " for board\n" + this);
+    }
+    if (eval < -child.eval || lower < -child.upper || upper < -child.lower) {
+      throw new AssertionError(
+          "Wrong eval=" + eval + "/lower=" + lower + "/upper=" + upper +
+          " (should be eval>=" + (-child.eval) + "/lower>=" + (-child.upper) + "/upper>=" + (-child.lower) +
+          ". Board:\n" + this + "\nchild:\n" + child);
+    }
     return 
         child.playerIsStartingPlayer == !playerIsStartingPlayer
-        && eval >= -child.eval
-        && lower >= -child.upper
-        && upper >= -child.lower
-        && evalGoal == -child.evalGoal
-        && found
         && Utils.arrayContains(children, child);
   }
 
@@ -551,14 +602,19 @@ public class StoredBoard {
     }
     for (StoredBoard child : children) {
       if (!isChildOK(child)) {
-        return false;
+        throw new AssertionError("Child\n" + child + "\n of board\n" + this + "\nis not OK");
+      }
+      if ((child instanceof StoredBoardForEndgameAnalysis) != (this instanceof StoredBoardForEndgameAnalysis)) {
+        throw new AssertionError("Board " + this + " has different type from child " + child + ".");
       }
     }
     if (children.length != Long.bitCount(GetMoves.getMoves(player, opponent)) && !(
         Long.bitCount(GetMoves.getMoves(player, opponent)) == 0
         && Long.bitCount(GetMoves.getMoves(opponent, player)) != 0
         && children.length == 1)) {
-      return false;
+      throw new AssertionError(
+          "Board " + this + " should have " + Long.bitCount(GetMoves.getMoves(player, opponent))
+              + " children. Found " + children.length);
     }
     return true;
   }
@@ -604,6 +660,15 @@ public class StoredBoard {
   }
   
   boolean isAllOK() {
-    return isPrevNextOK() && areChildrenOK() && areThisBoardEvalsOK() && isEvalOK() && areDescendantsOK();
+    if (!isPrevNextOK()) {
+      throw new AssertionError("Wrong isPrevNextOK");
+    }
+    if (!areChildrenOK()) {
+      throw new AssertionError("Wrong areChildrenOK");      
+    }
+    if (!areThisBoardEvalsOK() || !isEvalOK() || !areDescendantsOK()) {
+      throw new AssertionError("Wrong areThisBoardEvalsOK or isEvalOK or areDescendantsOK.");
+    }
+    return true;
   }
 }

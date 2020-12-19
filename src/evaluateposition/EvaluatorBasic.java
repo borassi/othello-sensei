@@ -90,7 +90,9 @@ public class EvaluatorBasic implements EvaluatorInterface {
     for (long move : moves) {
       Board next = current.move(move);
       int eval = -evaluatePosition(next, depth - 1);
-      StoredBoard sb = StoredBoard.initialStoredBoard(next.getPlayer(), next.getOpponent(), eval, 0, this.nVisitedPositions);
+      StoredBoard sb = StoredBoard.initialStoredBoard(next.getPlayer(), next.getOpponent());
+      sb.eval = eval;
+      sb.descendants = this.nVisitedPositions;
       evaluations.add(sb);
     }
     return evaluations;

@@ -92,7 +92,7 @@ public class HashMapVisitedPositions {
   public final void empty() {
     Arrays.fill(evaluationsHashMap, null);
 //    System.gc();
-    firstPosition = StoredBoard.initialStoredBoard(new Board(), 0, 0, 1);
+    firstPosition = StoredBoard.initialStoredBoard(new Board());
     size = 0;
   }
   
