@@ -386,13 +386,19 @@ public class Main implements Runnable {
       annotations.otherAnnotations =
 //        Utils.prettyPrintDouble(-child.getEvalGoal() / 100) + "\n"
         Utils.prettyPrintDouble(child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1 - child.probGreaterEqual) + "\n"
-        + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
-        + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
-        + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual()) + "\n"
+        + (-child.getUpper()) + " " + (-child.getLower()) + "\n" 
+//        + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
+//        + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
         + (bestChild == child && !playerVariates ? "*" : "")
-        + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
-        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child))
-        + (bestChild == child && playerVariates ? "*" : "");
+        + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual())
+        + (bestChild == child && playerVariates ? "*" : "") + "\n";
+      if (child.extraInfo != null) {
+        annotations.otherAnnotations +=
+            Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater) + " "
+            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual);
+      }
+//        + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
+//        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child))
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
 //        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);

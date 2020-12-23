@@ -146,6 +146,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   protected synchronized PositionToImprove nextPositionToImproveEndgame(
       StoredBoard father, boolean playerVariates,
       ArrayList<StoredBoard> parents) {
+    if (father == null) {
+      return null;
+    }
     parents.add(father);
     if (father.isLeaf()) {
       return new PositionToImprove(father, playerVariates, parents);
@@ -303,11 +306,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
 
     long startTime = System.currentTimeMillis();
-    HashMapVisitedPositions.PositionToImprove nextPos;
     int i = 0;
-    while (true) {
-//      System.out.println(this.firstPosition.descendants + "\t" + this.firstPosition.probGreaterEqualEvalGoal + "\t" + this.firstPosition.probStrictlyGreaterEvalGoal);
-      nextPos = nextPositionToImprove();
+    HashMapVisitedPositions.PositionToImprove nextPos;
+    for (nextPos = nextPositionToImprove();
+         nextPos != null;
+         nextPos = nextPositionToImprove()) {
       StoredBoard next = nextPos.board;
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
@@ -320,10 +323,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       updateEvalGoalIfNeeded();
 
-      if (isSolved()) {
-        status = Status.SOLVED;
-        break;
-      }
       if (status == Status.KILLING) {
         status = Status.KILLED;
         break;
@@ -337,45 +336,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         break;
       }
     }
+    if (nextPos == null) {
+      status = Status.SOLVED;
+    }
     return (short) -firstPosition.getEval();
-  }
-  
-  void castToEndgameAnalysis() {
-    StoredBoardForEndgameAnalysis[] newEvaluationsHashMap = new StoredBoardForEndgameAnalysis[this.evaluationsHashMap.length];
-    // Fix next / prev.
-    for (int i = 0; i < evaluationsHashMap.length; ++i) {
-      StoredBoard boardOld = evaluationsHashMap[i];
-      if (boardOld == null) {
-        continue;
-      }
-      StoredBoardForEndgameAnalysis boardNew = new StoredBoardForEndgameAnalysis(boardOld);
-      newEvaluationsHashMap[i] = boardNew;
-      for (boardOld = boardOld.next; boardOld != null; boardOld = boardOld.next) {
-        boardNew.next = new StoredBoardForEndgameAnalysis(boardOld);
-        boardNew.next.prev = boardNew;
-        boardNew = (StoredBoardForEndgameAnalysis) boardNew.next;
-      }
-    }
-    this.evaluationsHashMap = newEvaluationsHashMap;
-    
-    // Fix children and fathers.
-    for (StoredBoard startBoard : evaluationsHashMap) {
-      for (StoredBoard board = startBoard; board != null; board = board.next) {
-        if (board.children == null) {
-          continue;
-        }
-        StoredBoard[] newChildren = new StoredBoard[board.children.length];
-        for (int i = 0; i < board.children.length; ++i) {
-          StoredBoard child = board.children[i];
-          StoredBoard newChild = get(child.getPlayer(), child.getOpponent());
-          newChildren[i] = newChild;
-          newChild.fathers.add(board);
-        }
-        board.children = newChildren;
-        assert board.areChildrenOK();
-      }
-    }
-    this.firstPosition = get(this.firstPosition.getPlayer(), this.firstPosition.getOpponent());
   }
   
   public int getEvalGoal() {

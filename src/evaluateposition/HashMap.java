@@ -133,7 +133,9 @@ public class HashMap {
     for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
       if (b.player == player && b.opponent == opponent) {
         this.updateToRemove(b);
-        assert(allOk());
+        if (Constants.ASSERT_EXTENDED) {
+          assert(allOk());
+        }
         return b;
       }
     }
@@ -144,7 +146,9 @@ public class HashMap {
     evaluationsHashMap[hash] = b;
     addBeforeToRemove(b, lastToRemove);
     assert evaluationsHashMap[hash].prev == null;
-    assert allOk();
+    if (Constants.ASSERT_EXTENDED) {
+      assert allOk();
+    }
     return b;
   }
   
@@ -239,7 +243,10 @@ public class HashMap {
     }
     assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] == null ||
         evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)].prev == null);
-    assert(allOk());
+    
+    if (Constants.ASSERT_EXTENDED) {
+      assert(allOk());
+    }
     return toRemove;
   }
   
@@ -247,8 +254,11 @@ public class HashMap {
     // Remove b from the list.
     pairToRemove(b.prevToRemove, b.nextToRemove);
     // Add b at the end.
-    addBeforeToRemove(b, lastToRemove);   
-    assert(allOk()); 
+    addBeforeToRemove(b, lastToRemove); 
+    
+    if (Constants.ASSERT_EXTENDED) {
+      assert(allOk());
+    }
   }
   
   @Override
