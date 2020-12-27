@@ -242,6 +242,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //    }
     int eval = evaluatorMidgame.evaluatePosition(
         board.getPlayer(), board.getOpponent(), nEmpties, alpha, beta);
+    long seenPositions = evaluatorMidgame.getNVisited() + 1;
+    nEndgames++;
+    nVisitedEndgames += seenPositions;
+    position.addVisitedPositions(seenPositions);
     if (eval <= alpha) {
       // Tricky but probably correct.
       board.setUpper(eval);
@@ -250,10 +254,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     } else {
       board.setSolved(eval);
     }
-    long seenPositions = evaluatorMidgame.getNVisited() + 1;
-    nEndgames++;
-    nVisitedEndgames += seenPositions;
-    position.addVisitedPositions(seenPositions);
   }
   
   public void deepenPosition(PositionToImprove position, int nEmpties) {
@@ -271,8 +271,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           board.getPlayer(), board.getOpponent(), d, -6400, 6400);
       seenPositions += evaluatorMidgame.getNVisited();
     }
-    board.setEval(curEval);
     position.addVisitedPositions(seenPositions);
+    board.setEval(curEval);
     board.updateFathers();
   }
   

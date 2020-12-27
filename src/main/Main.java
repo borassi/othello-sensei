@@ -378,24 +378,28 @@ public class Main implements Runnable {
       annotations.isBestMove = ij.equals(bestIJ);
 //      annotations.lower = -child.getUpper() / 100F;
 //      annotations.upper = -child.getLower() / 100F;
-      annotations.nVisited = child.getDescendants();
+//      annotations.nVisited = child.getDescendants();
 //      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
 //      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
 //      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
 //      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
       annotations.otherAnnotations =
 //        Utils.prettyPrintDouble(-child.getEvalGoal() / 100) + "\n"
-        Utils.prettyPrintDouble(child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1 - child.probGreaterEqual) + "\n"
-        + (-child.getUpper()) + " " + (-child.getLower()) + "\n" 
+//        Utils.prettyPrintDouble(child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1 - child.probGreaterEqual) + "\n"
+        (-child.getUpper()) + " " + (-child.getLower()) + "\n" 
 //        + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
 //        + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
         + (bestChild == child && !playerVariates ? "*" : "")
         + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual())
-        + (bestChild == child && playerVariates ? "*" : "") + "\n";
+        + (bestChild == child && playerVariates ? "*" : "") + "\n"
+          ;
       if (child.extraInfo != null) {
         annotations.otherAnnotations +=
-            Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater) + " "
-            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual);
+            Utils.prettyPrintDouble(child.getDescendants()) + " " + Utils.prettyPrintDouble(child.extraInfo.nDescendants) + "\n"
+            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater) + " "
+            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual) + "\n"
+            + Utils.prettyPrintDouble(child.extraInfo.minDeltaDisproofStrictlyGreater) + " "
+            + Utils.prettyPrintDouble(child.extraInfo.minDeltaProofGreaterEqual);
       }
 //        + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
 //        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child))

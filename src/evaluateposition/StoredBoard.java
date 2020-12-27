@@ -29,6 +29,9 @@ public class StoredBoard {
   public class ExtraInfo {
     public double minProofGreaterEqual = 0;
     public double minDisproofStrictlyGreater = 0;
+    public double minDeltaProofGreaterEqual = 0;
+    public double minDeltaDisproofStrictlyGreater = 0;
+    public long nDescendants = 0;
   }
   private static HashMap HASH_MAP = new HashMap(6000, 3000);
   private static EvaluatorMidgame EVALUATOR_MIDGAME = new EvaluatorMidgame(PatternEvaluatorImproved.load(), HASH_MAP);
@@ -289,9 +292,22 @@ public class StoredBoard {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       extraInfo.minProofGreaterEqual = Double.POSITIVE_INFINITY;
       extraInfo.minDisproofStrictlyGreater = 0;
+      extraInfo.nDescendants = 0;
+      extraInfo.minDeltaDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
       for (StoredBoard child : children) {
         extraInfo.minProofGreaterEqual = Math.min(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);        
         extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
+        extraInfo.minDeltaDisproofStrictlyGreater = Math.min(extraInfo.minDeltaDisproofStrictlyGreater, child.extraInfo.minDeltaProofGreaterEqual);
+        extraInfo.minDeltaProofGreaterEqual = Math.min(extraInfo.minDeltaProofGreaterEqual, child.extraInfo.minDeltaDisproofStrictlyGreater);
+        extraInfo.nDescendants += child.extraInfo.nDescendants;
+      }
+      for (StoredBoard child : children) {
+        if (child.disproofNumberStrictlyGreater != 0 && child.disproofNumberStrictlyGreater != Double.POSITIVE_INFINITY
+            && extraInfo.minProofGreaterEqual != Double.POSITIVE_INFINITY) {
+          extraInfo.minDeltaProofGreaterEqual = Math.min(
+              extraInfo.minDeltaProofGreaterEqual,
+              child.disproofNumberStrictlyGreater + child.extraInfo.nDescendants - extraInfo.minProofGreaterEqual);          
+        }
       }
     }
     assert areThisBoardEvalsOK();
@@ -400,11 +416,15 @@ public class StoredBoard {
       }
     }
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      extraInfo.nDescendants = this.descendants;
+      extraInfo.minDeltaDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
+      extraInfo.minDeltaProofGreaterEqual = Double.POSITIVE_INFINITY;
+      
       if (lower >= evalGoal) {
         HASH_MAP.reset();
         EVALUATOR_MIDGAME.resetNVisitedPositions();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
-        extraInfo.minProofGreaterEqual = EVALUATOR_MIDGAME.getNVisited();
+        extraInfo.minProofGreaterEqual = Math.min(descendants, EVALUATOR_MIDGAME.getNVisited());
       } else {
         extraInfo.minProofGreaterEqual = Double.POSITIVE_INFINITY;
       }
@@ -412,7 +432,7 @@ public class StoredBoard {
         HASH_MAP.reset();
         EVALUATOR_MIDGAME.resetNVisitedPositions();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
-        extraInfo.minDisproofStrictlyGreater = EVALUATOR_MIDGAME.getNVisited();
+        extraInfo.minDisproofStrictlyGreater = Math.min(descendants, EVALUATOR_MIDGAME.getNVisited());
       } else {
         extraInfo.minDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
       }
