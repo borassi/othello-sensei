@@ -33,21 +33,8 @@ public class EvaluatorMCTSTest {
   EvaluatorInterface EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
 
-  private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, Board board) {
-    StoredBoard b = evaluator.get(board);
-    ArrayList<StoredBoard> fathers = new ArrayList<>();
-    StoredBoard curFather = b;
-
-    while (curFather.fathers != null && !curFather.fathers.isEmpty()) {
-      curFather = curFather.fathers.get((int) (curFather.fathers.size() * Math.random()));
-      fathers.add(curFather);
-    }
-
-    return new HashMapVisitedPositions.PositionToImprove(b, Math.random() > 0.5, fathers);
-  }
-
-  private HashMapVisitedPositions.PositionToImprove getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
-    return getPositionToImprove(evaluator, new Board(sequence));
+  private StoredBoardBestDescendant getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
+    return StoredBoardBestDescendant.fixedDescendant(evaluator.firstPosition, true, sequence);
   }
   
   @Test
@@ -55,17 +42,17 @@ public class EvaluatorMCTSTest {
     EvaluatorMCTS evaluator = new EvaluatorMCTS(20, 20, EVALUATOR_BASIC);
     
     evaluator.setFirstPosition(new Board("e6f4"));
-    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4"));
-    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4c3"));
-    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4c3c4"));
+    evaluator.addChildren(getPositionToImprove(evaluator, ""));
+    evaluator.addChildren(getPositionToImprove(evaluator, "c3"));
+    evaluator.addChildren(getPositionToImprove(evaluator, "c3c4"));
 
-    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4d3"));
+    evaluator.addChildren(getPositionToImprove(evaluator, "d3"));
     
     StoredBoard doubleFather = evaluator.get(new Board("e6f4c3c4d3"));
     assertEquals(1, doubleFather.fathers.size());
     assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
 
-    evaluator.addChildren(getPositionToImprove(evaluator, "e6f4d3c4"));
+    evaluator.addChildren(getPositionToImprove(evaluator, "d3c4"));
 
     assertEquals(2, doubleFather.fathers.size());
     assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
@@ -77,7 +64,7 @@ public class EvaluatorMCTSTest {
     EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, EVALUATOR_BASIC);
     Board passB = Board.pass();
     evaluator.setFirstPosition(passB);
-    evaluator.addChildren(getPositionToImprove(evaluator, passB));
+    evaluator.addChildren(getPositionToImprove(evaluator, ""));
 
     StoredBoard pass = evaluator.get(passB);
     StoredBoard afterPass = evaluator.get(passB.getOpponent(), passB.getPlayer());
@@ -96,7 +83,7 @@ public class EvaluatorMCTSTest {
     EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, EVALUATOR_BASIC);
     Board passB = Board.bothPass();
     evaluator.setFirstPosition(passB);
-    evaluator.addChildren(getPositionToImprove(evaluator, passB));
+    evaluator.addChildren(getPositionToImprove(evaluator, ""));
     assertEquals(1, evaluator.size);
 
     int eval = passB.getPlayerDisks() - passB.getOpponentDisks() + 
@@ -118,7 +105,7 @@ public class EvaluatorMCTSTest {
   }
 
   private void addChildrenWorstEvaluation(EvaluatorMCTS evaluator, String board) {
-    HashMapVisitedPositions.PositionToImprove pos = getPositionToImprove(evaluator, board);
+    StoredBoardBestDescendant pos = getPositionToImprove(evaluator, board);
     evaluator.addChildren(pos);
     for (StoredBoard child : pos.board.children) {
       child.setSolved(6400);
@@ -188,9 +175,9 @@ public class EvaluatorMCTSTest {
     evaluator.upper = 6400;
     
     evaluator.setFirstPosition(new Board("e6"));
-    addChildrenWorstEvaluation(evaluator, "e6");
-    addChildrenWorstEvaluation(evaluator, "e6f4");
-    addChildrenWorstEvaluation(evaluator, "e6f4c3");
+    addChildrenWorstEvaluation(evaluator, "");
+    addChildrenWorstEvaluation(evaluator, "f4");
+    addChildrenWorstEvaluation(evaluator, "f4c3");
 
     StoredBoard e6 = evaluator.get(new Board("e6"));
     StoredBoard e6f4 = evaluator.get(new Board("e6f4"));
@@ -230,8 +217,8 @@ public class EvaluatorMCTSTest {
     testBoard(e6, 2000, 30, 1040, 1001, 10);
     assert !evaluator.isSolved();
 
-    assertEquals(e6f4c3d6, evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, true, new ArrayList<>()).board);
-    assertEquals(e6f4e3, evaluator.nextPositionToImproveEndgame(evaluator.firstPosition, false, new ArrayList<>()).board);
+    assertEquals(e6f4c3d6, evaluator.nextPositionToImprove().board);
+//    assertEquals(e6f4e3, evaluator.nextPositionToImprove().board);
     e6f4e3.setLower(2200);
     
     testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
@@ -282,8 +269,8 @@ public class EvaluatorMCTSTest {
       evaluator.upper = (int) (evaluator.lower + Math.random() * 3200);
       
       for (int j = 0; j < nElements; j++) {
-        HashMapVisitedPositions.PositionToImprove nextPos = evaluator.nextPositionToImproveRandom(
-            evaluator.firstPosition, Math.random() > 0.5, new ArrayList<>());
+        StoredBoardBestDescendant nextPos = StoredBoardBestDescendant.randomDescendant(
+            evaluator.firstPosition, Math.random() > 0.5);
 
         if (nextPos == null) {
           break;

@@ -24,48 +24,6 @@ public class HashMapVisitedPositions {
   long maxSize;
   long size;
   
-  public static class PositionToImprove {
-    StoredBoard board;
-    boolean playerVariates;
-//    int alpha;
-//    int beta;
-    ArrayList<StoredBoard> parents;
-    
-    public PositionToImprove(StoredBoard board, boolean playerVariates,
-        ArrayList<StoredBoard> parents) {
-      this.board = board;
-      this.playerVariates = playerVariates;
-      this.parents = parents;
-//      this.setAlphaBeta(firstPosition, playerVariates);
-    }
-  
-    public int getAlpha() {
-      return board.getEvalGoal() - (playerVariates ? 0 : 1);
-    }
-  
-    public int getBeta() {
-      return board.getEvalGoal() + (playerVariates ? 1 : 0);
-    }
-//    private void setAlphaBeta(boolean playerVariates) {
-//      alpha = board.getEvalGoal();
-//      beta = board.getEvalGoal();
-//      if (playerVariates) {
-//        beta++;
-//      } else {
-//        alpha--;
-//      }
-//      if (!firstPosition.isPartiallySolved()) {
-//        alpha = -6400;
-//        beta = 6400;
-//      }
-//    }
-    public void addVisitedPositions(long visitedPositions) {
-      for (StoredBoard b : parents) {
-        b.descendants += visitedPositions;
-      }
-    }
-  }
-  
   public HashMapVisitedPositions() {
     this(1000000, 2000000);
   }
@@ -75,18 +33,6 @@ public class HashMapVisitedPositions {
     this.maxSize = maxSize;
     evaluationsHashMap = new StoredBoard[arraySize];
     empty();
-  }
-
-  protected synchronized PositionToImprove nextPositionToImproveRandom(
-      StoredBoard father, boolean playerVariates, 
-      ArrayList<StoredBoard> parents) {
-    parents.add(father);
-    if (father.isLeaf()) {
-      return new PositionToImprove(father, playerVariates, parents);
-    }
-    StoredBoard[] children = father.getChildren();
-    
-    return nextPositionToImproveRandom(children[(int) (Math.random() * children.length)], !playerVariates, parents);
   }
 
   public final void empty() {

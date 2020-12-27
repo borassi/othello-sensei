@@ -360,7 +360,7 @@ public class Main implements Runnable {
     }
     StoredBoard[] children = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(children);
-    boolean playerVariates = EVALUATOR.playerVariates() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
+    boolean playerVariates = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
     StoredBoard bestChild;
     if (playerVariates) {
       bestChild = EVALUATOR.getFirstPosition().isPartiallySolved() ? current.bestChildEndgameStrictlyGreater() : current.bestChildMidgameStrictlyGreater();

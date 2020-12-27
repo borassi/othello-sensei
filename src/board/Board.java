@@ -145,7 +145,7 @@ public class Board implements Serializable {
   public Board(String sequence) {
     Board b = new Board();
     for (int i = 0; i < sequence.length(); i += 2) {
-      b = GetMovesCache.moveIfPossible(b, new PositionIJ(sequence.substring(i, i+2)).toMove());
+      b = b.move(sequence.substring(i, i+2));
     }
     this.player = b.player;
     this.opponent = b.opponent;
@@ -302,7 +302,16 @@ public class Board implements Serializable {
   public Board move(long move) {
     return new Board(opponent & ~move, player | move);
   }
-  
+
+   /**
+   * Returns a board after a move.
+   * 
+   * @param move The move (e.g., "e6").
+   */
+  public Board move(String move) {
+    return GetMovesCache.moveIfPossible(this, new PositionIJ(move).toMove());
+  }
+
   /**
    * Returns the board after a move.
    * @param move a long whose bitwise expansion is '1' on the case where

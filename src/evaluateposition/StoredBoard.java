@@ -539,7 +539,7 @@ public class StoredBoard {
       }
     }
     assert best != null;
-    assert logDerivativeProbGreaterEqual(best) + best.maxLogDerivativeProbGreaterEqual < 0;
+    assert bestValue < 0;
     return best;
   }
 
