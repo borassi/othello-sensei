@@ -36,7 +36,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
     this.possibleMovesFinder = possibleMovesFinder;
   }
   
-  public void resetNVisitedPositions() {
+  public void resetNVisited() {
     nVisitedPositions = 0;
     nComputedMoves = 0;
   }
@@ -55,9 +55,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
   }
   
   public int evaluatePosition(Board current, int depth) {
-//    if (current.getEmptySquares() == 0) {
-//      return BitPattern.getEvaluationBoardFull(current);
-//    }
+    resetNVisited();
     if (depth <= 0) {
       return depthOneEvaluator.eval(current.getPlayer(), current.getOpponent());
     } 
@@ -81,21 +79,6 @@ public class EvaluatorBasic implements EvaluatorInterface {
       bestEval = bestEval > currentEval ? bestEval : currentEval;
     }
     return bestEval;    
-  }
-
-  public ArrayList<StoredBoard> evaluatePositionAll(Board current, int depth) {
-    ArrayList<StoredBoard> evaluations = new ArrayList<>();
-    long[] moves = possibleMovesFinder.possibleMoves(current);
- 
-    for (long move : moves) {
-      Board next = current.move(move);
-      int eval = -evaluatePosition(next, depth - 1);
-      StoredBoard sb = StoredBoard.initialStoredBoard(next.getPlayer(), next.getOpponent());
-      sb.eval = eval;
-      sb.descendants = this.nVisitedPositions;
-      evaluations.add(sb);
-    }
-    return evaluations;
   }
 
   @Override

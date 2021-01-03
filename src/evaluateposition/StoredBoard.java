@@ -33,6 +33,7 @@ public class StoredBoard {
     public double minDeltaDisproofStrictlyGreater = 0;
     public double nDescendants = 0;
     public boolean isFinished = false;
+    public StoredBoard leastCommonAncestor;
     
     public void setNDescendants(double value) {
       if (isFinished) {
@@ -42,7 +43,7 @@ public class StoredBoard {
     }
   }
   private static HashMap HASH_MAP = new HashMap(6000, 3000);
-  private static EvaluatorMidgame EVALUATOR_MIDGAME = new EvaluatorMidgame(PatternEvaluatorImproved.load(), HASH_MAP);
+  protected static EvaluatorInterface EVALUATOR_MIDGAME = new EvaluatorMidgame(PatternEvaluatorImproved.load(), HASH_MAP);
   
   private final long player;
   private final long opponent;
@@ -135,6 +136,9 @@ public class StoredBoard {
       } else {
         if (this.getEvalGoal() != -child.getEvalGoal()) {
           child.setEvalGoalRecursive(-this.getEvalGoal());
+        }
+        if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+          extraInfo.leastCommonAncestor = this.findLeastCommonAncestor();
         }
       }
       child.addFather(this);
@@ -457,7 +461,6 @@ public class StoredBoard {
       
       if (lower >= evalGoal) {
         HASH_MAP.reset();
-        EVALUATOR_MIDGAME.resetNVisitedPositions();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
         extraInfo.minProofGreaterEqual = EVALUATOR_MIDGAME.getNVisited();
         extraInfo.setNDescendants(extraInfo.minProofGreaterEqual);
@@ -466,7 +469,6 @@ public class StoredBoard {
       }
       if (upper <= evalGoal) {
         HASH_MAP.reset();
-        EVALUATOR_MIDGAME.resetNVisitedPositions();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
         extraInfo.minDisproofStrictlyGreater = EVALUATOR_MIDGAME.getNVisited();
         extraInfo.setNDescendants(extraInfo.minDisproofStrictlyGreater);
@@ -611,6 +613,40 @@ public class StoredBoard {
     assert bestValue < 0;
     return best;
   }
+  
+  StoredBoard findLeastCommonAncestor() {
+    if (fathers.size() == 1) {
+      return fathers.get(0);
+    }
+    
+    HashSet<StoredBoard> currentAncestors = new HashSet<>();
+    HashSet<StoredBoard> nextAncestors = new HashSet<>();
+    
+    currentAncestors.add(this);
+    
+    while (true) {
+      for (StoredBoard b : currentAncestors) {
+        for (StoredBoard father : b.fathers) {
+          if (father.nEmpties == b.nEmpties) {
+            // father is a pass: it cannot be the least common ancestor,
+            // because it has 1 child.
+            assert(father.fathers.get(0).nEmpties == b.nEmpties + 1);
+            nextAncestors.addAll(father.fathers);
+          } else {
+            assert(father.nEmpties == b.nEmpties + 1);
+            nextAncestors.add(father);
+          }
+        }
+      }
+      if (nextAncestors.size() == 1) {
+        return nextAncestors.iterator().next();
+      } else if (nextAncestors.isEmpty()) {
+        return null;
+      }
+      currentAncestors = nextAncestors;
+      nextAncestors = new HashSet<>();
+    }
+  }
 
   boolean areThisBoardEvalsOK() {
     if (this.lower > this.eval || this.eval > this.upper) {
@@ -717,6 +753,25 @@ public class StoredBoard {
       throw new AssertionError(
           "Wrong eval/lower/upper. Expected: " + correctEval + "/" + correctLower + "/" + correctUpper + 
           ". Got: " + eval + "/" + lower + "/" + upper + ".\nChildren eval/lower/upper:\n" + childEval);
+    }
+    return true;
+  }
+  
+  boolean isLeastCommonAncestorOK() {
+    if (!Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      return true;
+    }
+    if (fathers.size() <= 1) {
+      if (extraInfo.leastCommonAncestor == null) {
+        throw new AssertionError( 
+            "Board " + this + " has leastCommonAncestor = null, but more than one father.");
+      }
+    } else {
+      if (extraInfo.leastCommonAncestor != this.findLeastCommonAncestor()) {
+        throw new AssertionError( 
+            "Board " + this + " has wrong leastCommonAncestor. Expected:\n" +
+            this.findLeastCommonAncestor() + "Actual:\n" + extraInfo.leastCommonAncestor);
+      }
     }
     return true;
   }

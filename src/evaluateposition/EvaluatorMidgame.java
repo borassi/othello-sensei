@@ -408,7 +408,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
 
   public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
     depthOneEvaluator.setup(player, opponent);
-    this.resetNVisitedPositions();
+    this.resetNVisited();
     
     depth = Math.min(depth, 64 - Long.bitCount(player | opponent));
     int empties = Long.bitCount(~(player | opponent));
@@ -426,7 +426,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
     return evaluatePositionSlow(player, opponent, depth, lower, upper, false, true);
   }
 
-  public void resetNVisitedPositions() {
+  public void resetNVisited() {
     this.nVisitedPositions = 0;
     this.nComputedMoves = 0;
   }

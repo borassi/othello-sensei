@@ -18,12 +18,10 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
 import board.PossibleMovesFinderImproved;
-import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
-import java.util.ArrayList;
 import static junit.framework.TestCase.assertEquals;
+import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -33,6 +31,11 @@ public class EvaluatorMCTSTest {
   EvaluatorInterface EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
 
+  @Before
+  public void setUp() {
+    StoredBoard.EVALUATOR_MIDGAME = new EvaluatorMock();
+  }
+  
   private StoredBoardBestDescendant getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
     return StoredBoardBestDescendant.fixedDescendant(evaluator.firstPosition, true, sequence);
   }

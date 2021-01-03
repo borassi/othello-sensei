@@ -57,7 +57,7 @@ public class EndgameThorUpperBound {
       if (Math.random() > 0.1) {
         continue;
       }
-      eval.resetNVisitedPositions();
+      eval.resetNVisited();
       int resultCur = eval.evaluatePosition(b, 60, alpha, alpha + 1);
       System.out.print(b.getEmptySquares() + " " + result + " " + alpha + " " + eval.getNVisited() + " " + resultCur + " ");
       System.out.print(resultDepth0 + " " + resultDepth1 + " " + resultDepth2 + " ");

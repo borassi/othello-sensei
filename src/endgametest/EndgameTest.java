@@ -101,7 +101,7 @@ public class EndgameTest {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
-      evalMidgame.resetNVisitedPositions();
+      evalMidgame.resetNVisited();
       long t = System.currentTimeMillis();
 //      int result = evalMidgame.evaluatePosition(b, b.getEmptySquares(), 1, 199);
       int result = -eval.evaluatePosition(b); //, 0, 1, Long.MAX_VALUE, Long.MAX_VALUE, true);
