@@ -29,6 +29,7 @@ import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
+import evaluateposition.StoredBoardBestDescendant;
 import helpers.Utils;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -214,9 +215,6 @@ public class Main implements Runnable {
 
       evaluatePosition(board, (int) (updateTime), false);
       showMCTSEvaluations();
-      ui.setMovesPerSecond(EVALUATOR.getNVisited() * 1000. / (System.currentTimeMillis() - startTime));
-      StoredBoard firstBoard = EVALUATOR.get(board);
-      ui.setMissingPositions(firstBoard.getProofNumberGreaterEqual(), firstBoard.getDisproofNumberStrictlyGreater());
       switch (EVALUATOR.getStatus()) {
         case NONE:
         case RUNNING:
@@ -348,6 +346,7 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
+//    this.run();
     future = executor.submit(this);
   }
   
@@ -360,13 +359,9 @@ public class Main implements Runnable {
     }
     StoredBoard[] children = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(children);
-    boolean playerVariates = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
-    StoredBoard bestChild;
-    if (playerVariates) {
-      bestChild = EVALUATOR.getFirstPosition().isPartiallySolved() ? current.bestChildEndgameStrictlyGreater() : current.bestChildMidgameStrictlyGreater();
-    } else {
-      bestChild = EVALUATOR.getFirstPosition().isPartiallySolved() ? current.bestChildEndgameGreaterEqual() : current.bestChildMidgameGreaterEqual();      
-    }
+    boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
+    StoredBoard bestChild = StoredBoardBestDescendant.bestChild(current, greaterEqual);
+//    System.out.println(bestChild);
     for (StoredBoard child : children) {
       if (child == null) {
         continue;
@@ -389,24 +384,31 @@ public class Main implements Runnable {
         (-child.getUpper()) + " " + (-child.getLower()) + "\n" 
 //        + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
 //        + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
-        + (bestChild == child && !playerVariates ? "*" : "")
+        + (bestChild == child && !greaterEqual ? "*" : "")
         + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual())
-        + (bestChild == child && playerVariates ? "*" : "") + "\n"
-          ;
+        + (bestChild == child && greaterEqual ? "*" : "") + "\n";
+      
       if (child.extraInfo != null) {
+        double minProof =
+            (child.extraInfo.minDisproofStrictlyGreater == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minDisproofStrictlyGreater)
+            + (child.extraInfo.minProofGreaterEqual == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minProofGreaterEqual);
         annotations.otherAnnotations +=
-            Utils.prettyPrintDouble(child.getDescendants()) + " " + Utils.prettyPrintDouble(child.extraInfo.nDescendants) + "\n"
+//            Utils.prettyPrintDouble(child.getDescendants()) + " "
+            Utils.prettyPrintDouble(child.extraInfo.nDescendants) + "\n"
             + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater) + " "
             + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual) + "\n"
-            + Utils.prettyPrintDouble(child.extraInfo.minDeltaDisproofStrictlyGreater) + " "
-            + Utils.prettyPrintDouble(child.extraInfo.minDeltaProofGreaterEqual);
+//            + Utils.prettyPrintDouble(child.extraInfo.minDeltaDisproofStrictlyGreater) + " "
+//            + Utils.prettyPrintDouble(child.extraInfo.minDeltaProofGreaterEqual)
+            ;
+      } else {
+        annotations.otherAnnotations += Utils.prettyPrintDouble(child.getDescendants());
+        
       }
-//        + Utils.prettyPrintDouble(current.logDerivativeProofNumberGreaterEqual(child)) + " "
-//        + Utils.prettyPrintDouble(current.logDerivativeDisproofNumberStrictlyGreater(child))
-//        + Utils.prettyPrintDouble(Math.exp(current.logDerivativePlayerVariates(child))) + " "
-//        + Utils.prettyPrintDouble(Math.exp(current.logDerivativeOpponentVariates(child)));
       ui.setAnnotations(annotations, ij);
     }
+    ui.setExtras(
+        EVALUATOR.getFirstPosition(),
+        (System.currentTimeMillis() - startTime));
   }
   
   // The entry main() method

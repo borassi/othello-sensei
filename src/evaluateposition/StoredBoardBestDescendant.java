@@ -15,6 +15,7 @@ package evaluateposition;
 
 import bitpattern.PositionIJ;
 import board.Board;
+import constants.Constants;
 import helpers.Utils;
 import java.util.ArrayList;
 
@@ -89,13 +90,23 @@ public class StoredBoardBestDescendant {
 
   public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual) {
     if (greaterEqual) {
+      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+        if (father.proofNumberGreaterEqual == 0 || father.proofNumberGreaterEqual == Double.POSITIVE_INFINITY) {
+          return father.bestChildProofGreaterEqual();
+        }
+      }
       if (father.probGreaterEqual == 0 || father.probGreaterEqual == 1) {
         return father.bestChildEndgameGreaterEqual();
       } else {
         return father.bestChildMidgameGreaterEqual();
       }
     } else {
-      if (father.probStrictlyGreater == 0 || father.probGreaterEqual == 1) {
+      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+        if (father.disproofNumberStrictlyGreater == Double.POSITIVE_INFINITY || father.disproofNumberStrictlyGreater == 0) {
+          return father.bestChildProofStrictlyGreater();
+        }
+      }
+      if (father.probStrictlyGreater == 0 || father.probStrictlyGreater == 1) {
         return father.bestChildEndgameStrictlyGreater();
       } else {
         return father.bestChildMidgameStrictlyGreater();

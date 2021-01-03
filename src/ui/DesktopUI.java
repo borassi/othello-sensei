@@ -35,10 +35,13 @@ import javax.swing.JToolBar;
 import javax.swing.SpinnerModel;
 
 import board.Board;
+import constants.Constants;
+import evaluateposition.StoredBoard;
 import helpers.Utils;
 import java.util.Arrays;
 import javax.swing.Box;
 import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
@@ -83,8 +86,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner delta;  
   private final JSpinner ffoPositions;
   private final JLabel empties;
-  private final JLabel posPerSec;
-  private final JLabel missingPositions;
+  private final JTextArea extras;
   
   public void getClick(PositionIJ ij, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -234,10 +236,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     empties = new JLabel();
     commands.add(empties);
-    posPerSec = new JLabel();
-    commands.add(posPerSec);
-    missingPositions = new JLabel();
-    commands.add(missingPositions);
+    extras = new JTextArea();
+    commands.add(extras);
     
     setSize(1200, 800);
 
@@ -280,20 +280,25 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void setMovesPerSecond(double nMovesPerSec) {
+  public void setExtras(StoredBoard firstPosition, double milliseconds) {
     Runnable tmp = new Runnable() {
       public void run() {
-        posPerSec.setText("Pos/s: " + Utils.prettyPrintDouble(nMovesPerSec));
-      }
-    };
-    SwingUtilities.invokeLater(tmp);
-  }
+        String text = 
+            "Positions: " + Utils.prettyPrintDouble(firstPosition.getDescendants()) + "\n" +
+            "Positions/s: " + Utils.prettyPrintDouble(firstPosition.getDescendants() * 1000 / milliseconds) + "\n" +
+            "Missing: " + Utils.prettyPrintDouble(firstPosition.getProofNumberGreaterEqual()) + " + " +
+                Utils.prettyPrintDouble(firstPosition.getDisproofNumberStrictlyGreater());
 
-  @Override
-  public void setMissingPositions(double missingPosPlayer, double missingPosOpponent) {
-    Runnable tmp = new Runnable() {
-      public void run() {
-        missingPositions.setText("Missing: " + Utils.prettyPrintDouble(missingPosPlayer) + " + " + Utils.prettyPrintDouble(missingPosOpponent));
+        if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+          text += "\nProof: " +
+              Utils.prettyPrintDouble(firstPosition.extraInfo.nDescendants)
+              + "\nBest proof: " +
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual + firstPosition.extraInfo.minDisproofStrictlyGreater)
+              + " = " + 
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual) + " + " + 
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreater);
+        }
+        extras.setText(text);
       }
     };
     SwingUtilities.invokeLater(tmp);

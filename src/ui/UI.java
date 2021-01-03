@@ -15,6 +15,7 @@ package ui;
 
 import bitpattern.PositionIJ;
 import board.Board;
+import evaluateposition.StoredBoard;
 
 /**
  *
@@ -23,8 +24,7 @@ import board.Board;
 public interface UI {
   public void setCases(Board board, boolean blackTurn);
   public void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
-  public void setMovesPerSecond(double nMovesPerSecond);
-  public void setMissingPositions(double missingPosPlayer, double missingPosOpponent);
+  public void setExtras(StoredBoard firstPosition, double milliseconds);
   public boolean playBlackMoves();
   public boolean playWhiteMoves();
   public long depth();

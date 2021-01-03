@@ -245,27 +245,6 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       Move curMove = output[nMoves++];
       curMove.move = move;
       curMove.flip = flip;
-//      if (boardInHash != null && move == boardInHash.bestMove) {
-////        System.out.println("Best: " + move);
-//        value = 1 << 30;
-//      } else if (boardInHash != null && move == boardInHash.secondBestMove) {
-////        System.out.println("Second best: " + move);
-//        value = 1 << 29;
-//      } else
-//      if (depth > Constants.EMPTIES_FOR_ENDGAME + 20) {
-//        this.depthOneEvaluator.update(move, flip);
-//        value = -(int) (100000 * Math.log(getDisproofNumber(opponent & ~flip, player | flip, 
-//            3, (lower + upper) / 2, Double.POSITIVE_INFINITY, false)));
-////        System.out.println(getDisproofNumber(opponent & ~flip, player | flip, 
-////            depth - Constants.EMPTIES_FOR_ENDGAME - 4, (lower + upper) / 2, Double.POSITIVE_INFINITY, false) + ":\n" + new Board(opponent &~flip, player|flip));
-////        System.out.println(lower + " " + upper);
-//        this.depthOneEvaluator.undoUpdate(move, flip);     
-//      } else if (depth > Constants.EMPTIES_FOR_ENDGAME + 1) {
-//        this.depthOneEvaluator.update(move, flip);
-//        int eval = (this.depthOneEvaluator.eval());
-//        value = -(int) (100000 * Math.log(EndgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, lower, eval)));   
-//        this.depthOneEvaluator.undoUpdate(move, flip);   
-//      } else
       if (depth > Constants.EMPTIES_FOR_ENDGAME + 9) {
         this.depthOneEvaluator.update(move, flip);
         value = -(int) (100000 * Math.log(getDisproofNumber(opponent & ~flip, player | flip, 2, (lower + upper) / 2, Double.POSITIVE_INFINITY, false)));   
@@ -400,7 +379,11 @@ public class EvaluatorMidgame implements EvaluatorInterface {
     return this.nComputedMoves;
   }
   
+  @Override
   public long getNVisited() {
+    if (this.nVisitedPositions < 0) {
+      throw new RuntimeException("WEIRD, VERY WEIRD!!!");
+    }
     return this.nVisitedPositions;
   }
   

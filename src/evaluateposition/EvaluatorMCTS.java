@@ -131,6 +131,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public boolean nextPositionGreaterEqual() {
+    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      if (this.firstPosition.isSolved()) {
+        return firstPosition.extraInfo.minDeltaDisproofStrictlyGreater > firstPosition.extraInfo.minDeltaProofGreaterEqual;
+      }
+    }
     if (firstPosition.getEvalGoal() >= upper) {
       return true;
     } else if (firstPosition.getEvalGoal() <= lower) {
@@ -252,6 +257,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     this.lower = Math.floorDiv(lower, 200) * 200;
     this.upper = (int) Math.ceil(upper / 200.0) * 200;
     assert(this.lower < this.upper);
+    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      this.firstPosition.setIsFinished(false);
+    }
 
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent()) {
@@ -265,10 +273,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         setFirstPosition(board.getPlayer(), board.getOpponent());
       }
       setEvalGoal(Math.max(lower, Math.min(upper, firstPosition.getEval())));
-    }
-    if (isSolved()) {
-      status = Status.SOLVED;
-      return (short) firstPosition.getEval();
     }
 
     long startTime = System.currentTimeMillis();
@@ -288,6 +292,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         deepenPosition(nextPos, nEmpties);
       }
       updateEvalGoalIfNeeded();
+      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+        if (this.firstPosition.isSolved()) {
+          this.firstPosition.setIsFinished(true);
+        }
+      }
 
       if (status == Status.KILLING) {
         status = Status.KILLED;
@@ -302,7 +311,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         break;
       }
     }
-    if (nextPos == null) {
+    if (nextPos.isNull()) {
       status = Status.SOLVED;
     }
     return (short) -firstPosition.getEval();
