@@ -27,13 +27,15 @@ import java.util.HashSet;
 
 public class StoredBoard {
   public class ExtraInfo {
-    public double minProofGreaterEqual = 0;
-    public double minDisproofStrictlyGreater = 0;
-    public double minDeltaProofGreaterEqual = 0;
-    public double minDeltaDisproofStrictlyGreater = 0;
+    public double minProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
+    public double minDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
+    public double minDeltaProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
+    public double minDeltaDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
     public double nDescendants = 0;
     public boolean isFinished = false;
-    public StoredBoard leastCommonAncestor;
+//    public StoredBoard leastSingleAncestor;
+    public ArrayList<ProofOfEndgameEval> minProofGreaterEqual = new ArrayList<>();
+    public ArrayList<ProofOfEndgameEval> minDisproofStrictlyGreater = new ArrayList<>();
     
     public void setNDescendants(double value) {
       if (isFinished) {
@@ -137,9 +139,9 @@ public class StoredBoard {
         if (this.getEvalGoal() != -child.getEvalGoal()) {
           child.setEvalGoalRecursive(-this.getEvalGoal());
         }
-        if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-          extraInfo.leastCommonAncestor = this.findLeastCommonAncestor();
-        }
+//        if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//          child.extraInfo.leastSingleAncestor = child.findLeastCommonAncestor();
+//        }
       }
       child.addFather(this);
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
@@ -317,25 +319,26 @@ public class StoredBoard {
     }
 
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      extraInfo.minProofGreaterEqual = Double.POSITIVE_INFINITY;
-      extraInfo.minDisproofStrictlyGreater = 0;
+      extraInfo.minProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
+      extraInfo.minDisproofStrictlyGreaterBasic = 0;
       extraInfo.setNDescendants(0);
-      extraInfo.minDeltaDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
-      extraInfo.minDeltaProofGreaterEqual = Double.POSITIVE_INFINITY;
+      extraInfo.minDeltaDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
+      extraInfo.minDeltaProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
+      extraInfo.minProofGreaterEqual.clear();
+      extraInfo.minDisproofStrictlyGreater.clear();
       for (StoredBoard child : children) {
-        extraInfo.minProofGreaterEqual = Math.min(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);        
-        extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
-        extraInfo.minDeltaDisproofStrictlyGreater = Math.min(extraInfo.minDeltaDisproofStrictlyGreater, child.extraInfo.minDeltaProofGreaterEqual);
+        extraInfo.minProofGreaterEqualBasic = Math.min(extraInfo.minProofGreaterEqualBasic, child.extraInfo.minDisproofStrictlyGreaterBasic);        
+        extraInfo.minDisproofStrictlyGreaterBasic += child.extraInfo.minProofGreaterEqualBasic;
+        extraInfo.minDeltaDisproofStrictlyGreaterBasic = Math.min(extraInfo.minDeltaDisproofStrictlyGreaterBasic, child.extraInfo.minDeltaProofGreaterEqualBasic);
 //        extraInfo.minDeltaProofGreaterEqual = Math.min(extraInfo.minDeltaProofGreaterEqual, child.extraInfo.minDeltaDisproofStrictlyGreater);
         extraInfo.setNDescendants(extraInfo.nDescendants + child.extraInfo.nDescendants);
+        extraInfo.minProofGreaterEqual = ProofOfEndgameEval.or(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);
+        extraInfo.minDisproofStrictlyGreater = ProofOfEndgameEval.and(extraInfo.minDisproofStrictlyGreater, child.extraInfo.minProofGreaterEqual);
       }
       for (StoredBoard child : children) {
-//        System.out.println("  " + child.extraInfo.minDeltaDisproofStrictlyGreater);
-        extraInfo.minDeltaProofGreaterEqual = Math.min(
-            extraInfo.minDeltaProofGreaterEqual,
+        extraInfo.minDeltaProofGreaterEqualBasic = Math.min(extraInfo.minDeltaProofGreaterEqualBasic,
             childValueProofGreaterEqual(child));
       }
-//      System.out.println(extraInfo.minDeltaProofGreaterEqual);
     }
     assert areThisBoardEvalsOK();
     assert isEvalOK();
@@ -344,14 +347,14 @@ public class StoredBoard {
   
   // TODOTODO!!!
   public double childValueProofGreaterEqual(StoredBoard child) {
-    if (extraInfo.minProofGreaterEqual == Double.POSITIVE_INFINITY) {
+    if (extraInfo.minProofGreaterEqualBasic == Double.POSITIVE_INFINITY) {
       return Double.POSITIVE_INFINITY;
     }
     double tmp = Double.POSITIVE_INFINITY;
     if (child.disproofNumberStrictlyGreater != 0) {
-      return child.disproofNumberStrictlyGreater + child.extraInfo.nDescendants - extraInfo.minProofGreaterEqual;
+      return child.disproofNumberStrictlyGreater + child.extraInfo.nDescendants - extraInfo.minProofGreaterEqualBasic;
     }
-    return child.extraInfo.minDeltaDisproofStrictlyGreater + child.extraInfo.minDisproofStrictlyGreater - extraInfo.minProofGreaterEqual;
+    return child.extraInfo.minDeltaDisproofStrictlyGreaterBasic + child.extraInfo.minDisproofStrictlyGreaterBasic - extraInfo.minProofGreaterEqualBasic;
   }
   
   public double logDerivativeProbStrictlyGreater(StoredBoard child) {
@@ -456,24 +459,27 @@ public class StoredBoard {
     }
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       extraInfo.setNDescendants(this.descendants);
-      extraInfo.minDeltaDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
-      extraInfo.minDeltaProofGreaterEqual = Double.POSITIVE_INFINITY;
+      extraInfo.minDeltaDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
+      extraInfo.minDeltaProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
       
       if (lower >= evalGoal) {
         HASH_MAP.reset();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
-        extraInfo.minProofGreaterEqual = EVALUATOR_MIDGAME.getNVisited();
-        extraInfo.setNDescendants(extraInfo.minProofGreaterEqual);
+        extraInfo.minProofGreaterEqualBasic = EVALUATOR_MIDGAME.getNVisited();
+        extraInfo.setNDescendants(extraInfo.minProofGreaterEqualBasic);
+        extraInfo.minProofGreaterEqual = ProofOfEndgameEval.create(EVALUATOR_MIDGAME.getNVisited());
       } else {
-        extraInfo.minProofGreaterEqual = Double.POSITIVE_INFINITY;
+        extraInfo.minProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
       }
       if (upper <= evalGoal) {
         HASH_MAP.reset();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
-        extraInfo.minDisproofStrictlyGreater = EVALUATOR_MIDGAME.getNVisited();
-        extraInfo.setNDescendants(extraInfo.minDisproofStrictlyGreater);
+        extraInfo.minDisproofStrictlyGreaterBasic = EVALUATOR_MIDGAME.getNVisited();
+        extraInfo.setNDescendants(extraInfo.minDisproofStrictlyGreaterBasic);
+        extraInfo.minDisproofStrictlyGreater = ProofOfEndgameEval.create(EVALUATOR_MIDGAME.getNVisited());
+//        System.out.println(extraInfo.minDisproofStrictlyGreaterBasic + " " + extraInfo.minDisproofStrictlyGreater + " " + EVALUATOR_MIDGAME.getNVisited() + " " + EVALUATOR_MIDGAME.getNVisited());
       } else {
-        extraInfo.minDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
+        extraInfo.minDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
       }
     }
     assert areThisBoardEvalsOK();
@@ -533,9 +539,9 @@ public class StoredBoard {
     StoredBoard best = null;
     double bestValue = Double.POSITIVE_INFINITY;
     for (StoredBoard child : children) {
-      if (child.extraInfo.minDeltaProofGreaterEqual < bestValue) {
+      if (child.extraInfo.minDeltaProofGreaterEqualBasic < bestValue) {
         best = child;
-        bestValue = child.extraInfo.minDeltaProofGreaterEqual;
+        bestValue = child.extraInfo.minDeltaProofGreaterEqualBasic;
       }
     }
 //    if (best == null) {
@@ -615,6 +621,9 @@ public class StoredBoard {
   }
   
   StoredBoard findLeastCommonAncestor() {
+    if (fathers.isEmpty()) {
+      return null;
+    }
     if (fathers.size() == 1) {
       return fathers.get(0);
     }
@@ -640,8 +649,6 @@ public class StoredBoard {
       }
       if (nextAncestors.size() == 1) {
         return nextAncestors.iterator().next();
-      } else if (nextAncestors.isEmpty()) {
-        return null;
       }
       currentAncestors = nextAncestors;
       nextAncestors = new HashSet<>();
@@ -757,20 +764,40 @@ public class StoredBoard {
     return true;
   }
   
-  boolean isLeastCommonAncestorOK() {
+//  boolean isLeastSingleAncestorOK() {
+//    if (!Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//      return true;
+//    }
+//    if (fathers.size() <= 1) {
+//      if (extraInfo.leastSingleAncestor != null) {
+//        throw new AssertionError( 
+//            "Board " + this + " has one father and leastCommonAncestor != null.");
+//      }
+//    } else {
+//      if (extraInfo.leastSingleAncestor != this.findLeastCommonAncestor()) {
+//        throw new AssertionError( 
+//            "Board " + this + " has wrong leastCommonAncestor. Expected:\n" +
+//            this.findLeastCommonAncestor() + "Actual:\n" + extraInfo.leastSingleAncestor);
+//      }
+//    }
+//    return true;
+//  }
+  
+  boolean isExtraInfoOK() {
     if (!Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       return true;
     }
-    if (fathers.size() <= 1) {
-      if (extraInfo.leastCommonAncestor == null) {
-        throw new AssertionError( 
-            "Board " + this + " has leastCommonAncestor = null, but more than one father.");
-      }
-    } else {
-      if (extraInfo.leastCommonAncestor != this.findLeastCommonAncestor()) {
-        throw new AssertionError( 
-            "Board " + this + " has wrong leastCommonAncestor. Expected:\n" +
-            this.findLeastCommonAncestor() + "Actual:\n" + extraInfo.leastCommonAncestor);
+    assert extraInfo.minProofGreaterEqual.isEmpty() == (extraInfo.minProofGreaterEqualBasic == Double.POSITIVE_INFINITY);
+    assert extraInfo.minDisproofStrictlyGreater.isEmpty() == (extraInfo.minDisproofStrictlyGreaterBasic == Double.POSITIVE_INFINITY);
+    
+    if (!extraInfo.minProofGreaterEqual.isEmpty()) {
+      assert extraInfo.minProofGreaterEqual.get(0).nPositions == (long) extraInfo.minProofGreaterEqualBasic;
+    }
+    if (!extraInfo.minDisproofStrictlyGreater.isEmpty()) {
+      if (extraInfo.minDisproofStrictlyGreater.get(0).nPositions != (long) extraInfo.minDisproofStrictlyGreaterBasic) {
+        throw new AssertionError(
+            "nPositions = " + extraInfo.minDisproofStrictlyGreater.get(0).nPositions + ". Expected: " + extraInfo.minDisproofStrictlyGreaterBasic
+        );
       }
     }
     return true;
@@ -786,6 +813,6 @@ public class StoredBoard {
     if (!areThisBoardEvalsOK() || !isEvalOK() || !areDescendantsOK()) {
       throw new AssertionError("Wrong areThisBoardEvalsOK or isEvalOK or areDescendantsOK.");
     }
-    return true;
+    return isExtraInfoOK();// && isLeastSingleAncestorOK();
   }
 }

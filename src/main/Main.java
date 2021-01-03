@@ -390,13 +390,13 @@ public class Main implements Runnable {
       
       if (child.extraInfo != null) {
         double minProof =
-            (child.extraInfo.minDisproofStrictlyGreater == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minDisproofStrictlyGreater)
-            + (child.extraInfo.minProofGreaterEqual == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minProofGreaterEqual);
+            (child.extraInfo.minDisproofStrictlyGreaterBasic == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minDisproofStrictlyGreaterBasic)
+            + (child.extraInfo.minProofGreaterEqualBasic == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minProofGreaterEqualBasic);
         annotations.otherAnnotations +=
 //            Utils.prettyPrintDouble(child.getDescendants()) + " "
             Utils.prettyPrintDouble(child.extraInfo.nDescendants) + "\n"
-            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater) + " "
-            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual) + "\n"
+            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreaterBasic) + " "
+            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqualBasic) + "\n"
 //            + Utils.prettyPrintDouble(child.extraInfo.minDeltaDisproofStrictlyGreater) + " "
 //            + Utils.prettyPrintDouble(child.extraInfo.minDeltaProofGreaterEqual)
             ;

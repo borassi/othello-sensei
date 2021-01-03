@@ -20,7 +20,7 @@ import board.GetMovesCache;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import static junit.framework.TestCase.assertEquals;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -31,8 +31,8 @@ public class EvaluatorMCTSTest {
   EvaluatorInterface EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
   PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
 
-  @Before
-  public void setUp() {
+  @BeforeClass
+  public static void setUpClass() {
     StoredBoard.EVALUATOR_MIDGAME = new EvaluatorMock();
   }
   

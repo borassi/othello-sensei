@@ -293,10 +293,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
           text += "\nProof: " +
               Utils.prettyPrintDouble(firstPosition.extraInfo.nDescendants)
               + "\nBest proof: " +
-              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual + firstPosition.extraInfo.minDisproofStrictlyGreater)
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqualBasic + firstPosition.extraInfo.minDisproofStrictlyGreaterBasic)
               + " = " + 
-              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual) + " + " + 
-              Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreater);
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqualBasic) + " + " + 
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreaterBasic);
         }
         extras.setText(text);
       }

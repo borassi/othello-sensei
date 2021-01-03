@@ -14,14 +14,27 @@
 
 package evaluateposition;
 
+import board.Board;
+
 public class EvaluatorMock implements EvaluatorInterface {
+  long player;
+  long opponent;
+  long depth;
+  long alpha;
+  long beta;
+
   @Override
   public int evaluatePosition(long player, long opponent, int depth, int alpha, int beta) {
+    this.player = player;
+    this.opponent = opponent;
+    this.depth = depth;
+    this.alpha = alpha;
+    this.beta = beta;
     return 0;
   }
 
   @Override
   public long getNVisited() {
-    return (long) (Math.random() * 1000);
+    return Board.hash(player, opponent) & 0b11111111 * (long) Math.pow(2, depth) * (alpha - beta);
   }
 }

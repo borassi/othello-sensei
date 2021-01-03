@@ -133,7 +133,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public boolean nextPositionGreaterEqual() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
-        return firstPosition.extraInfo.minDeltaDisproofStrictlyGreater > firstPosition.extraInfo.minDeltaProofGreaterEqual;
+        return firstPosition.extraInfo.minDeltaDisproofStrictlyGreaterBasic > firstPosition.extraInfo.minDeltaProofGreaterEqualBasic;
       }
     }
     if (firstPosition.getEvalGoal() >= upper) {
