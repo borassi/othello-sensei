@@ -25,24 +25,25 @@ import java.util.Objects;
  */
 public class PossibleEndgameProofs {
   
-  private ArrayList<EndgameProof> endgameProofs;
+  ArrayList<EndgameProof> orClauses;
+  StoredBoard board;
 
   public static class EndgameProof {
     long nPositions;
-    HashSet<StoredBoard> boards;
+    HashSet<PossibleEndgameProofs> boards;
 
-    public EndgameProof(long nPositions, StoredBoard... boards) {
+    public EndgameProof(long nPositions, PossibleEndgameProofs... boards) {
       this.nPositions = nPositions;
       this.boards = new HashSet<>(Arrays.asList(boards));
     }
 
-    public EndgameProof(long nPositions, HashSet<StoredBoard> boards) {
+    public EndgameProof(long nPositions, HashSet<PossibleEndgameProofs> boards) {
       this.nPositions = nPositions;
       this.boards = boards;
     }
   
     public EndgameProof(long nPositions) {
-      this(nPositions, new HashSet<StoredBoard>());
+      this(nPositions, new HashSet<PossibleEndgameProofs>());
     }
   
     @Override
@@ -65,8 +66,8 @@ public class PossibleEndgameProofs {
     @Override
     public String toString() {
       String result = "[" + nPositions + " ";
-      for (StoredBoard b : boards) {
-        result += "(" + b.getPlayer() + " " + b.getOpponent() + ")";
+      for (PossibleEndgameProofs p : boards) {
+        result += "(" + p.board.getPlayer() + " " + p.board.getOpponent() + ")";
       }
       return result + "]";
     }
@@ -80,7 +81,7 @@ public class PossibleEndgameProofs {
     }
   
     public EndgameProof and(EndgameProof other) {
-      HashSet<StoredBoard> boardsUnion = new HashSet<>(boards);
+      HashSet<PossibleEndgameProofs> boardsUnion = new HashSet<>(boards);
       boardsUnion.addAll(other.boards);
       return new EndgameProof(nPositions + other.nPositions, boardsUnion);
     }
@@ -90,32 +91,30 @@ public class PossibleEndgameProofs {
     }
   }
   
-  public PossibleEndgameProofs() {
-    endgameProofs = new ArrayList<>();
+  public PossibleEndgameProofs(StoredBoard board) {
+    this.board = board;
+    orClauses = new ArrayList<>();
   }
   
-  public PossibleEndgameProofs(PossibleEndgameProofs other) {
-    endgameProofs = new ArrayList<>(other.endgameProofs);
+  public PossibleEndgameProofs(StoredBoard board, PossibleEndgameProofs other) {
+    this(board);
+    orClauses.addAll(other.orClauses);
   }
   
-  public PossibleEndgameProofs(EndgameProof... proofs) {
-    this();
-    endgameProofs.addAll(Arrays.asList(proofs));
+  public PossibleEndgameProofs(StoredBoard board, EndgameProof... proofs) {
+    this(board);
+    orClauses.addAll(Arrays.asList(proofs));
   }
   
-  public PossibleEndgameProofs(long nPositions) {
-    this(new EndgameProof(nPositions));
-  }
-  
-  public PossibleEndgameProofs(StoredBoard b) {
-    this(new EndgameProof(0, b));
+  public PossibleEndgameProofs(StoredBoard board, long nPositions) {
+    this(board, new EndgameProof(nPositions));
   }
 
   public void simplify() {
     ArrayList<EndgameProof> newEndgameProofs = new ArrayList<>();
 
-    for (int i = 0; i < endgameProofs.size(); ++i) {
-      EndgameProof p1 = endgameProofs.get(i);
+    for (int i = 0; i < orClauses.size(); ++i) {
+      EndgameProof p1 = orClauses.get(i);
       boolean include = true;
       for (EndgameProof p2 : newEndgameProofs) {
         if (p1.greaterEqual(p2)) {
@@ -126,8 +125,8 @@ public class PossibleEndgameProofs {
       if (!include) {
         continue;
       }
-      for (int j = i+1; j < endgameProofs.size(); ++j) {
-        EndgameProof p2 = endgameProofs.get(j);
+      for (int j = i+1; j < orClauses.size(); ++j) {
+        EndgameProof p2 = orClauses.get(j);
         if (p1.strictlyGreater(p2)) {
           include = false;
           break;
@@ -137,42 +136,45 @@ public class PossibleEndgameProofs {
         newEndgameProofs.add(p1);
       }
     }
-    endgameProofs = newEndgameProofs;
+    orClauses = newEndgameProofs;
   }
   
-  public PossibleEndgameProofs or(PossibleEndgameProofs other) {
-    PossibleEndgameProofs result = new PossibleEndgameProofs(this);
-    result.endgameProofs.addAll(other.endgameProofs);
-    result.simplify();
-    return result;
+  public void or(PossibleEndgameProofs other) {
+    orClauses.addAll(other.orClauses);
+    simplify();
   }
   
-  public PossibleEndgameProofs and(PossibleEndgameProofs other) {
-    PossibleEndgameProofs result = new PossibleEndgameProofs();
-    for (EndgameProof p1 : endgameProofs) {
-      for (EndgameProof p2 : other.endgameProofs) {
-        result.endgameProofs.add(p1.and(p2));
+  public void and(PossibleEndgameProofs other) {
+    ArrayList<EndgameProof> newOrClauses = new ArrayList<>();
+    for (EndgameProof p1 : orClauses) {
+      for (EndgameProof p2 : other.orClauses) {
+        newOrClauses.add(p1.and(p2));
       }
     }
-    result.simplify();
-    return result;
+    orClauses = newOrClauses;
+    simplify();
   }
   
-  public void clear() {
-    endgameProofs.clear();
+  public void toNoProof() {
+    orClauses.clear();
+  }
+  
+  public void toTrivialProof() {
+    orClauses.clear();
+    orClauses.add(new EndgameProof(0));
   }
   
   public boolean canProve() {
-    return !endgameProofs.isEmpty();
+    return !orClauses.isEmpty();
   }
   
   public EndgameProof get(int i) {
-    return endgameProofs.get(i);
+    return orClauses.get(i);
   }
 
   public long getMinNPositions() {
     long minNPositions = Long.MAX_VALUE;
-    for (EndgameProof proof : this.endgameProofs) {
+    for (EndgameProof proof : this.orClauses) {
       minNPositions = Math.min(minNPositions, proof.getNPositions());
     }
     return minNPositions;
@@ -180,7 +182,7 @@ public class PossibleEndgameProofs {
   
   public HashMap<EndgameProof, Integer> toHashMap() {
     HashMap<EndgameProof, Integer> result = new HashMap<>();
-    for (EndgameProof proof : this.endgameProofs) {
+    for (EndgameProof proof : this.orClauses) {
       result.put(proof, result.getOrDefault(proof, 0) + 1);
     }
     return result;
@@ -193,18 +195,18 @@ public class PossibleEndgameProofs {
     }
     PossibleEndgameProofs otherConverted = (PossibleEndgameProofs) other;
     
-    return toHashMap().equals(otherConverted.toHashMap());
+    return board.equals(otherConverted.board);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(this.toHashMap());
+    return board.hashCode();
   }
   
   @Override
   public String toString() {
     String result = "{";
-    for (EndgameProof proof : endgameProofs) {
+    for (EndgameProof proof : orClauses) {
       result += proof + ", ";
     }
     return result + "}";

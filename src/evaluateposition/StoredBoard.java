@@ -34,8 +34,8 @@ public class StoredBoard {
     public double nDescendants = 0;
     public boolean isFinished = false;
 //    public StoredBoard leastSingleAncestor;
-    public PossibleEndgameProofs minProofGreaterEqual = new PossibleEndgameProofs();
-    public PossibleEndgameProofs minDisproofStrictlyGreater = new PossibleEndgameProofs();
+    public PossibleEndgameProofs minProofGreaterEqual;
+    public PossibleEndgameProofs minDisproofStrictlyGreater;
     
     public void setNDescendants(double value) {
       if (isFinished) {
@@ -91,6 +91,8 @@ public class StoredBoard {
     this.nEmpties = 64 - Long.bitCount(player | opponent);
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       extraInfo = new ExtraInfo();
+      extraInfo.minDisproofStrictlyGreater = new PossibleEndgameProofs(this);
+      extraInfo.minProofGreaterEqual = new PossibleEndgameProofs(this);
     }
   }
   
@@ -324,16 +326,30 @@ public class StoredBoard {
       extraInfo.setNDescendants(0);
       extraInfo.minDeltaDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
       extraInfo.minDeltaProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
-      extraInfo.minProofGreaterEqual.clear();
-      extraInfo.minDisproofStrictlyGreater.clear();
+      extraInfo.minProofGreaterEqual.toNoProof();
+      extraInfo.minDisproofStrictlyGreater.toTrivialProof();
       for (StoredBoard child : children) {
         extraInfo.minProofGreaterEqualBasic = Math.min(extraInfo.minProofGreaterEqualBasic, child.extraInfo.minDisproofStrictlyGreaterBasic);        
         extraInfo.minDisproofStrictlyGreaterBasic += child.extraInfo.minProofGreaterEqualBasic;
         extraInfo.minDeltaDisproofStrictlyGreaterBasic = Math.min(extraInfo.minDeltaDisproofStrictlyGreaterBasic, child.extraInfo.minDeltaProofGreaterEqualBasic);
 //        extraInfo.minDeltaProofGreaterEqual = Math.min(extraInfo.minDeltaProofGreaterEqual, child.extraInfo.minDeltaDisproofStrictlyGreater);
         extraInfo.setNDescendants(extraInfo.nDescendants + child.extraInfo.nDescendants);
-        extraInfo.minProofGreaterEqual = extraInfo.minProofGreaterEqual.or(child.extraInfo.minDisproofStrictlyGreater);
-        extraInfo.minDisproofStrictlyGreater = extraInfo.minDisproofStrictlyGreater.and(child.extraInfo.minProofGreaterEqual);
+//        TODO: UNCOMMENT!!!
+//        if (child.fathers.size() <= 1) {
+          extraInfo.minProofGreaterEqual.or(child.extraInfo.minDisproofStrictlyGreater);
+          extraInfo.minDisproofStrictlyGreater.and(child.extraInfo.minProofGreaterEqual);
+//        } else {
+//          if (child.extraInfo.minDisproofStrictlyGreater.canProve()) {
+//            extraInfo.minProofGreaterEqual.or(new PossibleEndgameProofs(
+//                child, 
+//                new PossibleEndgameProofs.EndgameProof(0, child.extraInfo.minDisproofStrictlyGreater)));
+//          }
+//          if (child.extraInfo.minProofGreaterEqual.canProve()) {
+//            extraInfo.minDisproofStrictlyGreater.and(new PossibleEndgameProofs(
+//                child, 
+//                new PossibleEndgameProofs.EndgameProof(0, child.extraInfo.minProofGreaterEqual)));
+//          }
+//        }
       }
       for (StoredBoard child : children) {
         extraInfo.minDeltaProofGreaterEqualBasic = Math.min(extraInfo.minDeltaProofGreaterEqualBasic,
@@ -467,7 +483,7 @@ public class StoredBoard {
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
         extraInfo.minProofGreaterEqualBasic = EVALUATOR_MIDGAME.getNVisited();
         extraInfo.setNDescendants(extraInfo.minProofGreaterEqualBasic);
-        extraInfo.minProofGreaterEqual = new PossibleEndgameProofs(EVALUATOR_MIDGAME.getNVisited());
+        extraInfo.minProofGreaterEqual = new PossibleEndgameProofs(this, EVALUATOR_MIDGAME.getNVisited());
       } else {
         extraInfo.minProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
       }
@@ -476,7 +492,7 @@ public class StoredBoard {
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
         extraInfo.minDisproofStrictlyGreaterBasic = EVALUATOR_MIDGAME.getNVisited();
         extraInfo.setNDescendants(extraInfo.minDisproofStrictlyGreaterBasic);
-        extraInfo.minDisproofStrictlyGreater = new PossibleEndgameProofs(EVALUATOR_MIDGAME.getNVisited());
+        extraInfo.minDisproofStrictlyGreater = new PossibleEndgameProofs(this, EVALUATOR_MIDGAME.getNVisited());
 //        System.out.println(extraInfo.minDisproofStrictlyGreaterBasic + " " + extraInfo.minDisproofStrictlyGreater + " " + EVALUATOR_MIDGAME.getNVisited() + " " + EVALUATOR_MIDGAME.getNVisited());
       } else {
         extraInfo.minDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
