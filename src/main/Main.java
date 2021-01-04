@@ -389,14 +389,14 @@ public class Main implements Runnable {
         + (bestChild == child && greaterEqual ? "*" : "") + "\n";
       
       if (child.extraInfo != null) {
-        double minProof =
-            (child.extraInfo.minDisproofStrictlyGreaterBasic == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minDisproofStrictlyGreaterBasic)
-            + (child.extraInfo.minProofGreaterEqualBasic == Double.POSITIVE_INFINITY ? 0 : child.extraInfo.minProofGreaterEqualBasic);
+//        double minProof =
+//            (child.extraInfo.minDisproofStrictlyGreater.canProve() ? child.extraInfo.minDisproofStrictlyGreater.get(0) : Double.POSITIVE_INFINITY)
+//            + (child.extraInfo.minProofGreaterEqual.canProve() ? child.extraInfo.minProofGreaterEqual.get(0) : Double.POSITIVE_INFINITY);
         annotations.otherAnnotations +=
 //            Utils.prettyPrintDouble(child.getDescendants()) + " "
             Utils.prettyPrintDouble(child.extraInfo.nDescendants) + "\n"
-            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreaterBasic) + " "
-            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqualBasic) + "\n"
+            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater.getMinNPositions()) + " "
+            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual.getMinNPositions()) + "\n"
 //            + Utils.prettyPrintDouble(child.extraInfo.minDeltaDisproofStrictlyGreater) + " "
 //            + Utils.prettyPrintDouble(child.extraInfo.minDeltaProofGreaterEqual)
             ;

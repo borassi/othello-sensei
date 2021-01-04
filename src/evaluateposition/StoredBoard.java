@@ -34,8 +34,8 @@ public class StoredBoard {
     public double nDescendants = 0;
     public boolean isFinished = false;
 //    public StoredBoard leastSingleAncestor;
-    public ArrayList<ProofOfEndgameEval> minProofGreaterEqual = new ArrayList<>();
-    public ArrayList<ProofOfEndgameEval> minDisproofStrictlyGreater = new ArrayList<>();
+    public PossibleEndgameProofs minProofGreaterEqual = new PossibleEndgameProofs();
+    public PossibleEndgameProofs minDisproofStrictlyGreater = new PossibleEndgameProofs();
     
     public void setNDescendants(double value) {
       if (isFinished) {
@@ -332,8 +332,8 @@ public class StoredBoard {
         extraInfo.minDeltaDisproofStrictlyGreaterBasic = Math.min(extraInfo.minDeltaDisproofStrictlyGreaterBasic, child.extraInfo.minDeltaProofGreaterEqualBasic);
 //        extraInfo.minDeltaProofGreaterEqual = Math.min(extraInfo.minDeltaProofGreaterEqual, child.extraInfo.minDeltaDisproofStrictlyGreater);
         extraInfo.setNDescendants(extraInfo.nDescendants + child.extraInfo.nDescendants);
-        extraInfo.minProofGreaterEqual = ProofOfEndgameEval.or(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);
-        extraInfo.minDisproofStrictlyGreater = ProofOfEndgameEval.and(extraInfo.minDisproofStrictlyGreater, child.extraInfo.minProofGreaterEqual);
+        extraInfo.minProofGreaterEqual = extraInfo.minProofGreaterEqual.or(child.extraInfo.minDisproofStrictlyGreater);
+        extraInfo.minDisproofStrictlyGreater = extraInfo.minDisproofStrictlyGreater.and(child.extraInfo.minProofGreaterEqual);
       }
       for (StoredBoard child : children) {
         extraInfo.minDeltaProofGreaterEqualBasic = Math.min(extraInfo.minDeltaProofGreaterEqualBasic,
@@ -467,7 +467,7 @@ public class StoredBoard {
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
         extraInfo.minProofGreaterEqualBasic = EVALUATOR_MIDGAME.getNVisited();
         extraInfo.setNDescendants(extraInfo.minProofGreaterEqualBasic);
-        extraInfo.minProofGreaterEqual = ProofOfEndgameEval.create(EVALUATOR_MIDGAME.getNVisited());
+        extraInfo.minProofGreaterEqual = new PossibleEndgameProofs(EVALUATOR_MIDGAME.getNVisited());
       } else {
         extraInfo.minProofGreaterEqualBasic = Double.POSITIVE_INFINITY;
       }
@@ -476,7 +476,7 @@ public class StoredBoard {
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
         extraInfo.minDisproofStrictlyGreaterBasic = EVALUATOR_MIDGAME.getNVisited();
         extraInfo.setNDescendants(extraInfo.minDisproofStrictlyGreaterBasic);
-        extraInfo.minDisproofStrictlyGreater = ProofOfEndgameEval.create(EVALUATOR_MIDGAME.getNVisited());
+        extraInfo.minDisproofStrictlyGreater = new PossibleEndgameProofs(EVALUATOR_MIDGAME.getNVisited());
 //        System.out.println(extraInfo.minDisproofStrictlyGreaterBasic + " " + extraInfo.minDisproofStrictlyGreater + " " + EVALUATOR_MIDGAME.getNVisited() + " " + EVALUATOR_MIDGAME.getNVisited());
       } else {
         extraInfo.minDisproofStrictlyGreaterBasic = Double.POSITIVE_INFINITY;
@@ -787,13 +787,13 @@ public class StoredBoard {
     if (!Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       return true;
     }
-    assert extraInfo.minProofGreaterEqual.isEmpty() == (extraInfo.minProofGreaterEqualBasic == Double.POSITIVE_INFINITY);
-    assert extraInfo.minDisproofStrictlyGreater.isEmpty() == (extraInfo.minDisproofStrictlyGreaterBasic == Double.POSITIVE_INFINITY);
+    assert extraInfo.minProofGreaterEqual.canProve() == (extraInfo.minProofGreaterEqualBasic != Double.POSITIVE_INFINITY);
+    assert extraInfo.minDisproofStrictlyGreater.canProve() == (extraInfo.minDisproofStrictlyGreaterBasic != Double.POSITIVE_INFINITY);
     
-    if (!extraInfo.minProofGreaterEqual.isEmpty()) {
+    if (extraInfo.minProofGreaterEqual.canProve()) {
       assert extraInfo.minProofGreaterEqual.get(0).nPositions == (long) extraInfo.minProofGreaterEqualBasic;
     }
-    if (!extraInfo.minDisproofStrictlyGreater.isEmpty()) {
+    if (extraInfo.minDisproofStrictlyGreater.canProve()) {
       if (extraInfo.minDisproofStrictlyGreater.get(0).nPositions != (long) extraInfo.minDisproofStrictlyGreaterBasic) {
         throw new AssertionError(
             "nPositions = " + extraInfo.minDisproofStrictlyGreater.get(0).nPositions + ". Expected: " + extraInfo.minDisproofStrictlyGreaterBasic
