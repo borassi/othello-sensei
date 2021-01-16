@@ -291,7 +291,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
         if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
           text += "\nProof: " +
-              Utils.prettyPrintDouble(firstPosition.extraInfo.nDescendants)
+              Utils.prettyPrintDouble(firstPosition.getDescendants())
               + "\nBest proof: " +
               Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqualBasic + firstPosition.extraInfo.minDisproofStrictlyGreaterBasic)
               + " = " + 

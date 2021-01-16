@@ -37,4 +37,7 @@ public class EvaluatorMock implements EvaluatorInterface {
   public long getNVisited() {
     return Board.hash(player, opponent) & 0b11111111 * (long) Math.pow(2, depth) * (alpha - beta);
   }
+
+  @Override
+  public void resetHashMap() {}
 }

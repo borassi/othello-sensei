@@ -39,5 +39,5 @@ public class Constants {
   public final static double PPN_MU = -6;
 
   public final static boolean ASSERT_EXTENDED = false;
-  public final static boolean FIND_BEST_PROOF_AFTER_EVAL = true;
+  public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
 }

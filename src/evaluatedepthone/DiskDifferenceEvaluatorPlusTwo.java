@@ -82,4 +82,7 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator, Evalua
   public long getNVisited() {
     return 1;
   }
+
+  @Override
+  public void resetHashMap() {}
 }

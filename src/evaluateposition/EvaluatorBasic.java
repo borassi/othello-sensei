@@ -85,4 +85,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
   public long getNVisited() {
     return nVisitedPositions;
   }
+
+  @Override
+  public void resetHashMap() {}
 }

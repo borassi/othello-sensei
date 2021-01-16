@@ -391,8 +391,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
 //    this.hashMapVisitedPositions.reset();
 //  }
   /**
-   * - Returns value and samples.
-   * - Uses hash map.
+   * - Returns value and samples.- Uses hash map.
    * - Removes positions that are < lower or > upper.
    * - V Very fast at small depth.
    * - V Goes up to depth when evaluating.
@@ -401,11 +400,13 @@ public class EvaluatorMidgame implements EvaluatorInterface {
    * @param depth
    * @param lower
    * @param upper 
+   * @return The evaluation
    */
   public int evaluatePosition(Board current, int depth, int lower, int upper) {
     return evaluatePosition(current.getPlayer(), current.getOpponent(), depth, lower, upper);
   }
 
+  @Override
   public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
     depthOneEvaluator.setup(player, opponent);
     this.resetNVisited();
@@ -429,5 +430,10 @@ public class EvaluatorMidgame implements EvaluatorInterface {
   public void resetNVisited() {
     this.nVisitedPositions = 0;
     this.nComputedMoves = 0;
+  }
+  
+  @Override
+  public void resetHashMap() {
+    this.hashMap.reset();
   }
 }

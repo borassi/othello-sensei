@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.PriorityQueue;
 
 /**
  *
@@ -30,84 +32,104 @@ public class PossibleEndgameProofs {
 
   public static class EndgameProof {
     long nPositions;
-    HashSet<PossibleEndgameProofs> boards;
+    HashSet<PossibleEndgameProofs> children;
 
-    public EndgameProof(long nPositions, PossibleEndgameProofs... boards) {
-      this.nPositions = nPositions;
-      this.boards = new HashSet<>(Arrays.asList(boards));
+    public EndgameProof(long nPositions, PossibleEndgameProofs... children) {
+      this(nPositions);
+      this.children.addAll(Arrays.asList(children));
+      assert isAllOK();
     }
 
-    public EndgameProof(long nPositions, HashSet<PossibleEndgameProofs> boards) {
-      this.nPositions = nPositions;
-      this.boards = boards;
+    public EndgameProof(long nPositions, List<PossibleEndgameProofs> children) {
+      this(nPositions);
+      this.children.addAll(children);
+      assert isAllOK();
+    }
+
+    public EndgameProof(long nPositions, HashSet<PossibleEndgameProofs> children) {
+      this(nPositions);
+      this.children.addAll(children);
+      assert isAllOK();
     }
   
     public EndgameProof(long nPositions) {
-      this(nPositions, new HashSet<PossibleEndgameProofs>());
+      this.nPositions = nPositions;
+      this.children = new HashSet<>();
+      assert isAllOK();
     }
-  
+
+    public EndgameProof(EndgameProof other) {
+      this(other.nPositions, other.children);
+    }
     @Override
     public boolean equals(Object other) {
       if (!(other instanceof EndgameProof)) {
         return false;
       }
       EndgameProof otherConverted = (EndgameProof) other;
-      return otherConverted.nPositions == this.nPositions && otherConverted.boards.equals(boards);
+      return otherConverted.nPositions == this.nPositions && otherConverted.children.equals(children);
     }
 
     @Override
     public int hashCode() {
       int hash = 7;
       hash = 97 * hash + (int) (this.nPositions ^ (this.nPositions >>> 32));
-      hash = 97 * hash + Objects.hashCode(this.boards);
+      hash = 97 * hash + Objects.hashCode(this.children);
       return hash;
     }
 
     @Override
     public String toString() {
       String result = "[" + nPositions + " ";
-      for (PossibleEndgameProofs p : boards) {
+      for (PossibleEndgameProofs p : children) {
         result += "(" + p.board.getPlayer() + " " + p.board.getOpponent() + ")";
       }
       return result + "]";
     }
 
     public boolean greaterEqual(EndgameProof other) {
-      return nPositions >= other.nPositions && boards.containsAll(other.boards);
+      return nPositions >= other.nPositions && children.containsAll(other.children);
     }
   
     public boolean strictlyGreater(EndgameProof other) {
-      return greaterEqual(other) && (nPositions > other.nPositions || boards.size() > other.boards.size());
+      return greaterEqual(other) && (nPositions > other.nPositions || children.size() > other.children.size());
     }
   
     public EndgameProof and(EndgameProof other) {
-      HashSet<PossibleEndgameProofs> boardsUnion = new HashSet<>(boards);
-      boardsUnion.addAll(other.boards);
+      assert other.isAllOK();
+      HashSet<PossibleEndgameProofs> boardsUnion = new HashSet<>(children);
+      boardsUnion.addAll(other.children);
       return new EndgameProof(nPositions + other.nPositions, boardsUnion);
     }
-    public long getNPositions() {
-      // TODO: Update!!!
-      return nPositions;
+    
+    private boolean isAllOK() {
+      for (PossibleEndgameProofs child : children) {
+        assert child.canProve();
+      }
+      return true;
     }
   }
   
   public PossibleEndgameProofs(StoredBoard board) {
     this.board = board;
-    orClauses = new ArrayList<>();
+    this.orClauses = new ArrayList<>();
   }
   
-  public PossibleEndgameProofs(StoredBoard board, PossibleEndgameProofs other) {
+  public PossibleEndgameProofs(StoredBoard board, EndgameProof... orClauses) {
     this(board);
-    orClauses.addAll(other.orClauses);
+    this.orClauses.addAll(Arrays.asList(orClauses));
+    assert this.areChildrenOK();
   }
   
-  public PossibleEndgameProofs(StoredBoard board, EndgameProof... proofs) {
+  public PossibleEndgameProofs(StoredBoard board, List<EndgameProof> orClauses) {
     this(board);
-    orClauses.addAll(Arrays.asList(proofs));
+    this.orClauses.addAll(orClauses);
+    assert this.areChildrenOK();
   }
   
   public PossibleEndgameProofs(StoredBoard board, long nPositions) {
     this(board, new EndgameProof(nPositions));
+    assert this.isSimplified();
   }
 
   public void simplify() {
@@ -137,11 +159,14 @@ public class PossibleEndgameProofs {
       }
     }
     orClauses = newEndgameProofs;
+    assert this.areChildrenOK();
   }
   
   public void or(PossibleEndgameProofs other) {
     orClauses.addAll(other.orClauses);
     simplify();
+    assert this.areChildrenOK();
+    assert this.isSimplified();
   }
   
   public void and(PossibleEndgameProofs other) {
@@ -153,6 +178,8 @@ public class PossibleEndgameProofs {
     }
     orClauses = newOrClauses;
     simplify();
+    assert this.areChildrenOK();
+    assert this.isSimplified();
   }
   
   public void toNoProof() {
@@ -171,13 +198,66 @@ public class PossibleEndgameProofs {
   public EndgameProof get(int i) {
     return orClauses.get(i);
   }
-
+  
   public long getMinNPositions() {
-    long minNPositions = Long.MAX_VALUE;
-    for (EndgameProof proof : this.orClauses) {
-      minNPositions = Math.min(minNPositions, proof.getNPositions());
+    if (!canProve()) {
+      return Long.MAX_VALUE;
     }
-    return minNPositions;
+    PossibleEndgameProofs simplifiedProofs = new PossibleEndgameProofs(board, orClauses);
+    
+    HashSet<PossibleEndgameProofs> unsolvedSet = new HashSet<>();
+
+    for (EndgameProof orClause : simplifiedProofs.orClauses) {
+      unsolvedSet.addAll(orClause.children);
+    }
+    PriorityQueue<PossibleEndgameProofs> unsolved = new PriorityQueue<>(
+        (PossibleEndgameProofs p1, PossibleEndgameProofs p2) -> {
+          return p2.board.nEmpties - p1.board.nEmpties;
+        }
+    );
+    unsolved.addAll(unsolvedSet);
+//        System.out.println("START");
+    for (PossibleEndgameProofs solving = unsolved.poll(); solving != null; solving = unsolved.poll()) {
+      assert solving.canProve();
+      PossibleEndgameProofs unalteredProofs = new PossibleEndgameProofs(board);
+      PossibleEndgameProofs newSimplifiedProofs = new PossibleEndgameProofs(board);
+      for (EndgameProof orClause : simplifiedProofs.orClauses) {
+        if (!orClause.children.contains(solving)) {
+          unalteredProofs.orClauses.add(orClause);
+          continue;
+        }
+        for (EndgameProof childOrClause : solving.orClauses) {
+          for (PossibleEndgameProofs child : childOrClause.children) {
+            if (!unsolvedSet.contains(child)) {
+              unsolvedSet.add(child);
+              unsolved.add(child);
+            }
+          }
+        }
+        EndgameProof newOrClause = new EndgameProof(orClause);
+        newOrClause.children.remove(solving);
+        newSimplifiedProofs.orClauses.add(newOrClause);
+      }
+      newSimplifiedProofs.and(solving);
+      newSimplifiedProofs.or(unalteredProofs);
+      simplifiedProofs = newSimplifiedProofs;
+      simplifiedProofs.simplify();
+    }
+    if (!simplifiedProofs.canProve()) {
+      return Long.MAX_VALUE;
+    }
+    if (simplifiedProofs.orClauses.size() != 1) {
+      String s = "The number of clauses is " + simplifiedProofs.orClauses.size() + " instead of 1. Board:\n" +
+          this.board + "Value: " + simplifiedProofs + "\nOriginal:" + orClauses;
+      simplifiedProofs.simplify();
+      throw new AssertionError(s + "\n" + simplifiedProofs);
+    }
+    assert simplifiedProofs.orClauses.size() == 1;
+    if (!simplifiedProofs.get(0).children.isEmpty()) {
+      throw new AssertionError("Wrong value of " + simplifiedProofs.get(0));
+    }
+    assert simplifiedProofs.get(0).children.isEmpty();    
+    return simplifiedProofs.get(0).nPositions;
   }
   
   public HashMap<EndgameProof, Integer> toHashMap() {
@@ -210,5 +290,30 @@ public class PossibleEndgameProofs {
       result += proof + ", ";
     }
     return result + "}";
+  }
+  
+  boolean isSimplified() {
+    for (int i = 0; i < orClauses.size(); ++i) {
+      EndgameProof clause1 = orClauses.get(i);
+      for (int j = i+1; j < orClauses.size(); ++j) {
+        EndgameProof clause2 = orClauses.get(j);
+        if (clause1.greaterEqual(clause2) || clause2.greaterEqual(clause1)) {
+          return false;
+        } 
+      }
+    }
+    return true;
+  }
+  
+  boolean areChildrenOK() {
+    for (EndgameProof orClause : orClauses) {
+      for (PossibleEndgameProofs child : orClause.children) {
+        assert child.canProve();
+        if (board.nEmpties < child.board.nEmpties || board == child.board) {
+          throw new AssertionError("Proof of board\n" + board + "cannot have child\n" + child.board);
+        }
+      }
+    }
+    return true;
   }
 }

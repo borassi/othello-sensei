@@ -290,15 +290,15 @@ public class EvaluatorMCTSTest {
 
         int eval = (int) ((Math.random() - 0.5) * 6400);
         eval = Math.max(Math.min(eval, next.getUpper()), next.getLower());
-        if (d <= 0.1) {
+        if (d <= 0.05) {
           next.setLower(eval);
           next.updateFathers();
           continue;
-        } else if (d <= 0.2) {
+        } else if (d <= 0.01) {
           next.setUpper(eval);
           next.updateFathers();
           continue;
-        } else if (d <= 0.3) {
+        } else if (d <= 0.015 || nextPos.board.lower > -6400 || nextPos.board.upper < 6400) {
           next.setSolved(eval);
           next.updateFathers();
           continue;

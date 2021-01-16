@@ -27,4 +27,5 @@ import board.Board;
 public interface EvaluatorInterface {
   public int evaluatePosition(long player, long opponent, int depth, int lower, int upper);
   public long getNVisited();
+  public void resetHashMap();
 }

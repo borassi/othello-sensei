@@ -133,7 +133,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public boolean nextPositionGreaterEqual() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
-        return firstPosition.extraInfo.minDeltaDisproofStrictlyGreaterBasic > firstPosition.extraInfo.minDeltaProofGreaterEqualBasic;
+        return firstPosition.extraInfo.minDisproofStrictlyGreaterBasic - firstPosition.extraInfo.minDisproofStrictlyGreaterVar <
+            firstPosition.extraInfo.minProofGreaterEqualBasic - firstPosition.extraInfo.minProofGreaterEqualVar;
       }
     }
     if (firstPosition.getEvalGoal() >= upper) {
@@ -195,28 +196,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         addedPositions += child.descendants;
       }
     }
-    fatherPos.addVisitedPositions(addedPositions);
+    fatherPos.updateDescendants(addedPositions);
     father.updateFathers();
     assert father.isAllOK();
   }
   
   public void solvePosition(StoredBoardBestDescendant position, int nEmpties) {
     StoredBoard board = position.board;
-    int alpha;
-    int beta;
-//    if (firstPosition.isPartiallySolved()) {
-      alpha = position.getAlpha();
-      beta = position.getBeta();
-//    } else {
-//      alpha = -6400;
-//      beta = 6400;
-//    }
+    int alpha = position.getAlpha();
+    int beta = position.getBeta();
     int eval = evaluatorMidgame.evaluatePosition(
         board.getPlayer(), board.getOpponent(), nEmpties, alpha, beta);
     long seenPositions = evaluatorMidgame.getNVisited() + 1;
     nEndgames++;
     nVisitedEndgames += seenPositions;
-    position.addVisitedPositions(seenPositions);
+    position.updateDescendants(seenPositions);
     if (eval <= alpha) {
       // Tricky but probably correct.
       board.setUpper(eval);
@@ -242,7 +236,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           board.getPlayer(), board.getOpponent(), d, -6400, 6400);
       seenPositions += evaluatorMidgame.getNVisited();
     }
-    position.addVisitedPositions(seenPositions);
+    position.updateDescendants(seenPositions);
     board.setEval(curEval);
     board.updateFathers();
   }

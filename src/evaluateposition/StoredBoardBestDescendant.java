@@ -36,9 +36,11 @@ public class StoredBoardBestDescendant {
     return board.getEvalGoal() + (greaterEqual ? 0 : 1);
   }
 
-  public void addVisitedPositions(long visitedPositions) {
+  public void updateDescendants(long newDescendants) {
+    assert board != null;
+    board.descendants += newDescendants;
     for (StoredBoard b : parents) {
-      b.descendants += visitedPositions;
+      b.descendants += newDescendants;
     }
   }
   
@@ -52,7 +54,7 @@ public class StoredBoardBestDescendant {
   }
   
   private void toChild(StoredBoard child) {
-    assert Utils.arrayContains(board.children, child);
+    assert child == null || Utils.arrayContains(board.children, child);
     parents.add(board);
     greaterEqual = !greaterEqual;
     board = child;
@@ -120,7 +122,6 @@ public class StoredBoardBestDescendant {
   }
 
   public static StoredBoard fixedChild(StoredBoard father, String move) {
-    StoredBoard[] children = father.getChildren();
     Board childBoard = father.getBoard().move(move);
     for (StoredBoard child : father.getChildren()) {
       if (child.getPlayer() == childBoard.getPlayer() && child.getOpponent() == childBoard.getOpponent()) {
