@@ -27,7 +27,7 @@ import java.util.PriorityQueue;
  */
 public class PossibleEndgameProofs {
   
-  ArrayList<EndgameProof> orClauses;
+  public ArrayList<EndgameProof> orClauses;
   StoredBoard board;
 
   public static class EndgameProof {

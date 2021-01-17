@@ -140,7 +140,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
 
   public double getDisproofNumber(
       long player, long opponent, int depth, int evalGoal, double bestProofNumber, boolean passed) {
-    assert (evalGoal + 200000) % 200 == 100;
+//    assert (evalGoal + 200000) % 200 == 100;
     long movesBit = GetMoves.getMoves(player, opponent);
     int move;
     long flip;

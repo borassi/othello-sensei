@@ -51,7 +51,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   
   public float getEval() {
-    return get(firstPosition.getBoard()).getEval();
+    return firstPosition.getEval();
   }
 
   public long getNVisited() {
@@ -62,14 +62,24 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return this.size;
   }
 
-  private int roundEval(int eval) {
-    eval = Math.max(Math.min(eval, upper - 1), lower + 1);
-    eval = ((eval + 6500) / 200) * 200 - 6400;
-    return eval;
+  int roundEval(int eval) {
+    assert (lower + 6400) % 200 == 100;
+    assert (upper + 6400) % 200 == 100;
+    assert lower >= -6300 && lower <= 6300;
+    assert upper >= -6300 && upper <= 6300;
+    if (eval <= lower) {
+      return lower - 100;
+    }
+    if (eval > upper) {
+      return upper + 100;
+    }
+    return ((eval + 6499) / 200) * 200 - 6400;
   }
   
   protected void setEvalGoal(int evalGoal) {
-    assert(evalGoal >= lower && evalGoal <= upper);
+    evalGoal = roundEval(evalGoal);
+    assert(evalGoal >= lower - 100 && evalGoal <= upper + 100);
+    assert evalGoal % 200 == 0;
     this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
     this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
   }
@@ -131,17 +141,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public boolean nextPositionGreaterEqual() {
-    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      if (this.firstPosition.isSolved()) {
-        return firstPosition.extraInfo.minDisproofStrictlyGreaterBasic - firstPosition.extraInfo.minDisproofStrictlyGreaterVar <
-            firstPosition.extraInfo.minProofGreaterEqualBasic - firstPosition.extraInfo.minProofGreaterEqualVar;
-      }
-    }
-    if (firstPosition.getEvalGoal() >= upper) {
+    if (firstPosition.getEvalGoal() > upper) {
       return true;
     } else if (firstPosition.getEvalGoal() <= lower) {
       return false;
-    } else if (!this.firstPosition.isPartiallySolved()) {
+    }
+    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      if (this.firstPosition.isSolved()) {
+        return firstPosition.extraInfo.minDisproofStrictlyGreater - firstPosition.extraInfo.minDisproofStrictlyGreaterVar <
+            firstPosition.extraInfo.minProofGreaterEqual - firstPosition.extraInfo.minProofGreaterEqualVar;
+      }
+    }
+    if (!this.firstPosition.isPartiallySolved()) {
       return this.firstPosition.maxLogDerivativeProbStrictlyGreater < this.firstPosition.maxLogDerivativeProbGreaterEqual;
     }
     return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
@@ -172,7 +183,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     int quickEval = evaluatorMidgame.evaluatePosition(player, opponent, 2, lower, upper);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
     firstPosition.eval = quickEval;
-    firstPosition.descendants = evaluatorMidgame.getNVisited() + 1;
+    firstPosition.addDescendants(evaluatorMidgame.getNVisited() + 1);
     firstPosition.setEvalGoalRecursive(roundEval(quickEval));
     
     add(firstPosition);
@@ -189,11 +200,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     int depth = 2;
     long addedPositions = 0;
     for (StoredBoard child : father.children) {
-      if (child.descendants == 0) {
+      if (child.getDescendants() == 0) {
         int eval = evaluatorMidgame.evaluatePosition(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
-        child.descendants = evaluatorMidgame.getNVisited() + 1;
+        child.addDescendants(evaluatorMidgame.getNVisited() + 1);
         child.setEval(eval);
-        addedPositions += child.descendants;
+        addedPositions += child.getDescendants();
       }
     }
     fatherPos.updateDescendants(addedPositions);
@@ -247,10 +258,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
+    assert Math.abs(lower % 200) == 100;
+    assert Math.abs(upper % 200) == 100;
+    assert(lower <= upper);
     status = Status.RUNNING;
-    this.lower = Math.floorDiv(lower, 200) * 200;
-    this.upper = (int) Math.ceil(upper / 200.0) * 200;
-    assert(this.lower < this.upper);
+    this.lower = lower;
+    this.upper = upper;
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
@@ -266,7 +279,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (boardStored == null) {
         setFirstPosition(board.getPlayer(), board.getOpponent());
       }
-      setEvalGoal(Math.max(lower, Math.min(upper, firstPosition.getEval())));
+      setEvalGoal(firstPosition.getEval());
     }
 
     long startTime = System.currentTimeMillis();

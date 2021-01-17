@@ -29,4 +29,6 @@ public interface UI {
   public boolean playWhiteMoves();
   public long depth();
   public int delta();
+  public int lower();
+  public int upper();
 }

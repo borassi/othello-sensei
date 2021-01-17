@@ -25,7 +25,7 @@ public class Constants {
 //  public final static int HASH_MAP_SIZE = 500000;
 //  public final static int MCTS_SIZE = 2000000;
   public final static int HASH_MAP_SIZE = 1000000;
-  public final static int MCTS_SIZE = 1000000;
+  public final static int MCTS_SIZE = 10000000;
   public final static int EMPTIES_FOR_ENDGAME = 8;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;
   public final static int TRY_SC_LAST_5_CORNER = 2200;
@@ -40,4 +40,5 @@ public class Constants {
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
+  public final static boolean IGNORE_TRANSPOSITIONS = FIND_BEST_PROOF_AFTER_EVAL || false;
 }

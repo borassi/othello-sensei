@@ -162,7 +162,7 @@ public class Main implements Runnable {
     if (stopping) {
       return;
     }
-    EVALUATOR.evaluatePosition(b, -6400, 6400, ui.depth(), updateTime, reset);
+    EVALUATOR.evaluatePosition(b, ui.lower(), ui.upper(), ui.depth(), updateTime, reset);
 //    EVALUATOR.evaluatePosition(b, 0, 1, ui.depth(), updateTime, reset);
   }
   
@@ -361,6 +361,7 @@ public class Main implements Runnable {
     PositionIJ bestIJ = this.findBestMove(children);
     boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
     StoredBoard bestChild = StoredBoardBestDescendant.bestChild(current, greaterEqual);
+//    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);
     for (StoredBoard child : children) {
       if (child == null) {
         continue;
@@ -391,15 +392,19 @@ public class Main implements Runnable {
 //        double minProof =
 //            (child.extraInfo.minDisproofStrictlyGreater.canProve() ? child.extraInfo.minDisproofStrictlyGreater.get(0) : Double.POSITIVE_INFINITY)
 //            + (child.extraInfo.minProofGreaterEqual.canProve() ? child.extraInfo.minProofGreaterEqual.get(0) : Double.POSITIVE_INFINITY);
-        long minDisproofStrictlyGreater = child.extraInfo.minDisproofStrictlyGreater.getMinNPositions();
-        long minProofGreaterEqual = child.extraInfo.minProofGreaterEqual.getMinNPositions();
+//        long minDisproofStrictlyGreater = child.extraInfo.minDisproofStrictlyGreater.getMinNPositions();
+//        long minProofGreaterEqual = child.extraInfo.minProofGreaterEqual.getMinNPositions();
         annotations.otherAnnotations +=
-            Utils.prettyPrintDouble(child.getDescendants()) + "\n"
+            
+            (child.extraInfo.disproofBeforeFinished ? "* " : "")
+            + Utils.prettyPrintDouble(child.getDescendants())
+            + (child.extraInfo.proofBeforeFinished ? " *" : "") + "\n"
 //            Utils.prettyPrintDouble(child.extraInfo.nDescendants) + "\n"
 //            + (minDisproofStrictlyGreater < Long.MAX_VALUE ? Utils.prettyPrintDouble(minDisproofStrictlyGreater) : "---") + " "
 //            + (minProofGreaterEqual < Long.MAX_VALUE ? Utils.prettyPrintDouble(minProofGreaterEqual) : "---") + "\n"
-            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreaterBasic) + " "
-            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqualBasic) + "\n"
+            + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreater) + " "
+            + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqual) + "\n"
+//            + child.extraInfo.minDisproofStrictlyGreater.orClauses.size() + " " + child.extraInfo.minProofGreaterEqual.orClauses.size()
             + Utils.prettyPrintDouble(child.extraInfo.minDisproofStrictlyGreaterVar) + " "
             + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqualVar)
             ;

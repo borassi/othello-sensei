@@ -85,6 +85,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner depth;
   private final JSpinner delta;  
   private final JSpinner ffoPositions;
+  private final JSpinner lower;
+  private final JSpinner upper;
   private final JLabel empties;
   private final JTextArea extras;
   
@@ -95,7 +97,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       main.undo();
     }
   }
-
+  
   @Override
   public void setAnnotations(CaseAnnotations annotations, PositionIJ ij) {
     if (debugMode.isSelected()) {
@@ -153,6 +155,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 //    cases[ij.i][ij.j].setAnnotationsColor(Color.RED);
 //    cases[ij.i][ij.j].update(cases[ij.i][ij.j].getGraphics());
 //  }
+  private boolean lastBlackTurn = true;
   
   @Override
   public void setCases(Board board, boolean blackTurn) {
@@ -166,6 +169,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         cases[i][j].setAnnotations("");
         cases[i][j].update(cases[i][j].getGraphics());
       }
+    }
+    if (lastBlackTurn != blackTurn) {
+      lastBlackTurn = blackTurn;
+      int lowerValue = (int) lower.getValue();
+      lower.setValue(-(int) upper.getValue());
+      upper.setValue(-lowerValue);
     }
     empties.setText("Empties: " + board.getEmptySquares());
   }
@@ -217,7 +226,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000", "100000000000000"
     }));
     depth = new JSpinner(allowedDepths);
-    depth.setValue("10000000");
+    depth.setValue("100000000000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
     
@@ -233,6 +242,19 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     ffoPositions.addChangeListener((ChangeEvent e) -> {
       main.setEndgameBoard((int) ffoPositions.getValue());
     });
+    
+    SpinnerModel allowedLower = new SpinnerNumberModel(-63, -63, 63, 2);
+    SpinnerModel allowedUpper = new SpinnerNumberModel(63, -63, 63, 2);
+    lower = new JSpinner(allowedLower);
+    upper = new JSpinner(allowedUpper);
+    lower.addChangeListener((ChangeEvent e) -> {
+      upper.setValue(Math.max((int) upper.getValue(), (int) lower.getValue()));
+    });
+    upper.addChangeListener((ChangeEvent e) -> {
+      lower.setValue(Math.min((int) upper.getValue(), (int) lower.getValue()));
+    });
+    commands.add(lower);
+    commands.add(upper);
 
     empties = new JLabel();
     commands.add(empties);
@@ -293,14 +315,24 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
           text += "\nProof: " +
               Utils.prettyPrintDouble(firstPosition.getDescendants())
               + "\nBest proof: " +
-              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqualBasic + firstPosition.extraInfo.minDisproofStrictlyGreaterBasic)
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual + firstPosition.extraInfo.minDisproofStrictlyGreater)
               + " = " + 
-              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqualBasic) + " + " + 
-              Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreaterBasic);
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual) + " + " + 
+              Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreater);
         }
         extras.setText(text);
       }
     };
     SwingUtilities.invokeLater(tmp);
+  }
+
+  @Override
+  public int lower() {
+    return (int) lower.getValue() * 100;
+  }
+
+  @Override
+  public int upper() {
+    return (int) upper.getValue() * 100;
   }
 }

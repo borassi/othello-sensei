@@ -73,7 +73,7 @@ public class HashMap {
   public static final int hashBoard(long player, long opponent, int maxElements) {
     int newPlayer = (int) ((player + (player >> 32)) * 541725397157L);
     int newOpponent = (int) ((opponent + (opponent >> 32)) * 541725397157L);
-    return Math.abs(3 * newPlayer + 17 * newOpponent) % maxElements;
+    return Math.abs((3 * newPlayer + 17 * newOpponent) % maxElements);
   }
 
   public BoardInHash evaluationsHashMap[];

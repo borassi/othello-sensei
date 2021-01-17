@@ -18,6 +18,7 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
 import board.PossibleMovesFinderImproved;
+import constants.Constants;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import static junit.framework.TestCase.assertEquals;
 import org.junit.BeforeClass;
@@ -56,10 +57,12 @@ public class EvaluatorMCTSTest {
     assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
 
     evaluator.addChildren(getPositionToImprove(evaluator, "d3c4"));
-
-    assertEquals(2, doubleFather.fathers.size());
-    assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
-    assertEquals(evaluator.get(new Board("e6f4d3c4")), doubleFather.fathers.get(1));
+    
+    if (!Constants.IGNORE_TRANSPOSITIONS) {
+      assertEquals(2, doubleFather.fathers.size());
+      assertEquals(evaluator.get(new Board("e6f4c3c4")), doubleFather.fathers.get(0));
+      assertEquals(evaluator.get(new Board("e6f4d3c4")), doubleFather.fathers.get(1));
+    }
   }
   
   @Test
@@ -254,6 +257,25 @@ public class EvaluatorMCTSTest {
   }
   
   @Test
+  public void testRoundEval() {
+    EvaluatorMCTS eval = new EvaluatorMCTS(100, 100);
+    eval.lower = -3100;
+    eval.upper = 3100;
+    assertEquals(0, eval.roundEval(99));
+    assertEquals(200, eval.roundEval(101));
+    assertEquals(-3200, eval.roundEval(-3500));
+    assertEquals(3200, eval.roundEval(6300));
+
+    assertEquals(0, eval.roundEval(100));
+    assertEquals(200, eval.roundEval(101));
+    assertEquals(-3200, eval.roundEval(-3100));
+    assertEquals(-3000, eval.roundEval(-3099));
+    assertEquals(3000, eval.roundEval(3100));
+    assertEquals(3200, eval.roundEval(3101));
+    assertEquals(1000, eval.roundEval(1091));
+  }
+  
+  @Test
   public void testTreeIsCorrectAfterUpdates() {
     for (int i = 0; i < 10000; i++) {
       if (i % 100 == 0) {
@@ -268,8 +290,8 @@ public class EvaluatorMCTSTest {
         continue;
       }
       evaluator.setFirstPosition(start.getPlayer(), start.getOpponent());
-      evaluator.lower = (int) ((Math.random() - 0.5) * 3200);
-      evaluator.upper = (int) (evaluator.lower + Math.random() * 3200);
+      evaluator.lower = ((int) ((Math.random() - 0.5) * 16)) * 200 - 100;
+      evaluator.upper = evaluator.lower + 200 * (int) (Math.random() * 16);
       
       for (int j = 0; j < nElements; j++) {
         StoredBoardBestDescendant nextPos = StoredBoardBestDescendant.randomDescendant(
@@ -319,7 +341,8 @@ public class EvaluatorMCTSTest {
           }
         }
         if (!allLeaves) {
-          evaluator.setEvalGoal((int) (evaluator.lower + (Math.random() * (evaluator.upper - evaluator.lower))));
+          int tmp = evaluator.lower + (int) (Math.random() * (evaluator.upper - evaluator.lower));
+          evaluator.setEvalGoal(evaluator.roundEval(tmp));
           assertIsAllOK(evaluator);
         }
       }

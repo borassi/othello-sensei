@@ -29,18 +29,26 @@ public class StoredBoardBestDescendant {
   ArrayList<StoredBoard> parents = new ArrayList<>();
 
   public int getAlpha() {
-    return board.getEvalGoal() - (greaterEqual ? 1 : 0);
+    if (greaterEqual) {
+      return board.getEvalGoal() - 100;
+    } else {
+      return board.getEvalGoal() + 100;
+    }
   }
 
   public int getBeta() {
-    return board.getEvalGoal() + (greaterEqual ? 0 : 1);
+    if (greaterEqual) {
+      return board.getEvalGoal() - 100;
+    } else {
+      return board.getEvalGoal() + 100;
+    }
   }
 
   public void updateDescendants(long newDescendants) {
     assert board != null;
-    board.descendants += newDescendants;
-    for (StoredBoard b : parents) {
-      b.descendants += newDescendants;
+    board.addDescendants(newDescendants);
+    for (StoredBoard parent : parents) {
+      parent.addDescendants(newDescendants);
     }
   }
   

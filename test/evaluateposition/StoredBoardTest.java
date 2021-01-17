@@ -30,20 +30,20 @@ public class StoredBoardTest {
     eval.setFirstPosition(new Board("e6"));
     StoredBoard firstMove = eval.firstPosition;
     firstMove.eval = 0;
-    firstMove.descendants = 5;
+    firstMove.addDescendants(5);
 
     firstMove.addChildren(eval);
     StoredBoard diag = eval.get(new Board("e6f6"));
     diag.eval = 0;
-    diag.descendants = 1;
+    diag.addDescendants(1);
 
     StoredBoard perp = eval.get(new Board("e6f4"));
     perp.eval = -100;
-    perp.descendants = 1;
+    perp.addDescendants(1);
  
     StoredBoard par = eval.get(new Board("e6d6"));
     par.eval = 800;
-    par.descendants = 1;
+    par.addDescendants(1);
     firstMove.setEvalGoalRecursive(1000);
     
     // Proves >= -11.
@@ -63,26 +63,26 @@ public class StoredBoardTest {
     eval.setFirstPosition(new Board("e6"));
     StoredBoard firstMove = eval.firstPosition;
     firstMove.eval = 0;
-    firstMove.descendants = 34;
+    firstMove.addDescendants(34);
     firstMove.lower = -1;
     firstMove.upper = 1;
 
     firstMove.addChildren(eval);
     StoredBoard diag = eval.get(new Board("e6f6"));
     diag.eval = 0;
-    diag.descendants = 10;
+    diag.addDescendants(10);
     diag.lower = -1;
     diag.upper = 1;
 
     StoredBoard perp = eval.get(new Board("e6f4"));
     perp.eval = 2;
-    perp.descendants = 11;
+    perp.addDescendants(11);
     perp.lower = 1;
     perp.upper = 2;
  
     StoredBoard par = eval.get(new Board("e6d6"));
     par.eval = 8;
-    par.descendants = 12;
+    par.addDescendants(12);
     par.lower = 6;
     par.upper = 8;
 
@@ -147,10 +147,10 @@ public class StoredBoardTest {
   public void testBoardChildrenAreCorrectPass() {
     StoredBoard pass = StoredBoard.initialStoredBoard(Board.pass());
     pass.eval = 200;
-    pass.descendants = 2;
+    pass.addDescendants(2);
     StoredBoard afterPass = StoredBoard.initialStoredBoard(Board.pass().move(0));
     afterPass.eval = -200;
-    afterPass.descendants = 1;
+    afterPass.addDescendants(1);
 
     pass.children = new StoredBoard[] {afterPass};
     afterPass.fathers.add(pass);
@@ -189,7 +189,7 @@ public class StoredBoardTest {
   public void testBoardChildrenAreCorrectBothPass() {
     StoredBoard bothPass = StoredBoard.initialStoredBoard(Board.bothPass());
     bothPass.eval = -5600;
-    bothPass.descendants = 1;
+    bothPass.addDescendants(1);
     
     bothPass.lower = -5600;
     bothPass.upper = -5600;
