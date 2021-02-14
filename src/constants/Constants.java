@@ -34,11 +34,11 @@ public class Constants {
   public final static int TRY_SC_LAST_3_NO_CORNER = 600;
   public final static int TRY_SC_LAST_3_CORNER = 1600;
   
-  public final static double PPN_MIN_COST_LEAF = 0.0001;
-  public final static double PPN_LAMBDA = -4;
-  public final static double PPN_MU = -6;
+  public final static double PPN_MIN_COST_LEAF = 2E-4;
+//  public final static double PPN_LAMBDA = -4;
+  public final static double PPN_EPSILON = 1E-14;
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
-  public final static boolean IGNORE_TRANSPOSITIONS = FIND_BEST_PROOF_AFTER_EVAL || false;
+  public final static boolean IGNORE_TRANSPOSITIONS = FIND_BEST_PROOF_AFTER_EVAL || true;
 }

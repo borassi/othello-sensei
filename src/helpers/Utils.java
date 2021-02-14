@@ -13,35 +13,39 @@
 // limitations under the License.
 package helpers;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+
 public class Utils {
-  public static String prettyPrintDouble(double l) {
-    if (l == Double.POSITIVE_INFINITY) {
+  public static String prettyPrintDouble(double d) {
+    if (d == Double.POSITIVE_INFINITY) {
       return "+Inf";
-    } else if (l == Double.NEGATIVE_INFINITY) {
+    } else if (d == Double.NEGATIVE_INFINITY) {
       return "-Inf";
-    } else if (Math.abs(l) < 1.E-12) {
+    } else if (Math.abs(d) < 1.E-40) {
       return "0";
     }
-    String sign = "";
-    if (l < 0) {
-      sign = "-";
-      l = -l;
+    if (d < 0) {
+      return "-" + prettyPrintDouble(-d);
     }
+    BigDecimal bd = new BigDecimal(d);
+    bd = bd.round(new MathContext(2));
+    d = bd.doubleValue();
     String[] suffixes = {"p", "n", "μ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y"};
-    int orderOfMagnitude = (int) Math.log10(l);
+    int orderOfMagnitude = (int) Math.floor(Math.log10(d));
     int suffixesPosition = (int) (orderOfMagnitude + 12) / 3;
 
     if (suffixesPosition >= suffixes.length || suffixesPosition < 0) {
-      return String.format("%s%f", sign, l);
+      return String.format("%.1E", d);
     }
     String suffix = suffixes[suffixesPosition];
     
-    double rescaledL = l / Math.pow(10, ((orderOfMagnitude + 12) / 3) * 3 - 12);
+    double rescaledL = d / Math.pow(10, ((orderOfMagnitude + 300) / 3) * 3 - 300);
     
     if (orderOfMagnitude % 3 == 0) {
-      return String.format("%s%.1f%s", sign, rescaledL, suffix);
+      return String.format("%.1f%s", rescaledL, suffix);
     }
-    return String.format("%s%.0f%s", sign, rescaledL, suffix);
+    return String.format("%.0f%s", rescaledL, suffix);
   }
   
   public static boolean arrayContains(Object[] array, Object elem) {
@@ -51,8 +55,5 @@ public class Utils {
       }
     }
     return false;
-  }
-  public static void main(String args[]) {
-    System.out.println(Utils.prettyPrintDouble(10000));
   }
 }

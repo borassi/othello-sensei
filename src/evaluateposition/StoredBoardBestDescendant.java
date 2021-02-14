@@ -97,15 +97,20 @@ public class StoredBoardBestDescendant {
     }
     return result;
   }
-
+  
   public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual) {
+    boolean endgame = true;
     if (greaterEqual) {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
         if (father.proofNumberGreaterEqual == 0 || father.proofNumberGreaterEqual == Double.POSITIVE_INFINITY) {
           return father.bestChildProofGreaterEqual();
         }
       }
-      if (father.probGreaterEqual == 0 || father.probGreaterEqual == 1) {
+      if (endgame &&
+          (father.probGreaterEqual == 0 || father.probGreaterEqual == 1
+          || father.probGreaterEqual > 1 - 0.02
+//          || father.getDescendants() > 0.1 * father.proofNumberGreaterEqual
+          )) {
         return father.bestChildEndgameGreaterEqual();
       } else {
         return father.bestChildMidgameGreaterEqual();
@@ -116,7 +121,11 @@ public class StoredBoardBestDescendant {
           return father.bestChildProofStrictlyGreater();
         }
       }
-      if (father.probStrictlyGreater == 0 || father.probStrictlyGreater == 1) {
+      if (endgame && 
+          (father.probStrictlyGreater == 0 || father.probStrictlyGreater == 1
+          || father.probStrictlyGreater < 0.02
+//          || father.getDescendants() > 0.1 * father.disproofNumberStrictlyGreater
+          )) {
         return father.bestChildEndgameStrictlyGreater();
       } else {
         return father.bestChildMidgameStrictlyGreater();

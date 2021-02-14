@@ -109,6 +109,7 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
+    setBoard(new Board("--OOOOO---OOOO---XXXOXX--XXOOOXX-XXOXOX-XXXXOXOO---OXO----OOOOO-", false), false);
   }
   
   public void resetHashMaps() {
@@ -384,9 +385,9 @@ public class Main implements Runnable {
         (-child.getUpper()) + " " + (-child.getLower()) + "\n" 
 //        + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
 //        + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n"
-        + (bestChild == child && greaterEqual ? "*" : "")
+        + (bestChild == child && !greaterEqual ? "*" : "")
         + Utils.prettyPrintDouble(child.getDisproofNumberStrictlyGreater()) + " " + Utils.prettyPrintDouble(child.getProofNumberGreaterEqual())
-        + (bestChild == child && !greaterEqual ? "*" : "") + "\n";
+        + (bestChild == child && greaterEqual ? "*" : "") + "\n";
       
       if (child.extraInfo != null) {
 //        double minProof =
@@ -395,7 +396,6 @@ public class Main implements Runnable {
 //        long minDisproofStrictlyGreater = child.extraInfo.minDisproofStrictlyGreater.getMinNPositions();
 //        long minProofGreaterEqual = child.extraInfo.minProofGreaterEqual.getMinNPositions();
         annotations.otherAnnotations +=
-            
             (child.extraInfo.disproofBeforeFinished ? "* " : "")
             + Utils.prettyPrintDouble(child.getDescendants())
             + (child.extraInfo.proofBeforeFinished ? " *" : "") + "\n"
@@ -409,7 +409,11 @@ public class Main implements Runnable {
             + Utils.prettyPrintDouble(child.extraInfo.minProofGreaterEqualVar)
             ;
       } else {
-        annotations.otherAnnotations += Utils.prettyPrintDouble(child.getDescendants());
+        annotations.otherAnnotations +=
+            child.getEvalGoal() / 100 + " " + Utils.prettyPrintDouble(child.getDescendants()) + "\n"
+            + Utils.prettyPrintDouble(1-child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1-child.probGreaterEqual) + "\n"
+            + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
+            + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n";
         
       }
       ui.setAnnotations(annotations, ij);

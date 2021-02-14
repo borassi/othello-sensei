@@ -97,12 +97,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
-      while (this.firstPosition.probStrictlyGreater >= 0.9 && evalGoal + 200 <= upper) {
+      while (this.firstPosition.probStrictlyGreater >= 0.7 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
         evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      while (this.firstPosition.probGreaterEqual <= 0.1 && evalGoal - 200 >= lower) {
+      while (this.firstPosition.probGreaterEqual <= 0.3 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
         evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
@@ -152,10 +152,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             firstPosition.extraInfo.minProofGreaterEqual - firstPosition.extraInfo.minProofGreaterEqualVar;
       }
     }
-    if (!this.firstPosition.isPartiallySolved()) {
+//    if (!this.firstPosition.isPartiallySolved()) {
       return this.firstPosition.maxLogDerivativeProbStrictlyGreater < this.firstPosition.maxLogDerivativeProbGreaterEqual;
-    }
-    return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
+//    }
+//    return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
   }
 
   protected StoredBoardBestDescendant nextPositionToImprove() {
@@ -305,6 +305,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         }
       }
 
+//      if (this.firstPosition.probGreaterEqual > 1 - 0.02 && this.firstPosition.probStrictlyGreater < 0.02) {
+//        status = Status.SOLVED;
+//        break;
+//      }
       if (status == Status.KILLING) {
         status = Status.KILLED;
         break;
