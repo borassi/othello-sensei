@@ -146,20 +146,31 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     } else if (firstPosition.getEvalGoal() <= lower) {
       return false;
     }
+    if (firstPosition.getEvalGoal() >= firstPosition.upper) {
+      return true;
+    } else if (firstPosition.getEvalGoal() <= firstPosition.lower) {
+      return false;
+    }
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
         return firstPosition.extraInfo.minDisproofStrictlyGreater - firstPosition.extraInfo.minDisproofStrictlyGreaterVar <
             firstPosition.extraInfo.minProofGreaterEqual - firstPosition.extraInfo.minProofGreaterEqualVar;
       }
     }
-//    if (!this.firstPosition.isPartiallySolved()) {
+    if (!endgame()) {
+//      System.out.println(this.firstPosition.maxLogDerivativeProbStrictlyGreater + " " + this.firstPosition.maxLogDerivativeProbGreaterEqual);
       return this.firstPosition.maxLogDerivativeProbStrictlyGreater < this.firstPosition.maxLogDerivativeProbGreaterEqual;
-//    }
-//    return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
+    }
+    return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
+  }
+  
+  public boolean endgame() {
+    return firstPosition.probGreaterEqual > 1 - 0.01 && firstPosition.probStrictlyGreater < 0.01;
+//    return Math.max(this.firstPosition.maxLogDerivativeProbStrictlyGreater, this.firstPosition.maxLogDerivativeProbGreaterEqual) < -17;
   }
 
   protected StoredBoardBestDescendant nextPositionToImprove() {
-    return StoredBoardBestDescendant.bestDescendant(firstPosition, nextPositionGreaterEqual());
+    return StoredBoardBestDescendant.bestDescendant(firstPosition, nextPositionGreaterEqual(), endgame());
   }
 
   public short evaluatePosition(Board board) {
@@ -305,10 +316,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         }
       }
 
-//      if (this.firstPosition.probGreaterEqual > 1 - 0.02 && this.firstPosition.probStrictlyGreater < 0.02) {
-//        status = Status.SOLVED;
-//        break;
-//      }
+//      System.out.println(this.firstPosition.probGreaterEqual + " " + this.firstPosition.probStrictlyGreater);
+      if (Constants.APPROX_ONLY && this.firstPosition.probGreaterEqual > 1 - 0.02 && this.firstPosition.probStrictlyGreater < 0.02) {
+        status = Status.SOLVED;
+        break;
+      }
       if (status == Status.KILLING) {
         status = Status.KILLED;
         break;

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 public class StoredBoardBestDescendant {
   StoredBoard board;
   boolean greaterEqual;
+  boolean endgame;
   ArrayList<StoredBoard> parents = new ArrayList<>();
 
   public int getAlpha() {
@@ -56,9 +57,10 @@ public class StoredBoardBestDescendant {
     return board == null;
   }
   
-  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual) {
+  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, boolean endgame) {
     this.board = board;
     this.greaterEqual = greaterEqual;
+    this.endgame = endgame;
   }
   
   private void toChild(StoredBoard child) {
@@ -69,18 +71,24 @@ public class StoredBoardBestDescendant {
   }
 
   public static StoredBoardBestDescendant bestDescendant(
-      StoredBoard father, boolean greaterEqual) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
+      StoredBoard father, boolean greaterEqual, boolean endgame) {
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, endgame);
 
+//    System.out.println();
+    int i = 0;
     while (result.board != null && !result.board.isLeaf()) {
-      result.toChild(bestChild(result.board, result.greaterEqual));
+      result.toChild(bestChild(
+          result.board,
+          result.greaterEqual,
+          result.endgame,
+          false));
     }
     return result;
   }
 
   public static StoredBoardBestDescendant randomDescendant(
       StoredBoard father, boolean greaterEqual) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, false);
 
     while (result.board != null && !result.board.isLeaf()) {
       result.toChild(randomChild(result.board));
@@ -90,7 +98,7 @@ public class StoredBoardBestDescendant {
 
   public static StoredBoardBestDescendant fixedDescendant(
       StoredBoard father, boolean greaterEqual, String sequence) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, false);
 
     for (int i = 0; i < sequence.length(); i += 2) {
       result.toChild(fixedChild(result.board, sequence.substring(i, i+2)));
@@ -98,21 +106,18 @@ public class StoredBoardBestDescendant {
     return result;
   }
   
-  public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual) {
-    boolean endgame = true;
+  public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual, boolean endgame, boolean verbose) {
     if (greaterEqual) {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
         if (father.proofNumberGreaterEqual == 0 || father.proofNumberGreaterEqual == Double.POSITIVE_INFINITY) {
           return father.bestChildProofGreaterEqual();
         }
       }
-      if (endgame &&
-          (father.probGreaterEqual == 0 || father.probGreaterEqual == 1
-          || father.probGreaterEqual > 1 - 0.02
-//          || father.getDescendants() > 0.1 * father.proofNumberGreaterEqual
-          )) {
+      if (endgame || father.probGreaterEqual > 1 - 0.01) {
+        if (verbose) System.out.println("Endgame!" + father.probGreaterEqual);
         return father.bestChildEndgameGreaterEqual();
       } else {
+        if (verbose) System.out.println("Midgame!" + father.probGreaterEqual);
         return father.bestChildMidgameGreaterEqual();
       }
     } else {
@@ -121,13 +126,11 @@ public class StoredBoardBestDescendant {
           return father.bestChildProofStrictlyGreater();
         }
       }
-      if (endgame && 
-          (father.probStrictlyGreater == 0 || father.probStrictlyGreater == 1
-          || father.probStrictlyGreater < 0.02
-//          || father.getDescendants() > 0.1 * father.disproofNumberStrictlyGreater
-          )) {
+      if (endgame || father.probStrictlyGreater < 0.01) {
+        if (verbose) System.out.println("Endgame!");
         return father.bestChildEndgameStrictlyGreater();
       } else {
+        if (verbose) System.out.println("Midgame!");
         return father.bestChildMidgameStrictlyGreater();
       }
     }

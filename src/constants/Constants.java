@@ -25,7 +25,7 @@ public class Constants {
 //  public final static int HASH_MAP_SIZE = 500000;
 //  public final static int MCTS_SIZE = 2000000;
   public final static int HASH_MAP_SIZE = 1000000;
-  public final static int MCTS_SIZE = 10000000;
+  public final static int MCTS_SIZE = 20000000;
   public final static int EMPTIES_FOR_ENDGAME = 8;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;
   public final static int TRY_SC_LAST_5_CORNER = 2200;
@@ -34,11 +34,12 @@ public class Constants {
   public final static int TRY_SC_LAST_3_NO_CORNER = 600;
   public final static int TRY_SC_LAST_3_CORNER = 1600;
   
-  public final static double PPN_MIN_COST_LEAF = 2E-4;
+  public final static double PPN_MIN_COST_LEAF = 0.001;
 //  public final static double PPN_LAMBDA = -4;
   public final static double PPN_EPSILON = 1E-14;
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
-  public final static boolean IGNORE_TRANSPOSITIONS = FIND_BEST_PROOF_AFTER_EVAL || true;
+  public final static boolean IGNORE_TRANSPOSITIONS = FIND_BEST_PROOF_AFTER_EVAL || false;
+  public final static boolean APPROX_ONLY = false;
 }

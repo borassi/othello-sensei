@@ -274,7 +274,7 @@ public class StoredBoard {
   }
   
   private double lambda() {
-    return -6 / Math.max(1, 2 * Math.log(this.descendants)) - 0.5;
+    return -6 / Math.max(1, 2 * Math.log(this.descendants)) - 0.75;
   }
   
   protected void updateFather() {
@@ -292,9 +292,13 @@ public class StoredBoard {
       eval = Math.max(eval, -child.eval);
       lower = Math.max(lower, -child.upper);
       upper = Math.max(upper, -child.lower);
-      probGreaterEqual += Math.pow(child.probStrictlyGreater, lambda) - 1;
-      probStrictlyGreater += Math.pow(child.probGreaterEqual, lambda) - 1;
-      proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater);
+      if (child.probStrictlyGreater < 1 - Constants.PPN_MIN_COST_LEAF) {
+        probGreaterEqual += Math.pow(child.probStrictlyGreater, lambda) - 1;
+        proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater);
+      }
+      if (child.probGreaterEqual < 1 - Constants.PPN_MIN_COST_LEAF) {
+        probStrictlyGreater += Math.pow(child.probGreaterEqual, lambda) - 1;
+      }
       disproofNumberStrictlyGreater += child.proofNumberGreaterEqual;
     }
     if (lower >= evalGoal) {
@@ -505,7 +509,9 @@ public class StoredBoard {
 //    if (child.probGreaterEqual > 0.9) {
 //      return -1E30 * (1 + child.probGreaterEqual);
 //    }
-    return -child.proofNumberGreaterEqual / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberStrictlyGreater, 0.35) / Math.sqrt(child.descendants)));
+//    return child.probGreaterEqual;
+//    return child.proofNumberGreaterEqual;
+    return child.proofNumberGreaterEqual / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberStrictlyGreater, 0.35) / Math.sqrt(child.descendants)));
   }
   
   public double childValueGreaterEqual(StoredBoard child) {
@@ -513,10 +519,14 @@ public class StoredBoard {
     if (proofNumberGreaterEqual == 0 || child.disproofNumberStrictlyGreater == Double.POSITIVE_INFINITY) {
       return Double.NEGATIVE_INFINITY;
     }
+//    if (descendants >= proofNumberGreaterEqual * 0.01) {
+//      return -child.disproofNumberStrictlyGreater;
+//    }
 //    if (child.probStrictlyGreater > 0.99) {
 //      return -1E30 * (1 + child.probStrictlyGreater);
 //    }
-    return -child.disproofNumberStrictlyGreater / Math.exp(0.1 * Math.pow(proofNumberGreaterEqual, 0.35) / Math.sqrt(child.descendants));
+//    return -child.disproofNumberStrictlyGreater;
+    return -child.disproofNumberStrictlyGreater / Math.min(1.E20, Math.exp(0.1 * Math.pow(proofNumberGreaterEqual, 0.35) / Math.sqrt(child.descendants)));
   }
   
   // TODO!!!
