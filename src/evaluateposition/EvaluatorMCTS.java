@@ -16,7 +16,6 @@ package evaluateposition;
 
 import board.Board;
 import constants.Constants;
-import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorInterface evaluatorMidgame;
@@ -97,12 +96,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
-      while (this.firstPosition.probStrictlyGreater >= 0.7 && evalGoal + 200 <= upper) {
+      while (this.firstPosition.probStrictlyGreater >= 0.6 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
         evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      while (this.firstPosition.probGreaterEqual <= 0.3 && evalGoal - 200 >= lower) {
+      while (this.firstPosition.probGreaterEqual <= 0.4 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
         evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);

@@ -354,7 +354,7 @@ public class StoredBoard {
   
   public double logDerivativeProbStrictlyGreater(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.probGreaterEqual < Constants.PPN_EPSILON) {
+    if (child.probGreaterEqual < Constants.PPN_MIN_COST_LEAF) {
       return Double.NEGATIVE_INFINITY;
     }
     return child.maxLogDerivativeProbGreaterEqual +
@@ -363,7 +363,7 @@ public class StoredBoard {
   
   public double logDerivativeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.probStrictlyGreater < Constants.PPN_EPSILON) {
+    if (child.probStrictlyGreater < Constants.PPN_MIN_COST_LEAF) {
       return Double.NEGATIVE_INFINITY;
     }
     return child.maxLogDerivativeProbStrictlyGreater +
@@ -383,8 +383,8 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0 || extraInfo.isFinished;
-    probGreaterEqual = roundProb(1 - Gaussian.CDF(evalGoal-100, eval, 450 - nEmpties * 4));
-    probStrictlyGreater = roundProb(1 - Gaussian.CDF(evalGoal+100, eval, 450 - nEmpties * 4));
+    probGreaterEqual = roundProb(1 - Gaussian.CDF(evalGoal-100, eval, 550 - nEmpties * 4));
+    probStrictlyGreater = roundProb(1 - Gaussian.CDF(evalGoal+100, eval, 550 - nEmpties * 4));
     assert probGreaterEqual >= probStrictlyGreater;
     double proofNumberGreaterEqual = endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval);
     double disproofNumberGreaterEqual = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal - 100, this.eval);
@@ -423,8 +423,10 @@ public class StoredBoard {
         this.maxLogDerivativeProbGreaterEqual = Math.log(probGreaterEqual * (1 - probGreaterEqual) / proofNumberGreaterEqual +
             probGreaterEqual * (1 - probGreaterEqual) / disproofNumberGreaterEqual);
       } else {
-        this.maxLogDerivativeProbGreaterEqual = Math.log(probGreaterEqual * (1 - probGreaterEqual) *
-            Math.max(0.01, Math.pow(proofNumberGreaterEqual, -0.2) + Math.pow(disproofNumberGreaterEqual, -0.2)) / n);
+        this.maxLogDerivativeProbGreaterEqual =
+            Math.log(probGreaterEqual * (1 - probGreaterEqual)
+            * Math.max(0.01, Math.pow(proofNumberGreaterEqual, -0.2) + Math.pow(disproofNumberGreaterEqual, -0.2)) / n
+            );
       }
     }
     if (upper <= evalGoal) {
@@ -443,8 +445,9 @@ public class StoredBoard {
           probStrictlyGreater * (1 - probStrictlyGreater) / disproofNumberStrictlyGreater);
       } else {
         this.maxLogDerivativeProbStrictlyGreater =
-            Math.log(probStrictlyGreater * (1 - probStrictlyGreater) *
-            Math.max(0.01, Math.pow(proofNumberStrictlyGreater, -0.2) + Math.pow(disproofNumberStrictlyGreater, -0.2)) / n);
+            Math.log(probStrictlyGreater * (1 - probStrictlyGreater)
+            * Math.max(0.01, Math.pow(proofNumberStrictlyGreater, -0.2) + Math.pow(disproofNumberStrictlyGreater, -0.2)) / n
+            );
       }
     }
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {      

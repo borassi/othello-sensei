@@ -109,7 +109,8 @@ public class Main implements Runnable {
   public void setUI(UI ui) {
     this.ui = ui;
     newGame();
-    setBoard(new Board("--OOOOO---OOOO---XXXOXX--XXOOOXX-XXOXOX-XXXXOXOO---OXO----OOOOO-", false), false);
+//    setBoard(new Board("--OOOOO---OOOO---XXXOXX--XXOOOXX-XXOXOX-XXXXOXOO---OXO----OOOOO-", false), false);
+    setBoard(new Board("---XXXX---XXXO-OXXOXOX-OOOOOXOXO-OOOOXXX---OOOX-----------------", false), false);
   }
   
   public void resetHashMaps() {
