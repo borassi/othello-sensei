@@ -17,6 +17,7 @@ import board.Board;
 import board.GetMoves;
 import constants.Constants;
 import evaluatedepthone.BoardWithEvaluation;
+import evaluatedepthone.FindStableDisks;
 import helpers.Gaussian;
 import helpers.LoadDataset;
 import java.util.ArrayList;
@@ -55,16 +56,15 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
 
   public double logProofNumber(long player, long opponent, int lower, int approxEval) {
     int empties = 64 - Long.bitCount(player | opponent);
-//    return 0.0084 + 0.7193 * empties -0.0861 * Math.log(2 + GetMoves.getNMoves(player, opponent))
-//        -0.2998 * Math.log(2 + GetMoves.getNMoves(opponent, player))
-//        + 0.000786 * (lower - approxEval);
-    return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(opponent, player))
-        +0.000603 * (lower - approxEval);
+    return -3.29 + 0.5395 * empties + 2.4157 * Math.log(1 + GetMoves.getNMoves(opponent, player))
+        -0.000615 * (approxEval - lower);
+//    return -1.7147 + 0.6223 * empties + 1.0554 * Math.log(2 + GetMoves.getNMoves(opponent, player))
+//        +0.000603 * (lower - approxEval);
   }
 
   @Override
   public double disproofNumber(long player, long opponent, int lower, int approxEval) {
-    if (LOG && Math.random() < Math.pow(1.5, Long.bitCount(~(player | opponent))) / 1000 / 30000) {
+    if (LOG && Math.random() < Math.pow(1.5, Long.bitCount(~(player | opponent))) / 1000 / 3000) {
       requests.add(new EndgameTimeEstimatorRequest(player, opponent, lower, approxEval, false));
     }
     return Math.max(1, Math.min(1.27E89, Math.exp(logDisproofNumber(player, opponent, lower, approxEval))));
@@ -72,23 +72,27 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
 
   public double logDisproofNumber(long player, long opponent, int lower, int approxEval) {
     int empties = 64 - Long.bitCount(player | opponent);
-//    return -0.7814 + 0.7461 * empties + 0.0588 * Math.log(2 + GetMoves.getNMoves(player, opponent))
-//        -0.0773 * Math.log(2 + GetMoves.getNMoves(opponent, player))
-//        -0.000840 * (lower - approxEval);
-    return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(player, opponent))
-        -0.0005 * (lower - approxEval);
+    return -3.6659 + 0.5501 * empties + 2.7047 * Math.log(1 + GetMoves.getNMoves(player, opponent))
+        -0.000590 * (lower - approxEval);
+//    return -3.9479 + 0.5727 * empties + 2.7668 * Math.log(1 + GetMoves.getNMoves(player, opponent))
+//        -0.0005 * (lower - approxEval);
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
     EvaluatorMidgame evaluatorMidgame = new EvaluatorMidgame();
     EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, evaluatorMidgame);
     EndgameTimeEstimator endgameTimeEstimator = new EndgameTimeEstimator();
+    FindStableDisks stableDisks = FindStableDisks.load();
 
     ArrayList<BoardWithEvaluation> training = LoadDataset.loadTrainingSet(1990, 1990);
     double sumErrorSquared = 0;
     double nBoards = 0;
     
-    System.out.println("OrigEmpties Empties Lower approxEval nVisited logNVisited playerMoves opponentMoves requestProof eval solved proof disproof");
+
+    System.out.println("requestProof actualProof " +
+                       "nVisited logNVisited " +
+                       "Empties Lower approxEval playerMoves opponentMoves lowerStable upperStable " +
+                       "eval solved proof disproof");
     for (BoardWithEvaluation b : training) {
       int empties = b.board.getEmptySquares();
       if (empties < minEmpties || empties > maxEmpties || Math.random() > subsample) {
@@ -99,33 +103,48 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
       evaluator.evaluatePosition(b.board, -6300, 6300, Long.MAX_VALUE, 20 * 1000, true);
       LOG = false;
       for (EndgameTimeEstimatorRequest request : requests) {
+        Board current = new Board(request.player, request.opponent);
         evaluator.reset();
         evaluatorMidgame.resetHashMap();
-        int eval = evaluator.evaluatePosition(
-            new Board(request.player, request.opponent), request.lower, request.lower, Long.MAX_VALUE, 20 * 1000, true);
+        evaluator.reset();
+        int eval = -evaluator.evaluatePosition(
+            current, request.lower, request.lower, Long.MAX_VALUE, 20 * 1000, true);
         double nVisited = evaluator.getNVisited();
-//        double logNVisited = Math.log(evaluator.getNVisited() + );
-//        double predicted = eval > request.lower ?
-//            endgameTimeEstimator.logProofNumber(b.board.getPlayer(), b.board.getOpponent(), request.lower, request.approxEval) :
-//            endgameTimeEstimator.logDisproofNumber(b.board.getPlayer(), b.board.getOpponent(), request.lower, request.approxEval);
-//        if (logNVisited > 0) {
-          System.out.println(
-              empties + " " + new Board(request.player, request.opponent).getEmptySquares()
-              + " " + request.lower + " " + request.approxEval + " " + nVisited +
-              " " + Math.log(nVisited) + " " + GetMoves.getNMoves(b.board.getPlayer(), b.board.getOpponent()) + " " +
-              GetMoves.getNMoves(b.board.getOpponent(), b.board.getPlayer()) + " " + request.proof + " " + eval
-              + " " + (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) + " " + evaluator.firstPosition.proofNumberGreaterEqual + " " + evaluator.firstPosition.disproofNumberStrictlyGreater
-          );
-//          sumErrorSquared += (predicted - logNVisited) * (predicted - logNVisited);
+        double logNVisited = Math.log(evaluator.getNVisited());
+        double predicted = eval > request.lower ?
+            endgameTimeEstimator.logProofNumber(current.getPlayer(), current.getOpponent(), request.lower, request.approxEval) :
+            endgameTimeEstimator.logDisproofNumber(current.getPlayer(), current.getOpponent(), request.lower, request.approxEval);
+
+        if ((eval > request.lower) != request.proof) {
+          continue;
+        }
+        System.out.println(
+            request.proof + " " + (eval > request.lower) + " " +
+            nVisited + " " + Math.log(nVisited) + " " +
+            current.getEmptySquares() + " " +
+            request.lower + " " + request.approxEval + " " + 
+            GetMoves.getNMoves(current.getPlayer(), current.getOpponent()) + " " +
+            GetMoves.getNMoves(current.getOpponent(), current.getPlayer()) + " " +
+            stableDisks.getLowerBound(current.getPlayer(), current.getOpponent()) + " " +
+            stableDisks.getUpperBound(current.getPlayer(), current.getOpponent()) + " " +
+            eval + " " +
+            (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) + " " +
+            evaluator.firstPosition.proofNumberGreaterEqual + " " +
+            evaluator.firstPosition.disproofNumberStrictlyGreater
+        );
+//        System.out.println(predicted + " " + logNVisited);
+//        if (request.proof) {
+          sumErrorSquared += (predicted - logNVisited) * (predicted - logNVisited);
+          nBoards++;
 //        }
+//        System.out.println("Average squared error: " + Math.sqrt(sumErrorSquared / nBoards));
         
       }
-      nBoards++;
     }
     System.out.println("Average squared error: " + Math.sqrt(sumErrorSquared / nBoards));
   }
   
   public static void main(String args[]) {
-    buildDataset(8, 28, 0.03);
+    buildDataset(8, 20, 0.03);
   }
 }

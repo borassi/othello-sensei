@@ -113,7 +113,7 @@ public class StoredBoardBestDescendant {
           return father.bestChildProofGreaterEqual();
         }
       }
-      if (endgame || father.probGreaterEqual > 1 - 0.01) {
+      if (endgame) {
         if (verbose) System.out.println("Endgame!" + father.probGreaterEqual);
         return father.bestChildEndgameGreaterEqual();
       } else {
@@ -126,7 +126,7 @@ public class StoredBoardBestDescendant {
           return father.bestChildProofStrictlyGreater();
         }
       }
-      if (endgame || father.probStrictlyGreater < 0.01) {
+      if (endgame) {
         if (verbose) System.out.println("Endgame!");
         return father.bestChildEndgameStrictlyGreater();
       } else {
