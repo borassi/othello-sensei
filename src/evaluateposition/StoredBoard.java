@@ -356,7 +356,9 @@ public class StoredBoard {
   
   public double logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.upper < child.evalGoal) {
+    if (
+//        child.probGreaterEqual < Constants.PPN_MIN_COST_LEAF ||  // TODO: ENABLE FOR ESTIMATE.
+        child.upper < child.evalGoal) {
       return Double.NEGATIVE_INFINITY;
     }
     return (1-lambda()) * Math.min(0, Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
@@ -368,7 +370,9 @@ public class StoredBoard {
   
   public double logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.upper <= child.evalGoal) {
+    if (
+//        child.probStrictlyGreater < Constants.PPN_MIN_COST_LEAF ||  // TODO: ENABLE FOR ESTIMATE.
+        child.upper <= child.evalGoal) {
       return Double.NEGATIVE_INFINITY;
     }
     return (1-lambda()) * Math.min(0, Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
