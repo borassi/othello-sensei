@@ -18,17 +18,48 @@ import board.Board;
 import constants.Constants;
 import helpers.Utils;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.PriorityQueue;
 
 /**
  *
  * @author michele
  */
-public class StoredBoardBestDescendant {
+public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDescendant> {
+
   StoredBoard board;
   boolean greaterEqual;
   boolean endgame;
   ArrayList<StoredBoard> parents = new ArrayList<>();
+  double totalLogDerivative = 0;
+
+  public double getTotalLogDerivative() {
+    return totalLogDerivative;
+  }
+  public int getNEmpties() {
+    return board.nEmpties;
+  }
+  public long getPlayer() {
+    return board.getPlayer();
+  }
+  public long getOpponent() {
+    return board.getOpponent();
+  }
+
+  @Override
+  public int compareTo(StoredBoardBestDescendant other) {
+    return Comparator
+        .comparingDouble(StoredBoardBestDescendant::getTotalLogDerivative).reversed()
+        .thenComparingInt(StoredBoardBestDescendant::getNEmpties)
+        .thenComparingLong(StoredBoardBestDescendant::getPlayer)
+        .thenComparingLong(StoredBoardBestDescendant::getOpponent)
+        .compare(this, other);
+  }
+  
+  @Override
+  public String toString() {
+    return getTotalLogDerivative() + " " + board.toString().replace("\n", "");
+  }
 
   public int getAlpha() {
     if (greaterEqual) {
@@ -58,10 +89,16 @@ public class StoredBoardBestDescendant {
     return board == null;
   }
   
-  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, boolean endgame) {
+  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, boolean endgame, double totalLogDerivative) {
     this.board = board;
     this.greaterEqual = greaterEqual;
     this.endgame = endgame;
+    this.totalLogDerivative = totalLogDerivative;
+  }
+  
+  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, boolean endgame) {
+    this(board, greaterEqual, endgame, 0);
+    this.totalLogDerivative = maxLogDerivative();
   }
   
   private void toChild(StoredBoard child) {
@@ -113,9 +150,41 @@ public class StoredBoardBestDescendant {
     return result;
   }
   
-  public static StoredBoard[] bestChildren(StoredBoard father) {
-//    PriorityQueue<StoredBoard> toProcess = new PriorityQueue<>();
-    return null;
+  private double childLogDerivative(StoredBoard child) {
+    return greaterEqual ? board.logDerivativeProbGreaterEqual(child) : board.logDerivativeProbStrictlyGreater(child);
+  }
+  private double maxLogDerivative() {
+    return greaterEqual ? board.maxLogDerivativeProbGreaterEqual : board.maxLogDerivativeProbStrictlyGreater;
+  }
+  
+  // TO CHECK!!!
+  public static ArrayList<StoredBoardBestDescendant> bestDescendants(StoredBoard father, int n) {
+    PriorityQueue<StoredBoardBestDescendant> toProcess = new PriorityQueue<>();
+    ArrayList<StoredBoardBestDescendant> result = new ArrayList<>();
+    toProcess.add(new StoredBoardBestDescendant(father, true, false));
+    toProcess.add(new StoredBoardBestDescendant(father, false, false));
+
+    while (result.size() < n && !toProcess.isEmpty()) {
+      StoredBoardBestDescendant next = toProcess.poll();
+      StoredBoard nextBoard = next.board;
+      if (next.maxLogDerivative() == Double.NEGATIVE_INFINITY) {
+        return result;
+      }
+      if (nextBoard.isLeaf()) {
+        result.add(next);
+        continue;
+      }
+      for (StoredBoard child : next.board.children) {
+        double childLoss = next.totalLogDerivative - next.maxLogDerivative() + next.childLogDerivative(child);
+        assert childLoss <= next.totalLogDerivative + 1E-12;
+        toProcess.add(new StoredBoardBestDescendant(
+            child,
+            !next.greaterEqual,
+            false,
+            childLoss));
+      }
+    }
+    return result;
   }
   
   public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual, boolean endgame, boolean verbose) {
