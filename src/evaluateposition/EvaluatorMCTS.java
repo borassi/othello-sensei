@@ -22,9 +22,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public long nEndgames;
   public long nVisitedEndgames;
+  private long maxNVisited;
+  private long stopTimeMillis;
   
-  int lower;
-  int upper;
+  int lower = -6300;
+  int upper = 6300;
   
   public enum Status {
     NONE,
@@ -164,12 +166,40 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   
   public boolean endgame() {
+//    return false;
     return firstPosition.probGreaterEqual > 1 - 0.01 && firstPosition.probStrictlyGreater < 0.01;
 //    return Math.max(this.firstPosition.maxLogDerivativeProbStrictlyGreater, this.firstPosition.maxLogDerivativeProbGreaterEqual) < -17;
   }
 
   protected StoredBoardBestDescendant nextPositionToImprove() {
-    return StoredBoardBestDescendant.bestDescendant(firstPosition, nextPositionGreaterEqual(), endgame());
+
+    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      if (this.firstPosition.isSolved()) {
+        this.firstPosition.setIsFinished(true);
+      }
+    }
+
+    if (Constants.APPROX_ONLY && this.firstPosition.probGreaterEqual > 1 - 0.02 && this.firstPosition.probStrictlyGreater < 0.02) {
+      status = Status.SOLVED;
+      return StoredBoardBestDescendant.noDescendant();
+    }
+    if (status == Status.KILLING) {
+      status = Status.KILLED;
+      return StoredBoardBestDescendant.noDescendant();
+    }
+    if (this.firstPosition.getDescendants() > maxNVisited) {
+      status = Status.STOPPED_POSITIONS;
+      return StoredBoardBestDescendant.noDescendant();
+    }
+    if (System.currentTimeMillis() > stopTimeMillis) {
+      status = Status.STOPPED_TIME;
+      return StoredBoardBestDescendant.noDescendant();
+    }
+    StoredBoardBestDescendant bestDescendant = StoredBoardBestDescendant.bestDescendant(firstPosition, nextPositionGreaterEqual(), endgame());
+    if (bestDescendant.isNull()) {
+      status = Status.SOLVED;
+    }
+    return bestDescendant;
   }
 
   public short evaluatePosition(Board board) {
@@ -199,17 +229,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     add(firstPosition);
   }
   
-  public void addChildren(StoredBoardBestDescendant fatherPos) {
-    StoredBoard father = fatherPos.board;
-    father.addChildren(this);
-    if (father.children == null) {
+  public void addChildren(StoredBoardBestDescendant position) {
+    addChildren(position, position.board.getBoard().getEmptySquares());
+  }
+  
+  public void addChildren(StoredBoardBestDescendant position, int nEmpties) {
+    StoredBoard board = position.board;
+    board.addChildren(this);
+    if (board.children == null) {
       // Game over.
-      assert father.isSolved();
+      assert board.isSolved();
       return;
     }
-    int depth = 2;
+    int depth = nEmpties < 20 ? 2 : 3;
     long addedPositions = 0;
-    for (StoredBoard child : father.children) {
+    for (StoredBoard child : board.children) {
       if (child.getDescendants() == 0) {
         int eval = evaluatorMidgame.evaluatePosition(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
         child.addDescendants(evaluatorMidgame.getNVisited() + 1);
@@ -217,9 +251,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         addedPositions += child.getDescendants();
       }
     }
-    fatherPos.updateDescendants(addedPositions);
-    father.updateFathers();
-    assert father.isAllOK();
+    position.updateDescendants(addedPositions);
   }
   
   public void solvePosition(StoredBoardBestDescendant position, int nEmpties) {
@@ -259,7 +291,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
     position.updateDescendants(seenPositions);
     board.setEval(curEval);
-    board.updateFathers();
   }
   
   public boolean isSolved() {
@@ -274,6 +305,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
+    this.maxNVisited = maxNVisited;
+    this.stopTimeMillis = System.currentTimeMillis() + maxTimeMillis;
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
@@ -292,8 +325,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       setEvalGoal(firstPosition.getEval());
     }
 
-    long startTime = System.currentTimeMillis();
-    int i = 0;
     StoredBoardBestDescendant nextPos;
     for (nextPos = nextPositionToImprove();
          !nextPos.isNull();
@@ -304,37 +335,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (next != this.firstPosition && next.toBeSolved()) {
         solvePosition(nextPos, nEmpties);
       } else if (this.size < this.maxSize) {
-        addChildren(nextPos);
+        addChildren(nextPos, nEmpties);
       } else {
         deepenPosition(nextPos, nEmpties);
       }
+      next.updateFathers();
       updateEvalGoalIfNeeded();
-      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        if (this.firstPosition.isSolved()) {
-          this.firstPosition.setIsFinished(true);
-        }
-      }
-
-//      System.out.println(this.firstPosition.probGreaterEqual + " " + this.firstPosition.probStrictlyGreater);
-      if (Constants.APPROX_ONLY && this.firstPosition.probGreaterEqual > 1 - 0.02 && this.firstPosition.probStrictlyGreater < 0.02) {
-        status = Status.SOLVED;
-        break;
-      }
-      if (status == Status.KILLING) {
-        status = Status.KILLED;
-        break;
-      }
-      if (this.firstPosition.getDescendants() > maxNVisited) {
-        status = Status.STOPPED_POSITIONS;
-        break;
-      }
-      if (System.currentTimeMillis() - startTime > maxTimeMillis) {
-        status = Status.STOPPED_TIME;
-        break;
-      }
-    }
-    if (nextPos.isNull()) {
-      status = Status.SOLVED;
     }
     return (short) -firstPosition.getEval();
   }

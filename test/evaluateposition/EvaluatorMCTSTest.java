@@ -173,77 +173,75 @@ public class EvaluatorMCTSTest {
   //    -20       -16
   //    0 INF    10  20
   //  INF   0    1K  1K
-  @Test
-  public void testTree() {
-    StoredBoard.endgameTimeEstimator = new EndgameTimeEstimatorForTests();
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(100, 100, EVALUATOR_BASIC);
-    evaluator.lower = -6400;
-    evaluator.upper = 6400;
-    
-    evaluator.setFirstPosition(new Board("e6"));
-    addChildrenWorstEvaluation(evaluator, "");
-    addChildrenWorstEvaluation(evaluator, "f4");
-    addChildrenWorstEvaluation(evaluator, "f4c3");
-
-    StoredBoard e6 = evaluator.get(new Board("e6"));
-    StoredBoard e6f4 = evaluator.get(new Board("e6f4"));
-    StoredBoard e6f4c3 = evaluator.get(new Board("e6f4c3"));
-    StoredBoard e6f4c3c4 = evaluator.get(new Board("e6f4c3c4"));
-    e6f4c3c4.setSolved(-2000);
-
-    StoredBoard e6f4c3d6 = evaluator.get(new Board("e6f4c3d6"));
-    e6f4c3d6.eval = -1600;
-    e6f4c3d6.lower = -6400;
-    e6f4c3d6.upper = 6400;
-    
-    StoredBoard e6f4e3 = evaluator.get(new Board("e6f4e3"));
-    e6f4e3.eval = 2400;
-    e6f4e3.lower = -6400;
-    e6f4e3.upper = 6400;
-    
-    StoredBoard e6f6 = evaluator.get(new Board("e6f6"));
-    e6f6.eval = -1400;
-    e6f6.lower = -1400;
-    e6f6.upper = -1400;
-    
-    StoredBoard e6d6 = evaluator.get(new Board("e6d6"));
-    e6d6.eval = -1200;
-    e6d6.lower = -2000;
-    e6d6.upper = 6400;
-
-    evaluator.setEvalGoal(2000);
-
-    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
-    testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
-    testBoard(e6f4e3, 2400, 30, 40, 1000, 1000);
-    testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
-    testBoard(e6f4, -2000, 10, 1000, 1040, 30);
-    testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-    testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
-    testBoard(e6, 2000, 30, 1040, 1001, 10);
-    assert !evaluator.isSolved();
-
-    assertEquals(e6f4c3d6, evaluator.nextPositionToImprove().board);
-//    assertEquals(e6f4e3, evaluator.nextPositionToImprove().board);
-    e6f4e3.setLower(2200);
-    
-    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
-    testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
-    testBoard(e6f4e3, 2400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-    testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
-    testBoard(e6f4, -2000, 10, Double.POSITIVE_INFINITY, 1000, 0);
-    testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-    testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
-    testBoard(e6, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
-    assert !evaluator.isSolved();
-    
-    evaluator.upper = 2100;
-    assert !evaluator.isSolved();
-
-    evaluator.upper = 2000;
-    assert evaluator.isSolved();
-    StoredBoard.endgameTimeEstimator = new EndgameTimeEstimator();
-  }
+//  @Test
+//  public void testTree() {
+//    StoredBoard.endgameTimeEstimator = new EndgameTimeEstimatorForTests();
+//    EvaluatorMCTS evaluator = new EvaluatorMCTS(100, 100, EVALUATOR_BASIC);
+//    
+//    evaluator.setFirstPosition(new Board("e6"));
+//    addChildrenWorstEvaluation(evaluator, "");
+//    addChildrenWorstEvaluation(evaluator, "f4");
+//    addChildrenWorstEvaluation(evaluator, "f4c3");
+//
+//    StoredBoard e6 = evaluator.get(new Board("e6"));
+//    StoredBoard e6f4 = evaluator.get(new Board("e6f4"));
+//    StoredBoard e6f4c3 = evaluator.get(new Board("e6f4c3"));
+//    StoredBoard e6f4c3c4 = evaluator.get(new Board("e6f4c3c4"));
+//    e6f4c3c4.setSolved(-2000);
+//
+//    StoredBoard e6f4c3d6 = evaluator.get(new Board("e6f4c3d6"));
+//    e6f4c3d6.eval = -1600;
+//    e6f4c3d6.lower = -6400;
+//    e6f4c3d6.upper = 6400;
+//    
+//    StoredBoard e6f4e3 = evaluator.get(new Board("e6f4e3"));
+//    e6f4e3.eval = 2400;
+//    e6f4e3.lower = -6400;
+//    e6f4e3.upper = 6400;
+//    
+//    StoredBoard e6f6 = evaluator.get(new Board("e6f6"));
+//    e6f6.eval = -1400;
+//    e6f6.lower = -1400;
+//    e6f6.upper = -1400;
+//    
+//    StoredBoard e6d6 = evaluator.get(new Board("e6d6"));
+//    e6d6.eval = -1200;
+//    e6d6.lower = -2000;
+//    e6d6.upper = 6400;
+//
+//    evaluator.setEvalGoal(2000);
+//
+//    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
+//    testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
+//    testBoard(e6f4e3, 2400, 30, 40, 1000, 1000);
+//    testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
+//    testBoard(e6f4, -2000, 10, 1000, 1040, 30);
+//    testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+//    testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
+//    testBoard(e6, 2000, 30, 1040, 1001, 10);
+//    assert !evaluator.isSolved();
+//
+//    assertEquals(e6f4c3d6, evaluator.nextPositionToImprove().board);
+////    assertEquals(e6f4e3, evaluator.nextPositionToImprove().board);
+//    e6f4e3.setLower(2200);
+//    
+//    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);
+//    testBoard(e6f4c3d6, -1600, 10, 20, 1000, 1000);
+//    testBoard(e6f4e3, 2400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+//    testBoard(e6f4c3, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
+//    testBoard(e6f4, -2000, 10, Double.POSITIVE_INFINITY, 1000, 0);
+//    testBoard(e6f6, -1400, 0, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+//    testBoard(e6d6, -1200, 0, 1, Double.POSITIVE_INFINITY, 1000);
+//    testBoard(e6, 2000, 0, 1000, Double.POSITIVE_INFINITY, 10);
+//    assert !evaluator.isSolved();
+//    
+//    evaluator.upper = 2100;
+//    assert !evaluator.isSolved();
+//
+//    evaluator.upper = 2000;
+//    assert evaluator.isSolved();
+//    StoredBoard.endgameTimeEstimator = new EndgameTimeEstimator();
+//  }
   
   public void assertIsAllOK(EvaluatorMCTS eval) {
     for (StoredBoard firstBoard : eval.evaluationsHashMap) {
@@ -307,6 +305,7 @@ public class EvaluatorMCTSTest {
         if (moves.length == 0 && (new GetMovesCache()).getMoves(next.getOpponent(), next.getPlayer()) == 0) {
           int correctEval = BitPattern.getEvaluationGameOver(next.getPlayer(), next.getOpponent());
           next.setSolved(correctEval);
+          next.updateFathers();
           continue;
         }
 
@@ -314,18 +313,14 @@ public class EvaluatorMCTSTest {
         eval = Math.max(Math.min(eval, next.getUpper()), next.getLower());
         if (d <= 0.05) {
           next.setLower(eval);
-          next.updateFathers();
-          continue;
         } else if (d <= 0.01) {
           next.setUpper(eval);
-          next.updateFathers();
-          continue;
         } else if (d <= 0.015 || nextPos.board.lower > -6400 || nextPos.board.upper < 6400) {
           next.setSolved(eval);
-          next.updateFathers();
-          continue;
+        } else {
+          evaluator.addChildren(nextPos);
         }
-        evaluator.addChildren(nextPos);
+        next.updateFathers();
         if (Math.random() < 0.1) {
           assertIsAllOK(evaluator);
         }

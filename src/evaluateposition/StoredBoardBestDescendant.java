@@ -18,6 +18,7 @@ import board.Board;
 import constants.Constants;
 import helpers.Utils;
 import java.util.ArrayList;
+import java.util.PriorityQueue;
 
 /**
  *
@@ -69,19 +70,25 @@ public class StoredBoardBestDescendant {
     greaterEqual = !greaterEqual;
     board = child;
   }
+  public static StoredBoardBestDescendant noDescendant() {
+    return new StoredBoardBestDescendant(null, false, false);
+  }
 
   public static StoredBoardBestDescendant bestDescendant(
       StoredBoard father, boolean greaterEqual, boolean endgame) {
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, endgame);
 
-//    System.out.println();
-    int i = 0;
     while (result.board != null && !result.board.isLeaf()) {
       result.toChild(bestChild(
           result.board,
           result.greaterEqual,
           result.endgame,
           false));
+    }
+    if (result.isNull()
+        || (result.greaterEqual && result.board.maxLogDerivativeProbGreaterEqual == Double.NEGATIVE_INFINITY)
+        || (!result.greaterEqual && result.board.maxLogDerivativeProbStrictlyGreater == Double.NEGATIVE_INFINITY)) {
+      result.board = null;
     }
     return result;
   }
@@ -104,6 +111,11 @@ public class StoredBoardBestDescendant {
       result.toChild(fixedChild(result.board, sequence.substring(i, i+2)));
     }
     return result;
+  }
+  
+  public static StoredBoard[] bestChildren(StoredBoard father) {
+//    PriorityQueue<StoredBoard> toProcess = new PriorityQueue<>();
+    return null;
   }
   
   public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual, boolean endgame, boolean verbose) {

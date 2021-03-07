@@ -112,7 +112,6 @@ public class StoredBoard {
     if (nMoves == 0) {
       if (mover.getNMoves(opponent, player) == 0) {
         setSolved(BitPattern.getEvaluationGameOver(player, opponent));
-        assert isAllOK();
         return;
       } else {
         ++nMoves;
@@ -214,7 +213,7 @@ public class StoredBoard {
     this.eval = newEval;
     this.upper = newEval;
     this.setProofNumbersForLeaf();
-    this.updateFathers();
+//    this.updateFathers();
     assert areThisBoardEvalsOK();
   }
 
@@ -223,7 +222,7 @@ public class StoredBoard {
     this.lower = (short) Math.max(lower, newLower);
     this.eval = (short) Math.max(newLower, eval);
     this.setProofNumbersForLeaf();
-    this.updateFathers();
+//    this.updateFathers();
     assert areThisBoardEvalsOK();
   }
 
@@ -232,14 +231,13 @@ public class StoredBoard {
     this.upper = (short) Math.min(upper, newUpper);
     this.eval = (short) Math.min(newUpper, eval);
     this.setProofNumbersForLeaf();
-    this.updateFathers();
+//    this.updateFathers();
     assert areThisBoardEvalsOK();
   }
   
   public final void setEval(int newEval) {
     assert isLeaf();
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
-//    this.updateFathers();
     this.setProofNumbersForLeaf();
     assert areThisBoardEvalsOK();
   }
@@ -353,21 +351,27 @@ public class StoredBoard {
   }
   
   public double logDerivativeProbStrictlyGreater(StoredBoard child) {
+    return child.maxLogDerivativeProbGreaterEqual + logDerivativeEdgeProbStrictlyGreater(child);
+  }
+  
+  public double logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.probGreaterEqual < Constants.PPN_MIN_COST_LEAF) {
+    if (child.upper < child.evalGoal) {
       return Double.NEGATIVE_INFINITY;
     }
-    return child.maxLogDerivativeProbGreaterEqual +
-        (1-lambda()) * Math.min(0, Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
+    return (1-lambda()) * Math.min(0, Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
   }
   
   public double logDerivativeProbGreaterEqual(StoredBoard child) {
+    return child.maxLogDerivativeProbStrictlyGreater + logDerivativeEdgeProbGreaterEqual(child);
+  }
+  
+  public double logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.probStrictlyGreater < Constants.PPN_MIN_COST_LEAF) {
+    if (child.upper <= child.evalGoal) {
       return Double.NEGATIVE_INFINITY;
     }
-    return child.maxLogDerivativeProbStrictlyGreater +
-        (1-lambda()) * Math.min(0, Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
+    return (1-lambda()) * Math.min(0, Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
   }
 
   protected void updateFathers() {
@@ -391,19 +395,19 @@ public class StoredBoard {
     double proofNumberStrictlyGreater = endgameTimeEstimator.proofNumber(player, opponent, evalGoal + 100, this.eval);
     double disproofNumberStrictlyGreater = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval);
     
-    double minDistanceFrom1GE =
-        Math.min(1E-4,
-            Math.max(
-                1.E-10,
-                1.E-12 * proofNumberGreaterEqual)
-        );
-    double minDistanceFrom0SG =
-        Math.min(1E-4, Math.max(
-            1.E-10,
-            1.E-12 * disproofNumberStrictlyGreater));
+    double minDistanceFrom1GE = Constants.PPN_EPSILON;
+//        Math.min(1E-4,
+//            Math.max(
+//                1.E-10,
+//                1.E-12 * proofNumberGreaterEqual)
+//        );
+    double minDistanceFrom0SG = Constants.PPN_EPSILON;
+//        Math.min(1E-4, Math.max(
+//            1.E-10,
+//            1.E-12 * disproofNumberStrictlyGreater));
 
-    probGreaterEqual = Math.min(probGreaterEqual, 1 - minDistanceFrom1GE);
-    probStrictlyGreater = Math.max(probStrictlyGreater, minDistanceFrom0SG);
+    probGreaterEqual = Math.max(minDistanceFrom0SG, Math.min(probGreaterEqual, 1 - minDistanceFrom1GE));
+    probStrictlyGreater = Math.max(minDistanceFrom0SG, Math.min(probStrictlyGreater, 1 - minDistanceFrom1GE));
 
     boolean toBeSolved = this.toBeSolved();
     double n = 2000;
@@ -596,6 +600,8 @@ public class StoredBoard {
         bestValue = logDerivativeProbStrictlyGreater(child);
       }
     }
+    assert (bestValue == Double.NEGATIVE_INFINITY && maxLogDerivativeProbStrictlyGreater == Double.NEGATIVE_INFINITY)
+        || Math.abs(this.maxLogDerivativeProbStrictlyGreater - bestValue) < 1E-12;
 //    assert best != null;
 //    assert logDerivativeProbStrictlyGreater(best) + best.maxLogDerivativeProbStrictlyGreater < 0;
     return best;
@@ -612,6 +618,8 @@ public class StoredBoard {
         bestValue = logDerivativeProbGreaterEqual(child);
       }
     }
+    assert (bestValue == Double.NEGATIVE_INFINITY && maxLogDerivativeProbGreaterEqual == Double.NEGATIVE_INFINITY)
+        || Math.abs(this.maxLogDerivativeProbGreaterEqual - bestValue) < 1E-12;
 //    assert best != null;
     assert bestValue < 0;
     return best;
