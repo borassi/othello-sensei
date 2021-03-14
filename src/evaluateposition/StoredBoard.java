@@ -493,9 +493,14 @@ public class StoredBoard {
     } else if (nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME) {
       return true;
     }
-    return 
-        (getProofNumberGreaterEqual() < Constants.PROOF_NUMBER_FOR_ENDGAME && getEval() > getEvalGoal() + 2000) ||
-        (getDisproofNumberStrictlyGreater() < Constants.PROOF_NUMBER_FOR_ENDGAME && getEval() < getEvalGoal() - 2000);
+//    System.out.println(probGreaterEqual);
+    return
+        (getProofNumberGreaterEqual() < Constants.PROOF_NUMBER_FOR_ENDGAME && this.probGreaterEqual > 0.99) ||
+        (getDisproofNumberStrictlyGreater() < Constants.PROOF_NUMBER_FOR_ENDGAME && this.probGreaterEqual < 0.01);
+//        (this.probGreaterEqual > 0.99 || this.probGreaterEqual < 0.01) &&
+//        (getProofNumberGreaterEqual() * this.probGreaterEqual
+//         + getDisproofNumberStrictlyGreater() * (1 - this.probGreaterEqual)
+//         < Constants.PROOF_NUMBER_FOR_ENDGAME);
   }
 
   @Override

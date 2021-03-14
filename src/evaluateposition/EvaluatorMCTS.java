@@ -19,7 +19,7 @@ import constants.Constants;
 import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
-  private final EvaluatorInterface evaluatorMidgame;
+  private final EvaluatorMidgame evaluatorMidgame;
 
   public long nEndgames;
   public long nVisitedEndgames;
@@ -46,7 +46,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public EvaluatorMCTS(int maxSize, int arraySize,
-                       EvaluatorInterface evaluatorMidgame) {
+                       EvaluatorMidgame evaluatorMidgame) {
     super(maxSize, arraySize);
     this.evaluatorMidgame = evaluatorMidgame;
     this.firstPosition = StoredBoard.initialStoredBoard(new Board());
@@ -88,23 +88,23 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public void updateEvalGoalIfNeeded() {
     int evalGoal = firstPosition.getEvalGoal();
-    while (this.firstPosition.probStrictlyGreater >= 1-1E-8 && evalGoal + 200 <= upper) {
+    while (this.firstPosition.probStrictlyGreater >= 1-1E-8 && evalGoal <= upper) {
       this.setEvalGoal(evalGoal + 200);
       evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
-    while (this.firstPosition.probGreaterEqual <= 1E-8 && evalGoal - 200 >= lower) {
+    while (this.firstPosition.probGreaterEqual <= 1E-8 && evalGoal >= lower) {
       this.setEvalGoal(evalGoal - 200);
       evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
-      while (this.firstPosition.probStrictlyGreater >= 0.6 && evalGoal + 200 <= upper) {
+      while (this.firstPosition.probStrictlyGreater >= 0.6 && evalGoal <= upper) {
         this.setEvalGoal(evalGoal + 200);
         evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      while (this.firstPosition.probGreaterEqual <= 0.4 && evalGoal - 200 >= lower) {
+      while (this.firstPosition.probGreaterEqual <= 0.4 && evalGoal >= lower) {
         this.setEvalGoal(evalGoal - 200);
         evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
@@ -197,20 +197,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
-    if (nextPositions.isEmpty()) {
-      nextPositions = StoredBoardBestDescendant.bestDescendants(firstPosition, 1);
-//      for (StoredBoardBestDescendant nextPosition : nextPositions) {
-//        System.out.println(nextPosition);
-//      }
-    }
-    if (nextPositions.isEmpty()) {
-      status = Status.SOLVED;
-      return null;
-    }
-    StoredBoardBestDescendant result = nextPositions.remove(nextPositions.size() - 1);
-    if (!result.board.isLeaf()) {
-      System.out.println("VERY BIG MISTAKE!");
-    }
+//    if (nextPositions.isEmpty()) {
+//      nextPositions = StoredBoardBestDescendant.bestDescendants(firstPosition, 1);
+////      for (StoredBoardBestDescendant nextPosition : nextPositions) {
+////        System.out.println(nextPosition);
+////      }
+//    }
+//    if (nextPositions.isEmpty()) {
+//      status = Status.SOLVED;
+//      return null;
+//    }
+//    StoredBoardBestDescendant result = nextPositions.remove(nextPositions.size() - 1);
+//    if (!result.board.isLeaf()) {
+//      System.out.println("VERY BIG MISTAKE!");
+//    }
+    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual(), endgame());
     return result;
   }
 
@@ -253,7 +254,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       assert board.isSolved();
       return;
     }
-    int depth = nEmpties < 20 ? 2 : 3;
+    int depth = nEmpties < 24 ? (nEmpties < 21 ? 2 : 1) : 3;
     long addedPositions = 0;
     for (StoredBoard child : board.children) {
       if (child.getDescendants() == 0) {
@@ -314,6 +315,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
+    evaluatorMidgame.constant = 400;
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
@@ -354,6 +356,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       next.updateFathers();
       updateEvalGoalIfNeeded();
+////      if (this.firstPosition.evalGoal == -1200) {
+//        System.out.println(
+//            this.firstPosition.evalGoal + " " + firstPosition.getDescendants() + " "
+//            + firstPosition.probGreaterEqual + " " + firstPosition.probStrictlyGreater);
+////      }
     }
     return (short) -firstPosition.getEval();
   }

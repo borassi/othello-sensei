@@ -21,6 +21,10 @@ import evaluateposition.EndgameTimeEstimator;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMidgame;
 import evaluateposition.HashMap;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class EndgameTest {
   public final static String[] POSITIONS = {
@@ -95,21 +99,30 @@ public class EndgameTest {
   }
 
   public void run() {
-    
+//    try {
+//      Thread.sleep(30000);
+//    } catch (InterruptedException ex) {
+//      Logger.getLogger(EndgameTest.class.getName()).log(Level.SEVERE, null, ex);
+//    }
+    ThreadMXBean thread = ManagementFactory.getThreadMXBean( );
+//    bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime( ) : 0L;
     System.out.print(" num empties        t       nVisPos");
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       System.out.print("          Best");      
     }
-    System.out.println("   nVisPos/sec   nStored  n/end  n/mid  eval");
+    System.out.println("  CPUnVisPos/s   nVisPos/sec   nStored  n/end  n/mid  eval");
     for (int i = 41; i <= 60; i++) { //POSITIONS.length; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       evalMidgame.resetNVisited();
+      long cpuT;
+      cpuT = thread.getCurrentThreadCpuTime();
       long t = System.currentTimeMillis();
 //      int result = evalMidgame.evaluatePosition(b, b.getEmptySquares(), 1, 199);
       int result = -eval.evaluatePosition(b, -6300, 6300, Long.MAX_VALUE, 1200 * 1000, true); //, 0, 1, Long.MAX_VALUE, Long.MAX_VALUE, true);
       t = System.currentTimeMillis() - t;
+      cpuT = thread.getCurrentThreadCpuTime() - cpuT;
       
 //      eval.resetHashMapVisitedPositions();
 //////      eval.evaluatePosition(b, b.getEmptySquares() - 2, -64, 64);
@@ -132,6 +145,7 @@ public class EndgameTest {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
         System.out.print(String.format("%14.0f", eval.getFirstPosition().extraInfo.minProofGreaterEqual + eval.getFirstPosition().extraInfo.minDisproofStrictlyGreater));
       }
+      System.out.print(String.format("%14.0f", eval.getNVisited() * 1000000000. / cpuT));
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));
       System.out.print(String.format("%10d", eval.getNStored()));
       System.out.print(String.format("%7.0f", evalMidgame.nVisitedEndgames / (double) evalMidgame.nEndgames));

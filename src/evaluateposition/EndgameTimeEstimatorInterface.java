@@ -14,22 +14,25 @@
 package evaluateposition;
 
 import board.Board;
-import board.GetMoves;
-import helpers.Gaussian;
 
 /**
  *
  * @author michele
  */
 public abstract class EndgameTimeEstimatorInterface {
+  public abstract double proofNumber(long player, long opponent, int lower, int approxEval);
   public double proofNumber(Board board, int lower, int approxEval) {
     return proofNumber(board.getPlayer(), board.getOpponent(), lower, approxEval);
   }
-  public abstract double proofNumber(long player, long opponent, int lower, int approxEval);
+  public double logProofNumber(long player, long opponent, int lower, int approxEval) {
+    return Math.log(proofNumber(player, opponent, lower, approxEval));
+  }
 
+  public abstract double disproofNumber(long player, long opponent, int lower, int approxEval);
   public double disproofNumber(Board board, int lower, int approxEval) {
     return disproofNumber(board.getPlayer(), board.getOpponent(), lower, approxEval);
   }
-  public abstract double disproofNumber(long player, long opponent, int lower, int approxEval);
-  
+  public double logDisproofNumber(long player, long opponent, int lower, int approxEval) {
+    return Math.log(disproofNumber(player, opponent, lower, approxEval));
+  }
 }

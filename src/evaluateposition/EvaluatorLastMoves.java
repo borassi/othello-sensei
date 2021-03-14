@@ -182,13 +182,13 @@ public class EvaluatorLastMoves {
       int x1, int x2, int x3, long player, long opponent, int lower, int upper,
       int scLastSamePlayerDelta, boolean lastMoveCorner) {
     nVisited++;
-    if (scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_NO_CORNER ||
-        (lastMoveCorner && scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_CORNER)) {
-      int scUpper = stableDisks.getUpperBound(player, opponent);
-      if (scUpper <= lower) {
-        return scUpper;
-      }
-    }
+//    if (scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_NO_CORNER ||
+//        (lastMoveCorner && scLastSamePlayerDelta <= Constants.TRY_SC_LAST_3_CORNER)) {
+//      int scUpper = stableDisks.getUpperBound(player, opponent);
+//      if (scUpper <= lower) {
+//        return scUpper;
+//      }
+//    }
     int best = -6600;
     long flip = GetMoves.getFlip(x1, player, opponent);
     if (flip != 0) {
@@ -270,12 +270,14 @@ public class EvaluatorLastMoves {
   private int evalFourEmpties(
       int x1, int x2, int x3, int x4, long player, long opponent, int lower,
       int upper, int scLastDiffPlayerDelta, int scLastSamePlayerDelta,
-      boolean lastMoveCorner, boolean swap) {
+      boolean lastMoveCorner, boolean swap, long stable) {
     int scCurDelta;
     nVisited++;
     if (scLastSamePlayerDelta <= Constants.TRY_SC_LAST_4_NO_CORNER ||
         (lastMoveCorner && scLastSamePlayerDelta <= Constants.TRY_SC_LAST_4_CORNER)) {
-      int scUpper = stableDisks.getUpperBound(player, opponent);
+      stable = stableDisks.getStableDisks(opponent, player, stable, true);
+      assert stable == stableDisks.getStableDisks(opponent, player);
+      int scUpper = stableDisks.getUpperBoundFromStable(stable, opponent);
       scCurDelta = scUpper - lower;
       if (scCurDelta <= 0) {
         return scUpper;
@@ -293,13 +295,13 @@ public class EvaluatorLastMoves {
   private int evalFiveEmptiesNoCut(
       int x1, int x2, int x3, int x4, int x5, long player, long opponent,
       int lower, int upper, int scLastDiffPlayerDelta, int scLastSamePlayerDelta,
-      boolean swap, long moves) {
+      boolean swap, long moves, long stable) {
     int best = -6600;
     long flip;
     if (((moves & (1L << x1)) != 0) && ((flip = mover5.getFlip(x1)) != 0)) {
       best = -evalFourEmpties(
           x2, x3, x4, x5, opponent & ~flip, player | flip, -upper, -lower,
-          scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap);
+          scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap, stable);
       if (best >= upper) {
         return best;
       }
@@ -307,7 +309,7 @@ public class EvaluatorLastMoves {
     if (((moves & (1L << x2)) != 0) && ((flip = mover5.getFlip(x2)) != 0)) {
       best = Math.max(best, -evalFourEmpties(
           x1, x3, x4, x5, opponent & ~flip, player | flip, -upper, -lower,
-          scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap));
+          scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap, stable));
       if (best >= upper) {
         return best;
       }
@@ -315,7 +317,7 @@ public class EvaluatorLastMoves {
     if (((moves & (1L << x3)) != 0) && ((flip = mover5.getFlip(x3)) != 0)) {
       best = Math.max(best, -evalFourEmpties(
           x1, x2, x4, x5, opponent & ~flip, player | flip, -upper, -lower,
-          scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap));
+          scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, swap, stable));
       if (best >= upper) {
         return best;
       }
@@ -324,11 +326,11 @@ public class EvaluatorLastMoves {
       if (swap) {
         best = Math.max(best, -evalFourEmpties(
             x5, x1, x2, x3, opponent & ~flip, player | flip, -upper, -lower,
-            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false));
+            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false, stable));
       } else {
         best = Math.max(best, -evalFourEmpties(
             x1, x2, x3, x5, opponent & ~flip, player | flip, -upper, -lower,
-            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false));        
+            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false, stable));   
       }
       if (best >= upper) {
         return best;
@@ -338,11 +340,11 @@ public class EvaluatorLastMoves {
       if (swap) {
         return Math.max(best, -evalFourEmpties(
             x4, x1, x2, x3, opponent & ~flip, player | flip, -upper, -lower,
-            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false));
+            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false, stable));
       } else {
         return Math.max(best, -evalFourEmpties(
             x1, x2, x3, x4, opponent & ~flip, player | flip, -upper, -lower,
-            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false));     
+            scLastSamePlayerDelta, scLastDiffPlayerDelta, (flip & CORNERS) != 0, false, stable));     
       }
     }
 
@@ -351,19 +353,21 @@ public class EvaluatorLastMoves {
   
   private int evalFiveEmptiesPassed(
       int x1, int x2, int x3, int x4, int x5, long player, long opponent,
-      int lower, int upper, int scLastDiffPlayerDelta, int scLastSamePlayerDelta) {
+      int lower, int upper, int scLastDiffPlayerDelta, int scLastSamePlayerDelta,
+      long stable) {
     nVisited++;
     long moves = mover5.getMoves(player, opponent);
     if (moves == 0) {
       return BitPattern.getEvaluationGameOver(player, opponent);   
     }
-    return evalFiveEmptiesNoCut(x1, x2, x3, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scLastSamePlayerDelta, false, moves);
+    return evalFiveEmptiesNoCut(x1, x2, x3, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scLastSamePlayerDelta, false, moves, stable);
   }
     
   private int evalFiveEmpties(
       int x1, int x2, int x3, int x4, int x5, long player,
       long opponent, int lower, int upper,
-      int scLastDiffPlayerDelta, int scLastSamePlayerDelta, boolean swap) {
+      int scLastDiffPlayerDelta, int scLastSamePlayerDelta, boolean swap,
+      long stable) {
     assert(x1 != x2 && x1 != x3 && x1 != x4 && x1 != x5);
     assert(x2 != x3 && x2 != x4 && x2 != x5);
     assert(x3 != x4 && x3 != x5);
@@ -371,9 +375,9 @@ public class EvaluatorLastMoves {
     
     long moves = mover5.getMoves(player, opponent);
     if (moves == 0) {
-      return -evalFiveEmptiesPassed(x1, x2, x3, x4, x5, opponent, player, -upper, -lower, scLastSamePlayerDelta, scLastDiffPlayerDelta);
+      return -evalFiveEmptiesPassed(x1, x2, x3, x4, x5, opponent, player, -upper, -lower, scLastSamePlayerDelta, scLastDiffPlayerDelta, stable);
     }
-    return evalFiveEmptiesNoCut(x1, x2, x3, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scLastSamePlayerDelta, swap, moves);
+    return evalFiveEmptiesNoCut(x1, x2, x3, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scLastSamePlayerDelta, swap, moves, stable);
   }
   
   final static int SPACE[] = {
@@ -407,13 +411,15 @@ public class EvaluatorLastMoves {
   private int evalFiveEmpties(
       long player, long opponent, int lower, int upper,
       int scLastDiffPlayerDelta, int scLastSamePlayerDelta,
-      boolean lastMoveCorner) {
+      boolean lastMoveCorner, long stable) {
     nVisited++;
 
     int scCurDelta;
     if (scLastSamePlayerDelta <= Constants.TRY_SC_LAST_5_NO_CORNER ||
         (lastMoveCorner && scLastSamePlayerDelta <= Constants.TRY_SC_LAST_5_CORNER)) {
-      int scUpper = stableDisks.getUpperBound(player, opponent);
+      stable = stableDisks.getStableDisks(opponent, player, stable, true);
+      assert stable == stableDisks.getStableDisks(opponent, player);
+      int scUpper = stableDisks.getUpperBoundFromStable(stable, opponent);
       scCurDelta = scUpper - lower;
       if (scCurDelta <= 0) {
         return scUpper;
@@ -500,15 +506,15 @@ public class EvaluatorLastMoves {
       // x1 >= x2, x1 >= x3 >= x4 >= x5
       if (valueX2 < valueX4) {
         if (valueX2 < valueX5) {
-          return evalFiveEmpties(x1, x3, x4, x5, x2, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x3, x4, x5, x2, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         } else {
-          return evalFiveEmpties(x1, x3, x4, x2, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);             
+          return evalFiveEmpties(x1, x3, x4, x2, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);       
         }
       } else {
         if (valueX2 < valueX3) {
-          return evalFiveEmpties(x1, x3, x2, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x3, x2, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         } else {
-          return evalFiveEmpties(x1, x2, x3, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x2, x3, x4, x5, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         }
       }
     } else {
@@ -524,15 +530,15 @@ public class EvaluatorLastMoves {
       // x1 >= x2, x1 >= x5 >= x3 >= x4
       if (valueX2 < valueX3) {
         if (valueX2 < valueX4) {
-          return evalFiveEmpties(x1, x5, x3, x4, x2, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x5, x3, x4, x2, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         } else {
-          return evalFiveEmpties(x1, x5, x3, x2, x4, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x5, x3, x2, x4, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         }
       } else {
         if (valueX2 < valueX5) {
-          return evalFiveEmpties(x1, x5, x2, x3, x4, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x5, x2, x3, x4, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         } else {
-          return evalFiveEmpties(x1, x2, x5, x3, x4, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2);
+          return evalFiveEmpties(x1, x2, x5, x3, x4, player, opponent, lower, upper, scLastDiffPlayerDelta, scCurDelta, swapLast2, stable);
         }        
       }
     }
@@ -629,14 +635,13 @@ public class EvaluatorLastMoves {
 
   private int evaluateFast(
       long player, long opponent, int lower, int upper, boolean passed,
-      long lastMove, int scLastDiffPlayerDelta, int scLastSamePlayerDelta) {
+      long lastMove, int scLastDiffPlayerDelta, long stable) {
     long empties = ~(player | opponent);
     int nEmpties = Long.bitCount(empties);
     nVisited++;
-//    if (nEmpties <= Constants.EMPTIES_FOR_SUPER_FAST_ENDGAME) {
-//      return evaluateSuperFast(player, opponent, lower, upper, false, 0, 0);
-//    }
-    int scUpper = stableDisks.getUpperBound(player, opponent);
+    stable = stableDisks.getStableDisks(opponent, player, stable, true);
+    assert stable == stableDisks.getStableDisks(opponent, player);
+    int scUpper = stableDisks.getUpperBoundFromStable(stable, opponent);
     if (scUpper <= lower) {
       return scUpper;
     }
@@ -658,7 +663,7 @@ public class EvaluatorLastMoves {
       if (passed) {
         return BitPattern.getEvaluationGameOver(player, opponent);
       }
-      return -evaluateFast(opponent, player, -upper, -lower, true, lastMove, scUpper - lower, scLastDiffPlayerDelta);
+      return -evaluateFast(opponent, player, -upper, -lower, true, lastMove, scUpper - lower, stable);
     }
 
     for (long mask : masksTmp) {
@@ -674,12 +679,12 @@ public class EvaluatorLastMoves {
           best = Math.max(best, 
             -evalFiveEmpties(
                 opponent & ~flip, player | flip, -upper, -Math.max(lower, best),
-                scUpper - lower, scLastDiffPlayerDelta, (moveBit & CORNERS) != 0));  
+                scUpper - lower, scLastDiffPlayerDelta, (moveBit & CORNERS) != 0, stable));  
         } else {
           best = Math.max(best, 
             -evaluateFast(
                 opponent & ~flip, player | flip, -upper, -Math.max(lower, best),
-                false, flip, scUpper - lower, scLastDiffPlayerDelta));        
+                false, flip, scUpper - lower, stable));        
         }
         if (best >= upper) {
           break;
@@ -742,7 +747,7 @@ public class EvaluatorLastMoves {
       player = player & ~(1L << x4);
       opponent = opponent & ~(1L << x4);
       int low = (int) (tmp * 120) - 60;
-      eval.evalFiveEmpties(player, opponent, low, low+1, 0, 0, true);
+      eval.evalFiveEmpties(player, opponent, low, low+1, 0, 0, true, 0);
     }
     t += thread.getCurrentThreadCpuTime();
     System.out.println(new DecimalFormat("#,###.00").format(t / 1000000000.0));

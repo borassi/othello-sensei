@@ -148,7 +148,7 @@ public class FindStableDisksTest {
         + "-XXXX--X\n"
         + "-XXX--X-\n"
         + "XXX--XXX\n");
-    long output = FindStableDisks.getFullRevDiags(~input);
+    long output = FindStableDisks.getFullDiags7(~input);
     long expected = BitPattern.parsePattern(
           "--------\n"
         + "-------X\n"
@@ -161,7 +161,7 @@ public class FindStableDisksTest {
     assertEquals(expected, output);
     input = BitPattern.horizontalMirror(input);
     expected = BitPattern.horizontalMirror(expected);
-    assertEquals(expected, FindStableDisks.getFullDiags(~input));
+    assertEquals(expected, FindStableDisks.getFullDiags9(~input));
   }
   
   @Test

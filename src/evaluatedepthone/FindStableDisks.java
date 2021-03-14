@@ -139,6 +139,7 @@ public class FindStableDisks implements Serializable {
           + "-XXXXXX-\n" 
           + "-XXXXXX-\n" 
           + "--------\n");
+  final static long EDGES = ~CENTRAL;
   final long STABLE_DISKS[];
   public static final String STABLE_DISKS_FILEPATTERN = 
       "coefficients/stable_disks.sar";
@@ -208,7 +209,7 @@ public class FindStableDisks implements Serializable {
     return stableBottom | stableTop | stableRight | stableLeft;
   }
 
-  protected static long getFullRevDiags(long empty) {
+  protected static long getFullDiags7(long empty) {
     long emptyL = empty | ((empty >>> 7) & ALL_MINUS_LAST_COLUMN_PATTERN);
     emptyL = emptyL | ((emptyL >>> 14) & ALL_MINUS_LAST2_COLUMN_PATTERN);
     emptyL = emptyL | ((emptyL >>> 28) & ALL_MINUS_LAST4_COLUMN_PATTERN);
@@ -220,7 +221,7 @@ public class FindStableDisks implements Serializable {
     return ~(emptyL | emptyR);
   }
 
-  protected static long getFullDiags(long empty) {
+  protected static long getFullDiags9(long empty) {
     long emptyL = empty | ((empty << 9) & ALL_MINUS_LAST_COLUMN_PATTERN);
     emptyL = emptyL | ((emptyL << 18) & ALL_MINUS_LAST2_COLUMN_PATTERN);
     emptyL = emptyL | ((emptyL << 36) & ALL_MINUS_LAST4_COLUMN_PATTERN);
@@ -256,23 +257,24 @@ public class FindStableDisks implements Serializable {
     return ~(emptyL | emptyR);
   }
   
-  public long getStableDisks(long player, long opponent) {
-    long stable = getStableDisksEdges(player, opponent);
+  public long getStableDisks(long player, long opponent, long stable, boolean edge) {
+    if (edge) {
+      stable |= getStableDisksEdges(player, opponent);
+    }
     long empties = ~(player | opponent);
     long fullRows = getFullRows(empties);
     long fullColumns = getFullColumns(empties);
-    long fullDiags = getFullDiags(empties);
-    long fullRevDiags = getFullRevDiags(empties);
+    long fullDiags9 = getFullDiags9(empties);
+    long fullDiags7 = getFullDiags7(empties);
+    stable = stable | (fullRows & fullColumns & fullDiags9 & fullDiags7);
     long stablePlayer = stable & player;
-    
-    stable = stable | (fullRows & fullColumns & fullDiags & fullRevDiags);
     long newStable = stablePlayer;
 //    System.out.println(BitPattern.patternToString(stablePlayer));
     while (newStable != 0) {
       newStable = ((stablePlayer << 1) | (stablePlayer >> 1) | fullRows);
       newStable &= ((stablePlayer << 8 | (stablePlayer >> 8) | fullColumns));
-      newStable &= ((stablePlayer << 7 | (stablePlayer >> 7) | fullRevDiags));
-      newStable &= ((stablePlayer << 9 | (stablePlayer >> 9) | fullDiags));
+      newStable &= ((stablePlayer << 7 | (stablePlayer >> 7) | fullDiags7));
+      newStable &= ((stablePlayer << 9 | (stablePlayer >> 9) | fullDiags9));
       newStable = newStable & player & CENTRAL & ~stablePlayer;
       stablePlayer |= newStable;
     }
@@ -280,12 +282,20 @@ public class FindStableDisks implements Serializable {
     return stable | stablePlayer;
   }
   
+  public long getStableDisks(long player, long opponent) {
+    return getStableDisks(player, opponent, 0, true);
+  }
+  
   public int getLowerBound(long player, long opponent) {
     return 200 * Long.bitCount(getStableDisks(player, opponent) & player) - 6400;
   }
   
   public int getUpperBound(long player, long opponent) {
-    return 6400 - 200 * Long.bitCount(getStableDisks(opponent, player) & opponent);
+    return getUpperBoundFromStable(getStableDisks(opponent, player), opponent);
+  }
+  
+  public int getUpperBoundFromStable(long stable, long opponent) {
+    return 6400 - 200 * Long.bitCount(stable & opponent);
   }
   
   public long getStableDisks(Board b) {

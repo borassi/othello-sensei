@@ -174,6 +174,16 @@ public class BitPattern {
           + "--XXXXXX\n"
           + "-XXXXXXX\n");
   final static long TOP_LEFT_TRIANGLE_BIT_PATTERN = ~BOTTOM_RIGHT_TRIANGLE_BIT_PATTERN;
+  final static long CENTRAL = BitPattern.parsePattern(
+            "--------\n" 
+          + "-XXXXXX-\n" 
+          + "-XXXXXX-\n" 
+          + "-XXXXXX-\n" 
+          + "-XXXXXX-\n" 
+          + "-XXXXXX-\n" 
+          + "-XXXXXX-\n" 
+          + "--------\n");
+  final static long EDGE = ~CENTRAL;
 
 
   public final static int getEvaluationGameOver(Board b) {
@@ -437,5 +447,15 @@ public class BitPattern {
     return mainDiagShift > 0 ? 
       MAIN_DIAG7_BIT_PATTERN << mainDiagShift : 
       MAIN_DIAG7_BIT_PATTERN >>> -mainDiagShift;
+  }
+  
+  public final static boolean isEdge(int position) {
+    assert position >= 0;
+    assert position < 64;
+    return ((1L << position) & CENTRAL) != 0;
+  }
+  
+  public final static boolean hasEdge(long bitPattern) {
+    return (bitPattern & EDGE) != 0;
   }
 }
