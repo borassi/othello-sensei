@@ -240,7 +240,6 @@ public class EvaluatorMidgame implements EvaluatorInterface {
     long curMoves = mover.getMoves(player, opponent);
     long flip;
     int nMoves = 0;
-    int value = 0;
 
     while (curMoves != 0) {
       move = Long.numberOfTrailingZeros(curMoves);
@@ -253,13 +252,13 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       curMove.flip = flip;
 //      if (depth > Constants.EMPTIES_FOR_ENDGAME + 2) {
         this.depthOneEvaluator.update(move, flip);
-        value = -(int) StoredBoard.endgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, -upper, this.depthOneEvaluator.eval());   
+        curMove.value = -(int) StoredBoard.endgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, -upper, this.depthOneEvaluator.eval());   
         this.depthOneEvaluator.undoUpdate(move, flip);     
 //      } else {
-//        value = -(GetMoves.getWeightedNMoves(opponent & ~flip, player | flip) << 16);
-//        value |= SQUARE_VALUE[move];
+//        value = 1 + GetMoves.getWeightedNMoves(opponent & ~flip, player | flip);        
+//        curMove.value = -(value * value * value) * 100000;
+////        value |= SQUARE_VALUE[move];
 //      }
-      curMove.value = value;
     }
     Arrays.sort(output, 0, nMoves);
     return nMoves;
@@ -299,7 +298,6 @@ public class EvaluatorMidgame implements EvaluatorInterface {
     int secondBestEval = Integer.MIN_VALUE;
     int secondBestMove = -1;
     int depthZeroEval = depthOneEvaluator.eval();
-    boolean endgame;
     long nVisited;
  
     nComputedMoves++;
@@ -308,11 +306,6 @@ public class EvaluatorMidgame implements EvaluatorInterface {
 
     int nMoves = getMoves(player, opponent, lower, upper, depth, boardInHash, moves);
 
-    if (depth < nEmpties || (nEmpties >= Constants.EMPTIES_FOR_ENDGAME + 3)) {
-      endgame = false;
-    } else if (nEmpties <= Constants.EMPTIES_FOR_ENDGAME) {
-      endgame = true;
-    }
     long newPlayer;
     long newOpponent;
     for (int i = 0; i < nMoves; ++i) {

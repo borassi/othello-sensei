@@ -18,7 +18,6 @@ import board.GetMoves;
 import constants.Constants;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.FindStableDisks;
-import helpers.Gaussian;
 import helpers.LoadDataset;
 import java.util.ArrayList;
 
@@ -54,6 +53,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
     return Math.max(1, Math.min(1.27E89, Math.exp(logProofNumber(player, opponent, lower, approxEval))));
   }
 
+  @Override
   public double logProofNumber(long player, long opponent, int lower, int approxEval) {
     int empties = 64 - Long.bitCount(player | opponent);
     return -3.29 + 0.5395 * empties + 2.4157 * Math.log(1 + GetMoves.getNMoves(opponent, player))
@@ -70,6 +70,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
     return Math.max(1, Math.min(1.27E89, Math.exp(logDisproofNumber(player, opponent, lower, approxEval))));
   }
 
+  @Override
   public double logDisproofNumber(long player, long opponent, int lower, int approxEval) {
     int empties = 64 - Long.bitCount(player | opponent);
     return -3.6659 + 0.5501 * empties + 2.7047 * Math.log(1 + GetMoves.getNMoves(player, opponent))

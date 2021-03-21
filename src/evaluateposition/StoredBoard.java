@@ -495,8 +495,8 @@ public class StoredBoard {
     }
 //    System.out.println(probGreaterEqual);
     return
-        (getProofNumberGreaterEqual() < Constants.PROOF_NUMBER_FOR_ENDGAME && this.probGreaterEqual > 0.99) ||
-        (getDisproofNumberStrictlyGreater() < Constants.PROOF_NUMBER_FOR_ENDGAME && this.probGreaterEqual < 0.01);
+        (getProofNumberGreaterEqual() < Constants.PROOF_NUMBER_FOR_ENDGAME && this.probGreaterEqual > 0.98) ||
+        (getDisproofNumberStrictlyGreater() < Constants.PROOF_NUMBER_FOR_ENDGAME && this.probGreaterEqual < 0.02);
 //        (this.probGreaterEqual > 0.99 || this.probGreaterEqual < 0.01) &&
 //        (getProofNumberGreaterEqual() * this.probGreaterEqual
 //         + getDisproofNumberStrictlyGreater() * (1 - this.probGreaterEqual)

@@ -258,6 +258,7 @@ public class FindStableDisks implements Serializable {
   }
   
   public long getStableDisks(long player, long opponent, long stable, boolean edge) {
+//    return 0;
     if (edge) {
       stable |= getStableDisksEdges(player, opponent);
     }
@@ -294,7 +295,7 @@ public class FindStableDisks implements Serializable {
     return getUpperBoundFromStable(getStableDisks(opponent, player), opponent);
   }
   
-  public int getUpperBoundFromStable(long stable, long opponent) {
+  public static final int getUpperBoundFromStable(long stable, long opponent) {
     return 6400 - 200 * Long.bitCount(stable & opponent);
   }
   

@@ -254,7 +254,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       assert board.isSolved();
       return;
     }
-    int depth = nEmpties < 24 ? (nEmpties < 21 ? 2 : 1) : 3;
+    int depth = nEmpties < 24 ? 2 : 3;
     long addedPositions = 0;
     for (StoredBoard child : board.children) {
       if (child.getDescendants() == 0) {
