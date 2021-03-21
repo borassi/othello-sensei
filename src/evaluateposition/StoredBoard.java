@@ -272,7 +272,7 @@ public class StoredBoard {
   }
   
   public double lambda() {
-    return -5 / Math.max(1, 2 * Math.log(this.descendants)) - 1;
+    return -4 / Math.max(1, 2 * Math.log(this.descendants)) - 1;
   }
   
   protected void updateFather() {
@@ -387,8 +387,8 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0 || extraInfo.isFinished;
-    probGreaterEqual = roundProb(1 - Gaussian.CDF(evalGoal-100, eval, 450 - nEmpties * 4));
-    probStrictlyGreater = roundProb(1 - Gaussian.CDF(evalGoal+100, eval, 450 - nEmpties * 4));
+    probGreaterEqual = roundProb(1 - Gaussian.CDF(evalGoal-100, eval, 460 - nEmpties * 4));
+    probStrictlyGreater = roundProb(1 - Gaussian.CDF(evalGoal+100, eval, 460 - nEmpties * 4));
     assert probGreaterEqual >= probStrictlyGreater;
     double proofNumberGreaterEqual = endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval);
     double disproofNumberGreaterEqual = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal - 100, this.eval);
