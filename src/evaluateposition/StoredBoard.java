@@ -272,7 +272,7 @@ public class StoredBoard {
   }
   
   private double lambda() {
-    return -6 / Math.max(1, 2 * Math.log(this.descendants)) - 0.5;
+    return -6 / Math.max(1, 2 * Math.log(this.descendants)) - 0.6;
   }
   
   protected void updateFather() {
@@ -357,11 +357,13 @@ public class StoredBoard {
   public double logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     if (
-//        child.probGreaterEqual < Constants.PPN_MIN_COST_LEAF ||  // TODO: ENABLE FOR ESTIMATE.
+//        child.probGreaterEqual < 2 * Constants.PPN_EPSILON ||  // TODO: ENABLE FOR ESTIMATE.
         child.upper < child.evalGoal) {
       return Double.NEGATIVE_INFINITY;
     }
-    return (1-lambda()) * Math.min(0, Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
+    return (1-lambda()) * Math.min(0, Math.log((1 - probStrictlyGreater) / child.probGreaterEqual + 
+        (child.probGreaterEqual < 2 * Constants.PPN_EPSILON ? 10 : 0)
+        ));
   }
   
   public double logDerivativeProbGreaterEqual(StoredBoard child) {
@@ -371,11 +373,13 @@ public class StoredBoard {
   public double logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     if (
-//        child.probStrictlyGreater < Constants.PPN_MIN_COST_LEAF ||  // TODO: ENABLE FOR ESTIMATE.
+//        child.probStrictlyGreater < 2 * Constants.PPN_MIN_COST_LEAF ||  // TODO: ENABLE FOR ESTIMATE.
         child.upper <= child.evalGoal) {
       return Double.NEGATIVE_INFINITY;
     }
-    return (1-lambda()) * Math.min(0, Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
+    return (1-lambda()) * Math.min(0, Math.log((1 - probGreaterEqual) / child.probStrictlyGreater + 
+        (child.probGreaterEqual < 2 * Constants.PPN_EPSILON ? 10 : 0)
+    ));
   }
 
   protected void updateFathers() {
@@ -391,8 +395,8 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0 || extraInfo.isFinished;
-    probGreaterEqual = roundProb(1 - Gaussian.CDF(evalGoal-100, eval, 550 - nEmpties * 4));
-    probStrictlyGreater = roundProb(1 - Gaussian.CDF(evalGoal+100, eval, 550 - nEmpties * 4));
+    probGreaterEqual = roundProb(1 - Gaussian.CDF(evalGoal-100, eval, 550 + Math.max(Math.abs(eval) - 2400, 0) * 400 / 6400 - nEmpties * 4));
+    probStrictlyGreater = roundProb(1 - Gaussian.CDF(evalGoal+100, eval, 550 + Math.max(Math.abs(eval) - 2400, 0) * 400 / 6400 - nEmpties * 4));
     assert probGreaterEqual >= probStrictlyGreater;
     double proofNumberGreaterEqual = endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval);
     double disproofNumberGreaterEqual = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal - 100, this.eval);

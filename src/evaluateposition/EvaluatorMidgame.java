@@ -240,6 +240,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
     long curMoves = mover.getMoves(player, opponent);
     long flip;
     int nMoves = 0;
+    int value = 0;
 
     while (curMoves != 0) {
       move = Long.numberOfTrailingZeros(curMoves);
@@ -250,15 +251,15 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       Move curMove = output[nMoves++];
       curMove.move = move;
       curMove.flip = flip;
-//      if (depth > Constants.EMPTIES_FOR_ENDGAME + 2) {
+      if (depth > Constants.EMPTIES_FOR_ENDGAME + 2) {
         this.depthOneEvaluator.update(move, flip);
         curMove.value = -(int) StoredBoard.endgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, -upper, this.depthOneEvaluator.eval());   
         this.depthOneEvaluator.undoUpdate(move, flip);     
-//      } else {
-//        value = 1 + GetMoves.getWeightedNMoves(opponent & ~flip, player | flip);        
-//        curMove.value = -(value * value * value) * 100000;
-////        value |= SQUARE_VALUE[move];
-//      }
+      } else {
+        value = 1 + GetMoves.getWeightedNMoves(opponent & ~flip, player | flip);        
+        curMove.value = -(value * value * value) * 100000;
+//        value |= SQUARE_VALUE[move];
+      }
     }
     Arrays.sort(output, 0, nMoves);
     return nMoves;
