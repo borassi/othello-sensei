@@ -159,9 +159,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             firstPosition.extraInfo.minProofGreaterEqual - firstPosition.extraInfo.minProofGreaterEqualVar;
       }
     }
-    if (!endgame()) {
+    if (firstPosition.isLeaf()) {
+      return true;
+    }
+    if (!endgame() || true) {
 //      System.out.println(this.firstPosition.maxLogDerivativeProbStrictlyGreater + " " + this.firstPosition.maxLogDerivativeProbGreaterEqual);
-      return this.firstPosition.maxLogDerivativeProbStrictlyGreater < this.firstPosition.maxLogDerivativeProbGreaterEqual;
+      return this.firstPosition.maxLogDerivativeProbStrictlyGreater - (firstPosition.lambda() - 1) * Math.log(firstPosition.probStrictlyGreater)
+          < this.firstPosition.maxLogDerivativeProbGreaterEqual - (firstPosition.lambda() - 1) * Math.log(firstPosition.probGreaterEqual);
     }
     return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
   }
@@ -341,7 +345,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
 
     StoredBoardBestDescendant nextPos;
-    for (nextPos = nextPositionToImprove();
+    for (nextPos = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual(), endgame());
          nextPos != null;
          nextPos = nextPositionToImprove()) {
       StoredBoard next = nextPos.board;

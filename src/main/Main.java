@@ -413,8 +413,8 @@ public class Main implements Runnable {
         annotations.otherAnnotations +=
             child.getEvalGoal() / 100 + " " + Utils.prettyPrintDouble(child.getDescendants()) + "\n"
             + Utils.prettyPrintDouble(1-child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1-child.probGreaterEqual) + "\n"
-            + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
-            + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n";
+            + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child) - (current.lambda() - 1) * Math.log(current.probGreaterEqual)) + " "
+            + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child) - (current.lambda() - 1) * Math.log(current.probStrictlyGreater)) + "\n";
         
       }
       ui.setAnnotations(annotations, ij);
