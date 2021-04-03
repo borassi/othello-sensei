@@ -42,6 +42,7 @@ import java.util.Arrays;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
@@ -82,7 +83,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JButton newGame = new JButton("New game");
   private final JButton stop = new JButton("Stop");
   private final JButton resetHashMaps = new JButton("Reset hash maps");
-  private final JSpinner depth;
+  private final JTextField depth;
   private final JSpinner delta;  
   private final JSpinner ffoPositions;
   private final JSpinner lower;
@@ -220,13 +221,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     resetHashMaps.addActionListener((ActionEvent e) -> {
       main.resetHashMaps();
     });
-    
-    SpinnerModel allowedDepths = new SpinnerListModel(Arrays.asList(new String[] 
-      {"0", "1", "100", "1000", "10000", "100000", "1000000", "2000000", "5000000", "10000000",
-      "20000000", "50000000", "100000000", "200000000", "500000000", "1000000000", "100000000000000"
-    }));
-    depth = new JSpinner(allowedDepths);
-    depth.setValue("100000000000000");
+    depth = new JTextField();
+    depth.setText("100000000000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
     
@@ -278,7 +274,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public long depth() {
-    return Long.parseLong((String) depth.getValue());
+    return Long.parseLong((String) depth.getText());
   }
   
   @Override

@@ -23,6 +23,7 @@ import constants.Constants;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.FindStableDisks;
 import evaluatedepthone.PatternEvaluatorImproved;
+import helpers.Gaussian;
 import java.util.Arrays;
 
 public class EvaluatorMidgame implements EvaluatorInterface {
@@ -251,9 +252,12 @@ public class EvaluatorMidgame implements EvaluatorInterface {
       Move curMove = output[nMoves++];
       curMove.move = move;
       curMove.flip = flip;
-      if (depth > Constants.EMPTIES_FOR_ENDGAME + 2) {
+      if (depth > Constants.EMPTIES_FOR_ENDGAME) {
         this.depthOneEvaluator.update(move, flip);
-        curMove.value = -(int) StoredBoard.endgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, -upper, this.depthOneEvaluator.eval());   
+        int eval = this.depthOneEvaluator.eval();
+        curMove.value = -(int) (
+            StoredBoard.endgameTimeEstimator.disproofNumber(opponent & ~flip, player | flip, -upper, eval)
+            / (Gaussian.CDF(-upper, eval, 1000)));   
         this.depthOneEvaluator.undoUpdate(move, flip);     
       } else {
         value = 1 + GetMoves.getWeightedNMoves(opponent & ~flip, player | flip);        
@@ -324,8 +328,8 @@ public class EvaluatorMidgame implements EvaluatorInterface {
             (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
       } else if (
           depth >= nEmpties &&
-          (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 7) &&
-          (nEmpties == Constants.EMPTIES_FOR_ENDGAME + 2 ||
+          (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 3) &&
+          (nEmpties == Constants.EMPTIES_FOR_ENDGAME ||
            (-curMove.value < constant))) {
 //        System.out.print(StoredBoard.endgameTimeEstimator.disproofNumber(newPlayer, newOpponent, -upper, depthOneEvaluator.eval()));
         lastMovesEvaluator.resetNVisited();
@@ -392,9 +396,7 @@ public class EvaluatorMidgame implements EvaluatorInterface {
   
   @Override
   public long getNVisited() {
-    if (this.nVisitedPositions < 0) {
-      throw new RuntimeException("WEIRD, VERY WEIRD!!!");
-    }
+    assert this.nVisitedPositions >= 0;
     return this.nVisitedPositions;
   }
   

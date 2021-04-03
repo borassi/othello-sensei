@@ -362,7 +362,7 @@ public class Main implements Runnable {
     StoredBoard[] children = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(children);
     boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
-    StoredBoard bestChild = StoredBoardBestDescendant.bestChild(current, greaterEqual, EVALUATOR.endgame(), false);
+    StoredBoard bestChild = StoredBoardBestDescendant.bestChild(current, greaterEqual);
 //    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);
     for (StoredBoard child : children) {
       if (child == null) {
@@ -413,8 +413,8 @@ public class Main implements Runnable {
         annotations.otherAnnotations +=
             child.getEvalGoal() / 100 + " " + Utils.prettyPrintDouble(child.getDescendants()) + "\n"
             + Utils.prettyPrintDouble(1-child.probStrictlyGreater) + " " + Utils.prettyPrintDouble(1-child.probGreaterEqual) + "\n"
-            + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child) - (current.lambda() - 1) * Math.log(current.probGreaterEqual)) + " "
-            + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child) - (current.lambda() - 1) * Math.log(current.probStrictlyGreater)) + "\n";
+            + Utils.prettyPrintDouble(current.logDerivativeProbGreaterEqual(child)) + " "
+            + Utils.prettyPrintDouble(current.logDerivativeProbStrictlyGreater(child)) + "\n";
         
       }
       ui.setAnnotations(annotations, ij);

@@ -30,7 +30,6 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 
   StoredBoard board;
   boolean greaterEqual;
-  boolean endgame;
   ArrayList<StoredBoard> parents = new ArrayList<>();
   double totalLogDerivative = 0;
 
@@ -86,21 +85,19 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     }
   }
   
-  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, boolean endgame, double totalLogDerivative) {
+  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, double totalLogDerivative) {
     this.board = board;
     this.greaterEqual = greaterEqual;
-    this.endgame = endgame;
     this.totalLogDerivative = totalLogDerivative;
   }
   private StoredBoardBestDescendant(StoredBoardBestDescendant other) {
     board = other.board;
     greaterEqual = other.greaterEqual;
-    endgame = other.endgame;
     parents = new ArrayList<>(other.parents);
     totalLogDerivative = other.totalLogDerivative;
   }
-  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, boolean endgame) {
-    this(board, greaterEqual, endgame, 0);
+  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual) {
+    this(board, greaterEqual, 0);
     this.totalLogDerivative = maxLogDerivative();
   }
   
@@ -120,19 +117,15 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   }
 
   public static StoredBoardBestDescendant bestDescendant(
-      StoredBoard father, boolean greaterEqual, boolean endgame) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, endgame);
+      StoredBoard father, boolean greaterEqual) {
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
 
     while (result.board != null && !result.board.isLeaf()) {
-      result.toChild(bestChild(
-          result.board,
-          result.greaterEqual,
-          result.endgame,
-          false));
+      result.toChild(bestChild(result.board, result.greaterEqual));
     }
     if (result.board == null
-        || (result.greaterEqual && result.board.maxLogDerivativeProbGreaterEqual == Double.NEGATIVE_INFINITY)
-        || (!result.greaterEqual && result.board.maxLogDerivativeProbStrictlyGreater == Double.NEGATIVE_INFINITY)) {
+        || (result.greaterEqual && result.board.proofNumberGreaterEqual == 0)
+        || (!result.greaterEqual && result.board.disproofNumberStrictlyGreater == 0)) {
       return null;
     }
     return result;
@@ -140,7 +133,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 
   public static StoredBoardBestDescendant randomDescendant(
       StoredBoard father, boolean greaterEqual) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, false);
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
 
     while (result.board != null && !result.board.isLeaf()) {
       result.toChild(randomChild(result.board));
@@ -150,7 +143,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 
   public static StoredBoardBestDescendant fixedDescendant(
       StoredBoard father, boolean greaterEqual, String sequence) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual, false);
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
 
     for (int i = 0; i < sequence.length(); i += 2) {
       result.toChild(fixedChild(result.board, sequence.substring(i, i+2)));
@@ -168,8 +161,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public static ArrayList<StoredBoardBestDescendant> bestDescendants(StoredBoard father, int n) {
     PriorityQueue<StoredBoardBestDescendant> toProcess = new PriorityQueue<>();
     ArrayList<StoredBoardBestDescendant> result = new ArrayList<>();
-    toProcess.add(new StoredBoardBestDescendant(father, true, false));
-    toProcess.add(new StoredBoardBestDescendant(father, false, false));
+    toProcess.add(new StoredBoardBestDescendant(father, true));
+    toProcess.add(new StoredBoardBestDescendant(father, false));
     HashSet<StoredBoard> visitedGreaterEqual = new HashSet<>();
     HashSet<StoredBoard> visitedStrictlyGreater = new HashSet<>();
 
@@ -199,33 +192,21 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     return result;
   }
   
-  public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual, boolean endgame, boolean verbose) {
+  public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual) {
     if (greaterEqual) {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
         if (father.proofNumberGreaterEqual == 0 || father.proofNumberGreaterEqual == Double.POSITIVE_INFINITY) {
           return father.bestChildProofGreaterEqual();
         }
       }
-      if (endgame) {
-        if (verbose) System.out.println("Endgame!" + father.probGreaterEqual);
-        return father.bestChildEndgameGreaterEqual();
-      } else {
-        if (verbose) System.out.println("Midgame!" + father.probGreaterEqual);
-        return father.bestChildMidgameGreaterEqual();
-      }
+      return father.bestChildMidgameGreaterEqual();
     } else {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
         if (father.disproofNumberStrictlyGreater == Double.POSITIVE_INFINITY || father.disproofNumberStrictlyGreater == 0) {
           return father.bestChildProofStrictlyGreater();
         }
       }
-      if (endgame) {
-        if (verbose) System.out.println("Endgame!");
-        return father.bestChildEndgameStrictlyGreater();
-      } else {
-        if (verbose) System.out.println("Midgame!");
-        return father.bestChildMidgameStrictlyGreater();
-      }
+      return father.bestChildMidgameStrictlyGreater();
     }
   }
 

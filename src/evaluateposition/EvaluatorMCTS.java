@@ -88,25 +88,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public void updateEvalGoalIfNeeded() {
     int evalGoal = firstPosition.getEvalGoal();
-    while (this.firstPosition.probStrictlyGreater >= 1-1E-8 && evalGoal <= upper) {
+    if (this.firstPosition.probStrictlyGreater >= 1-1E-8 && evalGoal <= upper) {
       this.setEvalGoal(evalGoal + 200);
-      evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
-    while (this.firstPosition.probGreaterEqual <= 1E-8 && evalGoal >= lower) {
+    if (this.firstPosition.probGreaterEqual <= 1E-8 && evalGoal >= lower) {
       this.setEvalGoal(evalGoal - 200);
-      evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal forced " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
     }
     if (this.firstPosition.getDescendants() > nextUpdateEvalGoal) {
-      while (this.firstPosition.probStrictlyGreater >= 0.6 && evalGoal <= upper) {
+      if (this.firstPosition.getEval() >= evalGoal + 200 && evalGoal + 200 <= upper) {
         this.setEvalGoal(evalGoal + 200);
-        evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
-      while (this.firstPosition.probGreaterEqual <= 0.4 && evalGoal >= lower) {
+      if (this.firstPosition.getEval() <= evalGoal - 200 && evalGoal - 200 >= lower) {
         this.setEvalGoal(evalGoal - 200);
-        evalGoal = firstPosition.getEvalGoal();
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
     }
@@ -143,14 +139,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public boolean nextPositionGreaterEqual() {
-    if (firstPosition.getEvalGoal() > upper) {
+    if (firstPosition.getEvalGoal() > upper || firstPosition.getEvalGoal() >= firstPosition.upper) {
       return true;
-    } else if (firstPosition.getEvalGoal() <= lower) {
-      return false;
-    }
-    if (firstPosition.getEvalGoal() >= firstPosition.upper) {
-      return true;
-    } else if (firstPosition.getEvalGoal() <= firstPosition.lower) {
+    } else if (firstPosition.getEvalGoal() <= lower || firstPosition.getEvalGoal() <= firstPosition.lower) {
       return false;
     }
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
@@ -162,21 +153,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (firstPosition.isLeaf()) {
       return true;
     }
-    if (!endgame() || true) {
-//      System.out.println(this.firstPosition.maxLogDerivativeProbStrictlyGreater + " " + this.firstPosition.maxLogDerivativeProbGreaterEqual);
-      return this.firstPosition.maxLogDerivativeProbStrictlyGreater - (firstPosition.lambda() - 1) * Math.log(firstPosition.probStrictlyGreater)
-          < this.firstPosition.maxLogDerivativeProbGreaterEqual - (firstPosition.lambda() - 1) * Math.log(firstPosition.probGreaterEqual);
+    if (this.firstPosition.probGreaterEqual == 1 && this.firstPosition.probStrictlyGreater == 0) {
+      return this.firstPosition.proofNumberGreaterEqual > this.firstPosition.disproofNumberStrictlyGreater;
     }
-    return this.firstPosition.disproofNumberStrictlyGreater < this.firstPosition.proofNumberGreaterEqual;      
+    return this.firstPosition.probGreaterEqual < 1 - this.firstPosition.probStrictlyGreater;
   }
-  
-  public boolean endgame() {
-//    return false;
-    return firstPosition.probGreaterEqual > 1 - 0.01 && firstPosition.probStrictlyGreater < 0.01;
-//    return Math.max(this.firstPosition.maxLogDerivativeProbStrictlyGreater, this.firstPosition.maxLogDerivativeProbGreaterEqual) < -17;
-  }
-  
-  private ArrayList<StoredBoardBestDescendant> nextPositions = new ArrayList<>();
 
   protected StoredBoardBestDescendant nextPositionToImprove() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
@@ -201,21 +182,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
-//    if (nextPositions.isEmpty()) {
-//      nextPositions = StoredBoardBestDescendant.bestDescendants(firstPosition, 1);
-////      for (StoredBoardBestDescendant nextPosition : nextPositions) {
-////        System.out.println(nextPosition);
-////      }
-//    }
-//    if (nextPositions.isEmpty()) {
-//      status = Status.SOLVED;
-//      return null;
-//    }
-//    StoredBoardBestDescendant result = nextPositions.remove(nextPositions.size() - 1);
-//    if (!result.board.isLeaf()) {
-//      System.out.println("VERY BIG MISTAKE!");
-//    }
-    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual(), endgame());
+    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
     return result;
   }
 
@@ -280,6 +247,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     long seenPositions = evaluatorMidgame.getNVisited() + 1;
     nEndgames++;
     nVisitedEndgames += seenPositions;
+    constant = constant + 0.1 * (10000 - seenPositions);
     position.updateDescendants(seenPositions);
     if (eval <= alpha) {
       // Tricky but probably correct.
@@ -313,19 +281,29 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public boolean isSolved() {
     return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;
   }
-  
+
+  private double constant = 0;
+  public boolean toBeSolved(StoredBoard b) {
+//    System.out.println(constant);
+    return b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
+        && (
+        (b.proofNumberGreaterEqual < 20000 && b.getEval() > b.getEvalGoal() + 2000) ||
+        (b.disproofNumberStrictlyGreater < 20000 && b.getEval() < b.getEvalGoal() - 2000) ||
+        b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME);    
+  }
+
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
     evaluatorMidgame.constant = 400;
+    constant = 10000;
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
     this.maxNVisited = maxNVisited;
     this.stopTimeMillis = System.currentTimeMillis() + maxTimeMillis;
-    nextPositions = new ArrayList<>();
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
@@ -345,13 +323,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
 
     StoredBoardBestDescendant nextPos;
-    for (nextPos = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual(), endgame());
+    for (nextPos = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
          nextPos != null;
          nextPos = nextPositionToImprove()) {
       StoredBoard next = nextPos.board;
       int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
 
-      if (next != this.firstPosition && next.toBeSolved()) {
+      if (next != this.firstPosition && toBeSolved(next)) {
         solvePosition(nextPos, nEmpties);
       } else if (this.size < this.maxSize) {
         addChildren(nextPos, nEmpties);
