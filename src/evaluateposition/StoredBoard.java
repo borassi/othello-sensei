@@ -27,10 +27,10 @@ import java.util.HashSet;
 
 public class StoredBoard {
   public class ExtraInfo {
-    public double minProofGreaterEqual = Double.POSITIVE_INFINITY;
-    public double minDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
-    public double minProofGreaterEqualVar = Double.POSITIVE_INFINITY;
-    public double minDisproofStrictlyGreaterVar = Double.POSITIVE_INFINITY;
+    public float minProofGreaterEqual = Float.POSITIVE_INFINITY;
+    public float minDisproofStrictlyGreater = Float.POSITIVE_INFINITY;
+    public float minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
+    public float minDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
     public boolean isFinished = false;
     public boolean proofBeforeFinished = false;
     public boolean disproofBeforeFinished = false;
@@ -48,14 +48,14 @@ public class StoredBoard {
   int lower;
   int upper;
   int nEmpties;
-  public double probGreaterEqual;
-  public double probStrictlyGreater;
+  public float probGreaterEqual;
+  public float probStrictlyGreater;
   // Positions to prove that eval >= evalGoal.
-  double proofNumberGreaterEqual;
+  float proofNumberGreaterEqual;
   // Positions to prove that eval <= evalGoal.
-  double disproofNumberStrictlyGreater;
-  public double maxLogDerivativeProbStrictlyGreater;
-  public double maxLogDerivativeProbGreaterEqual;
+  float disproofNumberStrictlyGreater;
+  public float maxLogDerivativeProbStrictlyGreater;
+  public float maxLogDerivativeProbGreaterEqual;
   int evalGoal;
   public boolean playerIsStartingPlayer;
   private long descendants;
@@ -183,11 +183,11 @@ public class StoredBoard {
     return eval;
   }
   
-  public double getProofNumberGreaterEqual() {
+  public float getProofNumberGreaterEqual() {
     return proofNumberGreaterEqual;
   }
   
-  public double getDisproofNumberStrictlyGreater() {
+  public float getDisproofNumberStrictlyGreater() {
     return disproofNumberStrictlyGreater;
   }
   
@@ -262,7 +262,7 @@ public class StoredBoard {
     assert areChildrenOK();
   }
 
-  private final static double roundProb(double prob) {
+  private static float roundProb(float prob) {
     if (prob < Constants.PPN_MIN_COST_LEAF) {
       return 0;
     } else if (prob > 1 - Constants.PPN_MIN_COST_LEAF) {
@@ -271,8 +271,8 @@ public class StoredBoard {
     return prob;
   }
   
-  public double lambda() {
-    return -4 / Math.max(1, 2 * Math.log(this.descendants)) - 1;
+  public float lambda() {
+    return -4 / Math.max(1, 2 * (float) Math.log(this.descendants)) - 1;
   }
   
   protected void updateFather() {
@@ -282,10 +282,10 @@ public class StoredBoard {
     upper = Short.MIN_VALUE;
     probGreaterEqual = 1 - children.length;
     probStrictlyGreater = probGreaterEqual;
-    proofNumberGreaterEqual = Double.POSITIVE_INFINITY;
+    proofNumberGreaterEqual = Float.POSITIVE_INFINITY;
     disproofNumberStrictlyGreater = 0;
 
-    double lambda = lambda();
+    float lambda = lambda();
     for (StoredBoard child : children) {
       eval = Math.max(eval, -child.eval);
       lower = Math.max(lower, -child.upper);
@@ -300,19 +300,18 @@ public class StoredBoard {
     } else if (upper < evalGoal) {
       probGreaterEqual = 0;
     } else {
-      probGreaterEqual = roundProb(1 - Math.pow(probGreaterEqual, 1 / lambda));
+      probGreaterEqual = roundProb(1 - (float) Math.pow(probGreaterEqual, 1 / lambda));
     }
     if (lower > evalGoal) {
       probStrictlyGreater = 1;
     } else if (upper <= evalGoal) {
       probStrictlyGreater = 0;
     } else {
-      probStrictlyGreater = roundProb(1 - Math.pow(probStrictlyGreater, 1 / lambda));
+      probStrictlyGreater = roundProb(1 - (float) Math.pow(probStrictlyGreater, 1 / lambda));
     }
-//    proofNumberGreaterEqual = Math.pow(proofNumberGreaterEqual / Math.max(1.E-8, probGreaterEqual), 1 / Constants.PPN_MU);
     assert probGreaterEqual >= probStrictlyGreater;
-    maxLogDerivativeProbStrictlyGreater = Double.NEGATIVE_INFINITY;
-    maxLogDerivativeProbGreaterEqual = Double.NEGATIVE_INFINITY;
+    maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
+    maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
 
     for (StoredBoard child : children) {
       maxLogDerivativeProbStrictlyGreater = Math.max(maxLogDerivativeProbStrictlyGreater, logDerivativeProbStrictlyGreater(child));
@@ -320,11 +319,11 @@ public class StoredBoard {
     }
 
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      extraInfo.minProofGreaterEqual = Double.POSITIVE_INFINITY;
-      extraInfo.minProofGreaterEqualVar = Double.POSITIVE_INFINITY;
+      extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
+      extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
       extraInfo.minDisproofStrictlyGreater = 0;
       extraInfo.minDisproofStrictlyGreaterVar = 0;
-      double extraCostDisproofStrictlyGreaterVar = Double.POSITIVE_INFINITY;
+      float extraCostDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
       extraInfo.proofBeforeFinished = false;
       extraInfo.disproofBeforeFinished = true;
       for (StoredBoard child : children) {
@@ -334,7 +333,7 @@ public class StoredBoard {
         extraInfo.disproofBeforeFinished =extraInfo.disproofBeforeFinished && child.extraInfo.proofBeforeFinished;
         extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
         extraInfo.minDisproofStrictlyGreaterVar += Math.min(child.extraInfo.minProofGreaterEqual, child.extraInfo.minProofGreaterEqualVar);
-        if (extraInfo.minDisproofStrictlyGreaterVar == Double.POSITIVE_INFINITY) {
+        if (extraInfo.minDisproofStrictlyGreaterVar == Float.POSITIVE_INFINITY) {
           extraCostDisproofStrictlyGreaterVar = 0;
         } else {
           extraCostDisproofStrictlyGreaterVar = Math.min(extraCostDisproofStrictlyGreaterVar, child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual);
@@ -346,29 +345,29 @@ public class StoredBoard {
     assert isAllOK();
   }
   
-  public double logDerivativeProbStrictlyGreater(StoredBoard child) {
+  public float logDerivativeProbStrictlyGreater(StoredBoard child) {
     return child.maxLogDerivativeProbGreaterEqual + logDerivativeEdgeProbStrictlyGreater(child);
   }
   
-  public double logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
+  public float logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     assert evalGoal == -child.evalGoal;
     if (child.probGreaterEqual == 0) {
-      return Double.NEGATIVE_INFINITY;
+      return Float.NEGATIVE_INFINITY;
     }
-    return Math.min(0, Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
+    return Math.min(0, (float) Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
   }
   
-  public double logDerivativeProbGreaterEqual(StoredBoard child) {
+  public float logDerivativeProbGreaterEqual(StoredBoard child) {
     return child.maxLogDerivativeProbStrictlyGreater + logDerivativeEdgeProbGreaterEqual(child);
   }
   
-  public double logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
+  public float logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     if (child.probStrictlyGreater == 0) {
-      return Double.NEGATIVE_INFINITY;
+      return Float.NEGATIVE_INFINITY;
     }
-    return Math.min(0, Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
+    return Math.min(0, (float) Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
   }
 
   protected void updateFathers() {
@@ -384,36 +383,36 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0 || extraInfo.isFinished;
-    probGreaterEqual = roundProb(1-Gaussian.CDF(evalGoal-100, eval, 400));
-    probStrictlyGreater = roundProb(1-Gaussian.CDF(evalGoal+100, eval, 400));
+    probGreaterEqual = roundProb(1-(float) Gaussian.CDF(evalGoal-100, eval, 400));
+    probStrictlyGreater = roundProb(1-(float) Gaussian.CDF(evalGoal+100, eval, 400));
     assert probGreaterEqual >= probStrictlyGreater;
 
-    double mult = 0.6;
+    float mult = 0.6F;
 
     if (lower >= evalGoal) {
       this.proofNumberGreaterEqual = 0;
       probGreaterEqual = 1;
-      maxLogDerivativeProbGreaterEqual = Double.NEGATIVE_INFINITY;
+      maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
     } else if (upper < evalGoal) {
-      this.proofNumberGreaterEqual = Double.POSITIVE_INFINITY;
+      this.proofNumberGreaterEqual = Float.POSITIVE_INFINITY;
       probGreaterEqual = 0;
-      maxLogDerivativeProbGreaterEqual = Double.NEGATIVE_INFINITY;
+      maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
     } else {
-      this.maxLogDerivativeProbGreaterEqual = mult * Math.log(probGreaterEqual * (1 - probGreaterEqual));
-      proofNumberGreaterEqual = endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval) / probGreaterEqual;
+      this.maxLogDerivativeProbGreaterEqual = mult * (float) Math.log(probGreaterEqual * (1 - probGreaterEqual));
+      proofNumberGreaterEqual = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval) / probGreaterEqual);
     }
     
     if (upper <= evalGoal) {
       probStrictlyGreater = 0;
       disproofNumberStrictlyGreater = 0;
-      maxLogDerivativeProbStrictlyGreater = Double.NEGATIVE_INFINITY;
+      maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
     } else if (lower > evalGoal) {
       probStrictlyGreater = 1;
-      disproofNumberStrictlyGreater = Double.POSITIVE_INFINITY;
-      maxLogDerivativeProbStrictlyGreater = Double.NEGATIVE_INFINITY;
+      disproofNumberStrictlyGreater = Float.POSITIVE_INFINITY;
+      maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
     } else {
-      maxLogDerivativeProbStrictlyGreater = mult * Math.log((1 - probStrictlyGreater) * (probStrictlyGreater));
-      disproofNumberStrictlyGreater = endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval) / (1 - probStrictlyGreater);
+      maxLogDerivativeProbStrictlyGreater = mult * (float) Math.log((1 - probStrictlyGreater) * (probStrictlyGreater));
+      disproofNumberStrictlyGreater = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval) / (1 - probStrictlyGreater));
     }
     
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {     
@@ -423,10 +422,10 @@ public class StoredBoard {
         }
         EVALUATOR_MIDGAME.resetHashMap();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
-        extraInfo.minProofGreaterEqual = Math.min(extraInfo.proofBeforeFinished ? descendants : Long.MAX_VALUE, EVALUATOR_MIDGAME.getNVisited());
-        extraInfo.minProofGreaterEqualVar = Double.POSITIVE_INFINITY;
+        extraInfo.minProofGreaterEqual = Math.min(extraInfo.proofBeforeFinished ? descendants : Float.POSITIVE_INFINITY, EVALUATOR_MIDGAME.getNVisited());
+        extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
       } else {
-        extraInfo.minProofGreaterEqual = Double.POSITIVE_INFINITY;
+        extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
         extraInfo.minProofGreaterEqualVar = proofNumberGreaterEqual;
       }
       if (upper <= evalGoal) {
@@ -435,10 +434,10 @@ public class StoredBoard {
         }
         EVALUATOR_MIDGAME.resetHashMap();
         EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
-        extraInfo.minDisproofStrictlyGreater = Math.min(extraInfo.disproofBeforeFinished ? descendants : Long.MAX_VALUE, EVALUATOR_MIDGAME.getNVisited());
-        extraInfo.minDisproofStrictlyGreaterVar = Double.POSITIVE_INFINITY;
+        extraInfo.minDisproofStrictlyGreater = Math.min(extraInfo.disproofBeforeFinished ? descendants : Float.POSITIVE_INFINITY, EVALUATOR_MIDGAME.getNVisited());
+        extraInfo.minDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
       } else {
-        extraInfo.minDisproofStrictlyGreater = Double.POSITIVE_INFINITY;
+        extraInfo.minDisproofStrictlyGreater = Float.POSITIVE_INFINITY;
         extraInfo.minDisproofStrictlyGreaterVar = disproofNumberStrictlyGreater;
       }
     }
@@ -480,10 +479,10 @@ public class StoredBoard {
     return children;
   }
 
-//  public double childValueStrictlyGreater(StoredBoard child) {
+//  public float childValueStrictlyGreater(StoredBoard child) {
 //    assert Utils.arrayContains(children, child);
-//    if (child.proofNumberGreaterEqual == 0 || disproofNumberStrictlyGreater == Double.POSITIVE_INFINITY) {
-//      return Double.NEGATIVE_INFINITY;
+//    if (child.proofNumberGreaterEqual == 0 || disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
+//      return Float.NEGATIVE_INFINITY;
 //    }
 ////    if (child.probGreaterEqual > 0.9) {
 ////      return -1E30 * (1 + child.probGreaterEqual);
@@ -493,10 +492,10 @@ public class StoredBoard {
 //    return child.proofNumberGreaterEqual / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberStrictlyGreater, 0.35) / Math.sqrt(child.descendants)));
 //  }
 //  
-//  public double childValueGreaterEqual(StoredBoard child) {
+//  public float childValueGreaterEqual(StoredBoard child) {
 //    assert Utils.arrayContains(children, child);
-//    if (proofNumberGreaterEqual == 0 || child.disproofNumberStrictlyGreater == Double.POSITIVE_INFINITY) {
-//      return Double.NEGATIVE_INFINITY;
+//    if (proofNumberGreaterEqual == 0 || child.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
+//      return Float.NEGATIVE_INFINITY;
 //    }
 ////    if (descendants >= proofNumberGreaterEqual * 0.01) {
 ////      return -child.disproofNumberStrictlyGreater;
@@ -511,9 +510,9 @@ public class StoredBoard {
   // TODO!!!
   public StoredBoard bestChildProofStrictlyGreater() {
     StoredBoard best = null;
-    double bestValue = Double.POSITIVE_INFINITY;
+    float bestValue = Float.POSITIVE_INFINITY;
     for (StoredBoard child : children) {
-      assert child.extraInfo.minProofGreaterEqual < Double.POSITIVE_INFINITY;
+      assert child.extraInfo.minProofGreaterEqual < Float.POSITIVE_INFINITY;
       if (child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual < bestValue) {
         best = child;
         bestValue = child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual;
@@ -524,7 +523,7 @@ public class StoredBoard {
   
   public StoredBoard bestChildProofGreaterEqual() {
     StoredBoard best = null;
-    double bestValue = Double.POSITIVE_INFINITY;
+    float bestValue = Float.POSITIVE_INFINITY;
     for (StoredBoard child : children) {
       if (child.extraInfo.minDisproofStrictlyGreaterVar < bestValue) {
         best = child;
@@ -536,7 +535,7 @@ public class StoredBoard {
 
 //  public StoredBoard bestChildEndgameStrictlyGreater() {
 //    StoredBoard best = null;
-//    double bestValue = Double.NEGATIVE_INFINITY;
+//    float bestValue = Float.NEGATIVE_INFINITY;
 //    for (StoredBoard child : children) {
 //      if (childValueStrictlyGreater(child) > bestValue) {
 //        best = child;
@@ -547,7 +546,7 @@ public class StoredBoard {
 //  }
 //  public StoredBoard bestChildEndgameGreaterEqual() {
 //    StoredBoard best = null;
-//    double bestValue = Double.NEGATIVE_INFINITY;
+//    float bestValue = Float.NEGATIVE_INFINITY;
 //    for (StoredBoard child : children) {
 //      if (childValueGreaterEqual(child) > bestValue) {
 //        best = child;
@@ -560,7 +559,7 @@ public class StoredBoard {
   public StoredBoard bestChildMidgameStrictlyGreater() {
     assert !isLeaf();
     StoredBoard best = null;
-    double bestValue = Double.NEGATIVE_INFINITY;
+    float bestValue = Float.NEGATIVE_INFINITY;
 
     if (probStrictlyGreater == 0) {
       for (StoredBoard child : children) {
@@ -577,7 +576,7 @@ public class StoredBoard {
         }
       }
     }
-    assert (bestValue == Double.NEGATIVE_INFINITY && maxLogDerivativeProbStrictlyGreater == Double.NEGATIVE_INFINITY)
+    assert (bestValue == Float.NEGATIVE_INFINITY && maxLogDerivativeProbStrictlyGreater == Float.NEGATIVE_INFINITY)
         || Math.abs(this.maxLogDerivativeProbStrictlyGreater - bestValue) < 1E-12;
 //    assert best != null;
 //    assert logDerivativeProbStrictlyGreater(best) + best.maxLogDerivativeProbStrictlyGreater < 0;
@@ -587,7 +586,7 @@ public class StoredBoard {
   public StoredBoard bestChildMidgameGreaterEqual() {
     assert !isLeaf();
     StoredBoard best = null;
-    double bestValue = Double.NEGATIVE_INFINITY;
+    float bestValue = Float.NEGATIVE_INFINITY;
 
     if (probGreaterEqual == 1) {
       for (StoredBoard child : children) {
@@ -604,7 +603,7 @@ public class StoredBoard {
         }
       }
     }
-    assert (bestValue == Double.NEGATIVE_INFINITY && maxLogDerivativeProbGreaterEqual == Double.NEGATIVE_INFINITY)
+    assert (bestValue == Float.NEGATIVE_INFINITY && maxLogDerivativeProbGreaterEqual == Float.NEGATIVE_INFINITY)
         || Math.abs(this.maxLogDerivativeProbGreaterEqual - bestValue) < 1E-12;
 //    assert best != null;
     assert bestValue < 0;
@@ -726,7 +725,7 @@ public class StoredBoard {
   boolean isEvalOK() {
     if ((new GetMovesCache()).getNMoves(player, opponent) == 0
         && (new GetMovesCache()).getNMoves(opponent, player) == 0
-        && (this.getProofNumberGreaterEqual() == 0 || this.getProofNumberGreaterEqual() == Double.POSITIVE_INFINITY)) {
+        && (this.getProofNumberGreaterEqual() == 0 || this.getProofNumberGreaterEqual() == Float.POSITIVE_INFINITY)) {
       int correctEval = BitPattern.getEvaluationGameOver(player, opponent);
       if (eval != correctEval || lower != correctEval || upper != correctEval) {
         throw new AssertionError(
@@ -759,7 +758,7 @@ public class StoredBoard {
     if (!Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       return true;
     }
-    if (Double.isNaN(extraInfo.minDisproofStrictlyGreaterVar) || Double.isNaN(extraInfo.minProofGreaterEqualVar)) {
+    if (Float.isNaN(extraInfo.minDisproofStrictlyGreaterVar) || Float.isNaN(extraInfo.minProofGreaterEqualVar)) {
       throw new AssertionError(
           "Got (minDisproofVar, minProofVar) = " + extraInfo.minDisproofStrictlyGreaterVar + " " + extraInfo.minProofGreaterEqualVar
       );      

@@ -16,7 +16,6 @@ package evaluateposition;
 
 import board.Board;
 import constants.Constants;
-import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorMidgame evaluatorMidgame;
@@ -247,7 +246,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     long seenPositions = evaluatorMidgame.getNVisited() + 1;
     nEndgames++;
     nVisitedEndgames += seenPositions;
-    constant = constant + 0.1 * (10000 - seenPositions);
+    constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
     position.updateDescendants(seenPositions);
     if (eval <= alpha) {
       // Tricky but probably correct.
@@ -287,8 +286,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //    System.out.println(constant);
     return b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
         && (
-        (b.proofNumberGreaterEqual < 20000 && b.getEval() > b.getEvalGoal() + 2000) ||
-        (b.disproofNumberStrictlyGreater < 20000 && b.getEval() < b.getEvalGoal() - 2000) ||
+        (b.proofNumberGreaterEqual < constant && b.getEval() > b.getEvalGoal() + 1000) ||
+        (b.disproofNumberStrictlyGreater < constant && b.getEval() < b.getEvalGoal() - 1000) ||
         b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME);    
   }
 
@@ -298,7 +297,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
     evaluatorMidgame.constant = 400;
-    constant = 10000;
+    evaluatorMidgame.nEndgames = 0;
+    evaluatorMidgame.nVisitedEndgames = 0;
+    constant = 0;
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
