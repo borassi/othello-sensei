@@ -459,5 +459,8 @@ int bad = 0;
   @Override
   public void resetHashMap() {
     this.hashMap.reset();
+    constant = 400;
+    nEndgames = 0;
+    nVisitedEndgames = 0;
   }
 }

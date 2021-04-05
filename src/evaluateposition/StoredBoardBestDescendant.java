@@ -31,9 +31,9 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   StoredBoard board;
   boolean greaterEqual;
   ArrayList<StoredBoard> parents = new ArrayList<>();
-  double totalLogDerivative = 0;
+  float totalLogDerivative = 0;
 
-  public double getTotalLogDerivative() {
+  public float getTotalLogDerivative() {
     return totalLogDerivative;
   }
   public int getNEmpties() {
@@ -85,7 +85,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     }
   }
   
-  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, double totalLogDerivative) {
+  private StoredBoardBestDescendant(StoredBoard board, boolean greaterEqual, float totalLogDerivative) {
     this.board = board;
     this.greaterEqual = greaterEqual;
     this.totalLogDerivative = totalLogDerivative;
@@ -151,10 +151,10 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     return result;
   }
   
-  private double childLogDerivative(StoredBoard child) {
+  private float childLogDerivative(StoredBoard child) {
     return greaterEqual ? board.logDerivativeProbGreaterEqual(child) : board.logDerivativeProbStrictlyGreater(child);
   }
-  private double maxLogDerivative() {
+  private float maxLogDerivative() {
     return greaterEqual ? board.maxLogDerivativeProbGreaterEqual : board.maxLogDerivativeProbStrictlyGreater;
   }
 
@@ -169,23 +169,20 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     while (result.size() < n && !toProcess.isEmpty()) {
       StoredBoardBestDescendant next = toProcess.poll();
       StoredBoard nextBoard = next.board;
-      if (next.maxLogDerivative() == Double.NEGATIVE_INFINITY) {
+      if (next.maxLogDerivative() == Float.NEGATIVE_INFINITY) {
         return result;
       }
-      if ((next.greaterEqual && visitedGreaterEqual.contains(nextBoard)) ||
-          (!next.greaterEqual && visitedStrictlyGreater.contains(nextBoard))) {
-        continue;
-      }
-      if (nextBoard.isLeaf()) {
-        result.add(next);
-        visitedGreaterEqual.add(nextBoard);
-        visitedStrictlyGreater.add(nextBoard);
+      if ((next.greaterEqual ? visitedGreaterEqual : visitedStrictlyGreater).contains(nextBoard)) {
         continue;
       }
       (next.greaterEqual ? visitedGreaterEqual : visitedStrictlyGreater).add(nextBoard);
+      if (nextBoard.isLeaf()) {
+        result.add(next);
+        continue;
+      }
       for (StoredBoard child : next.board.children) {
-        double childLoss = next.totalLogDerivative - next.maxLogDerivative() + next.childLogDerivative(child);
-        assert childLoss <= next.totalLogDerivative + 1E-12;
+        float childLoss = next.totalLogDerivative - next.maxLogDerivative() + next.childLogDerivative(child);
+        assert childLoss <= next.totalLogDerivative + 1E-6;
         toProcess.add(next.copyToChild(child));
       }
     }
@@ -195,14 +192,14 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public static StoredBoard bestChild(StoredBoard father, boolean greaterEqual) {
     if (greaterEqual) {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        if (father.proofNumberGreaterEqual == 0 || father.proofNumberGreaterEqual == Double.POSITIVE_INFINITY) {
+        if (father.proofNumberGreaterEqual == 0 || father.proofNumberGreaterEqual == Float.POSITIVE_INFINITY) {
           return father.bestChildProofGreaterEqual();
         }
       }
       return father.bestChildMidgameGreaterEqual();
     } else {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        if (father.disproofNumberStrictlyGreater == Double.POSITIVE_INFINITY || father.disproofNumberStrictlyGreater == 0) {
+        if (father.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY || father.disproofNumberStrictlyGreater == 0) {
           return father.bestChildProofStrictlyGreater();
         }
       }

@@ -16,9 +16,10 @@ package evaluateposition;
 
 import board.Board;
 import constants.Constants;
+import java.util.ArrayList;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
-  private final EvaluatorMidgame evaluatorMidgame;
+  private final EvaluatorInterface evaluatorMidgame;
 
   public long nEndgames;
   public long nVisitedEndgames;
@@ -45,7 +46,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public EvaluatorMCTS(int maxSize, int arraySize,
-                       EvaluatorMidgame evaluatorMidgame) {
+                       EvaluatorInterface evaluatorMidgame) {
     super(maxSize, arraySize);
     this.evaluatorMidgame = evaluatorMidgame;
     this.firstPosition = StoredBoard.initialStoredBoard(new Board());
@@ -158,6 +159,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return this.firstPosition.probGreaterEqual < 1 - this.firstPosition.probStrictlyGreater;
   }
 
+  private ArrayList<StoredBoardBestDescendant> descendants = new ArrayList<>();
   protected StoredBoardBestDescendant nextPositionToImprove() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
@@ -181,6 +183,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
+//    if (descendants.isEmpty()) {
+//      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, 100);
+//      if (descendants.isEmpty()) {
+//        return null;
+//      }
+//    }
+//    return descendants.remove(descendants.size() - 1);
     StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
     return result;
   }
@@ -296,9 +305,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
-    evaluatorMidgame.constant = 400;
-    evaluatorMidgame.nEndgames = 0;
-    evaluatorMidgame.nVisitedEndgames = 0;
+//    evaluatorMidgame.resetHashMap();
     constant = 0;
     status = Status.RUNNING;
     this.lower = lower;

@@ -15,6 +15,7 @@
 package evaluateposition;
 
 import board.Board;
+import helpers.Gaussian;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -45,12 +46,6 @@ public class StoredBoardTest {
     par.eval = 800;
     par.addDescendants(1);
     firstMove.setEvalGoalRecursive(1000);
-    
-    // Proves >= -11.
-    assertEquals(perp.proofNumberGreaterEqual, StoredBoard.endgameTimeEstimator.proofNumber(new Board("e6f4"), -1100, -100), 1);
-    // Proves <= -9.
-    assertEquals(perp.disproofNumberStrictlyGreater, StoredBoard.endgameTimeEstimator.disproofNumber(new Board("e6f4"), -900, -100), 1);
-
     // Diag is much better than par. This means that proof numbers (for the
     // opponent) are harder.
     assert diag.proofNumberGreaterEqual > par.proofNumberGreaterEqual;
@@ -194,7 +189,7 @@ public class StoredBoardTest {
     bothPass.lower = -5600;
     bothPass.upper = -5600;
     bothPass.children = new StoredBoard[0];
-    bothPass.proofNumberGreaterEqual = Double.POSITIVE_INFINITY;
+    bothPass.proofNumberGreaterEqual = Float.POSITIVE_INFINITY;
     bothPass.disproofNumberStrictlyGreater = 0;
     
     assert bothPass.isAllOK();
