@@ -29,84 +29,89 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class StoredBoardBestDescendantTest {
-  EvaluatorInterface EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
-
-  public class AnyLeafDescendant implements Comparable<AnyLeafDescendant> {
-    public StoredBoard board;
-    public float value;
-    public boolean firstPositionGreaterEqual;
-    
-    public AnyLeafDescendant(StoredBoard board, float value, boolean greaterEqual) {
-      assert board.isLeaf();
-      this.board = board;
-      this.value = value;
-      firstPositionGreaterEqual = this.board.playerIsStartingPlayer ? greaterEqual : !greaterEqual;
-    }
-    
-    @Override
-    public int compareTo(AnyLeafDescendant other) {
-      return -Float.compare(value, other.value);
-    }
-  
-    @Override
-    public String toString() {
-      return value + " " + board.toString().replace("\n", "");
-    }
-  }
+  DiskDifferenceEvaluatorPlusTwo EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
 
   public void allDescendantsStrictlyGreater(
-      StoredBoard start, float costParents, ArrayList<AnyLeafDescendant> result) {
-    if (costParents == Float.NEGATIVE_INFINITY) {
+      StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
+    if (start.probStrictlyGreater == 1 || start.disproofNumberStrictlyGreater == 0 || start.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
       return;
     }
     if (start.isLeaf()) {
-      if (start.maxLogDerivativeProbStrictlyGreater > Float.NEGATIVE_INFINITY) {
-        result.add(new AnyLeafDescendant(start, costParents + start.maxLogDerivativeProbStrictlyGreater, false));
-      }
+      result.add(new StoredBoardBestDescendant(start, false, costDerivativeParents, costProofNumberParents));
       return;
     }
-
+    float maxChildrenProofNumber = start.maxFiniteChildrenProofNumber();
     for (StoredBoard child : start.children) {
-      allDescendantsGreaterEqual(
-          child,
-          costParents + start.logDerivativeEdgeProbStrictlyGreater(child),
-          result);
-    }
-  }
-//  
-  public void printDescendants(StoredBoard b, String indent) {
-    System.out.println(
-        indent + b.maxLogDerivativeProbGreaterEqual + " " + b.maxLogDerivativeProbStrictlyGreater + " " + b.getBoard().toString().replace("\n", ""));
-    if (!b.isLeaf()) {
-      for (StoredBoard child : b.children) {
-        printDescendants(child, indent + "  ");
+      if (costDerivativeParents + start.logDerivativeProbStrictlyGreater(child) == Float.NEGATIVE_INFINITY) {
+        allDescendantsGreaterEqual(
+            child,
+            Float.NEGATIVE_INFINITY,
+            costProofNumberParents - maxChildrenProofNumber + child.proofNumberGreaterEqual,
+            result);
+      } else {
+        allDescendantsGreaterEqual(
+            child,
+            costDerivativeParents + start.logDerivativeProbStrictlyGreater(child) - start.maxLogDerivativeProbStrictlyGreater,
+            costProofNumberParents,
+            result);
       }
     }
   }
   
   public void allDescendantsGreaterEqual(
-      StoredBoard start, float costParents, ArrayList<AnyLeafDescendant> result) {
-    if (costParents == Float.NEGATIVE_INFINITY) {
+      StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
+    if (start.proofNumberGreaterEqual == 0 || start.proofNumberGreaterEqual == Float.POSITIVE_INFINITY || start.probGreaterEqual == 0) {
       return;
     }
     if (start.isLeaf()) {
-      if (start.maxLogDerivativeProbGreaterEqual > Float.NEGATIVE_INFINITY) {
-        result.add(new AnyLeafDescendant(start, costParents + start.maxLogDerivativeProbGreaterEqual, false));
-      }
+      result.add(new StoredBoardBestDescendant(start, true, costDerivativeParents, costProofNumberParents));
       return;
     }
-
-    for (StoredBoard child : start.children) {
+    
+    if (costDerivativeParents == Float.NEGATIVE_INFINITY) {
+      StoredBoard bestChild = start.bestChildEndgameGreaterEqual();
       allDescendantsStrictlyGreater(
-          child,
-          costParents + start.logDerivativeEdgeProbGreaterEqual(child),
+          bestChild,
+          Float.NEGATIVE_INFINITY,
+          costProofNumberParents,
           result);
+    } else {
+      StoredBoard bestChild = start.bestChildMidgameGreaterEqual();
+      allDescendantsStrictlyGreater(
+          bestChild,
+          costDerivativeParents - start.maxLogDerivativeProbGreaterEqual + start.logDerivativeProbGreaterEqual(bestChild),
+          costProofNumberParents,
+          result);
+//      for (StoredBoard child : start.children) {
+//        if (child.probStrictlyGreater != 1) {
+//          allDescendantsStrictlyGreater(
+//              child,
+//              costDerivativeParents - start.maxLogDerivativeProbGreaterEqual + start.logDerivativeProbGreaterEqual(child),
+//              costProofNumberParents,
+//              result);
+//        }
+//      }
     }
   }
-  public ArrayList<AnyLeafDescendant> removeDuplicates(ArrayList<AnyLeafDescendant> descendants) {
+
+  public void printDescendants(StoredBoard b, String indent, boolean greaterEqual) {
+    if (greaterEqual) {
+      System.out.print(indent + b.maxLogDerivativeProbGreaterEqual + " " + b.proofNumberGreaterEqual + " " + b.probGreaterEqual);
+    } else {
+      System.out.print(indent + b.maxLogDerivativeProbStrictlyGreater + " " + b.disproofNumberStrictlyGreater + " " + b.probStrictlyGreater);
+    }
+    System.out.println(" " + b.getBoard().toString().replace("\n", ""));
+    if (!b.isLeaf()) {
+      for (StoredBoard child : b.children) {
+        printDescendants(child, indent + "  ", !greaterEqual);
+      }
+    }
+  }
+
+  public ArrayList<StoredBoardBestDescendant> removeDuplicates(ArrayList<StoredBoardBestDescendant> descendants) {
     HashSet<StoredBoard> duplicates = new HashSet<>();
-    ArrayList<AnyLeafDescendant> result = new ArrayList<>();
-    for (AnyLeafDescendant descendant : descendants) {
+    ArrayList<StoredBoardBestDescendant> result = new ArrayList<>();
+    for (StoredBoardBestDescendant descendant : descendants) {
       if (duplicates.contains(descendant.board)) {
         continue;
       }
@@ -116,16 +121,16 @@ public class StoredBoardBestDescendantTest {
     return result;
   }
   
-  public ArrayList<AnyLeafDescendant> allDescendantsGreaterEqual(StoredBoard start) {
-    ArrayList<AnyLeafDescendant> allDescendants = new ArrayList<>();
-    allDescendantsGreaterEqual(start, 0, allDescendants);
+  public ArrayList<StoredBoardBestDescendant> allDescendantsGreaterEqual(StoredBoard start) {
+    ArrayList<StoredBoardBestDescendant> allDescendants = new ArrayList<>();
+    allDescendantsGreaterEqual(start, start.maxLogDerivativeProbGreaterEqual == Float.NEGATIVE_INFINITY ? Float.NEGATIVE_INFINITY : 0, 0, allDescendants);
     Collections.sort(allDescendants);
     return removeDuplicates(allDescendants);
   }
   
-  public ArrayList<AnyLeafDescendant> allDescendantsStrictlyGreater(StoredBoard start) {
-    ArrayList<AnyLeafDescendant> allDescendants = new ArrayList<>();
-    allDescendantsStrictlyGreater(start, 0, allDescendants);
+  public ArrayList<StoredBoardBestDescendant> allDescendantsStrictlyGreater(StoredBoard start) {
+    ArrayList<StoredBoardBestDescendant> allDescendants = new ArrayList<>();
+    allDescendantsStrictlyGreater(start, 0, 0, allDescendants);
     Collections.sort(allDescendants);
     return removeDuplicates(allDescendants);
   }
@@ -134,17 +139,22 @@ public class StoredBoardBestDescendantTest {
     int nElements = 5 + (int) (Math.random() * 100);
     int totalSize = nElements + (int) (Math.random() * 100);
 
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, EVALUATOR_BASIC);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, (EvaluatorInterface) EVALUATOR_BASIC);
 
     evaluator.setFirstPosition(start.getPlayer(), start.getOpponent());
 
     for (int j = 0; j < nElements; j++) {
-      StoredBoardBestDescendant nextPos = StoredBoardBestDescendant.randomDescendant(
-          evaluator.firstPosition, Math.random() > 0.5);
-
-      if (nextPos == null) {
+      StoredBoardBestDescendant nextPos;
+      boolean greaterEqual = Math.random() > 0.5;
+      if (StoredBoardBestDescendant.hasValidDescendants(evaluator.firstPosition, greaterEqual)) {
+        nextPos = StoredBoardBestDescendant.randomDescendant(evaluator.firstPosition, greaterEqual);
+      } else if (StoredBoardBestDescendant.hasValidDescendants(evaluator.firstPosition, !greaterEqual)) {
+        greaterEqual = !greaterEqual;
+        nextPos = StoredBoardBestDescendant.randomDescendant(evaluator.firstPosition, greaterEqual);
+      } else {
         break;
       }
+      assert nextPos != null;
       StoredBoard next = nextPos.board;
       double d = Math.random();
 
@@ -169,26 +179,34 @@ public class StoredBoardBestDescendantTest {
       }
       next.updateFathers();
     }
+//    if (evaluator.firstPosition.probStrictlyGreater == 1 || evaluator.firstPosition.probGreaterEqual == 0) {
+//      return randomEvaluatorMCTS(start);
+//    }
     return evaluator;
   }
   
   public void checkCompatible(
-      ArrayList<AnyLeafDescendant> allDescendants,
+      ArrayList<StoredBoardBestDescendant> allDescendants,
       ArrayList<StoredBoardBestDescendant> bestDescendants) {
     if (allDescendants.isEmpty() || bestDescendants.isEmpty()) {
       assert bestDescendants.isEmpty() && allDescendants.isEmpty();
       return;
     }
+    assert bestDescendants.size() <= allDescendants.size();
     for (int i = 0; i < bestDescendants.size(); ++i) {
-      assertEquals(allDescendants.get(i).value, bestDescendants.get(i).totalLogDerivative, Math.abs(allDescendants.get(i).value) * 1E-4);
+      assertEquals(allDescendants.get(i).derivativeLoss, bestDescendants.get(i).derivativeLoss, Math.abs(allDescendants.get(i).derivativeLoss) * 1E-4);
+      assertEquals(allDescendants.get(i).proofNumberLoss, bestDescendants.get(i).proofNumberLoss, Math.abs(allDescendants.get(i).proofNumberLoss) * 1E-4);
     }
-    float nthValue = allDescendants.get(bestDescendants.size() - 1).value;
+    float nthDerivativeLoss = allDescendants.get(bestDescendants.size() - 1).derivativeLoss;
+    float nthProofNumberLoss = allDescendants.get(bestDescendants.size() - 1).proofNumberLoss;
     for (StoredBoardBestDescendant bestDescendant : bestDescendants) {
       boolean found = false;
-      for (AnyLeafDescendant descendant : allDescendants) {
+      for (StoredBoardBestDescendant descendant : allDescendants) {
         if (bestDescendant.board == descendant.board) {
           found = true;
-          assert descendant.value >= nthValue - Math.abs(nthValue) * 1E-4;
+          assert descendant.derivativeLoss >= nthDerivativeLoss - Math.abs(nthDerivativeLoss) * 1E-4 || (
+              descendant.derivativeLoss == Float.NEGATIVE_INFINITY && nthDerivativeLoss == Float.NEGATIVE_INFINITY);
+          assert descendant.proofNumberLoss >= nthProofNumberLoss - Math.abs(nthProofNumberLoss) * 1E-4;
           break;
         }
       }
@@ -197,7 +215,7 @@ public class StoredBoardBestDescendantTest {
   }
   
   public void checkCompatible(
-      ArrayList<AnyLeafDescendant> descendants,
+      ArrayList<StoredBoardBestDescendant> descendants,
       StoredBoardBestDescendant actual) {
     if (actual == null) {
       checkCompatible(descendants, new ArrayList<>());
@@ -209,22 +227,33 @@ public class StoredBoardBestDescendantTest {
   @Test
   public void testBestDescendant() {
     for (int i = 0; i < 10000; i++) {
-      if (i % 100 == 0) {
+//      if (i % 100 == 0) {
         System.out.println("Done " + i);
-      }
+//      }
+//      Board start = new Board("OO-OOOOOXOOO-O-OO--O-O-OOOO-XOOOOXXOOOOXOOOOOOOOOXOOOOOOOOO-O--O", true);
       Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;
       }
       EvaluatorMCTS evaluator = randomEvaluatorMCTS(start);
-      StoredBoardBestDescendant greaterEqual = evaluator.firstPosition.probGreaterEqual == 0 || evaluator.firstPosition.probGreaterEqual == 1 ?
-          null :
-          StoredBoardBestDescendant.bestDescendant(evaluator.firstPosition, true);
-      checkCompatible(allDescendantsGreaterEqual(evaluator.firstPosition), greaterEqual);
+      StoredBoardBestDescendant greaterEqual = StoredBoardBestDescendant.bestDescendant(evaluator.firstPosition, true);
 
-      StoredBoardBestDescendant strictlyGreater = evaluator.firstPosition.probStrictlyGreater == 0 || evaluator.firstPosition.probStrictlyGreater == 1 ?
-          null :
-          StoredBoardBestDescendant.bestDescendant(evaluator.firstPosition, false);
+//      printDescendants(evaluator.firstPosition, "", true);
+//      System.out.println();
+//      System.out.println(greaterEqual);
+//      for (StoredBoardBestDescendant b : allDescendantsGreaterEqual(evaluator.firstPosition)) {
+//        System.out.println(b);
+//      }
+      checkCompatible(allDescendantsGreaterEqual(evaluator.firstPosition), greaterEqual);
+      StoredBoardBestDescendant strictlyGreater = StoredBoardBestDescendant.bestDescendant(evaluator.firstPosition, false);
+
+      
+//      printDescendants(evaluator.firstPosition, "", false);
+//      System.out.println();
+//      System.out.println(strictlyGreater);
+//      for (StoredBoardBestDescendant b : allDescendantsStrictlyGreater(evaluator.firstPosition)) {
+//        System.out.println(b);
+//      }
       checkCompatible(allDescendantsStrictlyGreater(evaluator.firstPosition), strictlyGreater);
     }
   }
@@ -232,32 +261,31 @@ public class StoredBoardBestDescendantTest {
   @Test
   public void testBestDescendants() {
     for (int i = 0; i < 10000; i++) {
-      if (i % 100 == 0) {
-        System.out.println("Done " + i);
-      }
-      Board start = new Board("OO-OOOOOXOOO-O-OO--O-O-OOOO-XOOOOXXOOOOXOOOOOOOOOXOOOOOOOOO-O--O", true);
-      // Board start = Board.randomBoard();
+      System.out.println("Done " + i);
+//      Board start = new Board("OO-OOOOOXOOO-O-OO--O-O-OOOO-XOOOOXXOOOOXOOOOOOOOOXOOOOOOOOO-O--O", true);
+      Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;
       }
       EvaluatorMCTS evaluator = randomEvaluatorMCTS(start);
-      int n = (int) (Math.random() * 100) + 1;
+      int n = 1;//(int) (Math.random() * 100) + 1;
+      boolean greaterEqual = Math.random() > 0.5;
       
       ArrayList<StoredBoardBestDescendant> actual =
-          StoredBoardBestDescendant.bestDescendants(evaluator.firstPosition, n);
-      ArrayList<AnyLeafDescendant> expected = allDescendantsGreaterEqual(evaluator.firstPosition);
-      expected.addAll(allDescendantsStrictlyGreater(evaluator.firstPosition));
+          StoredBoardBestDescendant.bestDescendants(evaluator.firstPosition, greaterEqual, n);
+      ArrayList<StoredBoardBestDescendant> expected = greaterEqual ? allDescendantsGreaterEqual(evaluator.firstPosition) : allDescendantsStrictlyGreater(evaluator.firstPosition);
 
-      Collections.sort(expected);
-//      System.out.println();
-//      printDescendants(evaluator.firstPosition, "");
+//      System.out.println("\n" + (greaterEqual ? "greaterequal" : "strictlygreater"));
+//      printDescendants(evaluator.firstPosition, "", greaterEqual);
 //      System.out.println(n);
-//      if (actual != null && actual.size() > 1) {
-//        for (int j = 0; j < actual.size(); ++j) {
-//          System.out.println(actual.get(j));
-//          System.out.println(expected.get(j));
-//        }
-//      }
+      for (int j = 0; j < Math.min(n + 5, expected.size()); ++j) {
+        System.out.println(expected.get(j));
+        if (actual.size() <= j) {
+          System.out.println("= -");
+        } else {
+          System.out.println("= " + actual.get(j));
+        }
+      }
       checkCompatible(expected, actual);
 
     }

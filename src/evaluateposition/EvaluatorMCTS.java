@@ -183,15 +183,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
-//    if (descendants.isEmpty()) {
-//      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, 100);
-//      if (descendants.isEmpty()) {
-//        return null;
-//      }
-//    }
-//    return descendants.remove(descendants.size() - 1);
-    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
-    return result;
+    if (descendants.isEmpty()) {
+      boolean greaterEqual = this.nextPositionGreaterEqual();
+      float prob = greaterEqual ? firstPosition.probGreaterEqual : firstPosition.probStrictlyGreater;
+      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, greaterEqual, 1);
+//      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, greaterEqual, (prob == 0 || prob == 1) ? 100 : 1);
+      if (descendants.isEmpty()) {
+        return null;
+      }
+    }
+    return descendants.remove(descendants.size() - 1);
+//    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
+//    return result;
   }
 
   public short evaluatePosition(Board board) {
@@ -315,6 +318,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
+    this.descendants.clear();
 
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent()) {
@@ -346,11 +350,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       next.updateFathers();
       updateEvalGoalIfNeeded();
-////      if (this.firstPosition.evalGoal == -1200) {
-//        System.out.println(
-//            this.firstPosition.evalGoal + " " + firstPosition.getDescendants() + " "
-//            + firstPosition.probGreaterEqual + " " + firstPosition.probStrictlyGreater);
-////      }
     }
     return (short) -firstPosition.getEval();
   }

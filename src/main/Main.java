@@ -362,7 +362,7 @@ public class Main implements Runnable {
     StoredBoard[] children = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(children);
     boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
-    StoredBoard bestChild = StoredBoardBestDescendant.bestChild(current, greaterEqual);
+    StoredBoard bestChild = new StoredBoardBestDescendant(current, greaterEqual).bestChild();
 //    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);
     for (StoredBoard child : children) {
       if (child == null) {
