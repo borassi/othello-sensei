@@ -49,6 +49,15 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
       return Float.compare(other.value, value);
     }
   }
+  public static class Constant {
+    private double value = 150;
+    public synchronized double get() {
+      return value;
+    }
+    public synchronized void update(long nVisited) {
+      value += 0.01 * (150 - nVisited);
+    }
+  }
   
   final DepthOneEvaluator depthOneEvaluator;
   private long nVisited = 0;
@@ -57,7 +66,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   private final FindStableDisks findStableDisks = FindStableDisks.load();
   private final int logNPlusOne[];
   Move[][] moves = new Move[64][64];
-  double constant = 1;
+  static Constant constant = new Constant();
 
   public EvaluatorAlphaBeta() {
     this(PatternEvaluatorImproved.load());
@@ -339,11 +348,11 @@ int bad = 0;
           depth >= nEmpties &&
           (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 3) &&
           (nEmpties == Constants.EMPTIES_FOR_ENDGAME ||
-           (-curMove.value < constant))) {
+           (-curMove.value < constant.get()))) {
         currentEval = -lastMovesEvaluator.evaluate(
             opponent & ~flip, player | flip, -upper, -newLower, flip);
         nVisited = lastMovesEvaluator.getNVisited();
-        constant = constant + 0.01 * (150 - nVisited);
+        constant.update(nVisited);
         this.nVisited += nVisited;
       } else {
         if (depth <= 3 && fast) {
