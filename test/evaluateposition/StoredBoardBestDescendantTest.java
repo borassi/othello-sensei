@@ -29,7 +29,6 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class StoredBoardBestDescendantTest {
-  DiskDifferenceEvaluatorPlusTwo EVALUATOR_BASIC = new DiskDifferenceEvaluatorPlusTwo();
 
   public void allDescendantsStrictlyGreater(
       StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
@@ -139,7 +138,7 @@ public class StoredBoardBestDescendantTest {
     int nElements = 5 + (int) (Math.random() * 100);
     int totalSize = nElements + (int) (Math.random() * 100);
 
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, (EvaluatorInterface) EVALUATOR_BASIC);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize,  () -> new DiskDifferenceEvaluatorPlusTwo());
 
     evaluator.setFirstPosition(start.getPlayer(), start.getOpponent());
 
@@ -272,8 +271,11 @@ public class StoredBoardBestDescendantTest {
       boolean greaterEqual = Math.random() > 0.5;
       
       ArrayList<StoredBoardBestDescendant> actual =
-          StoredBoardBestDescendant.bestDescendants(evaluator.firstPosition, greaterEqual, n);
-      ArrayList<StoredBoardBestDescendant> expected = greaterEqual ? allDescendantsGreaterEqual(evaluator.firstPosition) : allDescendantsStrictlyGreater(evaluator.firstPosition);
+          StoredBoardBestDescendant.bestDescendants(evaluator.firstPosition, n);
+      ArrayList<StoredBoardBestDescendant> expected = allDescendantsGreaterEqual(evaluator.firstPosition);
+      expected.addAll(allDescendantsStrictlyGreater(evaluator.firstPosition));
+      Collections.sort(expected);
+      
 
 //      System.out.println("\n" + (greaterEqual ? "greaterequal" : "strictlygreater"));
 //      printDescendants(evaluator.firstPosition, "", greaterEqual);

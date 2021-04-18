@@ -60,7 +60,6 @@ public class Main implements Runnable {
   boolean blackTurn = true;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final HashMap HASH_MAP;
-  private final EvaluatorAlphaBeta EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   Future future = null;
@@ -84,8 +83,7 @@ public class Main implements Runnable {
   public Main(int hashMapSize) {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     HASH_MAP = new HashMap(hashMapSize);
-    EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(DEPTH_ONE_EVALUATOR, HASH_MAP);
-    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, EVALUATOR_MIDGAME);
+    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, () -> new EvaluatorAlphaBeta(DEPTH_ONE_EVALUATOR, HASH_MAP));
   }
   
   public void stop() {

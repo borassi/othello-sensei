@@ -17,6 +17,7 @@ package evaluateposition;
 import board.Board;
 import constants.Constants;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorInterface evaluatorMidgame;
@@ -40,13 +41,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long nextUpdateEvalGoal;
 
   public EvaluatorMCTS(int maxSize, int arraySize) {
-    this(maxSize, arraySize, new EvaluatorAlphaBeta());
+    this(maxSize, arraySize, () -> new EvaluatorAlphaBeta());
   }
 
   public EvaluatorMCTS(int maxSize, int arraySize,
-                       EvaluatorInterface evaluatorMidgame) {
+                       Supplier<EvaluatorInterface> evaluatorMidgameBuilder) {
     super(maxSize, arraySize);
-    this.evaluatorMidgame = evaluatorMidgame;
+    this.evaluatorMidgame = evaluatorMidgameBuilder.get();
     this.firstPosition = StoredBoard.initialStoredBoard(new Board());
   }
   

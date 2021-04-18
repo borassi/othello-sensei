@@ -197,7 +197,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     while (result.board != null && !result.board.isLeaf()) {
       StoredBoard bestChild = result.bestChild();
       result.toChild(bestChild);
-      assert result.derivativeLoss == 0 || result.derivativeLoss == Float.NEGATIVE_INFINITY;
+      assert result.derivativeLoss == result.maxLogDerivative() || result.derivativeLoss == Float.NEGATIVE_INFINITY;
     }
     return result;
   }

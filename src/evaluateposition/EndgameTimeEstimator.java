@@ -80,8 +80,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
-    EvaluatorAlphaBeta evaluatorMidgame = new EvaluatorAlphaBeta();
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, evaluatorMidgame);
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE);
     EndgameTimeEstimator endgameTimeEstimator = new EndgameTimeEstimator();
     FindStableDisks stableDisks = FindStableDisks.load();
 
