@@ -17,6 +17,10 @@ package evaluateposition;
 import board.Board;
 import constants.Constants;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class HashMap {
   
@@ -25,16 +29,12 @@ public class HashMap {
     public long opponent = 0;
     public int lower;
     public int upper;
+    public int bestMove;
+    public int secondBestMove;
     public int depthLower;
     public int depthUpper;
     public BoardInHash prev;
     public BoardInHash next;
-    public BoardInHash prevToRemove;
-    public BoardInHash nextToRemove;
-    public int bestMove;
-    public int secondBestMove;
-    public double proofNumber;
-    public double disproofNumber;
     
     public EvaluatedBoard toEvaluatedBoard() {
       if (player == 0 && opponent == 0) {
@@ -50,14 +50,13 @@ public class HashMap {
       this.upper = 6600;
       this.depthLower = 0;
       this.depthUpper = 0;
-      this.prevToRemove = null;
-      this.nextToRemove = null;
     }
   
     public boolean isNull() {
-      return depthLower == 0 && depthUpper == 0;
+      return player == 0 && opponent == 0;
     }
-      @Override
+
+    @Override
     public String toString() {
       if (isNull()) {
         return "()\n";
@@ -65,10 +64,6 @@ public class HashMap {
       return new Board(player, opponent).toString() + "\n" + lower + "@" + depthLower + " <= eval <= " + upper + "@" + depthUpper + "\n";
     }
   }
-
-  public BoardInHash prevToRemove = null;
-  public BoardInHash nextToRemove = null;
-  public ArrayList<BoardInHash> myArray;
   
   public static final int hashBoard(long player, long opponent, int maxElements) {
     int newPlayer = (int) ((player + (player >> 32)) * 541725397157L);
@@ -76,48 +71,37 @@ public class HashMap {
     return Math.abs((3 * newPlayer + 17 * newOpponent) % maxElements);
   }
 
-  public BoardInHash evaluationsHashMap[];
+  public final BoardInHash[] boards;
 
-  protected BoardInHash firstToRemove;
-  protected BoardInHash lastToRemove;
+  protected final BoardInHash firstToRemove;
+  protected final BoardInHash lastToRemove;
 
-  private int arraySize;
-  int maxSize;
-  int size;
+  private final int arraySize;
+  private final AtomicInteger size;
   
   public HashMap() {
-    this(Constants.HASH_MAP_SIZE * 2 + 1, Constants.HASH_MAP_SIZE);
+    this(Constants.HASH_MAP_SIZE);
   }
   
-  public HashMap(int arraySize, int maxSize) {
+  public HashMap(int arraySize) {
     this.arraySize = arraySize;
-    this.maxSize = maxSize;
-    this.size = 0;
+    this.size = new AtomicInteger(0);
+    boards = new BoardInHash[arraySize];
+    firstToRemove = new BoardInHash();
+    lastToRemove = new BoardInHash();
     reset();
   }
 
   public final void reset() {
-    evaluationsHashMap = new BoardInHash[arraySize];
-    firstToRemove = new BoardInHash();
-    lastToRemove = new BoardInHash();
-    BoardInHash boards[] = new BoardInHash[maxSize];
-    for (int i = 0; i < maxSize; i++) {
-      BoardInHash b = new BoardInHash();
-      b.player = (long) (Math.random() * Long.MAX_VALUE);
-      boards[i] = b;
-      this.insertBefore(b, evaluationsHashMap[hashBoard(b.player, b.opponent, arraySize)]);
-      evaluationsHashMap[hashBoard(b.player, b.opponent, arraySize)] = b;
+    for (int i = 0; i < boards.length; ++i) {
+      boards[i] = new BoardInHash();
     }
-    for (int i = 0; i < maxSize - 1; i++) {
-      pairToRemove(boards[i], boards[i + 1]);
-    }
-    pairToRemove(firstToRemove, boards[0]);
-    pairToRemove(boards[maxSize - 1], lastToRemove);
-    size = 0;
+    System.gc();
+    this.size.set(0);
   }
   
   public int size() {
-    return size;
+    return size.get();
   }
   
   public BoardInHash getOrAddStoredBoard(Board b) {
@@ -130,26 +114,31 @@ public class HashMap {
   
   public BoardInHash getOrAddStoredBoard(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
-      if (b.player == player && b.opponent == opponent) {
-        this.updateToRemove(b);
-        if (Constants.ASSERT_EXTENDED) {
-          assert(allOk());
+    BoardInHash first = boards[hash];
+    synchronized(first) {
+      for (BoardInHash b = first; b != null; b = b.next) {
+        if (b.player == player && b.opponent == opponent) {
+          if (Constants.ASSERT_EXTENDED) {
+            assert(allOk());
+          }
+          return b;
         }
-        return b;
       }
+      BoardInHash b;
+      if (first.isNull()) {
+        b = first;
+        b.reset(player, opponent);
+      } else {
+        b = new BoardInHash();
+        b.reset(player, opponent);
+        insertAfter(first, b);
+      }
+      size.incrementAndGet();
+//      if (Constants.ASSERT_EXTENDED) {
+//        assert allOk();
+//      }
+      return b;
     }
-    BoardInHash b = removeOneBoard();
-    b.reset(player, opponent);
-    size++;
-    insertBefore(b, evaluationsHashMap[hash]);
-    evaluationsHashMap[hash] = b;
-    addBeforeToRemove(b, lastToRemove);
-    assert evaluationsHashMap[hash].prev == null;
-    if (Constants.ASSERT_EXTENDED) {
-      assert allOk();
-    }
-    return b;
   }
   
   public BoardInHash getStoredBoardNoUpdate(Board b) {    
@@ -158,9 +147,11 @@ public class HashMap {
   
   public BoardInHash getStoredBoardNoUpdate(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
-      if (b.player == player && b.opponent == opponent) {
-        return b;
+    synchronized(boards[hash]) {
+      for (BoardInHash b = boards[hash]; b != null; b = b.next) {
+        if (b.player == player && b.opponent == opponent) {
+          return b;
+        }
       }
     }
     return null;
@@ -168,32 +159,16 @@ public class HashMap {
   
   public BoardInHash getStoredBoard(long player, long opponent) {    
     int hash = hashBoard(player, opponent, arraySize);
-    for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
-      if (b.player == player && b.opponent == opponent) {
-        this.updateToRemove(b);
-        return b;
+    synchronized(boards[hash]) {
+      for (BoardInHash b = boards[hash]; b != null; b = b.next) {
+        if (b.player == player && b.opponent == opponent) {
+          return b;
+        }
       }
     }
     return null;
   }
   
-  private boolean allOk() {
-    for (int hash = 0; hash < evaluationsHashMap.length; ++hash) {
-      if (evaluationsHashMap[hash] != null &&
-          evaluationsHashMap[hash].prev != null) {
-        System.out.println("Wrong prev for board " + evaluationsHashMap[hash] +
-            " at evaluationsHashMap[" + hash + "].");
-        return false;
-      }
-      for (BoardInHash b = evaluationsHashMap[hash]; b != null; b = b.next) {
-        if (hashBoard(b.player, b.opponent, arraySize) != hash) {
-          System.out.println("Wrong hash for board " + b);
-          return false;
-        }
-      }
-    }
-    return true;
-  }
   
   public EvaluatedBoard get(Board b) {
     BoardInHash sb = getStoredBoard(b);
@@ -203,69 +178,25 @@ public class HashMap {
     return sb.toEvaluatedBoard();
   }
   
-  public final static void pairToRemove(BoardInHash prev, BoardInHash next) {
-    prev.nextToRemove = next;
-    next.prevToRemove = prev;
-  }
-  
-  private void insertBefore(BoardInHash b, BoardInHash next) {
-    b.next = next;
-    if (next != null) {
-      b.prev = next.prev;
-      next.prev = b;
+  private void insertAfter(BoardInHash b, BoardInHash newB) {
+    assert hashBoard(b.player, b.opponent, arraySize) == hashBoard(newB.player, newB.opponent, arraySize);
+    assert Thread.holdsLock(boards[hashBoard(b.player, b.opponent, arraySize)]);
+    newB.next = b.next;
+    if (newB.next != null) {
+      newB.next.prev = newB;
     }
-    b.prev = null;
-    assert(b.next != b);
-    assert(b.prev == null || b.prev.next == b);
-    assert(b.next == null || b.next.prev == b);
-  }
-  public final static void addBeforeToRemove(BoardInHash b, BoardInHash next) {
-    pairToRemove(next.prevToRemove, b);
-    pairToRemove(b, next);
-  }
-  
-  public BoardInHash removeOneBoard() {
-    BoardInHash toRemove = firstToRemove.nextToRemove;
-    pairToRemove(firstToRemove, toRemove.nextToRemove);
-
-    if (!toRemove.isNull()) {
-      size--;
-    }
-    if (toRemove.prev == null) {
-      assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] == toRemove);
-      evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] = toRemove.next;
-    } else {
-      assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] != toRemove);
-      toRemove.prev.next = toRemove.next;
-    }
-    if (toRemove.next != null) {
-      toRemove.next.prev = toRemove.prev;
-    }
-    assert(evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)] == null ||
-        evaluationsHashMap[hashBoard(toRemove.player, toRemove.opponent, arraySize)].prev == null);
-    
-    if (Constants.ASSERT_EXTENDED) {
-      assert(allOk());
-    }
-    return toRemove;
-  }
-  
-  public void updateToRemove(BoardInHash b) {
-    // Remove b from the list.
-    pairToRemove(b.prevToRemove, b.nextToRemove);
-    // Add b at the end.
-    addBeforeToRemove(b, lastToRemove); 
-    
-    if (Constants.ASSERT_EXTENDED) {
-      assert(allOk());
-    }
+    newB.prev = b;
+    b.next = newB;
+    assert(newB.next != newB);
+    assert(newB.prev == null || newB.prev.next == newB);
+    assert(newB.next == null || newB.next.prev == newB);
   }
   
   @Override
   public String toString() {
     String result = "";
     int i = 0;
-    for (BoardInHash a : evaluationsHashMap) {
+    for (BoardInHash a : boards) {
       result += i++ + "\n";
       for (BoardInHash b = a; b != null; b = b.next) {
         result += b.toString();
@@ -277,10 +208,12 @@ public class HashMap {
   public void updateUpperBound(long player, long opponent, int eval, int depth, int bestMove, int secondBestMove) {
     BoardInHash evaluation = getOrAddStoredBoard(player, opponent);
 
-    evaluation.upper = eval;
-    evaluation.depthUpper = depth;
-    evaluation.bestMove = bestMove;
-    evaluation.secondBestMove = secondBestMove;    
+    synchronized(evaluation) {
+      evaluation.upper = eval;
+      evaluation.depthUpper = depth;
+      evaluation.bestMove = bestMove;
+      evaluation.secondBestMove = secondBestMove;
+    }
   }
   
   public void updateUpperBound(Board b, int eval, int depth, int bestMove, int secondBestMove) {    
@@ -290,46 +223,70 @@ public class HashMap {
   public void updateLowerBound(long player, long opponent, int eval, int depth, int bestMove, int secondBestMove) {    
     BoardInHash evaluation = getOrAddStoredBoard(player, opponent);
 
-    evaluation.lower = eval;
-    evaluation.depthLower = depth;
-    evaluation.bestMove = bestMove;
-    evaluation.secondBestMove = secondBestMove;    
+    synchronized(evaluation) {
+      evaluation.lower = eval;
+      evaluation.depthLower = depth;
+      evaluation.bestMove = bestMove;
+      evaluation.secondBestMove = secondBestMove;
+    }
   }
   
   public void updateLowerBound(Board b, int eval, int depth, int bestMove, int secondBestMove) {    
     updateLowerBound(b.getPlayer(), b.getOpponent(), eval, depth, bestMove, secondBestMove);
   }
   
-  public static void main(String args[]) {
-    
-    int N = 10000000;
-    int nElements = N / 2 + 1;
-    HashMap visitedPositions = 
-      new HashMap(N, nElements);
-    long t = System.currentTimeMillis();
-    long maxNIter = 100000;
-    int intIter = 1000;
-    for (int nIter = 0; nIter < maxNIter; nIter++) {
-      Board board = new Board((long) (Math.random() * Long.MAX_VALUE), 
-                            (long) (Math.random() * Long.MAX_VALUE));
-      int eval = (int) ((Math.random() - 0.5) * 12800);
-      int depth = (int) (Math.random() * 6000);
-      int value = 0;
-      for (int i = 0; i < intIter; ++i) {
-        visitedPositions.updateLowerBound(board, eval, depth, -1, -1);
-        visitedPositions.updateUpperBound(board, eval, depth, -1, -1);
-        value += visitedPositions.get(board).depthUpper;
+  boolean allOk() {
+    long testSize = 0;
+    for (int hash = 0; hash < boards.length; ++hash) {
+      if (boards[hash] != null && boards[hash].prev != null) {
+        System.out.println("Wrong prev for board " + boards[hash] +
+            " at evaluationsHashMap[" + hash + "].");
+        return false;
       }
-      if (nIter * intIter % 1000000 == 0) {
-        System.out.println(nIter + " " + (System.currentTimeMillis() - t));
-      }
-      
-
-      if (value - intIter * depth != 0) {
-        System.out.println("BIG MISTAKE!!");
+      for (BoardInHash b = boards[hash]; b != null; b = b.next) {
+        if (b.isNull()) {
+          continue;
+        }
+        ++testSize;
+        if (hashBoard(b.player, b.opponent, arraySize) != hash) {
+          System.out.println("Wrong hash for board " + b);
+          return false;
+        }
       }
     }
-    System.out.println(intIter * maxNIter + " " + (System.currentTimeMillis() - t));
-    System.out.println(intIter * maxNIter * 1000 / (System.currentTimeMillis() - t));
+    return testSize == this.size.get();
   }
+  
+//  public static void main(String args[]) {
+//    
+//    int N = 10000000;
+//    int nElements = N / 2 + 1;
+//    HashMap visitedPositions = 
+//      new HashMap(N, nElements);
+//    long t = System.currentTimeMillis();
+//    long maxNIter = 100000;
+//    int intIter = 1000;
+//    for (int nIter = 0; nIter < maxNIter; nIter++) {
+//      Board board = new Board((long) (Math.random() * Long.MAX_VALUE), 
+//                            (long) (Math.random() * Long.MAX_VALUE));
+//      int eval = (int) ((Math.random() - 0.5) * 12800);
+//      int depth = (int) (Math.random() * 6000);
+//      int value = 0;
+//      for (int i = 0; i < intIter; ++i) {
+//        visitedPositions.updateLowerBound(board, eval, depth, -1, -1);
+//        visitedPositions.updateUpperBound(board, eval, depth, -1, -1);
+//        value += visitedPositions.get(board).depthUpper;
+//      }
+//      if (nIter * intIter % 1000000 == 0) {
+//        System.out.println(nIter + " " + (System.currentTimeMillis() - t));
+//      }
+//      
+//
+//      if (value - intIter * depth != 0) {
+//        System.out.println("BIG MISTAKE!!");
+//      }
+//    }
+//    System.out.println(intIter * maxNIter + " " + (System.currentTimeMillis() - t));
+//    System.out.println(intIter * maxNIter * 1000 / (System.currentTimeMillis() - t));
+//  }
 }

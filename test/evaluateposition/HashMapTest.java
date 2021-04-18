@@ -29,7 +29,7 @@ public class HashMapTest {
     Board b1 = new Board();
     Board b2 = new Board(12423, 45);
     
-    HashMap visitedPositions = new HashMap(11, 5);
+    HashMap visitedPositions = new HashMap(5);
     
     assertEquals(0, visitedPositions.size());
     
@@ -62,50 +62,10 @@ public class HashMapTest {
   }
 
   @Test
-  public void testRemoveBoardsGeneral() {
-    Board b1 = new Board();
-    Board b2 = new Board(1, 2);
-    Board b3 = new Board(1, 4);
-    Board b4 = new Board(1, 8);
-    Board b5 = new Board(1, 16);
-    Board b6 = new Board(1, 32);
-    Board b7 = new Board(1, 64);
-    
-    HashMap visitedPositions = 
-      new HashMap(7, 3);
-    
-    visitedPositions.updateLowerBound(b1, 0, 1, 12, 13);
-    assertEquals(1, visitedPositions.size());
-    visitedPositions.updateUpperBound(b2, 0, 1, 12, 13);
-    assertEquals(2, visitedPositions.size());
-    visitedPositions.updateLowerBound(b4, 0, 1, 12, 13);
-    assertEquals(3, visitedPositions.size());
-    visitedPositions.updateUpperBound(b5, 0, 1, 12, 13);
-    assertEquals(3, visitedPositions.size());
-    visitedPositions.updateLowerBound(b6, 0, 1, 12, 13);
-    assertEquals(3, visitedPositions.size());
-    visitedPositions.updateUpperBound(b7, 0, 4, 12, 13);
-
-    visitedPositions.updateLowerBound(b2, 0, 2, 12, 13);
-    visitedPositions.updateLowerBound(b4, 0, 2, 12, 13);
-    visitedPositions.updateLowerBound(b5, 0, 4, 12, 13);
-    visitedPositions.updateLowerBound(b6, 0, 4, 12, 13);
-    visitedPositions.updateLowerBound(b3, 0, 2, 12, 13);
-
-    assertEquals(visitedPositions.get(b1), null);
-    assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 6600, 0));
-    assertEquals(visitedPositions.get(b2), null);
-    assertEquals(visitedPositions.get(b4), null);
-    assertEquals(visitedPositions.get(b3), new EvaluatedBoard(0, 2, 6600, 0));
-  }
-
-  @Test
   public void testRandom() {
-    int N = 100;
     for (int nIter = 0; nIter < 1000; nIter++) {
-      int nElements = (int) (Math.random() * 1.5 * N) + 1;
-      HashMap visitedPositions = 
-        new HashMap(N, nElements);
+      int nElements = (int) (Math.random() * 100) + 1;
+      HashMap visitedPositions = new HashMap(nElements);
       Board boards[] = new Board[nElements];
       int eval[] = new int[nElements];
       int depth[] = new int[nElements];
@@ -117,25 +77,19 @@ public class HashMapTest {
         eval[i] = (int) ((Math.random() - 0.5) * 12800);
         depth[i] = (int) (Math.random() * 6000) + 1;
         isUpper[i] = Math.random() > 0.5;
+        if (boards[i].getPlayer() == 0 && boards[i].getOpponent() == 0) {
+          i--;
+          continue;
+        }
         if (isUpper[i]) {
           visitedPositions.updateUpperBound(boards[i], eval[i], depth[i], 12, 13);
         } else {
           visitedPositions.updateLowerBound(boards[i], eval[i], depth[i], 12, 13);   
         }
       }
-
       {
         int j = 0;
-        BoardInHash b = visitedPositions.firstToRemove;
-        while (b != visitedPositions.lastToRemove) {
-          b = b.nextToRemove;
-          j++;
-        }
-        assertEquals(nElements + 1, j);
-      }
-      {
-        int j = 0;
-        for (BoardInHash a : visitedPositions.evaluationsHashMap) {
+        for (BoardInHash a : visitedPositions.boards) {
           for (BoardInHash b = a; b != null; b = b.next) {
             if (!b.isNull()) {
               j++;
@@ -155,6 +109,33 @@ public class HashMapTest {
           assertEquals(b.depthLower, depth[i], 1.E-10);          
         }
       }
+    }
+  }
+  
+  private void addToHashMap(HashMap h) {
+    Board board = new Board((long) (Math.random() * Long.MAX_VALUE), (long) (Math.random() * Long.MAX_VALUE));
+    int eval = (int) ((Math.random() - 0.5) * 12800);
+    int depth = (int) (Math.random() * 6000) + 1;
+    if (Math.random() > 0.5) {
+      h.updateUpperBound(board, eval, depth, 12, 13);
+    } else {
+      h.updateLowerBound(board, eval, depth, 12, 13);   
+    }
+  }
+  
+  @Test
+  public void testThreadSafe() {
+    for (int i = 0; i < 1000; ++i) {
+      int hashMapSize = (int) (Math.random() * 30 + 1);
+      int nElements = (int) (Math.random() * 100 + 1);
+
+      HashMap hashMap = new HashMap(hashMapSize);
+      ArrayList<HashMap> hashMapStream = new ArrayList<>();
+      for (int j = 0; j < nElements; ++j) {
+        hashMapStream.add(hashMap);
+      }
+      hashMapStream.parallelStream().forEach((h) -> {addToHashMap(h);});
+      assert hashMap.allOk();
     }
   }
 }

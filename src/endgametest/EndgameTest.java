@@ -90,7 +90,8 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
-  EvaluatorAlphaBeta evalMidgame = new EvaluatorAlphaBeta(PatternEvaluatorImproved.load(), new HashMap(2 * Constants.HASH_MAP_SIZE, Constants.HASH_MAP_SIZE));
+  HashMap hashMap = new HashMap(Constants.HASH_MAP_SIZE);
+  EvaluatorAlphaBeta evalMidgame = new EvaluatorAlphaBeta(PatternEvaluatorImproved.load(), hashMap);
 //  EvaluatorMidgame eval = evalMidgame;
   EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, evalMidgame);
 
@@ -113,6 +114,7 @@ public class EndgameTest {
     }
     System.out.println("  CPUnVisPos/s   nVisPos/sec   nStored  n/end  n/mid  eval");
     for (int i = 41; i <= 60; i++) { //POSITIONS.length; i++) {
+      hashMap.reset();
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));

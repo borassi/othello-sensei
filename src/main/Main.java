@@ -83,7 +83,7 @@ public class Main implements Runnable {
   }
   public Main(int hashMapSize) {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
-    HASH_MAP = new HashMap(hashMapSize * 2, hashMapSize);
+    HASH_MAP = new HashMap(hashMapSize);
     EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(DEPTH_ONE_EVALUATOR, HASH_MAP);
     EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, EVALUATOR_MIDGAME);
   }
