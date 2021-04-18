@@ -272,7 +272,7 @@ public class StoredBoard {
   }
   
   public float lambda() {
-    return -3;/// Math.max(1, 2 * (float) Math.log(this.descendants)) - 1F;
+    return -1 / Math.max(1, 2 * (float) Math.log(this.descendants)) - 1F;  // -3
   }
   
   protected void updateFather() {
@@ -389,8 +389,8 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0 || extraInfo.isFinished;
-    probGreaterEqual = roundProb(1-(float) Gaussian.CDF(evalGoal-100, eval, 400));
-    probStrictlyGreater = roundProb(1-(float) Gaussian.CDF(evalGoal+100, eval, 400));
+    probGreaterEqual = roundProb(1-(float) Gaussian.CDF(evalGoal-100, eval, 450 - 3 * nEmpties));
+    probStrictlyGreater = roundProb(1-(float) Gaussian.CDF(evalGoal+100, eval, 450 - 3 * nEmpties));
     assert probGreaterEqual >= probStrictlyGreater;
 
     float mult = 1F;
@@ -489,34 +489,6 @@ public class StoredBoard {
     return children;
   }
 
-//  public float childValueStrictlyGreater(StoredBoard child) {
-//    assert Utils.arrayContains(children, child);
-//    if (child.proofNumberGreaterEqual == 0 || disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
-//      return Float.NEGATIVE_INFINITY;
-//    }
-////    if (child.probGreaterEqual > 0.9) {
-////      return -1E30 * (1 + child.probGreaterEqual);
-////    }
-////    return child.probGreaterEqual;
-////    return child.proofNumberGreaterEqual;
-//    return child.proofNumberGreaterEqual / Math.min(1.E20, Math.exp(0.1 * Math.pow(disproofNumberStrictlyGreater, 0.35) / Math.sqrt(child.descendants)));
-//  }
-//  
-//  public float childValueGreaterEqual(StoredBoard child) {
-//    assert Utils.arrayContains(children, child);
-//    if (proofNumberGreaterEqual == 0 || child.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
-//      return Float.NEGATIVE_INFINITY;
-//    }
-////    if (descendants >= proofNumberGreaterEqual * 0.01) {
-////      return -child.disproofNumberStrictlyGreater;
-////    }
-////    if (child.probStrictlyGreater > 0.99) {
-////      return -1E30 * (1 + child.probStrictlyGreater);
-////    }
-////    return -child.disproofNumberStrictlyGreater;
-//    return -child.disproofNumberStrictlyGreater / Math.min(1.E20, Math.exp(0.1 * Math.pow(proofNumberGreaterEqual, 0.35) / Math.sqrt(child.descendants)));
-//  }
-  
   // TODO!!!
   public StoredBoard bestChildProofStrictlyGreater() {
     StoredBoard best = null;

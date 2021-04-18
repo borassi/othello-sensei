@@ -184,9 +184,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return null;
     }
     if (descendants.isEmpty()) {
-      boolean greaterEqual = this.nextPositionGreaterEqual();
-      float prob = greaterEqual ? firstPosition.probGreaterEqual : firstPosition.probStrictlyGreater;
-      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, greaterEqual, 1);
+//      boolean greaterEqual = this.nextPositionGreaterEqual();
+//      float prob = greaterEqual ? firstPosition.probGreaterEqual : firstPosition.probStrictlyGreater;
+      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, 100);
+//      System.out.println(descendants.size() + " " + firstPosition.maxLogDerivativeProbGreaterEqual + " " + firstPosition.maxLogDerivativeProbStrictlyGreater);
 //      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, greaterEqual, (prob == 0 || prob == 1) ? 100 : 1);
       if (descendants.isEmpty()) {
         return null;
