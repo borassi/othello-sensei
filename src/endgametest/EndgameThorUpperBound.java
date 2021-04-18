@@ -16,7 +16,7 @@ package endgametest;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluatedepthone.BoardWithEvaluation;
-import evaluateposition.EvaluatorMidgame;
+import evaluateposition.EvaluatorAlphaBeta;
 import helpers.LoadDataset;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class EndgameThorUpperBound {
   public ArrayList<BoardWithEvaluation> boards;
 //  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
 //  EvaluatorLastMoves eval = new EvaluatorLastMoves();
-  EvaluatorMidgame eval = new EvaluatorMidgame();
+  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   
   public EndgameThorUpperBound() {
@@ -43,12 +43,12 @@ public class EndgameThorUpperBound {
     Board b = be.board;
     Random generator = new Random(1234);
     t -= System.currentTimeMillis();
-    int resultDepth0 = eval.evaluatePosition(b, 0, -6400, 6400);
-    int resultDepth1 = eval.evaluatePosition(b, 1, -6400, 6400);
-    int resultDepth2 = eval.evaluatePosition(b, 2, -6400, 6400);
-    int resultDepth4 = eval.evaluatePosition(b, 4, -6400, 6400);
-    int resultDepth6 = eval.evaluatePosition(b, 6, -6400, 6400);
-    int result = eval.evaluatePosition(b, 60, -6400, 6400);
+    int resultDepth0 = eval.evaluate(b, 0, -6400, 6400);
+    int resultDepth1 = eval.evaluate(b, 1, -6400, 6400);
+    int resultDepth2 = eval.evaluate(b, 2, -6400, 6400);
+    int resultDepth4 = eval.evaluate(b, 4, -6400, 6400);
+    int resultDepth6 = eval.evaluate(b, 6, -6400, 6400);
+    int result = eval.evaluate(b, 60, -6400, 6400);
     if (result < -3000 || result > 3000) {
       return true;
     }
@@ -57,8 +57,7 @@ public class EndgameThorUpperBound {
       if (Math.random() > 0.1) {
         continue;
       }
-      eval.resetNVisited();
-      int resultCur = eval.evaluatePosition(b, 60, alpha, alpha + 1);
+      int resultCur = eval.evaluate(b, 60, alpha, alpha + 1);
       System.out.print(b.getEmptySquares() + " " + result + " " + alpha + " " + eval.getNVisited() + " " + resultCur + " ");
       System.out.print(resultDepth0 + " " + resultDepth1 + " " + resultDepth2 + " ");
       System.out.println(resultDepth4 + " " + resultDepth6);

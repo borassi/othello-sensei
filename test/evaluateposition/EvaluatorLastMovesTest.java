@@ -44,15 +44,15 @@ public class EvaluatorLastMovesTest {
   @Test
   public void testDoublePass() {
     Board b = new Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXXX", true);
-    assertEquals(0, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
+    assertEquals(0, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
     b = new Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX", true);
-    assertEquals(-400, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 0));
+    assertEquals(-400, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 0));
   }
 
   @Test
   public void testManyPass() {
     Board b = new Board("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX", true);
-    assertEquals(2400, LAST_MOVE_EVALUATOR.evaluatePosition(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
+    assertEquals(2400, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
   }
 //
 //  @Test
@@ -133,11 +133,11 @@ public class EvaluatorLastMovesTest {
       if (i % 1000 == 0) {
         System.out.println(i);
       }
-      float result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), b.getEmptySquares() + 3, -6400, 6400);
+      float result = eval.evaluate(b.getPlayer(), b.getOpponent(), b.getEmptySquares() + 3, -6400, 6400);
       int alpha = (int) (result + (Math.random() - 0.5) * 1600);
       int beta = alpha + 1 + (int) (Math.random() * 800);
 
-      int result1 = LAST_MOVE_EVALUATOR.evaluatePosition(b, alpha, beta, 1L << (int) (Math.random() * 64));
+      int result1 = LAST_MOVE_EVALUATOR.evaluate(b, alpha, beta, 1L << (int) (Math.random() * 64));
       if (result < alpha) {
         if (result > result1 || result1 > alpha) {
           System.out.println(alpha + " " + beta);

@@ -933,10 +933,8 @@ public class LastMovesEvaluatorUpperBound {
       Task t = new Task(POSITIONS[i]);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", t.b.getEmptySquares()));
-      eval.resetNVisited();
-      int trueResult = eval.evaluatePosition(t.b, -6600, 6600, 0);
-      eval.resetNVisited();
-      int result = eval.evaluatePosition(t.b, t.alpha, t.beta, 0);
+      int trueResult = eval.evaluate(t.b, -6600, 6600, 0);
+      int result = eval.evaluate(t.b, t.alpha, t.beta, 0);
       System.out.print(String.format("%8d%8d", t.alpha, t.beta));
       long lower = OptimumAlphaBeta.computeOptimumLower(t.b, t.beta);
       long upper = OptimumAlphaBeta.computeOptimumUpper(t.b, t.alpha);

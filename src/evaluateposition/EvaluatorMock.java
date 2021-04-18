@@ -24,7 +24,7 @@ public class EvaluatorMock implements EvaluatorInterface {
   long beta;
 
   @Override
-  public int evaluatePosition(long player, long opponent, int depth, int alpha, int beta) {
+  public int evaluate(long player, long opponent, int depth, int alpha, int beta) {
     this.player = player;
     this.opponent = opponent;
     this.depth = depth;
@@ -37,7 +37,4 @@ public class EvaluatorMock implements EvaluatorInterface {
   public long getNVisited() {
     return Board.hash(player, opponent) & 0b11111111 * (long) Math.pow(2, depth) * (alpha - beta);
   }
-
-  @Override
-  public void resetHashMap() {}
 }

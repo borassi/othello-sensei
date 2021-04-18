@@ -80,7 +80,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
-    EvaluatorMidgame evaluatorMidgame = new EvaluatorMidgame();
+    EvaluatorAlphaBeta evaluatorMidgame = new EvaluatorAlphaBeta();
     EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, evaluatorMidgame);
     EndgameTimeEstimator endgameTimeEstimator = new EndgameTimeEstimator();
     FindStableDisks stableDisks = FindStableDisks.load();
@@ -105,9 +105,6 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
       LOG = false;
       for (EndgameTimeEstimatorRequest request : requests) {
         Board current = new Board(request.player, request.opponent);
-        evaluator.reset();
-        evaluatorMidgame.resetHashMap();
-        evaluator.reset();
         int eval = -evaluator.evaluatePosition(
             current, request.lower, request.lower, Long.MAX_VALUE, 20 * 1000, true);
         double nVisited = evaluator.getNVisited();

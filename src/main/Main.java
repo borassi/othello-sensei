@@ -26,7 +26,7 @@ import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EndgameTimeEstimator;
 import evaluateposition.EvaluatorMCTS;
-import evaluateposition.EvaluatorMidgame;
+import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
 import evaluateposition.StoredBoardBestDescendant;
@@ -60,7 +60,7 @@ public class Main implements Runnable {
   boolean blackTurn = true;
   private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final HashMap HASH_MAP;
-  private final EvaluatorMidgame EVALUATOR_MIDGAME;
+  private final EvaluatorAlphaBeta EVALUATOR_MIDGAME;
   private EvaluatorMCTS EVALUATOR;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   Future future = null;
@@ -84,7 +84,7 @@ public class Main implements Runnable {
   public Main(int hashMapSize) {
     DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     HASH_MAP = new HashMap(hashMapSize * 2, hashMapSize);
-    EVALUATOR_MIDGAME = new EvaluatorMidgame(DEPTH_ONE_EVALUATOR, HASH_MAP);
+    EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(DEPTH_ONE_EVALUATOR, HASH_MAP);
     EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, EVALUATOR_MIDGAME);
   }
   

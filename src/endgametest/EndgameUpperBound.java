@@ -16,7 +16,7 @@ package endgametest;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluateposition.EvaluatorLastMoves;
-import evaluateposition.EvaluatorMidgame;
+import evaluateposition.EvaluatorAlphaBeta;
 import tmp.OptimumAlphaBeta;
 
 public class EndgameUpperBound {
@@ -123,8 +123,7 @@ public class EndgameUpperBound {
       Board b = readBoardFromFFOFormat(POSITIONS_AFTER_MOVES[i]);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
-      eval.resetNVisited();
-      int result = eval.evaluatePosition(b, -6600, 6600, 0);
+      int result = eval.evaluate(b, -6600, 6600, 0);
       long lower = OptimumAlphaBeta.computeOptimumLower(b, (int) result);
       long upper = OptimumAlphaBeta.computeOptimumUpper(b, (int) result);
       long lowerEval = OptimumAlphaBeta.computeOptimumLowerLast(b, (int) result);
@@ -141,7 +140,7 @@ public class EndgameUpperBound {
 
   public void generateDataSet() {
     PossibleMovesFinderImproved mf = new PossibleMovesFinderImproved();
-    EvaluatorMidgame eval = new EvaluatorMidgame();
+    EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
     for (int i = 0; i < POSITIONS.length; i++) {
       Board b = readBoardFromFFOFormat(POSITIONS[i]);
       while (b.getEmptySquares() > 13) {
@@ -155,7 +154,7 @@ public class EndgameUpperBound {
         
         for (long m : moves) {
           Board next = b.move(m);
-          int curEval = eval.evaluatePosition(next, 6, -6400, 6400);
+          int curEval = eval.evaluate(next, 6, -6400, 6400);
           if (curEval > bestEval) {
             bestEval = curEval;
             best = next;

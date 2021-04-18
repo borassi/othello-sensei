@@ -21,8 +21,6 @@ import java.util.ArrayList;
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorInterface evaluatorMidgame;
 
-  public long nEndgames;
-  public long nVisitedEndgames;
   private long maxNVisited;
   private long stopTimeMillis;
   
@@ -42,7 +40,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long nextUpdateEvalGoal;
 
   public EvaluatorMCTS(int maxSize, int arraySize) {
-    this(maxSize, arraySize, new EvaluatorMidgame());
+    this(maxSize, arraySize, new EvaluatorAlphaBeta());
   }
 
   public EvaluatorMCTS(int maxSize, int arraySize,
@@ -106,11 +104,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 //        System.out.println("Eval goal " + this.firstPosition.getEvalGoal() + " after " + this.firstPosition.descendants);
       }
     }
-  }
-  
-  public void reset() {
-    nEndgames = 0;
-    nVisitedEndgames = 0;
   }
   
   public void stop() {
@@ -216,7 +209,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   void setFirstPosition(long player, long opponent) {
     empty();
-    int quickEval = evaluatorMidgame.evaluatePosition(player, opponent, 2, lower, upper);
+    int quickEval = evaluatorMidgame.evaluate(player, opponent, 2, lower, upper);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
     firstPosition.eval = quickEval;
     firstPosition.addDescendants(evaluatorMidgame.getNVisited() + 1);
@@ -241,7 +234,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     long addedPositions = 0;
     for (StoredBoard child : board.children) {
       if (child.getDescendants() == 0) {
-        int eval = evaluatorMidgame.evaluatePosition(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
+        int eval = evaluatorMidgame.evaluate(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
         child.addDescendants(evaluatorMidgame.getNVisited() + 1);
         child.setEval(eval);
         addedPositions += child.getDescendants();
@@ -254,11 +247,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     StoredBoard board = position.board;
     int alpha = position.getAlpha();
     int beta = position.getBeta();
-    int eval = evaluatorMidgame.evaluatePosition(
+    int eval = evaluatorMidgame.evaluate(
         board.getPlayer(), board.getOpponent(), nEmpties, alpha, beta);
     long seenPositions = evaluatorMidgame.getNVisited() + 1;
-    nEndgames++;
-    nVisitedEndgames += seenPositions;
     constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
     position.updateDescendants(seenPositions);
     if (eval <= alpha) {
@@ -273,7 +264,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public void deepenPosition(StoredBoardBestDescendant position, int nEmpties) {
     StoredBoard board = position.board;
-    int curEval = evaluatorMidgame.evaluatePosition(
+    int curEval = evaluatorMidgame.evaluate(
           board.getPlayer(), board.getOpponent(), 2, -6400, 6400);
     int d;
     long seenPositions = 0;
@@ -282,7 +273,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         solvePosition(position, nEmpties);
         return;
       }
-      curEval = evaluatorMidgame.evaluatePosition(
+      curEval = evaluatorMidgame.evaluate(
           board.getPlayer(), board.getOpponent(), d, -6400, 6400);
       seenPositions += evaluatorMidgame.getNVisited();
     }
@@ -309,7 +300,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
-//    evaluatorMidgame.resetHashMap();
     constant = 0;
     status = Status.RUNNING;
     this.lower = lower;

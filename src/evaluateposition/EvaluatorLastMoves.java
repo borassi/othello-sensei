@@ -20,6 +20,7 @@ import board.GetFlip;
 import board.GetMoves;
 import board.GetMovesCache;
 import constants.Constants;
+import constants.Stats;
 import evaluatedepthone.FindStableDisks;
 
 /**
@@ -624,7 +625,7 @@ public class EvaluatorLastMoves {
     return this.firstLastInEdges;
   }
 
-  private int evaluateFast(
+  private int evaluateRecursive(
       long player, long opponent, int lower, int upper, boolean passed,
       long lastMove, long stable) {
     long empties = ~(player | opponent);
@@ -659,7 +660,7 @@ public class EvaluatorLastMoves {
       if (passed) {
         return BitPattern.getEvaluationGameOver(player, opponent);
       }
-      return -evaluateFast(opponent, player, -upper, -lower, true, lastMove, stable);
+      return -evaluateRecursive(opponent, player, -upper, -lower, true, lastMove, stable);
     }
 
     for (long mask : masksTmp) {
@@ -678,7 +679,7 @@ public class EvaluatorLastMoves {
                 (moveBit & CORNERS) != 0, stable));
         } else {
           best = Math.max(best, 
-            -evaluateFast(
+            -evaluateRecursive(
                 opponent & ~flip, player | flip, -upper, -Math.max(lower, best),
                 false, flip, stable));        
         }
@@ -693,27 +694,26 @@ public class EvaluatorLastMoves {
     return best;
   }
   
-  public int evaluatePosition(long player, long opponent, int lower, int upper, long lastMove) {
+  public int evaluate(Board b, int lower, int upper, long lastMove) {
+    return EvaluatorLastMoves.this.evaluate(b.getPlayer(), b.getOpponent(), lower, upper, lastMove);
+  }
+  
+  public int evaluate(long player, long opponent, int lower, int upper, long lastMove) {
+    nVisited = 0;
     if (~(player | opponent) == 0) {
       return BitPattern.getEvaluationBoardFull(player);
     }
 
-    return evaluateFast(player, opponent, lower, upper, false, lastMove, 0);
+    int result = evaluateRecursive(player, opponent, lower, upper, false, lastMove, 0);
+    Stats.addToNVisitedLastMoves(nVisited);
+    Stats.addToNLastMoves(1);
+    return result;
   }
-  
-  public int evaluatePosition(Board b, int lower, int upper, long lastMove) {
-    return evaluatePosition(b.getPlayer(), b.getOpponent(), lower, upper, lastMove);
-  }
-  
-  public void resetNVisited() {
-    nVisited = 0;
-  }
-  
   
   public int getNVisited() {
     return nVisited;
   }
-  
+
   public static void main(String args[]) {
     
 //    int x[] = new int[100000];

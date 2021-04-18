@@ -37,7 +37,7 @@ public class CaseOptimalEndgame {
     for (long flip : flips) {
       int move = Long.numberOfTrailingZeros(flip & ~board.getOpponent() & ~board.getPlayer());
       Board next = board.move(flip);
-      System.out.print(eval.evaluatePosition(next, -6400, 6400, 0) + " ");
+      System.out.print(eval.evaluate(next, -6400, 6400, 0) + " ");
     }
     System.out.println();
   }

@@ -50,7 +50,7 @@ public class EvaluatorBasic implements EvaluatorInterface {
   }
 
   @Override
-  public int evaluatePosition(long player, long opponent, int depth, int alpha, int beta) {
+  public int evaluate(long player, long opponent, int depth, int alpha, int beta) {
     return evaluatePosition(new Board(player, opponent), depth);
   }
   
@@ -85,7 +85,4 @@ public class EvaluatorBasic implements EvaluatorInterface {
   public long getNVisited() {
     return nVisitedPositions;
   }
-
-  @Override
-  public void resetHashMap() {}
 }

@@ -35,7 +35,8 @@ public class StoredBoard {
     public boolean proofBeforeFinished = false;
     public boolean disproofBeforeFinished = false;
   }
-  protected static EvaluatorInterface EVALUATOR_MIDGAME = new EvaluatorMidgame(PatternEvaluatorImproved.load(), new HashMap(6000, 3000));
+  protected static HashMap HASH_MAP = new HashMap(6000, 3000);
+  protected static EvaluatorInterface EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(PatternEvaluatorImproved.load(), HASH_MAP);
   
   private final long player;
   private final long opponent;
@@ -430,8 +431,8 @@ public class StoredBoard {
         if (!extraInfo.isFinished) {
           extraInfo.proofBeforeFinished = true;
         }
-        EVALUATOR_MIDGAME.resetHashMap();
-        EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
+        HASH_MAP.reset();
+        EVALUATOR_MIDGAME.evaluate(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal-100, evalGoal-101);
         extraInfo.minProofGreaterEqual = Math.min(extraInfo.proofBeforeFinished ? descendants : Float.POSITIVE_INFINITY, EVALUATOR_MIDGAME.getNVisited());
         extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
       } else {
@@ -442,8 +443,8 @@ public class StoredBoard {
         if (!extraInfo.isFinished) {
           extraInfo.disproofBeforeFinished = true;
         }
-        EVALUATOR_MIDGAME.resetHashMap();
-        EVALUATOR_MIDGAME.evaluatePosition(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
+        HASH_MAP.reset();
+        EVALUATOR_MIDGAME.evaluate(this.getPlayer(), this.getOpponent(), this.nEmpties, evalGoal+100, evalGoal+101);
         extraInfo.minDisproofStrictlyGreater = Math.min(extraInfo.disproofBeforeFinished ? descendants : Float.POSITIVE_INFINITY, EVALUATOR_MIDGAME.getNVisited());
         extraInfo.minDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
       } else {

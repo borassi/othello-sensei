@@ -28,9 +28,9 @@ import constants.Constants;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import java.util.ArrayList;
 
-public class EvaluatorMidgameTest {
+public class EvaluatorAlphaBetaTest {
   PossibleMovesFinderImproved possibleMovesFinder = PossibleMovesFinderImproved.load();
-  EvaluatorMidgame evaluator = new EvaluatorMidgame(
+  EvaluatorAlphaBeta evaluator = new EvaluatorAlphaBeta(
     new DiskDifferenceEvaluatorPlusTwo(), new HashMap());
   EvaluatorBasic evaluatorBasic = new EvaluatorBasic(
           new DiskDifferenceEvaluatorPlusTwo(), possibleMovesFinder);
@@ -52,20 +52,20 @@ public class EvaluatorMidgameTest {
     // (+1 because of the bias).
 //    assert(evaluator.evaluatePosition(b, 1, 700, 700) <= 700);
 //    assert(evaluator.evaluatePosition(b, 1, 0, 0) >= 0);
-    assertEquals(100, evaluator.evaluatePosition(b, 1, 0, 200));
+    assertEquals(100, evaluator.evaluate(b, 1, 0, 200));
 
     // At depth 2, Black has 3 disks, White has 3. +0 for Black
     // (+2 because of the bias).
-    assert(evaluator.evaluatePosition(b, 2, 300, 300) <= 300);
-    assert(evaluator.evaluatePosition(b, 2, -100, -100) >= -100);
-    assertEquals(evaluator.evaluatePosition(b, 2, -100, 600), 200);
+    assert(evaluator.evaluate(b, 2, 300, 300) <= 300);
+    assert(evaluator.evaluate(b, 2, -100, -100) >= -100);
+    assertEquals(evaluator.evaluate(b, 2, -100, 600), 200);
 
     // At depth 3, Black has 5 disks, White has 2. +3 for Black.
     // Unless you play e6d6, in which case Black can get 6 disks.
     // (the result is +1 because of the bias).
-    assert(evaluator.evaluatePosition(b, 3, 700, 700) <= 700);
-    assert(evaluator.evaluatePosition(b, 3, 0, 0) >= 0);
-    assertEquals(100, evaluator.evaluatePosition(b, 3, -1000, 200));
+    assert(evaluator.evaluate(b, 3, 700, 700) <= 700);
+    assert(evaluator.evaluate(b, 3, 0, 0) >= 0);
+    assertEquals(100, evaluator.evaluate(b, 3, -1000, 200));
   }
 
 //  @Test
@@ -129,7 +129,7 @@ public class EvaluatorMidgameTest {
   public void testEvaluatorRandom1() {
     Board b = new Board ("OOOXOOOXXXXX-XXOOOO------------XXO-OOXXOXXXOOX-XXOO-OXOOXXXXOXXX", true);
     for (int d = 4; d < 5; d++) {
-      int eval = evaluator.evaluatePosition(b, d, -6400, 6400);
+      int eval = evaluator.evaluate(b, d, -6400, 6400);
       assertEquals(eval, evaluatorBasic.evaluatePosition(b, d));
     }
   }
@@ -152,7 +152,7 @@ public class EvaluatorMidgameTest {
         if (b.getEmptySquares() <= d + Constants.EMPTIES_FOR_ENDGAME) {
           continue;
         }
-        int eval = evaluator.evaluatePosition(b, d, -6400, 6400);
+        int eval = evaluator.evaluate(b, d, -6400, 6400);
         
         int f2 = evaluatorBasic.evaluatePosition(b, d);
         if (eval != f2) {
@@ -182,9 +182,9 @@ public class EvaluatorMidgameTest {
     // The board has 21 Black, 9 White. In 1 move, Black can flip at most 5 disks.
     int eval = 2100;
     assertEquals(evaluatorBasic.evaluatePosition(b, 1), eval);
-    assert(evaluator.evaluatePosition(b, 1, eval - 200, eval - 200) >= eval - 200);
-    assert(evaluator.evaluatePosition(b, 1, eval + 200, eval + 200) <= eval + 2);
-    assertEquals(evaluator.evaluatePosition(b, 1, -6400, 6400), eval);
+    assert(evaluator.evaluate(b, 1, eval - 200, eval - 200) >= eval - 200);
+    assert(evaluator.evaluate(b, 1, eval + 200, eval + 200) <= eval + 2);
+    assertEquals(evaluator.evaluate(b, 1, -6400, 6400), eval);
     
     // In 2 moves, Black can flip all white disks.
     eval = 3000;
@@ -193,15 +193,15 @@ public class EvaluatorMidgameTest {
 //    assert(sb.eval >= eval - 200);
 //    evaluator.evaluatePosition(sb, 2, eval + 200, eval + 200);
 //    assert(sb.eval <= eval + 200);
-    assertEquals(eval, evaluator.evaluatePosition(b, 2, -6400, 6400));
+    assertEquals(eval, evaluator.evaluate(b, 2, -6400, 6400));
 
     // In 3 moves, Black can flip all white disks (+31 because of bias).
     // However, in 2 moves, Black can finish the game (+32, no bias).
     eval = 6400;
     assertEquals(eval, evaluatorBasic.evaluatePosition(b, 3));
-    assert(evaluator.evaluatePosition(b, 3, eval - 400, eval - 400) >= eval - 400);
-    assert(evaluator.evaluatePosition(b, 3, eval + 400, eval + 400) <= eval + 400);
-    assertEquals(evaluator.evaluatePosition(b, 3, eval - 100, eval + 100), eval);
+    assert(evaluator.evaluate(b, 3, eval - 400, eval - 400) >= eval - 400);
+    assert(evaluator.evaluate(b, 3, eval + 400, eval + 400) <= eval + 400);
+    assertEquals(evaluator.evaluate(b, 3, eval - 100, eval + 100), eval);
   }
 
 //  @Test
@@ -285,9 +285,9 @@ public class EvaluatorMidgameTest {
       if (b.getEmptySquares() <= depth + Constants.EMPTIES_FOR_ENDGAME) {
         continue;
       }
-      int eval = evaluator.evaluatePosition(b, depth, -6400, 6400);
+      int eval = evaluator.evaluate(b, depth, -6400, 6400);
       for (Board p : Board.allTranspositions(b)) {
-        assertEquals(eval, evaluator.evaluatePosition(p, depth, -6400, 6400));
+        assertEquals(eval, evaluator.evaluate(p, depth, -6400, 6400));
       }
     }
   }
@@ -307,8 +307,8 @@ public class EvaluatorMidgameTest {
         lower = upper;
         upper = tmp;
       }
-      int expected = eval.evaluatePosition(b, lower, upper, 64);
-      int actual = evaluator.evaluatePosition(b, 100, lower, upper);
+      int expected = eval.evaluate(b, lower, upper, 64);
+      int actual = evaluator.evaluate(b, 100, lower, upper);
       
       int expectedWithBound = Math.min(upper, Math.max(actual, lower));
       int actualWithBound = Math.min(upper, Math.max(expected, lower));

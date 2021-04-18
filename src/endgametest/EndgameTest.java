@@ -16,10 +16,11 @@ package endgametest;
 import board.Board;
 import board.PossibleMovesFinderImproved;
 import constants.Constants;
+import constants.Stats;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EndgameTimeEstimator;
 import evaluateposition.EvaluatorMCTS;
-import evaluateposition.EvaluatorMidgame;
+import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.HashMap;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -89,7 +90,7 @@ public class EndgameTest {
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
-  EvaluatorMidgame evalMidgame = new EvaluatorMidgame(PatternEvaluatorImproved.load(), new HashMap(2 * Constants.HASH_MAP_SIZE, Constants.HASH_MAP_SIZE));
+  EvaluatorAlphaBeta evalMidgame = new EvaluatorAlphaBeta(PatternEvaluatorImproved.load(), new HashMap(2 * Constants.HASH_MAP_SIZE, Constants.HASH_MAP_SIZE));
 //  EvaluatorMidgame eval = evalMidgame;
   EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, evalMidgame);
 
@@ -115,7 +116,6 @@ public class EndgameTest {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
-      evalMidgame.resetNVisited();
       long cpuT;
       cpuT = thread.getCurrentThreadCpuTime();
       long t = System.currentTimeMillis();
@@ -148,11 +148,10 @@ public class EndgameTest {
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000000000. / cpuT));
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));
       System.out.print(String.format("%10d", eval.getNStored()));
-      System.out.print(String.format("%7.0f", evalMidgame.nVisitedEndgames / (double) evalMidgame.nEndgames));
-      System.out.print(String.format("%7.0f", eval.nVisitedEndgames / (double) eval.nEndgames));
+      System.out.print(String.format("%7.0f", Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves()));
+      System.out.print(String.format("%7.0f", Stats.getNVisitedAlphaBetaSolve() / (double) Stats.getNAlphaBetaSolve()));
       System.out.println(String.format("%6d", result / 100));
-      evalMidgame.nEndgames = 0;
-      evalMidgame.nVisitedEndgames = 0;
+      Stats.reset();
     }
   }
 

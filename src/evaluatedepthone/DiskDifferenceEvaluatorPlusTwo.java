@@ -74,7 +74,7 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator, Evalua
   }
 
   @Override
-  public int evaluatePosition(long player, long opponent, int depth, int lower, int upper) {
+  public int evaluate(long player, long opponent, int depth, int lower, int upper) {
     return Math.max(lower, Math.min(upper, eval(player, opponent)));
   }
 
@@ -82,7 +82,4 @@ public class DiskDifferenceEvaluatorPlusTwo implements DepthOneEvaluator, Evalua
   public long getNVisited() {
     return 1;
   }
-
-  @Override
-  public void resetHashMap() {}
 }

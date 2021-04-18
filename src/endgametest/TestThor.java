@@ -20,7 +20,7 @@ import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorMCTS;
-import evaluateposition.EvaluatorMidgame;
+import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.StoredBoard;
 import helpers.LoadDataset;
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class TestThor {
   PatternEvaluatorImproved eval1 = PatternEvaluatorImproved.load();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
 //  EvaluatorMCTS eval = new EvaluatorMCTS(100, 10);
-  EvaluatorMidgame eval = new EvaluatorMidgame(eval1);
+  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta(eval1);
   long time;
 //  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   
@@ -65,7 +65,7 @@ public class TestThor {
     long[] moves = pmf.possibleMoves(b);
 //    Board sb = new StoredBoard(b, 0, 0);
     long startTime = System.currentTimeMillis();
-    int curEval = eval.evaluatePosition(b, depth, -6400, 6400);
+    int curEval = eval.evaluate(b, depth, -6400, 6400);
     time += System.currentTimeMillis() - startTime;
 //    for (long move : moves) {
 //      eval = Math.max(eval, -eval1.eval(b.move(move)));
@@ -87,7 +87,7 @@ public class TestThor {
       if (i % 1000 == 0) {
         System.out.println(i + "/" + boards.size() + ": " + Math.sqrt(totalError / n));
         System.out.println("  Visited positions: " + String.format("%.0f", eval.getNVisited() * 1000. / this.time));
-        System.out.println("  Computed moves:    " + String.format("%.0f", eval.getNComputedMoves() * 1000. / this.time));
+//        System.out.println("  Computed moves:    " + String.format("%.0f", eval.getNComputedMoves() * 1000. / this.time));
         System.out.println("  Average positions: " + eval.getNVisited() / n);
         System.out.println("  Depth: " + depth);
       }
