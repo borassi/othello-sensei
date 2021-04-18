@@ -32,16 +32,16 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   /**
    * Needed to implement Serializable.
    */
-  private static final long serialVersionUID = 1L;
+  private final static long serialVersionUID = 1L;
 //  public final static int EVAL_SHIFT = 32;
-  public static final String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
+  public final static String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
       "coefficients/pattern_evaluator.sar";
   long features[];
 //  long player;
 //  long opponent;
   ArrayList<int[]> featuresToSquaresList;
-  static final int EMPTIES_SPLITS = 20; // SET TO <= 2 FOR TESTS
-  static final long FEATURE_CORNER_4X4 = BitPattern.parsePattern("--------" +
+  final static int EMPTIES_SPLITS = 20; // SET TO <= 2 FOR TESTS
+  final static long FEATURE_CORNER_4X4 = BitPattern.parsePattern("--------" +
                                                                  "--------" +
                                                                  "--------" +
                                                                  "--------" +
@@ -49,7 +49,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                                  "-----XXX" +
                                                                  "----XXXX" +
                                                                  "----XXXX");
-  static final long FEATURE_CORNER_SIDED = BitPattern.parsePattern("--------" +
+  final static long FEATURE_CORNER_SIDED = BitPattern.parsePattern("--------" +
                                                                  "--------" +
                                                                  "--------" +
                                                                  "-------X" +
@@ -57,7 +57,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                                  "-------X" +
                                                                  "------XX" +
                                                                  "---XXXXX");
-  static final long FEATURE_EDGE_BOH = BitPattern.parsePattern("--------" +
+  final static long FEATURE_EDGE_BOH = BitPattern.parsePattern("--------" +
                                                                  "--------" +
                                                                  "--------" +
                                                                  "--------" +
@@ -65,7 +65,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                                  "--------" +
                                                                  "--XXXX--" +
                                                                  "X-XXXX-X");
-  static final long FEATURE_IMPR_DIAGONAL = BitPattern.parsePattern("XX------" +
+  final static long FEATURE_IMPR_DIAGONAL = BitPattern.parsePattern("XX------" +
                                                                     "XX------" +
                                                                     "--X-----" +
                                                                     "---X----" +
@@ -73,7 +73,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                                     "-----X--" +
                                                                     "------XX" +
                                                                     "------XX");
-  static final long FEATURE_DIAGONAL = BitPattern.parsePattern("X-------" +
+  final static long FEATURE_DIAGONAL = BitPattern.parsePattern("X-------" +
                                                                "-X------" +
                                                                "--X-----" +
                                                                "---X----" +
@@ -81,10 +81,10 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                                "-----X--" +
                                                                "------X-" +
                                                                "-------X");
-//  static final long FEATURE_LAST_ROW = BitPattern.LAST_ROW_BIT_PATTERN;
-//  static final long FEATURE_LAST_BUT_ONE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 8;
-//  static final long FEATURE_LAST_BUT_TWO_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 16;
-//  static final long FEATURE_LAST_BUT_THREE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 24;
+//  final static long FEATURE_LAST_ROW = BitPattern.LAST_ROW_BIT_PATTERN;
+//  final static long FEATURE_LAST_BUT_ONE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 8;
+//  final static long FEATURE_LAST_BUT_TWO_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 16;
+//  final static long FEATURE_LAST_BUT_THREE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 24;
 
   final static long PATTERN_CORNER = BitPattern.parsePattern("--------\n" 
                                                            + "--------\n"
@@ -149,7 +149,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                           + "--------\n"
                                                           + "--------\n");
 
-  final static long PATTERN_CORNER_5x2 = BitPattern.parsePattern("--------\n" 
+  final static long PATTERN_CORNER_5X2 = BitPattern.parsePattern("--------\n" 
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "--------\n"
@@ -158,7 +158,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                           + "---XXXXX\n"
                                                           + "---XXXXX\n");
   
-  static long[][] FEATURE_GROUPS = {
+  final static long[][] FEATURE_GROUPS = {
     {PATTERN_CORNER, PATTERN_SM_LAST1, PATTERN_SM_LAST2, PATTERN_LAST3, PATTERN_LAST4},
     {FEATURE_IMPR_DIAGONAL},
     {FEATURE_CORNER_4X4},
@@ -181,7 +181,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
 
   int[][][] evals;
 
-  static final int[] longToFeature(long pattern) {
+  final static int[] longToFeature(long pattern) {
     int[] feature = new int[Long.bitCount(pattern)];
     int currentBit = 0;
     int square;
@@ -196,7 +196,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return feature;
   }
 
-  static final long featureToLong(int[] feature) {
+  final static long featureToLong(int[] feature) {
     long result = 0;
     for (int i : feature) {
       result |= 1L << i;
@@ -204,7 +204,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return result;
   }
   
-  static final int[] horizMirrorFeature(int[] feature) {
+  final static int[] horizMirrorFeature(int[] feature) {
     int[] newFeature = new int[feature.length];
     for (int i = 0; i < feature.length; ++i) {
       int f = feature[i];
@@ -217,7 +217,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return newFeature;
   }
   
-  static final int[] rotateFeature(int[] feature) {
+  final static int[] rotateFeature(int[] feature) {
     int[] newFeature = new int[feature.length];
     for (int i = 0; i < feature.length; ++i) {
       int f = feature[i];
@@ -230,7 +230,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     return newFeature;
   }
   
-  static final ArrayList<int[]> allFeatures(long pattern) {
+  final static ArrayList<int[]> allFeatures(long pattern) {
     HashSet<Long> seen = new HashSet<>();
     int[] feature = longToFeature(pattern);
     ArrayList<int[]> result = new ArrayList<>();
@@ -338,7 +338,7 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
 //    return this.lastError;
 //  }
   
-  public static final int getEvalFromEmpties(int empties) {
+  public final static int getEvalFromEmpties(int empties) {
     return Math.min((empties - 1) * EMPTIES_SPLITS / 60, EMPTIES_SPLITS - 1);
   }
 

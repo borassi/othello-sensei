@@ -33,6 +33,11 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   ArrayList<StoredBoard> parents = new ArrayList<>();
   float derivativeLoss = 0;
   float proofNumberLoss = 0;
+  int id = 0;
+
+  public int getId() {
+    return id;
+  }
 
   public float getDerivativeLoss() {
     return derivativeLoss;
@@ -266,6 +271,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       }
       visited.add(nextBoard);
       if (nextBoard.isLeaf()) {
+        next.id = result.size();
         result.add(next);
         continue;
       }

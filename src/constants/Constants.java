@@ -36,6 +36,7 @@ public class Constants {
   public final static int TRY_SC_LAST_3_NO_CORNER = 0;
   public final static int TRY_SC_LAST_3_CORNER = 0;
   
+  public final static int MAX_PARALLEL_TASKS = 100;
 //  public final static double PPN_LAMBDA = -4;
   public final static double PPN_MIN_COST_LEAF = 0.001;
 
