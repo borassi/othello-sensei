@@ -293,7 +293,7 @@ public class StoredBoard {
       upper = Math.max(upper, -child.lower);
       probGreaterEqual += Math.pow(child.probStrictlyGreater, lambda);
       probStrictlyGreater += Math.pow(child.probGreaterEqual, lambda);
-      proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater);
+      proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater / Math.max(0.001F, 1 - child.probStrictlyGreater));
       disproofNumberStrictlyGreater += child.proofNumberGreaterEqual;
     }
     if (lower >= evalGoal) {
@@ -304,6 +304,7 @@ public class StoredBoard {
       assert proofNumberGreaterEqual == Float.POSITIVE_INFINITY;
     } else {
       probGreaterEqual = roundProb(1 - (float) Math.pow(probGreaterEqual, 1 / lambda));
+      proofNumberGreaterEqual *= Math.max(0.001F, probGreaterEqual);
       assert Float.isFinite(proofNumberGreaterEqual) && proofNumberGreaterEqual > 0;
     }
     if (lower > evalGoal) {
@@ -406,8 +407,7 @@ public class StoredBoard {
       maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
     } else {
       this.maxLogDerivativeProbGreaterEqual = mult * (float) Math.log(probGreaterEqual * (1 - probGreaterEqual));
-      proofNumberGreaterEqual = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval)
-          / Math.max(Constants.PPN_MIN_COST_LEAF, probGreaterEqual));
+      proofNumberGreaterEqual = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval));
       assert Float.isFinite(proofNumberGreaterEqual) && proofNumberGreaterEqual > 0;
     }
     
@@ -421,8 +421,7 @@ public class StoredBoard {
       maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
     } else {
       maxLogDerivativeProbStrictlyGreater = mult * (float) Math.log((1 - probStrictlyGreater) * (probStrictlyGreater));
-      disproofNumberStrictlyGreater = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval)
-          / Math.max(Constants.PPN_MIN_COST_LEAF, 1 - probStrictlyGreater));
+      disproofNumberStrictlyGreater = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval));
       assert Float.isFinite(disproofNumberStrictlyGreater) && disproofNumberStrictlyGreater > 0;
     }
     

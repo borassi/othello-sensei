@@ -164,7 +164,9 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     } else {
       if (derivativeLoss + childLogDerivative == Float.NEGATIVE_INFINITY) {
         derivativeLoss = Float.NEGATIVE_INFINITY;
+//        if (child.isLeaf()) {
         proofNumberLoss = proofNumberLoss + child.proofNumberGreaterEqual - board.maxFiniteChildrenProofNumber();  // TODO IMPROVE!!!
+//        }
       } else {
         derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
         // proofNumberLoss unchanged.
@@ -245,14 +247,14 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public static ArrayList<StoredBoardBestDescendant> bestDescendants(StoredBoard father, int n) {
     PriorityQueue<StoredBoardBestDescendant> toProcess = new PriorityQueue<>();
     ArrayList<StoredBoardBestDescendant> result = new ArrayList<>();
-    StoredBoardBestDescendant first = new StoredBoardBestDescendant(father, true);
-    StoredBoardBestDescendant second = new StoredBoardBestDescendant(father, false);
+    StoredBoardBestDescendant greaterEqual = new StoredBoardBestDescendant(father, true);
+    StoredBoardBestDescendant strictlyGreater = new StoredBoardBestDescendant(father, false);
 
-    if (first.hasValidDescendants()) {
-      toProcess.add(first);
+    if (greaterEqual.hasValidDescendants()) {
+      toProcess.add(greaterEqual);
     }
-    if (second.hasValidDescendants()) {
-      toProcess.add(second);
+    if (strictlyGreater.hasValidDescendants()) {
+      toProcess.add(strictlyGreater);
     }
     HashSet<StoredBoard> visited = new HashSet<>();
 

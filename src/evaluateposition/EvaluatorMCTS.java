@@ -156,8 +156,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return this.firstPosition.probGreaterEqual < 1 - this.firstPosition.probStrictlyGreater;
   }
 
-  private ArrayList<StoredBoardBestDescendant> descendants = new ArrayList<>();
-  protected StoredBoardBestDescendant nextPositionToImprove() {
+  protected ArrayList<StoredBoardBestDescendant> nextPositionsToImprove() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
         this.firstPosition.setIsFinished(true);
@@ -180,19 +179,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
-    if (descendants.isEmpty()) {
-//      boolean greaterEqual = this.nextPositionGreaterEqual();
-//      float prob = greaterEqual ? firstPosition.probGreaterEqual : firstPosition.probStrictlyGreater;
-      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, Constants.MAX_PARALLEL_TASKS);
-//      System.out.println(descendants.size() + " " + firstPosition.maxLogDerivativeProbGreaterEqual + " " + firstPosition.maxLogDerivativeProbStrictlyGreater);
-//      descendants = StoredBoardBestDescendant.bestDescendants(firstPosition, greaterEqual, (prob == 0 || prob == 1) ? 100 : 1);
-      if (descendants.isEmpty()) {
-        return null;
-      }
-    }
-    return descendants.remove(descendants.size() - 1);
-//    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
-//    return result;
+    return StoredBoardBestDescendant.bestDescendants(firstPosition, Constants.MAX_PARALLEL_TASKS);
   }
 
   public short evaluatePosition(Board board) {
@@ -223,10 +210,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   
   public void addChildren(StoredBoardBestDescendant position) {
-    addChildren(position, position.board.getBoard().getEmptySquares());
-  }
-  
-  public void addChildren(StoredBoardBestDescendant position, int nEmpties) {
     StoredBoard board = position.board;
     board.addChildren(this);
     if (board.children == null) {
@@ -235,7 +218,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return;
     }
     EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
-    int depth = nEmpties < 24 ? 2 : 3;
+    int depth = board.nEmpties < 24 ? 2 : 3;
     long addedPositions = 0;
     for (StoredBoard child : board.children) {
       if (child.getDescendants() == 0) {
@@ -248,13 +231,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     position.updateDescendants(addedPositions);
   }
   
-  public void solvePosition(StoredBoardBestDescendant position, int nEmpties) {
+  public void solvePosition(StoredBoardBestDescendant position) {
     StoredBoard board = position.board;
     int alpha = position.getAlpha();
     int beta = position.getBeta();
     EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
     int eval = nextEvaluator.evaluate(
-        board.getPlayer(), board.getOpponent(), nEmpties, alpha, beta);
+        board.getPlayer(), board.getOpponent(), board.nEmpties, alpha, beta);
     long seenPositions = nextEvaluator.getNVisited() + 1;
     constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
     position.updateDescendants(seenPositions);
@@ -268,7 +251,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
   }
   
-  public void deepenPosition(StoredBoardBestDescendant position, int nEmpties) {
+  public void deepenPosition(StoredBoardBestDescendant position) {
     StoredBoard board = position.board;
     EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
     int curEval = nextEvaluator.evaluate(
@@ -276,8 +259,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     int d;
     long seenPositions = 0;
     for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
-      if (nEmpties - d < Constants.EMPTIES_FOR_ENDGAME) {
-        solvePosition(position, nEmpties);
+      if (board.nEmpties - d < Constants.EMPTIES_FOR_ENDGAME) {
+        solvePosition(position);
         return;
       }
       curEval = nextEvaluator.evaluate(
@@ -301,6 +284,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         (b.disproofNumberStrictlyGreater < constant && b.getEval() < b.getEvalGoal() - 1000) ||
         b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME);    
   }
+  
+  private void expandPosition(StoredBoardBestDescendant position) {
+    if (position.board != this.firstPosition && toBeSolved(position.board)) {
+      solvePosition(position);
+    } else if (this.size < this.maxSize) {
+      addChildren(position);
+    } else {
+      deepenPosition(position);
+    }
+    position.board.updateFathers();
+    updateEvalGoalIfNeeded();
+  }
 
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
@@ -316,7 +311,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
-    this.descendants.clear();
 
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent()) {
@@ -332,22 +326,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       setEvalGoal(firstPosition.getEval());
     }
 
-    StoredBoardBestDescendant nextPos;
-    for (nextPos = StoredBoardBestDescendant.bestDescendant(firstPosition, this.nextPositionGreaterEqual());
-         nextPos != null;
-         nextPos = nextPositionToImprove()) {
-      StoredBoard next = nextPos.board;
-      int nEmpties = 64 - Long.bitCount(next.getPlayer() | next.getOpponent());
-
-      if (next != this.firstPosition && toBeSolved(next)) {
-        solvePosition(nextPos, nEmpties);
-      } else if (this.size < this.maxSize) {
-        addChildren(nextPos, nEmpties);
-      } else {
-        deepenPosition(nextPos, nEmpties);
+    for (ArrayList<StoredBoardBestDescendant> nextPositions = nextPositionsToImprove();
+         nextPositions != null && !nextPositions.isEmpty();
+         nextPositions = nextPositionsToImprove()) {
+      for (StoredBoardBestDescendant nextPosition : nextPositions) {
+        expandPosition(nextPosition);
       }
-      next.updateFathers();
-      updateEvalGoalIfNeeded();
     }
     return (short) -firstPosition.getEval();
   }

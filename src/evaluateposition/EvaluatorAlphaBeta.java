@@ -83,7 +83,6 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
 
   public EvaluatorAlphaBeta(DepthOneEvaluator depthOneEvaluator, HashMap hashMap) {
     this.depthOneEvaluator = depthOneEvaluator;
-    System.out.println(depthOneEvaluator instanceof DiskDifferenceEvaluatorPlusTwo);
     this.lastMovesEvaluator = new EvaluatorLastMoves(this.findStableDisks);
     for (int i = 0; i < this.moves.length; ++i) {
       for (int j = 0; j < this.moves[i].length; ++j) {
