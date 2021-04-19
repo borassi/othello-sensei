@@ -297,27 +297,30 @@ int bad = 0;
     return nMoves;
   }
 
+  final static int EMPTIES_HASH_MAP = 0;
   public int evaluatePositionSlow(
       long player, long opponent, int depth, int lower, int upper, boolean passed, boolean fast) {
+    int nEmpties = Long.bitCount(~(player | opponent));
     HashMap.BoardInHash boardInHash = null;
-    boardInHash = hashMap.getStoredBoard(player, opponent);
-    if (boardInHash != null) {
-      if (boardInHash.lower >= upper && boardInHash.depthLower >= depth) {
-        return boardInHash.lower;
-      }
-      if (boardInHash.upper <= lower && boardInHash.depthUpper >= depth) {
-        return boardInHash.upper;
-      }
-      if (boardInHash.lower == boardInHash.upper && boardInHash.depthLower >= depth
-          && boardInHash.depthUpper >= depth) {
-        return boardInHash.lower;
+    if (nEmpties > EMPTIES_HASH_MAP) {
+      boardInHash = hashMap.getStoredBoard(player, opponent);
+      if (boardInHash != null) {
+        if (boardInHash.lower >= upper && boardInHash.depthLower >= depth) {
+          return boardInHash.lower;
+        }
+        if (boardInHash.upper <= lower && boardInHash.depthUpper >= depth) {
+          return boardInHash.upper;
+        }
+        if (boardInHash.lower == boardInHash.upper && boardInHash.depthLower >= depth
+            && boardInHash.depthUpper >= depth) {
+          return boardInHash.lower;
+        }
       }
     }
     int stabilityCutoffUpper = findStableDisks.getUpperBound(player, opponent);
     if (stabilityCutoffUpper <= lower) {
       return stabilityCutoffUpper;
     }
-    int nEmpties = Long.bitCount(~(player | opponent));
     int move;
     long flip;
     boolean pass = true;
@@ -397,11 +400,13 @@ int bad = 0;
     }
     
     this.depthOneEvaluator.invert();
-    if (bestEval > lower) {
-      hashMap.updateLowerBound(player, opponent, bestEval, depth, bestMove, secondBestMove);
-    }
-    if (bestEval < upper) {
-      hashMap.updateUpperBound(player, opponent, bestEval, depth, bestMove, secondBestMove);
+    if (nEmpties > EMPTIES_HASH_MAP) {
+      if (bestEval > lower) {
+        hashMap.updateLowerBound(player, opponent, bestEval, depth, bestMove, secondBestMove);
+      }
+      if (bestEval < upper) {
+        hashMap.updateUpperBound(player, opponent, bestEval, depth, bestMove, secondBestMove);
+      }
     }
     return bestEval;    
   }

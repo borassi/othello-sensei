@@ -81,7 +81,7 @@ public class Main implements Runnable {
   }
   public Main(int hashMapSize) {
     HASH_MAP = new HashMap(hashMapSize);
-    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, () -> new EvaluatorAlphaBeta(HASH_MAP));
+    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, HASH_MAP);
   }
   
   public void stop() {

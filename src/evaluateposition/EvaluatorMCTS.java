@@ -17,13 +17,23 @@ package evaluateposition;
 import board.Board;
 import constants.Constants;
 import java.util.ArrayList;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private final EvaluatorInterface[] evaluatorMidgame;
 
   private long maxNVisited;
   private long stopTimeMillis;
+  private HashMap hashMap;
   
   int lower = -6300;
   int upper = 6300;
@@ -40,13 +50,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private Status status = Status.KILLED;
   private long nextUpdateEvalGoal;
 
-  public EvaluatorMCTS(int maxSize, int arraySize) {
-    this(maxSize, arraySize, () -> new EvaluatorAlphaBeta());
+  public EvaluatorMCTS(int maxSize, int arraySize, HashMap hashMap) {
+    this(maxSize, arraySize, hashMap, () -> new EvaluatorAlphaBeta(hashMap));
   }
 
-  public EvaluatorMCTS(int maxSize, int arraySize,
+  public EvaluatorMCTS(int maxSize, int arraySize) {
+    this(maxSize, arraySize, new HashMap());
+  }
+
+  public EvaluatorMCTS(int maxSize, int arraySize, HashMap hashMap,
                        Supplier<EvaluatorInterface> evaluatorMidgameBuilder) {
     super(maxSize, arraySize);
+    this.hashMap = hashMap;
     evaluatorMidgame = new EvaluatorInterface[Constants.MAX_PARALLEL_TASKS];
     for (int i = 0; i < evaluatorMidgame.length; ++i) {
       evaluatorMidgame[i] = evaluatorMidgameBuilder.get();
@@ -294,8 +309,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       deepenPosition(position);
     }
     position.board.updateFathers();
-    updateEvalGoalIfNeeded();
   }
+
+  ExecutorService es = Executors.newFixedThreadPool(12);
+  CompletionService<StoredBoardBestDescendant> executorCompletionService= new ExecutorCompletionService<>(es);
 
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
@@ -325,13 +342,23 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       setEvalGoal(firstPosition.getEval());
     }
-
     for (ArrayList<StoredBoardBestDescendant> nextPositions = nextPositionsToImprove();
          nextPositions != null && !nextPositions.isEmpty();
          nextPositions = nextPositionsToImprove()) {
+      CountDownLatch latch = new CountDownLatch(nextPositions.size());
       for (StoredBoardBestDescendant nextPosition : nextPositions) {
-        expandPosition(nextPosition);
+//        expandPosition(nextPosition);
+        es.submit(() -> {expandPosition(nextPosition); latch.countDown();});
       }
+      try {
+        latch.await();
+      } catch (InterruptedException ex) {
+        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
+      }
+      if (hashMap.size() > Constants.HASH_MAP_SIZE / 2) {
+        hashMap.reset();
+      }
+      updateEvalGoalIfNeeded();
     }
     return (short) -firstPosition.getEval();
   }

@@ -42,7 +42,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testDoubleFather() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(20, 20, () -> new DiskDifferenceEvaluatorPlusTwo());
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(20, 20, new HashMap(), () -> new DiskDifferenceEvaluatorPlusTwo());
     
     evaluator.setFirstPosition(new Board("e6f4"));
     evaluator.addChildren(getPositionToImprove(evaluator, ""));
@@ -66,7 +66,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testPass() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, () -> new DiskDifferenceEvaluatorPlusTwo());
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, new HashMap(), () -> new DiskDifferenceEvaluatorPlusTwo());
     Board passB = Board.pass();
     evaluator.setFirstPosition(passB);
     evaluator.addChildren(getPositionToImprove(evaluator, ""));
@@ -85,7 +85,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testDoublePass() {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, () -> new DiskDifferenceEvaluatorPlusTwo());
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(10, 10, new HashMap(), () -> new DiskDifferenceEvaluatorPlusTwo());
     Board passB = Board.bothPass();
     evaluator.setFirstPosition(passB);
     evaluator.addChildren(getPositionToImprove(evaluator, ""));
@@ -281,7 +281,7 @@ public class EvaluatorMCTSTest {
       int nElements = 5 + (int) (Math.random() * 100);
       int totalSize = nElements + (int) (Math.random() * 100);
 
-      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, () -> new DiskDifferenceEvaluatorPlusTwo());
+      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, new HashMap(), () -> new DiskDifferenceEvaluatorPlusTwo());
       Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;

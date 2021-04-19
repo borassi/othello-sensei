@@ -138,7 +138,7 @@ public class StoredBoardBestDescendantTest {
     int nElements = 5 + (int) (Math.random() * 100);
     int totalSize = nElements + (int) (Math.random() * 100);
 
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize,  () -> new DiskDifferenceEvaluatorPlusTwo());
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, new HashMap(), () -> new DiskDifferenceEvaluatorPlusTwo());
 
     evaluator.setFirstPosition(start.getPlayer(), start.getOpponent());
 

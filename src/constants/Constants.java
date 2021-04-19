@@ -24,7 +24,7 @@ public class Constants {
   public final static int PROOF_NUMBER_FOR_ENDGAME = 20000;
 //  public final static int HASH_MAP_SIZE = 500000;
 //  public final static int MCTS_SIZE = 2000000;
-  public final static int HASH_MAP_SIZE = 1000000;
+  public final static int HASH_MAP_SIZE = 10000000;
   public final static int MCTS_SIZE = 20000000;
   public final static int EMPTIES_FOR_ENDGAME = 10;
   public final static int TRY_SC_NO_CORNER = 2000;

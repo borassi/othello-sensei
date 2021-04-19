@@ -247,8 +247,9 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public static ArrayList<StoredBoardBestDescendant> bestDescendants(StoredBoard father, int n) {
     PriorityQueue<StoredBoardBestDescendant> toProcess = new PriorityQueue<>();
     ArrayList<StoredBoardBestDescendant> result = new ArrayList<>();
-    StoredBoardBestDescendant greaterEqual = new StoredBoardBestDescendant(father, true);
-    StoredBoardBestDescendant strictlyGreater = new StoredBoardBestDescendant(father, false);
+    boolean isGreaterEqual = Math.random() > 0.5;
+    StoredBoardBestDescendant greaterEqual = new StoredBoardBestDescendant(father, isGreaterEqual);
+    StoredBoardBestDescendant strictlyGreater = new StoredBoardBestDescendant(father, !isGreaterEqual);
 
     if (greaterEqual.hasValidDescendants()) {
       toProcess.add(greaterEqual);

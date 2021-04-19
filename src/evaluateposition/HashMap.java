@@ -89,14 +89,16 @@ public class HashMap {
     boards = new BoardInHash[arraySize];
     firstToRemove = new BoardInHash();
     lastToRemove = new BoardInHash();
+    for (int i = 0; i < boards.length; ++i) {
+      boards[i] = new BoardInHash();
+    }
     reset();
   }
 
   public final void reset() {
     for (int i = 0; i < boards.length; ++i) {
-      boards[i] = new BoardInHash();
+      boards[i].reset(0, 0);
     }
-    System.gc();
     this.size.set(0);
   }
   
