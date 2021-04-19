@@ -91,9 +91,8 @@ public class EndgameTest {
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
           "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
   final HashMap HASH_MAP = new HashMap(Constants.HASH_MAP_SIZE);
-  final PatternEvaluatorImproved EVALUATOR_DEPTH_ONE = PatternEvaluatorImproved.load();
 //  EvaluatorMidgame eval = evalMidgame;
-  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, () -> new EvaluatorAlphaBeta(EVALUATOR_DEPTH_ONE, HASH_MAP));
+  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, () -> new EvaluatorAlphaBeta(HASH_MAP));
 
   public static Board readIthBoard(int i) {
     String[] boards = POSITIONS[i - 1].split(" ");

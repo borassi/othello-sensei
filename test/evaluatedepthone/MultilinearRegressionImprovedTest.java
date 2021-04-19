@@ -90,8 +90,7 @@ public class MultilinearRegressionImprovedTest {
       long origError = (long) (Math.random() * 10000);
       long origEval = (long) ((Math.random() - 0.5) * 20000);
       long orig = origEval;//(origEval << 32) + origError;
-      MultilinearRegressionImproved.Feature feature = new MultilinearRegressionImproved.Feature(
-          eval, orig);
+      MultilinearRegressionImproved.Feature feature = new MultilinearRegressionImproved.Feature(orig);
       assertEquals(feature.toInt(), orig);
     }
   }
@@ -104,8 +103,7 @@ public class MultilinearRegressionImprovedTest {
       double errorSum = (Math.random() - 0.5) * origError;
       double evalSum = (Math.random() - 0.5) * 10000;
       long orig = origEval;//(origEval << 32) + origError;
-      MultilinearRegressionImproved.Feature feature = new MultilinearRegressionImproved.Feature(
-          eval, orig);
+      MultilinearRegressionImproved.Feature feature = new MultilinearRegressionImproved.Feature(orig);
       feature.eval += evalSum;
       feature.squaredError += errorSum;
       long updatedEval = feature.toInt();
@@ -147,11 +145,11 @@ public class MultilinearRegressionImprovedTest {
       trainingSet.add(new BoardWithEvaluation(fourCorners, -4000));
     }
 
-    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, trainingSet);
+    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(trainingSet);
     
     MultilinearRegressionImproved.Feature[][][] newEvals = mr.getFeatures();
     mr.train(newEvals, trainingSet, 0, 0.005F, 20, false);
-    mr.setFeatures(newEvals);
+    mr.exportFeatures(newEvals);
     
     for (BoardWithEvaluation b : trainingSet) {
       assertEquals(b.evaluation, eval.eval(b.board), 30);
@@ -170,7 +168,7 @@ public class MultilinearRegressionImprovedTest {
       trainingSet.add(new BoardWithEvaluation(fourCorners, -4000));
     }
 
-    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(eval, trainingSet);
+    MultilinearRegressionImproved mr = new MultilinearRegressionImproved(trainingSet);
     
     MultilinearRegressionImproved.Feature[][][] newEvals = mr.getFeatures();
     mr.train(newEvals, trainingSet, 0, 0.005F, 2, false);
@@ -179,7 +177,7 @@ public class MultilinearRegressionImprovedTest {
     mr.train(newEvals, trainingSet, 0, 0.0005F, 2, false);
     mr.train(newEvals, trainingSet, 0, 0.0002F, 2, false);
     mr.train(newEvals, trainingSet, 0, 0.0001F, 2, false);
-    mr.setFeatures(newEvals);
+    mr.exportFeatures(newEvals);
     
     for (BoardWithEvaluation b : trainingSet) {
       if (b.board != oneOnEdge) {

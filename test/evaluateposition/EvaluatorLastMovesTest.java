@@ -121,7 +121,7 @@ public class EvaluatorLastMovesTest {
 
   @Test
   public void testE2E() {
-    EvaluatorBasic eval = new EvaluatorBasic(PatternEvaluatorImproved.load(), new PossibleMovesFinderImproved());
+    EvaluatorBasic eval = new EvaluatorBasic(new PatternEvaluatorImproved(), new PossibleMovesFinderImproved());
     for (int i = 0; i < 10000; i++) {
       double percBlack = Math.random() * 0.9;
       double percWhite = 0.9 - percBlack;

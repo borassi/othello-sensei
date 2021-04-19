@@ -31,10 +31,10 @@ import java.util.ArrayList;
  */
 public class TestThor {
   public ArrayList<BoardWithEvaluation> boards;
-  PatternEvaluatorImproved eval1 = PatternEvaluatorImproved.load();
+  PatternEvaluatorImproved eval1 = new PatternEvaluatorImproved();
   PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
 //  EvaluatorMCTS eval = new EvaluatorMCTS(100, 10);
-  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta(eval1);
+  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   long time;
 //  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   

@@ -36,7 +36,7 @@ public class StoredBoard {
     public boolean disproofBeforeFinished = false;
   }
   protected static HashMap HASH_MAP = new HashMap(6000);
-  protected static EvaluatorInterface EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(PatternEvaluatorImproved.load(), HASH_MAP);
+  protected static EvaluatorInterface EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(HASH_MAP);
   
   private final long player;
   private final long opponent;

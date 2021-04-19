@@ -58,7 +58,6 @@ public class Main implements Runnable {
   ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
   ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
-  private final PatternEvaluatorImproved DEPTH_ONE_EVALUATOR;
   private final HashMap HASH_MAP;
   private EvaluatorMCTS EVALUATOR;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -81,9 +80,8 @@ public class Main implements Runnable {
     this(Constants.HASH_MAP_SIZE);
   }
   public Main(int hashMapSize) {
-    DEPTH_ONE_EVALUATOR = PatternEvaluatorImproved.load();
     HASH_MAP = new HashMap(hashMapSize);
-    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, () -> new EvaluatorAlphaBeta(DEPTH_ONE_EVALUATOR, HASH_MAP));
+    EVALUATOR = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE, () -> new EvaluatorAlphaBeta(HASH_MAP));
   }
   
   public void stop() {

@@ -15,31 +15,23 @@ package evaluatedepthone;
 
 import board.Board;
 import bitpattern.BitPattern;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import main.Main;
 
 /**
  *
  * @author michele
  */
-public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator {
-  /**
-   * Needed to implement Serializable.
-   */
-  private final static long serialVersionUID = 1L;
-//  public final static int EVAL_SHIFT = 32;
-  public final static String DEPTH_ONE_EVALUATOR_FILEPATTERN = 
-      "coefficients/pattern_evaluator.sar";
-  long features[];
-//  long player;
-//  long opponent;
-  ArrayList<int[]> featuresToSquaresList;
+public class PatternEvaluatorImproved implements DepthOneEvaluator {
+  public final static String DEPTH_ONE_EVALUATOR_FILEPATTERN = "coefficients/pattern_evaluator_coefficients.dat";
   final static int EMPTIES_SPLITS = 20; // SET TO <= 2 FOR TESTS
   final static long FEATURE_CORNER_4X4 = BitPattern.parsePattern("--------" +
                                                                  "--------" +
@@ -81,10 +73,6 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
                                                                "-----X--" +
                                                                "------X-" +
                                                                "-------X");
-//  final static long FEATURE_LAST_ROW = BitPattern.LAST_ROW_BIT_PATTERN;
-//  final static long FEATURE_LAST_BUT_ONE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 8;
-//  final static long FEATURE_LAST_BUT_TWO_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 16;
-//  final static long FEATURE_LAST_BUT_THREE_ROW = BitPattern.LAST_ROW_BIT_PATTERN << 24;
 
   final static long PATTERN_CORNER = BitPattern.parsePattern("--------\n" 
                                                            + "--------\n"
@@ -167,20 +155,151 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     {FEATURE_DIAGONAL << 8},
     {FEATURE_DIAGONAL << 16},
   };
-  
-  static int featureToBaseFeature[][];
 
-  int squaresToFeatureSingle[][] = new int[64][];
-  int squaresToFeatureDouble[][] = new int[64][];
+  final static int squaresToFeatureSingle[][] = new int[64][];
+  final static int squaresToFeatureDouble[][] = new int[64][];
+  final static int[] maxBaseHashes;
+  final static int[] emptyBaseHashes;
+
+  final static int[][][] evals;
+  final static long features[];
+  final static ArrayList<int[]> featuresToSquaresList;
+
   int[] hashes;
   int[] baseHashes;
   int empties;
-  int[] maxBaseHashes;
-  int[] emptyBaseHashes;
-  float lastError;
 
-  int[][][] evals;
+  public static ArrayList<int[]> featureToBaseFeature() {
+    featuresToSquaresList.clear();
+    ArrayList<int[]> result = new ArrayList<>();
+    for (long[] featureGroup : FEATURE_GROUPS) {
+      ArrayList<ArrayList<int[]>> baseFeatures = new ArrayList<>();
+      for (long featureLong : featureGroup) {
+        baseFeatures.add(allFeatures(featureLong));
+      }
+      for (int i = 0; i < baseFeatures.get(0).size(); ++i) {
+        int[] baseFeature = new int[baseFeatures.size()];
+        int nBaseFeature = 0;
+        for (int j = 0; j < baseFeatures.size(); ++j) {
+          assert(baseFeatures.get(0).size() == baseFeatures.get(j).size());
+          featuresToSquaresList.add(baseFeatures.get(j).get(i));
+          baseFeature[nBaseFeature++] = featuresToSquaresList.size() - 1;
+        }
+        result.add(baseFeature);
+      }
+    }
+    return result;
+  }
+  
+  static {
+    featuresToSquaresList = new ArrayList<>();
+    featureToBaseFeature();
+    ArrayList<ArrayList<Integer>> squaresToFeatureSingleList = new ArrayList<>();
+    ArrayList<ArrayList<Integer>> squaresToFeatureDoubleList = new ArrayList<>();
 
+    assert(featuresToSquaresList.size() < 127);
+    features = new long[featuresToSquaresList.size()];
+    maxBaseHashes = new int[featuresToSquaresList.size()];
+    emptyBaseHashes = new int[featuresToSquaresList.size()];
+
+    for (int i = 0; i < 64; ++i) {
+      squaresToFeatureSingleList.add(new ArrayList<>());
+      squaresToFeatureDoubleList.add(new ArrayList<>());
+    }
+    for (int j = 0; j < featuresToSquaresList.size(); ++j) {
+      int squareList[] = featuresToSquaresList.get(j);
+      features[j] = featureToLong(squareList);
+      for (int k = 0; k < squareList.length; ++k) {
+        squaresToFeatureSingleList.get(squareList[k]).add((int) Math.pow(3, k) * 128 + j);
+        squaresToFeatureDoubleList.get(squareList[k]).add((int) (2 * Math.pow(3, k)) * 128 + j);
+        maxBaseHashes[j] += 2 * Math.pow(3, k);
+        emptyBaseHashes[j] += Math.pow(3, k);
+      }
+    }
+    for (int i = 0; i < 64; ++i) {
+      squaresToFeatureSingle[i] = new int[squaresToFeatureSingleList.get(i).size()];
+      squaresToFeatureDouble[i] = new int[squaresToFeatureDoubleList.get(i).size()];
+      for (int j = 0; j < squaresToFeatureSingleList.get(i).size(); ++j) {
+        squaresToFeatureSingle[i][j] = squaresToFeatureSingleList.get(i).get(j);
+        squaresToFeatureDouble[i][j] = squaresToFeatureDoubleList.get(i).get(j);
+        
+      }
+    }
+    evals = readEvals();
+  }
+  
+  public PatternEvaluatorImproved() {
+    baseHashes = new int[featuresToSquaresList.size()];
+    hashes = new int[evals[0].length];
+  }
+  
+  public static int[][][] emptyEvals() {
+    ArrayList<int[]> featureToBaseFeature = featureToBaseFeature();
+    int[][][] result = new int[EMPTIES_SPLITS][featureToBaseFeature.size()][];
+    for (int i = 0; i < featureToBaseFeature.size(); ++i) {
+      boolean copied = true;
+      // Check if featureToBaseFeature[i][j] == featureToBaseFeature[i-1][j] rotated for all j.
+      if (i > 0 && featureToBaseFeature.get(i).length == featureToBaseFeature.get(i-1).length) {
+        for (int j = 0; j < featureToBaseFeature.get(i).length; ++j) {
+          HashSet<Long> allTransp = BitPattern.allTranspositions(features[featureToBaseFeature.get(i)[j]]);
+          if (!allTransp.contains(features[featureToBaseFeature.get(i-1)[j]])) {
+            copied = false;
+            break;
+          }
+        }
+      } else {
+        copied = false;
+      }
+      for (int emptiesGroup = 0; emptiesGroup < EMPTIES_SPLITS; ++emptiesGroup) {
+        if (copied) {
+          result[emptiesGroup][i] = result[emptiesGroup][i-1];
+          continue;
+        }
+        if (featureToBaseFeature.get(i).length == 1) {
+          result[emptiesGroup][i] = new int[maxBaseHashes[featureToBaseFeature.get(i)[0]] + 1];
+        } else {
+          int size = 0;
+          for (int j = 0; j < featureToBaseFeature.get(i).length - 1; ++j) {
+            size += (maxBaseHashes[featureToBaseFeature.get(i)[j]] + 1) * (maxBaseHashes[featureToBaseFeature.get(i)[j+1]] + 1);
+          }
+          result[emptiesGroup][i] = new int[size];
+        }
+      }
+    }
+    return result;
+  }
+  
+  public static void saveEvals() {
+    saveEvals(DEPTH_ONE_EVALUATOR_FILEPATTERN);
+  }
+
+  public static void saveEvals(String filepath) {
+    try {
+      ObjectOutputStream objOut = Main.fileAccessor.outputFile(filepath);
+      objOut.writeObject(evals);
+      objOut.close();
+    } catch (IOException ex) {
+      Logger.getLogger(MultilinearRegressionImproved.class.getName()).log(Level.SEVERE, null, ex);
+    }
+  }
+  
+  public static int[][][] readEvals() {
+    return readEvals(DEPTH_ONE_EVALUATOR_FILEPATTERN);
+  }
+
+  public static int[][][] readEvals(String filepath) {
+    try {
+      ObjectInputStream in = Main.fileAccessor.inputFile(filepath);
+      int[][][] result = (int[][][]) in.readObject();
+      in.close();
+      return result;
+    } catch (IOException | ClassNotFoundException ex) {
+      System.out.println("Missing pattern evaluator!");
+//      Logger.getLogger(PatternEvaluatorImproved.class.getName()).log(Level.SEVERE, null, ex);
+      return emptyEvals();
+    }
+  }
+  
   final static int[] longToFeature(long pattern) {
     int[] feature = new int[Long.bitCount(pattern)];
     int currentBit = 0;
@@ -248,19 +367,20 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   }
   
   public int[] hashes() {
-    for (int i = 0; i < featureToBaseFeature.length; ++i) {
+    ArrayList<int[]> featureToBaseFeature = featureToBaseFeature();
+    for (int i = 0; i < hashes.length; ++i) {
       hashes[i] = 0;
       int j = 0;
-      while (baseHashes[featureToBaseFeature[i][j]] == emptyBaseHashes[featureToBaseFeature[i][j]] &&
-             j < featureToBaseFeature[i].length - 2) {
-        hashes[i] += (maxBaseHashes[featureToBaseFeature[i][j]] + 1) * (maxBaseHashes[featureToBaseFeature[i][j+1]] + 1);
+      while (baseHashes[featureToBaseFeature.get(i)[j]] == emptyBaseHashes[featureToBaseFeature.get(i)[j]] &&
+             j < featureToBaseFeature.get(i).length - 2) {
+        hashes[i] += (maxBaseHashes[featureToBaseFeature.get(i)[j]] + 1) * (maxBaseHashes[featureToBaseFeature.get(i)[j+1]] + 1);
         ++j;
       }
-      if (j == featureToBaseFeature[i].length - 1) {
-        hashes[i] = baseHashes[featureToBaseFeature[i][j]];
+      if (j == featureToBaseFeature.get(i).length - 1) {
+        hashes[i] = baseHashes[featureToBaseFeature.get(i)[j]];
       } else {
-        hashes[i] += baseHashes[featureToBaseFeature[i][j]] +
-            (maxBaseHashes[featureToBaseFeature[i][j]] + 1) * baseHashes[featureToBaseFeature[i][j+1]];
+        hashes[i] += baseHashes[featureToBaseFeature.get(i)[j]] +
+            (maxBaseHashes[featureToBaseFeature.get(i)[j]] + 1) * baseHashes[featureToBaseFeature.get(i)[j+1]];
       }
     }
 //    hashes[featureToBaseFeature.length] = StableDisksMiddle.hash(new Board(player, opponent));
@@ -445,101 +565,6 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     setup(b.getPlayer(), b.getOpponent());
   }
   
-  public final void setupFeaturesToSquares() {
-    ArrayList<int[]> featureToBaseFeaturesList = new ArrayList<>();
-    this.featuresToSquaresList = new ArrayList<>();
-    for (long[] featureGroup : FEATURE_GROUPS) {
-      ArrayList<ArrayList<int[]>> baseFeatures = new ArrayList<>();
-      for (long featureLong : featureGroup) {
-        baseFeatures.add(allFeatures(featureLong));
-      }
-      for (int i = 0; i < baseFeatures.get(0).size(); ++i) {
-        int[] baseFeature = new int[baseFeatures.size()];
-        int nBaseFeature = 0;
-        for (int j = 0; j < baseFeatures.size(); ++j) {
-          assert(baseFeatures.get(0).size() == baseFeatures.get(j).size());
-          this.featuresToSquaresList.add(baseFeatures.get(j).get(i));
-          baseFeature[nBaseFeature++] = this.featuresToSquaresList.size() - 1;
-        }
-        featureToBaseFeaturesList.add(baseFeature);
-      }
-    }
-    featureToBaseFeature = new int[featureToBaseFeaturesList.size()][];
-    for (int i = 0; i < featureToBaseFeaturesList.size(); ++i) {
-      featureToBaseFeature[i] = featureToBaseFeaturesList.get(i);
-    }    
-  }
-  
-  public PatternEvaluatorImproved() {
-    ArrayList<ArrayList<Integer>> squaresToFeatureSingleList = new ArrayList<>();
-    ArrayList<ArrayList<Integer>> squaresToFeatureDoubleList = new ArrayList<>();
-
-    setupFeaturesToSquares();
-
-    assert(featuresToSquaresList.size() < 127);
-    features = new long[featuresToSquaresList.size()];
-    maxBaseHashes = new int[featuresToSquaresList.size()];
-    emptyBaseHashes = new int[featuresToSquaresList.size()];
-    baseHashes = new int[featuresToSquaresList.size()];
-    hashes = new int[featureToBaseFeature.length];
-    evals = new int[EMPTIES_SPLITS][hashes.length][];
-
-    for (int i = 0; i < 64; ++i) {
-      squaresToFeatureSingleList.add(new ArrayList<>());
-      squaresToFeatureDoubleList.add(new ArrayList<>());
-    }
-    for (int j = 0; j < featuresToSquaresList.size(); ++j) {
-      int squareList[] = featuresToSquaresList.get(j);
-      features[j] = featureToLong(squareList);
-      for (int k = 0; k < squareList.length; ++k) {
-        squaresToFeatureSingleList.get(squareList[k]).add((int) Math.pow(3, k) * 128 + j);
-        squaresToFeatureDoubleList.get(squareList[k]).add((int) (2 * Math.pow(3, k)) * 128 + j);
-        maxBaseHashes[j] += 2 * Math.pow(3, k);
-        emptyBaseHashes[j] += Math.pow(3, k);
-      }
-    }
-    for (int i = 0; i < 64; ++i) {
-      squaresToFeatureSingle[i] = new int[squaresToFeatureSingleList.get(i).size()];
-      squaresToFeatureDouble[i] = new int[squaresToFeatureDoubleList.get(i).size()];
-      for (int j = 0; j < squaresToFeatureSingleList.get(i).size(); ++j) {
-        squaresToFeatureSingle[i][j] = squaresToFeatureSingleList.get(i).get(j);
-        squaresToFeatureDouble[i][j] = squaresToFeatureDoubleList.get(i).get(j);
-        
-      }
-    }
-    for (int i = 0; i < featureToBaseFeature.length; ++i) {
-      boolean copied = true;
-      // Check if featureToBaseFeature[i][j] == featureToBaseFeature[i-1][j] rotated for all j.
-      if (i > 0 && featureToBaseFeature[i].length == featureToBaseFeature[i-1].length) {
-        for (int j = 0; j < featureToBaseFeature[i].length; ++j) {
-          HashSet<Long> allTransp = BitPattern.allTranspositions(features[featureToBaseFeature[i][j]]);
-          if (!allTransp.contains(features[featureToBaseFeature[i-1][j]])) {
-            copied = false;
-            break;
-          }
-        }
-      } else {
-        copied = false;
-      }
-      for (int emptiesGroup = 0; emptiesGroup < EMPTIES_SPLITS; ++emptiesGroup) {
-        if (copied) {
-          evals[emptiesGroup][i] = evals[emptiesGroup][i-1];
-          continue;
-        }
-        if (featureToBaseFeature[i].length == 1) {
-          evals[emptiesGroup][i] = new int[maxBaseHashes[featureToBaseFeature[i][0]] + 1];
-        } else {
-          int size = 0;
-          for (int j = 0; j < featureToBaseFeature[i].length - 1; ++j) {
-            size += (maxBaseHashes[featureToBaseFeature[i][j]] + 1) *  (maxBaseHashes[featureToBaseFeature[i][j+1]] + 1);
-          }
-          evals[emptiesGroup][i] = new int[size];
-        }
-//        evals[emptiesGroup][evals[emptiesGroup].length - 1] = new int[65*64];
-      }
-    }
-  }
-  
   public void randomizeEvals() {
     for (int emptiesGroup = 0; emptiesGroup < evals.length; ++emptiesGroup) {
       for (int i = 0; i < evals[emptiesGroup].length; ++i) {
@@ -578,27 +603,26 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
     }
   }
 
-  public static PatternEvaluatorImproved load() {
-    return load(DEPTH_ONE_EVALUATOR_FILEPATTERN);
-  }
+//  public static PatternEvaluatorImproved load() {
+//    return load(DEPTH_ONE_EVALUATOR_FILEPATTERN);
+//  }
 
-  /**
-   * Loads a PatternEvaluatorImproved.
-   * @param filepath the file (obtained by calling save() on another multilinear regression).
-   * @return The PatternEvaluatorImproved loaded, or an empty MultilinearRegression if errors occurred.
-   */
-  public static PatternEvaluatorImproved load(String filepath) {
-    PatternEvaluatorImproved result;
-    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
-      result = (PatternEvaluatorImproved) in.readObject();
-    } catch (IOException | ClassNotFoundException | ClassCastException e) {
-      System.out.println("Error when loading the PatternEvaluator:\n" + 
-                         Arrays.toString(e.getStackTrace()));
-      return new PatternEvaluatorImproved();
-    }
-    result.setupFeaturesToSquares();
-    return result;
-  }
+//  /**
+//   * Loads a PatternEvaluatorImproved.
+//   * @param filepath the file (obtained by calling save() on another multilinear regression).
+//   * @return The PatternEvaluatorImproved loaded, or an empty MultilinearRegression if errors occurred.
+//   */
+//  public static PatternEvaluatorImproved load(String filepath) {
+//    PatternEvaluatorImproved result;
+//    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
+//      result = (PatternEvaluatorImproved) in.readObject();
+//    } catch (IOException | ClassNotFoundException | ClassCastException e) {
+//      System.out.println("Error when loading the PatternEvaluator:\n" + 
+//                         Arrays.toString(e.getStackTrace()));
+//      return new PatternEvaluatorImproved();
+//    }
+//    return result;
+//  }
 
 //  public static void main(String args[]) {
 //    PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
@@ -636,10 +660,5 @@ public class PatternEvaluatorImproved implements Serializable, DepthOneEvaluator
   public int evalVerbose(long player, long opponent) {
     this.setup(player, opponent);
     return this.eval();
-  }
-  
-  public static void main(String args[]) {
-    PatternEvaluatorImproved eval = PatternEvaluatorImproved.load();
-    eval.save();
   }
 }

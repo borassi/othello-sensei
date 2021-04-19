@@ -22,6 +22,7 @@ import board.GetMovesCache;
 import constants.Constants;
 import constants.Stats;
 import evaluatedepthone.DepthOneEvaluator;
+import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import evaluatedepthone.FindStableDisks;
 import evaluatedepthone.PatternEvaluatorImproved;
 import helpers.Gaussian;
@@ -69,15 +70,20 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   static Constant constant = new Constant();
 
   public EvaluatorAlphaBeta() {
-    this(PatternEvaluatorImproved.load());
+    this(new PatternEvaluatorImproved());
   }
 
   public EvaluatorAlphaBeta(DepthOneEvaluator depthOneEvaluator) {
     this(depthOneEvaluator, new HashMap());
   }
 
+  public EvaluatorAlphaBeta(HashMap hashMap) {
+    this(new PatternEvaluatorImproved(), hashMap);
+  }
+
   public EvaluatorAlphaBeta(DepthOneEvaluator depthOneEvaluator, HashMap hashMap) {
     this.depthOneEvaluator = depthOneEvaluator;
+    System.out.println(depthOneEvaluator instanceof DiskDifferenceEvaluatorPlusTwo);
     this.lastMovesEvaluator = new EvaluatorLastMoves(this.findStableDisks);
     for (int i = 0; i < this.moves.length; ++i) {
       for (int j = 0; j < this.moves[i].length; ++j) {

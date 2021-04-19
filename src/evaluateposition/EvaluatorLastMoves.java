@@ -413,7 +413,10 @@ public class EvaluatorLastMoves {
     if (delta <= Constants.TRY_SC_LAST_5_NO_CORNER ||
         (lastMoveCorner && delta <= Constants.TRY_SC_LAST_5_CORNER)) {
       stable = stableDisks.getStableDisks(opponent, player, stable, true);
-      assert stable == stableDisks.getStableDisks(opponent, player);
+      // stable is a superset of StableDisks(opponent, player).
+      assert (stableDisks.getStableDisks(opponent, player) & ~stable) == 0;
+      // stable is a superset of StableDisks(opponent, player) | StableDisks(player, opponent)
+      assert (stable & ~(stableDisks.getStableDisks(opponent, player) | stableDisks.getStableDisks(player, opponent))) == 0;
       int scUpper = FindStableDisks.getUpperBoundFromStable(stable, opponent);
       if (scUpper - lower <= 0) {
         return scUpper;
@@ -637,7 +640,10 @@ public class EvaluatorLastMoves {
         delta <= Constants.TRY_SC_NO_CORNER ||
         ((lastMove & CORNERS) != 0 && delta <= Constants.TRY_SC_CORNER)) {
       stable = stableDisks.getStableDisks(opponent, player, stable, true);
-      assert stable == stableDisks.getStableDisks(opponent, player);
+      // stable is a superset of StableDisks(opponent, player).
+      assert (stableDisks.getStableDisks(opponent, player) & ~stable) == 0;
+      // stable is a superset of StableDisks(opponent, player) | StableDisks(player, opponent)
+      assert (stable & ~(stableDisks.getStableDisks(opponent, player) | stableDisks.getStableDisks(player, opponent))) == 0;
       int scUpper = FindStableDisks.getUpperBoundFromStable(stable, opponent);
       if (scUpper - lower <= 0) {
         return scUpper;
