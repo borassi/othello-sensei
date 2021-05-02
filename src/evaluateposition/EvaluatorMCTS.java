@@ -22,8 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,8 +97,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     evalGoal = roundEval(evalGoal);
     assert(evalGoal >= lower - 100 && evalGoal <= upper + 100);
     assert evalGoal % 200 == 0;
-    this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
-    this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
+//    if (evalGoal != this.getEvalGoal()) {
+      this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
+      this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
+//    }
   }
   
   public void updateEvalGoalIfNeeded() {
@@ -194,7 +194,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
-    return StoredBoardBestDescendant.bestDescendants(firstPosition, Constants.MAX_PARALLEL_TASKS);
+    ArrayList<StoredBoardBestDescendant> result = StoredBoardBestDescendant.bestDescendants(firstPosition, Constants.MAX_PARALLEL_TASKS);
+    if (result.isEmpty()) {
+      status = Status.SOLVED;
+      return null;
+    }
+    return result;
   }
 
   public short evaluatePosition(Board board) {
@@ -233,7 +238,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return;
     }
     EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
-    int depth = board.nEmpties < 24 ? 2 : 3;
+    int depth = board.nEmpties < 24 ? 2 : 4;
     long addedPositions = 0;
     for (StoredBoard child : board.children) {
       if (child.getDescendants() == 0) {
@@ -311,9 +316,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     position.board.updateFathers();
   }
 
-  ExecutorService es = Executors.newFixedThreadPool(12);
-  CompletionService<StoredBoardBestDescendant> executorCompletionService= new ExecutorCompletionService<>(es);
-
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, boolean reset) {
     assert Math.abs(lower % 200) == 100;
@@ -328,11 +330,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
-
+    ExecutorService es = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     if (firstPosition.getPlayer() != board.getPlayer() ||
-        firstPosition.getOpponent() != board.getOpponent()) {
+        firstPosition.getOpponent() != board.getOpponent() ||
+        !firstPosition.fathers.isEmpty()) {
       StoredBoard boardStored = null;
-      
+
       if (!reset) {
         boardStored = get(board.getPlayer(), board.getOpponent());
         firstPosition = boardStored;
@@ -340,8 +343,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (boardStored == null) {
         setFirstPosition(board.getPlayer(), board.getOpponent());
       }
-      setEvalGoal(firstPosition.getEval());
     }
+
+    StoredBoard[] firstPositionChildren = firstPosition.children;
+    if (firstPosition.fathers.isEmpty() && firstPosition.getChildren() != null) {
+      ArrayList<StoredBoard> firstPositionUnsolvedChildren = new ArrayList<>();
+      for (StoredBoard child : firstPosition.children) {
+        if (!child.isSolved()) {
+          firstPositionUnsolvedChildren.add(child);
+        }
+      }
+      firstPosition.children = firstPositionUnsolvedChildren.toArray(new StoredBoard[firstPositionUnsolvedChildren.size()]);
+      firstPosition.updateFather();
+    }
+    setEvalGoal(firstPosition.getEval());
+    
     for (ArrayList<StoredBoardBestDescendant> nextPositions = nextPositionsToImprove();
          nextPositions != null && !nextPositions.isEmpty();
          nextPositions = nextPositionsToImprove()) {
@@ -360,6 +376,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       updateEvalGoalIfNeeded();
     }
+    if (firstPositionChildren != null) {
+      firstPosition.children = firstPositionChildren;
+      firstPosition.updateFather();
+    }
+    es.shutdown();
     return (short) -firstPosition.getEval();
   }
   

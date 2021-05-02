@@ -14,18 +14,11 @@
 package endgametest;
 
 import board.Board;
-import board.PossibleMovesFinderImproved;
 import constants.Constants;
 import constants.Stats;
-import evaluatedepthone.PatternEvaluatorImproved;
-import evaluateposition.EndgameTimeEstimator;
 import evaluateposition.EvaluatorMCTS;
-import evaluateposition.EvaluatorAlphaBeta;
-import evaluateposition.HashMap;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class EndgameTest {
   public final static String[] POSITIONS = {
@@ -70,6 +63,7 @@ public class EndgameTest {
           "--OOOO--O-OOOO--OXXXOOO-OXXOXO--OOXXOXX-OOXXXX--O-XXX-----XX-O-- X",
           "--OOOO----OOOO---XOXXOOXOOXOOOOX-OOOOOXXXOOXXXXX--X-X----------- X",
           "O-OOOO--XOXXOX--XOOOXXX-XOOOXX--XOOXOX--XOXXX---X-XX------------ O", // 40
+//          "---------------------------XO------OX--------------------------- X", // 40
           "O--OOOOX-OOOOOOXOOXXOOOXOOXOOOXXOOOOOOXX---OOOOX----O--X-------- X",
           "-OOOOO----OOOOX--OOOOOO-XXXXXOO--XXOOX--OOXOXX----OXXO---OOO--O- X",
           "--OOO-------XX-OOOOOOXOO-OOOOXOOX-OOOXXO---OOXOO---OOOXO--OOOO-- X", // 43

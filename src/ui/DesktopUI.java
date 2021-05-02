@@ -108,44 +108,81 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
-    String annotationsString = String.format("%+.1f", annotations.eval);
-    if (annotations.lower == annotations.eval && annotations.eval == annotations.upper) {
-      annotationsString = String.format("%+.0f", annotations.eval);
+    if (annotations.storedBoard == null) {
+      return;
     }
-    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
-    annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval + annotations.disproofNumberCurEval);
+    StoredBoard board = annotations.storedBoard;
+    double eval = -board.getEval() / 100.0;
+    String annotationsString = String.format("%+.1f", eval);
+    if (board.isSolved()) {
+      annotationsString = String.format("%+.0f", eval);
+    }
+    annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
+    if (board.probStrictlyGreater > 0) {
+      annotationsString += "\n" + (int) (board.probStrictlyGreater * 100) + "% ";
+    } else {
+      annotationsString += "\n" + Utils.prettyPrintDouble(board.getDisproofNumberStrictlyGreater()) + " ";
+    }
+    if (board.probStrictlyGreater > 0 || board.probGreaterEqual < 1) {
+      annotationsString += (-board.getEvalGoal() / 100) + " ";
+    }
+    if (board.probGreaterEqual < 1) {
+      annotationsString += (int) (100 - board.probGreaterEqual * 100) + "%";
+    } else {
+      annotationsString += Utils.prettyPrintDouble(board.getProofNumberGreaterEqual());      
+    }
     cases[ij.i][ij.j].setAnnotations(annotationsString);
     cases[ij.i][ij.j].setFontSizes(new double[] {0.3, 0.16});
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
     cases[ij.i][ij.j].repaint();    
   }
-  
+
   private void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
     cases[ij.i][ij.j].setFontSizes(new double[] {0.13});
+    StoredBoard board = annotations.storedBoard;
+    double eval = -board.getEval() / 100.0;
+    int lower = -board.getUpper() / 100;
+    int upper = -board.getLower() / 100;
     
-    String annotationsString = "";
-    if (annotations.eval != Float.NEGATIVE_INFINITY) {
-      if (annotations.lower == annotations.eval && annotations.eval == annotations.upper) {
-        annotationsString = String.format("%+.0f", annotations.eval);
+    String annotationsString = String.format("%+.0f (%+d)", eval, -board.getEvalGoal() / 100);
+    if (board.getLower() == board.getEval() && board.getUpper() == board.getEval()) {
+      annotationsString = String.format("%+.0f (%+d)", eval, -board.getEvalGoal() / 100);
+    }
+    annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
+    annotationsString += "\n" + (int) (board.probStrictlyGreater * 100) + "% " + (int) (100 - board.probGreaterEqual * 100) + "%";
+//    boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
+//    StoredBoard bestChild = new StoredBoardBestDescendant(current, greaterEqual).bestChild();
+//    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);
+    annotationsString += 
+        "\n"
+//        + (bestChild == child && !greaterEqual ? "*" : "")
+        + Utils.prettyPrintDouble(board.getDisproofNumberStrictlyGreater()) + " " +
+        Utils.prettyPrintDouble(board.getProofNumberGreaterEqual())
+//        + (bestChild == child && greaterEqual ? "*" : "")
+        ;
+
+    annotationsString += String.format("\n%+d %+d", lower, upper);
+//      
+      if (board.extraInfo != null) {
+        annotationsString +=
+            "\n"
+            + (board.extraInfo.disproofBeforeFinished ? "* " : "")
+            + Utils.prettyPrintDouble(board.getDescendants())
+            + (board.extraInfo.proofBeforeFinished ? " *" : "") + "\n"
+            + Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreater) + " "
+            + Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqual) + "\n"
+            + Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreaterVar) + " "
+            + Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqualVar)
+            ;
       } else {
-        annotationsString += String.format("%+.2f", annotations.eval);
+        annotationsString +=
+            "\n"
+            + Utils.prettyPrintDouble(board.fathers.get(0).logDerivativeProbStrictlyGreater(board)) + " "
+            + Utils.prettyPrintDouble(board.fathers.get(0).logDerivativeProbGreaterEqual(board));
       }
-    }
 
-    if (annotations.lower != Float.NEGATIVE_INFINITY && annotations.upper != Float.NEGATIVE_INFINITY) {
-      annotationsString += String.format("\n%.1f  %.1f", annotations.lower, annotations.upper);
-    }
+//
 
-    if (annotations.proofNumberCurEval != Double.NEGATIVE_INFINITY && annotations.proofNumberNextEval != Double.NEGATIVE_INFINITY) {
-      annotationsString += "\n" + Utils.prettyPrintDouble(annotations.proofNumberCurEval) + " " + Utils.prettyPrintDouble(annotations.proofNumberNextEval);
-      annotationsString += "\n" + Utils.prettyPrintDouble(annotations.disproofNumberNextEval) + " " + Utils.prettyPrintDouble(annotations.disproofNumberCurEval);
-    }
-    if (annotations.nVisited != 0) {
-      annotationsString += "\n" + Utils.prettyPrintDouble(annotations.nVisited);
-    }
-    if (annotations.otherAnnotations != "") {
-      annotationsString += "\n" + annotations.otherAnnotations;
-    }
     cases[ij.i][ij.j].setAnnotations(annotationsString);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
     cases[ij.i][ij.j].repaint();    
@@ -301,15 +338,19 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   public void setExtras(StoredBoard firstPosition, double milliseconds) {
     Runnable tmp = new Runnable() {
       public void run() {
+        long descendants = 0;
+        for (StoredBoard child : firstPosition.getChildren()) {
+          descendants += child.getDescendants();
+        }
         String text = 
-            "Positions: " + Utils.prettyPrintDouble(firstPosition.getDescendants()) + "\n" +
-            "Positions/s: " + Utils.prettyPrintDouble(firstPosition.getDescendants() * 1000 / milliseconds) + "\n" +
+            "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
+            "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n" +
             "Missing: " + Utils.prettyPrintDouble(firstPosition.getProofNumberGreaterEqual()) + " + " +
                 Utils.prettyPrintDouble(firstPosition.getDisproofNumberStrictlyGreater());
 
         if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
           text += "\nProof: " +
-              Utils.prettyPrintDouble(firstPosition.getDescendants())
+              Utils.prettyPrintDouble(descendants)
               + "\nBest proof: " +
               Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual + firstPosition.extraInfo.minDisproofStrictlyGreater)
               + " = " + 

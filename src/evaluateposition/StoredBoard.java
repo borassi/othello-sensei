@@ -42,8 +42,8 @@ public class StoredBoard {
   private final long opponent;
 
   static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
-  final ArrayList<StoredBoard> fathers;
-  StoredBoard[] children;
+  public final ArrayList<StoredBoard> fathers;
+  public StoredBoard[] children;
   
   int eval;
   int lower;
@@ -288,6 +288,7 @@ public class StoredBoard {
 
     float lambda = lambda();
     for (StoredBoard child : children) {
+//      synchronized(child) {
       eval = Math.max(eval, -child.eval);
       lower = Math.max(lower, -child.upper);
       upper = Math.max(upper, -child.lower);
@@ -295,6 +296,7 @@ public class StoredBoard {
       probStrictlyGreater += Math.pow(child.probGreaterEqual, lambda);
       proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater / Math.max(0.001F, 1 - child.probStrictlyGreater));
       disproofNumberStrictlyGreater += child.proofNumberGreaterEqual;
+//      }
     }
     if (lower >= evalGoal) {
       probGreaterEqual = 1;
@@ -383,7 +385,9 @@ public class StoredBoard {
       updateFather();
     }
     for (StoredBoard father : fathers) {
-      father.updateFathers();
+      if (father.getEvalGoal() == -evalGoal) {
+        father.updateFathers();
+      }
     }
   }
   

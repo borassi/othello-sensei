@@ -13,22 +13,29 @@
 // limitations under the License.
 package ui;
 
+import evaluateposition.HashMap;
+import evaluateposition.StoredBoard;
+
 /**
  *
  * @author michele
  */
 public class CaseAnnotations {
-  public float eval = 0;
+  public StoredBoard storedBoard;
+  public HashMap.BoardInHash boardInHash;
   public boolean isBestMove = false;
-  public float safeEval = Float.NEGATIVE_INFINITY;
-  public double proofNumberCurEval = Double.NEGATIVE_INFINITY;
-  public double proofNumberNextEval = Double.NEGATIVE_INFINITY;
-  public double disproofNumberCurEval = Double.NEGATIVE_INFINITY;
-  public double disproofNumberNextEval = Double.NEGATIVE_INFINITY;
-  public float lower = Float.NEGATIVE_INFINITY;
-  public float upper = Float.NEGATIVE_INFINITY;
-  public float bestVariationPlayer = Float.NEGATIVE_INFINITY;
-  public float bestVariationOpponent = Float.NEGATIVE_INFINITY;
-  public long nVisited = 0;
-  public String otherAnnotations = "";
+
+  public CaseAnnotations(StoredBoard storedBoard, boolean isBestMove) {
+    this(storedBoard, null, isBestMove);
+  }
+
+  public CaseAnnotations(HashMap.BoardInHash boardInHash, boolean isBestMove) {
+    this(null, boardInHash, isBestMove);
+  }
+
+  private CaseAnnotations(StoredBoard storedBoard, HashMap.BoardInHash boardInHash, boolean isBestMove) {
+    this.storedBoard = storedBoard;
+    this.boardInHash = boardInHash;
+    this.isBestMove = isBestMove;    
+  }
 }

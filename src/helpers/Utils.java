@@ -21,7 +21,9 @@ public class Utils {
     if (d == Double.POSITIVE_INFINITY) {
       return "+Inf";
     } else if (d == Double.NEGATIVE_INFINITY) {
-      return "-Inf";
+      return "+Inf";
+    } else if (Double.isNaN(d)) {
+      return "NaN";
     } else if (Math.abs(d) < 1.E-40) {
       return "0";
     }
