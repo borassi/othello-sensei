@@ -24,13 +24,16 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import main.Main;
 
 /**
  *
  * @author michele
  */
-public class FindStableDisks implements Serializable {
+public class FindStableDisks {
+  public final static String STABLE_DISKS_FILEPATTERN = "coefficients/stable_disks.dat";
   final static long TOP_EDGE_PATTERN = BitPattern.parsePattern(
             "XXXXXXXX\n"
           + "--------\n"
@@ -140,41 +143,45 @@ public class FindStableDisks implements Serializable {
           + "-XXXXXX-\n" 
           + "--------\n");
   final static long EDGES = ~CENTRAL;
-  final long STABLE_DISKS[];
-  public static final String STABLE_DISKS_FILEPATTERN = 
-      "coefficients/stable_disks.sar";
+  final static long STABLE_DISKS[];
   
-  public void save() {
-    save(STABLE_DISKS_FILEPATTERN);
+  public static long[] loadStableDisks() {
+    return loadStableDisks(STABLE_DISKS_FILEPATTERN);
   }
-  public void save(String file) {
+  
+  public static long[] loadStableDisks(String filepath) {
+    long stableDisks[];
     try {
-       ObjectOutputStream out = Main.fileAccessor.outputFile(file);
-       out.writeObject(this);
-       out.close();
-       System.out.println("Saved stable disks.");
-    } catch (IOException e) {
-       e.printStackTrace();
+      ObjectInputStream in = Main.fileAccessor.inputFile(filepath);
+      stableDisks = (long[]) in.readObject();
+      in.close();
+    } catch (IOException | ClassNotFoundException ex) {
+      stableDisks = new long[65536];
+      for (long player : BitPattern.allSubBitPatterns(BOTTOM_EDGE_PATTERN)) {
+        for (long opponent : BitPattern.allSubBitPatterns(BOTTOM_EDGE_PATTERN)) {
+          if ((player & opponent) == 0) {
+            stableDisks[hash(player, opponent)] = 
+              findStableDisks(player, opponent, BOTTOM_EDGE_PATTERN, false);
+          }
+        }
+      }
+      saveStableDisks(stableDisks, STABLE_DISKS_FILEPATTERN);
+    }
+    return stableDisks;
+  }
+
+  public static void saveStableDisks(long[] stableDisks, String filepath) {
+    try {
+      ObjectOutputStream objOut = Main.fileAccessor.outputFile(filepath);
+      objOut.writeObject(stableDisks);
+      objOut.close();
+    } catch (IOException ex) {
+      Logger.getLogger(FindStableDisks.class.getName()).log(Level.SEVERE, null, ex);
     }
   }
 
-  public static FindStableDisks load() {
-    return load(STABLE_DISKS_FILEPATTERN);
-  }
-
-  /**
-   * Loads a PatternEvaluatorImproved.
-   * @param filepath the file (obtained by calling save() on another multilinear regression).
-   * @return The PatternEvaluatorImproved loaded, or an empty MultilinearRegression if errors occurred.
-   */
-  public static FindStableDisks load(String filepath) {
-    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
-      return (FindStableDisks) in.readObject();
-    } catch (IOException | ClassNotFoundException | ClassCastException e) {
-      System.out.println("Error when loading the FindStableDisks:\n" + 
-                         Arrays.toString(e.getStackTrace()));
-      return new FindStableDisks();
-    }
+  static {
+    STABLE_DISKS = loadStableDisks();
   }
   
   private final static int hash(long player, long opponent) {
@@ -183,20 +190,7 @@ public class FindStableDisks implements Serializable {
     return (int) (player | opponent << 8);
   }
   
-  private FindStableDisks() {
-    STABLE_DISKS = new long[65536]; // 2^16
-    for (long player : BitPattern.allSubBitPatterns(BOTTOM_EDGE_PATTERN)) {
-      for (long opponent : BitPattern.allSubBitPatterns(BOTTOM_EDGE_PATTERN)) {
-        if ((player & opponent) == 0) {
-          STABLE_DISKS[hash(player, opponent)] = 
-            findStableDisks(player, opponent, BOTTOM_EDGE_PATTERN, false);
-        }
-      }
-    }
-    save();
-  }
-  
-  public long getStableDisksEdges(long player, long opponent) {
+  public static long getStableDisksEdges(long player, long opponent) {
     long stableBottom = STABLE_DISKS[hash(player & BOTTOM_EDGE_PATTERN, opponent & BOTTOM_EDGE_PATTERN)];
     long stableTop = STABLE_DISKS[hash(player >>> 56, opponent >>> 56)] << 56;
     long stableRight = ((STABLE_DISKS[hash(((player & RIGHT_EDGE_PATTERN) * MAIN_DIAG9_BIT_PATTERN) >>> 56,
@@ -257,7 +251,7 @@ public class FindStableDisks implements Serializable {
     return ~(emptyL | emptyR);
   }
   
-  public long getStableDisks(long player, long opponent, long stable, boolean edge) {
+  public static long getStableDisks(long player, long opponent, long stable, boolean edge) {
 //    return 0;
     if (edge) {
       stable |= getStableDisksEdges(player, opponent);
@@ -283,15 +277,15 @@ public class FindStableDisks implements Serializable {
     return stable | stablePlayer;
   }
   
-  public long getStableDisks(long player, long opponent) {
+  public static long getStableDisks(long player, long opponent) {
     return getStableDisks(player, opponent, 0, true);
   }
   
-  public int getLowerBound(long player, long opponent) {
+  public static int getLowerBound(long player, long opponent) {
     return 200 * Long.bitCount(getStableDisks(player, opponent) & player) - 6400;
   }
   
-  public int getUpperBound(long player, long opponent) {
+  public static int getUpperBound(long player, long opponent) {
     return getUpperBoundFromStable(getStableDisks(opponent, player), opponent);
   }
   
@@ -299,7 +293,7 @@ public class FindStableDisks implements Serializable {
     return 6400 - 200 * Long.bitCount(stable & opponent);
   }
   
-  public long getStableDisks(Board b) {
+  public static long getStableDisks(Board b) {
     return getStableDisks(b.getPlayer(), b.getOpponent());
   }
   

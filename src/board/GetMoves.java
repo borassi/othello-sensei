@@ -2430,6 +2430,9 @@ public class GetMoves {
   };
   
   public static long getFlip(int move, long player, long opponent) {
+//    if (Math.random() < 0.0001) {
+//      System.out.println(move + " " + player + " " + opponent);
+//    }
     return flipper[move].run(player, opponent);
   }
   

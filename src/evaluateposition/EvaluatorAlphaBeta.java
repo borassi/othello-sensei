@@ -64,7 +64,6 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   private long nVisited = 0;
   private final EvaluatorLastMoves lastMovesEvaluator;
   private final HashMap hashMap;
-  private final FindStableDisks findStableDisks = FindStableDisks.load();
   private final int logNPlusOne[];
   Move[][] moves = new Move[64][64];
   static Constant constant = new Constant();
@@ -83,7 +82,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
 
   public EvaluatorAlphaBeta(DepthOneEvaluator depthOneEvaluator, HashMap hashMap) {
     this.depthOneEvaluator = depthOneEvaluator;
-    this.lastMovesEvaluator = new EvaluatorLastMoves(this.findStableDisks);
+    this.lastMovesEvaluator = new EvaluatorLastMoves();
     for (int i = 0; i < this.moves.length; ++i) {
       for (int j = 0; j < this.moves[i].length; ++j) {
         this.moves[i][j] = new Move();
@@ -317,7 +316,7 @@ int bad = 0;
         }
       }
     }
-    int stabilityCutoffUpper = findStableDisks.getUpperBound(player, opponent);
+    int stabilityCutoffUpper = FindStableDisks.getUpperBound(player, opponent);
     if (stabilityCutoffUpper <= lower) {
       return stabilityCutoffUpper;
     }

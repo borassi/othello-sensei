@@ -330,7 +330,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       this.firstPosition.setIsFinished(false);
     }
-    ExecutorService es = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    ExecutorService es = Executors.newFixedThreadPool(Math.min(Constants.MAX_PARALLEL_TASKS, Runtime.getRuntime().availableProcessors()));
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent() ||
         !firstPosition.fathers.isEmpty()) {

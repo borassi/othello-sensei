@@ -14,49 +14,58 @@
 package endgametest;
 
 import board.Board;
-import board.GetFlip;
-import board.PossibleMovesFinderImproved;
+import board.GetMovesCache;
+import constants.Constants;
 import constants.Stats;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorAlphaBeta;
+import evaluateposition.EvaluatorLastMoves;
 import helpers.LoadDataset;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
+import helpers.Utils;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author michele
  */
 public class EndgameThor {
-  public ArrayList<BoardWithEvaluation> boards;
-  EvaluatorMCTS eval = new EvaluatorMCTS(2000000, 4000000);
-//  EvaluatorLastMoves eval = new EvaluatorLastMoves();
-//  EvaluatorMidgame eval = new EvaluatorMidgame();
-  PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-	ThreadMXBean thread = ManagementFactory.getThreadMXBean();
+  public ArrayList<BoardWithEvaluation> boards = new ArrayList<>();
+  long t = 0;
+
+  EvaluatorMCTS evalMCTS = new EvaluatorMCTS(2000000, 4000000);
+  EvaluatorLastMoves evalLast = new EvaluatorLastMoves();
+  EvaluatorAlphaBeta evalMidgame = new EvaluatorAlphaBeta();
+  Random generator = new Random(1234);
   
   public EndgameThor() {
-    boards = LoadDataset.loadTrainingSet(1977, 1987);
+    ArrayList<BoardWithEvaluation> allBoards = LoadDataset.loadTrainingSet(1977, 1997);
+    for (BoardWithEvaluation b : allBoards) {
+      long[] moves = GetMovesCache.getAllMoves(b.board);
+//      return moves != null && moves.length == 1 && moves[0] == 0;
+      if (b.board.getEmptySquares() == Constants.EMPTIES_FOR_ENDGAME &&
+          (moves != null) &&
+          (moves.length > 1 || (moves.length == 1 && moves[0] != 0))) {
+        boards.add(b);
+      }
+    }
   }
   
-  long t = 0;
-  long cpuT = 0;
   public boolean runSingleBoard(BoardWithEvaluation be) {
     Board b = be.board;
-    Random generator = new Random(1234);
-    int alpha = (int) (generator.nextDouble() * 120 - 60);
-    int beta = (int) (alpha + generator.nextDouble() * 6);
-//    int result = eval1.evaluatePosition(b, 60, alpha, beta);
+    int alpha = (int) (be.evaluation + (generator.nextDouble() - 0.5) * 3000);
+    int beta = (int) (alpha + 1);
+
     t -= System.currentTimeMillis();
-    cpuT -= thread.getCurrentThreadCpuTime();
-    int result = -eval.evaluatePosition(b, alpha, beta, Long.MAX_VALUE, Long.MAX_VALUE, true);
-//    int result = eval.evaluatePosition(b.getPlayer(), b.getOpponent(), alpha, beta, 64);
-    cpuT += thread.getCurrentThreadCpuTime();
+    int result = -evalLast.evaluate(b, alpha, beta, 0);
     t += System.currentTimeMillis();
     if (alpha < be.evaluation && be.evaluation < beta) {
       if (result - be.evaluation > 0) {
@@ -67,51 +76,67 @@ public class EndgameThor {
         return false;
       }
     }
-    if (be.evaluation > alpha && result <= alpha) {
+    if (be.evaluation > alpha && -result <= alpha) {
+      System.out.println(b);
+      System.out.println(result + " " + be.evaluation + " " + alpha + " " + beta);
       return false;
     }
-    if (be.evaluation < beta && result >= beta) {
+    if (be.evaluation < beta && -result >= beta) {
+      System.out.println(b);
+      System.out.println(result + " " + be.evaluation + " " + alpha + " " + beta);
       return false;
     }
     return true;
   }
   
+  NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
   public void run() {
-    NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
     int i = 0;
-    int j = 0;
     long nVisited = 0;
     for (BoardWithEvaluation be : boards) {
-      if (j++ % 100 == 0 && i > 0) {
-        System.out.println(j + " / " + boards.size());
+      if (++i % 100 == 0) {
+        System.out.println(i + " / " + boards.size());
 //        System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
         System.out.println("Visited / pos: " + numberFormat.format((int) (nVisited / i)));
-        System.out.println("Visited / CPUs: " + numberFormat.format((int) (nVisited * 1000000000. / cpuT)));
         System.out.println("Visited / s: " + numberFormat.format((int) (nVisited * 1000. / t)));
         System.out.println("Visited / endgame: " + numberFormat.format((int) (nVisited / Stats.getNLastMoves())));
       }
       int d = be.board.getEmptySquares();
-      if (d != 12 || pmf.haveToPass(be.board)) {
-        continue;
-      }
-      i++;
       if (!runSingleBoard(be)) {
         System.out.println("FAIL");
         break;
       }
-      nVisited += eval.getNVisited();
+      nVisited += evalLast.getNVisited();
     }
-    System.out.println(t + " " + numberFormat.format(eval.getNVisited()) + " " + i);
-//    System.out.println("Visited1 / s: " + numberFormat.format((int) (eval1.getNVisited() * 1000. / t)));
-//    System.out.println("Visited1 / pos: " + numberFormat.format((int) (eval1.getNVisited() / i)));
-    System.out.println("Visited / pos: " + numberFormat.format((int) (eval.getNVisited() / i)));
-    System.out.println("Visited / CPUs: " + numberFormat.format((int) (eval.getNVisited() * 1000000000. / cpuT)));
-    System.out.println("Visited / s: " + numberFormat.format((int) (eval.getNVisited() * 1000. / t)));
-    System.out.println("Visited / endgame: " + numberFormat.format((int) (eval.getNVisited() / Stats.getNLastMoves())));
-    System.out.println(GetFlip.getCPUTime() + " / " + (cpuT / 1000000000.) + " = " + GetFlip.getCPUTime() * 100000000000. / cpuT + "%");
+    System.out.println(t + " " + numberFormat.format(nVisited) + " " + i);
+    System.out.println("Visited / pos: " + numberFormat.format((int) (nVisited / i)));
+    System.out.println("Visited / s: " + numberFormat.format((int) (nVisited * 1000. / t)));
+    System.out.println("Visited / endgame: " + numberFormat.format((int) (nVisited / Stats.getNLastMoves())));
+//    System.out.println(GetFlip.getCPUTime() + " / " + (cpuT / 1000000000.) + " = " + GetFlip.getCPUTime() * 100000000000. / cpuT + "%");
   }
   
-  public static void main(String args[]) {    
-    new EndgameThor().run();
+  public void parallelTest() {
+    ExecutorService es = Executors.newFixedThreadPool(12);
+    long t = -System.currentTimeMillis();
+    for (BoardWithEvaluation be : boards) {
+      es.submit(() -> new EvaluatorLastMoves().evaluate(be.board, -6400, 6400, 0));
+    }
+    es.shutdown();
+    try {
+      es.awaitTermination(1000, TimeUnit.HOURS);
+    } catch (InterruptedException ex) {
+      Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    t += System.currentTimeMillis();
+    long nVisited = Stats.getNVisitedLastMoves();
+    System.out.println(t + " " + numberFormat.format(nVisited) + " " + boards.size());
+    System.out.println("Visited / pos: " + numberFormat.format((int) (nVisited / boards.size())));
+    System.out.println("Visited / s: " + numberFormat.format((int) (nVisited * 1000. / t)));
+    System.out.println("Visited / endgame: " + numberFormat.format((int) (nVisited / Stats.getNLastMoves())));
+  }
+  
+  public static void main(String args[]) { 
+//    new EndgameThor().run();
+    new EndgameThor().parallelTest();
   }
 }

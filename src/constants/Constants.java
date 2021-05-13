@@ -26,7 +26,7 @@ public class Constants {
 //  public final static int MCTS_SIZE = 2000000;
   public final static int HASH_MAP_SIZE = 10000000;
   public final static int MCTS_SIZE = 20000000;
-  public final static int EMPTIES_FOR_ENDGAME = 10;
+  public final static int EMPTIES_FOR_ENDGAME = 12;
   public final static int TRY_SC_NO_CORNER = 2000;
   public final static int TRY_SC_CORNER = 40000000;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;

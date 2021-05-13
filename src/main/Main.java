@@ -35,8 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -68,6 +66,11 @@ public class Main implements Runnable {
    */
   UI ui;
   public static FileAccessor fileAccessor = new DesktopFileAccessor();
+  
+  static {
+    System.out.println(System.getProperty("user.dir"));
+    System.load(System.getProperty("user.dir") + "/cpp-plugins/dist/libothello-sensei.so");
+  }
   
   /**
    * Creates a new UI and sets the initial position.
@@ -356,9 +359,12 @@ public class Main implements Runnable {
     ui.setExtras(EVALUATOR.get(board), (System.currentTimeMillis() - startTime));
   }
   
+  public native void test();
+  
   // The entry main() method
   public static void main(String[] args) throws FileNotFoundException, IOException {
     Main main = new Main();
+    main.test();
     UI ui = new DesktopUI(main);
     main.setUI(ui);
   }

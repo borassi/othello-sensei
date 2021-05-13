@@ -26,7 +26,7 @@ import org.junit.Test;
  * @author michele
  */
 public class FindStableDisksTest {
-  private final FindStableDisks STABLE_DISKS = FindStableDisks.load();
+  private final FindStableDisks STABLE_DISKS = new FindStableDisks();
   
   @Test
   public void testSimple() {

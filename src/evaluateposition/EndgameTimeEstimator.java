@@ -82,7 +82,6 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
     EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE);
     EndgameTimeEstimator endgameTimeEstimator = new EndgameTimeEstimator();
-    FindStableDisks stableDisks = FindStableDisks.load();
 
     ArrayList<BoardWithEvaluation> training = LoadDataset.loadTrainingSet(1990, 1990);
     double sumErrorSquared = 0;
@@ -122,8 +121,8 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
             request.lower + " " + request.approxEval + " " + 
             GetMoves.getNMoves(current.getPlayer(), current.getOpponent()) + " " +
             GetMoves.getNMoves(current.getOpponent(), current.getPlayer()) + " " +
-            stableDisks.getLowerBound(current.getPlayer(), current.getOpponent()) + " " +
-            stableDisks.getUpperBound(current.getPlayer(), current.getOpponent()) + " " +
+            FindStableDisks.getLowerBound(current.getPlayer(), current.getOpponent()) + " " +
+            FindStableDisks.getUpperBound(current.getPlayer(), current.getOpponent()) + " " +
             eval + " " +
             (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) + " "// +
 //            evaluator.firstPosition.proofNumberGreaterEqual + " " +

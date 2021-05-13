@@ -18,18 +18,20 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.GetFlip;
 import board.GetMoves;
+import board.GetFlipNoWrite;
 import board.GetMovesCache;
 import constants.Constants;
 import constants.Stats;
+import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.FindStableDisks;
+import helpers.LoadDataset;
+import java.util.ArrayList;
 
 /**
  *
  * @author michele
  */
 public class EvaluatorLastMoves {
-  private final FindStableDisks stableDisks;
-
   int nVisited = 0;
   int baseOffset;
   
@@ -41,16 +43,8 @@ public class EvaluatorLastMoves {
   private final GetMovesCache mover4 = new GetMovesCache();
   private final GetMovesCache mover3 = new GetMovesCache();
   
-  public EvaluatorLastMoves(FindStableDisks stableDisks) {
-    this.stableDisks = stableDisks;
-    setup();
-  }
   public EvaluatorLastMoves() {
-    this(FindStableDisks.load());
-  }
-  
-  private void setup() {
-    this.masksTmp = new long[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    masksTmp = new long[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     masksTmp[3] = CORNERS;
     masksTmp[6] = CENTRAL;
     masksTmp[7] = CENTRAL1;
@@ -79,7 +73,7 @@ public class EvaluatorLastMoves {
   
   private int evalTwoEmptiesPassed(int x1, int x2, long player, long opponent, int upper) {
     int best = -6600;
-    long flip = GetMoves.getFlip(x1, player, opponent);
+    long flip = GetFlip.getFlipLast(x1, opponent);
     if (flip != 0) {
       nVisited++;
       best = -evalOneEmpty(x2, opponent & ~flip, player | flip);
@@ -87,7 +81,7 @@ public class EvaluatorLastMoves {
         return best;
       }
     }
-    flip = GetMoves.getFlip(x2, player, opponent);
+    flip = GetFlip.getFlipLast(x2, player);
     if (flip != 0) {
       nVisited++;
       return Math.max(best, -evalOneEmpty(x1, opponent & ~flip, player | flip));
@@ -277,8 +271,8 @@ public class EvaluatorLastMoves {
 //    }
     if (delta <= Constants.TRY_SC_LAST_4_NO_CORNER ||
         (lastMoveCorner && delta <= Constants.TRY_SC_LAST_4_CORNER)) {
-      stable = stableDisks.getStableDisks(opponent, player, stable, true);
-      assert stable == stableDisks.getStableDisks(opponent, player);
+      stable = FindStableDisks.getStableDisks(opponent, player, stable, true);
+      assert stable == FindStableDisks.getStableDisks(opponent, player);
       int scUpper = FindStableDisks.getUpperBoundFromStable(stable, opponent);
       if (scUpper - lower <= 0) {
         return scUpper;
@@ -412,11 +406,11 @@ public class EvaluatorLastMoves {
     int delta = FindStableDisks.getUpperBoundFromStable(stable, opponent) - lower;
     if (delta <= Constants.TRY_SC_LAST_5_NO_CORNER ||
         (lastMoveCorner && delta <= Constants.TRY_SC_LAST_5_CORNER)) {
-      stable = stableDisks.getStableDisks(opponent, player, stable, true);
+      stable = FindStableDisks.getStableDisks(opponent, player, stable, true);
       // stable is a superset of StableDisks(opponent, player).
-      assert (stableDisks.getStableDisks(opponent, player) & ~stable) == 0;
+      assert (FindStableDisks.getStableDisks(opponent, player) & ~stable) == 0;
       // stable is a superset of StableDisks(opponent, player) | StableDisks(player, opponent)
-      assert (stable & ~(stableDisks.getStableDisks(opponent, player) | stableDisks.getStableDisks(player, opponent))) == 0;
+      assert (stable & ~(FindStableDisks.getStableDisks(opponent, player) | FindStableDisks.getStableDisks(player, opponent))) == 0;
       int scUpper = FindStableDisks.getUpperBoundFromStable(stable, opponent);
       if (scUpper - lower <= 0) {
         return scUpper;
@@ -639,11 +633,11 @@ public class EvaluatorLastMoves {
     if (nEmpties >= 8 ||
         delta <= Constants.TRY_SC_NO_CORNER ||
         ((lastMove & CORNERS) != 0 && delta <= Constants.TRY_SC_CORNER)) {
-      stable = stableDisks.getStableDisks(opponent, player, stable, true);
+      stable = FindStableDisks.getStableDisks(opponent, player, stable, true);
       // stable is a superset of StableDisks(opponent, player).
-      assert (stableDisks.getStableDisks(opponent, player) & ~stable) == 0;
+      assert (FindStableDisks.getStableDisks(opponent, player) & ~stable) == 0;
       // stable is a superset of StableDisks(opponent, player) | StableDisks(player, opponent)
-      assert (stable & ~(stableDisks.getStableDisks(opponent, player) | stableDisks.getStableDisks(player, opponent))) == 0;
+      assert (stable & ~(FindStableDisks.getStableDisks(opponent, player) | FindStableDisks.getStableDisks(player, opponent))) == 0;
       int scUpper = FindStableDisks.getUpperBoundFromStable(stable, opponent);
       if (scUpper - lower <= 0) {
         return scUpper;
@@ -701,7 +695,7 @@ public class EvaluatorLastMoves {
   }
   
   public int evaluate(Board b, int lower, int upper, long lastMove) {
-    return EvaluatorLastMoves.this.evaluate(b.getPlayer(), b.getOpponent(), lower, upper, lastMove);
+    return evaluate(b.getPlayer(), b.getOpponent(), lower, upper, lastMove);
   }
   
   public int evaluate(long player, long opponent, int lower, int upper, long lastMove) {
@@ -718,41 +712,5 @@ public class EvaluatorLastMoves {
   
   public int getNVisited() {
     return nVisited;
-  }
-
-  public static void main(String args[]) {
-    
-//    int x[] = new int[100000];
-//    for (int i = 0; i < x.length; ++i) {
-//      x[i] = (int) (Math.random() * 64);
-//    }
-//    EvaluatorLastMoves eval = new EvaluatorLastMoves();
-//    
-//    ThreadMXBean thread = ManagementFactory.getThreadMXBean();
-//    double t = -thread.getCurrentThreadCpuTime();
-//    for (int iter = 0; iter < 1000000; ++iter) {
-//      double tmp = Math.random();
-//      long player = (long) (tmp * Long.MAX_VALUE);
-//      long opponent = ~player;
-//      
-//      int x1 = 0;
-//      int x2 = 63;
-//      int x3 = 12;
-//      int x4 = 13;
-//     
-//      player = player & ~(1L << x1);
-//      opponent = opponent & ~(1L << x1);
-//      player = player & ~(1L << x2);
-//      opponent = opponent & ~(1L << x2);
-//      player = player & ~(1L << x3);
-//      opponent = opponent & ~(1L << x3);
-//      player = player & ~(1L << x4);
-//      opponent = opponent & ~(1L << x4);
-//      int low = (int) (tmp * 120) - 60;
-//      eval.evalFiveEmpties(player, opponent, low, low+1, 0);
-//    }
-//    t += thread.getCurrentThreadCpuTime();
-//    System.out.println(new DecimalFormat("#,###.00").format(t / 1000000000.0));
-//    System.out.println(new DecimalFormat("#,###").format(eval.getNVisited() * 1000000000.0 / t));
   }
 }

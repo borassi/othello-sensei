@@ -14,7 +14,10 @@
 package board;
 
 import bitpattern.BitPattern;
+import helpers.Utils;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -23,6 +26,12 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,20 +76,16 @@ public class GetMovesCache implements Serializable {
       "-XXXXXX-" +
       "-XXXXXX-");
   
-  private static boolean init = false;
-  public GetMovesCache() {
-    if (!init) {
+  static {
+    try {
+      loadFlips();
+    } catch (IOException | ClassNotFoundException ex) {
+      initMoves();
       try {
-        loadFlips();
-      } catch (IOException | ClassNotFoundException ex) {
-        initMoves();
-        try {
-          saveFlips();
-        } catch (IOException ex1) {
-          Logger.getLogger(GetMovesCache.class.getName()).log(Level.WARNING, null, ex1);
-        }
+        saveFlips();
+      } catch (IOException ex1) {
+        Logger.getLogger(GetMovesCache.class.getName()).log(Level.WARNING, null, ex1);
       }
-      init = true;
     }
   }
   
@@ -183,7 +188,7 @@ public class GetMovesCache implements Serializable {
     return moves;
   }
   
-  private void initMoves() {
+  private static void initMoves() {
     for (int position = 0; position < 64; position++) {
       long bitPatterns[] = {BitPattern.getRow(position), 
         BitPattern.getColumn(position), BitPattern.getDiag7(position),
@@ -1428,72 +1433,154 @@ public class GetMovesCache implements Serializable {
     return indent + str.replace("\n", "\n" + indent);
   }
   
-  public static void main(String args[]) {
-    for (int i = 0; i < 64; ++i) {
-      System.out.println(getFlipNCode(i));
-    }
-    System.out.println(getFlipCodeInterface());
-//      System.out.println(getFlipNCode(63));
-    
-    GetMovesCache getMoves = new GetMovesCache();
-    GetFlip getFlip = new GetFlip();
-    
-    long n = 400000000L;
-    ThreadMXBean thread = ManagementFactory.getThreadMXBean();
-
+  public static long testGetFlipNoWriteLast(long n) {
+    TestCase test;
     long tmp = 0;
-    long t = -System.currentTimeMillis();	
-    long cpuT = thread.getCurrentThreadCpuTime();
     
-    for (long i = 10000; i > 0; --i) {
-      Board b = Board.randomBoard(0.5, 0.5);
-      long player = b.getPlayer();
-      long opponent = b.getOpponent();
-      for (long j = n / 10000; j > 0; --j) {
-        getMoves.getMoves(player | (i*j), opponent & ~(i*j));
-//        tmp = tmp ^ GetMoves.getFlipGeneric((int) (j % 63), player | (i*j), opponent & ~(i*j));// (int) (i % 11));
-        tmp = tmp ^ getMoves.getFlip(0);// (int) (i % 11));
-//      tmp = tmp ^ getFlip(63, player | (2*i), opponent & ~(2*i));// (int) (i % 11));
-//      tmp = tmp ^ getFlip(63, player | (4*i), opponent & ~(4*i));// (int) (i % 11));
-//      tmp = tmp ^ getFlip(player | i, opponent & ~i, 1);
-//      tmp = tmp ^ getFlip(player | i, opponent & ~i, 2);
-//      tmp = tmp ^ getFlip(player | i, opponent & ~i, 8);
-//      tmp = tmp ^ getFlip(player | i, opponent & ~i, 9);
-      }
+    for (long i = n; i > 0; --i) {
+      test = tests.get((int) (i % tests.size()));
+      tmp = tmp ^ GetFlipNoWrite.getFlipLast(test.move, test.player, test.opponent);
     }
-    cpuT += thread.getCurrentThreadCpuTime();
-    t += System.currentTimeMillis();
-    System.out.println(t);
-    System.out.println(n * 1000.0 / t);
-    System.out.println(cpuT);
-    System.out.println(n * 1000000000.0 / cpuT);
-    System.out.println(BitPattern.patternToString(tmp));
+    return tmp;
   }
   
-//  public static void main(String args[]) {
-//    GetFlip flipper = GetFlip.load();
-//    
-//    Board b = Board.randomBoard();
-//    long player = b.getPlayer();
-//    long opponent = b.getOpponent();
-//    GetMoves getMoves = new GetMoves();
-//    
-//    long n = 400000000L;
-//    long t = -System.currentTimeMillis();	
-//    ThreadMXBean thread = ManagementFactory.getThreadMXBean();
-//
-//    long cpuT = thread.getCurrentThreadCpuTime();
-//    long tmp = 0;
-//    
-//    for (long i = n; i > 0; --i) {
-//      tmp = tmp ^ flipper.getFlip(63, player | i, opponent & ~i);
-//    }
-//    cpuT += thread.getCurrentThreadCpuTime();
-//    t += System.currentTimeMillis();
-//    System.out.println(t);
-//    System.out.println(n * 1000.0 / t);
-//    System.out.println(cpuT);
-//    System.out.println(n * 1000000000.0 / cpuT);
-//    System.out.println(BitPattern.patternToString(tmp));
-//  }
+  public static long testGetFlipNoWrite(long n) {
+    TestCase test;
+    long tmp = 0;
+    
+    for (long i = n; i > 0; --i) {
+      test = tests.get((int) (i % tests.size()));
+      tmp = tmp ^ GetFlipNoWrite.getFlip(test.move, test.player, test.opponent);
+    }
+    return tmp;
+  }
+  
+  public static long testGetMoves(long n) {
+    TestCase test;
+    long tmp = 0;
+    
+    for (long i = n; i > 0; --i) {
+      test = tests.get((int) (i % tests.size()));
+      tmp = tmp ^ GetMoves.getFlip(test.move, test.player, test.opponent);
+    }
+    return tmp;
+  }
+  
+  public static long testPureMath(long n) {
+    TestCase test;
+    long tmp = 0;
+    
+    for (long i = n; i > 0; --i) {
+      test = tests.get((int) (i % tests.size()));
+      long player = test.player;
+      long opponent = test.opponent;
+      int move = test.move;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+      tmp = ((tmp | player) & opponent) % 10000;
+      tmp = tmp * move * tmp;
+      tmp = tmp / 15023;
+    }
+    return tmp;
+  }
+  
+  public static long testGetFlipLast(long n) {
+    TestCase test;
+    long tmp = 0;
+    
+    for (long i = n; i > 0; --i) {
+      test = tests.get((int) (i % tests.size()));
+      tmp = tmp ^ GetFlip.getFlipLast(test.move, test.opponent);
+    }
+    return tmp;
+  }
+  public static long testGetFlip(long n) {
+    TestCase test;
+    long tmp = 0;
+    
+    for (long i = n; i > 0; --i) {
+      test = tests.get((int) (i % tests.size()));
+      tmp = tmp ^ GetFlip.getFlip(test.move, test.player, test.opponent);
+    }
+    return tmp;
+  }
+  static final long n = 20000000L;
+  
+  public static void testFunction(int nTasks, Runnable function) {
+    ExecutorService es = Executors.newFixedThreadPool(nTasks);
+    long t = -System.currentTimeMillis();
+    for (int i = 0; i < nTasks; ++i) {
+      es.submit(function);
+    }
+    es.shutdown();
+    try {
+      es.awaitTermination(1000, TimeUnit.HOURS);
+    } catch (InterruptedException ex) {
+      Logger.getLogger(GetMovesCache.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    t += System.currentTimeMillis();
+    System.out.print(" " + String.format("%12d", (int) (1000.0 * n * nTasks / t)));
+  }
+  
+  
+  public static void main(String args[]) throws InterruptedException {
+    ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+    
+//    int nTasks = 1;
+    System.out.println("Tasks     getMoves      getFlip  getFlipLast   getFlipNoW getFlipNoWLast   pureMath");
+    for (int nTasks : new int[] {1, 2, 4, 6, 9, 12, 24}) {
+      System.out.print(String.format("%5d", nTasks));
+      testFunction(nTasks, () -> {testGetMoves(n);});
+      testFunction(nTasks, () -> {testGetFlip(n);});
+      testFunction(nTasks, () -> {testGetFlipLast(n);});
+      testFunction(nTasks, () -> {testGetFlipNoWrite(n);});
+      testFunction(nTasks, () -> {testGetFlipNoWriteLast(n);});
+      testFunction(nTasks, () -> {testPureMath(n);});
+      System.out.println();
+    }
+  }
+  
+  static class TestCase {
+    int move;
+    long player;
+    long opponent;
+    public TestCase(int move, long player, long opponent) {
+      this.move = move;
+      this.player = player;
+      this.opponent = opponent;
+    }
+  }
+  static final ArrayList<TestCase> tests = new ArrayList<>();
+  
+  static {
+    try {
+      File input = new File("coefficients/moves.txt");
+      Scanner myReader = new Scanner(input);
+      while (myReader.hasNextLine()) {
+        String s = myReader.nextLine();
+        String[] splitS = s.split(" ");
+        tests.add(
+            new TestCase(Integer.parseInt(splitS[0]),
+                Long.parseLong(splitS[1]), Long.parseLong(splitS[2])));
+      }
+    } catch (FileNotFoundException ex) {
+      Logger.getLogger(GetMovesCache.class.getName()).log(Level.SEVERE, null, ex);
+    }
+  }
 }

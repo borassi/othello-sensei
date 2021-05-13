@@ -36,35 +36,20 @@ public class GetFlip implements Serializable {
   static final long[] flipDiagonalLast = new long[64 * 256];
   static final long[] flipReverseDiagonalLast = new long[64 * 256];
   
-  long neighbors[];
-  long horizVert[];
-  private int baseOffset;
-//	private static ThreadMXBean cpuTimeGetter = ManagementFactory.getThreadMXBean();
-  private static double cpuTimeForGetFlip = 0;
-//  private static void startCPUTime() {
-//    cpuTimeForGetFlip -= cpuTimeGetter.getCurrentThreadCpuTime();
-//  }
-//  private static void endCPUTime() {
-//    cpuTimeForGetFlip += cpuTimeGetter.getCurrentThreadCpuTime();
-//  }
-  public static double getCPUTime() {
-    return cpuTimeForGetFlip / 1000000000.0;
-  }
+  static long neighbors[];
+  static long horizVert[];
   
   public static void main(String args[]) throws IOException, ClassNotFoundException {
     GetFlip result = new GetFlip();
 //    result.save();
     ObjectInputStream in = Main.fileAccessor.inputFile(SERIALIZE_FILEPATTERN);
 //    try (ObjectInputStream in = Main.fileAccessor.inputFile(filepath)) {
-    result = (GetFlip) in.readObject();  
-    System.out.println(result.baseOffset);
+    result = (GetFlip) in.readObject();
   }
   
-  protected GetFlip() {
-//    setupUnsafe();
+  static {
     initFlips();
     initMoves();
-    save();
   }
   
   private void save() {
@@ -99,21 +84,8 @@ public class GetFlip implements Serializable {
                          Arrays.toString(e.getStackTrace()));
       return new GetFlip();
     }
-//    result.setupUnsafe();
     return result;
   }
-  
-//  private void setupUnsafe() {
-//    Field theUnsafe;
-//    try {
-//      theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-//      theUnsafe.setAccessible(true);
-//      unsafe = (Unsafe) theUnsafe.get(null);
-//      baseOffset = unsafe.arrayBaseOffset(long[].class);
-//    } catch (Exception ex) {
-//      Logger.getLogger(EvaluatorLastMoves.class.getName()).log(Level.SEVERE, null, ex);
-//    }
-//  }
   
   static int hashDiagonal(int move, long player) {
     long bitPattern = BitPattern.getDiag9(move);
@@ -191,7 +163,7 @@ public class GetFlip implements Serializable {
    * @return the list of moves.
    */
   public static final ArrayList<Long> possibleMovesBasic(Board b) {
-    ArrayList<Long> moves = new ArrayList<Long>();
+    ArrayList<Long> moves = new ArrayList<>();
     int[][] directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, 
                            {0, 1}, {1, -1}, {1, 0}, {1, 1}};
     char player = 'X';
@@ -228,7 +200,7 @@ public class GetFlip implements Serializable {
     return moves;
   }
 
-  private void initMoves() {
+  private static void initMoves() {
     for (int position = 0; position < 64; position++) {
       long bitPatterns[] = {BitPattern.getRow(position), 
         BitPattern.getColumn(position), BitPattern.getDiag7(position),
@@ -240,8 +212,6 @@ public class GetFlip implements Serializable {
         long[] flipLast = flipsLast[i];
         for (Board board : Board.existingBoardsInBitPattern(bitPattern)) {
           ArrayList<Long> possibleMoves = possibleMovesBasic(board);
-          int hash = hashGeneric(
-            position, board.getPlayer(), board.getOpponent(), bitPattern);
 
           for (int j = 0; j < possibleMoves.size(); j++) {
             long curFlip = possibleMoves.get(j);          
@@ -261,11 +231,9 @@ public class GetFlip implements Serializable {
     }
   }
   
-  private void initFlips() {
+  private static void initFlips() {
     neighbors = new long[65];
     horizVert = new long[65];
-//    diagFlips = new long[64];
-//    deletersFlips = new long[64];
     int dirs[] = new int[] {-9, -8, -7, -1, 1, 7, 8, 9};
     for (int i = 0; i < 64; ++i) {
       int rightShift = i % 8;
@@ -291,33 +259,31 @@ public class GetFlip implements Serializable {
     }
   }
 
-  public long getFlipLast(int move, long opponent) {
+  public static long getFlipLast(int move, long opponent) {
+    if ((neighbors[move] & opponent) == 0) {
+      return 0;
+    }
     int position = move * 256;
     long flip = flipHorizontalLast[position + hashRow(move, opponent)] |
         flipVerticalLast[position + hashColumn(move, opponent)] |
         flipDiagonalLast[position + hashDiagonal(move, opponent)] |
         flipReverseDiagonalLast[position + hashRevDiagonal(move, opponent)];
-//    int position = baseOffset + (move * 2048);
-//    return unsafe.getLongVolatile(flipHorizontalLast, position + hashRow(move, opponent) * 8) |
-//        unsafe.getLongVolatile(flipVerticalLast, position + hashColumn(move, opponent) * 8) | 
-//        unsafe.getLongVolatile(flipDiagonalLast, position + hashDiagonal(move, opponent) * 8) | 
-//        unsafe.getLongVolatile(flipReverseDiagonalLast, position + hashRevDiagonal(move, opponent) * 8);
     return flip;
   }
 
-  public long getFlip(int move, long player, long opponent) {
-//    if ((this.neighbors[move] & opponent) == 0) {
-//      return 0;
-//    }
+  public static long getFlip(int move, long player, long opponent) {
+    if ((neighbors[move] & opponent) == 0) {
+      return 0;
+    }
     long flip = 0;
     long moveBit = 1L << move;
     long empties = ~(player | opponent);
-    if ((moveBit & empties) == 0) {
-      return 0;
-    }
+//    if ((moveBit & empties) == 0) {
+//      return 0;
+//    }
     empties = empties & ~moveBit;
     int positionLast = move * 256;
-    long opponentShifted = opponent & this.neighbors[move];
+    long opponentShifted = opponent & neighbors[move];
     long larger = ((-1L) << move);
     long emptiesFlip;
     long smaller = (~larger) | moveBit;
@@ -382,87 +348,8 @@ public class GetFlip implements Serializable {
     flip = flip & ~player;
     return flip == moveBit ? 0 : flip;
   }
-//  
-//
-//  public long getFlipUnsafe(int move, long player, long opponent) {
-//    if ((this.neighbors[move] & opponent) == 0) {
-//      return 0;
-//    }
-//    long flip = 0;
-//    long moveBit = 1L << move;
-//    long empties = ~(player | opponent);
-//    if ((moveBit & empties) == 0) {
-//      return 0;
-//    }
-//    empties = empties & ~moveBit;
-//    int positionLast = baseOffset + move * 2048;
-//    long opponentShifted = opponent & this.neighbors[move];
-//    long larger = ((-1L) << move);
-//    long emptiesFlip;
-//    long smaller = (~larger) | moveBit;
-//    if (move > 9) {
-//      opponentShifted = opponentShifted >>> (move - 9);
-//    } else {
-//      opponentShifted = opponentShifted << (9 - move);      
-//    }
-//    long curFlip;
-//    if ((opponentShifted & 1280L) != 0) {
-//      curFlip = unsafe.getLongVolatile(flipHorizontalLast, positionLast + hashRow(move, opponent) * 8);
-//      emptiesFlip = curFlip & empties;
-//      if (emptiesFlip != 0) {
-//        if ((emptiesFlip & larger) != 0) {
-//          curFlip &= smaller;
-//        }
-//        if ((emptiesFlip & smaller) != 0) {
-//          curFlip &= larger;
-//        }
-//      }
-//      flip |= curFlip;
-//    }
-//    if ((opponentShifted & 131074L) != 0) {
-//      curFlip = unsafe.getLongVolatile(flipVerticalLast, positionLast + hashColumn(move, opponent) * 8);
-//      emptiesFlip = curFlip & empties;
-//      if (emptiesFlip != 0) {
-//        if ((emptiesFlip & larger) != 0) {
-//          curFlip &= smaller;
-//        }
-//        if ((emptiesFlip & smaller) != 0) {
-//          curFlip &= larger;
-//        }
-//      }
-//      flip |= curFlip;
-//    }
-//    if ((opponentShifted & 262145L) != 0) {
-//      curFlip = unsafe.getLongVolatile(flipDiagonalLast, positionLast + hashDiagonal(move, opponent) * 8);
-//      emptiesFlip = curFlip & empties;
-//      if (emptiesFlip != 0) {
-//        if ((emptiesFlip & larger) != 0) {
-//          curFlip &= smaller;
-//        }
-//        if ((emptiesFlip & smaller) != 0) {
-//          curFlip &= larger;
-//        }
-//      }
-//      flip |= curFlip;
-//    }
-//    if ((opponentShifted & 65540L) != 0) {
-//      curFlip = unsafe.getLongVolatile(flipReverseDiagonalLast, positionLast + hashRevDiagonal(move, opponent) * 8);
-//      emptiesFlip = curFlip & empties;
-//      if (emptiesFlip != 0) {
-//        if ((emptiesFlip & larger) != 0) {
-//          curFlip &= smaller;
-//        }
-//        if ((emptiesFlip & smaller) != 0) {
-//          curFlip &= larger;
-//        }
-//      }
-//      flip |= curFlip;
-//    }
-//    flip = flip & ~player;
-//    return flip == moveBit ? 0 : flip;
-//  }
   
-  public long neighborsMove(int move) {
+  public static long neighborsMove(int move) {
     return neighbors[move];
   }
   
