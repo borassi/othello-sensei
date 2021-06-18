@@ -21,12 +21,6 @@ import board.Board;
 import board.PossibleMovesFinderImproved;
 import evaluateposition.EvaluatorLastMoves;
 import helpers.LoadDataset;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class MultilinearRegressionImproved {
 
@@ -49,7 +43,7 @@ public class MultilinearRegressionImproved {
     public Feature(long eval) {
       this.eval = eval;// >> PatternEvaluatorImproved.EVAL_SHIFT;
 //      if (eval == 0) {
-      this.squaredError = (1200F * 1200F) / PatternEvaluatorImproved.evals[0].length;
+      this.squaredError = (1200F * 1200F) / PatternEvaluatorImproved.EVALS[0].length;
 //      } else {
 //        this.squaredError = eval - ((eval >> PatternEvaluatorImproved.EVAL_SHIFT) << PatternEvaluatorImproved.EVAL_SHIFT);
 //      }
@@ -58,16 +52,16 @@ public class MultilinearRegressionImproved {
     public int toInt() {
       return ((int) Math.round(eval));
 //      long evalPart = ((long) Math.round(eval)) << PatternEvaluatorImproved.EVAL_SHIFT;
-//      assert(Long.MAX_VALUE / patternEvaluator.evals[0].length > evalPart);
+//      assert(Long.MAX_VALUE / patternEvaluator.EVALS[0].length > evalPart);
 //      int errorPart = (int) (Math.round(squaredError));
-//      assert((double) errorPart * patternEvaluator.evals[0].length < (1L << PatternEvaluatorImproved.EVAL_SHIFT));
+//      assert((double) errorPart * patternEvaluator.EVALS[0].length < (1L << PatternEvaluatorImproved.EVAL_SHIFT));
 //      return evalPart + errorPart;
     }
   }
   
   
   protected Feature[][][] getFeatures() {
-    int[][][] intFeatures = PatternEvaluatorImproved.evals;
+    int[][][] intFeatures = PatternEvaluatorImproved.EVALS;
     Feature[][][] features = new Feature[intFeatures.length][][];
     
     for (int i = 0; i < features.length; ++i) {
@@ -92,11 +86,11 @@ public class MultilinearRegressionImproved {
     for (int i = 0; i < newEvals.length; ++i) {
       for (int j = 0; j < newEvals[i].length; ++j) {
         if (j > 0 && newEvals[i][j] == newEvals[i][j-1]) {
-          PatternEvaluatorImproved.evals[i][j] = PatternEvaluatorImproved.evals[i][j-1];
+          PatternEvaluatorImproved.EVALS[i][j] = PatternEvaluatorImproved.EVALS[i][j-1];
           continue;
         }
         Feature[] newEvalsIJ = newEvals[i][j];
-        int[] evalsIJ = PatternEvaluatorImproved.evals[i][j];
+        int[] evalsIJ = PatternEvaluatorImproved.EVALS[i][j];
         for (int k = 0; k < evalsIJ.length; ++k) {
           evalsIJ[k] = newEvalsIJ[k].toInt();
         }
@@ -149,7 +143,7 @@ public class MultilinearRegressionImproved {
           feature.squaredError += expectedErrorUpdateSize;
           feature.squaredError = (float) Math.max(
               Math.min(feature.squaredError, 2000 * 2000),
-              200.0 * 200.0 / this.patternEvaluator.evals[0].length);
+              200.0 * 200.0 / this.patternEvaluator.EVALS[0].length);
 
           double ridgeUpdateSize = 2 * speed * (error - lambda * feature.eval);// * 800 / Math.sqrt(expectedSquaredError);
 //              / Math.min(1000, Math.max(feature.appearences, 5)); // Math.signum(error) * 600; //
@@ -168,7 +162,11 @@ public class MultilinearRegressionImproved {
 
     Collections.shuffle(trainingSet);
 
+//    int i = 0;
     for (BoardWithEvaluation be : trainingSet) {
+//      if (i++ % 100000 == 0) {
+//        System.out.println(i + " " + trainingSet.size());
+//      }
       if (be.board.getEmptySquares() == 0) {
         continue;
       }
@@ -333,7 +331,7 @@ public class MultilinearRegressionImproved {
     mr.train(features, trainingSet, 0.01F, 0.001F, 1, false);
     mr.train(features, trainingSet, 0.01F, 0.0005F, 1, false);
     mr.train(features, trainingSet, 0.01F, 0.0002F, 1, false);
-    mr.train(features, trainingSet, 0.01F, 0.0001F, 1, false);
+//    mr.train(features, trainingSet, 0.01F, 0.0001F, 1, false);
     mr.exportFeatures(features);
     PatternEvaluatorImproved.saveEvals("coefficients/pattern_evaluator_coefficients_v1.dat");
  

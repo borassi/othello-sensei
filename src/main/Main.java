@@ -22,6 +22,7 @@ import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
 import endgametest.EndgameTest;
+import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
@@ -68,7 +69,6 @@ public class Main implements Runnable {
   public static FileAccessor fileAccessor = new DesktopFileAccessor();
   
   static {
-    System.out.println(System.getProperty("user.dir"));
     System.load(System.getProperty("user.dir") + "/cpp-plugins/dist/libothello-sensei.so");
   }
   
@@ -359,13 +359,9 @@ public class Main implements Runnable {
     ui.setExtras(EVALUATOR.get(board), (System.currentTimeMillis() - startTime));
   }
   
-  public native void test();
-  
   // The entry main() method
   public static void main(String[] args) throws FileNotFoundException, IOException {
     Main main = new Main();
-    main.test();
-    UI ui = new DesktopUI(main);
-    main.setUI(ui);
+    main.setUI(new DesktopUI(main));
   }
 }

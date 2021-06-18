@@ -155,14 +155,14 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     parents.add(board);
     Float childLogDerivative = childLogDerivative(child);
     if (greaterEqual) {
-      if (derivativeLoss + childLogDerivative == Float.NEGATIVE_INFINITY) {
+      if (derivativeLoss + childLogDerivative <= StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
         derivativeLoss = Float.NEGATIVE_INFINITY;
         // No extra proof number loss.
       } else {
         derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
       }
     } else {
-      if (derivativeLoss + childLogDerivative == Float.NEGATIVE_INFINITY) {
+      if (derivativeLoss + childLogDerivative <= StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
         derivativeLoss = Float.NEGATIVE_INFINITY;
 //        if (child.isLeaf()) {
         proofNumberLoss = proofNumberLoss + child.proofNumberGreaterEqual - board.maxFiniteChildrenProofNumber();  // TODO IMPROVE!!!
@@ -183,16 +183,30 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 
   public static boolean hasValidDescendants(StoredBoard b, boolean greaterEqual) {
     if (greaterEqual) {
-      if (b.probGreaterEqual == 0 || b.proofNumberGreaterEqual == 0 || b.proofNumberGreaterEqual == Float.POSITIVE_INFINITY) {
+      if (b.getProbGreaterEqual() == 0 || b.proofNumberGreaterEqual == 0 || b.proofNumberGreaterEqual == Float.POSITIVE_INFINITY) {
         return false;
       }
     } else {
-      if (b.disproofNumberStrictlyGreater == 0 || b.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY || b.probStrictlyGreater == 1) {
+      if (b.disproofNumberStrictlyGreater == 0 || b.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY || b.getProbStrictlyGreater() == 1) {
         return false;
       } 
     }
     return true;
   } 
+  
+  public static boolean bestDescendantGreaterEqual(StoredBoard father) {
+    if (!hasValidDescendants(father, true)) {
+      return false;
+    }
+    if (!hasValidDescendants(father, false)) {
+      return true;
+    }    
+    return father.maxLogDerivativeProbGreaterEqual > father.maxLogDerivativeProbStrictlyGreater
+        || (
+            father.maxLogDerivativeProbGreaterEqual == father.maxLogDerivativeProbStrictlyGreater
+            && father.proofNumberGreaterEqual > father.disproofNumberStrictlyGreater
+    );
+  }
 
   public static StoredBoardBestDescendant bestDescendant(
       StoredBoard father, boolean greaterEqual) {
@@ -236,11 +250,11 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     return greaterEqual ? board.maxLogDerivativeProbGreaterEqual : board.maxLogDerivativeProbStrictlyGreater;
   }
   private static float prob(StoredBoard board, boolean greaterEqual) {
-    return greaterEqual ? board.probGreaterEqual : board.probStrictlyGreater;
+    return (greaterEqual ? board.getProbGreaterEqual() : board.getProbStrictlyGreater());
   }
 
   private static boolean endgame(StoredBoard board, boolean greaterEqual) {
-    return greaterEqual ? board.probGreaterEqual == 1 : board.probStrictlyGreater == 0;
+    return greaterEqual ? board.getProbGreaterEqual() == 1 : board.getProbStrictlyGreater() == 0;
   }
 
 
@@ -263,7 +277,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       StoredBoardBestDescendant next = toProcess.poll();
       StoredBoard nextBoard = next.board;
 //      System.out.println(next.derivativeLoss);
-      if (result.size() > 10 //&& father.probGreaterEqual > 0.1 && father.probStrictlyGreater < 0.1
+      if (result.size() > 10
           && result.get(0).derivativeLoss != Float.NEGATIVE_INFINITY && next.derivativeLoss - result.get(0).derivativeLoss < -3) {
 //        System.out.println("HI" + result.size() + " " + result.get(0).derivativeLoss + " " + next.derivativeLoss);
         break;
@@ -279,7 +293,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
         continue;
       }
       if (next.greaterEqual) {
-        if (next.board.probGreaterEqual > 0.97 || next.derivativeLoss == Float.NEGATIVE_INFINITY) {
+        if (next.board.getProbGreaterEqual() > 0.97 || next.derivativeLoss == Float.NEGATIVE_INFINITY) {
           toProcess.add(next.copyToChild(next.bestChild()));
           continue;
         }

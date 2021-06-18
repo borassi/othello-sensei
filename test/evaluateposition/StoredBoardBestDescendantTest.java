@@ -32,7 +32,7 @@ public class StoredBoardBestDescendantTest {
 
   public void allDescendantsStrictlyGreater(
       StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
-    if (start.probStrictlyGreater == 1 || start.disproofNumberStrictlyGreater == 0 || start.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
+    if (start.getProbStrictlyGreater() == 1 || start.disproofNumberStrictlyGreater == 0 || start.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
       return;
     }
     if (start.isLeaf()) {
@@ -59,7 +59,7 @@ public class StoredBoardBestDescendantTest {
   
   public void allDescendantsGreaterEqual(
       StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
-    if (start.proofNumberGreaterEqual == 0 || start.proofNumberGreaterEqual == Float.POSITIVE_INFINITY || start.probGreaterEqual == 0) {
+    if (start.proofNumberGreaterEqual == 0 || start.proofNumberGreaterEqual == Float.POSITIVE_INFINITY || start.getProbGreaterEqual() == 0) {
       return;
     }
     if (start.isLeaf()) {
@@ -95,9 +95,9 @@ public class StoredBoardBestDescendantTest {
 
   public void printDescendants(StoredBoard b, String indent, boolean greaterEqual) {
     if (greaterEqual) {
-      System.out.print(indent + b.maxLogDerivativeProbGreaterEqual + " " + b.proofNumberGreaterEqual + " " + b.probGreaterEqual);
+      System.out.print(indent + b.maxLogDerivativeProbGreaterEqual + " " + b.proofNumberGreaterEqual + " " + b.getProbGreaterEqual());
     } else {
-      System.out.print(indent + b.maxLogDerivativeProbStrictlyGreater + " " + b.disproofNumberStrictlyGreater + " " + b.probStrictlyGreater);
+      System.out.print(indent + b.maxLogDerivativeProbStrictlyGreater + " " + b.disproofNumberStrictlyGreater + " " + b.getProbStrictlyGreater());
     }
     System.out.println(" " + b.getBoard().toString().replace("\n", ""));
     if (!b.isLeaf()) {

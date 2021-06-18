@@ -118,16 +118,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       annotationsString = String.format("%+.0f", eval);
     }
     annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-    if (board.probStrictlyGreater > 0) {
-      annotationsString += "\n" + (int) (board.probStrictlyGreater * 100) + "% ";
+    if (board.getProbStrictlyGreater() > 0) {
+      annotationsString += "\n" + (int) (board.getProbStrictlyGreater() * 100) + "% ";
     } else {
       annotationsString += "\n" + Utils.prettyPrintDouble(board.getDisproofNumberStrictlyGreater()) + " ";
     }
-    if (board.probStrictlyGreater > 0 || board.probGreaterEqual < 1) {
+    if (board.getProbStrictlyGreater() > 0 || board.getProbGreaterEqual() < 1) {
       annotationsString += (-board.getEvalGoal() / 100) + " ";
     }
-    if (board.probGreaterEqual < 1) {
-      annotationsString += (int) (100 - board.probGreaterEqual * 100) + "%";
+    if (board.getProbGreaterEqual() < 1) {
+      annotationsString += (int) (100 - board.getProbGreaterEqual() * 100) + "%";
     } else {
       annotationsString += Utils.prettyPrintDouble(board.getProofNumberGreaterEqual());      
     }
@@ -149,7 +149,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       annotationsString = String.format("%+.0f (%+d)", eval, -board.getEvalGoal() / 100);
     }
     annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-    annotationsString += "\n" + (int) (board.probStrictlyGreater * 100) + "% " + (int) (100 - board.probGreaterEqual * 100) + "%";
+    annotationsString += "\n" + (int) (board.getProbStrictlyGreater() * 100) + "% " + (int) (100 - board.getProbGreaterEqual() * 100) + "%";
 //    boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
 //    StoredBoard bestChild = new StoredBoardBestDescendant(current, greaterEqual).bestChild();
 //    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);

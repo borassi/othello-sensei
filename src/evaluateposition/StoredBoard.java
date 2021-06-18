@@ -35,8 +35,13 @@ public class StoredBoard {
     public boolean proofBeforeFinished = false;
     public boolean disproofBeforeFinished = false;
   }
-  protected static HashMap HASH_MAP = new HashMap(6000);
-  protected static EvaluatorInterface EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(HASH_MAP);
+  protected static final HashMap HASH_MAP;
+  protected static final EvaluatorInterface EVALUATOR_MIDGAME;
+  
+  static {
+    HASH_MAP = new HashMap(6000);
+    EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(HASH_MAP);
+  }
   
   private final long player;
   private final long opponent;
@@ -49,17 +54,66 @@ public class StoredBoard {
   int lower;
   int upper;
   int nEmpties;
-  public float probGreaterEqual;
-  public float probStrictlyGreater;
+  private int probGreaterEqual;
+  private int probStrictlyGreater;
   // Positions to prove that eval >= evalGoal.
   float proofNumberGreaterEqual;
   // Positions to prove that eval <= evalGoal.
   float disproofNumberStrictlyGreater;
-  public float maxLogDerivativeProbStrictlyGreater;
-  public float maxLogDerivativeProbGreaterEqual;
+  public int maxLogDerivativeProbStrictlyGreater;
+  public int maxLogDerivativeProbGreaterEqual;
   int evalGoal;
   public boolean playerIsStartingPlayer;
   private long descendants;
+  boolean isBusyGreaterEqual;
+  boolean isBusyStrictlyGreater;
+  
+  private static final int PROB_STEP = 255;
+  private static final int[] COMBINE_PROB;
+  private static final int[] LOG_DERIVATIVE;
+  public static final int LOG_DERIVATIVE_MINUS_INF = -20000000;
+  private static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
+  
+  static {
+    COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1) * 64];
+    LOG_DERIVATIVE = new int[(PROB_STEP + 1) * (PROB_STEP + 1) * 64];
+    for (int leadingZerosDescendants = 0; leadingZerosDescendants < 64; ++leadingZerosDescendants) {
+      float lambda = -1 / Math.max(1, 3 * (63 - leadingZerosDescendants)) - 1F;
+      for (int i = 0; i <= PROB_STEP; ++i) {
+        for (int j = 0; j <= PROB_STEP; ++j) {
+          COMBINE_PROB[(leadingZerosDescendants << 16) | (i << 8) | j] = 
+              (int) Math.round(
+                  Math.pow(
+                      Math.pow(i / (double) PROB_STEP, lambda) +
+                      Math.pow(j / (double) PROB_STEP, lambda) - 1,
+                      1 / lambda
+                  ) * PROB_STEP);
+          
+          if (i == PROB_STEP || j == 0) {
+            LOG_DERIVATIVE[(leadingZerosDescendants << 16) | (i << 8) | j] = LOG_DERIVATIVE_MINUS_INF;
+          } else {
+            LOG_DERIVATIVE[(leadingZerosDescendants << 16) | (i << 8) | j] =
+                // (1 - lambda) * log((1 - p_f) / p_c), with (1-p_f >= p_c).
+                // <= 0, >= (1 - (-2)) * log(1/255 / 1) >= -17
+                // Max value: -17 * 100 * 60 = 102000. Should be fine with 2M
+                (int) Math.round(
+                    LOG_DERIVATIVE_MULTIPLIER *
+                    Math.min(0,
+                             (1 - lambda) * (float) Math.log((PROB_STEP - i) / (float) j)));
+            if (LOG_DERIVATIVE[(leadingZerosDescendants << 16) | (i << 8) | j] == -2147483648) {
+              System.out.println(leadingZerosDescendants + " " + i + " " + j);
+            }
+          }
+        }
+      }
+    }
+  }
+  private static int combineProb(int leadingZerosDescendants, int p1, int p2) {
+    return COMBINE_PROB[(leadingZerosDescendants << 16) | (p1 << 8) | p2];
+  }
+  private static int logDerivative(int leadingZerosDescendants, int fatherProb, int childProb) {
+    return LOG_DERIVATIVE[(leadingZerosDescendants << 16) | (fatherProb << 8) | childProb];
+  }
 
   StoredBoard next;
   StoredBoard prev;
@@ -184,6 +238,13 @@ public class StoredBoard {
     return eval;
   }
   
+  public float getProbGreaterEqual() {
+    return probGreaterEqual / (float) PROB_STEP;
+  }
+  public float getProbStrictlyGreater() {
+    return probStrictlyGreater / (float) PROB_STEP;
+  }
+  
   public synchronized float getProofNumberGreaterEqual() {
     return proofNumberGreaterEqual;
   }
@@ -209,16 +270,17 @@ public class StoredBoard {
   }
 
   public synchronized final void setSolved(int newEval) {
+    assert isBusyGreaterEqual || isBusyStrictlyGreater;
     assert isLeaf();
     this.lower = newEval;
     this.eval = newEval;
     this.upper = newEval;
-    this.setProofNumbersForLeaf();
 //    this.updateFathers();
     assert areThisBoardEvalsOK();
   }
 
   public synchronized final void setLower(int newLower) {
+    assert isBusyGreaterEqual || isBusyStrictlyGreater;
     assert isLeaf();
     this.lower = (short) Math.max(lower, newLower);
     this.eval = (short) Math.max(newLower, eval);
@@ -228,6 +290,7 @@ public class StoredBoard {
   }
 
   public synchronized final void setUpper(int newUpper) {
+    assert isBusyGreaterEqual || isBusyStrictlyGreater;
     assert isLeaf();
     this.upper = (short) Math.min(upper, newUpper);
     this.eval = (short) Math.min(newUpper, eval);
@@ -237,10 +300,31 @@ public class StoredBoard {
   }
   
   public synchronized final void setEval(int newEval) {
+    assert isBusyGreaterEqual || isBusyStrictlyGreater;
     assert isLeaf();
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
     this.setProofNumbersForLeaf();
     assert areThisBoardEvalsOK();
+  }
+  
+  public void setFree(boolean greaterEqual) {
+    if (greaterEqual) {
+      isBusyGreaterEqual = false;
+    } else {
+      isBusyStrictlyGreater = false; 
+    }
+//    this.setProofNumbersForLeaf();
+    this.updateFathers();
+  }
+
+  public void setBusy(boolean greaterEqual) {
+    if (greaterEqual) {
+      isBusyGreaterEqual = true;
+    } else {
+      isBusyStrictlyGreater = true; 
+    }
+//    this.setProofNumbersForLeaf();
+    this.updateFathers();
   }
   
   protected void setEvalGoalRecursive(int evalGoal) {
@@ -263,17 +347,12 @@ public class StoredBoard {
     assert areChildrenOK();
   }
 
-  private static float roundProb(float prob) {
-    if (prob < Constants.PPN_MIN_COST_LEAF) {
-      return 0;
-    } else if (prob > 1 - Constants.PPN_MIN_COST_LEAF) {
-      return 1;      
-    }
-    return prob;
+  private static final int roundProb(float prob) {
+    return Math.round(prob * PROB_STEP);
   }
   
   public synchronized float lambda() {
-    return -1 / Math.max(1, 2 * (float) Math.log(this.descendants)) - 1F;  // -3
+    return -1 / Math.max(1, 3 * (63 - Long.numberOfLeadingZeros(this.descendants))) - 1F;  // -3
   }
   
   protected synchronized void updateFather() {
@@ -281,10 +360,13 @@ public class StoredBoard {
     eval = Short.MIN_VALUE;
     lower = Short.MIN_VALUE;
     upper = Short.MIN_VALUE;
-    probGreaterEqual = 1 - children.length;
-    probStrictlyGreater = probGreaterEqual;
+//    probGreaterEqual = 1 - children.length;
+//    probStrictlyGreater = probGreaterEqual;
     proofNumberGreaterEqual = Float.POSITIVE_INFINITY;
     disproofNumberStrictlyGreater = 0;
+    probGreaterEqual = PROB_STEP;
+    probStrictlyGreater = PROB_STEP;
+    int leadingZerosDescendants = Long.numberOfLeadingZeros(descendants);
 
     float lambda = lambda();
     for (StoredBoard child : children) {
@@ -292,36 +374,35 @@ public class StoredBoard {
       eval = Math.max(eval, -child.eval);
       lower = Math.max(lower, -child.upper);
       upper = Math.max(upper, -child.lower);
-      probGreaterEqual += Math.pow(child.probStrictlyGreater, lambda);
-      probStrictlyGreater += Math.pow(child.probGreaterEqual, lambda);
-      proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater / Math.max(0.001F, 1 - child.probStrictlyGreater));
+      probGreaterEqual = combineProb(leadingZerosDescendants, probGreaterEqual, child.probStrictlyGreater);
+      probStrictlyGreater = combineProb(leadingZerosDescendants, probStrictlyGreater, child.probGreaterEqual);
+      proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater / Math.max(0.002F, 1 - child.getProbStrictlyGreater()));
       disproofNumberStrictlyGreater += child.proofNumberGreaterEqual;
-//      }
     }
+    probGreaterEqual = PROB_STEP - probGreaterEqual;
+    probStrictlyGreater = PROB_STEP - probStrictlyGreater;
     if (lower >= evalGoal) {
-      probGreaterEqual = 1;
+      assert getProbGreaterEqual() == 1;
       assert proofNumberGreaterEqual == 0;
     } else if (upper < evalGoal) {
-      probGreaterEqual = 0;
+      assert getProbGreaterEqual() == 0;
       assert proofNumberGreaterEqual == Float.POSITIVE_INFINITY;
     } else {
-      probGreaterEqual = roundProb(1 - (float) Math.pow(probGreaterEqual, 1 / lambda));
-      proofNumberGreaterEqual *= Math.max(0.001F, probGreaterEqual);
+      proofNumberGreaterEqual *= Math.max(0.002F, this.getProbGreaterEqual());
       assert Float.isFinite(proofNumberGreaterEqual) && proofNumberGreaterEqual > 0;
     }
     if (lower > evalGoal) {
-      probStrictlyGreater = 1;
+      assert getProbStrictlyGreater() == 1;
       assert disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY;
     } else if (upper <= evalGoal) {
-      probStrictlyGreater = 0;
+      assert getProbStrictlyGreater() == 0;
       assert disproofNumberStrictlyGreater == 0;
     } else {
-      probStrictlyGreater = roundProb(1 - (float) Math.pow(probStrictlyGreater, 1 / lambda));
       assert Float.isFinite(disproofNumberStrictlyGreater) && disproofNumberStrictlyGreater > 0;
     }
     assert probGreaterEqual >= probStrictlyGreater;
-    maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
-    maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
+    maxLogDerivativeProbStrictlyGreater = LOG_DERIVATIVE_MINUS_INF;
+    maxLogDerivativeProbGreaterEqual = LOG_DERIVATIVE_MINUS_INF;
 
     for (StoredBoard child : children) {
       maxLogDerivativeProbStrictlyGreater = Math.max(maxLogDerivativeProbStrictlyGreater, logDerivativeProbStrictlyGreater(child));
@@ -355,29 +436,33 @@ public class StoredBoard {
     assert isAllOK();
   }
   
-  public synchronized float logDerivativeProbStrictlyGreater(StoredBoard child) {
-    return child.maxLogDerivativeProbGreaterEqual + logDerivativeEdgeProbStrictlyGreater(child);
+  public synchronized int logDerivativeProbStrictlyGreater(StoredBoard child) {
+    return (int) child.maxLogDerivativeProbGreaterEqual + logDerivativeEdgeProbStrictlyGreater(child);
   }
   
-  public synchronized float logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
+  public synchronized int logDerivativeEdgeProbStrictlyGreater(StoredBoard child) {
     assert Utils.arrayContains(children, child);
     assert evalGoal == -child.evalGoal;
-    if (child.probGreaterEqual == 0) {
-      return Float.NEGATIVE_INFINITY;
-    }
-    return Math.min(0, (1 - lambda()) * (float) Math.log((1 - probStrictlyGreater) / child.probGreaterEqual));
+    return logDerivative(Long.numberOfLeadingZeros(child.descendants), probStrictlyGreater, child.probGreaterEqual);
+//    if (child.probGreaterEqual == 0 || probStrictlyGreater == PROB_STEP) {
+//      return LOG_DERIVATIVE_MINUS_INF;
+//    }
+//    return (int) Math.round(
+//        LOG_DERIVATIVE_MULTIPLIER * Math.min(0, (1 - lambda()) * (float) Math.log((PROB_STEP - probStrictlyGreater) / (float) child.probGreaterEqual)));
   }
   
-  public synchronized float logDerivativeProbGreaterEqual(StoredBoard child) {
+  public synchronized int logDerivativeProbGreaterEqual(StoredBoard child) {
     return child.maxLogDerivativeProbStrictlyGreater + logDerivativeEdgeProbGreaterEqual(child);
   }
-  
-  public synchronized float logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
+  public synchronized int logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    if (child.probStrictlyGreater == 0) {
-      return Float.NEGATIVE_INFINITY;
-    }
-    return Math.min(0, (1 - lambda()) * (float) Math.log((1 - probGreaterEqual) / child.probStrictlyGreater));
+    return logDerivative(Long.numberOfLeadingZeros(child.descendants), probGreaterEqual, child.probStrictlyGreater);
+//    if (child.probStrictlyGreater == 0 || probGreaterEqual == PROB_STEP) {
+//      return LOG_DERIVATIVE_MINUS_INF;
+//    }
+////    System.out.println(LOG_DERIVATIVE_MULTIPLIER * Math.min(0, (1 - lambda()) * (float) Math.log((PROB_STEP - probGreaterEqual) / (float) child.probStrictlyGreater)));
+//    return (int) Math.round(
+//        LOG_DERIVATIVE_MULTIPLIER * Math.min(0, (1 - lambda()) * (float) Math.log((PROB_STEP - probGreaterEqual) / (float) child.probStrictlyGreater)));
   }
 
   protected synchronized void updateFathers() {
@@ -395,22 +480,25 @@ public class StoredBoard {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
     assert descendants > 0 || extraInfo.isFinished;
-    probGreaterEqual = roundProb(1-(float) Gaussian.CDF(evalGoal-100, eval, 450 - 3 * nEmpties));
-    probStrictlyGreater = roundProb(1-(float) Gaussian.CDF(evalGoal+100, eval, 450 - 3 * nEmpties));
     assert probGreaterEqual >= probStrictlyGreater;
 
-    float mult = 1F;
+    float mult = LOG_DERIVATIVE_MULTIPLIER;
 
     if (lower >= evalGoal) {
       proofNumberGreaterEqual = 0;
-      probGreaterEqual = 1;
-      maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
+      probGreaterEqual = (int) PROB_STEP;
+      maxLogDerivativeProbGreaterEqual = LOG_DERIVATIVE_MINUS_INF;
     } else if (upper < evalGoal) {
       proofNumberGreaterEqual = Float.POSITIVE_INFINITY;
       probGreaterEqual = 0;
-      maxLogDerivativeProbGreaterEqual = Float.NEGATIVE_INFINITY;
+      maxLogDerivativeProbGreaterEqual = LOG_DERIVATIVE_MINUS_INF;
     } else {
-      this.maxLogDerivativeProbGreaterEqual = mult * (float) Math.log(probGreaterEqual * (1 - probGreaterEqual));
+      probGreaterEqual = roundProb((1-(float) Gaussian.CDF(evalGoal-100, eval, 500 - 3 * nEmpties)));
+      if (getProbGreaterEqual() == 0 || getProbGreaterEqual() == 1) {
+        maxLogDerivativeProbGreaterEqual = LOG_DERIVATIVE_MINUS_INF;
+      } else {
+        maxLogDerivativeProbGreaterEqual = (int) Math.round(mult * Math.log(getProbGreaterEqual() * (1 - getProbGreaterEqual())));
+      }
       proofNumberGreaterEqual = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal - 100, this.eval));
       assert Float.isFinite(proofNumberGreaterEqual) && proofNumberGreaterEqual > 0;
     }
@@ -418,13 +506,18 @@ public class StoredBoard {
     if (upper <= evalGoal) {
       probStrictlyGreater = 0;
       disproofNumberStrictlyGreater = 0;
-      maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
+      maxLogDerivativeProbStrictlyGreater = LOG_DERIVATIVE_MINUS_INF;
     } else if (lower > evalGoal) {
-      probStrictlyGreater = 1;
+      probStrictlyGreater = (int) PROB_STEP;
       disproofNumberStrictlyGreater = Float.POSITIVE_INFINITY;
-      maxLogDerivativeProbStrictlyGreater = Float.NEGATIVE_INFINITY;
+      maxLogDerivativeProbStrictlyGreater = LOG_DERIVATIVE_MINUS_INF;
     } else {
-      maxLogDerivativeProbStrictlyGreater = mult * (float) Math.log((1 - probStrictlyGreater) * (probStrictlyGreater));
+      probStrictlyGreater = roundProb((1-(float) Gaussian.CDF(evalGoal+100, eval, 500 - 3 * nEmpties)));
+      if (getProbStrictlyGreater() == 0 || getProbStrictlyGreater() == 1) {
+        maxLogDerivativeProbStrictlyGreater = LOG_DERIVATIVE_MINUS_INF;
+      } else {
+        maxLogDerivativeProbStrictlyGreater = (int) Math.round(mult * Math.log(getProbStrictlyGreater() * (1 - getProbStrictlyGreater())));
+      }
       disproofNumberStrictlyGreater = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal + 100, this.eval));
       assert Float.isFinite(disproofNumberStrictlyGreater) && disproofNumberStrictlyGreater > 0;
     }
@@ -482,7 +575,7 @@ public class StoredBoard {
   }
   
   public synchronized boolean isPartiallySolved() {
-    return probGreaterEqual > 1 - Constants.PPN_MIN_COST_LEAF && probStrictlyGreater < Constants.PPN_MIN_COST_LEAF;
+    return probGreaterEqual == PROB_STEP && probStrictlyGreater == 0;
   }
   
   public synchronized boolean isSolved() {
@@ -538,7 +631,7 @@ public class StoredBoard {
     float bestValue = Float.NEGATIVE_INFINITY;
     float curValue;
     for (StoredBoard child : children) {
-      curValue = -child.disproofNumberStrictlyGreater / (1-child.probStrictlyGreater);
+      curValue = -child.disproofNumberStrictlyGreater / (1-child.getProbStrictlyGreater());
       if (curValue > bestValue) {
         best = child;
         bestValue = curValue;
@@ -549,7 +642,7 @@ public class StoredBoard {
   }
 
   public synchronized StoredBoard bestChildMidgameStrictlyGreater() {
-    assert probStrictlyGreater < 1;
+    assert probStrictlyGreater < PROB_STEP;
     assert !isLeaf();
     if (probStrictlyGreater == 0) {
       return bestChildEndgameStrictlyGreater();
@@ -573,7 +666,7 @@ public class StoredBoard {
 
   public synchronized StoredBoard bestChildMidgameGreaterEqual() {
     assert !isLeaf();
-    if (probGreaterEqual == 1) {
+    if (probGreaterEqual == PROB_STEP) {
       return bestChildEndgameGreaterEqual();
     }
     StoredBoard best = null;

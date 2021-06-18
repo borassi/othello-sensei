@@ -54,6 +54,14 @@ public class EvaluatorLastMovesTest {
     Board b = new Board("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX", true);
     assertEquals(2400, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
   }
+
+  @Test
+  public void testTemp() {
+    Board b = new Board("XOOXXXXX-XOXXXOOXXOOXXXXXOOOOXXXXXOXXOXOOXOO-XOOXXXX-XOOX-XXXXXX", true);
+    assertEquals(-600, LAST_MOVE_EVALUATOR.evalFourEmpties(6, 55, 19, 11, b.getPlayer(), b.getOpponent(), -6400, 6400, false, false, 0));
+  }
+  
+//  6 55 19 11 200 -6400 6400
 //
 //  @Test
 //  public void testNVisitedOneMove() {

@@ -62,9 +62,8 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   
   final DepthOneEvaluator depthOneEvaluator;
   private long nVisited = 0;
-  private final EvaluatorLastMoves lastMovesEvaluator;
+  private final EvaluatorLastMoves lastMovesEvaluator = new EvaluatorLastMoves();
   private final HashMap hashMap;
-  private final int logNPlusOne[];
   Move[][] moves = new Move[64][64];
   static Constant constant = new Constant();
 
@@ -82,17 +81,13 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
 
   public EvaluatorAlphaBeta(DepthOneEvaluator depthOneEvaluator, HashMap hashMap) {
     this.depthOneEvaluator = depthOneEvaluator;
-    this.lastMovesEvaluator = new EvaluatorLastMoves();
+//    this.lastMovesEvaluator = new EvaluatorLastMoves();
     for (int i = 0; i < this.moves.length; ++i) {
       for (int j = 0; j < this.moves[i].length; ++j) {
         this.moves[i][j] = new Move();
       }
     }
     this.hashMap = hashMap;
-    logNPlusOne = new int[64];
-    for (int i = 0; i < logNPlusOne.length; ++i) {
-      logNPlusOne[i] = (int) (Math.log(i+1) * 100);
-    }
   }
 //
 //  public double getDisproofNumber(
@@ -356,9 +351,21 @@ int bad = 0;
           (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 3) &&
           (nEmpties == Constants.EMPTIES_FOR_ENDGAME ||
            (-curMove.value < constant.get()))) {
-        currentEval = -lastMovesEvaluator.evaluate(
-            opponent & ~flip, player | flip, -upper, -newLower, flip);
-        nVisited = lastMovesEvaluator.getNVisited();
+//        currentEval = -lastMovesEvaluator.evaluate(
+//            opponent & ~flip, player | flip, -upper, -newLower, flip);
+//        nVisited = lastMovesEvaluator.getNVisited();
+        EvalWithVisited eval = EvaluatorLastMoves.evaluateCPP(
+            opponent & ~flip, player | flip, -upper, -newLower);
+//        System.out.println(-eval.eval + " " + currentEval);
+//        System.out.println(eval.nVisited + " " + nVisited);
+//        if ((currentEval <= newLower && -eval.eval > newLower)
+//            || (currentEval >= upper && -eval.eval < upper)) {
+//          System.out.println("BIG MISTAKE!!");
+//          System.out.println(newLower + " " + -eval.eval + " " + upper);
+//          System.out.println(currentEval);
+//        }
+        currentEval = -eval.eval;
+        nVisited = eval.nVisited;
         constant.update(nVisited);
         this.nVisited += nVisited;
       } else {

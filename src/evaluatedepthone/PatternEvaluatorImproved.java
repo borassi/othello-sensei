@@ -15,6 +15,7 @@ package evaluatedepthone;
 
 import board.Board;
 import bitpattern.BitPattern;
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -49,14 +50,6 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
                                                                  "-------X" +
                                                                  "------XX" +
                                                                  "---XXXXX");
-  final static long FEATURE_EDGE_BOH = BitPattern.parsePattern("--------" +
-                                                                 "--------" +
-                                                                 "--------" +
-                                                                 "--------" +
-                                                                 "--------" +
-                                                                 "--------" +
-                                                                 "--XXXX--" +
-                                                                 "X-XXXX-X");
   final static long FEATURE_IMPR_DIAGONAL = BitPattern.parsePattern("XX------" +
                                                                     "XX------" +
                                                                     "--X-----" +
@@ -91,15 +84,6 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
                                                           + "--------\n"
                                                           + "--------\n"
                                                           + "XXXXXXXX\n");
-
-  final static long PATTERN_LAST2 = BitPattern.parsePattern("--------\n" 
-                                                          + "--------\n"
-                                                          + "--------\n"
-                                                          + "--------\n"
-                                                          + "--------\n"
-                                                          + "--------\n"
-                                                          + "XXXXXXXX\n"
-                                                          + "--------\n");
 
   final static long PATTERN_SM_LAST1 = BitPattern.parsePattern("--------\n" 
                                                           + "--------\n"
@@ -161,7 +145,7 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   final static int[] maxBaseHashes;
   final static int[] emptyBaseHashes;
 
-  final static int[][][] evals;
+  final static int[][][] EVALS;
   final static long features[];
   final static ArrayList<int[]> featuresToSquaresList;
 
@@ -169,7 +153,7 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   int[] baseHashes;
   int empties;
 
-  public static ArrayList<int[]> featureToBaseFeature() {
+  final static ArrayList<int[]> featureToBaseFeature() {
     featuresToSquaresList.clear();
     ArrayList<int[]> result = new ArrayList<>();
     for (long[] featureGroup : FEATURE_GROUPS) {
@@ -225,12 +209,42 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
         
       }
     }
-    evals = readEvals();
+    EVALS = readEvals();
   }
-  
+
+  final static int[] rotateFeature(int[] feature) {
+    int[] newFeature = new int[feature.length];
+    for (int i = 0; i < feature.length; ++i) {
+      int f = feature[i];
+      int row = f / 8;
+      int column = f % 8;
+      int newRow = column;
+      int newColumn = 7 - row;
+      newFeature[i] = newRow * 8 + newColumn;
+    }
+    return newFeature;
+  }
+
+  final static ArrayList<int[]> allFeatures(long pattern) {
+    HashSet<Long> seen = new HashSet<>();
+    int[] feature = longToFeature(pattern);
+    ArrayList<int[]> result = new ArrayList<>();
+
+    for (int i = 0; i < 1; ++i) {
+      for (int j = 0; j < 4; ++j) {
+        if (!seen.contains(featureToLong(feature))) {
+          result.add(feature);
+          seen.add(featureToLong(feature));
+        }
+        feature = rotateFeature(feature);
+      }
+    }
+    return result;
+  }
+
   public PatternEvaluatorImproved() {
     baseHashes = new int[featuresToSquaresList.size()];
-    hashes = new int[evals[0].length];
+    hashes = new int[EVALS[0].length];
   }
   
   public static int[][][] emptyEvals() {
@@ -276,7 +290,7 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   public static void saveEvals(String filepath) {
     try {
       ObjectOutputStream objOut = Main.fileAccessor.outputFile(filepath);
-      objOut.writeObject(evals);
+      objOut.writeObject(EVALS);
       objOut.close();
     } catch (IOException ex) {
       Logger.getLogger(MultilinearRegressionImproved.class.getName()).log(Level.SEVERE, null, ex);
@@ -336,36 +350,6 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
     return newFeature;
   }
   
-  final static int[] rotateFeature(int[] feature) {
-    int[] newFeature = new int[feature.length];
-    for (int i = 0; i < feature.length; ++i) {
-      int f = feature[i];
-      int row = f / 8;
-      int column = f % 8;
-      int newRow = column;
-      int newColumn = 7 - row;
-      newFeature[i] = newRow * 8 + newColumn;
-    }
-    return newFeature;
-  }
-  
-  final static ArrayList<int[]> allFeatures(long pattern) {
-    HashSet<Long> seen = new HashSet<>();
-    int[] feature = longToFeature(pattern);
-    ArrayList<int[]> result = new ArrayList<>();
-
-    for (int i = 0; i < 1; ++i) {
-      for (int j = 0; j < 4; ++j) {
-        if (!seen.contains(featureToLong(feature))) {
-          result.add(feature);
-          seen.add(featureToLong(feature));
-        }
-        feature = rotateFeature(feature);
-      }
-    }
-    return result;
-  }
-  
   public int[] hashes() {
     ArrayList<int[]> featureToBaseFeature = featureToBaseFeature();
     for (int i = 0; i < hashes.length; ++i) {
@@ -390,7 +374,7 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   @Override
   public int eval() {
 //    return this.evalSlow();
-    int[][] curEvals = evals[getEvalFromEmpties(empties)];
+    int[][] curEvals = EVALS[getEvalFromEmpties(empties)];
     int eval = 0;
     
     if (baseHashes[0] != 40) {
@@ -466,7 +450,7 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   public int evalSlow() {
     int eval = 0;
     int[] curHashes = hashes();
-    int[][] curEval = evals[getEvalFromEmpties(empties)];
+    int[][] curEval = EVALS[getEvalFromEmpties(empties)];
     for (int i = 0; i < curEval.length; ++i) {
       eval += curEval[i][curHashes[i]];
     }
@@ -566,12 +550,12 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   }
   
   public void randomizeEvals() {
-    for (int emptiesGroup = 0; emptiesGroup < evals.length; ++emptiesGroup) {
-      for (int i = 0; i < evals[emptiesGroup].length; ++i) {
+    for (int emptiesGroup = 0; emptiesGroup < EVALS.length; ++emptiesGroup) {
+      for (int i = 0; i < EVALS[emptiesGroup].length; ++i) {
         int mod1 = (int) (Math.random() * 100) + 3;
         int mod2 = (int) (Math.random() * 100) + 3;
-        for (int j = 0; j < evals[emptiesGroup][i].length; ++j) {
-          evals[emptiesGroup][i][j] += emptiesGroup + i % mod1 - j % mod2; // (int) (Math.random() * 6400);
+        for (int j = 0; j < EVALS[emptiesGroup][i].length; ++j) {
+          EVALS[emptiesGroup][i][j] += emptiesGroup + i % mod1 - j % mod2; // (int) (Math.random() * 6400);
         }
       }
     }
@@ -582,9 +566,9 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
   }
 
   public void reset(int eval) {
-    for (int i = 0; i < evals.length; ++i) {
-      for (int j = 0; j < evals[i].length; ++j) {
-        Arrays.fill(evals[i][j], eval);
+    for (int i = 0; i < EVALS.length; ++i) {
+      for (int j = 0; j < EVALS[i].length; ++j) {
+        Arrays.fill(EVALS[i][j], eval);
       }
     }
   }

@@ -8,5 +8,5 @@ include/*
 manifest.mf
 nbproject/
 tmp/*
-/cpp-plugins/build/
-/cpp-plugins/dist/
+cpp-plugins/build/*
+cpp-plugins/dist/*
