@@ -20,6 +20,7 @@ import board.Board;
 import board.GetMoves;
 import board.GetMovesCache;
 import constants.Constants;
+import static constants.Constants.VISITED_ENDGAME_GOAL;
 import constants.Stats;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
@@ -51,12 +52,12 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
     }
   }
   public static class Constant {
-    private double value = 150;
+    private double value = VISITED_ENDGAME_GOAL;
     public synchronized double get() {
       return value;
     }
     public synchronized void update(long nVisited) {
-      value += 0.01 * (150 - nVisited);
+      value += 0.01 * (VISITED_ENDGAME_GOAL - nVisited);
     }
   }
   
@@ -349,7 +350,7 @@ int bad = 0;
       } else if (
           depth >= nEmpties &&
           (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 3) &&
-          (nEmpties == Constants.EMPTIES_FOR_ENDGAME ||
+          (nEmpties <= Constants.EMPTIES_FOR_ENDGAME ||
            (-curMove.value < constant.get()))) {
 //        currentEval = -lastMovesEvaluator.evaluate(
 //            opponent & ~flip, player | flip, -upper, -newLower, flip);

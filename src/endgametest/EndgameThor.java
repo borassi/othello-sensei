@@ -54,7 +54,7 @@ public class EndgameThor {
     for (BoardWithEvaluation b : allBoards) {
       long[] moves = GetMovesCache.getAllMoves(b.board);
 //      return moves != null && moves.length == 1 && moves[0] == 0;
-      if (b.board.getEmptySquares() == 12 &&
+      if (b.board.getEmptySquares() == 14 &&
           (moves != null) &&
           (moves.length > 1 || (moves.length == 1 && moves[0] != 0))) {
         boards.add(b);
@@ -130,7 +130,7 @@ public class EndgameThor {
 //    for (int i = 0; i < 5; ++i) {
       for (BoardWithEvaluation be : boards) {
         es.submit(() -> {
-//          (new EvaluatorAlphaBeta(new PatternEvaluatorImproved(), h)).evaluate(be.board.getPlayer(), be.board.getOpponent(), be.board.getEmptySquares(), -6400, 6400);
+//          (new EvaluatorAlphaBeta(new PatternEvaluatorImproved(), h)).evaluate(be.board.getPlayer(), be.board.getOpponent(), be.board.getEmptySquares(), 100, 100);
           EvaluatorLastMoves.evaluateCPP(be.board.getPlayer(), be.board.getOpponent(), 100, 100);
 //          new EvaluatorLastMoves().evaluate(be.board, -6400, 6400, 0);
         });

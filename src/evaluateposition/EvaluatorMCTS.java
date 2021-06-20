@@ -22,6 +22,10 @@ import evaluatedepthone.PatternEvaluatorImproved;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,6 +37,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long maxNVisited;
   private long stopTimeMillis;
   private HashMap hashMap;
+  private final ReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
+  private final Lock editLock = editNextPositionLock.readLock();
+  private final Lock nextPositionLock = editNextPositionLock.writeLock();
+  private final Condition isNextPositionAvailable = nextPositionLock.newCondition();
   
   int lower = -6300;
   int upper = 6300;
@@ -152,7 +160,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
   }
-  
+
   public EvaluatorMCTS(int maxSize, int arraySize, HashMap hashMap) {
     this(maxSize, arraySize, hashMap, () -> new EvaluatorAlphaBeta(hashMap));
   }
@@ -277,39 +285,51 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return this.firstPosition.getProbGreaterEqual() < 1 - this.firstPosition.getProbStrictlyGreater();
   }
   
-  protected synchronized void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
-    StoredBoard board = position.board;
-    if (board.children != null) {
-      for (int i = 0; i < board.children.length; ++i) {
-        StoredBoard child = board.children[i];
-        StoredBoard childInEvaluator = get(child.getPlayer(), child.getOpponent());
-        if (Constants.IGNORE_TRANSPOSITIONS) {
-          childInEvaluator = null;
-        }
-        if (childInEvaluator == null) {
-          add(child);
-        } else {
-          board.children[i] = childInEvaluator;
-          childInEvaluator.addFather(board);
-          if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-            childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
+  protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
+    editLock.lock();
+    try {
+      StoredBoard board = position.board;
+      if (board.children != null) {
+        for (int i = 0; i < board.children.length; ++i) {
+          StoredBoard child = board.children[i];
+          StoredBoard childInEvaluator = get(child.getPlayer(), child.getOpponent());
+          if (Constants.IGNORE_TRANSPOSITIONS) {
+            childInEvaluator = null;
           }
-          if (board.getEvalGoal() != -childInEvaluator.getEvalGoal()) {
-            childInEvaluator.setEvalGoalRecursive(-board.getEvalGoal());
+          if (childInEvaluator == null) {
+            add(child);
+          } else {
+            board.children[i] = childInEvaluator;
+            childInEvaluator.addFather(board);
+            if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+              childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
+            }
+            if (board.getEvalGoal() != -childInEvaluator.getEvalGoal()) {
+              childInEvaluator.setEvalGoalRecursive(-board.getEvalGoal());
+            }
           }
         }
       }
+      position.updateDescendants(nVisited);
+      board.setFree();
+    } finally {
+      editLock.unlock();
     }
-    position.updateDescendants(nVisited);
-    board.setFree(position.greaterEqual);
+
+    nextPositionLock.lock();
+    try {
+      isNextPositionAvailable.signalAll();
+    } finally {
+      nextPositionLock.unlock();
+    }
+  }
+  
+  protected boolean checkFinished() {
+    updateEvalGoalIfNeeded();
     if (hashMap.size() > Constants.HASH_MAP_SIZE / 2) {
       hashMap.reset();
     }
-    updateEvalGoalIfNeeded();
-    notifyAll();
-  }
 
-  protected synchronized StoredBoardBestDescendant getNextPosition() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
         this.firstPosition.setIsFinished(true);
@@ -318,43 +338,53 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
     if (Constants.APPROX_ONLY && this.firstPosition.getProbGreaterEqual() > 1 - 0.02 && this.firstPosition.getProbStrictlyGreater() < 0.02) {
       status = Status.SOLVED;
-      return null;
+      return true;
     }
     if (status == Status.KILLING) {
       status = Status.KILLED;
-      return null;
+      return true;
     }
     if (this.firstPosition.getDescendants() > maxNVisited) {
       status = Status.STOPPED_POSITIONS;
-      return null;
+      return true;
     }
     if (System.currentTimeMillis() > stopTimeMillis) {
       status = Status.STOPPED_TIME;
-      return null;
+      return true;
     }
     if (isSolved()) {
       status = Status.SOLVED;
-      return null;
+      return true;
     }
-//    while (firstPosition.isBusy) {
-//      try {
-//        wait(100);
-//      } catch (InterruptedException ex) {
-//        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
-//      }
-//    }
-    boolean greaterEqual = StoredBoardBestDescendant.bestDescendantGreaterEqual(firstPosition);
-    
-    StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, greaterEqual);
-    if (result.board == null) {
-      try {
-        wait();
-      } catch (InterruptedException ex) {
-        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
+    return false;
+  }
+
+  protected StoredBoardBestDescendant getNextPosition() {
+    nextPositionLock.lock();
+    StoredBoardBestDescendant result = null;
+    try {
+      if (checkFinished()) {
+        return null;
       }
-      return getNextPosition();
+      result = StoredBoardBestDescendant.bestDescendant(firstPosition);
+      while (result == null) {
+        isNextPositionAvailable.await();
+        if (checkFinished()) {
+          return null;
+        }
+        result = StoredBoardBestDescendant.bestDescendant(firstPosition);
+      }
+      editLock.lock();
+    } catch (InterruptedException ex) {
+      Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
+    } finally {
+      nextPositionLock.unlock();
     }
-    result.board.setBusy(result.greaterEqual);
+    try {
+      result.board.setBusy();
+    } finally {
+      editLock.unlock();
+    }
     return result;
   }
 

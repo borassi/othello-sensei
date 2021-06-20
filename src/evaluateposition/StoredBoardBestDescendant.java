@@ -204,12 +204,18 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     );
   }
 
+  public static StoredBoardBestDescendant bestDescendant(StoredBoard father) {
+    return bestDescendant(
+        father,
+        bestDescendantGreaterEqual(father)
+    );
+  }
+
   public static StoredBoardBestDescendant bestDescendant(
       StoredBoard father, boolean greaterEqual) {
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
     if (!result.hasValidDescendants()) {
-      result.board = null;
-      return result;
+      return null;
     }
     assert !father.isBusy;
 
@@ -221,6 +227,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 //      System.out.println(result.derivativeLoss + " " + result.maxLogDerivative());
 //      assert result.derivativeLoss == result.maxLogDerivative() || result.derivativeLoss == StoredBoard.LOG_DERIVATIVE_MINUS_INF;
     }
+    assert result.board != null;
     return result;
   }
 
@@ -318,7 +325,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       if (maxLogDerivative() + derivativeLoss <= LOG_DERIVATIVE_MINUS_INF) {
         return board.bestChildEndgameGreaterEqual();
       } else {
-        return board.bestChildMidgameGreaterEqual();        
+        return board.bestChildMidgameGreaterEqual(); 
       }
     } else {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {

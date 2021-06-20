@@ -15,7 +15,6 @@
 package evaluateposition;
 
 import board.Board;
-import helpers.Gaussian;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
