@@ -22,11 +22,11 @@ public class Constants {
   public final static int WEIGHT_DEPTH_0 = 2;
   public final static int EMPTIES_FOR_FORCED_MIDGAME = 14;
   public final static int VISITED_ENDGAME_GOAL = 150;
-//  public final static int HASH_MAP_SIZE = 500000;
-//  public final static int MCTS_SIZE = 2000000;
+  public final static int EMPTIES_FOR_ENDGAME = 10;
+
   public final static int HASH_MAP_SIZE = 10000000;
   public final static int MCTS_SIZE = 20000000;
-  public final static int EMPTIES_FOR_ENDGAME = 10;
+
   public final static int TRY_SC_NO_CORNER = 2000;
   public final static int TRY_SC_CORNER = 40000000;
   public final static int TRY_SC_LAST_5_NO_CORNER = 1400;
@@ -37,8 +37,6 @@ public class Constants {
   public final static int TRY_SC_LAST_3_CORNER = 0;
   
   public final static int MAX_PARALLEL_TASKS = 12;
-//  public final static double PPN_LAMBDA = -4;
-  public final static double PPN_MIN_COST_LEAF = 0.004;
 
   public final static boolean ASSERT_EXTENDED = true;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;

@@ -24,6 +24,7 @@ import constants.Constants;
 import endgametest.EndgameTest;
 import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorMCTS;
+import evaluateposition.EvaluatorMCTS.Status;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
 import evaluateposition.StoredBoardBestDescendant;
@@ -58,6 +59,7 @@ public class Main implements Runnable {
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   Future future = null;
   private long startTime;
+  private final int updateTimes[] = {100, 1000};
   /**
    * The board, as a pair of bitpattern.
    */
@@ -168,32 +170,25 @@ public class Main implements Runnable {
     PriorityQueue<StoredBoard> toEvaluate = new PriorityQueue<>(
         (StoredBoard t, StoredBoard t1) -> Integer.compare(t.getEval(), t1.getEval()));
     StoredBoard firstPosition = EVALUATOR.get(board);
+    
     for (StoredBoard child : firstPosition.getChildren()) {
-      if (!child.isSolved()
-          && -child.getEval() >= firstPosition.getEval() - delta) {
+      if (!child.isSolved() && -child.getEval() >= firstPosition.getEval() - delta) {
         toEvaluate.add(child);
       }
     }
-    return toEvaluate;
-  }
-  
-  private final int updateTimes[] = {100, 1000};
-  
-  private boolean isFinished() {
-    switch (EVALUATOR.getStatus()) {
-      case KILLING:
-      case KILLED:
-      case STOPPED_POSITIONS:
-      case STOPPED_TIME:
-        return false;
-      case SOLVED:
-        return true;
-      case NONE:
-      case RUNNING:
-        throw new RuntimeException("Bad state " + EVALUATOR.getStatus() + " for EvaluatorMCTS.");
-      default:
-        throw new RuntimeException("Bad state " + EVALUATOR.getStatus() + " for EvaluatorMCTS.");
+    if (toEvaluate.isEmpty() && firstPosition.isSolved()) {
+      StoredBoard bestUnsolvedChild = null;
+      int bestUnsolvedChildEval = -6600;
+      for (StoredBoard child : firstPosition.getChildren()) {
+        if (!child.isSolved()
+            && -child.getEval() > bestUnsolvedChildEval) {
+          bestUnsolvedChild = child;
+          bestUnsolvedChildEval = -child.getEval();
+        }
+      }
+      toEvaluate.add(bestUnsolvedChild);
     }
+    return toEvaluate;
   }
   
   @Override
@@ -201,16 +196,17 @@ public class Main implements Runnable {
     stopping = false;
     boolean finished = false;
     int nUpdate = 0;
-    startTime = System.currentTimeMillis();
     
     while (!stopping && !finished) {
+      long start = System.currentTimeMillis();
       int updateTime = updateTimes[Math.min(updateTimes.length-1, nUpdate)];
       evaluatePosition(board, (int) ((ui.delta() > 0 ? 0.4 : 1) * updateTime), nUpdate == 0);
-      
+
       if (ui.delta() > 0) {
+        double remainingTime = updateTime - (System.currentTimeMillis() - start);
         PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
         if (!toEvaluate.isEmpty()) {
-          int timeEachPosition = (int) (0.6 * updateTime / toEvaluate.size());
+          int timeEachPosition = (int) (remainingTime / toEvaluate.size());
           while (!toEvaluate.isEmpty()) {
             StoredBoard child = toEvaluate.poll();
             evaluatePosition(child.getBoard(), timeEachPosition, false);
@@ -218,7 +214,7 @@ public class Main implements Runnable {
         }
       }
       showMCTSEvaluations();
-      finished = EVALUATOR.get(board).isSolved();
+      finished = EVALUATOR.getStatus() == Status.SOLVED;
       if (ui.delta() > 0 && finished) {
         for (StoredBoard child : EVALUATOR.get(board).children) {
           if (!child.isSolved()) {
@@ -334,7 +330,7 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-//    this.run();
+    startTime = System.currentTimeMillis();
     future = executor.submit(this);
   }
   

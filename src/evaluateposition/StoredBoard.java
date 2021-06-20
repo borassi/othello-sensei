@@ -80,7 +80,7 @@ public class StoredBoard {
     COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1) * 64];
     LOG_DERIVATIVE = new int[(PROB_STEP + 1) * (PROB_STEP + 1) * 64];
     for (int leadingZerosDescendants = 0; leadingZerosDescendants < 64; ++leadingZerosDescendants) {
-      float lambda = -1 / Math.max(1, 3 * (63 - leadingZerosDescendants)) - 1F;
+      float lambda = -1 / Math.max(1, 3 * (63 - leadingZerosDescendants)) - 0.7F;
       for (int i = 0; i <= PROB_STEP; ++i) {
         for (int j = 0; j <= PROB_STEP; ++j) {
           COMBINE_PROB[(leadingZerosDescendants << 16) | (i << 8) | j] = 
@@ -488,7 +488,7 @@ public class StoredBoard {
       probGreaterEqual = 0;
       maxLogDerivativeProbGreaterEqual = LOG_DERIVATIVE_MINUS_INF;
     } else {
-      probGreaterEqual = roundProb((1-(float) Gaussian.CDF(evalGoal-100, eval, 500 - 3 * nEmpties)));
+      probGreaterEqual = roundProb((1-(float) Gaussian.CDF(evalGoal-100, eval, 600 - 6 * nEmpties)));
       if (getProbGreaterEqual() == 0 || getProbGreaterEqual() == 1) {
         maxLogDerivativeProbGreaterEqual = LOG_DERIVATIVE_MINUS_INF;
       } else {
@@ -507,7 +507,7 @@ public class StoredBoard {
       disproofNumberStrictlyGreater = Float.POSITIVE_INFINITY;
       maxLogDerivativeProbStrictlyGreater = LOG_DERIVATIVE_MINUS_INF;
     } else {
-      probStrictlyGreater = roundProb((1-(float) Gaussian.CDF(evalGoal+100, eval, 500 - 3 * nEmpties)));
+      probStrictlyGreater = roundProb((1-(float) Gaussian.CDF(evalGoal+100, eval, 600 - 6 * nEmpties)));
       if (getProbStrictlyGreater() == 0 || getProbStrictlyGreater() == 1) {
         maxLogDerivativeProbStrictlyGreater = LOG_DERIVATIVE_MINUS_INF;
       } else {

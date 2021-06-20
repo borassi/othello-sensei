@@ -335,12 +335,15 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
 
-    if (Constants.APPROX_ONLY && this.firstPosition.getProbGreaterEqual() > 1 - 0.02 && this.firstPosition.getProbStrictlyGreater() < 0.02) {
+    if (Constants.APPROX_ONLY && this.firstPosition.getProbGreaterEqual() > 1 - 0.04 && this.firstPosition.getProbStrictlyGreater() < 0.04) {
       status = Status.SOLVED;
       return true;
     }
     if (status == Status.KILLING) {
       status = Status.KILLED;
+      return true;
+    }
+    if (status == Status.KILLED) {
       return true;
     }
     if (this.firstPosition.getDescendants() > maxNVisited) {
@@ -359,8 +362,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   protected StoredBoardBestDescendant getNextPosition() {
-    nextPositionLock.lock();
     StoredBoardBestDescendant result = null;
+    nextPositionLock.lock();
     try {
       if (checkFinished()) {
         return null;
@@ -456,17 +459,17 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
 
-    StoredBoard[] firstPositionChildren = firstPosition.children;
-    if (firstPosition.fathers.isEmpty() && firstPosition.getChildren() != null) {
-      ArrayList<StoredBoard> firstPositionUnsolvedChildren = new ArrayList<>();
-      for (StoredBoard child : firstPosition.children) {
-        if (!child.isSolved()) {
-          firstPositionUnsolvedChildren.add(child);
-        }
-      }
-      firstPosition.children = firstPositionUnsolvedChildren.toArray(new StoredBoard[firstPositionUnsolvedChildren.size()]);
-      firstPosition.updateFather();
-    }
+//    StoredBoard[] firstPositionChildren = firstPosition.children;
+//    if (firstPosition.fathers.isEmpty() && firstPosition.getChildren() != null) {
+//      ArrayList<StoredBoard> firstPositionUnsolvedChildren = new ArrayList<>();
+//      for (StoredBoard child : firstPosition.children) {
+//        if (!child.isSolved()) {
+//          firstPositionUnsolvedChildren.add(child);
+//        }
+//      }
+//      firstPosition.children = firstPositionUnsolvedChildren.toArray(new StoredBoard[firstPositionUnsolvedChildren.size()]);
+//      firstPosition.updateFather();
+//    }
     setEvalGoal(firstPosition.getEval());
     
     Thread threads[] = new Thread[this.threads.length];
@@ -483,10 +486,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
 
-    if (firstPositionChildren != null) {
-      firstPosition.children = firstPositionChildren;
-      firstPosition.updateFather();
-    }
+//    if (firstPositionChildren != null) {
+//      firstPosition.children = firstPositionChildren;
+//      firstPosition.updateFather();
+//    }
     es.shutdown();
     return (short) -firstPosition.getEval();
   }

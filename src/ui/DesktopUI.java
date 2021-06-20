@@ -177,8 +177,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       } else {
         annotationsString +=
             "\n"
-            + Utils.prettyPrintDouble(board.fathers.get(0).logDerivativeProbStrictlyGreater(board)) + " "
-            + Utils.prettyPrintDouble(board.fathers.get(0).logDerivativeProbGreaterEqual(board));
+            + Utils.prettyPrintDouble(board.fathers.get(0).logDerivativeProbGreaterEqual(board)) + " "
+            + Utils.prettyPrintDouble(board.fathers.get(0).logDerivativeProbStrictlyGreater(board));
       }
 
 //

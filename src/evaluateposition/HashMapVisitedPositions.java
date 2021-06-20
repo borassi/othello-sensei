@@ -14,7 +14,6 @@
 package evaluateposition;
 
 import board.Board;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class HashMapVisitedPositions {

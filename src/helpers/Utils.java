@@ -28,17 +28,17 @@ public class Utils {
     if (d == Double.POSITIVE_INFINITY) {
       return "+Inf";
     } else if (d == Double.NEGATIVE_INFINITY) {
-      return "+Inf";
+      return "-Inf";
     } else if (Double.isNaN(d)) {
       return "NaN";
-    } else if (Math.abs(d) < 1.E-40) {
+    } else if (Math.abs(d) < 1.E-20) {
       return "0";
     }
     if (d < 0) {
       return "-" + prettyPrintDouble(-d);
     }
     BigDecimal bd = new BigDecimal(d);
-    bd = bd.round(new MathContext(2));
+    bd = bd.round(new MathContext(3));
     d = bd.doubleValue();
     String[] suffixes = {"p", "n", "μ", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y"};
     int orderOfMagnitude = (int) Math.floor(Math.log10(d));
