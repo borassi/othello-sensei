@@ -233,7 +233,7 @@ public class Main implements Runnable {
       Board evaluatedBoard = EVALUATOR.getFirstPosition().getBoard();
       if (evaluatedBoard.getPlayer() == this.board.getPlayer()
           && evaluatedBoard.getOpponent() == this.board.getOpponent()) {
-        this.playMoveIfPossible(this.findBestMove(EVALUATOR.getEvaluations()));
+        this.playMoveIfPossible(this.findBestMove(EVALUATOR.getFirstPosition().getChildren()));
       }
     }
   }

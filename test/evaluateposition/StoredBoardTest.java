@@ -32,7 +32,7 @@ public class StoredBoardTest {
     firstMove.eval = 0;
     firstMove.addDescendants(5);
 
-    firstMove.addChildren(eval);
+    eval.addChildren(firstMove);
     StoredBoard diag = eval.get(new Board("e6f6"));
     diag.eval = 0;
     diag.addDescendants(1);
@@ -56,12 +56,12 @@ public class StoredBoardTest {
     EvaluatorMCTS eval = new EvaluatorMCTS(10, 20);
     eval.setFirstPosition(new Board("e6"));
     StoredBoard firstMove = eval.firstPosition;
+    eval.addChildren(firstMove);
     firstMove.eval = 0;
     firstMove.addDescendants(34);
     firstMove.lower = -1;
     firstMove.upper = 1;
 
-    firstMove.addChildren(eval);
     StoredBoard diag = eval.get(new Board("e6f6"));
     diag.eval = 0;
     diag.addDescendants(10);

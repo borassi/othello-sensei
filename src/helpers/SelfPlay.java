@@ -40,7 +40,7 @@ public class SelfPlay extends Thread {
   
   public synchronized Board bestMove(Board b, EvaluatorMCTS player) {
     player.evaluatePosition(b, 100000000, 1000);
-    StoredBoard evaluations[] = player.getEvaluations();
+    StoredBoard evaluations[] = player.getFirstPosition().getChildren();
     double best = Double.POSITIVE_INFINITY;
 //    double bestUpper = Double.POSITIVE_INFINITY;
 //    double bestPlayerVariates = Double.POSITIVE_INFINITY;

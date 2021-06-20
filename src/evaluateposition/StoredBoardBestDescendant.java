@@ -234,6 +234,9 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public static StoredBoardBestDescendant randomDescendant(
       StoredBoard father, boolean greaterEqual) {
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
+    if (!result.hasValidDescendants()) {
+      return null;
+    }
 
     while (result.board != null && !result.board.isLeaf()) {
       result.toChild(randomChild(result.board, result.greaterEqual));

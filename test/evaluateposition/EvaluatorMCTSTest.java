@@ -274,6 +274,7 @@ public class EvaluatorMCTSTest {
   
   @Test
   public void testTreeIsCorrectAfterUpdates() {
+    HashMap hashMap = new HashMap(20000);
     for (int i = 0; i < 10000; i++) {
       if (i % 100 == 0) {
         System.out.println("Done " + i);
@@ -281,7 +282,7 @@ public class EvaluatorMCTSTest {
       int nElements = 5 + (int) (Math.random() * 100);
       int totalSize = nElements + (int) (Math.random() * 100);
 
-      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, new HashMap(), () -> new DiskDifferenceEvaluatorPlusTwo());
+      EvaluatorMCTS evaluator = new EvaluatorMCTS(totalSize, totalSize, hashMap, () -> new DiskDifferenceEvaluatorPlusTwo());
       Board start = Board.randomBoard();
       if (start.getPlayer() == 0 && start.getOpponent() == 0) {
         continue;
@@ -289,7 +290,7 @@ public class EvaluatorMCTSTest {
       evaluator.setFirstPosition(start.getPlayer(), start.getOpponent());
       evaluator.lower = ((int) ((Math.random() - 0.5) * 16)) * 200 - 100;
       evaluator.upper = evaluator.lower + 200 * (int) (Math.random() * 16);
-      
+
       for (int j = 0; j < nElements; j++) {
         StoredBoardBestDescendant nextPos = StoredBoardBestDescendant.randomDescendant(
             evaluator.firstPosition, Math.random() > 0.5);
@@ -300,11 +301,12 @@ public class EvaluatorMCTSTest {
         StoredBoard next = nextPos.board;
         double d = Math.random();
         
+        next.setBusy();
         long[] moves = POSSIBLE_MOVES_FINDER.possibleMovesAdvanced(next.getPlayer(), next.getOpponent());
         if (moves.length == 0 && (new GetMovesCache()).getMoves(next.getOpponent(), next.getPlayer()) == 0) {
           int correctEval = BitPattern.getEvaluationGameOver(next.getPlayer(), next.getOpponent());
           next.setSolved(correctEval);
-          next.updateFathers();
+          next.setFree();
           continue;
         }
 
@@ -312,11 +314,15 @@ public class EvaluatorMCTSTest {
         eval = Math.max(Math.min(eval, next.getUpper()), next.getLower());
         if (d <= 0.05) {
           next.setLower(eval);
+          next.setFree();
         } else if (d <= 0.01) {
           next.setUpper(eval);
+          next.setFree();
         } else if (d <= 0.015 || nextPos.board.lower > -6400 || nextPos.board.upper < 6400) {
           next.setSolved(eval);
+          next.setFree();
         } else {
+          next.setFree();
           evaluator.addChildren(nextPos);
         }
         next.updateFathers();

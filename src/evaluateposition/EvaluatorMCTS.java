@@ -89,7 +89,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         long newPlayer = opponent & ~flip;
         long newOpponent = player | flip;
         StoredBoard child = board.getChild(newPlayer, newOpponent);
-        // CREATE CHILD.
         int eval = nextEvaluator.evaluate(newPlayer, newOpponent, depth, -6400, 6400);
         child.addDescendants(nextEvaluator.getNVisited() + 1);
         child.setEval(eval);
@@ -500,7 +499,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return firstPosition;
   }
 
-  public StoredBoard[] getEvaluations() {
-    return firstPosition.getChildren();
+  public void addChildren(StoredBoardBestDescendant position) {
+    position.board.setBusy();
+    threads[0].addChildren(position);
+    finalizePosition(position, 0);
+  }
+
+  public void addChildren(StoredBoard board) {
+    addChildren(new StoredBoardBestDescendant(board, true));
   }
 }

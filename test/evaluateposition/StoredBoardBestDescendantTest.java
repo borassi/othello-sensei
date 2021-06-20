@@ -17,6 +17,7 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
+import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MINUS_INF;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,7 +32,7 @@ import static org.junit.Assert.*;
 public class StoredBoardBestDescendantTest {
 
   public void allDescendantsStrictlyGreater(
-      StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
+      StoredBoard start, int costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
     if (start.getProbStrictlyGreater() == 1 || start.disproofNumberStrictlyGreater == 0 || start.disproofNumberStrictlyGreater == Float.POSITIVE_INFINITY) {
       return;
     }
@@ -44,7 +45,7 @@ public class StoredBoardBestDescendantTest {
       if (costDerivativeParents + start.logDerivativeProbStrictlyGreater(child) == Float.NEGATIVE_INFINITY) {
         allDescendantsGreaterEqual(
             child,
-            Float.NEGATIVE_INFINITY,
+            LOG_DERIVATIVE_MINUS_INF,
             costProofNumberParents - maxChildrenProofNumber + child.proofNumberGreaterEqual,
             result);
       } else {
@@ -58,7 +59,7 @@ public class StoredBoardBestDescendantTest {
   }
   
   public void allDescendantsGreaterEqual(
-      StoredBoard start, float costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
+      StoredBoard start, int costDerivativeParents, float costProofNumberParents, ArrayList<StoredBoardBestDescendant> result) {
     if (start.proofNumberGreaterEqual == 0 || start.proofNumberGreaterEqual == Float.POSITIVE_INFINITY || start.getProbGreaterEqual() == 0) {
       return;
     }
@@ -71,7 +72,7 @@ public class StoredBoardBestDescendantTest {
       StoredBoard bestChild = start.bestChildEndgameGreaterEqual();
       allDescendantsStrictlyGreater(
           bestChild,
-          Float.NEGATIVE_INFINITY,
+          LOG_DERIVATIVE_MINUS_INF,
           costProofNumberParents,
           result);
     } else {
@@ -81,15 +82,6 @@ public class StoredBoardBestDescendantTest {
           costDerivativeParents - start.maxLogDerivativeProbGreaterEqual + start.logDerivativeProbGreaterEqual(bestChild),
           costProofNumberParents,
           result);
-//      for (StoredBoard child : start.children) {
-//        if (child.probStrictlyGreater != 1) {
-//          allDescendantsStrictlyGreater(
-//              child,
-//              costDerivativeParents - start.maxLogDerivativeProbGreaterEqual + start.logDerivativeProbGreaterEqual(child),
-//              costProofNumberParents,
-//              result);
-//        }
-//      }
     }
   }
 
@@ -122,7 +114,7 @@ public class StoredBoardBestDescendantTest {
   
   public ArrayList<StoredBoardBestDescendant> allDescendantsGreaterEqual(StoredBoard start) {
     ArrayList<StoredBoardBestDescendant> allDescendants = new ArrayList<>();
-    allDescendantsGreaterEqual(start, start.maxLogDerivativeProbGreaterEqual == Float.NEGATIVE_INFINITY ? Float.NEGATIVE_INFINITY : 0, 0, allDescendants);
+    allDescendantsGreaterEqual(start, start.maxLogDerivativeProbGreaterEqual <= LOG_DERIVATIVE_MINUS_INF ? LOG_DERIVATIVE_MINUS_INF : 0, 0, allDescendants);
     Collections.sort(allDescendants);
     return removeDuplicates(allDescendants);
   }
@@ -155,13 +147,14 @@ public class StoredBoardBestDescendantTest {
       }
       assert nextPos != null;
       StoredBoard next = nextPos.board;
+      next.setBusy();
       double d = Math.random();
 
       long moves = (new GetMovesCache()).getMoves(next.getPlayer(), next.getOpponent());
       if (moves == 0 && (new GetMovesCache()).getMoves(next.getOpponent(), next.getPlayer()) == 0) {
         int correctEval = BitPattern.getEvaluationGameOver(next.getPlayer(), next.getOpponent());
         next.setSolved(correctEval);
-        next.updateFathers();
+        next.setFree();
         continue;
       }
 
@@ -169,14 +162,17 @@ public class StoredBoardBestDescendantTest {
       eval = Math.max(Math.min(eval, next.getUpper()), next.getLower());
       if (d <= 0.05) {
         next.setLower(eval);
+        next.setFree();
       } else if (d <= 0.01) {
         next.setUpper(eval);
+        next.setFree();
       } else if (d <= 0.015 || nextPos.board.lower > -6400 || nextPos.board.upper < 6400) {
         next.setSolved(eval);
+        next.setFree();
       } else {
+        next.setFree();
         evaluator.addChildren(nextPos);
       }
-      next.updateFathers();
     }
 //    if (evaluator.firstPosition.probStrictlyGreater == 1 || evaluator.firstPosition.probGreaterEqual == 0) {
 //      return randomEvaluatorMCTS(start);

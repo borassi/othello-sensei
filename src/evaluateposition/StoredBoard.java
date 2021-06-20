@@ -35,7 +35,7 @@ public class StoredBoard {
     public boolean disproofBeforeFinished = false;
   }
   protected static final HashMap HASH_MAP;
-  protected static final EvaluatorInterface EVALUATOR_MIDGAME;
+  protected static EvaluatorInterface EVALUATOR_MIDGAME;
   
   static {
     HASH_MAP = new HashMap(6000);
@@ -470,7 +470,7 @@ public class StoredBoard {
   private synchronized void setProofNumbersForLeaf() {
     assert this.isLeaf();
     assert evalGoal <= 6400 && evalGoal >= -6400;
-    assert descendants > 0 || extraInfo.isFinished;
+    assert descendants > 0;
     assert probGreaterEqual >= probStrictlyGreater;
 
     float mult = LOG_DERIVATIVE_MULTIPLIER;
