@@ -220,8 +220,8 @@ public class EvaluatorMCTSTest {
 //    testBoard(e6, 2000, 30, 1040, 1001, 10);
 //    assert !evaluator.isSolved();
 //
-//    assertEquals(e6f4c3d6, evaluator.nextPositionToImprove().board);
-////    assertEquals(e6f4e3, evaluator.nextPositionToImprove().board);
+//    assertEquals(e6f4c3d6, evaluator.getNextPosition().board);
+////    assertEquals(e6f4e3, evaluator.getNextPosition().board);
 //    e6f4e3.setLower(2200);
 //    
 //    testBoard(e6f4c3c4, -2000, 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, 0);

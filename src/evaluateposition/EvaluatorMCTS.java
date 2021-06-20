@@ -14,18 +14,22 @@
 
 package evaluateposition;
 
+import bitpattern.BitPattern;
 import board.Board;
+import board.GetMovesCache;
 import constants.Constants;
 import evaluatedepthone.PatternEvaluatorImproved;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
-  private final EvaluatorInterface[] evaluatorMidgame;
   PatternEvaluatorImproved evaluator;
 
+  private EvaluatorInterface nextEvaluator;
   private long maxNVisited;
   private long stopTimeMillis;
   private HashMap hashMap;
@@ -44,7 +48,111 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   private Status status = Status.KILLED;
   private long nextUpdateEvalGoal;
+  private final EvaluatorThread[] threads;
+  private double constant = 0;
 
+  private class EvaluatorThread implements Runnable {    
+    private final EvaluatorInterface nextEvaluator;
+    private final EvaluatorMCTS main;
+
+    private EvaluatorThread(EvaluatorInterface nextEvaluator, EvaluatorMCTS main) {
+      this.nextEvaluator = nextEvaluator;
+      this.main = main;
+    }
+
+    public long addChildren(StoredBoardBestDescendant position) {
+      StoredBoard board = position.board;
+      assert board.isLeaf();
+      assert board.isBusy;
+      long player = board.getPlayer();
+      long opponent = board.getOpponent();
+      int depth = board.nEmpties < 22 ? 2 : 4;
+      // Includes passes.
+      long[] moves = GetMovesCache.getAllMoves(player, opponent);
+
+      if (moves == null) {
+        board.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
+        return 0;
+      }
+      StoredBoard[] children = new StoredBoard[moves.length];
+      long nVisited = 0;
+      for (int i = 0; i < moves.length; ++i) {
+        long flip = moves[i];
+        long newPlayer = opponent & ~flip;
+        long newOpponent = player | flip;
+        StoredBoard child = board.getChild(newPlayer, newOpponent);
+        // CREATE CHILD.
+        int eval = nextEvaluator.evaluate(newPlayer, newOpponent, depth, -6400, 6400);
+        child.addDescendants(nextEvaluator.getNVisited() + 1);
+        child.setEval(eval);
+        nVisited += child.getDescendants();
+        children[i] = child;
+        assert !child.isBusy;
+      }
+      board.children = children;
+      return nVisited;
+    }
+
+    public long solvePosition(StoredBoardBestDescendant position) {
+      StoredBoard board = position.board;
+      int alpha = position.getAlpha();
+      int beta = position.getBeta();
+      int eval = nextEvaluator.evaluate(
+          board.getPlayer(), board.getOpponent(), board.nEmpties, alpha, beta);
+      if (eval <= alpha) {
+        // Tricky but correct.
+        board.setUpper(eval);
+      } else if (eval >= beta) {
+        board.setLower(eval);
+      } else {
+        board.setSolved(eval);
+      }
+      long seenPositions = nextEvaluator.getNVisited() + 1;
+      synchronized(main) {
+        constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
+      }
+      return seenPositions;
+    }
+
+    public long deepenPosition(StoredBoardBestDescendant position) {
+      StoredBoard board = position.board;
+      int curEval = nextEvaluator.evaluate(
+            board.getPlayer(), board.getOpponent(), 2, -6400, 6400);
+      int d;
+      long seenPositions = 0;
+      for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
+        if (board.nEmpties - d < Constants.EMPTIES_FOR_FORCED_MIDGAME) {
+          return seenPositions + solvePosition(position);
+        }
+        curEval = nextEvaluator.evaluate(
+            board.getPlayer(), board.getOpponent(), d, -6400, 6400);
+        seenPositions += nextEvaluator.getNVisited();
+      }
+      board.setEval(curEval);
+      return seenPositions;
+    }
+
+    @Override
+    public void run() {
+      StoredBoardBestDescendant position;
+      long nVisited;
+      while (true) {
+        position = getNextPosition();
+        if (position == null) {
+          break;
+        }
+        if (position.board != firstPosition && toBeSolved(position.board)) {
+          nVisited = solvePosition(position);
+        } else if (size < maxSize) {
+          nVisited = addChildren(position);
+        } else {
+          nVisited = deepenPosition(position);
+        }
+        finalizePosition(position, nVisited);
+      }
+    }
+  }
+  
   public EvaluatorMCTS(int maxSize, int arraySize, HashMap hashMap) {
     this(maxSize, arraySize, hashMap, () -> new EvaluatorAlphaBeta(hashMap));
   }
@@ -57,11 +165,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
                        Supplier<EvaluatorInterface> evaluatorMidgameBuilder) {
     super(maxSize, arraySize);
     this.hashMap = hashMap;
-    evaluatorMidgame = new EvaluatorInterface[Constants.MAX_PARALLEL_TASKS];
-    for (int i = 0; i < evaluatorMidgame.length; ++i) {
-      evaluatorMidgame[i] = evaluatorMidgameBuilder.get();
+    threads = new EvaluatorThread[Constants.MAX_PARALLEL_TASKS];
+    for (int i = 0; i < threads.length; ++i) {
+      threads[i] = new EvaluatorThread(evaluatorMidgameBuilder.get(), this);
     }
     this.firstPosition = StoredBoard.initialStoredBoard(new Board());
+    this.nextEvaluator = evaluatorMidgameBuilder.get();
   }
   
   public float getEval() {
@@ -167,16 +276,40 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
     return this.firstPosition.getProbGreaterEqual() < 1 - this.firstPosition.getProbStrictlyGreater();
   }
-
-  protected StoredBoardBestDescendant nextPositionToImprove(StoredBoardBestDescendant previous) {
-    if (previous != null) {
-//      previous.board.setFree(previous.greaterEqual);
-      previous.board.updateFathers();
+  
+  protected synchronized void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
+    StoredBoard board = position.board;
+    if (board.children != null) {
+      for (int i = 0; i < board.children.length; ++i) {
+        StoredBoard child = board.children[i];
+        StoredBoard childInEvaluator = get(child.getPlayer(), child.getOpponent());
+        if (Constants.IGNORE_TRANSPOSITIONS) {
+          childInEvaluator = null;
+        }
+        if (childInEvaluator == null) {
+          add(child);
+        } else {
+          board.children[i] = childInEvaluator;
+          childInEvaluator.addFather(board);
+          if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+            childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
+          }
+          if (board.getEvalGoal() != -childInEvaluator.getEvalGoal()) {
+            childInEvaluator.setEvalGoalRecursive(-board.getEvalGoal());
+          }
+        }
+      }
     }
-    updateEvalGoalIfNeeded();
+    position.updateDescendants(nVisited);
+    board.setFree(position.greaterEqual);
     if (hashMap.size() > Constants.HASH_MAP_SIZE / 2) {
       hashMap.reset();
     }
+    updateEvalGoalIfNeeded();
+    notifyAll();
+  }
+
+  protected synchronized StoredBoardBestDescendant getNextPosition() {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       if (this.firstPosition.isSolved()) {
         this.firstPosition.setIsFinished(true);
@@ -199,17 +332,29 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       status = Status.STOPPED_TIME;
       return null;
     }
-//    ArrayList<StoredBoardBestDescendant> result = StoredBoardBestDescendant.bestDescendants(firstPosition, Constants.MAX_PARALLEL_TASKS);
-//    if (result.isEmpty()) {
-//      status = Status.SOLVED;
-//      return null;
+    if (isSolved()) {
+      status = Status.SOLVED;
+      return null;
+    }
+//    while (firstPosition.isBusy) {
+//      try {
+//        wait(100);
+//      } catch (InterruptedException ex) {
+//        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
+//      }
 //    }
     boolean greaterEqual = StoredBoardBestDescendant.bestDescendantGreaterEqual(firstPosition);
+    
     StoredBoardBestDescendant result = StoredBoardBestDescendant.bestDescendant(firstPosition, greaterEqual);
-    if (result == null) {
-      status = Status.SOLVED;
+    if (result.board == null) {
+      try {
+        wait();
+      } catch (InterruptedException ex) {
+        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
+      }
+      return getNextPosition();
     }
-//    result.board.setBusy(result.greaterEqual);
+    result.board.setBusy(result.greaterEqual);
     return result;
   }
 
@@ -231,93 +376,26 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   void setFirstPosition(long player, long opponent) {
     empty();
-    int quickEval = evaluatorMidgame[0].evaluate(player, opponent, 2, lower, upper);
+    int quickEval = nextEvaluator.evaluate(player, opponent, 2, lower, upper);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
     firstPosition.eval = quickEval;
-    firstPosition.addDescendants(evaluatorMidgame[0].getNVisited() + 1);
+    firstPosition.addDescendants(nextEvaluator.getNVisited() + 1);
     firstPosition.setEvalGoalRecursive(roundEval(quickEval));
     
     add(firstPosition);
   }
-  
-  public void addChildren(StoredBoardBestDescendant position) {
-    StoredBoard board = position.board;
-    board.addChildren(this);
-    if (board.children == null) {
-      // Game over.
-      assert board.isSolved();
-      return;
-    }
-    EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
-    int depth = board.nEmpties < 22 ? 2 : 3;
-    long addedPositions = 0;
-    for (StoredBoard child : board.children) {
-      if (child.getDescendants() == 0) {
-        int eval = nextEvaluator.evaluate(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
-        child.addDescendants(nextEvaluator.getNVisited() + 1);
-        child.setEval(eval);
-        addedPositions += child.getDescendants();
-      }
-    }
-    position.updateDescendants(addedPositions);
-  }
-  
-  public void solvePosition(StoredBoardBestDescendant position) {
-    StoredBoard board = position.board;
-    int alpha = position.getAlpha();
-    int beta = position.getBeta();
-    EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
-    int eval = nextEvaluator.evaluate(
-        board.getPlayer(), board.getOpponent(), board.nEmpties, alpha, beta);
-    long seenPositions = nextEvaluator.getNVisited() + 1;
-    constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
-    position.updateDescendants(seenPositions);
-    if (eval <= alpha) {
-      // Tricky but probably correct.
-      board.setUpper(eval);
-    } else if (eval >= beta) {
-      board.setLower(eval);
-    } else {
-      board.setSolved(eval);
-    }
-  }
-  
-  public void deepenPosition(StoredBoardBestDescendant position) {
-    StoredBoard board = position.board;
-    EvaluatorInterface nextEvaluator = evaluatorMidgame[position.getId()];
-    int curEval = nextEvaluator.evaluate(
-          board.getPlayer(), board.getOpponent(), 2, -6400, 6400);
-    int d;
-    long seenPositions = 0;
-    for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
-      if (board.nEmpties - d < Constants.EMPTIES_FOR_FORCED_MIDGAME) {
-        solvePosition(position);
-        return;
-      }
-      curEval = nextEvaluator.evaluate(
-          board.getPlayer(), board.getOpponent(), d, -6400, 6400);
-      seenPositions += nextEvaluator.getNVisited();
-    }
-    position.updateDescendants(seenPositions);
-    board.setEval(curEval);
-  }
-  
+
   public boolean isSolved() {
     return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;
   }
 
-  private double constant = 0;
   public boolean toBeSolved(StoredBoard b) {
 //    System.out.println(constant);
     return b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
         && (
-        (b.proofNumberGreaterEqual < constant && b.getEval() > b.getEvalGoal() + 1000) ||
-        (b.disproofNumberStrictlyGreater < constant && b.getEval() < b.getEvalGoal() - 1000) ||
+        (b.getProofNumberGreaterEqual() < constant && b.getEval() > b.getEvalGoal() + 1000) ||
+        (b.getDisproofNumberStrictlyGreater() < constant && b.getEval() < b.getEvalGoal() - 1000) ||
         b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME);    
-  }
-  
-  private void expandPosition(StoredBoardBestDescendant position) {
-    
   }
 
   public short evaluatePosition(
@@ -362,20 +440,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
     setEvalGoal(firstPosition.getEval());
     
-    StoredBoardBestDescendant position = nextPositionToImprove(null);
-    while (true) {
-      if (position.board != this.firstPosition && toBeSolved(position.board)) {
-        solvePosition(position);
-      } else if (this.size < this.maxSize) {
-        addChildren(position);
-      } else {
-        deepenPosition(position);
-      }
-      position = nextPositionToImprove(position);
-      if (position == null) {
-        break;
+    Thread threads[] = new Thread[this.threads.length];
+    
+    for (int i = 0; i < threads.length; ++i) {
+      threads[i] = new Thread(this.threads[i]);
+      threads[i].start();
+    }
+    for (Thread t : threads) {
+      try {
+        t.join();
+      } catch (InterruptedException ex) {
+        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
+
     if (firstPositionChildren != null) {
       firstPosition.children = firstPositionChildren;
       firstPosition.updateFather();

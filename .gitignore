@@ -10,3 +10,5 @@ nbproject/
 tmp/*
 cpp-plugins/build/*
 cpp-plugins/dist/*
+.idea/*
+cpp-plugins/.dep.inc
