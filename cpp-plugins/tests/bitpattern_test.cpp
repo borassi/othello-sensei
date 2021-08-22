@@ -37,7 +37,6 @@ void bitpattern_test::testNeighbors() {
                                      "------XX"
                                      "XXXX--X-"
                                      "XXXX--XX");
-  std::cout << PatternToString(Neighbors(p));
   CPPUNIT_ASSERT(Neighbors(p) == expected);
 }
 void bitpattern_test::testUniqueInEdges() {
@@ -57,7 +56,6 @@ void bitpattern_test::testUniqueInEdges() {
                                       "--------"
                                       "--------"
                                       "--------");
-  std::cout << PatternToString(FirstLastInEdges(~p1));
   BitPattern expectedFirstLast = ParsePattern("----X---"
                                               "X------X"
                                               "--------"
@@ -84,7 +82,38 @@ void bitpattern_test::testUniqueInEdges() {
                                       "X-------"
                                       "--------"
                                       "-------X");
-  std::cout << PatternToString(UniqueInEdges(~p2));
   CPPUNIT_ASSERT(UniqueInEdges(~p2) == expected2);
+}
+void bitpattern_test::testRowToFirstRow() {
+  for (int i = 0; i < 1000; ++i) {
+    BitPattern p = RandomPattern();
+    Move move = rand() % 64;
+    BitPattern row = GetRow(move);
+    LastRow result = RowToLastRow(p, row, move & 56);
+    CPPUNIT_ASSERT(result < 256);
+    CPPUNIT_ASSERT((p & row) == LastRowToRow(result, move & 56));
+  }
+}
+
+void bitpattern_test::testColumnToFirstRow() {
+  for (int i = 0; i < 1000; ++i) {
+    BitPattern p = RandomPattern();
+    Move move = rand() % 64;
+    BitPattern column = GetColumn(move);
+    LastRow result = ColumnToLastRow(p, column, move & 7);
+    CPPUNIT_ASSERT(result < 256);
+    CPPUNIT_ASSERT((p & column) == LastRowToColumn(result, move & 7));
+  }
+}
+
+void bitpattern_test::testDiagonalToFirstRow() {
+  for (int i = 0; i < 1000; ++i) {
+    BitPattern p = RandomPattern();
+    Move move = rand() % 64;
+    BitPattern diagonal = rand() % 2 ? GetDiag7(move) : GetDiag9(move);
+    LastRow result = DiagonalToLastRow(p, diagonal);
+    CPPUNIT_ASSERT(result < 256);
+    CPPUNIT_ASSERT((p & diagonal) == LastRowToDiagonal(result, diagonal));
+  }  
 }
 

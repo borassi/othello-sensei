@@ -110,7 +110,7 @@ void get_flip_test::testFlipOutflank() {
 }
 
 void get_flip_test::testGetFlipRandom() {
-  for (int i = 0; i < 100000; ++i) {
+  for (int i = 0; i < 1000000; ++i) {
     Board b = RandomBoard();
     Move move = rand() % 64;
     if (b.IsEmpty(move)) {

@@ -13,10 +13,6 @@
 // limitations under the License.
 package constants;
 
-/**
- *
- * @author michele
- */
 public class Constants {
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
@@ -38,7 +34,7 @@ public class Constants {
   
   public final static int MAX_PARALLEL_TASKS = 12;
 
-  public final static boolean ASSERT_EXTENDED = true;
+  public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
   public final static boolean IGNORE_TRANSPOSITIONS = FIND_BEST_PROOF_AFTER_EVAL || false;
   public final static boolean APPROX_ONLY = false;

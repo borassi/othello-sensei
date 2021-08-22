@@ -19,6 +19,10 @@
 
 #include <iostream>
 #include "bitpattern.h"
+#include "constants.h"
+#if PDEP_PEXT
+#include <immintrin.h>
+#endif
 
 constexpr u_int8_t kOutflank[] = {
     0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 16, 0, 0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 32, 0,
@@ -176,24 +180,42 @@ constexpr MoveShift GetPositionInPattern(Move move, BitPattern pattern) {
 }
 
 struct MoveMetadata {
-  MoveShift row_shift;
-  MoveShift column_shift;
-  MoveShift diag7_shift;
-  MoveShift diag9_shift;
+  MoveShift position_in_row;
+  MoveShift position_in_column;
+  MoveShift position_in_diag7;
+  MoveShift position_in_diag9;
   BitPattern row;
   BitPattern column;
   BitPattern diag7;
   BitPattern diag9;
+  BitPattern neighbors;
+
+#if !PDEP_PEXT
+  MoveShift row_shift;
+  MoveShift column_shift;
+#endif
 
   constexpr MoveMetadata(Move move) :
-    row_shift(GetPositionInPattern(move, GetRow(move)) << 8),
-    column_shift(GetPositionInPattern(move, GetColumn(move)) << 8),
-    diag7_shift(GetPositionInPattern(move, GetDiag7(move)) << 8),
-    diag9_shift(GetPositionInPattern(move, GetDiag9(move)) << 8),
     row(GetRow(move)),
     column(GetColumn(move)),
     diag7(GetDiag7(move)),
-    diag9(GetDiag9(move)) {}
+    diag9(GetDiag9(move)),
+    position_in_row(GetPositionInPattern(move, GetRow(move)) << 8),
+    neighbors(Neighbors(1ULL << move)),
+#if PDEP_PEXT
+    position_in_column(GetPositionInPattern(move, GetColumn(move)) << 8),
+    position_in_diag7(GetPositionInPattern(move, GetDiag7(move)) << 8),
+    position_in_diag9(GetPositionInPattern(move, GetDiag9(move)) << 8)
+#else
+    // Moving the column / diag does not respect the order of bits. For this
+    // reason, we have to fix it.
+    position_in_column(7 - GetPositionInPattern(move, GetColumn(move)) << 8),
+    position_in_diag7((move % 8) << 8),
+    position_in_diag9((move % 8) << 8),
+    row_shift(GetPositionInPattern(move, GetColumn(move)) * 8),
+    column_shift(GetPositionInPattern(move, GetRow(move)))
+#endif
+  {}
 };
 
 constexpr MoveMetadata kMoveMetadata[] = {
@@ -214,8 +236,36 @@ constexpr MoveMetadata kMoveMetadata[] = {
     MoveMetadata(56), MoveMetadata(57), MoveMetadata(58), MoveMetadata(59),
     MoveMetadata(60), MoveMetadata(61), MoveMetadata(62), MoveMetadata(63)};
 
+inline BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+inline BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noexcept {
+  MoveMetadata m = kMoveMetadata[move];
+  if ((m.neighbors & opponent) == 0) {
+    return 0;
+  }
+  BitPattern flip;
+#if PDEP_PEXT
+  flip = _pdep_u64(kFlip[m.position_in_row | (kOutflank[m.position_in_row | _pext_u64(opponent, m.row)] & _pext_u64(player, m.row))], m.row);
+  flip |= _pdep_u64(kFlip[m.position_in_column | (kOutflank[m.position_in_column | _pext_u64(opponent, m.column)] & _pext_u64(player, m.column))], m.column);
+  flip |= _pdep_u64(kFlip[m.position_in_diag7 | (kOutflank[m.position_in_diag7 | _pext_u64(opponent, m.diag7)] & _pext_u64(player, m.diag7))], m.diag7);
+  flip |= _pdep_u64(kFlip[m.position_in_diag9 | (kOutflank[m.position_in_diag9 | _pext_u64(opponent, m.diag9)] & _pext_u64(player, m.diag9))], m.diag9);
+#else
+  flip = LastRowToRow(
+      kFlip[m.position_in_row | (kOutflank[m.position_in_row | RowToLastRow(opponent, m.row, m.row_shift)] & RowToLastRow(player, m.row, m.row_shift))],
+      m.row_shift
+  );
+  flip |= LastRowToColumn(
+      kFlip[m.position_in_column | (
+          kOutflank[m.position_in_column | ColumnToLastRow(opponent, m.column, m.column_shift)] & ColumnToLastRow(player, m.column, m.column_shift))],
+      m.column_shift
+  );
+  flip |= LastRowToDiagonal(
+      kFlip[m.position_in_diag7 | (kOutflank[m.position_in_diag7 | DiagonalToLastRow(opponent, m.diag7)] & DiagonalToLastRow(player, m.diag7))], m.diag7);
+  flip |= LastRowToDiagonal(
+      kFlip[m.position_in_diag9 | (kOutflank[m.position_in_diag9 | DiagonalToLastRow(opponent, m.diag9)] & DiagonalToLastRow(player, m.diag9))], m.diag9);
+#endif
 
-BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noexcept;
+  return flip;
+}
 
 constexpr BitPattern GetFlipBasic(Move move, BitPattern player, BitPattern opponent) { 
   int directions[] = {-9, -8, -7, -1, 1, 7, 8, 9};

@@ -75,25 +75,10 @@ constexpr BitPattern kSpace1Pattern = kSpace0Pattern << 4;
 constexpr BitPattern kSpace2Pattern = kSpace0Pattern << 32;
 constexpr BitPattern kSpace3Pattern = kSpace0Pattern << 36;
 
-
-Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) {
-  register BitPattern flip = GetFlip(x, player, opponent);
-  if (flip != 0) {
-    return (__builtin_popcountll(player | flip) << 1) - 64;
-  }
-
-  flip = GetFlip(x, opponent, player);
-  if (flip != 0) {
-    return 64 - (__builtin_popcountll(opponent | flip) << 1);
-  }
-  Eval playerDisks = __builtin_popcountll(player) << 1;
-  return playerDisks - (playerDisks >= 64 ? 62 : 64);
-}
-
-Eval EvalTwoEmptiesOrMin(const Move x1, const Move x2, const BitPattern player, const BitPattern opponent, const Eval upper, int* const n_visited) {
+Eval EvalTwoEmptiesOrMin(const Move x1, const Move x2, const BitPattern player, const BitPattern opponent, const Eval upper, int* const n_visited) noexcept {
   (*n_visited)++;
-  register Eval eval = kMinEval;
-  register BitPattern flip = GetFlip(x1, player, opponent);
+  Eval eval = kMinEval;
+  BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
     (*n_visited)++;
     eval = -EvalOneEmpty(x2, opponent & ~flip, player | flip);
@@ -109,7 +94,7 @@ Eval EvalTwoEmptiesOrMin(const Move x1, const Move x2, const BitPattern player, 
   return eval;
 }
 
-Eval EvalTwoEmpties(const Move x1, const Move x2, const BitPattern player, const BitPattern opponent, const Eval lower, const Eval upper, int* const n_visited) {
+Eval EvalTwoEmpties(const Move x1, const Move x2, const BitPattern player, const BitPattern opponent, const Eval lower, const Eval upper, int* const n_visited) noexcept {
   Eval eval = EvalTwoEmptiesOrMin(x1, x2, player, opponent, upper, n_visited);
   if (eval > kMinEval) {
     return eval;
@@ -214,7 +199,7 @@ Eval EvalFourEmpties(
     const Eval lower, const Eval upper, const bool swap,
     const BitPattern last_flip, const BitPattern stable, 
     int* const n_visited) {
-  if (GetUpperBoundFromStable(stable, opponent) - ((last_flip & kCornerPattern) == 0 ? 10 : 14) <= lower) {
+  if (GetUpperBoundFromStable(stable, opponent) - ((last_flip & kCornerPattern) == 0 ? 8 : 20) <= lower) {
     Eval stability_cutoff_upper = GetUpperBoundFromStable(GetStableDisks(opponent, player, stable), opponent);
     if (stability_cutoff_upper <= lower) {
       return stability_cutoff_upper;
@@ -367,13 +352,6 @@ int Evaluate(
     const BitPattern last_flip, const BitPattern stable,
     int* const n_visited) {
   (*n_visited)++;
-
-//  if (lower >= 40) {
-//    int scUpper = GetStableDisksUpperBound(player, opponent);
-//    if (scUpper <= lower) {
-//      return scUpper;
-//    }
-//  }
   
   BitPattern new_stable = stable;
   new_stable = GetStableDisks(opponent, player, new_stable);
@@ -390,7 +368,6 @@ int Evaluate(
   BitPattern move_bit;
   BitPattern neighbors_player = Neighbors(player);
   BitPattern empties_neighbors_opponent = Neighbors(opponent) & empties;
-  // TODO: moves.
 
   for (BitPattern mask : {
       ~Neighbors(empties) & neighbors_player,

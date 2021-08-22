@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
+#include "constants.h"
+
 #include <algorithm>
 #include <assert.h>
 #include <bitset>
-#include <immintrin.h>
 #include <string>
 
 #include "bitpattern.h"
 #include "get_flip.h"
 
-
-BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noexcept {
-  MoveMetadata m = kMoveMetadata[move];
-
-  BitPattern flip = _pdep_u64(kFlip[(kOutflank[m.row_shift | _pext_u64(opponent, m.row)] & _pext_u64(player, m.row)) | m.row_shift], m.row);
-  flip |= _pdep_u64(kFlip[(kOutflank[m.column_shift | _pext_u64(opponent, m.column)] & _pext_u64(player, m.column)) | m.column_shift], m.column);
-  flip |= _pdep_u64(kFlip[(kOutflank[m.diag7_shift | _pext_u64(opponent, m.diag7)] & _pext_u64(player, m.diag7)) | m.diag7_shift], m.diag7);
-  flip |= _pdep_u64(kFlip[(kOutflank[m.diag9_shift | _pext_u64(opponent, m.diag9)] & _pext_u64(player, m.diag9)) | m.diag9_shift], m.diag9);
-
-  return flip;
-}
 
 //BitPattern GetFlipBasic(Move move, BitPattern player, BitPattern opponent) {
 //}
