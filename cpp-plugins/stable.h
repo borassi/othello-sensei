@@ -17,7 +17,6 @@
 #ifndef STABLE_H
 #define STABLE_H
 
-#include <immintrin.h>
 #include "bitpattern.h"
 #include "get_flip.h"
 
@@ -111,16 +110,84 @@ struct StableDisksEdge {
 
 constexpr StableDisksEdge kStableDisksEdge;
 
-BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent);
-BitPattern GetFullDiags7(BitPattern empty);
-BitPattern GetFullDiags9(BitPattern empty);
-BitPattern GetFullColumns(BitPattern empty);
-BitPattern GetFullRows(BitPattern empty);
-BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable = 0);
-Eval GetLowerBound(BitPattern player, BitPattern opponent);
-Eval GetUpperBoundFromStable(long stable, long opponent);
-Eval GetStableDisksUpperBound(BitPattern player, BitPattern opponent);
+inline BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) __attribute__((always_inline));
 
+BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) {
+  BitPattern stable = kStableDisksEdge.arr[(player & kBottomEdgePattern) | ((opponent & kBottomEdgePattern) << 8)];
+#if PDEP_PEXT
+  stable |= _pdep_u64(kStableDisksEdge.arr[_pext_u64(player, kTopEdgePattern) | (_pext_u64(opponent, kTopEdgePattern) << 8)], kTopEdgePattern);
+  stable |= _pdep_u64(kStableDisksEdge.arr[_pext_u64(player, kRightEdgePattern) | (_pext_u64(opponent, kRightEdgePattern) << 8)], kRightEdgePattern);
+  stable |= _pdep_u64(kStableDisksEdge.arr[_pext_u64(player, kLeftEdgePattern) | (_pext_u64(opponent, kLeftEdgePattern) << 8)], kLeftEdgePattern);
+#else
+  stable |= LastRowToRow(kStableDisksEdge.arr[RowToLastRow(player, kTopEdgePattern, 56) | (RowToLastRow(opponent, kTopEdgePattern, 56) << 8)], 56);
+  stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kRightEdgePattern, 0) | (ColumnToLastRow(opponent, kRightEdgePattern, 0) << 8)], 0);
+  stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kLeftEdgePattern, 7) | (ColumnToLastRow(opponent, kLeftEdgePattern, 7) << 8)], 7);  
+#endif
+  return stable;
+}
+
+inline BitPattern GetFullDiags7(BitPattern empty) __attribute__((always_inline));
+inline BitPattern GetFullDiags7(BitPattern empty) {
+  BitPattern emptyL = empty | ((empty >> 7) & kAllMinusLastColumnPattern);
+  emptyL = emptyL | ((emptyL >> 14) & kAllMinusLast2ColumnsPattern);
+  emptyL = emptyL | ((emptyL >> 28) & kAllMinusLast4ColumnsPattern);
+
+  BitPattern emptyR = empty | ((empty << 7) & kAllMinusFirstColumnPattern);
+  emptyR = emptyR | ((emptyR << 14) & kAllMinusFirst2ColumnsPattern);
+  emptyR = emptyR | ((emptyR << 28) & kAllMinusFirst4ColumnsPattern);
+    
+  return ~(emptyL | emptyR);
+}
+
+inline BitPattern GetFullDiags9(BitPattern empty) __attribute__((always_inline));
+inline BitPattern GetFullDiags9(BitPattern empty) {
+  BitPattern emptyL = empty | ((empty << 9) & kAllMinusLastColumnPattern);
+  emptyL = emptyL | ((emptyL << 18) & kAllMinusLast2ColumnsPattern);
+  emptyL = emptyL | ((emptyL << 36) & kAllMinusLast4ColumnsPattern);
+
+  BitPattern emptyR = empty | ((empty >> 9) & kAllMinusFirstColumnPattern);
+  emptyR = emptyR | ((emptyR >> 18) & kAllMinusFirst2ColumnsPattern);
+  emptyR = emptyR | ((emptyR >> 36) & kAllMinusFirst4ColumnsPattern);
+    
+  return ~(emptyL | emptyR);
+}
+
+inline BitPattern GetFullColumns(BitPattern empty) __attribute__((always_inline));
+inline BitPattern GetFullColumns(BitPattern empty) {
+  BitPattern emptyL = empty | (empty >> 8);
+  emptyL = emptyL | (emptyL >> 16);
+  emptyL = emptyL | (emptyL >> 32);
+
+  BitPattern emptyR = empty | (empty << 8);
+  emptyR = emptyR | (emptyR << 16);
+  emptyR = emptyR | (emptyR << 32);
+
+  return ~(emptyL | emptyR);
+}
+
+inline BitPattern GetFullRows(BitPattern empty) __attribute__((always_inline));
+inline BitPattern GetFullRows(BitPattern empty) {
+  BitPattern emptyL = empty | ((empty << 1) & kAllMinusLastColumnPattern);
+  emptyL = emptyL | ((emptyL << 2) & kAllMinusLast2ColumnsPattern);
+  emptyL = emptyL | ((emptyL << 4) & kAllMinusLast4ColumnsPattern);
+
+  BitPattern emptyR = empty | ((empty >> 1) & kAllMinusFirstColumnPattern);
+  emptyR = emptyR | ((emptyR >> 2) & kAllMinusFirst2ColumnsPattern);
+  emptyR = emptyR | ((emptyR >> 4) & kAllMinusFirst4ColumnsPattern);
+    
+  return ~(emptyL | emptyR);
+}
+BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable = 0);
+
+inline Eval GetUpperBoundFromStable(long stable, long opponent) __attribute__((always_inline));
+
+inline Eval GetUpperBoundFromStable(long stable, long opponent) {
+  return 64 - 2 * __builtin_popcountll(stable & opponent);
+}
+
+inline Eval GetStableDisksUpperBound(BitPattern player, BitPattern opponent) {
+  return GetUpperBoundFromStable(GetStableDisks(opponent, player), opponent);
+}
 
 #endif /* STABLE_H */
 

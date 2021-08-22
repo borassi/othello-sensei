@@ -64,7 +64,6 @@ void evaluator_last_moves_test::testDoublePass() {
 //  CPPUNIT_ASSERT(evaluate(b.getPlayer(), b.getOpponent(), -64, 64, &visited) == 0);
   b = Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX");
   CPPUNIT_ASSERT(EvalBasic(b.GetPlayer(), b.GetOpponent(), false) == -4);
-//  CPPUNIT_ASSERT(evaluate(b.getPlayer(), b.getOpponent(), -64, 64, &visited) == -4);
 }
 
 void evaluator_last_moves_test::testManyPass() {

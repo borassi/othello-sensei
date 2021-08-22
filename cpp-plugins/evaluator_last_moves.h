@@ -22,12 +22,25 @@
 
 constexpr Eval kMinEval = -66;
 
+inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept {
+  register BitPattern flip = GetFlip(x, player, opponent);
+  if (__builtin_expect(flip, 1)) {
+    return (__builtin_popcountll(player | flip) << 1) - 64;
+  }
 
-Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent);
+  flip = GetFlip(x, opponent, player);
+  if (flip) {
+    return 64 - (__builtin_popcountll(opponent | flip) << 1);
+  }
+  Eval playerDisks = __builtin_popcountll(player) << 1;
+  return playerDisks - (playerDisks >= 64 ? 62 : 64);
+}
+
 Eval EvalTwoEmpties(
     const Move x1, const Move x2, const BitPattern player,
     const BitPattern opponent, const Eval lower, const Eval upper,
-    int* const n_visited);
+    int* const n_visited) noexcept;
 Eval EvalThreeEmpties(
     const Move x1, const Move x2, const Move x3,
     const BitPattern player, const BitPattern opponent,
@@ -52,10 +65,10 @@ Eval Evaluate(
 #ifdef __cplusplus
 extern "C" {
 #endif
-  
+    
 JNIEXPORT jobject JNICALL Java_evaluateposition_EvaluatorLastMoves_evaluateCPPInternal(
     JNIEnv* env, jclass java_class, jlong player, jlong opponent, jint lower,
-    jint upper);
+    jint upper) __attribute__((externally_visible));
 
 #ifdef __cplusplus
 }

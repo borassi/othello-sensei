@@ -24,6 +24,7 @@ typedef int Eval;
 typedef unsigned long long BitPattern;
 typedef u_int8_t Move;
 typedef u_int16_t MoveShift;
+typedef u_int8_t LastRow;
 
 constexpr BitPattern ParsePattern(const char* pattern, char letter) {
   long result = 0;
@@ -45,7 +46,7 @@ constexpr BitPattern ParsePattern(const char* pattern) {
   return ParsePattern(pattern, 'X');
 }
 
-constexpr BitPattern kPatternLastRow = ParsePattern(
+constexpr BitPattern kLastRowPattern = ParsePattern(
         "--------"
         "--------"
         "--------"
@@ -54,7 +55,7 @@ constexpr BitPattern kPatternLastRow = ParsePattern(
         "--------"
         "--------"
         "XXXXXXXX");
-constexpr BitPattern kFirstRowPattern = kPatternLastRow << 56;
+constexpr BitPattern kFirstRowPattern = kLastRowPattern << 56;
 
 constexpr BitPattern kLastColumnPattern = ParsePattern(
         "-------X"
@@ -100,7 +101,7 @@ constexpr BitPattern kCornerPattern = ParsePattern(
 int GetEvaluationGameOver(BitPattern player, BitPattern opponent);
 
 constexpr BitPattern GetRow(Move move) {
-  return kPatternLastRow << (move & 56);
+  return kLastRowPattern << (move & 56);
 }
 constexpr BitPattern GetColumn(Move move) {
   return kLastColumnPattern << (move & 7);
@@ -131,11 +132,25 @@ constexpr BitPattern Diag9Symmetry(BitPattern b) {
   return b;
 }
 
-BitPattern Neighbors(BitPattern b);
+constexpr BitPattern Neighbors(BitPattern b) {
+  return (((b << 1) | (b << 9) | (b >> 7)) & ~kLastColumnPattern)
+          | (((b >> 1) | (b >> 9) | (b << 7)) & ~kFirstColumnPattern)
+          | (b >> 8) | (b << 8);
+}
+
+LastRow RowToLastRow(BitPattern pattern, BitPattern row, int row_num);
+LastRow ColumnToLastRow(BitPattern pattern, BitPattern column, int col_num);
+LastRow DiagonalToLastRow(BitPattern pattern, BitPattern diagonal);
+
+BitPattern LastRowToRow(LastRow last_row, int row_num);
+BitPattern LastRowToColumn(LastRow last_row, int col_num);
+BitPattern LastRowToDiagonal(LastRow last_row, BitPattern diagonal);
 
 BitPattern UniqueInEdges(BitPattern empties);
-
 BitPattern FirstLastInEdges(BitPattern empties);
+
+BitPattern RandomPattern(double percentage);
+BitPattern RandomPattern();
 
 #endif /* BITPATTERN_H */
 

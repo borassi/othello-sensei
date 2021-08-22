@@ -14,29 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef BITPATTERN_TEST_H
-#define BITPATTERN_TEST_H
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
-#include <cppunit/extensions/HelperMacros.h>
+#define PDEP_PEXT true
 
-class bitpattern_test : public CPPUNIT_NS::TestFixture {
-  CPPUNIT_TEST_SUITE(bitpattern_test);
-
-  CPPUNIT_TEST(testNeighbors);
-  CPPUNIT_TEST(testUniqueInEdges);
-  CPPUNIT_TEST(testRowToFirstRow);
-  CPPUNIT_TEST(testColumnToFirstRow);
-  CPPUNIT_TEST(testDiagonalToFirstRow);
-
-  CPPUNIT_TEST_SUITE_END();
-
-private:
-  void testNeighbors();
-  void testUniqueInEdges();
-  void testRowToFirstRow();
-  void testColumnToFirstRow();
-  void testDiagonalToFirstRow();
-};
-
-#endif /* BITPATTERN_TEST_H */
+#endif /* CONSTANTS_H */
 

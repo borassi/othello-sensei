@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <assert.h>
 #include <immintrin.h>
 #include <iostream>
 #include <regex>
@@ -44,10 +45,26 @@ std::string PatternToString(BitPattern pattern) {
   return result;
 }
 
-BitPattern Neighbors(BitPattern b) {
-  return (((b << 1) | (b << 9) | (b >> 7)) & ~kLastColumnPattern)
-          | (((b >> 1) | (b >> 9) | (b << 7)) & ~kFirstColumnPattern)
-          | (b >> 8) | (b << 8);
+LastRow RowToLastRow(BitPattern pattern, BitPattern row, int row_num) {
+  assert ((kLastRowPattern << row_num) == row);
+  return (pattern & row) >> row_num;
+}
+LastRow ColumnToLastRow(BitPattern pattern, BitPattern column, int col_num) {
+  assert ((kLastColumnPattern << col_num) == column);
+  return (((pattern & column) >> col_num) * kMainDiag9Pattern) >> 56;
+}
+LastRow DiagonalToLastRow(BitPattern pattern, BitPattern diagonal) {
+  return ((pattern & diagonal) * kLastColumnPattern) >> 56;
+}
+
+BitPattern LastRowToRow(LastRow last_row, int row_num) {
+  return ((BitPattern) last_row) << row_num;
+}
+BitPattern LastRowToColumn(LastRow last_row, int col_num) {
+  return ((last_row * kMainDiag9Pattern) & kFirstColumnPattern) >> (7-col_num);
+}
+BitPattern LastRowToDiagonal(LastRow last_row, BitPattern diagonal) {
+  return (last_row * kLastColumnPattern) & diagonal;
 }
 
 BitPattern UniqueSet(BitPattern b) {
@@ -59,15 +76,30 @@ BitPattern FirstLastSet(BitPattern b) {
 }
 
 BitPattern UniqueInEdges(BitPattern empties) {
-  return UniqueSet(empties & kPatternLastRow)
+  return UniqueSet(empties & kLastRowPattern)
           | UniqueSet(empties & kFirstRowPattern)
           | UniqueSet(empties & kFirstColumnPattern)
           | UniqueSet(empties & kLastColumnPattern);
 }
 
 BitPattern FirstLastInEdges(BitPattern empties) {
-  return (FirstLastSet(empties & kPatternLastRow)
+  return (FirstLastSet(empties & kLastRowPattern)
           | FirstLastSet(empties & kFirstRowPattern)
           | FirstLastSet(empties & kFirstColumnPattern)
           | FirstLastSet(empties & kLastColumnPattern)) & ~kCornerPattern;
+}
+
+BitPattern RandomPattern(double percentage) {
+  BitPattern result = 0;
+  for (int j = 0; j < 64; j++) {
+    if ((double) rand() / RAND_MAX < percentage) {
+      result |= 1;
+    }
+    result = result << 1;
+  }
+  return result;
+}
+
+BitPattern RandomPattern() {
+  return RandomPattern((double) rand() / RAND_MAX);
 }

@@ -26,39 +26,53 @@
 
 using namespace std;
 
+typedef struct TestCase {
+  BitPattern player;
+  BitPattern opponent;
+  int alpha;
+  int beta;
+} TestCase;
+
 int main(int argc, char** argv) {
   std::cout << "%SUITE_STARTING% evaluator_last_moves_profile" << std::endl;
   std::cout << "%SUITE_STARTED%" << std::endl;
 
   std::cout << "%TEST_STARTED% test1 (evaluator_last_moves_profile)" << std::endl;
   
-  std::vector<Board> boards;
-  while (boards.size() < 10000) {
-    double perc_player = (double) rand() / RAND_MAX * 0.9;
-    double perc_opponent = 0.9 - perc_player;
-    Board b = RandomBoard(perc_player, perc_opponent);
-    if (b.NEmpties() == 8) {
-      boards.push_back(RandomBoard(perc_player, perc_opponent));
-    }
+  TestCase tests[10000];
+  ifstream tests_file("../../othello-sensei/coefficients/test_endgame.txt");
+  std::string line;
+  for (int i = 0; i < 10000; ++i) {
+    std::getline(tests_file, line);
+    TestCase test;
+    sscanf(line.c_str(), "%lld %lld %d %d", &test.player, &test.opponent, &test.alpha, &test.beta);
+    tests[i] = test;
   }
-  long totNVisited = 0;
+  tests_file.close();
   
   std::cout << "Starting\n";
-  int N = 10;
+  int N = 100;
+  long long n_positions = 0;
+  int n_visited = 0;
+  long long tot_n_visited = 0;
+  unsigned long long tmp = 12;
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < N; ++i) {
-    for (const auto& board : boards) {
-      int nVisited = 0;
-      Evaluate(board.GetPlayer(), board.GetOpponent(), -1, 1, &nVisited);
-      totNVisited += nVisited;
+    for (int i = 0; i < 10000; ++i) {
+      const auto& test = tests[i];
+      n_positions++;
+      n_visited = 0;
+      std::cout << Board(test.player, test.opponent).GetEmpties() << "\n";
+      tmp ^= Evaluate(test.player, test.opponent, test.alpha, test.beta, &n_visited);
+      tot_n_visited += n_visited;
     }
   }
   auto end = std::chrono::high_resolution_clock::now();
   double millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   
   
-  std::cout << "\n\nTime: " << (int) (1000.0 / millis * totNVisited) << "\n\n\n";
-  std::cout << "\nTests: " << (int) totNVisited << "\n\n\n";
+  std::cout << "\n\nVisited/sec: " << (int) (1000.0 / millis * tot_n_visited);
+  std::cout << "\nVisited/test: " << tot_n_visited / (double) n_positions << "\n";
   std::cout << "%TEST_FINISHED% time=" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " test1 (evaluator_last_moves_profile)" << std::endl;
 
   std::cout << "%SUITE_FINISHED% time=0" << std::endl;

@@ -25,7 +25,11 @@ import constants.Stats;
 import evaluatedepthone.BoardWithEvaluation;
 import evaluatedepthone.FindStableDisks;
 import helpers.LoadDataset;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -37,7 +41,7 @@ public class EvaluatorLastMoves {
   
   long masksTmp[];
   long firstLastInEdges[];
-
+  
   private final GetMovesCache movers[] = new GetMovesCache[63];
   private final GetMovesCache mover5 = new GetMovesCache();
   private final GetMovesCache mover4 = new GetMovesCache();
@@ -716,9 +720,30 @@ public class EvaluatorLastMoves {
     int tmp = ((eval + 100000) / 200) * 2 - 1000;
     return eval - (tmp * 100) > 0 ? tmp + 1 : tmp;
   }
-
+  
+//  static FileWriter writer;
+//  static {
+//    try {
+//      writer = new FileWriter("coefficients/test_endgame.txt");
+//    } catch (IOException ex) {
+//      Logger.getLogger(EvaluatorLastMoves.class.getName()).log(Level.SEVERE, null, ex);
+//    }
+//  }
+//  static int i = 0;
+//  
   public static EvalWithVisited evaluateCPP(
       long player, long opponent, int lower, int upper) {
+//    
+//    if (Math.random() < 0.001) {
+//      try {
+//        writer.append(player + " " + opponent + " " + adaptEval(lower) + " " + adaptEval(upper) + "\n");
+//      } catch (IOException ex) {
+//        Logger.getLogger(EvaluatorLastMoves.class.getName()).log(Level.SEVERE, null, ex);
+//      }
+//      if (++i == 10000) {
+//        throw new UnsupportedOperationException();
+//      }
+//    }
     EvalWithVisited eval = evaluateCPPInternal(player, opponent, adaptEval(lower), adaptEval(upper));
     Stats.addToNLastMoves(1);
     Stats.addToNVisitedLastMoves(eval.nVisited);

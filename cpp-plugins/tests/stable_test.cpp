@@ -119,39 +119,12 @@ void stable::testGetFullRowsColumns() {
                                      "--------"
                                      "--------"
                                      "--------");
-  std::cout << PatternToString(output);
+//  std::cout << PatternToString(output);
   CPPUNIT_ASSERT(output == expected);
-  std::cout << PatternToString(GetFullColumns(~Diag9Symmetry(p)));
+//  std::cout << PatternToString(GetFullColumns(~Diag9Symmetry(p)));
   CPPUNIT_ASSERT(GetFullColumns(~Diag9Symmetry(p)) == Diag9Symmetry(expected));
 }
-//  
-//  @Test
-//  public void testGetFullDiags() {
-//    long input = BitPattern.parsePattern(
-//          "---X----\n"
-//        + "-----XXX\n"
-//        + "----XXXX\n"
-//        + "X--XXX--\n"
-//        + "--XXXX--\n"
-//        + "-XXXX--X\n"
-//        + "-XXX--X-\n"
-//        + "XXX--XXX\n");
-//    long output = FindStableDisks.getFullDiags7(~input);
-//    long expected = BitPattern.parsePattern(
-//          "--------\n"
-//        + "-------X\n"
-//        + "------X-\n"
-//        + "-----X--\n"
-//        + "----X---\n"
-//        + "---X---X\n"
-//        + "--X---X-\n"
-//        + "-X---X-X\n");
-//    assertEquals(expected, output);
-//    input = BitPattern.horizontalMirror(input);
-//    expected = BitPattern.horizontalMirror(expected);
-//    assertEquals(expected, FindStableDisks.getFullDiags9(~input));
-//  }
-//  
+
 void stable::testAll() {
   for (int i = 0; i < 100000; i++) {
     Board b = RandomBoard();
