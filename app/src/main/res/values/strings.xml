@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Othello Sensei Dev</string>
+    <string name="new_game">New game</string>
+    <string name="undo">Undo</string>
+    <string-array name="depth">
+        <item>10000000000</item>
+        <item>100000000</item>
+        <item>50000000</item>
+        <item>20000000</item>
+        <item>10000000</item>
+    </string-array>
+    <string-array name="delta">
+        <item>6</item>
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>40</item>
+        <item>128</item>
+    </string-array>
+</resources>
