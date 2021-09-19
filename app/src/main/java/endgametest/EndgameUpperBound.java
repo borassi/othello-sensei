@@ -108,8 +108,8 @@ public class EndgameUpperBound {
     "XXXOXXXXOXXXXXXXOOXXXXXXOOOXXXXXOOOXXOO-OOOOO---OOOOOOO-OOOOOOO- O",
     "OOOOOOOOXXXXXXOOXXOOXOOOXOXOOX--XOOOXX--XOOXOO--XOOOOO--XXXX---- O",
     "O-OOOOOOO-OOOXO-OXOOXOXXOXOOXXXXOXXXXXXXOXXOXOXX-XXXXX-X----X--- O"};
-  
-  EvaluatorLastMoves eval = new EvaluatorLastMoves();
+
+  final EvaluatorLastMoves eval = new EvaluatorLastMoves();
 
   public Board readBoardFromFFOFormat(String ffoFormat) {
     String[] boards = ffoFormat.split(" ");

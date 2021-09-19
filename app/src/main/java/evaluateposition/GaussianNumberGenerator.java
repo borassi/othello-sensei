@@ -26,7 +26,7 @@ import java.util.Random;
  * @author michele
  */
 public class GaussianNumberGenerator {
-  public float nums[] = new float[100000];
+  public final float nums[] = new float[100000];
   public int currentNumber = 0;
   
   public GaussianNumberGenerator() {

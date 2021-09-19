@@ -24,8 +24,8 @@ import java.util.ArrayList;
  * @author michele
  */
 public class CaseOptimalEndgame {
-  EvaluatorLastMoves eval = new EvaluatorLastMoves();
-  PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+  final EvaluatorLastMoves eval = new EvaluatorLastMoves();
+  final PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   long[] losses = new long[64];
   long[] num = new long[64];
   

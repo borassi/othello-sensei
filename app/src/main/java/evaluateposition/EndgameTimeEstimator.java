@@ -27,11 +27,11 @@ import java.util.ArrayList;
  */
 public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   public class EndgameTimeEstimatorRequest {
-    long player;
-    long opponent;
-    int lower;
-    int approxEval;
-    boolean proof;
+    final long player;
+    final long opponent;
+    final int lower;
+    final int approxEval;
+    final boolean proof;
     
     public EndgameTimeEstimatorRequest(long player, long opponent, int lower, int approxEval, boolean proof) {
       this.player = player;
@@ -41,7 +41,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
       this.proof = proof;
     }
   }
-  public static ArrayList<EndgameTimeEstimatorRequest> requests = new ArrayList<>();
+  public static final ArrayList<EndgameTimeEstimatorRequest> requests = new ArrayList<>();
   public static boolean LOG = false;
   public static boolean LOG_PROBABILITY;
 

@@ -28,11 +28,11 @@ import java.util.PriorityQueue;
 public class PossibleEndgameProofs {
   
   public ArrayList<EndgameProof> orClauses;
-  StoredBoard board;
+  final StoredBoard board;
 
   public static class EndgameProof {
-    long nPositions;
-    HashSet<PossibleEndgameProofs> children;
+    final long nPositions;
+    final HashSet<PossibleEndgameProofs> children;
 
     public EndgameProof(long nPositions, PossibleEndgameProofs... children) {
       this(nPositions);

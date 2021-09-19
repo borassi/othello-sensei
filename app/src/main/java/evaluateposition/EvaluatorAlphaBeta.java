@@ -65,8 +65,8 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   private long nVisited = 0;
   private final EvaluatorLastMoves lastMovesEvaluator = new EvaluatorLastMoves();
   private final HashMap hashMap;
-  Move[][] moves = new Move[64][64];
-  static Constant constant = new Constant();
+  final Move[][] moves = new Move[64][64];
+  static final Constant constant = new Constant();
 
   public EvaluatorAlphaBeta() {
     this(new PatternEvaluatorImproved());

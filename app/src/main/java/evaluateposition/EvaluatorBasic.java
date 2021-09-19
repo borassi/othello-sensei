@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 public class EvaluatorBasic implements EvaluatorInterface {
   private final DepthOneEvaluator depthOneEvaluator;
-  private PossibleMovesFinderImproved possibleMovesFinder;
+  private final PossibleMovesFinderImproved possibleMovesFinder;
   private int nVisitedPositions = 0;
   private long nComputedMoves = 0;
 

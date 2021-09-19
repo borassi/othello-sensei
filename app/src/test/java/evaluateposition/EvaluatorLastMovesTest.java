@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class EvaluatorLastMovesTest {
-  static EvaluatorLastMoves LAST_MOVE_EVALUATOR = new EvaluatorLastMoves();
+  static final EvaluatorLastMoves LAST_MOVE_EVALUATOR = new EvaluatorLastMoves();
   static PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = 
     new PossibleMovesFinderImproved();
 

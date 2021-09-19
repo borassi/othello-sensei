@@ -1558,9 +1558,9 @@ public class GetMovesCache implements Serializable {
   }
   
   static class TestCase {
-    int move;
-    long player;
-    long opponent;
+    final int move;
+    final long player;
+    final long opponent;
     public TestCase(int move, long player, long opponent) {
       this.move = move;
       this.player = player;

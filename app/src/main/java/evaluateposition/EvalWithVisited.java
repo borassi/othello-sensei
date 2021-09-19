@@ -19,7 +19,7 @@ package evaluateposition;
  */
 public class EvalWithVisited {
   public int eval;
-  public long nVisited;
+  public final long nVisited;
   
   public EvalWithVisited(int eval, long nVisited){
     this.eval = eval;

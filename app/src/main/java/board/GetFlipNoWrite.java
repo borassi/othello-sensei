@@ -23,7 +23,7 @@ import static board.GetFlip.neighbors;
  * @author michele
  */
 public class GetFlipNoWrite {
-  private static int sideMask = BitPatternInt.parsePattern(
+  private static final int sideMask = BitPatternInt.parsePattern(
       "-XXXXXX-" +
       "-XXXXXX-" +
       "-XXXXXX-" +

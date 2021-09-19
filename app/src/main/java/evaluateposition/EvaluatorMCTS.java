@@ -33,10 +33,10 @@ import java.util.logging.Logger;
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   PatternEvaluatorImproved evaluator;
 
-  private EvaluatorInterface nextEvaluator;
+  private final EvaluatorInterface nextEvaluator;
   private long maxNVisited;
   private long stopTimeMillis;
-  private HashMap hashMap;
+  private final HashMap hashMap;
   private final ReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
   private final Lock editLock = editNextPositionLock.readLock();
   private final Lock nextPositionLock = editNextPositionLock.writeLock();

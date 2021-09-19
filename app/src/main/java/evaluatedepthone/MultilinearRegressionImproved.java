@@ -27,7 +27,7 @@ public class MultilinearRegressionImproved {
   private final PatternEvaluatorImproved patternEvaluator;
   private final PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   private final EvaluatorLastMoves evaluatorLastMoves = new EvaluatorLastMoves();
-  ArrayList<BoardWithEvaluation> testingSet;
+  final ArrayList<BoardWithEvaluation> testingSet;
   
   public MultilinearRegressionImproved(
       ArrayList<BoardWithEvaluation> testingSet) {

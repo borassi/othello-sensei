@@ -41,13 +41,14 @@ import java.util.logging.Logger;
  * @author michele
  */
 public class EndgameThor {
-  public ArrayList<BoardWithEvaluation> boards = new ArrayList<>();
+  public final ArrayList<BoardWithEvaluation> boards = new ArrayList<>();
   long t = 0;
 
-  EvaluatorMCTS evalMCTS = new EvaluatorMCTS(2000000, 4000000);
-  EvaluatorLastMoves evalLast = new EvaluatorLastMoves();
-  EvaluatorAlphaBeta evalMidgame = new EvaluatorAlphaBeta();
-  Random generator = new Random(1234);
+//  EvaluatorMCTS evalMCTS = new EvaluatorMCTS(2000000, 4000000);
+//  EvaluatorLastMoves evalLast = new EvaluatorLastMoves();
+//  EvaluatorAlphaBeta evalMidgame = new EvaluatorAlphaBeta();
+//  Random generator = new Random(1234);
+  final NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
   
   public EndgameThor() {
     ArrayList<BoardWithEvaluation> allBoards = LoadDataset.loadTrainingSet(1977, 1997);
@@ -94,8 +95,7 @@ public class EndgameThor {
     }
     return true;
   }
-  
-  NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
+
   public void run() {
     int i = 0;
     Stats.reset();

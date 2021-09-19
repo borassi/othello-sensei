@@ -22,7 +22,7 @@ import board.Board;
 import static org.junit.Assert.assertEquals;
 
 public class MultilinearRegressionImprovedTest {
-  PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
+  final PatternEvaluatorImproved eval = new PatternEvaluatorImproved();
   final static Board oneOnEdge =
           new Board("---X----\n"
                   + "--------\n"

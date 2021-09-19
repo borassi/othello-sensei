@@ -424,7 +424,7 @@ int Evaluate(
 }
 
 JNIEXPORT jobject JNICALL Java_evaluateposition_EvaluatorLastMoves_evaluateCPPInternal(
-    JNIEnv* env, jclass java_class, jlong player, jlong opponent, jint lower,
+    JNIEnv* env, jclass, jlong player, jlong opponent, jint lower,
     jint upper) {
 //  return lower + upper;
 //  int n_visited = 0;

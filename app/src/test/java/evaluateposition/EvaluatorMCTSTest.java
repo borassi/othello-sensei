@@ -29,7 +29,7 @@ import org.junit.Test;
  * @author michele
  */
 public class EvaluatorMCTSTest {
-  PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
+  final PossibleMovesFinderImproved POSSIBLE_MOVES_FINDER = PossibleMovesFinderImproved.load();
 
   @BeforeClass
   public static void setUpClass() {

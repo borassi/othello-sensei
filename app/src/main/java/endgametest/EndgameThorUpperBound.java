@@ -28,11 +28,11 @@ import java.util.Random;
  * @author michele
  */
 public class EndgameThorUpperBound {
-  public ArrayList<BoardWithEvaluation> boards;
+  public final ArrayList<BoardWithEvaluation> boards;
 //  EvaluatorMCTS eval = new EvaluatorMCTS(400000, 200000);
 //  EvaluatorLastMoves eval = new EvaluatorLastMoves();
-  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
-  PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+  final EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
+  final PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
   
   public EndgameThorUpperBound() {
     boards = LoadDataset.loadTrainingSet(1977, 1987);

@@ -2362,7 +2362,7 @@ public class GetMoves {
           }
   }
 
-  private static Flipper[] flipper = new Flipper[] {
+  private static final Flipper[] flipper = new Flipper[] {
     new Flipper0(),
     new Flipper1(),
     new Flipper2(),

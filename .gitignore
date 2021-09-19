@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+/app/build
+/app/desktop_res
+/app/src/main/assets/coefficients
+/app/libs/rt.jar

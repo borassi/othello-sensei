@@ -19,15 +19,12 @@ import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
 import java.util.ArrayList;
-/**
- *
- * @author michele
- */
+
 public class SelfPlay extends Thread {
   
   EvaluatorMCTS player1, player2;
-  PossibleMovesFinderImproved pmf;
-  int nRandMoves;
+  final PossibleMovesFinderImproved pmf;
+  final int nRandMoves;
   ArrayList<Board> game;
   
   public SelfPlay(EvaluatorMCTS player1, EvaluatorMCTS player2,

@@ -56,8 +56,8 @@ import main.Main;
 public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   private static final long serialVersionUID = 1L;
-  private Case[][] cases = new Case[8][8];
-  private JPanel casesContainer = new JPanel(new GridLayout(0, 8)) {
+  private final Case[][] cases = new Case[8][8];
+  private final JPanel casesContainer = new JPanel(new GridLayout(0, 8)) {
     /**
      * Needed to silence a warning.
      */

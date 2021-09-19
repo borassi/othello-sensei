@@ -17,8 +17,8 @@ package board;
 import java.io.Serializable;
 
 public class Move implements Serializable {
-  public int position;
-  public long flip;
+  public final int position;
+  public final long flip;
   
   public Move(Board b, long l) {
     flip = l;

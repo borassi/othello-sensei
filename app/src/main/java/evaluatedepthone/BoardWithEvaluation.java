@@ -35,7 +35,7 @@ import board.Board;
  * The evaluation is for the player who is currently playing.
  */
 public class BoardWithEvaluation implements Comparable<BoardWithEvaluation> {
-  public Board board;
+  public final Board board;
   public int evaluation;
   
   public BoardWithEvaluation(Board board, int evaluation) {

@@ -30,13 +30,11 @@ import java.util.ArrayList;
  * @author michele
  */
 public class TestThor {
-  public ArrayList<BoardWithEvaluation> boards;
-  PatternEvaluatorImproved eval1 = new PatternEvaluatorImproved();
-  PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-//  EvaluatorMCTS eval = new EvaluatorMCTS(100, 10);
-  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
+  public final ArrayList<BoardWithEvaluation> boards;
+  final PatternEvaluatorImproved eval1 = new PatternEvaluatorImproved();
+  final PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
+  final EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   long time;
-//  EvaluatorAlphaBeta eval = new EvaluatorAlphaBeta();
   
   public TestThor() {
     boards = LoadDataset.loadTestingSet();
@@ -51,8 +49,6 @@ public class TestThor {
       eval = Math.max(eval, -eval1.eval(b.move(move)));
     }
 
-//    System.out.println(eval + " " + this.eval.evaluatePosition(b, 1));
-//    return -this.eval.evaluatePosition(b, 0) - be.evaluation;
     return eval * 20 / 30 + eval1.eval(b) * 10 / 30 - be.evaluation;
   }
   

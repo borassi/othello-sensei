@@ -899,13 +899,13 @@ public class LastMovesEvaluatorUpperBound {
     "-XXXXXXXO-XOOXXXOXXXXOXXOXXXXOO-OOXXOOX-OOOXOO--OOOOO-O---XXOO-- -2001 -2000",
     "-XXXXXXXO-XOOXOOOXXXXOOOOXXXOXO-OOXOOOOOOOOOOOO-OOXXX-----XX-O-- -2001 -2000"};
 
-  
-  EvaluatorLastMoves eval = new EvaluatorLastMoves();
+
+  final EvaluatorLastMoves eval = new EvaluatorLastMoves();
 
   class Task {
-    int alpha;
-    int beta;
-    Board b;
+    final int alpha;
+    final int beta;
+    final Board b;
 
     public Task(String boardString) {
       String[] split = boardString.split(" ");

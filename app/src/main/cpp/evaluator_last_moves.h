@@ -28,7 +28,6 @@ inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcep
   if (__builtin_expect(flip, 1)) {
     return (__builtin_popcountll(player | flip) << 1) - 64;
   }
-
   flip = GetFlip(x, opponent, player);
   if (flip) {
     return 64 - (__builtin_popcountll(opponent | flip) << 1);
@@ -68,7 +67,7 @@ extern "C" {
 
 JNIEXPORT jobject JNICALL Java_evaluateposition_EvaluatorLastMoves_evaluateCPPInternal(
     JNIEnv* env, jclass java_class, jlong player, jlong opponent, jint lower,
-    jint upper) __attribute__((externally_visible));
+    jint upper);
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,7 @@ public class StoredBoard {
   private final long player;
   private final long opponent;
 
-  static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
+  final static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
   public final ArrayList<StoredBoard> fathers;
   public StoredBoard[] children;
   

@@ -21,11 +21,11 @@ public class PositionIJ {
   /**
    * The row (from 0 to 7).
    */
-  public int i;
+  public final int i;
   /**
    * The column (from 0 to 7).
    */
-  public int j;
+  public final int j;
   
   /**
    * Constructor.

@@ -21,9 +21,9 @@ import board.PossibleMovesFinderImproved;
  * @author michele
  */
 public class OptimumAlphaBeta {
-  static PossibleMovesFinderImproved possibleMovesFinder = 
+  final static PossibleMovesFinderImproved possibleMovesFinder =
     new PossibleMovesFinderImproved();
-  static long INFINITY = 1000000000000L;
+  final static long INFINITY = 1000000000000L;
 
   // Prove b.eval <= eval
   public static long computeOptimumUpper(Board b, int eval) {

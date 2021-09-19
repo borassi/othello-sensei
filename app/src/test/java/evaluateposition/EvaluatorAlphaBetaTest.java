@@ -29,10 +29,10 @@ import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import java.util.ArrayList;
 
 public class EvaluatorAlphaBetaTest {
-  PossibleMovesFinderImproved possibleMovesFinder = PossibleMovesFinderImproved.load();
-  EvaluatorAlphaBeta evaluator = new EvaluatorAlphaBeta(
+  final PossibleMovesFinderImproved possibleMovesFinder = PossibleMovesFinderImproved.load();
+  final EvaluatorAlphaBeta evaluator = new EvaluatorAlphaBeta(
     new DiskDifferenceEvaluatorPlusTwo(), new HashMap());
-  EvaluatorBasic evaluatorBasic = new EvaluatorBasic(
+  final EvaluatorBasic evaluatorBasic = new EvaluatorBasic(
           new DiskDifferenceEvaluatorPlusTwo(), possibleMovesFinder);
 
   final static String THIRD_MOVE_BOARD_STRING = "--------\n"

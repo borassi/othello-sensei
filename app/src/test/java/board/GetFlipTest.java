@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
  * @author michele
  */
 public class GetFlipTest {
-  GetFlip FLIPPER = GetFlip.load();
+  final GetFlip FLIPPER = GetFlip.load();
   
   @Test
   public void testFlip() {

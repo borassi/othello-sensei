@@ -230,8 +230,8 @@ public class PossibleMovesFinderImproved implements Serializable {
     initMoves();
   }
 
-  long[] moves = new long[64];
-  int[] positions = new int[60];
+  final long[] moves = new long[64];
+  final int[] positions = new int[60];
   /**
    * Returns the set of possible moves, as an ArrayList\<Long\>.
    * Each of the move is a bitpattern that contains 1 on all the disks flipped,

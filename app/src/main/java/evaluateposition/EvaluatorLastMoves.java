@@ -403,7 +403,7 @@ public class EvaluatorLastMoves {
     return ((spaceSize & 1) << 24) | ((6 - spaceSize) << 16) | (SPACE[x] << 8) | SQUARE_VALUE[x];
   }
   
-  private int[] spaceSizes = new int[4];
+  private final int[] spaceSizes = new int[4];
   private int evalFiveEmpties(
       long player, long opponent, int lower, int upper,
       boolean lastMoveCorner, long stable) {

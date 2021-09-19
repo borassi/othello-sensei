@@ -63,8 +63,8 @@ import ui.UI;
  * Connects the board and the evaluation with the UI.
  */
 public class Main implements Runnable {
-  ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
-  ArrayList<Board> oldBoards = new ArrayList<>();
+  final ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
+  final ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
   Board board;
   private final HashMap HASH_MAP;

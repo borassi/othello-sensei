@@ -39,9 +39,9 @@ Board::Board (const char* board)
     : Board(ParsePattern(board, 'X'), ParsePattern(board, 'O')) {}
 
 Board RandomBoard() {
-  double percentage_player = rand();
-  double percentage_opponent = rand();
-  double tot = percentage_player + percentage_opponent + rand();
+  double percentage_player = (double) std::rand() / RAND_MAX;
+  double percentage_opponent = (double) std::rand() / RAND_MAX;
+  double tot = percentage_player + percentage_opponent + (double) std::rand() / RAND_MAX;
   percentage_player /= tot;
   percentage_opponent /= tot;
   return RandomBoard(percentage_player, percentage_opponent);
@@ -50,7 +50,7 @@ Board RandomBoard() {
 Board RandomBoard(double percentage_player, double percentage_opponent) {
   std::string board_string;
   for (int j = 0; j < 64; j++) {
-    double value = (double) rand() / RAND_MAX;
+    double value = (double) std::rand() / RAND_MAX;
     if (value < percentage_player) {
       board_string += "X";
     } else if (value < percentage_opponent + percentage_player) {
