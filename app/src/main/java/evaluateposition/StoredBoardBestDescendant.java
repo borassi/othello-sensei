@@ -200,7 +200,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     return father.maxLogDerivativeProbGreaterEqual > father.maxLogDerivativeProbStrictlyGreater
         || (
             father.maxLogDerivativeProbGreaterEqual == father.maxLogDerivativeProbStrictlyGreater
-            && father.proofNumberGreaterEqual > father.disproofNumberStrictlyGreater
+            && Math.random() > 0.5
     );
   }
 

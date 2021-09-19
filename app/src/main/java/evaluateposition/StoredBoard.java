@@ -34,6 +34,7 @@ public class StoredBoard {
     public boolean proofBeforeFinished = false;
     public boolean disproofBeforeFinished = false;
   }
+
   protected static final HashMap HASH_MAP;
   protected static EvaluatorInterface EVALUATOR_MIDGAME;
   
@@ -80,7 +81,7 @@ public class StoredBoard {
     COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1) * 64];
     LOG_DERIVATIVE = new int[(PROB_STEP + 1) * (PROB_STEP + 1) * 64];
     for (int leadingZerosDescendants = 0; leadingZerosDescendants < 64; ++leadingZerosDescendants) {
-      float lambda = -1 / Math.max(1, 3 * (63 - leadingZerosDescendants)) - 0.7F;
+      float lambda = -0.1F * leadingZerosDescendants;
       for (int i = 0; i <= PROB_STEP; ++i) {
         for (int j = 0; j <= PROB_STEP; ++j) {
           COMBINE_PROB[(leadingZerosDescendants << 16) | (i << 8) | j] = 
@@ -111,6 +112,7 @@ public class StoredBoard {
     }
   }
   private static int combineProb(int leadingZerosDescendants, int p1, int p2) {
+//    System.out.println(63 - leadingZerosDescendants);
     return COMBINE_PROB[(leadingZerosDescendants << 16) | (p1 << 8) | p2];
   }
   private static int logDerivative(int leadingZerosDescendants, int fatherProb, int childProb) {
@@ -327,6 +329,15 @@ public class StoredBoard {
     return Math.round(prob * PROB_STEP);
   }
 
+  private int lambdaTenths() {
+    double logDescendants = Math.log(this.getDescendants()) / Math.log(2);
+//    System.out.println();
+//    -1 / Math.max(1, 3 * (63 - leadingZerosDescendants)) - 0.7F;
+    int formula = (int) (10.0 / Math.max(1, 3 * (63 - Long.numberOfLeadingZeros(descendants))) + 7);
+    return 3;//Math.max(0, Math.min(63, formula));
+//    return Long.numberOfLeadingZeros(descendants);
+  }
+
   protected synchronized void updateFather() {
     assert !isLeaf();
     if (isBusy) {
@@ -353,8 +364,8 @@ public class StoredBoard {
         eval = Math.max(eval, -child.eval);
         lower = Math.max(lower, -child.getUpper());
         upper = Math.max(upper, -child.getLower());
-        probGreaterEqual = combineProb(leadingZerosDescendants, probGreaterEqual, child.probStrictlyGreater);
-        probStrictlyGreater = combineProb(leadingZerosDescendants, probStrictlyGreater, child.probGreaterEqual);
+        probGreaterEqual = combineProb(lambdaTenths(), probGreaterEqual, child.probStrictlyGreater);
+        probStrictlyGreater = combineProb(lambdaTenths(), probStrictlyGreater, child.probGreaterEqual);
         proofNumberGreaterEqual = Math.min(proofNumberGreaterEqual, child.disproofNumberStrictlyGreater / Math.max(0.002F, 1 - child.getProbStrictlyGreater()));
         disproofNumberStrictlyGreater += child.proofNumberGreaterEqual;
       }
@@ -441,7 +452,7 @@ public class StoredBoard {
 //      System.out.println(child.fathers.size());
 //    }
 //    assert evalGoal == -child.evalGoal;
-    return logDerivative(Long.numberOfLeadingZeros(child.descendants), probStrictlyGreater, child.probGreaterEqual);
+    return logDerivative(lambdaTenths(), probStrictlyGreater, child.probGreaterEqual);
 //    if (child.probGreaterEqual == 0 || probStrictlyGreater == PROB_STEP) {
 //      return LOG_DERIVATIVE_MINUS_INF;
 //    }
@@ -454,7 +465,7 @@ public class StoredBoard {
   }
   public synchronized int logDerivativeEdgeProbGreaterEqual(StoredBoard child) {
     assert Utils.arrayContains(children, child);
-    return logDerivative(Long.numberOfLeadingZeros(child.descendants), probGreaterEqual, child.probStrictlyGreater);
+    return logDerivative(lambdaTenths(), probGreaterEqual, child.probStrictlyGreater);
 //    if (child.probStrictlyGreater == 0 || probGreaterEqual == PROB_STEP) {
 //      return LOG_DERIVATIVE_MINUS_INF;
 //    }

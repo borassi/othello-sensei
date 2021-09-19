@@ -58,6 +58,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long nextUpdateEvalGoal;
   private EvaluatorThread[] threads;
   private double constant = 0;
+  private boolean lastDoubtGreaterEqual = true;
 
   private class EvaluatorThread implements Runnable {    
     private final EvaluatorInterface nextEvaluator;
@@ -206,7 +207,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return ((eval + 6499) / 200) * 200 - 6400;
   }
   
-  protected void setEvalGoal(int evalGoal) {
+  public void setEvalGoal(int evalGoal) {
     evalGoal = roundEval(evalGoal);
     assert(evalGoal >= lower - 100 && evalGoal <= upper + 100);
     assert evalGoal % 200 == 0;
@@ -281,7 +282,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return true;
     }
     if (this.firstPosition.getProbGreaterEqual() == 1 && this.firstPosition.getProbStrictlyGreater() == 0) {
-      return this.firstPosition.proofNumberGreaterEqual > this.firstPosition.disproofNumberStrictlyGreater;
+      if (this.firstPosition.proofNumberGreaterEqual == 0) {
+        return false;
+      } else if (this.firstPosition.disproofNumberStrictlyGreater == 0) {
+        return true;
+      }
+      lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
+      return lastDoubtGreaterEqual;
+//      return this.firstPosition.proofNumberGreaterEqual > this.firstPosition.disproofNumberStrictlyGreater;
     }
     return this.firstPosition.getProbGreaterEqual() < 1 - this.firstPosition.getProbStrictlyGreater();
   }
@@ -340,7 +348,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
 
-    if (Constants.APPROX_ONLY && this.firstPosition.getProbGreaterEqual() > 1 - 0.04 && this.firstPosition.getProbStrictlyGreater() < 0.04) {
+    if (Constants.APPROX_ONLY && this.firstPosition.getProbGreaterEqual() > 1 - 0.001 && this.firstPosition.getProbStrictlyGreater() < 0.001) {
       status = Status.SOLVED;
       return true;
     }
@@ -373,13 +381,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (checkFinished()) {
         return null;
       }
-      result = StoredBoardBestDescendant.bestDescendant(firstPosition);
+      result = StoredBoardBestDescendant.bestDescendant(firstPosition, nextPositionGreaterEqual());
       while (result == null) {
         isNextPositionAvailable.await();
         if (checkFinished()) {
           return null;
         }
-        result = StoredBoardBestDescendant.bestDescendant(firstPosition);
+        result = StoredBoardBestDescendant.bestDescendant(firstPosition, nextPositionGreaterEqual());
       }
       editLock.lock();
     } catch (InterruptedException ex) {

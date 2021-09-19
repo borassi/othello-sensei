@@ -9,7 +9,7 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# See the License for the specIFic language governing permissions and
 # limitations under the License.
 
 # Sets the minimum version of CMake required to build the native library.
@@ -19,26 +19,29 @@ cmake_minimum_required(VERSION 3.10.2)
 
 project("othellosensei")
 
-SET(ANDROID FALSE)
+IF(NOT DEFINED ANDROID)
+    SET(ANDROID TRUE)
+ENDIF()
+
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
 
 enable_testing()
 
-if(ANDROID)
+IF(ANDROID)
     find_library(log-lib JNI_LIBRARIES)
-else()
+ELSE()
     find_package(GTest)
     find_package(JNI REQUIRED)
     include_directories( ${JNI_INCLUDE_DIRS} )
-endif()
+ENDIF()
 
 SET(PDEP_PEXT NOT ANDROID)
 
-if(${PDEP_PEXT})
+IF(${PDEP_PEXT})
     add_definitions(-DPDEP_PEXT=true)
-else()
+ELSE()
     add_definitions(-DPDEP_PEXT=false)
-endif()
+ENDIF()
 
 SET(
         RELEASE_FLAGS
@@ -52,14 +55,14 @@ SET(
         -DHAS_CPU_64
 )
 
-if(!ANDROID)
+IF(NOT ANDROID)
   SET(
           RELEASE_FLAGS
           ${RELEASE_FLAGS}
           -m64
           -march=native
   )
-endif()
+ENDIF()
 
 add_library(
         bitpattern
@@ -73,7 +76,7 @@ target_compile_options(
         ${RELEASE_FLAGS}
 )
 
-if(!ANDROID)
+IF(NOT ANDROID)
     add_executable(
             bitpattern_test
             bitpattern_test.cpp
@@ -86,7 +89,7 @@ if(!ANDROID)
             GTest::gtest
             GTest::gtest_main
     )
-endif()
+ENDIF()
 
 add_library(
         board
@@ -110,15 +113,15 @@ target_compile_options(
         ${RELEASE_FLAGS}
 )
 
-if(${PDEP_PEXT})
+IF(${PDEP_PEXT})
     target_compile_options(
             get_flip
             PUBLIC
             -mbmi2
     )
-endif()
+ENDIF()
 
-if(!ANDROID)
+IF(NOT ANDROID)
     add_executable(
             get_flip_test
             get_flip_test.cpp
@@ -132,7 +135,7 @@ if(!ANDROID)
             GTest::gtest
             GTest::gtest_main
     )
-endif()
+ENDIF()
 
 add_executable(
         get_flip_profile
@@ -172,16 +175,16 @@ target_compile_options(
         ${RELEASE_FLAGS}
 )
 
-if(${PDEP_PEXT})
+IF(${PDEP_PEXT})
     target_compile_options(
             stable
             PUBLIC
             -mbmi2
             ${RELEASE_FLAGS}
     )
-endif()
+ENDIF()
 
-if(!ANDROID)
+IF(NOT ANDROID)
     add_executable(
             stable_test
             stable_test.cpp
@@ -195,7 +198,7 @@ if(!ANDROID)
             GTest::gtest
             GTest::gtest_main
     )
-endif()
+ENDIF()
 
 add_library(
         evaluator_last_moves
@@ -204,22 +207,22 @@ add_library(
         evaluator_last_moves.cpp
 )
 
-if(ANDROID)
+IF(ANDROID)
     target_compile_options(
             evaluator_last_moves
             PUBLIC
             ${RELEASE_FLAGS}
     )
-else()
+ELSE()
     target_compile_options(
             evaluator_last_moves
             PUBLIC
             ${RELEASE_FLAGS}
     )
 
-endif()
+ENDIF()
 
-target_link_libraries( # Specifies the target library.
+target_link_libraries( # SpecIFies the target library.
         evaluator_last_moves
         LINK_PUBLIC
         bitpattern
@@ -228,7 +231,7 @@ target_link_libraries( # Specifies the target library.
         ${JNI_LIBRARIES}
 )
 
-if(!ANDROID)
+IF(NOT ANDROID)
     add_executable(
             evaluator_last_moves_test
             evaluator_last_moves_test.cpp
@@ -243,7 +246,7 @@ if(!ANDROID)
             GTest::gtest
             GTest::gtest_main
     )
-endif()
+ENDIF()
 
 add_executable(
         evaluator_last_moves_profile

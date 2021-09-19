@@ -76,7 +76,7 @@ struct StableDisksEdge {
   }
   
   constexpr uint8_t GetFlipOneDirection(Move x, uint8_t player, uint8_t opponent) {
-    return kFlip[((x << 8) | kOutflank[(x << 8) | opponent]) & player];
+    return kFlip[(x << 8) | (kOutflank[(x << 8) | opponent] & player)];
   }
 
   constexpr void FillStableDisks(BitPattern player, BitPattern opponent) {

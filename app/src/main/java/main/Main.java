@@ -214,6 +214,14 @@ public class Main implements Runnable {
           }
         }
       }
+//      int evalGoal = EVALUATOR.getEvalGoal();
+//      for (int i = -6400; i < 6400; i += 200) {
+//        EVALUATOR.setEvalGoal(i);
+//        if (EVALUATOR.getFirstPosition().getProbGreaterEqual() != EVALUATOR.getFirstPosition().getProbStrictlyGreater()) {
+//          System.out.println(i + " " + EVALUATOR.getFirstPosition().getProbGreaterEqual() + " " + EVALUATOR.getFirstPosition().getProbStrictlyGreater());
+//        }
+//      }
+//      EVALUATOR.setEvalGoal(evalGoal);
       nUpdate++;
     }
     

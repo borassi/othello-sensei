@@ -25,7 +25,7 @@ public class Constants {
   public final static int HASH_MAP_SIZE_MOBILE = 100000;
   public final static int HASH_MAP_SIZE_DESKTOP = 10000000;
   public final static int MCTS_SIZE_MOBILE = 100000;
-  public final static int MCTS_SIZE_DESKTOP = 20000000;
+  public final static int MCTS_SIZE_DESKTOP = 10000000;
 
   public final static int TRY_SC_NO_CORNER = 2000;
   public final static int TRY_SC_CORNER = 40000000;
