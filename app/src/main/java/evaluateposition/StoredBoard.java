@@ -54,7 +54,6 @@ public class StoredBoard {
     private void reset() {
       proofNumber = Float.POSITIVE_INFINITY;
       disproofNumber = 0;
-
       prob = 0;
       maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
@@ -351,7 +350,6 @@ public class StoredBoard {
   public final synchronized void setEval(int newEval) {
     assert isLeaf();
     this.eval = (short) Math.max(this.lower, Math.min(this.upper, newEval));
-//    this.setProofNumbersForLeaf();
     assert areThisBoardEvalsOK();
   }
   

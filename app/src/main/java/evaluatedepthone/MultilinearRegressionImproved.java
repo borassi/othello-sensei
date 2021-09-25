@@ -186,7 +186,7 @@ public class MultilinearRegressionImproved {
   
   
   public void selfTrainEndgameBoard(Board b, ArrayList<BoardWithEvaluation> trainingSet) {
-    int evalB = this.evaluatorLastMoves.evaluate(b, -6600, 6600, 0);
+    int evalB = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6600, 6600).eval;
     trainingSet.add(new BoardWithEvaluation(b, evalB));
     if (b.getEmptySquares() == 1) {
       return;

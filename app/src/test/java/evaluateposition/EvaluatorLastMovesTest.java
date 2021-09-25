@@ -44,21 +44,21 @@ public class EvaluatorLastMovesTest {
   @Test
   public void testDoublePass() {
     Board b = new Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXXX", true);
-    assertEquals(0, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
+    assertEquals(0, EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6400, 6400).eval);
     b = new Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX", true);
-    assertEquals(-400, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 0));
+    assertEquals(-400, EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6400, 6400).eval);
   }
 
   @Test
   public void testManyPass() {
     Board b = new Board("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX", true);
-    assertEquals(2400, LAST_MOVE_EVALUATOR.evaluate(b, -6400, 6400, 1L << (int) (Math.random() * 64)));
+    assertEquals(2400, EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6400, 6400).eval);
   }
 
   @Test
   public void testTemp() {
     Board b = new Board("XOOXXXXX-XOXXXOOXXOOXXXXXOOOOXXXXXOXXOXOOXOO-XOOXXXX-XOOX-XXXXXX", true);
-    assertEquals(-600, LAST_MOVE_EVALUATOR.evalFourEmpties(6, 55, 19, 11, b.getPlayer(), b.getOpponent(), -6400, 6400, false, false, 0));
+    assertEquals(-600, EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6400, 6400).eval);
   }
   
 //  6 55 19 11 200 -6400 6400
@@ -145,7 +145,7 @@ public class EvaluatorLastMovesTest {
       int alpha = (int) (result + (Math.random() - 0.5) * 1600);
       int beta = alpha + 1 + (int) (Math.random() * 800);
 
-      int result1 = LAST_MOVE_EVALUATOR.evaluate(b, alpha, beta, 1L << (int) (Math.random() * 64));
+      int result1 = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), alpha, beta).eval;
       if (result < alpha) {
         if (result > result1 || result1 > alpha) {
           System.out.println(alpha + " " + beta);
