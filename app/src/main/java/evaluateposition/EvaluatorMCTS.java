@@ -37,9 +37,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long maxNVisited;
   private long stopTimeMillis;
   private final HashMap hashMap;
-  private final ReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
-  private final Lock editLock = editNextPositionLock.readLock();
-  private final Lock nextPositionLock = editNextPositionLock.writeLock();
+  private final ReentrantReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
+  private final ReentrantReadWriteLock.WriteLock nextPositionLock = editNextPositionLock.writeLock();
+  private final ReentrantReadWriteLock.ReadLock editLock = editNextPositionLock.readLock();
+
   private final Condition isNextPositionAvailable = nextPositionLock.newCondition();
   
   int lower = -6300;
@@ -211,6 +212,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     evalGoal = roundEval(evalGoal);
     assert(evalGoal >= lower - 100 && evalGoal <= upper + 100);
     assert evalGoal % 200 == 0;
+    assert nextPositionLock.isHeldByCurrentThread();
 //    if (evalGoal != this.getEvalGoal()) {
       this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
       this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
@@ -282,9 +284,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return true;
     }
     if (this.firstPosition.getProbGreaterEqual() == 1 && this.firstPosition.getProbStrictlyGreater() == 0) {
-      if (this.firstPosition.proofNumberGreaterEqual == 0) {
+      if (this.firstPosition.getProofNumberGreaterEqual() == 0) {
         return false;
-      } else if (this.firstPosition.disproofNumberStrictlyGreater == 0) {
+      } else if (this.firstPosition.getDisproofNumberStrictlyGreater() == 0) {
         return true;
       }
       lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
@@ -472,9 +474,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
 
+    nextPositionLock.lock();
     setEvalGoal(firstPosition.getEval());
+    nextPositionLock.unlock();
     
-    Thread threads[] = new Thread[this.threads.length];
+    Thread[] threads = new Thread[this.threads.length];
     
     for (int i = 0; i < threads.length; ++i) {
       threads[i] = new Thread(this.threads[i]);

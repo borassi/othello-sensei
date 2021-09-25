@@ -1,4 +1,4 @@
-// Copyright 2019 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,11 @@ package evaluateposition;
 import board.Board;
 import constants.Constants;
 import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MINUS_INF;
+
+import androidx.annotation.NonNull;
+
+import com.sun.istack.internal.NotNull;
+
 import helpers.Utils;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,22 +28,13 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.PriorityQueue;
 
-/**
- *
- * @author michele
- */
 public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDescendant> {
 
   StoredBoard board;
   boolean greaterEqual;
   ArrayList<StoredBoard> parents = new ArrayList<>();
-  int derivativeLoss = 0;
-  float proofNumberLoss = 0;
-  int id = 0;
-
-  public int getId() {
-    return id;
-  }
+  int derivativeLoss;
+  float proofNumberLoss;
 
   public int getDerivativeLoss() {
     return derivativeLoss;
@@ -92,7 +88,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
         .thenComparingLong(StoredBoardBestDescendant::getOpponent)
         .compare(this, other);
   }
-  
+
+  @NonNull
   @Override
   public String toString() {
     return greaterEqual ? "greaterEqual" : "strictlyGreater" + " (" + getDerivativeLoss() + "|" + getProofNumberLoss() + ") " + board.toString().replace("\n", "");
@@ -141,7 +138,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   }
   
   private static int firstDerivativeLoss(StoredBoard board, boolean greaterEqual) {
-    return Math.max(LOG_DERIVATIVE_MINUS_INF, (greaterEqual ? board.maxLogDerivativeProbGreaterEqual : board.maxLogDerivativeProbStrictlyGreater));
+    return Math.max(LOG_DERIVATIVE_MINUS_INF, (greaterEqual ? board.maxLogDerivativeGreaterEqual() : board.maxLogDerivativeStrictlyGreater()));
   }
   
   private StoredBoardBestDescendant copyToChild(StoredBoard child) {
@@ -166,7 +163,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       if (derivativeLoss + childLogDerivative <= LOG_DERIVATIVE_MINUS_INF) {
         derivativeLoss = LOG_DERIVATIVE_MINUS_INF;
 //        if (child.isLeaf()) {
-        proofNumberLoss = proofNumberLoss + child.proofNumberGreaterEqual - board.maxFiniteChildrenProofNumber();  // TODO IMPROVE!!!
+        proofNumberLoss = proofNumberLoss + child.getProofNumberGreaterEqual() - board.maxFiniteChildrenProofNumber();  // TODO IMPROVE!!!
 //        }
       } else {
         derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
@@ -184,48 +181,24 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 
   public static boolean hasValidDescendants(StoredBoard b, boolean greaterEqual) {
     if (greaterEqual) {
-      return (b.getProbGreaterEqual() == 0 || b.proofNumberGreaterEqual != 0 && b.proofNumberGreaterEqual != Float.POSITIVE_INFINITY);
+      return (b.getProbGreaterEqual() == 0 || b.getProofNumberGreaterEqual() != 0 && b.getProofNumberGreaterEqual() != Float.POSITIVE_INFINITY);
     } else {
-      return (b.getProbStrictlyGreater() == 1 || b.disproofNumberStrictlyGreater != 0 && b.disproofNumberStrictlyGreater != Float.POSITIVE_INFINITY);
+      return (b.getProbStrictlyGreater() == 1 || b.getDisproofNumberStrictlyGreater() != 0 && b.getDisproofNumberStrictlyGreater() != Float.POSITIVE_INFINITY);
     }
-  }
-  
-  public static boolean bestDescendantGreaterEqual(StoredBoard father) {
-    if (!hasValidDescendants(father, true)) {
-      return false;
-    }
-    if (!hasValidDescendants(father, false)) {
-      return true;
-    }    
-    return father.maxLogDerivativeProbGreaterEqual > father.maxLogDerivativeProbStrictlyGreater
-        || (
-            father.maxLogDerivativeProbGreaterEqual == father.maxLogDerivativeProbStrictlyGreater
-            && Math.random() > 0.5
-    );
-  }
-
-  public static StoredBoardBestDescendant bestDescendant(StoredBoard father) {
-    return bestDescendant(
-        father,
-        bestDescendantGreaterEqual(father)
-    );
   }
 
   public static StoredBoardBestDescendant bestDescendant(
       StoredBoard father, boolean greaterEqual) {
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father, greaterEqual);
-    if (!result.hasValidDescendants()) {
+    if (!result.hasValidDescendants() || father.isBusy) {
       return null;
     }
-    assert !father.isBusy;
 
     while (!result.board.isLeaf()) {
       StoredBoard bestChild = result.bestChild();
       assert bestChild != null;
       assert !bestChild.isBusy;
       result.toChild(bestChild);
-//      System.out.println(result.derivativeLoss + " " + result.maxLogDerivative());
-//      assert result.derivativeLoss == result.maxLogDerivative() || result.derivativeLoss == StoredBoard.LOG_DERIVATIVE_MINUS_INF;
     }
     assert result.board != null;
     return result;
@@ -258,10 +231,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     return greaterEqual ? board.logDerivativeProbGreaterEqual(child) : board.logDerivativeProbStrictlyGreater(child);
   }
   private int maxLogDerivative() {
-    return greaterEqual ? board.maxLogDerivativeProbGreaterEqual : board.maxLogDerivativeProbStrictlyGreater;
-  }
-  private static float prob(StoredBoard board, boolean greaterEqual) {
-    return (greaterEqual ? board.getProbGreaterEqual() : board.getProbStrictlyGreater());
+    return greaterEqual ? board.maxLogDerivativeGreaterEqual() : board.maxLogDerivativeStrictlyGreater();
   }
 
   private static boolean endgame(StoredBoard board, boolean greaterEqual) {
@@ -299,7 +269,6 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       }
       visited.add(nextBoard);
       if (nextBoard.isLeaf()) {
-        next.id = result.size();
         result.add(next);
         continue;
       }
@@ -321,26 +290,18 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public StoredBoard bestChild() {
     if (greaterEqual) {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        if (board.proofNumberGreaterEqual == 0 || board.proofNumberGreaterEqual == Float.POSITIVE_INFINITY) {
+        if (board.getProofNumberGreaterEqual() == 0 || board.getProofNumberGreaterEqual() == Float.POSITIVE_INFINITY) {
           return board.bestChildProofGreaterEqual();
         }
       }
-      if (maxLogDerivative() + derivativeLoss <= LOG_DERIVATIVE_MINUS_INF) {
-        return board.bestChildEndgameGreaterEqual();
-      } else {
-        return board.bestChildMidgameGreaterEqual(); 
-      }
+      return board.bestChildGreaterEqual();
     } else {
       if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        if (board.disproofNumberStrictlyGreater <= LOG_DERIVATIVE_MINUS_INF || board.disproofNumberStrictlyGreater == 0) {
+        if (board.getDisproofNumberStrictlyGreater() <= LOG_DERIVATIVE_MINUS_INF || board.getDisproofNumberStrictlyGreater() == 0) {
           return board.bestChildProofStrictlyGreater();
         }
       }
-      if (maxLogDerivative() + derivativeLoss <= LOG_DERIVATIVE_MINUS_INF) {
-        return board.bestChildEndgameStrictlyGreater();
-      } else {
-        return board.bestChildMidgameStrictlyGreater();        
-      }
+      return board.bestChildStrictlyGreater();
     }
   }
 

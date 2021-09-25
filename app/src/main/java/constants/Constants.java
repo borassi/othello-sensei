@@ -36,7 +36,8 @@ public class Constants {
   public final static int TRY_SC_LAST_3_NO_CORNER = 0;
   public final static int TRY_SC_LAST_3_CORNER = 0;
   
-  public final static int MAX_PARALLEL_TASKS = 1;
+  public final static int MAX_PARALLEL_TASKS = 12;
+  public final static float LAMBDA = -0.3F;
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;

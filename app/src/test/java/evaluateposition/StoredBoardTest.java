@@ -47,8 +47,8 @@ public class StoredBoardTest {
     firstMove.setEvalGoalRecursive(1000);
     // Diag is much better than par. This means that proof numbers (for the
     // opponent) are harder.
-    assert diag.proofNumberGreaterEqual > par.proofNumberGreaterEqual;
-    assert diag.disproofNumberStrictlyGreater < par.disproofNumberStrictlyGreater;
+    assert diag.getProofNumberGreaterEqual() > par.getProofNumberGreaterEqual();
+    assert diag.getDisproofNumberStrictlyGreater() < par.getDisproofNumberStrictlyGreater();
   }
   
   @Test
@@ -188,8 +188,8 @@ public class StoredBoardTest {
     bothPass.lower = -5600;
     bothPass.upper = -5600;
     bothPass.children = new StoredBoard[0];
-    bothPass.proofNumberGreaterEqual = Float.POSITIVE_INFINITY;
-    bothPass.disproofNumberStrictlyGreater = 0;
+    bothPass.evalGreaterEqual.proofNumber = Float.POSITIVE_INFINITY;
+    bothPass.evalStrictlyGreater.disproofNumber = 0;
     
     assert bothPass.isAllOK();
 
@@ -244,7 +244,7 @@ public class StoredBoardTest {
       }
     }
     
-    assertEquals(null, b.findLeastCommonAncestor());
+    assertNull(b.findLeastCommonAncestor());
     assertEquals(b, b1.findLeastCommonAncestor());
     assertEquals(b, b11.findLeastCommonAncestor());
     assertEquals(b, b111.findLeastCommonAncestor());
@@ -288,7 +288,7 @@ public class StoredBoardTest {
       }
     }
     
-    assertEquals(null, b.findLeastCommonAncestor());
+    assertNull(b.findLeastCommonAncestor());
     assertEquals(b, b1.findLeastCommonAncestor());
     assertEquals(b1, b1_.findLeastCommonAncestor());
     assertEquals(b2, b21.findLeastCommonAncestor());
