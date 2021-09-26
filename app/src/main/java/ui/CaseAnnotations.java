@@ -16,10 +16,6 @@ package ui;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
 
-/**
- *
- * @author michele
- */
 public class CaseAnnotations {
   public StoredBoard storedBoard;
   public HashMap.BoardInHash boardInHash;

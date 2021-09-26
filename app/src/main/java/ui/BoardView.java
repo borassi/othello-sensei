@@ -142,7 +142,8 @@ public class BoardView extends View {
         String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0),
 //                String.format("%s %s", Utils.prettyPrintDouble(annotation.pro), Utils.prettyPrintDouble(annotation.costUntilLeafDefense)),
         Utils.prettyPrintDouble(storedBoard.getDescendants()),
-        Utils.prettyPrintDouble(storedBoard.getProofNumberGreaterEqual()) + " " + Utils.prettyPrintDouble(storedBoard.getDisproofNumberStrictlyGreater())
+        Utils.prettyPrintDouble(storedBoard.getProofNumber(storedBoard.getEvalGoal()-100)) + " "
+            + Utils.prettyPrintDouble(storedBoard.getDisproofNumber(storedBoard.getEvalGoal()+100))
     };
 
     Paint paint = new Paint();

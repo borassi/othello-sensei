@@ -37,7 +37,7 @@ public class EvaluatorMCTSTest {
   }
   
   private StoredBoardBestDescendant getPositionToImprove(EvaluatorMCTS evaluator, String sequence) {
-    return StoredBoardBestDescendant.fixedDescendant(evaluator.firstPosition, true, sequence);
+    return StoredBoardBestDescendant.fixedDescendant(evaluator.firstPosition, 100, sequence);
   }
   
   @Test
@@ -105,8 +105,8 @@ public class EvaluatorMCTSTest {
   public void testBoard(StoredBoard b, int eval, double proofNumberCurEval, double proofNumberNextEval,
       double disproofNumberNextEval, double disproofNumberCurEval) {
     assertEquals(eval, b.getEval());
-    assertEquals(proofNumberCurEval, b.getProofNumberGreaterEqual(), 1);
-    assertEquals(disproofNumberCurEval, b.getDisproofNumberStrictlyGreater(), 1);
+    assertEquals(proofNumberCurEval, b.getProofNumber(b.getEvalGoal() - 100), 1);
+    assertEquals(disproofNumberCurEval, b.getDisproofNumber(b.getEvalGoal() + 100), 1);
   }
 
   private void addChildrenWorstEvaluation(EvaluatorMCTS evaluator, String board) {
@@ -293,7 +293,7 @@ public class EvaluatorMCTSTest {
 
       for (int j = 0; j < nElements; j++) {
         StoredBoardBestDescendant nextPos = StoredBoardBestDescendant.randomDescendant(
-            evaluator.firstPosition, Math.random() > 0.5);
+            evaluator.firstPosition, evaluator.evalGoal + Math.random() > 0.5 ? 100 : -100);
 
         if (nextPos == null) {
           break;
