@@ -44,11 +44,11 @@ public class StoredBoardTest {
     StoredBoard par = eval.get(new Board("e6d6"));
     par.eval = 800;
     par.addDescendants(1);
-    firstMove.setEvalGoalRecursive(1000);
+//    firstMove.setEvalGoalRecursive(1000);
     // Diag is much better than par. This means that proof numbers (for the
     // opponent) are harder.
-    assert diag.getProofNumber(diag.getEvalGoal() - 100) > par.getProofNumber(diag.getEvalGoal() - 100);
-    assert diag.getDisproofNumber(diag.getEvalGoal() + 100) < par.getDisproofNumber(diag.getEvalGoal() + 100);
+    assert diag.getProofNumber(- 100) > par.getProofNumber(- 100);
+    assert diag.getDisproofNumber(100) < par.getDisproofNumber(100);
   }
   @Test
   public void testToEvaluationIndex() {
@@ -214,92 +214,4 @@ public class StoredBoardTest {
 //
 //    bothPass.children = new StoredBoard[0];
 //  }
-
-  /*
-  b - b1 - b11 - b111
-    \    /     /
-      b2 - b21 - b211
-         \     /
-           b22 
-  
-  */
-  @Test
-  public void testLeastCommonAncestorNoPass() {
-    StoredBoard b = new StoredBoard(0, 0, true);
-    StoredBoard b1 = new StoredBoard(0, 1, false);
-    StoredBoard b2 = new StoredBoard(0, 1, false);
-    StoredBoard b11 = new StoredBoard(0, 3, true);
-    StoredBoard b21 = new StoredBoard(0, 3, true);
-    StoredBoard b22 = new StoredBoard(0, 3, true);
-    StoredBoard b111 = new StoredBoard(0, 7, false);
-    StoredBoard b211 = new StoredBoard(0, 7, false);
-
-    b.children = new StoredBoard[] {b1, b2};
-    b1.children = new StoredBoard[] {b11};
-    b2.children = new StoredBoard[] {b11, b21, b22};
-    b11.children = new StoredBoard[] {b111};
-    b21.children = new StoredBoard[] {b111, b211};
-    b22.children = new StoredBoard[] {b211};
-    
-    for (StoredBoard board : new StoredBoard[] {b, b1, b2, b11, b21, b22, b111, b211}) {
-      if (board.children == null) {
-        continue;
-      }
-      for (StoredBoard child : board.children) {
-        child.fathers.add(board);
-      }
-    }
-    
-    assertNull(b.findLeastCommonAncestor());
-    assertEquals(b, b1.findLeastCommonAncestor());
-    assertEquals(b, b11.findLeastCommonAncestor());
-    assertEquals(b, b111.findLeastCommonAncestor());
-    assertEquals(b2, b211.findLeastCommonAncestor());
-  }
-
-  /*
-      b1 PS b1_ -  b11 PS b111
-    /           PS       /
-  b - b2 -- b21         /
-    \                  /
-      b3 -- b31 ------/    
-  */
-  @Test
-  public void testLeastCommonAncestorPass() {
-    StoredBoard b = new StoredBoard(0, 0, true);
-    StoredBoard b1 = new StoredBoard(0, 1, false);
-    StoredBoard b2 = new StoredBoard(0, 1, false);
-    StoredBoard b3 = new StoredBoard(0, 1, false);
-    StoredBoard b1_ = new StoredBoard(1, 0, true);
-    StoredBoard b21 = new StoredBoard(3, 0, true);
-    StoredBoard b31 = new StoredBoard(3, 0, true);
-    StoredBoard b11 = new StoredBoard(0, 3, false);
-    StoredBoard b111 = new StoredBoard(0, 7, false);
-
-    b.children = new StoredBoard[] {b1, b2, b3};
-    b1.children = new StoredBoard[] {b1_};
-    b2.children = new StoredBoard[] {b21};
-    b1_.children = new StoredBoard[] {b11};
-    b21.children = new StoredBoard[] {b11};
-    b11.children = new StoredBoard[] {b111};
-    b3.children = new StoredBoard[] {b31};
-    b31.children = new StoredBoard[] {b111};
-    
-    for (StoredBoard board : new StoredBoard[] {b, b1, b2, b3, b11, b21, b31, b1_, b111}) {
-      if (board.children == null) {
-        continue;
-      }
-      for (StoredBoard child : board.children) {
-        child.fathers.add(board);
-      }
-    }
-    
-    assertNull(b.findLeastCommonAncestor());
-    assertEquals(b, b1.findLeastCommonAncestor());
-    assertEquals(b1, b1_.findLeastCommonAncestor());
-    assertEquals(b2, b21.findLeastCommonAncestor());
-    assertEquals(b, b11.findLeastCommonAncestor());
-    assertEquals(b, b111.findLeastCommonAncestor());
-    assertEquals(b3, b31.findLeastCommonAncestor());
-  }
 }

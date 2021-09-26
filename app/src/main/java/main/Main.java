@@ -349,9 +349,9 @@ public class Main implements Runnable {
       }
       PositionIJ ij = moveFromBoard(board, child);
 
-      CaseAnnotations annotations = new CaseAnnotations(child, ij.equals(bestIJ));
+      CaseAnnotations annotations = new CaseAnnotations(child, child.playerIsStartingPlayer ? EVALUATOR.evalGoal : -EVALUATOR.evalGoal, ij.equals(bestIJ));
       ui.setAnnotations(annotations, ij);
     }
-    ui.setExtras(EVALUATOR.get(board), (System.currentTimeMillis() - startTime));
+    ui.setExtras(EVALUATOR.get(board), EVALUATOR.evalGoal, (System.currentTimeMillis() - startTime));
   }
 }

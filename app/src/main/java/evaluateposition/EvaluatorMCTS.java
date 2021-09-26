@@ -217,7 +217,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert nextPositionLock.isHeldByCurrentThread();
 //    if (evalGoal != this.getEvalGoal()) {
       this.nextUpdateEvalGoal = (long) (this.firstPosition.getDescendants() * 1.1);
-      this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
+//      this.firstPosition.setEvalGoalRecursive(roundEval(evalGoal));
 //    }
   }
   
@@ -244,26 +244,26 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
   }
 
-  private boolean positionToImproveAndEvalGoalAreOk(StoredBoard position, boolean playerVariates) {
-    int evalGoal = position.evalGoal;
-    int posUpper = position.playerIsStartingPlayer ? upper : -lower;
-    int posLower = position.playerIsStartingPlayer ? lower : -upper;
-
-    if (playerVariates) {
-      if (evalGoal >= posUpper) {
-        throw new AssertionError(
-            "Player should not try to prove that [value > ] evalGoal (" + evalGoal
-            + ") >= upper (" + posUpper + ") in board\n" + position.getBoard());
-      }      
-    } else {
-      if (evalGoal <= posLower) {
-        throw new AssertionError(
-            "Opponent should not try to prove that [value < ] evalGoal (" + evalGoal
-            + ") <= lower (" + posLower + ") in board\n" + position.getBoard());
-      }
-    }
-    return true;
-  }
+//  private boolean positionToImproveAndEvalGoalAreOk(StoredBoard position, boolean playerVariates) {
+//    int evalGoal = position.evalGoal;
+//    int posUpper = position.playerIsStartingPlayer ? upper : -lower;
+//    int posLower = position.playerIsStartingPlayer ? lower : -upper;
+//
+//    if (playerVariates) {
+//      if (evalGoal >= posUpper) {
+//        throw new AssertionError(
+//            "Player should not try to prove that [value > ] evalGoal (" + evalGoal
+//            + ") >= upper (" + posUpper + ") in board\n" + position.getBoard());
+//      }
+//    } else {
+//      if (evalGoal <= posLower) {
+//        throw new AssertionError(
+//            "Opponent should not try to prove that [value < ] evalGoal (" + evalGoal
+//            + ") <= lower (" + posLower + ") in board\n" + position.getBoard());
+//      }
+//    }
+//    return true;
+//  }
 
   public boolean nextPositionGreaterEqual() {
     if (evalGoal > upper || evalGoal >= firstPosition.upper) {
@@ -288,7 +288,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
       return lastDoubtGreaterEqual;
-//      return this.firstPosition.proofNumberGreaterEqual > this.firstPosition.disproofNumberStrictlyGreater;
     }
     return this.firstPosition.getProb(evalGoal - 100) < 1 - this.firstPosition.getProb(evalGoal + 100);
   }
@@ -312,14 +311,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
               childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
             }
-            if (board.getEvalGoal() != -childInEvaluator.getEvalGoal()) {
-              childInEvaluator.setEvalGoalRecursive(-board.getEvalGoal());
-            }
           }
         }
       }
       position.updateDescendants(nVisited);
-      board.setFree();
+      board.setFree(board.playerIsStartingPlayer ? evalGoal : -evalGoal);
     } finally {
       editLock.unlock();
     }
@@ -395,7 +391,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       nextPositionLock.unlock();
     }
     try {
-      result.board.setBusy();
+      result.board.setBusy(result.board.playerIsStartingPlayer ? evalGoal : -evalGoal);
     } finally {
       editLock.unlock();
     }
@@ -422,10 +418,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     empty();
     int quickEval = nextEvaluator.evaluate(player, opponent, 2, lower, upper);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
-    firstPosition.eval = quickEval;
     firstPosition.addDescendants(nextEvaluator.getNVisited() + 1);
-    firstPosition.setEvalGoalRecursive(roundEval(quickEval));
-    
+    firstPosition.setBusy(roundEval(quickEval));
+    firstPosition.eval = quickEval;
+    firstPosition.setEval(quickEval);
+    firstPosition.setFree(roundEval(quickEval));
     add(firstPosition);
   }
 
@@ -434,11 +431,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public boolean toBeSolved(StoredBoard b) {
-//    System.out.println(constant);
+    int curEvalGoal = b.playerIsStartingPlayer ? evalGoal : -evalGoal;
     return b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
         && (
-        (b.getProofNumber(b.evalGoal - 100) < constant && b.getEval() > b.getEvalGoal() + 1000) ||
-        (b.getDisproofNumber(b.evalGoal + 100) < constant && b.getEval() < b.getEvalGoal() - 1000) ||
+        (b.getProofNumber( curEvalGoal - 100) < constant
+             && b.getEval() > curEvalGoal + 1000) ||
+        (b.getDisproofNumber(curEvalGoal + 100) < constant && b.getEval() < curEvalGoal - 1000) ||
         b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME);    
   }
 
@@ -488,11 +486,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
-
-//    if (firstPositionChildren != null) {
-//      firstPosition.children = firstPositionChildren;
-//      firstPosition.updateFather();
-//    }
     es.shutdown();
     return (short) -firstPosition.getEval();
   }
@@ -502,7 +495,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public void addChildren(StoredBoardBestDescendant position) {
-    position.board.setBusy();
+    position.board.setBusy(position.board.playerIsStartingPlayer ? evalGoal-100 : -evalGoal - 100);
     threads[0].addChildren(position);
     finalizePosition(position, 0);
   }

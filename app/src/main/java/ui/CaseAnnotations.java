@@ -20,18 +20,20 @@ public class CaseAnnotations {
   public StoredBoard storedBoard;
   public HashMap.BoardInHash boardInHash;
   public boolean isBestMove;
+  public int evalGoal;
 
-  public CaseAnnotations(StoredBoard storedBoard, boolean isBestMove) {
-    this(storedBoard, null, isBestMove);
+  public CaseAnnotations(StoredBoard storedBoard, int evalGoal, boolean isBestMove) {
+    this(storedBoard, evalGoal, null, isBestMove);
   }
 
   public CaseAnnotations(HashMap.BoardInHash boardInHash, boolean isBestMove) {
-    this(null, boardInHash, isBestMove);
+    this(null, 0, boardInHash, isBestMove);
   }
 
-  private CaseAnnotations(StoredBoard storedBoard, HashMap.BoardInHash boardInHash, boolean isBestMove) {
+  private CaseAnnotations(StoredBoard storedBoard, int evalGoal, HashMap.BoardInHash boardInHash, boolean isBestMove) {
     this.storedBoard = storedBoard;
     this.boardInHash = boardInHash;
-    this.isBestMove = isBestMove;    
+    this.isBestMove = isBestMove;
+    this.evalGoal = evalGoal;
   }
 }

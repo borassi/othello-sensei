@@ -160,7 +160,6 @@ public class StoredBoard {
   int upper;
   int nEmpties;
   Evaluation[] evaluations = new Evaluation[64];
-  int evalGoal;
   public boolean playerIsStartingPlayer;
   private long descendants;
   boolean isBusy = false;
@@ -240,7 +239,6 @@ public class StoredBoard {
   
   synchronized StoredBoard getChild(long player, long opponent) {
     StoredBoard result = new StoredBoard(player, opponent, !playerIsStartingPlayer);
-    result.evalGoal = -evalGoal;
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       result.extraInfo.isFinished = this.extraInfo.isFinished;
     }
@@ -323,10 +321,6 @@ public class StoredBoard {
     return descendants;
   }
 
-  public int getEvalGoal() {
-    return evalGoal;
-  }
-
   public final synchronized void setSolved(int newEval) {
     assert isBusy;
     assert isLeaf();
@@ -359,20 +353,17 @@ public class StoredBoard {
     assert areThisBoardEvalsOK();
   }
   
-  public void setFree() {
+  public void setFree(int evalGoal) {
     assert isBusy;
     isBusy = false;
     if (isLeaf()) {
-      this.setProofNumbersForLeaf();
+      this.setProofNumbersForLeaf(evalGoal);
     }
     else {
       for (StoredBoard child : children) {
         synchronized(child) {
           if (child.isLeaf() && !child.isBusy) {
-            child.evalGoal = -this.evalGoal;
-            child.setProofNumbersForLeaf();
-          } else {
-            assert child.evalGoal == -evalGoal;
+            child.setProofNumbersForLeaf(evalGoal);
           }
         }
       }
@@ -380,36 +371,14 @@ public class StoredBoard {
     updateFathers();
   }
 
-  public void setBusy() {
+  public void setBusy(int evalGoal) {
     synchronized (this) {
       assert !isBusy;
       isBusy = true;
-      this.setProofNumbersForLeaf();
+      this.setProofNumbersForLeaf(evalGoal);
       assert isLeaf();
     }
     this.updateFathers();
-  }
-
-  protected void setEvalGoalRecursive(int evalGoal) {
-    setEvalGoalRecursive(evalGoal, new HashSet<>());
-  }
-  protected synchronized void setEvalGoalRecursive(int evalGoal, HashSet<StoredBoard> done) {
-    if (done.contains(this)) {
-      return;
-    }
-    this.evalGoal = evalGoal;
-    if (isLeaf()) {
-      if (!isBusy) {
-        setProofNumbersForLeaf();
-      }
-      return;
-    }
-    for (StoredBoard child : children) {
-      child.setEvalGoalRecursive(-evalGoal, done);
-    }
-    updateFather();
-    done.add(this);
-    assert areChildrenOK();
   }
 
   private static int roundProb(float prob) {
@@ -429,7 +398,6 @@ public class StoredBoard {
     }
     for (StoredBoard child : children) {
       synchronized (child) {
-        assert child.evalGoal == -evalGoal;
         eval = Math.max(eval, -child.eval);
         lower = Math.max(lower, -child.getUpper());
         upper = Math.max(upper, -child.getLower());
@@ -470,10 +438,7 @@ public class StoredBoard {
       updateFather();
     }
     for (int i = 0; i < fathers.size(); ++i) {
-      StoredBoard father = fathers.get(i);
-      if (father.getEvalGoal() == -evalGoal) {
-        father.updateFathers();
-      }
+      fathers.get(i).updateFathers();
     }
   }
 
@@ -487,9 +452,9 @@ public class StoredBoard {
     return child.maxLogDerivative(-evalGoal) + (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * 1.3 * Math.log(1 - getProb(evalGoal)));
   }
 
-  private synchronized void setProofNumbersForLeaf() {
+  private synchronized void setProofNumbersForLeaf(int evalGoal) {
     assert this.isLeaf();
-    assert evalGoal <= 6400 && evalGoal >= -6400;
+    assert evalGoal <= 6300 && evalGoal >= -6300;
     assert descendants > 0;
 
     if (isBusy) {
@@ -592,40 +557,6 @@ public class StoredBoard {
     }
     return result;
   }
- synchronized StoredBoard findLeastCommonAncestor() {
-    if (fathers.isEmpty()) {
-      return null;
-    }
-    if (fathers.size() == 1) {
-      return fathers.get(0);
-    }
-    
-    HashSet<StoredBoard> currentAncestors = new HashSet<>();
-    HashSet<StoredBoard> nextAncestors = new HashSet<>();
-    
-    currentAncestors.add(this);
-    
-    while (true) {
-      for (StoredBoard b : currentAncestors) {
-        for (StoredBoard father : b.fathers) {
-          if (father.nEmpties == b.nEmpties) {
-            // father is a pass: it cannot be the least common ancestor,
-            // because it has 1 child.
-            assert(father.fathers.get(0).nEmpties == b.nEmpties + 1);
-            nextAncestors.addAll(father.fathers);
-          } else {
-            assert(father.nEmpties == b.nEmpties + 1);
-            nextAncestors.add(father);
-          }
-        }
-      }
-      if (nextAncestors.size() == 1) {
-        return nextAncestors.iterator().next();
-      }
-      currentAncestors = nextAncestors;
-      nextAncestors = new HashSet<>();
-    }
-  }
 
   boolean areThisBoardEvalsOK() {
     if (this.lower > this.eval || this.eval > this.upper) {
@@ -710,13 +641,13 @@ public class StoredBoard {
         && (next == null || next.prev == this);
   }
   
-  boolean isEvalOK() {
+  boolean isEvalOK(int evalGoal) {
     if (Constants.MAX_PARALLEL_TASKS > 1) {
       return true;
     }
     if ((new GetMovesCache()).getNMoves(player, opponent) == 0
         && (new GetMovesCache()).getNMoves(opponent, player) == 0
-        && (this.getProofNumber(evalGoal - 100) == 0 || this.getProofNumber(evalGoal + 100) == Float.POSITIVE_INFINITY)) {
+        && (this.getProofNumber(evalGoal) == 0 || this.getProofNumber(evalGoal) == Float.POSITIVE_INFINITY)) {
       int correctEval = BitPattern.getEvaluationGameOver(player, opponent);
       if (eval != correctEval || lower != correctEval || upper != correctEval) {
         throw new AssertionError(
@@ -768,7 +699,10 @@ public class StoredBoard {
     if (!areChildrenOK()) {
       throw new AssertionError("Wrong areChildrenOK");      
     }
-    if (!areThisBoardEvalsOK() || !isEvalOK() || !areDescendantsOK()) {
+    for (int goal = -6300; goal <= 6300; goal += 200) {
+      assert isEvalOK(goal);
+    }
+    if (!areThisBoardEvalsOK() || !areDescendantsOK()) {
       throw new AssertionError("Wrong areThisBoardEvalsOK or isEvalOK or areDescendantsOK.");
     }
     if (isBusy && !isLeaf()) {

@@ -123,18 +123,18 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       annotationsString = String.format("%+.0f", eval);
     }
     annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-    if (board.getProb(board.getEvalGoal() - 100) > 0) {
-      annotationsString += "\n" + (int) (board.getProb(board.getEvalGoal() + 100) * 100) + "% ";
+    if (board.getProb(annotations.evalGoal - 100) > 0) {
+      annotationsString += "\n" + (int) (board.getProb(annotations.evalGoal + 100) * 100) + "% ";
     } else {
-      annotationsString += "\n" + Utils.prettyPrintDouble(board.getDisproofNumber(board.getEvalGoal() + 100)) + " ";
+      annotationsString += "\n" + Utils.prettyPrintDouble(board.getDisproofNumber(annotations.evalGoal + 100)) + " ";
     }
-    if (board.getProb(board.getEvalGoal() + 100) > 0 || board.getProb(board.getEvalGoal() - 100) < 1) {
-      annotationsString += (-board.getEvalGoal() / 100) + " ";
+    if (board.getProb(annotations.evalGoal + 100) > 0 || board.getProb(annotations.evalGoal - 100) < 1) {
+      annotationsString += (-annotations.evalGoal / 100) + " ";
     }
-    if (board.getProb(board.getEvalGoal() - 100) < 1) {
-      annotationsString += (int) (100 - board.getProb(board.getEvalGoal() - 100) * 100) + "%";
+    if (board.getProb(annotations.evalGoal - 100) < 1) {
+      annotationsString += (int) (100 - board.getProb(annotations.evalGoal - 100) * 100) + "%";
     } else {
-      annotationsString += Utils.prettyPrintDouble(board.getProofNumber(board.getEvalGoal() - 100));
+      annotationsString += Utils.prettyPrintDouble(board.getProofNumber(annotations.evalGoal - 100));
     }
     cases[ij.i][ij.j].setAnnotations(annotationsString);
     cases[ij.i][ij.j].setFontSizes(new double[] {0.3, 0.16});
@@ -149,20 +149,20 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int lower = -board.getUpper() / 100;
     int upper = -board.getLower() / 100;
 
-    String annotationsString = String.format("%+.0f (%+d)", eval, -board.getEvalGoal() / 100);
+    String annotationsString = String.format("%+.0f (%+d)", eval, -annotations.evalGoal / 100);
     if (board.getLower() == board.getEval() && board.getUpper() == board.getEval()) {
-      annotationsString = String.format("%+.0f (%+d)", eval, -board.getEvalGoal() / 100);
+      annotationsString = String.format("%+.0f (%+d)", eval, -annotations.evalGoal / 100);
     }
     annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-    annotationsString += "\n" + (int) (board.getProb(board.getEvalGoal() + 100) * 100) + "% " + (int) (100 - board.getProb(board.getEvalGoal() - 100) * 100) + "%";
+    annotationsString += "\n" + (int) (board.getProb(annotations.evalGoal + 100) * 100) + "% " + (int) (100 - board.getProb(annotations.evalGoal - 100) * 100) + "%";
 //    boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
 //    StoredBoard bestChild = new StoredBoardBestDescendant(current, greaterEqual).bestChild();
 //    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);
     annotationsString +=
         "\n"
 //        + (bestChild == child && !greaterEqual ? "*" : "")
-        + Utils.prettyPrintDouble(board.getDisproofNumber(board.getEvalGoal() + 100)) + " " +
-        Utils.prettyPrintDouble(board.getProofNumber(board.getEvalGoal() - 100))
+        + Utils.prettyPrintDouble(board.getDisproofNumber(annotations.evalGoal + 100)) + " " +
+        Utils.prettyPrintDouble(board.getProofNumber(annotations.evalGoal - 100))
 //        + (bestChild == child && greaterEqual ? "*" : "")
         ;
 
@@ -331,7 +331,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void setExtras(StoredBoard firstPosition, double milliseconds) {
+  public void setExtras(StoredBoard firstPosition, int evalGoal, double milliseconds) {
     Runnable tmp = new Runnable() {
       public void run() {
         long descendants = 0;
@@ -341,8 +341,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         String text =
             "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
             "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n" +
-            "Missing: " + Utils.prettyPrintDouble(firstPosition.getProofNumber(firstPosition.getEvalGoal() - 100)) + " + " +
-                Utils.prettyPrintDouble(firstPosition.getDisproofNumber(firstPosition.getEvalGoal() + 100));
+            "Missing: " + Utils.prettyPrintDouble(firstPosition.getProofNumber(evalGoal - 100)) + " + " +
+                Utils.prettyPrintDouble(firstPosition.getDisproofNumber(evalGoal + 100));
 
         if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
           text += "\nProof: " +
