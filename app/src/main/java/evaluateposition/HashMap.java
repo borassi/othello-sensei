@@ -50,6 +50,8 @@ public class HashMap {
       this.upper = 6600;
       this.depthLower = 0;
       this.depthUpper = 0;
+      this.prev = null;
+      this.next = null;
     }
   
     public boolean isNull() {
