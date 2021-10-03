@@ -30,20 +30,20 @@ public class StoredBoardTest {
     eval.setFirstPosition(new Board("e6"));
     StoredBoard firstMove = eval.firstPosition;
     firstMove.eval = 0;
-    firstMove.addDescendants(5);
+    firstMove.evaluations[0].addDescendants(5);
 
     eval.addChildren(firstMove);
     StoredBoard diag = eval.get(new Board("e6f6"));
     diag.eval = 0;
-    diag.addDescendants(1);
+    diag.evaluations[0].addDescendants(1);
 
     StoredBoard perp = eval.get(new Board("e6f4"));
     perp.eval = -100;
-    perp.addDescendants(1);
+    perp.evaluations[0].addDescendants(1);
  
     StoredBoard par = eval.get(new Board("e6d6"));
     par.eval = 800;
-    par.addDescendants(1);
+    par.evaluations[0].addDescendants(1);
 //    firstMove.setEvalGoalRecursive(1000);
     // Diag is much better than par. This means that proof numbers (for the
     // opponent) are harder.
@@ -64,25 +64,25 @@ public class StoredBoardTest {
     StoredBoard firstMove = eval.firstPosition;
     eval.addChildren(firstMove);
     firstMove.eval = 0;
-    firstMove.addDescendants(34);
+    firstMove.evaluations[0].addDescendants(34);
     firstMove.lower = -1;
     firstMove.upper = 1;
 
     StoredBoard diag = eval.get(new Board("e6f6"));
     diag.eval = 0;
-    diag.addDescendants(10);
+    diag.evaluations[0].addDescendants(10);
     diag.lower = -1;
     diag.upper = 1;
 
     StoredBoard perp = eval.get(new Board("e6f4"));
     perp.eval = 2;
-    perp.addDescendants(11);
+    perp.evaluations[0].addDescendants(11);
     perp.lower = 1;
     perp.upper = 2;
  
     StoredBoard par = eval.get(new Board("e6d6"));
     par.eval = 8;
-    par.addDescendants(12);
+    par.evaluations[0].addDescendants(12);
     par.lower = 6;
     par.upper = 8;
 
@@ -147,10 +147,10 @@ public class StoredBoardTest {
   public void testBoardChildrenAreCorrectPass() {
     StoredBoard pass = StoredBoard.initialStoredBoard(Board.pass());
     pass.eval = 200;
-    pass.addDescendants(2);
+    pass.evaluations[0].addDescendants(2);
     StoredBoard afterPass = StoredBoard.initialStoredBoard(Board.pass().move(0));
     afterPass.eval = -200;
-    afterPass.addDescendants(1);
+    afterPass.evaluations[0].addDescendants(1);
 
     pass.children = new StoredBoard[] {afterPass};
     afterPass.fathers.add(pass);

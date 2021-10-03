@@ -206,7 +206,7 @@ public class Main implements Runnable {
         }
       }
       showMCTSEvaluations();
-      finished = EVALUATOR.getStatus() == Status.SOLVED;
+      finished = EVALUATOR.getStatus() == Status.SOLVED || EVALUATOR.getStatus() == Status.STOPPED_POSITIONS;
       if (ui.delta() > 0 && finished) {
         for (StoredBoard child : EVALUATOR.get(board).children) {
           if (!child.isSolved()) {
@@ -214,14 +214,6 @@ public class Main implements Runnable {
           }
         }
       }
-//      int evalGoal = EVALUATOR.getEvalGoal();
-//      for (int i = -6400; i < 6400; i += 200) {
-//        EVALUATOR.setEvalGoal(i);
-//        if (EVALUATOR.getFirstPosition().getProbGreaterEqual() != EVALUATOR.getFirstPosition().getProbStrictlyGreater()) {
-//          System.out.println(i + " " + EVALUATOR.getFirstPosition().getProbGreaterEqual() + " " + EVALUATOR.getFirstPosition().getProbStrictlyGreater());
-//        }
-//      }
-//      EVALUATOR.setEvalGoal(evalGoal);
       nUpdate++;
     }
     
@@ -349,9 +341,11 @@ public class Main implements Runnable {
       }
       PositionIJ ij = moveFromBoard(board, child);
 
-      CaseAnnotations annotations = new CaseAnnotations(child, child.playerIsStartingPlayer ? EVALUATOR.evalGoal : -EVALUATOR.evalGoal, ij.equals(bestIJ));
+      // TODO.
+      CaseAnnotations annotations = new CaseAnnotations(child, EVALUATOR.nextPositionEvalGoal() + 100, ij.equals(bestIJ));
       ui.setAnnotations(annotations, ij);
     }
-    ui.setExtras(EVALUATOR.get(board), EVALUATOR.evalGoal, (System.currentTimeMillis() - startTime));
+    // TODO.
+    ui.setExtras(EVALUATOR.get(board), EVALUATOR.nextPositionEvalGoal() + 100, (System.currentTimeMillis() - startTime));
   }
 }
