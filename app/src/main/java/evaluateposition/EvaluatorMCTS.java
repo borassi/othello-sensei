@@ -86,10 +86,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         long flip = moves[i];
         long newPlayer = opponent & ~flip;
         long newOpponent = player | flip;
-        StoredBoard child = board.getChild(newPlayer, newOpponent);
+        StoredBoard child = new StoredBoard(newPlayer, newOpponent, !board.playerIsStartingPlayer);
+        child.setBusy();
         int eval = nextEvaluator.evaluate(newPlayer, newOpponent, depth, -6400, 6400);
         child.getEvaluation(-position.eval.evalGoal).addDescendants(nextEvaluator.getNVisited() + 1);
         child.setEval(eval);
+        child.setFree();
+        child.fathers.add(board);
         nVisited += child.getDescendants();
         children[i] = child;
       }

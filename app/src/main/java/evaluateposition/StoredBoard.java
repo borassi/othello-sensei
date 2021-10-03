@@ -148,15 +148,6 @@ public class StoredBoard {
       isBusy = false;
       if (isLeaf) {
         this.setLeaf();
-      } else {
-        for (StoredBoard child : children) {
-          synchronized(child) {
-            Evaluation childEval = child.getEvaluation(-evalGoal);
-            if (childEval.isLeaf && !childEval.isBusy) {
-              childEval.setLeaf();
-            }
-          }
-        }
       }
     }
 
