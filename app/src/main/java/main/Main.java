@@ -33,6 +33,7 @@ import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
 import endgametest.EndgameTest;
+import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorMCTS.Status;
 import evaluateposition.HashMap;
@@ -105,6 +106,7 @@ public class Main implements Runnable {
   public void resetHashMaps() {
     EVALUATOR.empty();
     HASH_MAP.reset();
+    EvaluatorAlphaBeta.resetConstant();
     ui.setCases(board, blackTurn);
   }
 
