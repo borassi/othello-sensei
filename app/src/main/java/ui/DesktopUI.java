@@ -307,7 +307,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public long depth() {
-    return Long.parseLong((String) depth.getText());
+    try {
+      return Long.parseLong((String) depth.getText());
+    } catch (NumberFormatException e) {
+      return 0;
+    }
   }
 
   @Override

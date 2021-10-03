@@ -200,8 +200,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public int nextPositionEvalGoal() {
     assert nextPositionLock.isHeldByCurrentThread();
-    for (int eval = lower + 100; eval <= upper - 100; eval += 200) {
-      if (firstPosition.getProb(eval - 100) > 0.5 && firstPosition.getProb(eval+100) <= 0.5) {
+    int eval = (int) (Math.round(firstPosition.getEval() / 200.0) * 200);
+//    for (int eval = lower + 100; eval <= upper - 100; eval += 200) {
+//      if (firstPosition.getProb(eval - 100) > 0.5 && firstPosition.getProb(eval+100) <= 0.5) {
         if (firstPosition.maxLogDerivative(eval-100) > firstPosition.maxLogDerivative(eval+100)) {
           return eval - 100;
         } else if (firstPosition.maxLogDerivative(eval-100) < firstPosition.maxLogDerivative(eval+100)) {
@@ -214,14 +215,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         }
         lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
         return lastDoubtGreaterEqual ? eval-100 : eval+100;
-      }
-    }
-    assert nextPositionLock.isHeldByCurrentThread();
-    for (int eval = lower; eval <= upper; eval += 200) {
-      System.out.println(eval + " " + firstPosition.getProb(eval) + " " + firstPosition.getDescendants());
-    }
-    assert false;
-    return -100;
+//      }
+//    }
+//    assert nextPositionLock.isHeldByCurrentThread();
+//    for (int eval = lower; eval <= upper; eval += 200) {
+//      System.out.println(eval + " " + firstPosition.getProb(eval) + " " + firstPosition.getDescendants());
+//    }
+//    assert false;
+//    return -100;
   }
   
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
