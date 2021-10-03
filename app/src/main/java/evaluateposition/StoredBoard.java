@@ -61,14 +61,6 @@ public class StoredBoard {
       return (float) prob / PROB_STEP;
     }
 
-    private void reset() {
-      proofNumber = Float.POSITIVE_INFINITY;
-      disproofNumber = 0;
-      prob = 0;
-      maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
-      bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
-    }
-
     int maxChildLogDerivative() {
       return Math.max(LOG_DERIVATIVE_MINUS_INF, maxLogDerivative + LOG_DERIVATIVE[prob]);
     }
@@ -81,27 +73,6 @@ public class StoredBoard {
     int childLogDerivative(Evaluation child) {
       return Math.max(LOG_DERIVATIVE_MINUS_INF,
           child.maxChildLogDerivative() + (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb())));
-    }
-
-    private void update(Evaluation child) {
-      prob = combineProb(prob, child.prob);
-
-      float curProofNumber = child.disproofNumber / Math.max(0.001F, 1 - child.getProb());
-      if (curProofNumber < proofNumber) {
-        bestChildProof = child;
-        proofNumber = curProofNumber;
-      }
-
-      disproofNumber += child.proofNumber;
-      if (child.proofNumber > bestDisproofNumberValue) {
-        bestChildDisproof = child;
-        bestDisproofNumberValue = child.proofNumber;
-      }
-      int currentLogDerivative = child.maxChildLogDerivative();
-      if (currentLogDerivative > maxLogDerivative) {
-        bestChildMidgame = child;
-        maxLogDerivative = currentLogDerivative;
-      }
     }
 
     public Evaluation bestChild() {
@@ -196,6 +167,61 @@ public class StoredBoard {
         isBusy = true;
         this.setLeaf();
       }
+    }
+
+    protected synchronized void updateFather() {
+      proofNumber = Float.POSITIVE_INFINITY;
+      disproofNumber = 0;
+      prob = 0;
+      maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
+      for (StoredBoard childBoard : children) {
+        synchronized (childBoard) {
+          Evaluation child = childBoard.getEvaluation(-evalGoal);
+          prob = combineProb(prob, child.prob);
+
+          float curProofNumber = child.disproofNumber / Math.max(0.001F, 1 - child.getProb());
+          if (curProofNumber < proofNumber) {
+            bestChildProof = child;
+            proofNumber = curProofNumber;
+          }
+
+          disproofNumber += child.proofNumber;
+          if (child.proofNumber > bestDisproofNumberValue) {
+            bestChildDisproof = child;
+            bestDisproofNumberValue = child.proofNumber;
+          }
+          int currentLogDerivative = child.maxChildLogDerivative();
+          if (currentLogDerivative > maxLogDerivative) {
+            bestChildMidgame = child;
+            maxLogDerivative = currentLogDerivative;
+          }
+        }
+      }
+//      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//        extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
+//        extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
+//        extraInfo.minDisproofStrictlyGreater = 0;
+//        extraInfo.minDisproofStrictlyGreaterVar = 0;
+//        float extraCostDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
+//        extraInfo.proofBeforeFinished = false;
+//        extraInfo.disproofBeforeFinished = true;
+//        for (StoredBoard child : children) {
+//          extraInfo.proofBeforeFinished = extraInfo.proofBeforeFinished || child.extraInfo.disproofBeforeFinished;
+//          extraInfo.minProofGreaterEqual = Math.min(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);
+//          extraInfo.minProofGreaterEqualVar = Math.min(extraInfo.minProofGreaterEqualVar, child.extraInfo.minDisproofStrictlyGreaterVar);
+//          extraInfo.disproofBeforeFinished =extraInfo.disproofBeforeFinished && child.extraInfo.proofBeforeFinished;
+//          extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
+//          extraInfo.minDisproofStrictlyGreaterVar += Math.min(child.extraInfo.minProofGreaterEqual, child.extraInfo.minProofGreaterEqualVar);
+//          if (extraInfo.minDisproofStrictlyGreaterVar == Float.POSITIVE_INFINITY) {
+//            extraCostDisproofStrictlyGreaterVar = 0;
+//          } else {
+//            extraCostDisproofStrictlyGreaterVar = Math.min(extraCostDisproofStrictlyGreaterVar, child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual);
+//          }
+//        }
+//        extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar);
+//        assert isExtraInfoOK();
+//      }
     }
   }
 
@@ -393,8 +419,10 @@ public class StoredBoard {
   }
 
   public void setFree() {
-    for (int i = -6300; i <= 6300; i += 200) {
-      getEvaluation(i).setFree();
+    synchronized (this) {
+      for (int i = -6300; i <= 6300; i += 200) {
+        getEvaluation(i).setFree();
+      }
     }
     updateFathers();
   }
@@ -417,17 +445,13 @@ public class StoredBoard {
     lower = Short.MIN_VALUE;
     upper = Short.MIN_VALUE;
     for (int eval = -6300; eval <= 6300; eval += 200) {
-      getEvaluation(eval).reset();
+      getEvaluation(eval).updateFather();
     }
     for (StoredBoard child : children) {
       synchronized (child) {
         eval = Math.max(eval, -child.eval);
         lower = Math.max(lower, -child.getUpper());
         upper = Math.max(upper, -child.getLower());
-        for (int i = -6300; i <= 6300; i += 200) {
-          Evaluation eval = getEvaluation(i);
-          eval.update(child.getEvaluation(-i));
-        }
       }
     }
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
@@ -451,7 +475,7 @@ public class StoredBoard {
           extraCostDisproofStrictlyGreaterVar = Math.min(extraCostDisproofStrictlyGreaterVar, child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual);
         }
       }
-      extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar); 
+      extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar);
       assert isExtraInfoOK();
     }
     assert isAllOK();

@@ -192,20 +192,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return this.size;
   }
 
-  int roundEval(int eval) {
-    assert (lower + 6400) % 200 == 100;
-    assert (upper + 6400) % 200 == 100;
-    assert lower >= -6300 && lower <= 6300;
-    assert upper >= -6300 && upper <= 6300;
-    if (eval <= lower) {
-      return lower - 100;
-    }
-    if (eval > upper) {
-      return upper + 100;
-    }
-    return ((eval + 6499) / 200) * 200 - 6400;
-  }
-  
   public synchronized void stop() {
     if (status == Status.RUNNING) {
       status = Status.KILLING;
@@ -214,10 +200,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public int nextPositionEvalGoal() {
     assert nextPositionLock.isHeldByCurrentThread();
-    int best = -6500;
-    float bestValue = Float.NEGATIVE_INFINITY;
-    float curValue;
-    float lastProb = 1;
     for (int eval = lower + 100; eval <= upper - 100; eval += 200) {
       if (firstPosition.getProb(eval - 100) > 0.5 && firstPosition.getProb(eval+100) <= 0.5) {
         if (firstPosition.maxLogDerivative(eval-100) > firstPosition.maxLogDerivative(eval+100)) {
@@ -294,10 +276,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
 
-//    if (Constants.APPROX_ONLY && this.firstPosition.getProb(evalGoal - 100) == 1 && this.firstPosition.getProb(evalGoal + 100) == 0) {
-//      status = Status.SOLVED;
-//      return true;
-//    }
     if (status == Status.KILLING) {
       status = Status.KILLED;
       return true;
