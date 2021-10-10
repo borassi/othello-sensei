@@ -61,17 +61,13 @@ public class StoredBoard {
       return (float) prob / PROB_STEP;
     }
 
-    int maxChildLogDerivative() {
-      return Math.max(LOG_DERIVATIVE_MINUS_INF, maxLogDerivative + LOG_DERIVATIVE[prob]);
-    }
-
     int maxLogDerivative() {
       return maxLogDerivative;
     }
 
     int childLogDerivative(Evaluation child) {
       return Math.max(LOG_DERIVATIVE_MINUS_INF,
-          child.maxChildLogDerivative() + (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb())));
+          child.maxLogDerivative - LOG_DERIVATIVE[child.prob] + LOG_DERIVATIVE[255 - prob]);
     }
 
     public Evaluation bestChild() {
@@ -116,7 +112,7 @@ public class StoredBoard {
       } else if (upper < evalGoal) {
         setDisproved();
       } else {
-        prob = roundProb((1-(float) Gaussian.CDF(evalGoal, eval, 550 - 5 * nEmpties)));
+        prob = roundProb((1-(float) Gaussian.CDF(evalGoal, eval, 600 - 5 * nEmpties)));
         proofNumber = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal, eval));
         assert Float.isFinite(proofNumber) && proofNumber > 0;
         disproofNumber = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, eval));
@@ -182,7 +178,7 @@ public class StoredBoard {
             bestDisproofNumberValue = child.proofNumber;
           }
           if (child.getProb() > 0 && child.getProb() < 1) {
-            int currentLogDerivative = child.maxLogDerivative - (int) (LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(child.getProb()));
+            int currentLogDerivative = child.maxLogDerivative - LOG_DERIVATIVE[child.prob];
             if (currentLogDerivative > maxLogDerivative) {
               bestChildMidgame = child;
               maxLogDerivative = currentLogDerivative;
@@ -195,7 +191,7 @@ public class StoredBoard {
       } else {
         maxLogDerivative = Math.max(
             LOG_DERIVATIVE_MINUS_INF,
-            maxLogDerivative + (int) (LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb())));
+            maxLogDerivative + LOG_DERIVATIVE[255 - prob]);
       }
 //      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
 //        extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
@@ -263,8 +259,9 @@ public class StoredBoard {
             // (1 - lambda) * log((1 - p_c) / p_c).
             // <= 0, >= (1 - (-2)) * log(1/255 / 1) >= -17
             // Max value: -17 * 100 * 60 = 102000. Should be fine with 2M
-            (int) Math.round(
-                LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log((PROB_STEP - i) / (float) i));
+            (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(((double) i) / PROB_STEP));
+//            (int) Math.round(
+//                LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log((PROB_STEP - i) / (float) i));
       }
       for (int j = 0; j <= PROB_STEP; ++j) {
         COMBINE_PROB[(i << 8) | j] =
