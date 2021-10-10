@@ -78,7 +78,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
       if (moves == null) {
         board.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
-        board.setFree(BitPattern.getEvaluationGameOver(player, opponent));
+        board.updateAndSetFree(BitPattern.getEvaluationGameOver(player, opponent));
         return 0;
       }
       StoredBoard[] children = new StoredBoard[moves.length];
@@ -92,7 +92,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         int eval = nextEvaluator.evaluate(newPlayer, newOpponent, depth, -6400, 6400);
         child.getEvaluation(-position.eval.evalGoal).addDescendants(nextEvaluator.getNVisited() + 1);
         child.setEval(eval);
-        child.setFree(child.eval);
+        child.updateAndSetFree(eval);
         child.fathers.add(board);
         nVisited += child.getDescendants();
         children[i] = child;
@@ -120,7 +120,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             }
           }
         }
-        board.setFreeWithChildren();
+        board.setFree();
       } finally {
         editLock.unlock();
       }
@@ -146,7 +146,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
       }
       editLock.lock();
-      board.setFree(board.eval);
+      board.setFree();
       editLock.unlock();
       return seenPositions;
     }
@@ -167,7 +167,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       board.setEval(curEval);
       editLock.lock();
-      board.setFree(curEval);
+      board.updateAndSetFree(curEval);
       editLock.unlock();
       return seenPositions;
     }
@@ -235,8 +235,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert nextPositionLock.isHeldByCurrentThread();
 //    int eval = (int) (Math.round(firstPosition.getEval() / 200.0) * 200);
     int bestLogDerivative = StoredBoard.LOG_DERIVATIVE_MINUS_INF;
-    int bestEvalProof = -6500;
-    int bestEvalDisproof = 6500;
+    int bestEvalProof = -6300;
+    int bestEvalDisproof = 6300;
     int bestEval = 0;
     for (int eval = lower; eval <= upper; eval += 200) {
       if (firstPosition.maxLogDerivative(eval) > bestLogDerivative) {
@@ -246,7 +246,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (firstPosition.getProb(eval) == 1) {
         bestEvalProof = eval;
       }
-      if (bestEvalDisproof == 6500 && firstPosition.getProb(eval) == 0) {
+      if (bestEvalDisproof == 6300 && firstPosition.getProb(eval) == 0) {
         bestEvalDisproof = eval;
       }
     }
@@ -288,11 +288,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       hashMap.reset();
     }
 
-    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      if (this.firstPosition.isSolved()) {
-        this.firstPosition.setIsFinished(true);
-      }
-    }
+//    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//      if (this.firstPosition.isSolved()) {
+//        this.firstPosition.setIsFinished(true);
+//      }
+//    }
 
     if (status == Status.KILLING) {
       status = Status.KILLED;
@@ -368,7 +368,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     firstPosition.evaluations[30].addDescendants(nextEvaluator.getNVisited() + 1);
     firstPosition.setBusy();
     firstPosition.setEval(quickEval);
-    firstPosition.setFree(quickEval);
+    firstPosition.updateAndSetFree(quickEval);
     add(firstPosition);
   }
 
@@ -391,10 +391,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     } else if (b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME) {
       return true;
     }
-    if (b.getEval() > eval.evalGoal + 1000) {
-      return StoredBoard.endgameTimeEstimator.proofNumber(b.getPlayer(), b.getOpponent(), eval.evalGoal, b.eval) < constant;
-    } else if (b.getEval() < eval.evalGoal - 1000) {
-      return StoredBoard.endgameTimeEstimator.disproofNumber(b.getPlayer(), b.getOpponent(), eval.evalGoal, b.eval) < constant;
+    if (eval.getProb() == 1) {
+      return eval.proofNumber < constant;
+    } else if (eval.getProb() == 0) {
+      return eval.disproofNumber < constant;
     }
     return false;
   }

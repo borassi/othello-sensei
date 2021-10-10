@@ -29,20 +29,16 @@ public class StoredBoardTest {
     EvaluatorMCTS eval = new EvaluatorMCTS(10, 20);
     eval.setFirstPosition(new Board("e6"));
     StoredBoard firstMove = eval.firstPosition;
-    firstMove.eval = 0;
     firstMove.evaluations[0].addDescendants(5);
 
     eval.addChildren(firstMove);
     StoredBoard diag = eval.get(new Board("e6f6"));
-    diag.eval = 0;
     diag.evaluations[0].addDescendants(1);
 
     StoredBoard perp = eval.get(new Board("e6f4"));
-    perp.eval = -100;
     perp.evaluations[0].addDescendants(1);
  
     StoredBoard par = eval.get(new Board("e6d6"));
-    par.eval = 800;
     par.evaluations[0].addDescendants(1);
 //    firstMove.setEvalGoalRecursive(1000);
     // Diag is much better than par. This means that proof numbers (for the
@@ -63,52 +59,19 @@ public class StoredBoardTest {
     eval.setFirstPosition(new Board("e6"));
     StoredBoard firstMove = eval.firstPosition;
     eval.addChildren(firstMove);
-    firstMove.eval = 0;
     firstMove.evaluations[0].addDescendants(34);
-    firstMove.lower = -1;
-    firstMove.upper = 1;
 
     StoredBoard diag = eval.get(new Board("e6f6"));
-    diag.eval = 0;
     diag.evaluations[0].addDescendants(10);
-    diag.lower = -1;
-    diag.upper = 1;
 
     StoredBoard perp = eval.get(new Board("e6f4"));
-    perp.eval = 2;
     perp.evaluations[0].addDescendants(11);
-    perp.lower = 1;
-    perp.upper = 2;
  
     StoredBoard par = eval.get(new Board("e6d6"));
-    par.eval = 8;
     par.evaluations[0].addDescendants(12);
-    par.lower = 6;
-    par.upper = 8;
 
     assert(firstMove.isAllOK());
 
-    firstMove.eval = 1;
-    try {
-      firstMove.isAllOK();
-      throw new IllegalStateException("Should have raised an AssertionError.");
-    } catch (AssertionError e) {}
-    firstMove.eval = 0;
-    
-    firstMove.lower = 12;
-    try {
-      firstMove.isAllOK();
-      throw new IllegalStateException("Should have raised an AssertionError.");
-    } catch (AssertionError e) {}
-    firstMove.lower = -1;
-    
-    firstMove.upper = 124;
-    try {
-      firstMove.isAllOK();
-      throw new IllegalStateException("Should have raised an AssertionError.");
-    } catch (AssertionError e) {}
-    firstMove.upper = 1;
-    
     diag.fathers.clear();
     try {
       firstMove.isAllOK();
@@ -146,10 +109,8 @@ public class StoredBoardTest {
   @Test
   public void testBoardChildrenAreCorrectPass() {
     StoredBoard pass = StoredBoard.initialStoredBoard(Board.pass());
-    pass.eval = 200;
     pass.evaluations[0].addDescendants(2);
     StoredBoard afterPass = StoredBoard.initialStoredBoard(Board.pass().move(0));
-    afterPass.eval = -200;
     afterPass.evaluations[0].addDescendants(1);
 
     pass.children = new StoredBoard[] {afterPass};
@@ -158,13 +119,6 @@ public class StoredBoardTest {
 
     assert pass.isAllOK();
 
-    pass.eval = 100;
-    try {
-      pass.isAllOK();
-      throw new IllegalStateException("Should have raised an AssertionError.");
-    } catch (AssertionError e) {}
-    pass.eval = -200;
-    
     afterPass.fathers.clear();
     try {
       pass.isAllOK();
