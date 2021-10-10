@@ -311,15 +311,6 @@ public class StoredBoard {
     return new StoredBoard(player, opponent, true);
   }
   
-  synchronized StoredBoard getChild(long player, long opponent) {
-    StoredBoard result = new StoredBoard(player, opponent, !playerIsStartingPlayer);
-    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      result.extraInfo.isFinished = this.extraInfo.isFinished;
-    }
-    result.addFather(this);
-    return result;
-  }
-  
   public synchronized void setIsFinished(boolean newValue) {
     if (newValue == this.extraInfo.isFinished) {
       return;
@@ -445,30 +436,30 @@ public class StoredBoard {
         upper = Math.max(upper, -child.getLower());
       }
     }
-    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
-      extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
-      extraInfo.minDisproofStrictlyGreater = 0;
-      extraInfo.minDisproofStrictlyGreaterVar = 0;
-      float extraCostDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
-      extraInfo.proofBeforeFinished = false;
-      extraInfo.disproofBeforeFinished = true;
-      for (StoredBoard child : children) {
-        extraInfo.proofBeforeFinished = extraInfo.proofBeforeFinished || child.extraInfo.disproofBeforeFinished;
-        extraInfo.minProofGreaterEqual = Math.min(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);
-        extraInfo.minProofGreaterEqualVar = Math.min(extraInfo.minProofGreaterEqualVar, child.extraInfo.minDisproofStrictlyGreaterVar);
-        extraInfo.disproofBeforeFinished =extraInfo.disproofBeforeFinished && child.extraInfo.proofBeforeFinished;
-        extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
-        extraInfo.minDisproofStrictlyGreaterVar += Math.min(child.extraInfo.minProofGreaterEqual, child.extraInfo.minProofGreaterEqualVar);
-        if (extraInfo.minDisproofStrictlyGreaterVar == Float.POSITIVE_INFINITY) {
-          extraCostDisproofStrictlyGreaterVar = 0;
-        } else {
-          extraCostDisproofStrictlyGreaterVar = Math.min(extraCostDisproofStrictlyGreaterVar, child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual);
-        }
-      }
-      extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar);
-      assert isExtraInfoOK();
-    }
+//    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//      extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
+//      extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
+//      extraInfo.minDisproofStrictlyGreater = 0;
+//      extraInfo.minDisproofStrictlyGreaterVar = 0;
+//      float extraCostDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
+//      extraInfo.proofBeforeFinished = false;
+//      extraInfo.disproofBeforeFinished = true;
+//      for (StoredBoard child : children) {
+//        extraInfo.proofBeforeFinished = extraInfo.proofBeforeFinished || child.extraInfo.disproofBeforeFinished;
+//        extraInfo.minProofGreaterEqual = Math.min(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);
+//        extraInfo.minProofGreaterEqualVar = Math.min(extraInfo.minProofGreaterEqualVar, child.extraInfo.minDisproofStrictlyGreaterVar);
+//        extraInfo.disproofBeforeFinished =extraInfo.disproofBeforeFinished && child.extraInfo.proofBeforeFinished;
+//        extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
+//        extraInfo.minDisproofStrictlyGreaterVar += Math.min(child.extraInfo.minProofGreaterEqual, child.extraInfo.minProofGreaterEqualVar);
+//        if (extraInfo.minDisproofStrictlyGreaterVar == Float.POSITIVE_INFINITY) {
+//          extraCostDisproofStrictlyGreaterVar = 0;
+//        } else {
+//          extraCostDisproofStrictlyGreaterVar = Math.min(extraCostDisproofStrictlyGreaterVar, child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual);
+//        }
+//      }
+//      extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar);
+//      assert isExtraInfoOK();
+//    }
     assert isAllOK();
   }
 

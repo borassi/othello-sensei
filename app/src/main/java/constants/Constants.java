@@ -23,7 +23,7 @@ public class Constants {
   public final static int EMPTIES_FOR_ENDGAME = 10;
 
   public final static int HASH_MAP_SIZE_MOBILE = 100000;
-  public final static int HASH_MAP_SIZE_DESKTOP = 5000000;
+  public final static int HASH_MAP_SIZE_DESKTOP = 1000000;
   public final static int MCTS_SIZE_MOBILE = 100000;
   public final static int MCTS_SIZE_DESKTOP = 10000000;
   

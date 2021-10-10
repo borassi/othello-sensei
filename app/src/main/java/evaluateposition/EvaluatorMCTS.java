@@ -372,12 +372,17 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public boolean toBeSolved(StoredBoard.Evaluation eval) {
     StoredBoard b = eval.getStoredBoard();
-    return b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME + 3
-        && (
-        (b.getProofNumber(eval.evalGoal) < constant
-             && b.getEval() > eval.evalGoal + 1000) ||
-        (b.getDisproofNumber(eval.evalGoal) < constant && b.getEval() < eval.evalGoal - 1000) ||
-        b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME);
+    if (b.nEmpties > Constants.EMPTIES_FOR_FORCED_MIDGAME + 3) {
+      return false;
+    } else if (b.nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME) {
+      return true;
+    }
+    if (b.getEval() > eval.evalGoal + 1000) {
+      return StoredBoard.endgameTimeEstimator.proofNumber(b.getPlayer(), b.getOpponent(), eval.evalGoal, b.eval) < constant;
+    } else if (b.getEval() < eval.evalGoal - 1000) {
+      return StoredBoard.endgameTimeEstimator.disproofNumber(b.getPlayer(), b.getOpponent(), eval.evalGoal, b.eval) < constant;
+    }
+    return false;
   }
 
   public short evaluatePosition(
