@@ -91,7 +91,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         child.setBusy();
         int eval = nextEvaluator.evaluate(newPlayer, newOpponent, depth, -6400, 6400);
         child.getEvaluation(-position.eval.evalGoal).addDescendants(nextEvaluator.getNVisited() + 1);
-        child.setEval(eval);
         child.updateAndSetFree(eval);
         child.fathers.add(board);
         nVisited += child.getDescendants();
@@ -119,6 +118,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
               childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
             }
           }
+        }
+        for (StoredBoard.Evaluation eval : board.evaluations) {
+          eval.updateFather();
         }
         board.setFree();
       } finally {
@@ -165,7 +167,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             board.getPlayer(), board.getOpponent(), d, -6400, 6400);
         seenPositions += nextEvaluator.getNVisited();
       }
-      board.setEval(curEval);
       editLock.lock();
       board.updateAndSetFree(curEval);
       editLock.unlock();
@@ -367,7 +368,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
     firstPosition.evaluations[30].addDescendants(nextEvaluator.getNVisited() + 1);
     firstPosition.setBusy();
-    firstPosition.setEval(quickEval);
     firstPosition.updateAndSetFree(quickEval);
     add(firstPosition);
   }
