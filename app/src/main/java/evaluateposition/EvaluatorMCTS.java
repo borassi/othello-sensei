@@ -203,29 +203,34 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public int nextPositionEvalGoal() {
     assert nextPositionLock.isHeldByCurrentThread();
-    int eval = (int) (Math.round(firstPosition.getEval() / 200.0) * 200);
-//    for (int eval = lower + 100; eval <= upper - 100; eval += 200) {
-//      if (firstPosition.getProb(eval - 100) > 0.5 && firstPosition.getProb(eval+100) <= 0.5) {
-        if (firstPosition.maxLogDerivative(eval-100) > firstPosition.maxLogDerivative(eval+100)) {
-          return eval - 100;
-        } else if (firstPosition.maxLogDerivative(eval-100) < firstPosition.maxLogDerivative(eval+100)) {
-          return eval + 100;
-        }
-        if (this.firstPosition.getProofNumber(eval - 100) == 0) {
-          return eval + 100;
-        } else if (this.firstPosition.getDisproofNumber(eval + 100) == 0) {
-          return eval - 100;
-        }
-        lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
-        return lastDoubtGreaterEqual ? eval-100 : eval+100;
-//      }
-//    }
-//    assert nextPositionLock.isHeldByCurrentThread();
-//    for (int eval = lower; eval <= upper; eval += 200) {
-//      System.out.println(eval + " " + firstPosition.getProb(eval) + " " + firstPosition.getDescendants());
-//    }
-//    assert false;
-//    return -100;
+//    int eval = (int) (Math.round(firstPosition.getEval() / 200.0) * 200);
+    int bestLogDerivative = StoredBoard.LOG_DERIVATIVE_MINUS_INF;
+    int bestEvalProof = -6500;
+    int bestEvalDisproof = 6500;
+    int bestEval = 0;
+    for (int eval = lower; eval <= upper; eval += 200) {
+      if (firstPosition.maxLogDerivative(eval) > bestLogDerivative) {
+        bestLogDerivative = firstPosition.maxLogDerivative(eval);
+        bestEval = eval;
+      }
+      if (firstPosition.getProb(eval) == 1) {
+        bestEvalProof = eval;
+      }
+      if (bestEvalDisproof == 6500 && firstPosition.getProb(eval) == 0) {
+        bestEvalDisproof = eval;
+      }
+    }
+    if (bestLogDerivative > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
+      return bestEval;
+    }
+    if (firstPosition.getProofNumber(bestEvalProof) == 0) {
+      return bestEvalDisproof;
+    }
+    if (firstPosition.getDisproofNumber(bestEvalDisproof) == 0) {
+      return bestEvalProof;
+    }
+    lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
+    return lastDoubtGreaterEqual ? bestEvalProof : bestEvalDisproof;
   }
   
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {

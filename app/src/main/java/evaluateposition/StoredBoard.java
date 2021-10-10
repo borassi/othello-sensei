@@ -41,7 +41,7 @@ public class StoredBoard {
     private int prob;
     protected float proofNumber;
     protected float disproofNumber;
-    private int maxLogDerivative;
+    int maxLogDerivative;
     final int evalGoal;
     private Evaluation bestChildMidgame;
     private Evaluation bestChildProof;
@@ -66,8 +66,7 @@ public class StoredBoard {
     }
 
     int maxLogDerivative() {
-      return maxChildLogDerivative()
-                 + (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb()));
+      return maxLogDerivative;
     }
 
     int childLogDerivative(Evaluation child) {
@@ -117,7 +116,7 @@ public class StoredBoard {
       } else if (upper < evalGoal) {
         setDisproved();
       } else {
-        prob = roundProb((1-(float) Gaussian.CDF(evalGoal, eval, 600 - 6 * nEmpties)));
+        prob = roundProb((1-(float) Gaussian.CDF(evalGoal, eval, 550 - 5 * nEmpties)));
         proofNumber = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal, eval));
         assert Float.isFinite(proofNumber) && proofNumber > 0;
         disproofNumber = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, eval));
@@ -125,7 +124,7 @@ public class StoredBoard {
         if (prob == 0 || prob == PROB_STEP) {
           maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
         } else {
-          maxLogDerivative = (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (Math.log(getProb() * (1 - getProb())) - (1 - Constants.LAMBDA) * Math.log(1 - getProb())));
+          maxLogDerivative = (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (Math.log(getProb() * (1 - getProb()))));
         }
       }
     }
@@ -182,12 +181,21 @@ public class StoredBoard {
             bestChildDisproof = child;
             bestDisproofNumberValue = child.proofNumber;
           }
-          int currentLogDerivative = child.maxChildLogDerivative();
-          if (currentLogDerivative > maxLogDerivative) {
-            bestChildMidgame = child;
-            maxLogDerivative = currentLogDerivative;
+          if (child.getProb() > 0 && child.getProb() < 1) {
+            int currentLogDerivative = child.maxLogDerivative - (int) (LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(child.getProb()));
+            if (currentLogDerivative > maxLogDerivative) {
+              bestChildMidgame = child;
+              maxLogDerivative = currentLogDerivative;
+            }
           }
         }
+      }
+      if (getProb() == 1) {
+        maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      } else {
+        maxLogDerivative = Math.max(
+            LOG_DERIVATIVE_MINUS_INF,
+            maxLogDerivative + (int) (LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb())));
       }
 //      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
 //        extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
@@ -474,12 +482,12 @@ public class StoredBoard {
 
   public synchronized int maxLogDerivative(int evalGoal) {
     Evaluation eval = getEvaluation(evalGoal);
-    return eval.maxLogDerivative() + (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb(evalGoal)));
+    return eval.maxLogDerivative();
   }
 
   public synchronized int childLogDerivative(StoredBoard child, int evalGoal) {
     Evaluation eval = evaluations[toEvaluationIndex(evalGoal)];
-    return child.maxLogDerivative(-evalGoal) + (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(1 - getProb(evalGoal)));
+    return child.maxLogDerivative(-evalGoal);
   }
 
   @NonNull
