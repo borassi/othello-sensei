@@ -35,9 +35,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long maxNVisited;
   private long stopTimeMillis;
   private final HashMap hashMap;
-  private final ReentrantReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
-  private final ReentrantReadWriteLock.WriteLock nextPositionLock = editNextPositionLock.writeLock();
-  private final ReentrantReadWriteLock.ReadLock editLock = editNextPositionLock.readLock();
+  static final ReentrantReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
+  static final ReentrantReadWriteLock.WriteLock nextPositionLock = editNextPositionLock.writeLock();
+  static final ReentrantReadWriteLock.ReadLock editLock = editNextPositionLock.readLock();
   private boolean justStarted = false;
 
   private final Condition isNextPositionAvailable = nextPositionLock.newCondition();
@@ -78,6 +78,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
       if (moves == null) {
         board.setSolved(BitPattern.getEvaluationGameOver(player, opponent));
+        board.setFree(BitPattern.getEvaluationGameOver(player, opponent));
         return 0;
       }
       StoredBoard[] children = new StoredBoard[moves.length];
@@ -91,7 +92,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         int eval = nextEvaluator.evaluate(newPlayer, newOpponent, depth, -6400, 6400);
         child.getEvaluation(-position.eval.evalGoal).addDescendants(nextEvaluator.getNVisited() + 1);
         child.setEval(eval);
-        child.setFree();
+        child.setFree(child.eval);
         child.fathers.add(board);
         nVisited += child.getDescendants();
         children[i] = child;
@@ -99,6 +100,29 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       board.children = children;
       for (StoredBoard.Evaluation eval : board.evaluations) {
         eval.isLeaf = false;
+      }
+      editLock.lock();
+      try {
+        for (int i = 0; i < board.children.length; ++i) {
+          StoredBoard child = board.children[i];
+          StoredBoard childInEvaluator = get(child.getPlayer(), child.getOpponent());
+          if (Constants.IGNORE_TRANSPOSITIONS) {
+            childInEvaluator = null;
+          }
+          if (childInEvaluator == null) {
+            add(child);
+          } else {
+            board.children[i] = childInEvaluator;
+            assert !childInEvaluator.fathers.contains(board);
+            childInEvaluator.addFather(board);
+            if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+              childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
+            }
+          }
+        }
+        board.setFreeWithChildren();
+      } finally {
+        editLock.unlock();
       }
       return nVisited;
     }
@@ -121,6 +145,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       synchronized(main) {
         constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
       }
+      editLock.lock();
+      board.setFree(board.eval);
+      editLock.unlock();
       return seenPositions;
     }
 
@@ -139,6 +166,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         seenPositions += nextEvaluator.getNVisited();
       }
       board.setEval(curEval);
+      editLock.lock();
+      board.setFree(curEval);
+      editLock.unlock();
       return seenPositions;
     }
 
@@ -236,28 +266,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
     editLock.lock();
     try {
-      StoredBoard board = position.eval.getStoredBoard();
-      if (board.children != null) {
-        for (int i = 0; i < board.children.length; ++i) {
-          StoredBoard child = board.children[i];
-          StoredBoard childInEvaluator = get(child.getPlayer(), child.getOpponent());
-          if (Constants.IGNORE_TRANSPOSITIONS) {
-            childInEvaluator = null;
-          }
-          if (childInEvaluator == null) {
-            add(child);
-          } else {
-            board.children[i] = childInEvaluator;
-            assert !childInEvaluator.fathers.contains(board);
-            childInEvaluator.addFather(board);
-            if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-              childInEvaluator.extraInfo.isFinished = board.extraInfo.isFinished;
-            }
-          }
-        }
-      }
       position.updateDescendants(nVisited);
-      board.setFree();
       justStarted = false;
     } finally {
       editLock.unlock();
@@ -359,7 +368,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     firstPosition.evaluations[30].addDescendants(nextEvaluator.getNVisited() + 1);
     firstPosition.setBusy();
     firstPosition.setEval(quickEval);
-    firstPosition.setFree();
+    firstPosition.setFree(quickEval);
     add(firstPosition);
   }
 

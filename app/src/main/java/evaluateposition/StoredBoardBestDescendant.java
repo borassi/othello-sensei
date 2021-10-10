@@ -138,23 +138,16 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
     }
     eval = child;
-    assert hasValidDescendants();
-  }
-  
-  public boolean hasValidDescendants() {
-    return hasValidDescendants(eval);
-  }
-
-  public static boolean hasValidDescendants(StoredBoard.Evaluation eval) {
-    return (eval.proofNumber != 0 && eval.disproofNumber != 0);
+    assert eval.hasValidDescendants();
   }
 
   public static StoredBoardBestDescendant bestDescendant(
       StoredBoard.Evaluation father) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
-    if (!result.hasValidDescendants() || father.isBusy) {
+    assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
+    if (!father.hasValidDescendants()) {
       return null;
     }
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
     while (!result.eval.isLeaf) {
       StoredBoard.Evaluation bestChild = result.bestChild();
@@ -168,10 +161,10 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 
   public static StoredBoardBestDescendant randomDescendant(
       StoredBoard.Evaluation father) {
-    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
-    if (!result.hasValidDescendants()) {
+    if (!father.hasValidDescendants()) {
       return null;
     }
+    StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
     while (result.eval != null && !result.eval.isLeaf) {
       result.toChild(randomChild(result.eval));
@@ -250,11 +243,11 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   }
 
   public static StoredBoard.Evaluation randomChild(StoredBoard.Evaluation father) {
-    assert hasValidDescendants(father);
+    assert father.hasValidDescendants();
     ArrayList<StoredBoard.Evaluation> validChildren = new ArrayList<>();
     
     for (StoredBoard child : father.getStoredBoard().getChildren()) {
-      if (hasValidDescendants(child.getEvaluation(-father.evalGoal))) {
+      if (child.getEvaluation(-father.evalGoal).hasValidDescendants()) {
         validChildren.add(child.getEvaluation(-father.evalGoal));
       }
     }

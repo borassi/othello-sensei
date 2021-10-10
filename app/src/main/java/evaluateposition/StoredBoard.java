@@ -57,6 +57,14 @@ public class StoredBoard {
       this.evalGoal = evalGoal;
     }
 
+    public boolean hasValidDescendants() {
+      return !isSolved() && !isBusy;
+    }
+
+    public boolean isSolved() {
+      return proofNumber == 0 || disproofNumber == 0;
+    }
+
     public float getProb() {
       return (float) prob / PROB_STEP;
     }
@@ -80,48 +88,26 @@ public class StoredBoard {
     }
 
     private void setDisproved() {
-      prob = 0;
-      proofNumber = Float.POSITIVE_INFINITY;
-      disproofNumber = 0;
-      maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      setLeaf(0, Float.POSITIVE_INFINITY, 0);
     }
 
     private void setProved() {
-      prob = PROB_STEP;
-      proofNumber = 0;
-      disproofNumber = Float.POSITIVE_INFINITY;
-      maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      setLeaf(PROB_STEP, 0, Float.POSITIVE_INFINITY);
     }
 
-    private void setLeaf() {
+    private void setLeaf(int prob, float proofNumber, float disproofNumber) {
       assert isLeaf;
+      assert isBusy;
       bestChildMidgame = this;
       bestChildProof = this;
       bestChildDisproof = this;
-      if (isBusy) {
-        if (eval > evalGoal) {
-          setProved();
-        } else {
-          setDisproved();
-        }
-        return;
-      }
-
-      if (lower >= evalGoal) {
-        setProved();
-      } else if (upper < evalGoal) {
-        setDisproved();
+      this.prob = prob;
+      this.proofNumber = proofNumber;
+      this.disproofNumber = disproofNumber;
+      if (prob == 0 || prob == PROB_STEP) {
+        maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       } else {
-        prob = roundProb((1-(float) Gaussian.CDF(evalGoal, eval, 600 - 5 * nEmpties)));
-        proofNumber = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal, eval));
-        assert Float.isFinite(proofNumber) && proofNumber > 0;
-        disproofNumber = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, eval));
-        assert Float.isFinite(disproofNumber) && disproofNumber > 0;
-        if (prob == 0 || prob == PROB_STEP) {
-          maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
-        } else {
-          maxLogDerivative = (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (Math.log(getProb() * (1 - getProb()))));
-        }
+        maxLogDerivative = (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (Math.log(getProb() * (1 - getProb()))));
       }
     }
 
@@ -138,21 +124,23 @@ public class StoredBoard {
       descendants += newDescendants;
     }
 
-    public void setFree() {
+    public synchronized void setFreeWithChildren() {
       assert isBusy;
+      assert !isLeaf;
       isBusy = false;
-      if (isLeaf) {
-        this.setLeaf();
-      }
     }
 
-    public void setBusy() {
-      synchronized (this) {
-        assert isLeaf;
-        assert !isBusy;
-        isBusy = true;
-        this.setLeaf();
-      }
+    public synchronized void setFree(int prob, float proofNumber, float disproofNumber) {
+      assert isBusy;
+      assert isLeaf;
+      this.setLeaf(prob, proofNumber, disproofNumber);
+      isBusy = false;
+    }
+
+    public synchronized void setBusy() {
+      assert isLeaf;
+      assert !isBusy;
+      isBusy = true;
     }
 
     protected synchronized void updateFather() {
@@ -161,31 +149,56 @@ public class StoredBoard {
       prob = 0;
       maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
+      int childProb;
+      float childProbRescaled;
+      float childProofNumber;
+      float childDisproofNumber;
+      int childMaxLogDerivative;
       for (StoredBoard childBoard : children) {
+        Evaluation child = childBoard.getEvaluation(-evalGoal);
         synchronized (childBoard) {
-          Evaluation child = childBoard.getEvaluation(-evalGoal);
-          prob = combineProb(prob, child.prob);
-
-          float curProofNumber = child.disproofNumber / Math.max(0.001F, 1 - child.getProb());
-          if (curProofNumber < proofNumber) {
-            bestChildProof = child;
-            proofNumber = curProofNumber;
-          }
-
-          disproofNumber += child.proofNumber;
-          if (child.proofNumber > bestDisproofNumberValue) {
-            bestChildDisproof = child;
-            bestDisproofNumberValue = child.proofNumber;
-          }
-          if (child.getProb() > 0 && child.getProb() < 1) {
-            int currentLogDerivative = child.maxLogDerivative - LOG_DERIVATIVE[child.prob];
-            if (currentLogDerivative > maxLogDerivative) {
-              bestChildMidgame = child;
-              maxLogDerivative = currentLogDerivative;
+          if (child.isBusy) {
+            if (child.getProb() > 0.5) {
+              childProb = PROB_STEP;
+              childProofNumber = 0;
+              childDisproofNumber = Float.POSITIVE_INFINITY;
+              childMaxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+            } else {
+              childProb = 0;
+              childProofNumber = Float.POSITIVE_INFINITY;
+              childDisproofNumber = 0;
+              childMaxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
             }
+          } else {
+            childProb = child.prob;
+            childProofNumber = child.proofNumber;
+            childDisproofNumber = child.disproofNumber;
+            childMaxLogDerivative = child.maxLogDerivative;
+          }
+        }
+        childProbRescaled = childProb / (float) PROB_STEP;
+        prob = combineProb(prob, childProb);
+
+        float curProofNumber = childDisproofNumber / Math.max(0.0001F, 1 - childProbRescaled);
+        if (curProofNumber < proofNumber) {
+          bestChildProof = child;
+          proofNumber = curProofNumber;
+        }
+
+        disproofNumber += childProofNumber;
+        if (childProofNumber > bestDisproofNumberValue) {
+          bestChildDisproof = child;
+          bestDisproofNumberValue = childProofNumber;
+        }
+        if (childProbRescaled > 0 && childProbRescaled < 1) {
+          int currentLogDerivative = childMaxLogDerivative - LOG_DERIVATIVE[childProb];
+          if (currentLogDerivative > maxLogDerivative) {
+            bestChildMidgame = child;
+            maxLogDerivative = currentLogDerivative;
           }
         }
       }
+      assert isSolved() || !(bestChildProof.isSolved() && bestChildDisproof.isSolved());
       if (getProb() == 1) {
         maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       } else {
@@ -367,7 +380,7 @@ public class StoredBoard {
   public int getLower() {
     return lower;
   }
-  
+
   public int getUpper() {
     return upper;
   }
@@ -405,10 +418,35 @@ public class StoredBoard {
     assert areThisBoardEvalsOK();
   }
 
-  public void setFree() {
+  public void setFreeWithChildren() {
     synchronized (this) {
-      for (int i = -6300; i <= 6300; i += 200) {
-        getEvaluation(i).setFree();
+      assert children != null;
+      for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
+        getEvaluation(evalGoal).setFreeWithChildren();
+      }
+    }
+    updateFathers();
+  }
+
+  public void setFree(int eval) {
+    assert eval == this.eval;
+    synchronized (this) {
+      for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
+        Evaluation evaluation = getEvaluation(evalGoal);
+        if (lower >= evalGoal) {
+          evaluation.setProved();
+          evaluation.isBusy = false;  // TODO.
+        } else if (upper < evalGoal) {
+          evaluation.setDisproved();
+          evaluation.isBusy = false;  // TODO.
+        } else {
+          int prob = roundProb((1 - (float) Gaussian.CDF(evalGoal, eval, 600 - 5 * nEmpties)));
+          float proofNumber = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal, eval));
+          assert Float.isFinite(proofNumber) && proofNumber > 0;
+          float disproofNumber = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, eval));
+          assert Float.isFinite(disproofNumber) && disproofNumber > 0;
+          evaluation.setFree(prob, proofNumber, disproofNumber);
+        }
       }
     }
     updateFathers();
