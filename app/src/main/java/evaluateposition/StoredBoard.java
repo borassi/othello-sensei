@@ -56,28 +56,31 @@ public class StoredBoard {
       this.evalGoal = evalGoal;
     }
 
-    public boolean hasValidDescendants() {
+    public synchronized boolean hasValidDescendants() {
       return !isSolved() && !isBusy;
     }
 
-    public boolean isSolved() {
+    public synchronized boolean isSolved() {
       return proofNumber == 0 || disproofNumber == 0;
     }
 
-    public float getProb() {
+    public synchronized float getProb() {
       return (float) prob / PROB_STEP;
     }
 
-    int maxLogDerivative() {
+    synchronized int maxLogDerivative() {
       return maxLogDerivative;
     }
 
-    int childLogDerivative(Evaluation child) {
-      return Math.max(LOG_DERIVATIVE_MINUS_INF,
-          child.maxLogDerivative - LOG_DERIVATIVE[child.prob] + LOG_DERIVATIVE[255 - prob]);
+    synchronized int childLogDerivative(Evaluation child) {
+      synchronized (child) {
+        return Math.max(LOG_DERIVATIVE_MINUS_INF,
+            child.maxLogDerivative - LOG_DERIVATIVE[child.prob] + LOG_DERIVATIVE[PROB_STEP - prob]);
+      }
     }
 
-    public Evaluation bestChild() {
+    public synchronized Evaluation bestChild() {
+      assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
       if (prob == 0) {
         return bestChildDisproof;
       } else if (prob == PROB_STEP) {
@@ -89,7 +92,6 @@ public class StoredBoard {
     private synchronized void setLeaf(int prob, float proofNumber, float disproofNumber) {
       assert isLeaf;
       assert isBusy;
-//      assert !isSolved();
       bestChildMidgame = this;
       bestChildProof = this;
       bestChildDisproof = this;
@@ -222,10 +224,12 @@ public class StoredBoard {
     }
 
     protected void updateFathers() {
-      for (int i = 0; i < fathers.size(); ++i) {
-        Evaluation father = fathers.get(i).getEvaluation(-evalGoal);
-        father.updateFather();
-        father.updateFathers();
+      synchronized (StoredBoard.this) {
+        for (int i = 0; i < fathers.size(); ++i) {
+          Evaluation father = fathers.get(i).getEvaluation(-evalGoal);
+          father.updateFather();
+          father.updateFathers();
+        }
       }
     }
   }
@@ -337,19 +341,19 @@ public class StoredBoard {
     fathers.add(father);
   }
   
-  public synchronized Board getBoard() {
+  public Board getBoard() {
     return new Board(player, opponent);
   }
   
-  public synchronized long getPlayer() {
+  public long getPlayer() {
     return player;
   }
   
-  public synchronized long getOpponent() {
+  public long getOpponent() {
     return opponent;
   }
 
-  public synchronized int getEval() {
+  public int getEval() {
     int eval = -6400;
     for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
       eval += (int) (200 * getEvaluation(evalGoal).getProb());
@@ -365,11 +369,11 @@ public class StoredBoard {
     return getEvaluation(evalGoal).getProb();
   }
 
-  public synchronized float getDisproofNumber(int evalGoal) {
+  public float getDisproofNumber(int evalGoal) {
     return getEvaluation(evalGoal).disproofNumber;
   }
 
-  public synchronized float getProofNumber(int evalGoal) {
+  public float getProofNumber(int evalGoal) {
     return getEvaluation(evalGoal).proofNumber;
   }
 
@@ -403,55 +407,45 @@ public class StoredBoard {
     return descendants;
   }
 
-  public final synchronized void setSolved(int newEval) {
+  public final void setSolved(int newEval) {
     setUpper(newEval);
     setLower(newEval);
   }
 
-  public final synchronized void setLower(int newLower) {
+  public final void setLower(int newLower) {
     for (int eval = -6300; eval < newLower; eval += 200) {
       getEvaluation(eval).setProved();
     }
   }
 
-  public final synchronized void setUpper(int newUpper) {
+  public final void setUpper(int newUpper) {
     for (int eval = newUpper + 100; eval <= 6300; eval += 200) {
       getEvaluation(eval).setDisproved();
     }
   }
 
   public void setFree() {
-    synchronized (this) {
-      for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
-        getEvaluation(evalGoal).setFree();
-      }
+    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
+      getEvaluation(evalGoal).setFree();
     }
   }
 
   public void updateAndSetFree(int eval) {
-    synchronized (this) {
-      for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
-        Evaluation evaluation = getEvaluation(evalGoal);
-//        if (evaluation.isSolved()) {
-//          System.out.println(evaluation.isBusy);
-//          evaluation.setFree();
-//          continue;
-//        }
-        int prob = roundProb((1 - (float) Gaussian.CDF(evalGoal, eval, 600 - 5 * nEmpties)));
-        float proofNumber = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal, eval));
-        assert Float.isFinite(proofNumber) && proofNumber > 0;
-        float disproofNumber = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, eval));
-        assert Float.isFinite(disproofNumber) && disproofNumber > 0;
-        evaluation.updateAndSetFree(prob, proofNumber, disproofNumber);
-      }
+    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
+      Evaluation evaluation = getEvaluation(evalGoal);
+      int prob = roundProb((1 - (float) Gaussian.CDF(evalGoal, eval, 600 - 5 * nEmpties)));
+      float proofNumber = (float) (endgameTimeEstimator.proofNumber(player, opponent, evalGoal, eval));
+      assert Float.isFinite(proofNumber) && proofNumber > 0;
+      float disproofNumber = (float) (endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, eval));
+      assert Float.isFinite(disproofNumber) && disproofNumber > 0;
+      evaluation.updateAndSetFree(prob, proofNumber, disproofNumber);
     }
   }
 
   public void setBusy() {
-    synchronized (this) {
-      for (int i = -6300; i <= 6300; i += 200) {
-        getEvaluation(i).setBusy();
-      }
+    assert !EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
+    for (int i = -6300; i <= 6300; i += 200) {
+      getEvaluation(i).setBusy();
     }
   }
 
@@ -459,28 +453,27 @@ public class StoredBoard {
     return Math.round(prob * PROB_STEP);
   }
 
-  public synchronized int maxLogDerivative(int evalGoal) {
+  public int maxLogDerivative(int evalGoal) {
     Evaluation eval = getEvaluation(evalGoal);
     return eval.maxLogDerivative();
   }
 
-  public synchronized int childLogDerivative(StoredBoard child, int evalGoal) {
-    Evaluation eval = evaluations[toEvaluationIndex(evalGoal)];
+  public int childLogDerivative(StoredBoard child, int evalGoal) {
     return child.maxLogDerivative(-evalGoal);
   }
 
   @NonNull
   @Override
-  public synchronized String toString() {
+  public String toString() {
     return new Board(player, opponent).toString() + "\n";
   }
   
-  public synchronized StoredBoard[] getChildren() {
+  public StoredBoard[] getChildren() {
     return children;
   }
 
   // TODO!!!
-//  public synchronized StoredBoard bestChildProofStrictlyGreater() {
+//  public StoredBoard bestChildProofStrictlyGreater() {
 //    StoredBoard best = null;
 //    float bestValue = Float.POSITIVE_INFINITY;
 //    for (StoredBoard child : children) {
@@ -493,7 +486,7 @@ public class StoredBoard {
 //    return best;
 //  }
 //
-//  public synchronized StoredBoard bestChildProofGreaterEqual() {
+//  public StoredBoard bestChildProofGreaterEqual() {
 //    StoredBoard best = null;
 //    float bestValue = Float.POSITIVE_INFINITY;
 //    for (StoredBoard child : children) {
@@ -505,7 +498,7 @@ public class StoredBoard {
 //    return best;
 //  }
   
-  public synchronized float maxFiniteChildrenProofNumber(int evalGoal) {
+  public float maxFiniteChildrenProofNumber(int evalGoal) {
     float result = 0;
     for (StoredBoard child : children) {
       if (child.getProofNumber(evalGoal) != Float.POSITIVE_INFINITY) {

@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   PatternEvaluatorImproved evaluator;
 
+  boolean threadWaitingForNextPos = false;
   private final EvaluatorInterface nextEvaluator;
   private long maxNVisited;
   private long stopTimeMillis;
@@ -101,7 +102,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         eval.isLeaf = false;
       }
       editLock.lock();
-      try {
+      {
         for (int i = 0; i < board.children.length; ++i) {
           StoredBoard child = board.children[i];
           StoredBoard childInEvaluator = get(child.getPlayer(), child.getOpponent());
@@ -123,9 +124,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           eval.updateFather();
         }
         board.setFree();
-      } finally {
-        editLock.unlock();
       }
+      editLock.unlock();
       return nVisited;
     }
 
@@ -263,7 +263,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
     return lastDoubtGreaterEqual ? bestEvalProof : bestEvalDisproof;
   }
-  
+
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
     editLock.lock();
     try {
@@ -273,11 +273,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       editLock.unlock();
     }
 
-    nextPositionLock.lock();
-    try {
-      isNextPositionAvailable.signalAll();
-    } finally {
-      nextPositionLock.unlock();
+    if (threadWaitingForNextPos) {
+      nextPositionLock.lock();
+      try {
+        threadWaitingForNextPos = false;
+        isNextPositionAvailable.signalAll();
+      } finally {
+        nextPositionLock.unlock();
+      }
     }
   }
   
@@ -326,7 +329,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       result = StoredBoardBestDescendant.bestDescendant(firstPosition.getEvaluation(nextPositionEvalGoal()));
       while (result == null) {
+        threadWaitingForNextPos = true;
         isNextPositionAvailable.await();
+        assert nextPositionLock.isHeldByCurrentThread();
         if (checkFinished()) {
           return null;
         }
