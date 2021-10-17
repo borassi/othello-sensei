@@ -37,6 +37,7 @@ import javax.swing.SpinnerModel;
 
 import board.Board;
 import constants.Constants;
+import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
 import helpers.Utils;
 
@@ -136,38 +137,32 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
     cases[ij.i][ij.j].setFontSizes(new double[] {0.13});
     StoredBoard board = annotations.storedBoard;
-    double eval = -board.getEval() / 100.0;
-    int lower = -board.getUpper() / 100;
-    int upper = -board.getLower() / 100;
+    int eval = -board.getEval();
+    int evalRounded = Math.round(eval / 200.0F) * 200;
+    StoredBoard.Evaluation prevEval = board.getEvaluation(-evalRounded - 100);
+    StoredBoard.Evaluation nextEval = board.getEvaluation(-evalRounded + 100);
+    boolean isPartiallySolved = prevEval != null && nextEval != null && (prevEval.getProb() == 1) && (nextEval.getProb() == 0);
 
-    String annotationsString = String.format(Locale.US, "%+.2f", eval);
-//    if (board.getLower() == board.getEval() && board.getUpper() == board.getEval()) {
-//      annotationsString = String.format("%+.0f");
-//    }
-    annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-    float oldProb = 0;
+    String evalFormat = isPartiallySolved ? (
+        (board.getLower() == board.getEval() && board.getUpper() == board.getEval()) ? "%.0f" : "%.1f") : "%.2f";
+    String annotationsString = String.format(Locale.US, evalFormat, eval / 100.0);
+    annotationsString += "  " + Utils.prettyPrintDouble(board.getDescendants());
     String scoresString = "";
 
-    for (int evalGoal = -6300; evalGoal < 6300; evalGoal += 200) {
-      StoredBoard.Evaluation curEval = board.getEvaluation(-evalGoal);
-      if (curEval == null) {
-        continue;
-      }
-      if (curEval.getProb() == 0) {
-        scoresString = "";
-      } else {
-        scoresString += "\n" + (evalGoal - 100) / 100 + " " +
-                            String.format("%2d%%", (int) ((curEval.getProb() - oldProb) * 100));
-      }
-      if (curEval.getProb() == 1) {
-        if (oldProb == 0) {
-          scoresString = "\n" + (evalGoal - 100) / 100 + "\n" +
-                             (evalGoal == -6300 ? 0 : Utils.prettyPrintDouble(board.getEvaluation(-evalGoal+200).disproofNumber())) + " + " +
-                             Utils.prettyPrintDouble(curEval.proofNumber());
+    if (isPartiallySolved) {
+      scoresString = "\n" + Utils.prettyPrintDouble(prevEval.proofNumber()) + " " + Utils.prettyPrintDouble(nextEval.disproofNumber());
+    } else {
+      for (int evalGoal = evalRounded - 400; evalGoal <= evalRounded + 400; evalGoal += 200) {
+        if (evalGoal < -6400 || evalGoal > 6400) {
+          continue;
         }
-        break;
+        prevEval = board.getEvaluation(-evalGoal - 100);
+        nextEval = board.getEvaluation(-evalGoal + 100);
+        if (prevEval == null || nextEval == null) {
+          continue;
+        }
+        scoresString += String.format("\n %d %2.0f%%", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100);
       }
-      oldProb = curEval.getProb();
     }
     annotationsString += scoresString;
 //    int evalGoal = EvaluatorMCTS.evalToBoundary(-board.getEval());
