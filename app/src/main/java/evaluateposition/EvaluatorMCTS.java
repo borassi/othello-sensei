@@ -366,6 +366,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     setFirstPosition(b.getPlayer(), b.getOpponent());
   }
 
+  public static int evalToBoundary(int eval) {
+    if (eval >= 6300) {
+      return 6300;
+    }
+    if (eval <= -6300) {
+      return 6300;
+    }
+    return 200 * Math.round((eval + 100) / 200) - 100;
+  }
+
   void setFirstPosition(long player, long opponent) {
     empty();
     int quickEval = nextEvaluator.evaluate(player, opponent, 2, lower, upper);
@@ -375,8 +385,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       setLeaf(eval, quickEval, i);
       eval.setFree();
     }
-    int roundedEval = 200 * Math.round((quickEval + 16500) / 200) - 16500;
-    firstPosition.getEvaluation(roundedEval).addDescendants(nextEvaluator.getNVisited() + 1);
+    firstPosition.getEvaluation(evalToBoundary(quickEval)).addDescendants(nextEvaluator.getNVisited() + 1);
     add(firstPosition);
   }
 

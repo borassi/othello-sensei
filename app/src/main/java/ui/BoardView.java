@@ -140,10 +140,7 @@ public class BoardView extends View {
     StoredBoard storedBoard = annotation.storedBoard;
     String rows[] = {
         String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0),
-//                String.format("%s %s", Utils.prettyPrintDouble(annotation.pro), Utils.prettyPrintDouble(annotation.costUntilLeafDefense)),
-        Utils.prettyPrintDouble(storedBoard.getDescendants()),
-        Utils.prettyPrintDouble(storedBoard.getProofNumber(annotation.evalGoal-100)) + " "
-            + Utils.prettyPrintDouble(storedBoard.getDisproofNumber(annotation.evalGoal+100))
+        Utils.prettyPrintDouble(storedBoard.getDescendants())
     };
 
     Paint paint = new Paint();

@@ -29,7 +29,7 @@ import evaluateposition.StoredBoard;
 public interface UI {
   void setCases(Board board, boolean blackTurn);
   void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
-  void setExtras(StoredBoard firstPosition, int evalGoal, double milliseconds);
+  void setExtras(StoredBoard firstPosition, double milliseconds);
   boolean playBlackMoves();
   boolean playWhiteMoves();
   long depth();

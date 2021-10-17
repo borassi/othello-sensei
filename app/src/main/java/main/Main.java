@@ -337,18 +337,15 @@ public class Main implements Runnable {
     }
     StoredBoard[] children = current.getChildren();
     PositionIJ bestIJ = this.findBestMove(children);
-    int evalGoal = (int) Math.round(EVALUATOR.getFirstPosition().getEval() / 200.0) * 200;
     for (StoredBoard child : children) {
       if (child == null) {
         continue;
       }
       PositionIJ ij = moveFromBoard(board, child);
 
-      // TODO.
-      CaseAnnotations annotations = new CaseAnnotations(child, evalGoal, ij.equals(bestIJ));
+      CaseAnnotations annotations = new CaseAnnotations(child, ij.equals(bestIJ));
       ui.setAnnotations(annotations, ij);
     }
-    // TODO.
-    ui.setExtras(EVALUATOR.get(board), evalGoal, (System.currentTimeMillis() - startTime));
+    ui.setExtras(EVALUATOR.get(board), (System.currentTimeMillis() - startTime));
   }
 }

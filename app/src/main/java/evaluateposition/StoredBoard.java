@@ -50,6 +50,9 @@ public class StoredBoard {
     boolean isLeaf = true;
     long descendants = 0;
 
+    public float proofNumber() { return proofNumber; }
+    public float disproofNumber() { return disproofNumber; }
+
     public Evaluation(int evalGoal) {
       assert evalGoal <= 6400 && evalGoal >= -6400;
       assert (evalGoal + 6400) % 200 == 100;
@@ -394,16 +397,33 @@ public class StoredBoard {
   }
 
   public int getEval() {
-    int eval = -6400;
-    float lastProb = 0;
+    float eval = -6400;
+    float lastProb = 1;
     for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
       Evaluation curEval = getEvaluation(evalGoal);
-      if (curEval != null) {
-        lastProb = curEval.getProb();
+      if (curEval == null) {
+        continue;
       }
-      eval += (int) (200 * lastProb);
+
+      lastProb = curEval.getProb();
+      if (curEval.getProb() == 1) {
+        eval = evalGoal + 100;
+      } else if (curEval.getProb() == 0) {
+        break;
+      } else {
+        eval += (int) (200 * lastProb);
+      }
     }
-    return eval;
+//    System.out.println(eval);
+//    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
+//      Evaluation curEval = getEvaluation(evalGoal);
+//      if (curEval != null) {
+//        lastProb = curEval.getProb();
+//      }
+//      System.out.println("  " + );
+//
+//    }
+    return Math.round(eval);
   }
 
   public float getProb(int evalGoal) {

@@ -115,11 +115,6 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
     for (int i = 0; i < annotationLines.length; ++i) {
       String annotationLine = annotationLines[i];
 
-//DialogInput
-//Dialog
-//SansSerif
-//Serif
-//Monospaced
       Font font = new Font("Dialog", i == 0 ? Font.BOLD : Font.PLAIN,
           (int) (size * this.fontSizes[Math.min(i, this.fontSizes.length-1)]));
       g.setFont(font);

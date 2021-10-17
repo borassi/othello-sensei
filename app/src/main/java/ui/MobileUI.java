@@ -84,7 +84,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public void setExtras(StoredBoard firstPosition, int evalGoal, double milliseconds) {
+  public void setExtras(StoredBoard firstPosition, double milliseconds) {
     posPerSec.setText("Pos/sec: " + Utils.prettyPrintDouble(firstPosition.getDescendants() * 1000.0 / milliseconds));
   }
 
