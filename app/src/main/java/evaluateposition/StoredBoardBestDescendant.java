@@ -120,14 +120,16 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   }
   
   private StoredBoardBestDescendant copyToChild(StoredBoard.Evaluation child) {
-    assert child == null || Utils.arrayContains(eval.getStoredBoard().children, child.getStoredBoard());
+    assert child == null || Utils.arrayContains(eval.getStoredBoard().getChildren(), child.getStoredBoard());
     StoredBoardBestDescendant copy = new StoredBoardBestDescendant(this);
     copy.toChild(child);
     return copy;
   }
   
   private void toChild(StoredBoard.Evaluation child) {
-    assert Utils.arrayContains(eval.getStoredBoard().children, child.getStoredBoard());
+    assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
+    assert child != null;
+    assert Utils.arrayContains(eval.getStoredBoard().getChildren(), child.getStoredBoard());
     parents.add(eval);
     int childLogDerivative = child.maxLogDerivative();
     if (derivativeLoss + childLogDerivative <= LOG_DERIVATIVE_MINUS_INF) {
@@ -138,7 +140,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
     }
     eval = child;
-    assert eval.hasValidDescendants();
+    assert eval.threadId == 0;
+    assert !eval.isSolved();
   }
 
   public static StoredBoardBestDescendant bestDescendant(
@@ -152,7 +155,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     while (!result.eval.isLeaf) {
       StoredBoard.Evaluation bestChild = result.bestChild();
       assert bestChild != null;
-      assert !bestChild.isBusy;
+      assert bestChild.threadId == 0;
       result.toChild(bestChild);
     }
     assert result.eval != null;

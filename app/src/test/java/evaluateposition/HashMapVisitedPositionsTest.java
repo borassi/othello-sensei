@@ -26,7 +26,7 @@ public class HashMapVisitedPositionsTest extends TestCase {
   public void testAddGet() {
     EvaluatorMCTS eval = new EvaluatorMCTS(20, 10);
     StoredBoard s = StoredBoard.initialStoredBoard(new Board());
-    s.evaluations[0].addDescendants(1);
+    s.getEvaluation(100).addDescendants(1);
     eval.addChildren(s);
     StoredBoard t = eval.get(new Board("e6"));
     HashMapVisitedPositions visitedPositions = new HashMapVisitedPositions(11, 5);

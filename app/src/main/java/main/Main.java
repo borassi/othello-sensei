@@ -210,7 +210,7 @@ public class Main implements Runnable {
       showMCTSEvaluations();
       finished = EVALUATOR.getStatus() == Status.SOLVED || EVALUATOR.getStatus() == Status.STOPPED_POSITIONS;
       if (ui.delta() > 0 && finished) {
-        for (StoredBoard child : EVALUATOR.get(board).children) {
+        for (StoredBoard child : EVALUATOR.get(board).getChildren()) {
           if (!child.isSolved()) {
             finished = false;
           }
