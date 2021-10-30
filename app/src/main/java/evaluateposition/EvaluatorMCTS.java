@@ -16,11 +16,9 @@ package evaluateposition;
 
 import bitpattern.BitPattern;
 import board.Board;
-import board.GetMovesCache;
 import constants.Constants;
 import evaluatedepthone.PatternEvaluatorImproved;
 import helpers.Gaussian;
-import helpers.Utils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +30,12 @@ import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   PatternEvaluatorImproved evaluator;
+
+  private static final int ERRORS[] = {
+      0, 0, 0, 0, 530, 585, 636, 696, 736, 780, 794, 828, 814, 821, 807, 797, 772, 768, 753, 732,
+      709, 680, 552, 474, 480, 448, 461, 397, 429, 380, 403, 362, 372, 328, 338, 300, 332, 303,
+      311, 290, 300, 265, 267, 249, 250, 216, 228, 196, 194, 168, 168, 150, 150, 150, 150, 150,
+      150, 150, 150, 150};
 
   boolean threadWaitingForNextPos = false;
   private final EvaluatorInterface nextEvaluator;
@@ -204,7 +208,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public void setLeaf(StoredBoard.Evaluation evaluation, int eval, int evalGoal) {
     StoredBoard board = evaluation.getStoredBoard();
-    float prob = 1 - (float) Gaussian.CDF(evalGoal, eval, 600 - 5 * board.nEmpties);
+    float prob = 1 - (float) Gaussian.CDF(evalGoal, eval, ERRORS[board.nEmpties]);
     float proofNumber = (float) (StoredBoard.endgameTimeEstimator.proofNumber(board.getPlayer(), board.getOpponent(), evalGoal, eval));
     assert Float.isFinite(proofNumber) && proofNumber > 0;
     float disproofNumber = (float) (StoredBoard.endgameTimeEstimator.disproofNumber(board.getPlayer(), board.getOpponent(), evalGoal, eval));

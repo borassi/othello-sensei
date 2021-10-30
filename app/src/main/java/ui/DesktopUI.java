@@ -19,6 +19,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -87,6 +88,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner upper;
   private final JLabel empties;
   private final JTextArea extras;
+  private final JTextArea extrasPosition;
 
   public void getClick(PositionIJ ij, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -161,7 +163,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         if (prevEval == null || nextEval == null) {
           continue;
         }
-        scoresString += String.format("\n %d %2.0f%%", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100);
+        scoresString += String.format("\n %d %2.0f%% %s", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100,
+            Utils.prettyPrintDouble(prevEval.maxLogDerivative()));
       }
     }
     annotationsString += scoresString;
@@ -263,7 +266,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     empties = new JLabel();
     commands.add(empties);
     extras = new JTextArea();
+    extras.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
     commands.add(extras);
+    commands.add(new JLabel("Current position eval:"));
+    extrasPosition = new JTextArea();
+    extrasPosition.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    commands.add(extrasPosition);
 
     setSize(1200, 800);
 
@@ -334,7 +342,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public void setExtras(StoredBoard firstPosition, double milliseconds) {
-    Runnable tmp = () -> {
+    Runnable setExtras = () -> {
       long descendants = 0;
       for (StoredBoard child : firstPosition.getChildren()) {
         descendants += child.getDescendants();
@@ -355,8 +363,28 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
             Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreater);
       }
       extras.setText(text);
+
+      String firstPositionText = "";
+      if (firstPosition.isPartiallySolved()) {
+        firstPosition.getProofNumber(firstPosition.getWeakLower() - 100);
+        firstPositionText = "\n" +
+            firstPosition.getEval() + " " +
+            Utils.prettyPrintDouble(firstPosition.getProofNumber(firstPosition.getWeakLower() - 100)) +
+            " + " + Utils.prettyPrintDouble(firstPosition.getDisproofNumber(firstPosition.getWeakLower() + 100));
+      } else {
+        StoredBoard.Evaluation prev = firstPosition.getEvaluation(firstPosition.getWeakLower() - 100);
+        System.out.println(prev.getProb());
+        firstPositionText += "      " + Utils.prettyPrintDouble(prev.maxLogDerivative());
+        for (int evalGoal = firstPosition.getWeakLower(); evalGoal <= firstPosition.getWeakUpper(); evalGoal += 200) {
+          StoredBoard.Evaluation prevEval = firstPosition.getEvaluation(evalGoal - 100);
+          StoredBoard.Evaluation nextEval = firstPosition.getEvaluation(evalGoal + 100);
+          firstPositionText += String.format("\n%+3d %3.0f%%\n      %s", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100,
+              Utils.prettyPrintDouble(nextEval.maxLogDerivative()));
+        }
+      }
+      extrasPosition.setText(firstPositionText);
     };
-    SwingUtilities.invokeLater(tmp);
+    SwingUtilities.invokeLater(setExtras);
   }
 
   @Override

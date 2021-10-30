@@ -50,8 +50,9 @@ public class StoredBoard {
     boolean isLeaf = true;
     long descendants = 0;
 
-    public float proofNumber() { return proofNumber; }
-    public float disproofNumber() { return disproofNumber; }
+    public synchronized float proofNumber() { return proofNumber; }
+    public synchronized float disproofNumber() { return disproofNumber; }
+    public synchronized int maxLogDerivative() { return maxLogDerivative; }
 
     public Evaluation(int evalGoal) {
       assert evalGoal <= 6400 && evalGoal >= -6400;
@@ -71,10 +72,6 @@ public class StoredBoard {
 
     public synchronized float getProb() {
       return (float) prob / PROB_STEP;
-    }
-
-    synchronized int maxLogDerivative() {
-      return maxLogDerivative;
     }
 
     synchronized int childLogDerivative(@NonNull Evaluation child) {
@@ -397,7 +394,7 @@ public class StoredBoard {
   }
 
   public int getEval() {
-    float eval = -6400;
+    float eval = 0;
     float lastProb = 1;
     for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
       Evaluation curEval = getEvaluation(evalGoal);
@@ -405,14 +402,9 @@ public class StoredBoard {
         continue;
       }
 
-      lastProb = curEval.getProb();
-      if (curEval.getProb() == 1) {
-        eval = evalGoal + 100;
-      } else if (curEval.getProb() == 0) {
-        break;
-      } else {
-        eval += (int) (200 * lastProb);
-      }
+      float curProb = curEval.getProb();
+      eval += (int) (evalGoal - 100) * Math.abs(lastProb - curProb);
+      lastProb = curProb;
     }
 //    System.out.println(eval);
 //    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
@@ -440,6 +432,29 @@ public class StoredBoard {
 
   public boolean isSolved() {
     return getLower() == getUpper();
+  }
+
+  public synchronized boolean isPartiallySolved() {
+    return getWeakLower() == getWeakUpper();
+  }
+
+  public synchronized int getWeakUpper() {
+    for (int eval = 6300; eval > -6300; eval -= 200) {
+      Evaluation curEval = getEvaluation(eval);
+      if (curEval != null && curEval.getProb() > 0) {
+        return eval + 100;
+      }
+    }
+    return -6400;
+  }
+  public synchronized int getWeakLower() {
+    for (int eval = -6300; eval < 6300; eval += 200) {
+      Evaluation curEval = getEvaluation(eval);
+      if (curEval != null && curEval.getProb() < 1) {
+        return eval - 100;
+      }
+    }
+    return 6400;
   }
 
   public int getUpper() {

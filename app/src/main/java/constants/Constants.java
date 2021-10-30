@@ -27,8 +27,8 @@ public class Constants {
   public final static int MCTS_SIZE_MOBILE = 100000;
   public final static int MCTS_SIZE_DESKTOP = 10000000;
   
-  public final static int MAX_PARALLEL_TASKS = 12;
-  public final static float LAMBDA = -0.3F;
+  public final static int MAX_PARALLEL_TASKS = 1;
+  public final static float LAMBDA = -0.1F;
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;

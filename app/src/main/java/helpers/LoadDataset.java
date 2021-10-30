@@ -82,14 +82,14 @@ public class LoadDataset {
   public static final ArrayList<BoardWithEvaluation> loadTrainingSet(int startYear, int endYear) {
     ArrayList<String> files = new ArrayList<>();
     for (int i = startYear; i <= endYear; i++) {
-      files.add("training_set/TrainingSet" + i + ".tmp");
+      files.add("app/testdata/training_set/TrainingSet" + i + ".tmp");
     }
     return loadTrainingSet(files);
   }
   public static final ArrayList<BoardWithEvaluation> loadOMGSet(int endFile) {
     ArrayList<String> files = new ArrayList<>();
     for (int i = 0; i <= endFile; i++) {
-      files.add("training_set/weird_positions_result_" + i + ".tmp");
+      files.add("app/testdata/training_set/weird_positions_result_" + i + ".tmp");
     }
     return loadTrainingSet(files);
   }

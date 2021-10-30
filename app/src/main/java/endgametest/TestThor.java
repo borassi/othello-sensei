@@ -54,12 +54,7 @@ public class TestThor {
   
   public int errorSingleBoard(BoardWithEvaluation be, int depth) {
     Board b = be.board;
-//    int d = 1;
-//    if (b.getEmptySquares() > 4) {
-//      return 0F;
-//    }
     long[] moves = pmf.possibleMoves(b);
-//    Board sb = new StoredBoard(b, 0, 0);
     long startTime = System.currentTimeMillis();
     int curEval = eval.evaluate(b, depth, -6400, 6400);
     time += System.currentTimeMillis() - startTime;
@@ -73,29 +68,37 @@ public class TestThor {
   }
   
   public void run() {
-    int i = 0;
     int n = 0;
-    int depth = 1;
+    int depth = 4;
+    long visitedPositions = 0;
     float totalError = 0;
-    for (BoardWithEvaluation be : boards) {
-      i++;
+    double[] totalErrors = new double[64];
+    long[] nPositions = new long[64];
 
-      if (i % 1000 == 0) {
-        System.out.println(i + "/" + boards.size() + ": " + Math.sqrt(totalError / n));
-        System.out.println("  Visited positions: " + String.format("%.0f", eval.getNVisited() * 1000. / this.time));
-//        System.out.println("  Computed moves:    " + String.format("%.0f", eval.getNComputedMoves() * 1000. / this.time));
-        System.out.println("  Average positions: " + eval.getNVisited() / n);
-        System.out.println("  Depth: " + depth);
-      }
-      if (be.board.getEmptySquares() > 64 || be.board.getEmptySquares() < 4 || pmf.haveToPass(be.board)) {
+    for (BoardWithEvaluation be : boards) {
+      int nEmpties = be.board.getEmptySquares();
+      if (nEmpties > 64 || nEmpties < 4 || pmf.haveToPass(be.board)) {
         continue;
       }
       n++;
 //      if (be.board.getEmptySquares() < depth + 12) {
 //        continue;
 //      }
-      float curError = errorSingleBoard(be, depth);
+      float curError = errorSingleBoard(be, nEmpties < 22 ? 2 : 4);
+      visitedPositions += eval.getNVisited();
+      totalErrors[nEmpties] += (curError * curError);
+      nPositions[nEmpties]++;
       totalError += curError * curError;
+      if (n > 0 && n % 1000 == 0) {
+        System.out.println(n + "/" + boards.size() + ": " + Math.sqrt(totalError / n));
+        System.out.println("  Positions / sec: " + String.format("%.0f", visitedPositions * 1000. / this.time));
+//        System.out.println("  Computed moves:    " + String.format("%.0f", eval.getNComputedMoves() * 1000. / this.time));
+        System.out.println("  Average positions: " + visitedPositions / n);
+        System.out.println("  Depth: " + depth);
+      }
+    }
+    for (int i = 0; i < totalErrors.length; ++i) {
+      System.out.println(i + " " + Math.sqrt(totalErrors[i] / nPositions[i]));
     }
   }
   
