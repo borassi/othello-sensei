@@ -36,4 +36,5 @@ public interface UI {
   int delta();
   int lower();
   int upper();
+  void repaint();
 }

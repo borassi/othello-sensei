@@ -22,6 +22,7 @@ import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.StoredBoard;
+import helpers.Gaussian;
 import helpers.LoadDataset;
 import java.util.ArrayList;
 
@@ -73,7 +74,9 @@ public class TestThor {
     long visitedPositions = 0;
     float totalError = 0;
     double[] totalErrors = new double[64];
+    double errors[] = new double[256];
     long[] nPositions = new long[64];
+    int totalInErrors = 0;
 
     for (BoardWithEvaluation be : boards) {
       int nEmpties = be.board.getEmptySquares();
@@ -81,14 +84,15 @@ public class TestThor {
         continue;
       }
       n++;
-//      if (be.board.getEmptySquares() < depth + 12) {
-//        continue;
-//      }
       float curError = errorSingleBoard(be, nEmpties < 22 ? 2 : 4);
       visitedPositions += eval.getNVisited();
       totalErrors[nEmpties] += (curError * curError);
       nPositions[nEmpties]++;
       totalError += curError * curError;
+      if (nEmpties == 14) {
+        errors[Math.round(curError / 100) + 128]++;
+        totalInErrors++;
+      }
       if (n > 0 && n % 1000 == 0) {
         System.out.println(n + "/" + boards.size() + ": " + Math.sqrt(totalError / n));
         System.out.println("  Positions / sec: " + String.format("%.0f", visitedPositions * 1000. / this.time));
@@ -99,6 +103,11 @@ public class TestThor {
     }
     for (int i = 0; i < totalErrors.length; ++i) {
       System.out.println(i + " " + Math.sqrt(totalErrors[i] / nPositions[i]));
+    }
+    for (int i = 0; i < errors.length; ++i) {
+      System.out.println(i - 128 + " " + errors[i] / totalInErrors + " " +
+           (Gaussian.CDF(i - 127.5, 0, 8.07)
+                - Gaussian.CDF(i - 128.5, 0, 8.07)));
     }
   }
   

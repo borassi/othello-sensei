@@ -160,31 +160,6 @@ public class Main implements Runnable {
   
   private boolean stopping = false;
 
-  private PriorityQueue<StoredBoard> childrenToEvaluate(int delta) {
-    PriorityQueue<StoredBoard> toEvaluate = new PriorityQueue<>(
-        Comparator.comparingInt(StoredBoard::getEval));
-    StoredBoard firstPosition = EVALUATOR.get(board);
-    
-    for (StoredBoard child : firstPosition.getChildren()) {
-      if (!child.isSolved() && -child.getEval() >= firstPosition.getEval() - delta) {
-        toEvaluate.add(child);
-      }
-    }
-    if (toEvaluate.isEmpty() && firstPosition.isSolved()) {
-      StoredBoard bestUnsolvedChild = null;
-      int bestUnsolvedChildEval = -6600;
-      for (StoredBoard child : firstPosition.getChildren()) {
-        if (!child.isSolved()
-            && -child.getEval() > bestUnsolvedChildEval) {
-          bestUnsolvedChild = child;
-          bestUnsolvedChildEval = -child.getEval();
-        }
-      }
-      toEvaluate.add(bestUnsolvedChild);
-    }
-    return toEvaluate;
-  }
-  
   @Override
   public synchronized void run() {
     stopping = false;
@@ -192,23 +167,10 @@ public class Main implements Runnable {
     int nUpdate = 0;
     
     while (!stopping && !finished) {
-      long start = System.currentTimeMillis();
-      int updateTime = updateTimes[Math.min(updateTimes.length-1, nUpdate)];
-      evaluatePosition(board, (int) ((ui.delta() > 0 ? 0.4 : 1) * updateTime), nUpdate == 0);
-
-      if (ui.delta() > 0) {
-        double remainingTime = updateTime - (System.currentTimeMillis() - start);
-        PriorityQueue<StoredBoard> toEvaluate = childrenToEvaluate(100 * ui.delta());
-        if (!toEvaluate.isEmpty()) {
-          int timeEachPosition = (int) (remainingTime / toEvaluate.size());
-          while (!toEvaluate.isEmpty()) {
-            StoredBoard child = toEvaluate.poll();
-            evaluatePosition(child.getBoard(), timeEachPosition, false);
-          }
-        }
-      }
+      int updateTime = updateTimes[Math.min(updateTimes.length - 1, nUpdate)];
+      evaluatePosition(board, updateTime, nUpdate == 0);
       showMCTSEvaluations();
-      finished = EVALUATOR.getStatus() == Status.SOLVED || EVALUATOR.getStatus() == Status.STOPPED_POSITIONS;
+      finished = EVALUATOR.getStatus() == Status.SOLVED || EVALUATOR.getStatus() == Status.STOPPED_POSITIONS || EVALUATOR.getStatus() == Status.FAILED;
       if (ui.delta() > 0 && finished) {
         for (StoredBoard child : EVALUATOR.get(board).getChildren()) {
           if (!child.isSolved()) {
@@ -283,6 +245,7 @@ public class Main implements Runnable {
 //          "<" + Utils.prettyPrintDouble(-child.lower / 100) + "@" + child.depthLower;
       ui.setAnnotations(annotations, new PositionIJ(move));
     }
+    ui.repaint();
   }
   
   private PositionIJ moveFromBoard(Board father, StoredBoard child) {
@@ -347,5 +310,6 @@ public class Main implements Runnable {
       ui.setAnnotations(annotations, ij);
     }
     ui.setExtras(EVALUATOR.get(board), (System.currentTimeMillis() - startTime));
+    ui.repaint();
   }
 }
