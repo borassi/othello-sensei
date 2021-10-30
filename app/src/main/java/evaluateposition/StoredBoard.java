@@ -16,6 +16,8 @@ package evaluateposition;
 
 import androidx.annotation.NonNull;
 
+import com.sun.xml.internal.ws.policy.spi.AssertionCreationException;
+
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetMoves;
@@ -76,8 +78,10 @@ public class StoredBoard {
 
     synchronized int childLogDerivative(@NonNull Evaluation child) {
       synchronized (child) {
-        return Math.max(LOG_DERIVATIVE_MINUS_INF,
-            child.maxLogDerivative - LOG_DERIVATIVE[child.prob] + LOG_DERIVATIVE[PROB_STEP - prob]);
+        if (prob == 0 || prob == PROB_STEP || child.prob == 0 || child.prob == PROB_STEP || child.threadId != 0) {
+          return LOG_DERIVATIVE_MINUS_INF;
+        }
+        return child.maxLogDerivative - LOG_DERIVATIVE[child.prob] + LOG_DERIVATIVE[PROB_STEP - prob];
       }
     }
 
@@ -151,6 +155,7 @@ public class StoredBoard {
     }
 
     protected synchronized void updateFather() {
+      assert !isLeaf;
       proofNumber = Float.POSITIVE_INFINITY;
       disproofNumber = 0;
       prob = 0;
@@ -205,13 +210,13 @@ public class StoredBoard {
           }
         }
       }
-      if (getProb() == 1) {
+      if (getProb() == 1 || getProb() == 0) {
         maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       } else {
-        maxLogDerivative = Math.max(
-            LOG_DERIVATIVE_MINUS_INF,
-            maxLogDerivative + LOG_DERIVATIVE[255 - prob]);
+        maxLogDerivative = maxLogDerivative + LOG_DERIVATIVE[255 - prob];
+        assert maxLogDerivative > LOG_DERIVATIVE_MINUS_INF;
       }
+      assert isChildLogDerivativeOK();
 //      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
 //        extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
 //        extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
@@ -236,6 +241,25 @@ public class StoredBoard {
 //        extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar);
 //        assert isExtraInfoOK();
 //      }
+    }
+
+    private boolean isChildLogDerivativeOK() {
+      if (isLeaf) {
+        return true;
+      }
+      int expectedLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      String childLogDerivatives = "";
+      for (StoredBoard child : children) {
+        Evaluation childEval = child.getEvaluation(-evalGoal);
+        if (childEval.getProb() > 0 && childEval.getProb() < 1) {
+          childLogDerivatives += "  " + childLogDerivative(childEval) + "\n";
+          expectedLogDerivative = Math.max(expectedLogDerivative, childLogDerivative(childEval));
+        }
+      }
+      if (maxLogDerivative != expectedLogDerivative) {
+        throw new AssertionError("Wrong maxLogDerivative. Expected " + expectedLogDerivative + ", got " + maxLogDerivative + ".\n" + childLogDerivatives);
+      }
+      return maxLogDerivative == expectedLogDerivative;
     }
 
     protected void updateFathers() {

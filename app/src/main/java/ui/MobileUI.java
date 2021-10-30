@@ -77,10 +77,14 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
+  public void repaint() {
+    boardView.invalidate();
+  }
+
+  @Override
   public void setAnnotations(CaseAnnotations annotations, PositionIJ positionIJ) {
     BoardView boardView = findViewById(R.id.board);
     boardView.setAnnotations(annotations, positionIJ);
-    boardView.invalidate();
   }
 
   @Override

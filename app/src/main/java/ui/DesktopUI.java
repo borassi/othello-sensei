@@ -140,7 +140,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     cases[ij.i][ij.j].setFontSizes(new double[] {0.13});
     StoredBoard board = annotations.storedBoard;
     int eval = -board.getEval();
-    int evalRounded = Math.round(eval / 200.0F) * 200;
+    int evalRounded = Math.max(-6200, Math.min(6200, Math.round(eval / 200.0F) * 200));
     StoredBoard.Evaluation prevEval = board.getEvaluation(-evalRounded - 100);
     StoredBoard.Evaluation nextEval = board.getEvaluation(-evalRounded + 100);
     boolean isPartiallySolved = prevEval != null && nextEval != null && (prevEval.getProb() == 1) && (nextEval.getProb() == 0);
@@ -154,6 +154,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (isPartiallySolved) {
       scoresString = "\n" + Utils.prettyPrintDouble(prevEval.proofNumber()) + " " + Utils.prettyPrintDouble(nextEval.disproofNumber());
     } else {
+      evalRounded = Math.max(-5800, Math.min(5800, evalRounded));
       for (int evalGoal = evalRounded - 400; evalGoal <= evalRounded + 400; evalGoal += 200) {
         if (evalGoal < -6400 || evalGoal > 6400) {
           continue;
@@ -164,7 +165,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
           continue;
         }
         scoresString += String.format("\n %d %2.0f%% %s", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100,
-            Utils.prettyPrintDouble(prevEval.maxLogDerivative()));
+            Utils.prettyPrintDouble(nextEval.maxLogDerivative()));
       }
     }
     annotationsString += scoresString;
@@ -198,7 +199,14 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     cases[ij.i][ij.j].setAnnotations(annotationsString);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
-    cases[ij.i][ij.j].repaint();
+  }
+
+  public void repaint() {
+    for (Case[] row : cases) {
+      for (Case c : row) {
+        c.repaint();
+      }
+    }
   }
 
 
@@ -239,7 +247,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     resetHashMaps.addActionListener((ActionEvent e) -> main.resetHashMaps());
     depth = new JTextField();
-    depth.setText("100000000000000");
+    depth.setText("1000000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
 
@@ -341,48 +349,42 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void setExtras(StoredBoard firstPosition, double milliseconds) {
+  public void setExtras(StoredBoard board, double milliseconds) {
+    long descendants = board.getDescendants();
+    String text =
+        "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
+            "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n";
+
+    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+      text += "\nProof: " +
+                  Utils.prettyPrintDouble(descendants)
+                  + "\nBest proof: " +
+                  Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqual + board.extraInfo.minDisproofStrictlyGreater)
+                  + " = " +
+                  Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqual) + " + " +
+                  Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreater);
+    }
+
+    String firstPositionText = board.getEval() + "\n";
+    if (board.isPartiallySolved()) {
+      board.getProofNumber(board.getWeakLower() - 100);
+      firstPositionText +=
+          Utils.prettyPrintDouble(board.getProofNumber(board.getWeakLower() - 100)) +
+              " + " + Utils.prettyPrintDouble(board.getDisproofNumber(board.getWeakLower() + 100));
+    } else {
+      StoredBoard.Evaluation prev = board.getEvaluation(board.getWeakLower() - 100);
+      firstPositionText += "        " + Utils.prettyPrintDouble(prev.maxLogDerivative());
+      for (int evalGoal = board.getWeakLower(); evalGoal <= board.getWeakUpper(); evalGoal += 200) {
+        StoredBoard.Evaluation prevEval = board.getEvaluation(evalGoal - 100);
+        StoredBoard.Evaluation nextEval = board.getEvaluation(evalGoal + 100);
+        firstPositionText += String.format("\n%+3d %3.0f%%\n        %s", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100,
+            Utils.prettyPrintDouble(nextEval.maxLogDerivative()));
+      }
+    }
+    String tmp = firstPositionText;
     Runnable setExtras = () -> {
-      long descendants = 0;
-      for (StoredBoard child : firstPosition.getChildren()) {
-        descendants += child.getDescendants();
-      }
-      String text =
-          "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
-          "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n";
-//          "Missing: " + Utils.prettyPrintDouble(firstPosition.getProofNumber(evalGoal - 100)) + " + " +
-//              Utils.prettyPrintDouble(firstPosition.getDisproofNumber(evalGoal + 100));
-
-      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        text += "\nProof: " +
-            Utils.prettyPrintDouble(descendants)
-            + "\nBest proof: " +
-            Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual + firstPosition.extraInfo.minDisproofStrictlyGreater)
-            + " = " +
-            Utils.prettyPrintDouble(firstPosition.extraInfo.minProofGreaterEqual) + " + " +
-            Utils.prettyPrintDouble(firstPosition.extraInfo.minDisproofStrictlyGreater);
-      }
       extras.setText(text);
-
-      String firstPositionText = "";
-      if (firstPosition.isPartiallySolved()) {
-        firstPosition.getProofNumber(firstPosition.getWeakLower() - 100);
-        firstPositionText = "\n" +
-            firstPosition.getEval() + " " +
-            Utils.prettyPrintDouble(firstPosition.getProofNumber(firstPosition.getWeakLower() - 100)) +
-            " + " + Utils.prettyPrintDouble(firstPosition.getDisproofNumber(firstPosition.getWeakLower() + 100));
-      } else {
-        StoredBoard.Evaluation prev = firstPosition.getEvaluation(firstPosition.getWeakLower() - 100);
-        System.out.println(prev.getProb());
-        firstPositionText += "      " + Utils.prettyPrintDouble(prev.maxLogDerivative());
-        for (int evalGoal = firstPosition.getWeakLower(); evalGoal <= firstPosition.getWeakUpper(); evalGoal += 200) {
-          StoredBoard.Evaluation prevEval = firstPosition.getEvaluation(evalGoal - 100);
-          StoredBoard.Evaluation nextEval = firstPosition.getEvaluation(evalGoal + 100);
-          firstPositionText += String.format("\n%+3d %3.0f%%\n      %s", evalGoal / 100, (prevEval.getProb() - nextEval.getProb()) * 100,
-              Utils.prettyPrintDouble(nextEval.maxLogDerivative()));
-        }
-      }
-      extrasPosition.setText(firstPositionText);
+      extrasPosition.setText(tmp);
     };
     SwingUtilities.invokeLater(setExtras);
   }
