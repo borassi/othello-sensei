@@ -21,6 +21,7 @@ import evaluatedepthone.PatternEvaluatorImproved;
 import helpers.Gaussian;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Condition;
@@ -82,17 +83,15 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       int depth = board.nEmpties < 22 ? 2 : 4;
       int evalGoal = position.eval.evalGoal;
       long nVisited = 0;
+      int alpha = position.alpha;
+      int beta = position.beta;
 
       editLock.lock();
       if (board.getChildren() == null) {
         if (!board.addChildren(EvaluatorMCTS.this)) {
           int finalEval = BitPattern.getEvaluationGameOver(board.getPlayer(), board.getOpponent());
-          if (position.eval.evalGoal > finalEval) {
-            position.eval.setProved();
-          } else {
-            position.eval.setDisproved();
-          }
-          position.eval.setFree();
+          board.setSolved(finalEval);
+          board.setFree(alpha, beta);
           editLock.unlock();
           return 1;
         }
@@ -100,46 +99,70 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       editLock.unlock();
 
       for (StoredBoard child : board.getChildren()) {
-        StoredBoard.Evaluation childEval = child.addEvaluation(-evalGoal);
-        if (childEval == null) {
-          assert child.getEvaluation(-evalGoal) != null;
+        boolean missing = false;
+        for (int i = alpha; i <= beta; i += 200) {
+          if (child.getEvaluation(-i) == null) {
+            missing = true;
+            break;
+          }
+        }
+        if (!missing) {
           continue;
         }
+
+        child.setBusyNoUpdate();
         int eval = nextEvaluator.evaluate(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
+        for (int i = alpha; i <= beta; i += 200) {
+          StoredBoard.Evaluation childEval = child.addEvaluation(-i);
+          if (childEval == null) {
+            assert child.getEvaluation(-i) != null;
+            continue;
+          }
+          setLeaf(childEval, eval, -i);
+          assert child.getEvaluation(-i) != null;
+        }
+        StoredBoard.Evaluation childEval = child.getEvaluation(-evalGoal);
         childEval.addDescendants(nextEvaluator.getNVisited() + 1);
         nVisited += childEval.descendants;
-        setLeaf(childEval, eval, -evalGoal);
-        childEval.setFreeNoUpdate();
-        assert child.getEvaluation(-evalGoal) != null;
+        child.setFreeNoUpdate();
       }
       editLock.lock();
-      position.eval.isLeaf = false;
-      for (StoredBoard child : board.getChildren()) {
-        assert child.getEvaluation(-evalGoal) != null;
+//      position.eval.isLeaf = false;
+      for (int i = alpha; i <= beta; i += 200) {
+        if (board.getEvaluation(i) == null) {
+          board.addEvaluation(i);
+        }
+        board.getEvaluation(i).isLeaf = false;
+        board.getEvaluation(i).updateFather();
       }
-      position.eval.updateFather();
-      position.eval.setFree();
+      board.setFree(alpha, beta);
       editLock.unlock();
       return nVisited;
     }
 
     public long solvePosition(StoredBoardBestDescendant position) {
       StoredBoard board = position.eval.getStoredBoard();
-      int alpha = position.eval.evalGoal;
-      int beta = position.eval.evalGoal;
+      int alpha = position.alpha;
+      int beta = position.beta;
       int eval = nextEvaluator.evaluate(
           board.getPlayer(), board.getOpponent(), board.nEmpties, alpha, beta);
-      if (eval <= alpha) {
-        position.eval.setDisproved();
-      } else if (eval >= beta) {
-        position.eval.setProved();
+      for (int i = position.alpha; i <= position.beta; i += 200) {
+        StoredBoard.Evaluation evaluation = board.getEvaluation(i);
+        if (evaluation == null) {
+          evaluation = board.addEvaluation(i);
+        }
+        if (eval <= i && evaluation.isLeaf) {
+          evaluation.setDisproved();
+        } else if (eval >= i && evaluation.isLeaf) {
+          evaluation.setProved();
+        }
       }
       long seenPositions = nextEvaluator.getNVisited() + 1;
       synchronized(main) {
         constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
       }
       editLock.lock();
-      position.eval.setFree();
+      board.setFree(position.alpha, position.beta);
       editLock.unlock();
       return seenPositions;
     }
@@ -207,7 +230,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public void setLeaf(StoredBoard.Evaluation evaluation, int eval, int evalGoal) {
     StoredBoard board = evaluation.getStoredBoard();
-    float prob = 1 - (float) Gaussian.CDF(evalGoal, eval, ERRORS[board.nEmpties]);
+    float prob = 1 - (float) Gaussian.CDF(evalGoal, eval, ERRORS[board.nEmpties] * Constants.MULT_STDDEV);
     float proofNumber = (float) (StoredBoard.endgameTimeEstimator.proofNumber(board.getPlayer(), board.getOpponent(), evalGoal, eval));
     assert Float.isFinite(proofNumber) && proofNumber > 0;
     float disproofNumber = (float) (StoredBoard.endgameTimeEstimator.disproofNumber(board.getPlayer(), board.getOpponent(), evalGoal, eval));
@@ -239,29 +262,58 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     int bestEvalProof = -6300;
     int bestEvalDisproof = 6300;
     int bestEval = 0;
+    int lower = board.getWeakLower();
+    int upper = board.getWeakUpper();
+    double quantile = 0.5;
     for (int eval = lower; eval <= upper; eval += 200) {
-      if (board.maxLogDerivative(eval) > bestLogDerivative) {
-        bestLogDerivative = board.maxLogDerivative(eval);
-        bestEval = eval;
+      StoredBoard.Evaluation evalPrevious = board.getEvaluation(eval - 100);
+      StoredBoard.Evaluation evalNext = board.getEvaluation(eval + 100);
+      if (evalPrevious.getProb() >= quantile && evalNext.getProb() < quantile) {
+        if (evalPrevious.proofNumber() == 0) {
+          return eval + 100;
+        }
+        if (evalNext.disproofNumber() == 0) {
+          return eval - 100;
+        }
+        double tmp = random.nextDouble();
+        if (tmp < Constants.PROB_RANDOM_VALUE) {
+          return eval - 100;
+        } else if (tmp > 1 - Constants.PROB_RANDOM_VALUE) {
+          return eval + 100;
+        }
+        if (evalPrevious.maxLogDerivative() > evalNext.maxLogDerivative()) {
+          return eval - 100;
+        } else if (evalPrevious.maxLogDerivative() < evalNext.maxLogDerivative()) {
+          return eval + 100;
+        }
+        lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
+        return lastDoubtGreaterEqual ? eval - 100 : eval + 100;
+//        return board.maxLogDerivative(eval-100) > board.maxLogDerivative(eval + 100) ? eval - 100 : eval + 100;
       }
-      if (board.getProb(eval) == 1) {
-        bestEvalProof = eval;
-      }
-      if (bestEvalDisproof == 6300 && board.getProb(eval) == 0) {
-        bestEvalDisproof = eval;
-      }
+//      if (board.getProb(eval) == 1) {
+//        bestEvalProof = eval;
+//      }
+//      if (bestEvalDisproof == 6300 && board.getProb(eval) == 0) {
+//        bestEvalDisproof = eval;
+//      }
     }
-    if (bestLogDerivative > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
-      return bestEval;
-    }
-    if (board.getProofNumber(bestEvalProof) == 0) {
-      return bestEvalDisproof;
-    }
-    if (board.getDisproofNumber(bestEvalDisproof) == 0) {
-      return bestEvalProof;
-    }
-    lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
-    return lastDoubtGreaterEqual ? bestEvalProof : bestEvalDisproof;
+//    System.out.println(bestEval + " " + board.getEvaluation(bestEval).evalGoal + " " + board.getWeakLower() + " " + board.getWeakUpper());
+//    assert bestEval == 0 || (board.getEvaluation(bestEval).evalGoal >= board.getWeakLower() - 100 && board.getEvaluation(bestEval).evalGoal <= board.getWeakUpper() + 100);
+//    assert bestEvalProof == -6300 || (board.getEvaluation(bestEvalProof).evalGoal >= board.getWeakLower() - 100 && board.getEvaluation(bestEvalProof).evalGoal <= board.getWeakUpper() + 100);
+//    assert bestEvalDisproof == 6300 || (board.getEvaluation(bestEvalDisproof).evalGoal >= board.getWeakLower() - 100 && board.getEvaluation(bestEvalDisproof).evalGoal <= board.getWeakUpper() + 100);
+//    if (bestLogDerivative > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
+//      return bestEval;
+//    }
+//    if (board.getProofNumber(bestEvalProof) == 0) {
+//      return bestEvalDisproof;
+//    }
+//    if (board.getDisproofNumber(bestEvalDisproof) == 0) {
+//      return bestEvalProof;
+//    }
+//    lastDoubtGreaterEqual = !lastDoubtGreaterEqual;
+//    return lastDoubtGreaterEqual ? bestEvalProof : bestEvalDisproof;
+    assert false;
+    return 0;
   }
 
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
@@ -356,7 +408,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       nextPositionLock.unlock();
     }
     try {
-      result.eval.setBusy();
+      result.eval.getStoredBoard().setBusy(result.eval.evalGoal, result.eval.evalGoal);
     } finally {
       editLock.unlock();
     }
@@ -389,40 +441,46 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return 200 * Math.round((eval + 100) / 200) - 100;
   }
 
+  Random random = new Random();
   void setFirstPosition(long player, long opponent) {
     empty();
+    random.setSeed(42);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
+    firstPosition.setBusy(-6300, 6300);
     add(firstPosition);
     firstPosition.addChildren(this);
     for (int i = -6300; i <= 6300; i += 200) {
       StoredBoard.Evaluation eval = firstPosition.addEvaluation(i);
       setLeaf(eval, 0, i);
       eval.isLeaf = false;
-      eval.setFree();
     }
     for (StoredBoard child : firstPosition.getChildren()) {
+      child.setBusyNoUpdate();
       int quickEval = nextEvaluator.evaluate(child.getPlayer(), child.getOpponent(), 4, lower, upper);
       for (int i = -6300; i <= 6300; i += 200) {
         StoredBoard.Evaluation eval = child.addEvaluation(i);
         setLeaf(eval, quickEval, i);
-        eval.setFreeNoUpdate();
       }
       child.getEvaluation(evalToBoundary(quickEval)).addDescendants(nextEvaluator.getNVisited() + 1);
       firstPosition.getEvaluation(evalToBoundary(-quickEval)).addDescendants(child.getDescendants());
+      child.setFreeNoUpdate();
     }
     for (int i = -6300; i <= 6300; i += 200) {
       firstPosition.getEvaluation(i).updateFather();
     }
+    firstPosition.setFree(-6300, 6300);
   }
 
+  int temp = 0;
   public boolean isSolved() {
     if (Constants.APPROX_ONLY) {
-      for (int eval = lower; eval <= upper; eval += 200) {
-        if (firstPosition.getProb(eval) > 0 && firstPosition.getProb(eval) < 1) {
-          return false;
+      if (firstPosition.isPartiallySolved()) {
+        if (temp++ > this.size * Constants.SIZE_FOR_APPROX) {
+          return true;
         }
+      } else {
+        temp = 0;
       }
-      return true;
     }
     return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;
   }
@@ -496,7 +554,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public void addChildren(StoredBoardBestDescendant position) {
-    position.eval.setBusy();
+    position.eval.getStoredBoard().setBusy(-6300, 6300);
     threads[0].addChildren(position);
     finalizePosition(position, 0);
   }

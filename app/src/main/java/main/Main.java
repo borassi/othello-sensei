@@ -294,7 +294,12 @@ public class Main implements Runnable {
   
   private void showMCTSEvaluations() {
     StoredBoard current = EVALUATOR.get(board);
-    if (current == null || current.getChildren() == null) {
+    if (current == null) {
+      showHashMapEvaluations();
+      return;
+    }
+    ui.setExtras(current, (System.currentTimeMillis() - startTime));
+    if (current.getChildren() == null) {
       showHashMapEvaluations();
       return;
     }
@@ -309,7 +314,6 @@ public class Main implements Runnable {
       CaseAnnotations annotations = new CaseAnnotations(child, ij.equals(bestIJ));
       ui.setAnnotations(annotations, ij);
     }
-    ui.setExtras(EVALUATOR.get(board), (System.currentTimeMillis() - startTime));
     ui.repaint();
   }
 }

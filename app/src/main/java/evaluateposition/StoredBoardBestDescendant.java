@@ -18,6 +18,7 @@ import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MINUS_INF;
 
 import androidx.annotation.NonNull;
 
+import constants.Constants;
 import helpers.Utils;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,6 +33,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   ArrayList<StoredBoard.Evaluation> parents = new ArrayList<>();
   int derivativeLoss;
   float proofNumberLoss;
+  int alpha;
+  int beta;
 
   public int getDerivativeLoss() {
     return derivativeLoss;
@@ -140,8 +143,19 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     } else {
       derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
     }
+    assert alpha <= eval.evalGoal;
+    for (int i = alpha; i <= beta; i += 200) {
+      assert eval.getStoredBoard().getEvaluation(i) != null;
+    }
+    int tmp = -alpha;
+    alpha = -beta;
+    beta = tmp;
     eval = child;
-    assert eval.threadId == 0;
+    alpha = Math.max(alpha, Math.min(eval.evalGoal, eval.getStoredBoard().getWeakLower() + 100));
+    beta = Math.min(beta, Math.max(eval.evalGoal, eval.getStoredBoard().getWeakUpper() - 100));
+    assert alpha <= eval.evalGoal;
+    assert beta >= eval.evalGoal;
+    assert eval.getStoredBoard().threadId == 0;
     assert !eval.isSolved();
   }
 
@@ -153,11 +167,20 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     }
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
+    result.alpha = Math.min(father.getStoredBoard().getWeakLower() + 100, result.eval.evalGoal); //
+    result.beta = Math.max(father.getStoredBoard().getWeakUpper() - 100, result.eval.evalGoal); //
+
     while (!result.eval.isLeaf) {
       StoredBoard.Evaluation bestChild = result.bestChild();
       assert bestChild != null;
-      assert bestChild.threadId == 0;
+      assert bestChild.getStoredBoard().threadId == 0;
+      assert (result.eval.getProb() >= Constants.PROB_FOR_PROOF || bestChild.maxLogDerivative >= result.eval.maxLogDerivative());
       result.toChild(bestChild);
+      for (int i = result.alpha; i <= result.beta; i += 200) {
+        if (result.eval.getStoredBoard().getEvaluation(i) == null) {
+          return result;
+        }
+      }
     }
     assert result.eval != null;
     return result;
@@ -211,10 +234,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 //    while (result.size() < n && !toProcess.isEmpty()) {
 //      StoredBoardBestDescendant next = toProcess.poll();
 //      StoredBoard.Evaluation nextBoard = next.eval;
-////      System.out.println(next.derivativeLoss);
 //      if (result.size() > 10
 //          && result.get(0).derivativeLoss != Float.NEGATIVE_INFINITY && next.derivativeLoss - result.get(0).derivativeLoss < -3) {
-////        System.out.println("HI" + result.size() + " " + result.get(0).derivativeLoss + " " + next.derivativeLoss);
 //        break;
 //      }
 ////      nextBoard.fathers.get(0);
