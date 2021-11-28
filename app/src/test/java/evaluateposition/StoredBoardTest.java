@@ -115,7 +115,7 @@ public class StoredBoardTest {
 
     pass.children = new StoredBoard[] {afterPass};
     afterPass.fathers.add(pass);
-    afterPass.playerIsStartingPlayer = false;
+    afterPass.depth = 1;
 
     assert pass.isAllOK();
 

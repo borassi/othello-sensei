@@ -84,7 +84,9 @@ public class EndgameTest {
           "--XXXXX---XXXX---OOOXX---OOXOX---OXXXXX-OOOOOXO----OXX---------- O",
           "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
           "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
-          "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X"};
+          "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X", // 60
+          "---XXXX---XXXO-OXXOXOO-OOOOOXOOO-OOOOXO----OOOX----------------- X" // 61
+      };
 //  EvaluatorMidgame eval = evalMidgame;
   EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTSSize(), 2 * Constants.MCTSSize());
 

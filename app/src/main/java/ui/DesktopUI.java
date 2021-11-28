@@ -258,7 +258,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
 
-    SpinnerModel allowedFFOPositions = new SpinnerNumberModel(46, 40, 60, 1);
+    SpinnerModel allowedFFOPositions = new SpinnerNumberModel(46, 40, 61, 1);
     ffoPositions = new JSpinner(allowedFFOPositions);
     commands.add(ffoPositions);
     ffoPositions.addChangeListener((ChangeEvent e) -> main.setEndgameBoard((int) ffoPositions.getValue()));

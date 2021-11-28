@@ -160,25 +160,35 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   }
 
   public static StoredBoardBestDescendant bestDescendant(
-      StoredBoard.Evaluation father) {
+      StoredBoard.Evaluation father, int alpha, int beta) {
     assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
     if (!father.hasValidDescendants()) {
       return null;
     }
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
-    result.alpha = Math.min(father.getStoredBoard().getWeakLower() + 100, result.eval.evalGoal); //
-    result.beta = Math.max(father.getStoredBoard().getWeakUpper() - 100, result.eval.evalGoal); //
+    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getWeakLower() + 100, result.eval.evalGoal)); //
+    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getWeakUpper() - 100, result.eval.evalGoal)); //
 
-    while (!result.eval.isLeaf) {
+    while (true) {
       StoredBoard.Evaluation bestChild = result.bestChild();
       assert bestChild != null;
       assert bestChild.getStoredBoard().threadId == 0;
       assert (result.eval.getProb() >= Constants.PROB_FOR_PROOF || bestChild.maxLogDerivative >= result.eval.maxLogDerivative());
       result.toChild(bestChild);
+      if (result.eval.getStoredBoard().isLeaf()) {
+        break;
+      }
       for (int i = result.alpha; i <= result.beta; i += 200) {
         if (result.eval.getStoredBoard().getEvaluation(i) == null) {
+          System.out.println("BIG MISTAKE1!");
           return result;
+        }
+        for (StoredBoard child : result.eval.getStoredBoard().getChildren()) {
+          if (child.getEvaluation(-i) == null) {
+            System.out.println("BIG MISTAKE2!");
+            return result;
+          }
         }
       }
     }
@@ -193,7 +203,7 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     }
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
-    while (result.eval != null && !result.eval.isLeaf) {
+    while (result.eval != null && !result.eval.getStoredBoard().isLeaf()) {
       result.toChild(randomChild(result.eval));
     }
     return result;
