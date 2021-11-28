@@ -467,9 +467,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       firstPosition.getEvaluation(evalToBoundary(-quickEval)).addDescendants(child.getDescendants());
       child.setFreeNoUpdate();
     }
-    for (int i = -6300; i <= 6300; i += 200) {
-      firstPosition.getEvaluation(i).updateFather();
-    }
+    firstPosition.updateFathers(-6300, 6300);
     firstPosition.setFree(-6300, 6300);
     this.weakUpper = 6300;
     this.weakLower = -6300;
