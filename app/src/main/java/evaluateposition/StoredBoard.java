@@ -105,9 +105,9 @@ public class StoredBoard {
     void setLeaf(float prob, float proofNumber, float disproofNumber) {
       assert isLeaf();
       assert threadId == Thread.currentThread().getId() || EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
-      bestChildMidgame = this;
-      bestChildProof = this;
-      bestChildDisproof = this;
+      bestChildMidgame = null;
+      bestChildProof = null;
+      bestChildDisproof = null;
       this.prob = roundProb(prob);
       this.proofNumber = proofNumber;
       this.disproofNumber = disproofNumber;
@@ -606,8 +606,10 @@ public class StoredBoard {
     for (StoredBoard child : children) {
       child.updateDescendantsRecursive(-beta, -alpha);
     }
-    for (int i = alpha; i <= beta; i += 200) {
-      getOrAddEvaluation(i).updateFather();
+    synchronized (this) {
+      for (int i = alpha; i <= beta; i += 200) {
+        getOrAddEvaluation(i).updateFather();
+      }
     }
   }
 //

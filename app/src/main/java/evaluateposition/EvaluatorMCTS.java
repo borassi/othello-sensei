@@ -108,13 +108,15 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       editLock.lock();
 
-      for (int i = alpha; i <= beta; i += 200) {
-        if (board.getEvaluation(i) == null) {
-          board.addEvaluation(i);
+      synchronized (board) {
+        for (int i = alpha; i <= beta; i += 200) {
+          if (board.getEvaluation(i) == null) {
+            board.addEvaluation(i);
+          }
+          board.getEvaluation(i).updateFather();
         }
-        board.getEvaluation(i).updateFather();
+        board.setFree(alpha, beta);
       }
-      board.setFree(alpha, beta);
       editLock.unlock();
       return nVisited;
     }
@@ -435,10 +437,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return status;
   }
 
-  void setFirstPosition(Board b) {
-    setFirstPosition(b.getPlayer(), b.getOpponent());
-  }
-
   public static int evalToBoundary(int eval) {
     if (eval >= 6300) {
       return 6300;
@@ -447,6 +445,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       return 6300;
     }
     return 200 * Math.round((eval + 100) / 200) - 100;
+  }
+
+  void setFirstPosition(Board b) {
+    setFirstPosition(b.getPlayer(), b.getOpponent());
   }
 
   Random random = new Random();
@@ -467,7 +469,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       firstPosition.getEvaluation(evalToBoundary(-quickEval)).addDescendants(child.getDescendants());
       child.setFreeNoUpdate();
     }
-    firstPosition.updateFathers(-6300, 6300);
+    firstPosition.updateFather(-6300, 6300);
     firstPosition.setFree(-6300, 6300);
     this.weakUpper = 6300;
     this.weakLower = -6300;

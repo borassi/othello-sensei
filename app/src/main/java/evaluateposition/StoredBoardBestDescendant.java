@@ -179,18 +179,6 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       if (result.eval.getStoredBoard().isLeaf()) {
         break;
       }
-      for (int i = result.alpha; i <= result.beta; i += 200) {
-        if (result.eval.getStoredBoard().getEvaluation(i) == null) {
-          System.out.println("BIG MISTAKE1!");
-          return result;
-        }
-        for (StoredBoard child : result.eval.getStoredBoard().getChildren()) {
-          if (child.getEvaluation(-i) == null) {
-            System.out.println("BIG MISTAKE2!");
-            return result;
-          }
-        }
-      }
     }
     assert result.eval != null;
     return result;
