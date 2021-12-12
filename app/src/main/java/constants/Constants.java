@@ -26,21 +26,21 @@ public class Constants {
   public final static int HASH_MAP_SIZE_DESKTOP = 1000000;
   public final static int MCTS_SIZE_MOBILE = 100000;
   public final static int MCTS_SIZE_DESKTOP = 10000000;
-  
+
   public final static int MAX_PARALLEL_TASKS = 1;
-  public final static float LAMBDA = -0.65F;
+  public final static float LAMBDA = -0.45F;
   public final static float MIN_PROB = 0F;
   public final static float MIN_PROB_LEAF = 0F;
   public final static float PROB_RANDOM_VALUE = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
-  public final static float MULT_STDDEV = 0.65F;
-  public final static float PROB_FOR_PROOF = 0.6F;
-  public final static float ZERO_PERC_FOR_WEAK = 0.05F;
+  public final static float MULT_STDDEV = 0.8F;
+  public final static float PROB_FOR_PROOF = 1F;
+  public final static float ZERO_PERC_FOR_WEAK = 0.04F;
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
   public final static boolean IGNORE_TRANSPOSITIONS = false;
-  public final static boolean APPROX_ONLY = true;
+  public final static boolean APPROX_ONLY = false;
 
   public static int hashMapSize() {
     return MOBILE ? HASH_MAP_SIZE_MOBILE : HASH_MAP_SIZE_DESKTOP;

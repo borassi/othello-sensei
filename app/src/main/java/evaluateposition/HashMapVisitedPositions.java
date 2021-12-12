@@ -14,6 +14,8 @@
 package evaluateposition;
 
 import board.Board;
+import constants.Constants;
+
 import java.util.Arrays;
 
 public class HashMapVisitedPositions {
@@ -41,9 +43,8 @@ public class HashMapVisitedPositions {
     size = 0;
   }
   
-  public void add(StoredBoard b) {
+  public synchronized void add(StoredBoard b) {
     int hash = hash(b);
-
     StoredBoard first = evaluationsHashMap[hash];
     assert b != first;
     evaluationsHashMap[hash] = b;
@@ -52,12 +53,21 @@ public class HashMapVisitedPositions {
       assert hash(first) == hash;
       first.prev = b;
       b.next = first;
-      
+
       assert first.isPrevNextOK();
     }
     assert b.isPrevNextOK();
   }
-  
+
+  public synchronized StoredBoard getOrAdd(long player, long opponent, int depth) {
+    StoredBoard b = get(player, opponent);
+    if (b == null || b.depth != depth || Constants.IGNORE_TRANSPOSITIONS) {
+      b = new StoredBoard(player, opponent, depth);
+      add(b);
+    }
+    return b;
+  }
+
   public StoredBoard get(Board b) {
     return get(b.getPlayer(), b.getOpponent());
   }

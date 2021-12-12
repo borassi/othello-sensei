@@ -14,6 +14,8 @@
 
 package evaluateposition;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+
 import board.Board;
 import constants.Constants;
 import java.util.ArrayList;
@@ -138,9 +140,9 @@ public class HashMap {
         insertAfter(first, b);
       }
       size.incrementAndGet();
-//      if (Constants.ASSERT_EXTENDED) {
-//        assert allOk();
-//      }
+      if (Constants.ASSERT_EXTENDED) {
+        assert allOk();
+      }
       return b;
     }
   }
@@ -258,7 +260,10 @@ public class HashMap {
         }
       }
     }
-    return testSize == this.size.get();
+    if (Constants.MAX_PARALLEL_TASKS == 1 && testSize != this.size.get()) {
+      System.out.println(testSize + " " + this.size.get());
+    }
+    return Constants.MAX_PARALLEL_TASKS > 1 || testSize == this.size.get();
   }
   
 //  public static void main(String args[]) {

@@ -167,18 +167,15 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     }
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
-    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getWeakLower() + 100, result.eval.evalGoal)); //
-    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getWeakUpper() - 100, result.eval.evalGoal)); //
+    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getWeakLower() + 100, result.eval.evalGoal));
+    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getWeakUpper() - 100, result.eval.evalGoal));
 
-    while (true) {
+    while (!result.eval.getStoredBoard().isLeaf()) {
       StoredBoard.Evaluation bestChild = result.bestChild();
       assert bestChild != null;
       assert bestChild.getStoredBoard().threadId == 0;
       assert (result.eval.getProb() >= Constants.PROB_FOR_PROOF || bestChild.maxLogDerivative >= result.eval.maxLogDerivative());
       result.toChild(bestChild);
-      if (result.eval.getStoredBoard().isLeaf()) {
-        break;
-      }
     }
     assert result.eval != null;
     return result;

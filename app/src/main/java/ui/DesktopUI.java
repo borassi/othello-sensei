@@ -366,7 +366,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
                   Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreater);
     }
 
-    String firstPositionText = board.getEval() + "\n";
+    String firstPositionText = board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n";
     assert board.threadId == 0;
     for (int evalGoal = Math.max(-6300, board.getWeakLower() - 700);
          evalGoal <= Math.min(6300, board.getWeakUpper() + 700); evalGoal += 200) {
