@@ -25,7 +25,7 @@ public class Constants {
   public final static int HASH_MAP_SIZE_MOBILE = 100000;
   public final static int HASH_MAP_SIZE_DESKTOP = 1000000;
   public final static int MCTS_SIZE_MOBILE = 100000;
-  public final static int MCTS_SIZE_DESKTOP = 10000000;
+  public final static int MCTS_SIZE_DESKTOP = 14000000;
 
   public final static int MAX_PARALLEL_TASKS = 1;
   public final static float LAMBDA = -0.45F;

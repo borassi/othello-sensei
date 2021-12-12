@@ -252,7 +252,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
 
-    SpinnerModel allowedDeltas = new SpinnerNumberModel(0, 0, 64, 1);
+    SpinnerModel allowedDeltas = new SpinnerNumberModel(0, 0, 64, 2);
     delta = new JSpinner(allowedDeltas);
     delta.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * delta.getPreferredSize().height));
     commands.add(delta);

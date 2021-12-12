@@ -347,6 +347,9 @@ public class StoredBoard {
   }
 
   static int toEvaluationIndex(int eval) {
+    if ((eval + 6300) % 200 != 0) {
+      System.out.println(eval);
+    }
     assert ((eval + 6300) % 200 == 0);
     assert (eval >= -6300);
     assert (eval <= 6300);

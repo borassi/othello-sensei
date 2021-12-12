@@ -108,14 +108,14 @@ public class EndgameTest {
       System.out.print("          Best");      
     }
     System.out.println("   nVisPos/sec   nStored  n/end  n/mid  eval");
-    for (int i = 41; i <= 60; i++) { //POSITIONS.length; i++) {
+    for (int i = 41; i <= 60; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
       long cpuT;
       long t = System.currentTimeMillis();
 //      int result = evalMidgame.evaluatePosition(b, b.getEmptySquares(), 1, 199);
-      int result = -eval.evaluatePosition(b, -6300, 6300, Long.MAX_VALUE, 1200 * 1000, true); //, 0, 1, Long.MAX_VALUE, Long.MAX_VALUE, true);
+      int result = -eval.evaluatePosition(b, -6300, 6300, Long.MAX_VALUE, 1200 * 1000, 0);
       t = System.currentTimeMillis() - t;
       
 //      eval.resetHashMapVisitedPositions();
