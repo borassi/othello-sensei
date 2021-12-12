@@ -550,9 +550,10 @@ public class StoredBoard {
     return descendants;
   }
 
-  public final void setSolved(int newEval) {
+  public final void setSolved(int newEval, int alpha, int beta) {
     setUpper(newEval);
     setLower(newEval);
+    setFree(alpha, beta);
   }
 
   public final void setLower(int newLower) {
@@ -587,7 +588,7 @@ public class StoredBoard {
     return children == null;
   }
 
-  public void setLeaf(int leafEval, int alpha, int beta) {
+  private synchronized void setLeafWithoutFree(int leafEval, int alpha, int beta) {
     assert isLeaf();
     assert threadId == 0 || threadId == Thread.currentThread().getId() || EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
     assert leafEval != -6500;
@@ -603,6 +604,10 @@ public class StoredBoard {
       evaluation.setLeaf(prob, proofNumber, disproofNumber);
     }
   }
+  public void setLeaf(int leafEval, int alpha, int beta) {
+    setLeafWithoutFree(leafEval, alpha, beta);
+    setFree(alpha, beta);
+  }
 
   public synchronized void updateDescendantsRecursive(int alpha, int beta) {
     // Nobody else can held a StoredBoard lock.
@@ -610,7 +615,7 @@ public class StoredBoard {
     assert isLeaf() || threadId == 0;
     if (isLeaf()) {
       assert leafEval != -6500;
-      setLeaf(leafEval, alpha, beta);
+      setLeafWithoutFree(leafEval, alpha, beta);
       return;
     }
     for (StoredBoard child : children) {
