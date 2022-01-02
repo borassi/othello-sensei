@@ -127,7 +127,7 @@ public class StoredBoard {
       if (getProb() == 0 || getProb() == 1) {
         maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       } else {
-        maxLogDerivative = (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (Math.log(getProb() * (1 - getProb()))));
+        maxLogDerivative = (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * Constants.LEAF_MULTIPLIER * (Math.log(getProb() * (1 - getProb()))));
       }
       assert maxLogDerivative < 0;
     }
@@ -158,7 +158,7 @@ public class StoredBoard {
       assert Thread.holdsLock(StoredBoard.this);
       proofNumber = Float.POSITIVE_INFINITY;
       disproofNumber = 0;
-      prob = 0;
+      prob = PROB_STEP;
       maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
       assert getChildren().length > 0;
@@ -173,7 +173,7 @@ public class StoredBoard {
             if (child.getProb() > 0.5) {
               continue;
             } else {
-              prob = PROB_STEP;
+              prob = 0;
               proofNumber = 0;
               disproofNumber = Float.POSITIVE_INFINITY;
               maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
@@ -216,10 +216,10 @@ public class StoredBoard {
       if (getProb() == 1 || getProb() == 0) {
         maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
       } else {
-        maxLogDerivative = maxLogDerivative + LOG_DERIVATIVE[255 - prob];
+        maxLogDerivative = maxLogDerivative + LOG_DERIVATIVE[prob];
         assert maxLogDerivative > LOG_DERIVATIVE_MINUS_INF;
       }
-
+      prob = PROB_STEP - prob;
       if (Constants.MAX_PARALLEL_TASKS == 1) {
         assert bestChildMidgame == null || bestChildMidgame.getStoredBoard().threadId == 0;
         assert bestChildProof == null || bestChildProof.getStoredBoard().threadId == 0;
@@ -311,34 +311,17 @@ public class StoredBoard {
   private static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
 
   static {
+    ProbCombiner combiner = Constants.PROB_COMBINER;
     COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1)];
     LOG_DERIVATIVE = new int[(PROB_STEP + 1)];
     for (int i = 0; i <= PROB_STEP; ++i) {
-      if (i == 0 || i == PROB_STEP) {
-        LOG_DERIVATIVE[i] = LOG_DERIVATIVE_MINUS_INF;
-      } else {
-        LOG_DERIVATIVE[i] =
-            // (1 - lambda) * log((1 - p_c) / p_c).
-            // <= 0, >= (1 - (-2)) * log(1/255 / 1) >= -17
-            // Max value: -17 * 100 * 60 = 102000. Should be fine with 2M
-            (int) Math.round(LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log(((double) i) / PROB_STEP));
-//            (int) Math.round(
-//                LOG_DERIVATIVE_MULTIPLIER * (1 - Constants.LAMBDA) * Math.log((PROB_STEP - i) / (float) i));
-      }
+      double x = i / (double) PROB_STEP;
+      LOG_DERIVATIVE[i] = (int) Math.round(Math.max(LOG_DERIVATIVE_MINUS_INF,
+          -LOG_DERIVATIVE_MULTIPLIER * Math.log(combiner.derivative(x) / combiner.f(x))));
+
       for (int j = 0; j <= PROB_STEP; ++j) {
-        COMBINE_PROB[(i << 8) | j] =
-            PROB_STEP - (int) Math.round(
-                Math.pow(
-                    Math.pow(1 - i / (double) PROB_STEP, Constants.LAMBDA) +
-                    Math.pow(j / (double) PROB_STEP, Constants.LAMBDA) - 1,
-                    1 / Constants.LAMBDA
-                ) * PROB_STEP);
-        if (COMBINE_PROB[(i << 8) | j] / (double) PROB_STEP <= Constants.MIN_PROB) {
-          COMBINE_PROB[(i << 8) | j] = 0;
-        }
-        if (COMBINE_PROB[(i << 8) | j] / (double) PROB_STEP >= 1 - Constants.MIN_PROB) {
-          COMBINE_PROB[(i << 8) | j] = 255;
-        }
+        double y = j / (double) PROB_STEP;
+        COMBINE_PROB[(i << 8) | j] = (int) Math.round(combiner.inverse(combiner.f(x) * combiner.f(y)) * PROB_STEP);
       }
     }
   }

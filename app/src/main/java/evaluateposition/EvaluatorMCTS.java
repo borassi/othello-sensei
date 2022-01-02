@@ -1,4 +1,4 @@
-// Copyright 2019 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -258,7 +258,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         continue;
       }
       long curValue = 0;
-      curValue += curEval.getProb() > Constants.ZERO_PERC_FOR_WEAK && curEval.getProb() < 1 - Constants.ZERO_PERC_FOR_WEAK ?
+      curValue += curEval.getProb() > 0.01 && curEval.getProb() < 1 - 0.01 ?
                       -StoredBoard.LOG_DERIVATIVE_MINUS_INF * 1000L : 0;
       curValue += curEval.maxLogDerivative * 1000L;
       curValue += curEval.evalGoal == lastEvalGoal ? 0 : 1;
@@ -339,8 +339,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
 //    System.out.println(firstPosition.lower + " " + weakLower + " " + firstPosition.upper + " " + weakUpper);
 
-    int newWeakLower = Math.max(-6300, firstPosition.getWeakLower() - 100);
-    int newWeakUpper = Math.min(6300, firstPosition.getWeakUpper() + 100);
+    int newWeakLower = Math.max(-6300, firstPosition.getPercentileLower(0.01F) - 100);
+    int newWeakUpper = Math.min(6300, firstPosition.getPercentileUpper(0.01F) + 100);
 
     if (newWeakLower < weakLower && firstPosition.getPercentileLower(0.2F) > weakLower) {
 //      System.out.println("Not updating lower");

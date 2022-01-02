@@ -151,8 +151,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     alpha = -beta;
     beta = tmp;
     eval = child;
-    alpha = Math.max(alpha, Math.min(eval.evalGoal, eval.getStoredBoard().getWeakLower() + 100));
-    beta = Math.min(beta, Math.max(eval.evalGoal, eval.getStoredBoard().getWeakUpper() - 100));
+    alpha = Math.max(alpha, Math.min(eval.evalGoal, eval.getStoredBoard().getPercentileLower(0.01F) + 100));
+    beta = Math.min(beta, Math.max(eval.evalGoal, eval.getStoredBoard().getPercentileUpper(0.01F) - 100));
     assert alpha <= eval.evalGoal;
     assert beta >= eval.evalGoal;
     assert eval.getStoredBoard().threadId == 0;
@@ -167,8 +167,8 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
     }
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
-    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getWeakLower() + 100, result.eval.evalGoal));
-    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getWeakUpper() - 100, result.eval.evalGoal));
+    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getPercentileLower(0.01F) + 100, result.eval.evalGoal));
+    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getPercentileUpper(0.01F) - 100, result.eval.evalGoal));
 
     while (!result.eval.getStoredBoard().isLeaf()) {
       StoredBoard.Evaluation bestChild = result.bestChild();
