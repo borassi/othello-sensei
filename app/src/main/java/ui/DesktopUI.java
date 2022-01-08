@@ -38,7 +38,6 @@ import javax.swing.SpinnerModel;
 
 import board.Board;
 import constants.Constants;
-import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
 import helpers.Utils;
 
@@ -107,7 +106,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
-    String rows = "";
+    String rows;
     StoredBoard board = annotations.storedBoard;
     if (board == null) {
       return;
@@ -124,7 +123,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       formatter = "%+.1f";
       showMissing = true;
     }
-    String evalStr = String.format(formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
+    String evalStr = String.format(Locale.US, formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
     if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
         rows = evalStr;
@@ -156,7 +155,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (board == null) {
       return;
     }
-    String rows = "";
+    String rows;
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
 
@@ -166,7 +165,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     } else if (board.isPartiallySolved()) {
       formatter = "%+.1f ";
     }
-    String evalStr = String.format(formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
+    String evalStr = String.format(Locale.US, formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
     if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
         rows = evalStr;
@@ -185,7 +184,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     for (int evalGoal = upper; evalGoal >= lower; evalGoal -= 200) {
       StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
-      rows += String.format("\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
+      rows += String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
 
       if (evaluation.maxLogDerivative() > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
         rows += Utils.prettyPrintDouble(evaluation.maxLogDerivative());
@@ -361,14 +360,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
-    int eval = lower - 100;
     for (int evalGoal = Math.min(upper + 400, 6300); evalGoal >= Math.max(lower - 400, -6300); evalGoal -= 200) {
       StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
-      firstPositionText += String.format("\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (evaluation.getProb()) * 100,
+      firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (evaluation.getProb()) * 100,
           Utils.prettyPrintDouble(evaluation.maxLogDerivative()), Utils.prettyPrintDouble(evaluation.getDescendants()),
           Utils.prettyPrintDouble(evaluation.proofNumber()), Utils.prettyPrintDouble(evaluation.disproofNumber()));
-
-      eval += (int) (200 * evaluation.getProb());
     }
 
     String tmp = firstPositionText;
