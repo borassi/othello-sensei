@@ -14,13 +14,10 @@
 
 package evaluateposition;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
-
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
-import evaluatedepthone.PatternEvaluatorImproved;
 
 import java.util.Random;
 import java.util.concurrent.locks.Condition;
@@ -30,8 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
-  PatternEvaluatorImproved evaluator;
-
   int threadWaitingForNextPos = 0;
   private final EvaluatorInterface nextEvaluator;
   private long maxNVisited;
@@ -62,7 +57,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     FAILED,
   }
   private Status status = Status.KILLED;
-  private EvaluatorThread[] threads;
+  private final EvaluatorThread[] threads;
   private double constant = 0;
   private int lastEvalGoal = -6500;
 
@@ -178,7 +173,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         seenPositions += nextEvaluator.getNVisited();
       }
       editLock.lock();
-      board.setLeaf(curEval, getAlpha(board), getBeta(board));
+//      System.out.println(d);
+      board.setLeaf(curEval, getAlpha(board), getBeta(board), 3.0 / (3 + (d - 4)));
       editLock.unlock();
       return seenPositions;
     }
@@ -276,8 +272,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
     if (bestEval == null) {
       assert Constants.MAX_PARALLEL_TASKS > 1;
-//      System.out.println("Nothing good found." + lower + " " + upper + " " +
-//                             board.getEvaluation(lower).proofNumber + " " + board.getEvaluation(upper).proofNumber);
       return -6500;
     }
     lastEvalGoal = bestEval.evalGoal;
@@ -308,12 +302,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (hashMap.size() > Constants.hashMapSize() / 2) {
       hashMap.reset();
     }
-
-//    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-//      if (this.firstPosition.isSolved()) {
-//        this.firstPosition.setIsFinished(true);
-//      }
-//    }
 
     if (status == Status.KILLING) {
       status = Status.KILLED;
@@ -444,7 +432,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (eval <= -6300) {
       return 6300;
     }
-    return 200 * Math.round((eval + 100) / 200) - 100;
+    return 200 * Math.round((eval + 100.0F) / 200) - 100;
   }
 
   void setFirstPosition(Board b) {
@@ -517,9 +505,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
     this.maxNVisited = maxNVisited;
     this.justStarted = true;
-    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      this.firstPosition.setIsFinished(false);
-    }
+//    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//      this.firstPosition.setIsFinished(false);
+//    }
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent()) {
       setFirstPosition(board.getPlayer(), board.getOpponent());

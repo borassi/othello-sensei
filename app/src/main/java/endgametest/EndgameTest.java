@@ -136,9 +136,9 @@ public class EndgameTest {
 //      System.out.println(String.format("%6d", result / 100));
       System.out.print(String.format("%9.3f", t / 1000.));
       System.out.print(String.format("%14d", eval.getNVisited()));
-      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-        System.out.print(String.format("%14.0f", eval.getFirstPosition().extraInfo.minProofGreaterEqual + eval.getFirstPosition().extraInfo.minDisproofStrictlyGreater));
-      }
+//      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
+//        System.out.print(String.format("%14.0f", eval.getFirstPosition().extraInfo.minProofGreaterEqual + eval.getFirstPosition().extraInfo.minDisproofStrictlyGreater));
+//      }
       System.out.print(String.format("%14.0f", eval.getNVisited() * 1000. / t));
       System.out.print(String.format("%10d", eval.getNStored()));
       System.out.print(String.format("%7.0f", Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves()));

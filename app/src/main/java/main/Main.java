@@ -104,6 +104,7 @@ public class Main implements Runnable {
   }
   
   public void resetHashMaps() {
+    stop();
     EVALUATOR.empty();
     HASH_MAP.reset();
     EvaluatorAlphaBeta.resetConstant();
