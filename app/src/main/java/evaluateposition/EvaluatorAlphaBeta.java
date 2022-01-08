@@ -23,15 +23,13 @@ import constants.Constants;
 import static constants.Constants.VISITED_ENDGAME_GOAL;
 import constants.Stats;
 import evaluatedepthone.DepthOneEvaluator;
-import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
 import evaluatedepthone.FindStableDisks;
 import evaluatedepthone.PatternEvaluatorImproved;
 import helpers.Gaussian;
 import java.util.Arrays;
 
 public class EvaluatorAlphaBeta implements EvaluatorInterface {
-  static final int SQUARE_VALUE[] = {
-    // JCW's score:
+  static final int[] SQUARE_VALUE = {
     18,  4,  16, 12, 12, 16,  4, 18,
      4,  2,   6,  8,  8,  6,  2,  4,
     16,  6,  14, 10, 10, 14,  6, 16,
@@ -41,7 +39,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
      4,  2,   6,  8,  8,  6,  2,  4,
     18,  4,  16, 12, 12, 16,  4, 18
   };
-  public class Move implements Comparable<Move> {
+  public static class Move implements Comparable<Move> {
     int move;
     long flip;
     int value;
@@ -63,7 +61,6 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
   
   final DepthOneEvaluator depthOneEvaluator;
   private long nVisited = 0;
-  private final EvaluatorLastMoves lastMovesEvaluator = new EvaluatorLastMoves();
   private final HashMap hashMap;
   final Move[][] moves = new Move[64][64];
   static Constant constant = new Constant();
@@ -94,94 +91,6 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
     }
     this.hashMap = hashMap;
   }
-//
-//  public double getDisproofNumber(
-//      long player, long opponent, int depth, int evalGoal, double bestProofNumber, boolean passed) {
-////    assert (evalGoal + 200000) % 200 == 100;
-//    long movesBit = GetMoves.getMoves(player, opponent);
-//    int move;
-//    long flip;
-//    boolean pass = true;
-//    nComputedMoves++;
-//    double result = 0;
-//    int currentEval;
-//    int depthZeroEval = depthOneEvaluator.eval();
-//
-//    depthOneEvaluator.invert();
-//    while (movesBit != 0) {
-//      flip = Long.lowestOneBit(movesBit);
-//      move = Long.numberOfTrailingZeros(flip);      
-//      movesBit = movesBit & (~flip);
-//      flip = GetMoves.getFlip(move, player, opponent);
-//
-////      nVisitedPositions++;
-//      pass = false;
-//      depthOneEvaluator.update(move, flip);
-//      if (depth > 1) {
-//        result += getProofNumber(opponent & ~flip, player | flip, depth - 1, -evalGoal, bestProofNumber, false);
-//      } else {
-//        currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
-//            (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
-//        result += StoredBoard.endgameTimeEstimator.disproofNumber(player, opponent, evalGoal, currentEval);          
-//      }
-//      depthOneEvaluator.undoUpdate(move, flip);
-//    }
-//
-//    if (pass) {
-//      if (passed) {
-//        result = BitPattern.getEvaluationGameOver(player, opponent) > evalGoal ? Double.POSITIVE_INFINITY : 0;
-//      } else {
-//        result = getProofNumber(opponent, player, depth, -evalGoal, bestProofNumber, true);
-//      }
-//    }
-//    
-//    depthOneEvaluator.invert();
-//    return result;    
-//  }
-//
-//  public double getProofNumber(
-//      long player, long opponent, int depth, int evalGoal, double bestProofNumber, boolean passed) {
-//    assert (evalGoal + 200000) % 200 == 100;
-//    long movesBit = GetMoves.getMoves(player, opponent);
-//    int move;
-//    long flip;
-//    boolean pass = true;
-//    nComputedMoves++;
-//    double result = Double.POSITIVE_INFINITY;
-//    int currentEval;
-//    int depthZeroEval = depthOneEvaluator.eval();
-//
-//    depthOneEvaluator.invert();
-//    while (movesBit != 0) {
-//      flip = Long.lowestOneBit(movesBit);
-//      move = Long.numberOfTrailingZeros(flip);      
-//      movesBit = movesBit & (~flip);
-//      flip = GetMoves.getFlip(move, player, opponent);
-////      nVisitedPositions++;
-//      pass = false;
-//      depthOneEvaluator.update(move, flip);
-////      depthOneEvaluator.setup(opponent & ~flip, player | flip);
-//      if (depth > 1) {
-//        result = Math.min(result, getDisproofNumber(opponent & ~flip, player | flip, depth - 1, -evalGoal, Math.min(result, bestProofNumber), false));
-//      } else {
-//        currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
-//            (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
-//        result = Math.min(result, StoredBoard.endgameTimeEstimator.proofNumber(player, opponent, evalGoal, currentEval));          
-//      }
-//      depthOneEvaluator.undoUpdate(move, flip);
-//    }
-//
-//    if (pass) {
-//      if (passed) {
-//        result = BitPattern.getEvaluationGameOver(player, opponent) > evalGoal ? 0 : Double.POSITIVE_INFINITY;
-//      } else {
-//        result = getDisproofNumber(opponent, player, depth, -evalGoal, Double.POSITIVE_INFINITY, true);
-//      }
-//    }
-//    
-//    this.depthOneEvaluator.invert();
-//    return result;    
-//  }
 
   public int evaluatePositionQuick(
       long player, long opponent, int depth, int lower, int upper, boolean passed, int lastMove) {
@@ -208,7 +117,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
         currentEval = (depthZeroEval * Constants.WEIGHT_DEPTH_1 - depthOneEvaluator.eval() * Constants.WEIGHT_DEPTH_0) /
             (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
         depthOneEvaluator.undoUpdate(move, flip);
-        bestEval = bestEval > currentEval ? bestEval : currentEval;
+        bestEval = Math.max(bestEval, currentEval);
         if (bestEval >= upper) {
           break;
         }
@@ -226,7 +135,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
         depthOneEvaluator.update(move, flip);
         currentEval = -evaluatePositionQuick(opponent & ~flip, player | flip, depth - 1, -upper, -Math.max(lower, bestEval), false, move);
         depthOneEvaluator.undoUpdate(move, flip);
-        bestEval = bestEval > currentEval ? bestEval : currentEval;
+        bestEval = Math.max(bestEval, currentEval);
         if (bestEval >= upper) {
           break;
         }
@@ -244,9 +153,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
     this.depthOneEvaluator.invert();
     return bestEval;    
   }
-  
-int good = 0;
-int bad = 0;
+
   int getMoves(long player, long opponent, int lower, int upper, int depth, HashMap.BoardInHash boardInHash, Move[] output) {
     int move;
     long moveBit;
@@ -254,7 +161,7 @@ int bad = 0;
     long curMoves = mover.getMoves(player, opponent);
     long flip;
     int nMoves = 0;
-    int value = 0;
+    int value;
 
     while (curMoves != 0) {
       move = Long.numberOfTrailingZeros(curMoves);
@@ -353,22 +260,11 @@ int bad = 0;
             (Constants.WEIGHT_DEPTH_1 + Constants.WEIGHT_DEPTH_0);
       } else if (
           depth >= nEmpties &&
-          (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 3) &&
+          (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 4) &&
           (nEmpties <= Constants.EMPTIES_FOR_ENDGAME ||
            (-curMove.value < constant.get()))) {
-//        currentEval = -lastMovesEvaluator.evaluate(
-//            opponent & ~flip, player | flip, -upper, -newLower, flip);
-//        nVisited = lastMovesEvaluator.getNVisited();
         EvalWithVisited eval = EvaluatorLastMoves.evaluateCPP(
             opponent & ~flip, player | flip, -upper, -newLower);
-//        System.out.println(-eval.eval + " " + currentEval);
-//        System.out.println(eval.nVisited + " " + nVisited);
-//        if ((currentEval <= newLower && -eval.eval > newLower)
-//            || (currentEval >= upper && -eval.eval < upper)) {
-//          System.out.println("BIG MISTAKE!!");
-//          System.out.println(newLower + " " + -eval.eval + " " + upper);
-//          System.out.println(currentEval);
-//        }
         currentEval = -eval.eval;
         nVisited = eval.nVisited;
         constant.update(nVisited);
@@ -428,18 +324,6 @@ int bad = 0;
     return this.nVisited;
   }
 
-  /**
-   * - Returns value and samples.- Uses hash map.
-   * - Removes positions that are < lower or > upper.
-   * - V Very fast at small depth.
-   * - V Goes up to depth when evaluating.
-   * - V At depth 8, uses EvaluatorLastMoves.
-   * @param current
-   * @param depth
-   * @param lower
-   * @param upper 
-   * @return The evaluation
-   */
   public int evaluate(Board current, int depth, int lower, int upper) {
     return evaluate(current.getPlayer(), current.getOpponent(), depth, lower, upper);
   }
@@ -465,9 +349,6 @@ int bad = 0;
       Stats.addToNVisitedAlphaBetaSolve(nVisited);
       Stats.addToNAlphaBetaSolve(1);      
     }
-//    evaluatePositionSlow(
-//        player, opponent, depth - Constants.EMPTIES_FOR_ENDGAME - 3,
-//        lower, upper, false, false);
     return result;
   }
 }

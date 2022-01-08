@@ -16,6 +16,8 @@ package evaluateposition;
 
 import androidx.annotation.NonNull;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetMoves;
@@ -438,28 +440,22 @@ public class StoredBoard {
     }
   }
 
-  public synchronized int getEval() {
-    float eval = 0;
-    float lastProb = 1;
-    int weakLower = getPercentileLower(Constants.ZERO_PERC_FOR_WEAK - 1E-5F);
-    int weakUpper = getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK - 1E-5F);
-    if (weakLower == weakUpper) {
-      return weakLower;
+  public synchronized int getEval(int evaluatorLower, int evaluatorUpper) {
+    if (depth % 2 == 1) {
+      int tmp = -evaluatorLower;
+      evaluatorLower = -evaluatorUpper;
+      evaluatorUpper = tmp;
     }
-    for (int evalGoal = weakLower + 100; evalGoal <= weakUpper + 100; evalGoal += 200) {
-      if (evalGoal > 6300) {
-        return -6500;
+    float eval = evaluatorLower - 100;
+    for (int evalGoal = evaluatorLower; evalGoal <= evaluatorUpper; evalGoal += 200) {
+      float prob = getEvaluation(evalGoal).getProb();
+      if (prob >= 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+        prob = 1;
+      } else if (prob <= Constants.PROB_INCREASE_WEAK_EVAL) {
+        prob = 0;
       }
-      Evaluation curEval = getEvaluation(evalGoal);
-      if (curEval == null) {
-        return -6500;
-      }
-
-      float curProb = curEval.getProb();
-      eval += (evalGoal - 100) * Math.max(0, lastProb - curProb);
-      lastProb = curProb;
+      eval += 200 * prob;
     }
-    eval += (weakUpper) * Math.max(0, lastProb);
     return Math.round(eval);
   }
 

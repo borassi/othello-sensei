@@ -96,13 +96,6 @@ public class EndgameTest {
   }
 
   public void run() {
-//    try {
-//      Thread.sleep(30000);
-//    } catch (InterruptedException ex) {
-//      Logger.getLogger(EndgameTest.class.getName()).log(Level.SEVERE, null, ex);
-//    }
-//    ThreadMXBean thread = ManagementFactory.getThreadMXBean( );
-//    bean.isCurrentThreadCpuTimeSupported() ? bean.getCurrentThreadCpuTime( ) : 0L;
     System.out.print(" num empties        t       nVisPos");
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       System.out.print("          Best");      

@@ -139,7 +139,7 @@ public class BoardView extends View {
     }
     StoredBoard storedBoard = annotation.storedBoard;
     String rows[] = {
-        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0),
+        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval(annotation.lower, annotation.upper) / 100.0),
         Utils.prettyPrintDouble(storedBoard.getDescendants())
     };
 

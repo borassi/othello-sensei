@@ -223,10 +223,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     this.firstPosition = StoredBoard.initialStoredBoard(new Board(0, 0));
     this.nextEvaluator = evaluatorMidgameBuilder.get();
   }
-  
-  public float getEval() {
-    return firstPosition.getEval();
-  }
 
   public int getLower() { return lower; }
 
@@ -497,6 +493,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert(lower <= upper);
     assert delta % 200 == 0;
     constant = 0;
+    EvaluatorAlphaBeta.resetConstant();
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
@@ -535,7 +532,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
-    return (short) -firstPosition.getEval();
+    return (short) -firstPosition.getEval(weakLower, weakUpper);
   }
 
   public StoredBoard getFirstPosition() {

@@ -266,7 +266,7 @@ public class Main implements Runnable {
       if (evaluation == null) {
         continue;
       }
-      float eval = evaluation.getEval();// -(evaluation.getLowerBound() + evaluation.getUpperBound()) / 2.0F;
+      float eval = evaluation.getEval(EVALUATOR.getWeakLower(), EVALUATOR.getWeakUpper());
       PositionIJ ij = moveFromBoard(board, evaluation);
       if (eval < best) {
         best = eval;

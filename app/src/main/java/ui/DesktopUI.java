@@ -116,18 +116,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
-    int eval = lower - 100;
-    for (int evalGoal = upper; evalGoal >= lower; evalGoal -= 200) {
-      StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
-//      nextRows += String.format("\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
-
-      eval += (int) (200 * evaluation.getProb());
-//      if (evaluation.getProb() == 0) {
-//        nextRows += Utils.prettyPrintDouble(evaluation.disproofNumber());
-//      } else {
-//        nextRows += Utils.prettyPrintDouble(evaluation.proofNumber());
-//      }
-    }
 
     String formatter = "%+.2f ";
     if (board.isSolved()) {
@@ -135,7 +123,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     } else if (board.isPartiallySolved()) {
       formatter = "%+.1f ";
     }
-    String evalStr = String.format(formatter, -eval / 100.0);
+    String evalStr = String.format(formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
     if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
         evalRow = evalStr;
@@ -158,29 +146,13 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   private void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
-    String evalRow = "";
-    String nextRows = "";
     StoredBoard board = annotations.storedBoard;
     if (board == null) {
       return;
     }
-
+    String rows = "";
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
-    int eval = lower - 100;
-    for (int evalGoal = upper; evalGoal >= lower; evalGoal -= 200) {
-      StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
-      nextRows += String.format("\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
-
-      eval += (int) (200 * evaluation.getProb());
-      if (evaluation.maxLogDerivative() > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
-        nextRows += Utils.prettyPrintDouble(evaluation.maxLogDerivative());
-      } else if (evaluation.getProb() == 0) {
-        nextRows += Utils.prettyPrintDouble(evaluation.disproofNumber());
-      } else {
-        nextRows += Utils.prettyPrintDouble(evaluation.proofNumber());
-      }
-    }
 
     String formatter = "%+.2f ";
     if (board.isSolved()) {
@@ -188,24 +160,38 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     } else if (board.isPartiallySolved()) {
       formatter = "%+.1f ";
     }
-    String evalStr = String.format(formatter, -eval / 100.0);
+    String evalStr = String.format(formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
     if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
-        evalRow = evalStr;
+        rows = evalStr;
       } else {
-        evalRow = "≤" + evalStr;
+        rows = "≤" + evalStr;
       }
     } else {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
-        evalRow = "≥" + evalStr;
+        rows = "≥" + evalStr;
       } else {
-        evalRow = "?";
+        rows = "?";
       }
     }
-    evalRow += " " + Utils.prettyPrintDouble(board.getDescendants());
+    rows += " " + Utils.prettyPrintDouble(board.getDescendants());
+
+
+    for (int evalGoal = upper; evalGoal >= lower; evalGoal -= 200) {
+      StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
+      rows += String.format("\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
+
+      if (evaluation.maxLogDerivative() > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
+        rows += Utils.prettyPrintDouble(evaluation.maxLogDerivative());
+      } else if (evaluation.getProb() == 0) {
+        rows += Utils.prettyPrintDouble(evaluation.disproofNumber());
+      } else {
+        rows += Utils.prettyPrintDouble(evaluation.proofNumber());
+      }
+    }
 
     cases[ij.i][ij.j].setFontSizes(new double[] {0.125});
-    cases[ij.i][ij.j].setAnnotations(evalRow + " " + nextRows);
+    cases[ij.i][ij.j].setAnnotations(rows);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
   }
 
@@ -364,7 +350,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
             "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n";
 
-    String firstPositionText = board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n";
+    String firstPositionText = board.getEval(annotations.lower, annotations.upper) + " " + board.getLower() + " " + board.getUpper() + "\n";
     assert board.threadId == 0;
 
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
