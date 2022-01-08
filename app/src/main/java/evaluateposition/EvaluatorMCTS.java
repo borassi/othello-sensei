@@ -248,17 +248,15 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   public int nextPositionEvalGoal(StoredBoard board) {
     assert nextPositionLock.isHeldByCurrentThread();
-    int lower = weakLower;
-    int upper = weakUpper;
     StoredBoard.Evaluation bestEval = null;
     long bestValue = Long.MIN_VALUE;
-    for (int eval = lower; eval <= upper; eval += 200) {
+    for (int eval = weakLower; eval <= weakUpper; eval += 200) {
       StoredBoard.Evaluation curEval = board.getEvaluation(eval);
       if (curEval.proofNumber == 0 || curEval.disproofNumber == 0) {
         continue;
       }
       long curValue = 0;
-      curValue += curEval.getProb() > 0.01 && curEval.getProb() < 1 - 0.01 ?
+      curValue += curEval.getProb() > Constants.MIN_PROB_EVAL_GOAL && curEval.getProb() < 1 - Constants.MIN_PROB_EVAL_GOAL ?
                       -StoredBoard.LOG_DERIVATIVE_MINUS_INF * 1000L : 0;
       curValue += curEval.maxLogDerivative * 1000L;
       curValue += curEval.evalGoal == lastEvalGoal ? 0 : 1;
@@ -269,6 +267,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
     }
     if (bestEval == null) {
+      assert Constants.MAX_PARALLEL_TASKS > 1;
 //      System.out.println("Nothing good found." + lower + " " + upper + " " +
 //                             board.getEvaluation(lower).proofNumber + " " + board.getEvaluation(upper).proofNumber);
       return -6500;
@@ -333,20 +332,25 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private void updateWeakLowerUpper() {
     assert nextPositionLock.isHeldByCurrentThread();
     if (firstPosition.getDescendants() < this.lastUpdateWeak * 1.2 &&
-        firstPosition.lower - 200 <= weakLower  &&
+        firstPosition.lower - 200 <= weakLower &&
         firstPosition.upper + 200 >= weakUpper) {
       return;
     }
 //    System.out.println(firstPosition.lower + " " + weakLower + " " + firstPosition.upper + " " + weakUpper);
 
-    int newWeakLower = Math.max(-6300, firstPosition.getPercentileLower(0.01F) - 100);
-    int newWeakUpper = Math.min(6300, firstPosition.getPercentileUpper(0.01F) + 100);
+    int newWeakLower = Math.max(lower, firstPosition.getPercentileLower(Constants.PROB_REDUCE_WEAK_EVAL) - 100);
+    int newWeakUpper = Math.min(upper, firstPosition.getPercentileUpper(Constants.PROB_REDUCE_WEAK_EVAL) + 100);
+    if (newWeakLower > upper) {
+      newWeakLower = upper;
+    } else if (newWeakUpper < lower) {
+      newWeakUpper = lower;
+    }
 
-    if (newWeakLower < weakLower && firstPosition.getPercentileLower(0.2F) > weakLower) {
+    if (newWeakLower < weakLower && firstPosition.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL) > weakLower) {
 //      System.out.println("Not updating lower");
       newWeakLower = weakLower;
     }
-    if (newWeakUpper > weakUpper && firstPosition.getPercentileUpper(0.2F) < weakUpper) {
+    if (newWeakUpper > weakUpper && firstPosition.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL) < weakUpper) {
 //      System.out.println("Not updating upper");
       newWeakUpper = weakUpper;
     }
@@ -358,7 +362,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
     if (newWeakLower < weakLower) {
       //System.out.println("Updating descendants " + (newWeakLower) + " " + (weakLower - 200));
-      firstPosition.updateDescendantsRecursive(Math.max(-6300, newWeakLower - delta), weakLower - 200);
+      firstPosition.updateDescendantsRecursive(Math.max(lower, newWeakLower - delta), weakLower - 200);
     }
     lastUpdateWeak = this.getNVisited();
     weakLower = newWeakLower;

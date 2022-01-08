@@ -144,15 +144,13 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
       derivativeLoss = derivativeLoss - maxLogDerivative() + childLogDerivative;
     }
     assert alpha <= eval.evalGoal;
-    for (int i = alpha; i <= beta; i += 200) {
-      assert eval.getStoredBoard().getEvaluation(i) != null;
-    }
+    assert eval.getStoredBoard().getEvaluation(eval.evalGoal) != null;
     int tmp = -alpha;
     alpha = -beta;
     beta = tmp;
     eval = child;
-    alpha = Math.max(alpha, Math.min(eval.evalGoal, eval.getStoredBoard().getPercentileLower(0.01F) + 100));
-    beta = Math.min(beta, Math.max(eval.evalGoal, eval.getStoredBoard().getPercentileUpper(0.01F) - 100));
+    alpha = Math.max(alpha, Math.min(eval.evalGoal, eval.getStoredBoard().getPercentileLower(Constants.PROB_FOR_ENDGAME_ALPHA_BETA) + 100));
+    beta = Math.min(beta, Math.max(eval.evalGoal, eval.getStoredBoard().getPercentileUpper(Constants.PROB_FOR_ENDGAME_ALPHA_BETA) - 100));
     assert alpha <= eval.evalGoal;
     assert beta >= eval.evalGoal;
     assert eval.getStoredBoard().threadId == 0;
@@ -162,19 +160,20 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
   public static StoredBoardBestDescendant bestDescendant(
       StoredBoard.Evaluation father, int alpha, int beta) {
     assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
+    boolean proof = father.getProb() > 1 - Constants.PROB_FOR_PROOF || father.getProb() < Constants.PROB_FOR_PROOF;
     if (!father.hasValidDescendants()) {
       return null;
     }
     StoredBoardBestDescendant result = new StoredBoardBestDescendant(father);
 
-    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getPercentileLower(0.01F) + 100, result.eval.evalGoal));
-    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getPercentileUpper(0.01F) - 100, result.eval.evalGoal));
+    result.alpha = Math.max(alpha, Math.min(father.getStoredBoard().getPercentileLower(Constants.PROB_FOR_ENDGAME_ALPHA_BETA) + 100, result.eval.evalGoal));
+    result.beta = Math.min(beta, Math.max(father.getStoredBoard().getPercentileUpper(Constants.PROB_FOR_ENDGAME_ALPHA_BETA) - 100, result.eval.evalGoal));
 
     while (!result.eval.getStoredBoard().isLeaf()) {
-      StoredBoard.Evaluation bestChild = result.bestChild();
+      StoredBoard.Evaluation bestChild = proof ? result.eval.bestChildProof() : result.eval.bestChild();
       assert bestChild != null;
       assert bestChild.getStoredBoard().threadId == 0;
-      assert (result.eval.getProb() >= Constants.PROB_FOR_PROOF || bestChild.maxLogDerivative >= result.eval.maxLogDerivative());
+      assert proof || result.eval.getProb() == 1 || bestChild.maxLogDerivative >= result.eval.maxLogDerivative();
       result.toChild(bestChild);
     }
     assert result.eval != null;
@@ -257,10 +256,6 @@ public class StoredBoardBestDescendant implements Comparable<StoredBoardBestDesc
 //    }
 //    return result;
 //  }
-  
-  public StoredBoard.Evaluation bestChild() {
-    return eval.bestChild();
-  }
 
   public static StoredBoard.Evaluation randomChild(StoredBoard.Evaluation father) {
     assert father.hasValidDescendants();

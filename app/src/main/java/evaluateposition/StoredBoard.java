@@ -95,24 +95,19 @@ public class StoredBoard {
       assert prob == 0 || prob == PROB_STEP || Utils.arrayContains(getStoredBoard().getChildren(), bestChildMidgame.getStoredBoard());
       if (getProb() == 0) {
         return bestChildDisproof;
-      } else if (getProb() >= Constants.PROB_FOR_PROOF) {
+      } else if (getProb() >= 1) {
         return bestChildProof;
-      }
-      if (bestChildMidgame.getStoredBoard().threadId != 0) {
-        System.out.println(bestChildMidgame.evalGoal);
-        System.out.println(bestChildMidgame.getStoredBoard().fathers.get(0));
-        System.out.println(bestChildMidgame.getStoredBoard());
-        System.out.println(bestChildMidgame.getStoredBoard().leafEval);
-        System.out.println(bestChildMidgame.getStoredBoard().threadId);
-        System.out.println(bestChildMidgame.getStoredBoard().getChildren().length);
-        System.out.println(bestChildMidgame.getStoredBoard().getChildren()[0]);
-        System.out.println(bestChildMidgame.getStoredBoard().getChildren()[0].getChildren());
-        System.out.println(bestChildMidgame.getStoredBoard().getChildren()[0].leafEval);
-        System.out.println(bestChildMidgame.getStoredBoard().getChildren()[0].threadId);
       }
       assert bestChildMidgame.getStoredBoard().threadId == 0;
       assert bestChildMidgame.maxLogDerivative > LOG_DERIVATIVE_MINUS_INF;
       return bestChildMidgame;
+    }
+
+    public Evaluation bestChildProof() {
+      if (getProb() < 0.5) {
+        return bestChild();
+      }
+      return bestChildProof;
     }
 
     void setLeaf(float prob, float proofNumber, float disproofNumber) {
