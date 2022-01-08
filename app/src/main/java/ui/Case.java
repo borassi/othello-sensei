@@ -56,7 +56,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
    */
   private Color annotationsColor = Color.BLACK;
 
-  private double fontSizes[] = {0.11};
+  private double fontSizes[] = {0.3};
 
   /**
    * Constructor.
@@ -115,7 +115,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
     for (int i = 0; i < annotationLines.length; ++i) {
       String annotationLine = annotationLines[i];
 
-      Font font = new Font("Dialog", i == 0 ? Font.BOLD : Font.PLAIN,
+      Font font = new Font(Font.MONOSPACED, i == 0 ? Font.BOLD : Font.PLAIN,
           (int) (size * this.fontSizes[Math.min(i, this.fontSizes.length-1)]));
       g.setFont(font);
       FontMetrics metrics = g.getFontMetrics();
@@ -150,7 +150,6 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
 
   /**
    * Sets the state of this case.
-   * @param newState the new state: 'X' for black, 'O' for white, '-' for empty.
    */
   public final char getState() {
     return state;

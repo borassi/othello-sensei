@@ -23,15 +23,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-
 import bitpattern.PositionIJ;
 import board.Board;
 
 import constants.Constants;
-import evaluateposition.StoredBoard;
 import helpers.Utils;
 import main.Main;
 
@@ -88,8 +83,8 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public void setExtras(StoredBoard firstPosition, double milliseconds) {
-    posPerSec.setText("Pos/sec: " + Utils.prettyPrintDouble(firstPosition.getDescendants() * 1000.0 / milliseconds));
+  public void setExtras(CaseAnnotations firstPosition, double milliseconds) {
+    posPerSec.setText("Pos/sec: " + Utils.prettyPrintDouble(firstPosition.storedBoard.getDescendants() * 1000.0 / milliseconds));
   }
 
   @Override

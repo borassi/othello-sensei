@@ -107,98 +107,105 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
-    if (annotations.storedBoard == null) {
+    String evalRow = "";
+    String nextRows = "";
+    StoredBoard board = annotations.storedBoard;
+    if (board == null) {
       return;
     }
-    StoredBoard board = annotations.storedBoard;
-    double eval = -board.getEval() / 100.0;
-    String annotationsString = String.format(Locale.US, "%+.1f", eval);
-    if (board.isSolved()) {
-      annotationsString = String.format(Locale.US, "%+.0f", eval);
+
+    int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
+    int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
+    int eval = lower - 100;
+    for (int evalGoal = upper; evalGoal >= lower; evalGoal -= 200) {
+      StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
+//      nextRows += String.format("\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
+
+      eval += (int) (200 * evaluation.getProb());
+//      if (evaluation.getProb() == 0) {
+//        nextRows += Utils.prettyPrintDouble(evaluation.disproofNumber());
+//      } else {
+//        nextRows += Utils.prettyPrintDouble(evaluation.proofNumber());
+//      }
     }
-//    annotationsString += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-//    if (board.getProb(-annotations.evalGoal - 100) > 0) {
-//      annotationsString += "\n" + (int) (board.getProb(-annotations.evalGoal + 100) * 100) + "% ";
-//    } else {
-//      annotationsString += "\n" + Utils.prettyPrintDouble(board.getDisproofNumber(-annotations.evalGoal + 100)) + " ";
-//    }
-//    if (board.getProb(-annotations.evalGoal + 100) > 0 || board.getProb(-annotations.evalGoal - 100) < 1) {
-//      annotationsString += (-annotations.evalGoal / 100) + " ";
-//    }
-//    if (board.getProb(annotations.evalGoal - 100) < 1) {
-//      annotationsString += (int) (100 - board.getProb(-annotations.evalGoal - 100) * 100) + "%";
-//    } else {
-//      annotationsString += Utils.prettyPrintDouble(board.getProofNumber(-annotations.evalGoal - 100));
-//    }
-    cases[ij.i][ij.j].setAnnotations(annotationsString);
-    cases[ij.i][ij.j].setFontSizes(new double[] {0.3, 0.16});
+
+    String formatter = "%+.2f ";
+    if (board.isSolved()) {
+      formatter = "%+.0f ";
+    } else if (board.isPartiallySolved()) {
+      formatter = "%+.1f ";
+    }
+    String evalStr = String.format(formatter, -eval / 100.0);
+    if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+      if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
+        evalRow = evalStr;
+      } else {
+        evalRow = "≤" + evalStr;
+      }
+    } else {
+      if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
+        evalRow = "≥" + evalStr;
+      } else {
+        evalRow = "?";
+      }
+    }
+    nextRows = Utils.prettyPrintDouble(board.getDescendants());
+
+    cases[ij.i][ij.j].setFontSizes(new double[] {0.25, 0.16});
+    cases[ij.i][ij.j].setAnnotations(evalRow + "\n" + nextRows);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
     cases[ij.i][ij.j].repaint();
   }
 
   private void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
-    cases[ij.i][ij.j].setFontSizes(new double[] {0.13});
+    String evalRow = "";
+    String nextRows = "";
     StoredBoard board = annotations.storedBoard;
     if (board == null) {
       return;
     }
-    int eval = -board.getEval();
-    int evalRounded = Math.max(-6200, Math.min(6200, Math.round(eval / 200.0F) * 200));
-    StoredBoard.Evaluation prevEval = board.getEvaluation(-evalRounded - 100);
-    StoredBoard.Evaluation nextEval = board.getEvaluation(-evalRounded + 100);
-    boolean isPartiallySolved = prevEval != null && nextEval != null && (prevEval.getProb() == 1) && (nextEval.getProb() == 0);
 
-    String evalFormat = isPartiallySolved ? (
-        (board.getLower() == board.getEval() && board.getUpper() == board.getEval()) ? "%.0f" : "%.1f") : "%.2f";
-    String annotationsString = String.format(Locale.US, evalFormat, eval / 100.0);
-    annotationsString += "  " + Utils.prettyPrintDouble(board.getDescendants());
-    String scoresString = "\n" + board.getLower() + " " + board.getUpper();
+    int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
+    int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
+    int eval = lower - 100;
+    for (int evalGoal = upper; evalGoal >= lower; evalGoal -= 200) {
+      StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
+      nextRows += String.format("\n%+3d %3.0f%% ", -evalGoal / 100, (evaluation.getProb()) * 100);
 
-    for (int evalGoal = Math.max(-6300, board.getWeakLower() - 100);
-         evalGoal <= Math.min(6300, board.getWeakUpper() + 100); evalGoal += 200) {
-      StoredBoard.Evaluation evaluation = board.getEvaluation(-evalGoal);
-      if (evaluation == null) {
-        continue;
-      }
-      scoresString += String.format("\n%+3d %3.0f%% ", evalGoal / 100, (evaluation.getProb()) * 100);
+      eval += (int) (200 * evaluation.getProb());
       if (evaluation.maxLogDerivative() > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
-        scoresString += Utils.prettyPrintDouble(evaluation.maxLogDerivative());
+        nextRows += Utils.prettyPrintDouble(evaluation.maxLogDerivative());
       } else if (evaluation.getProb() == 0) {
-        scoresString += Utils.prettyPrintDouble(evaluation.disproofNumber());
+        nextRows += Utils.prettyPrintDouble(evaluation.disproofNumber());
       } else {
-        scoresString += Utils.prettyPrintDouble(evaluation.proofNumber());
+        nextRows += Utils.prettyPrintDouble(evaluation.proofNumber());
       }
     }
-    annotationsString += scoresString;
-//    int evalGoal = EvaluatorMCTS.evalToBoundary(-board.getEval());
-//    annotationsString += "\n" + (int) (board.getProb(-annotations.evalGoal + 100) * 100) + "% " + (int) (100 - board.getProb(-annotations.evalGoal - 100) * 100) + "%";
-////    boolean greaterEqual = EVALUATOR.nextPositionGreaterEqual() ? current.playerIsStartingPlayer : !current.playerIsStartingPlayer;
-////    StoredBoard bestChild = new StoredBoardBestDescendant(current, greaterEqual).bestChild();
-////    System.out.println("\n\n" + current.extraInfo.minProofGreaterEqual + "\n" + current.extraInfo.minDisproofStrictlyGreater);
-//    annotationsString +=
-//        "\n"
-////        + (bestChild == child && !greaterEqual ? "*" : "")
-//        + Utils.prettyPrintDouble(board.getDisproofNumber(-annotations.evalGoal + 100)) + " " +
-//        Utils.prettyPrintDouble(board.getProofNumber(-annotations.evalGoal - 100))
-////        + (bestChild == child && greaterEqual ? "*" : "")
-//        ;
 
-//    annotationsString += String.format(Locale.US, "\n%+d %+d", lower, upper);
-
-    if (board.extraInfo != null) {
-      annotationsString +=
-          "\n"
-          + (board.extraInfo.disproofBeforeFinished ? "* " : "")
-          + Utils.prettyPrintDouble(board.getDescendants())
-          + (board.extraInfo.proofBeforeFinished ? " *" : "") + "\n"
-          + Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreater) + " "
-          + Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqual) + "\n"
-          + Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreaterVar) + " "
-          + Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqualVar)
-          ;
+    String formatter = "%+.2f ";
+    if (board.isSolved()) {
+      formatter = "%+.0f ";
+    } else if (board.isPartiallySolved()) {
+      formatter = "%+.1f ";
     }
+    String evalStr = String.format(formatter, -eval / 100.0);
+    if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+      if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
+        evalRow = evalStr;
+      } else {
+        evalRow = "≤" + evalStr;
+      }
+    } else {
+      if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
+        evalRow = "≥" + evalStr;
+      } else {
+        evalRow = "?";
+      }
+    }
+    evalRow += " " + Utils.prettyPrintDouble(board.getDescendants());
 
-    cases[ij.i][ij.j].setAnnotations(annotationsString);
+    cases[ij.i][ij.j].setFontSizes(new double[] {0.125});
+    cases[ij.i][ij.j].setAnnotations(evalRow + " " + nextRows);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
   }
 
@@ -350,34 +357,28 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void setExtras(StoredBoard board, double milliseconds) {
+  public void setExtras(CaseAnnotations annotations, double milliseconds) {
+    StoredBoard board = annotations.storedBoard;
     long descendants = board.getDescendants();
     String text =
         "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
             "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n";
 
-    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-      text += "\nProof: " +
-                  Utils.prettyPrintDouble(descendants)
-                  + "\nBest proof: " +
-                  Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqual + board.extraInfo.minDisproofStrictlyGreater)
-                  + " = " +
-                  Utils.prettyPrintDouble(board.extraInfo.minProofGreaterEqual) + " + " +
-                  Utils.prettyPrintDouble(board.extraInfo.minDisproofStrictlyGreater);
-    }
-
     String firstPositionText = board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n";
     assert board.threadId == 0;
-    for (int evalGoal = Math.max(-6300, board.getWeakLower() - 700);
-         evalGoal <= Math.min(6300, board.getWeakUpper() + 700); evalGoal += 200) {
-      StoredBoard.Evaluation eval = board.getEvaluation(evalGoal);
-      if (eval == null) {
-        continue;
-      }
-      firstPositionText += String.format("\n%+3d %3.0f%%  %s  %s  %s  %s", evalGoal / 100, (eval.getProb()) * 100,
-          Utils.prettyPrintDouble(eval.maxLogDerivative()), Utils.prettyPrintDouble(eval.getDescendants()),
-          Utils.prettyPrintDouble(eval.proofNumber()), Utils.prettyPrintDouble(eval.disproofNumber()));
+
+    int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
+    int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
+    int eval = lower - 100;
+    for (int evalGoal = Math.min(upper + 400, 6300); evalGoal >= Math.max(lower - 400, -6300); evalGoal -= 200) {
+      StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
+      firstPositionText += String.format("\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (evaluation.getProb()) * 100,
+          Utils.prettyPrintDouble(evaluation.maxLogDerivative()), Utils.prettyPrintDouble(evaluation.getDescendants()),
+          Utils.prettyPrintDouble(evaluation.proofNumber()), Utils.prettyPrintDouble(evaluation.disproofNumber()));
+
+      eval += (int) (200 * evaluation.getProb());
     }
+
     String tmp = firstPositionText;
     Runnable setExtras = () -> {
       extras.setText(text);

@@ -298,7 +298,9 @@ public class Main implements Runnable {
       showHashMapEvaluations();
       return;
     }
-    ui.setExtras(current, (System.currentTimeMillis() - startTime));
+    ui.setExtras(
+        new CaseAnnotations(current, EVALUATOR.getWeakLower(), EVALUATOR.getWeakUpper(), false),
+        System.currentTimeMillis() - startTime);
     if (current.getChildren() == null) {
       showHashMapEvaluations();
       return;
@@ -311,7 +313,7 @@ public class Main implements Runnable {
       }
       PositionIJ ij = moveFromBoard(board, child);
 
-      CaseAnnotations annotations = new CaseAnnotations(child, ij.equals(bestIJ));
+      CaseAnnotations annotations = new CaseAnnotations(child, EVALUATOR.getWeakLower(), EVALUATOR.getWeakUpper(), ij.equals(bestIJ));
       ui.setAnnotations(annotations, ij);
     }
     ui.repaint();

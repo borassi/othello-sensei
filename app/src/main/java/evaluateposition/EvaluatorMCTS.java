@@ -47,7 +47,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long lastUpdateWeak = 0;
 
   private final Condition isNextPositionAvailable = nextPositionLock.newCondition();
-  
+
   int lower = -6300;
   int upper = 6300;
   
@@ -232,6 +232,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return firstPosition.getEval();
   }
 
+  public int getLower() { return lower; }
+
+  public int getUpper() { return upper; }
+
+  public int getWeakLower() { return weakLower; }
+
+  public int getWeakUpper() { return weakUpper; }
+
   public long getNVisited() {
     return this.firstPosition.getDescendants();
   }
@@ -346,22 +354,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       newWeakUpper = lower;
     }
 
-    if (newWeakLower < weakLower && firstPosition.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL) > weakLower) {
-//      System.out.println("Not updating lower");
+    if (newWeakLower < weakLower && firstPosition.getEvaluation(weakLower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       newWeakLower = weakLower;
     }
-    if (newWeakUpper > weakUpper && firstPosition.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL) < weakUpper) {
-//      System.out.println("Not updating upper");
+    if (newWeakUpper > weakUpper && firstPosition.getEvaluation(weakUpper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
       newWeakUpper = weakUpper;
     }
-//    System.out.println(firstPosition.getDescendants() + ": (" + weakLower + ", " + weakUpper + ") -> (" + newWeakLower + ", " + newWeakUpper + ")");
-
     if (newWeakUpper > weakUpper) {
-      //System.out.println("Updating descendants " + (weakUpper + 200) + " " + newWeakUpper);
       firstPosition.updateDescendantsRecursive(weakUpper + 200, newWeakUpper);
     }
     if (newWeakLower < weakLower) {
-      //System.out.println("Updating descendants " + (newWeakLower) + " " + (weakLower - 200));
       firstPosition.updateDescendantsRecursive(Math.max(lower, newWeakLower - delta), weakLower - 200);
     }
     lastUpdateWeak = this.getNVisited();

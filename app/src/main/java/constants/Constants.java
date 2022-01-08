@@ -30,7 +30,7 @@ public class Constants {
   public final static int MCTS_SIZE_MOBILE = 100000;
   public final static int MCTS_SIZE_DESKTOP = 14000000;
 
-  public final static int MAX_PARALLEL_TASKS = 12;
+  public final static int MAX_PARALLEL_TASKS = 1;
   public final static float MIN_PROB_LEAF = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
   public final static float MULT_STDDEV = 0.95F;
@@ -41,7 +41,7 @@ public class Constants {
   public final static float MIN_PROB_EVAL_GOAL = 0.03F;
   public final static float PROB_REDUCE_WEAK_EVAL = 0.01F;
   public final static float PROB_FOR_ENDGAME_ALPHA_BETA = 0.01F;
-  public final static float PROB_INCREASE_WEAK_EVAL = 0.2F;
+  public final static float PROB_INCREASE_WEAK_EVAL = 0.05F;
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;

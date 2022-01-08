@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,13 +14,8 @@
 
 package ui;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-
 import bitpattern.PositionIJ;
 import board.Board;
-import evaluateposition.StoredBoard;
 
 /**
  *
@@ -29,7 +24,7 @@ import evaluateposition.StoredBoard;
 public interface UI {
   void setCases(Board board, boolean blackTurn);
   void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
-  void setExtras(StoredBoard firstPosition, double milliseconds);
+  void setExtras(CaseAnnotations firstPosition, double milliseconds);
   boolean playBlackMoves();
   boolean playWhiteMoves();
   long depth();
