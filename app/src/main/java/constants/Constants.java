@@ -46,7 +46,7 @@ public class Constants {
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
   public final static boolean IGNORE_TRANSPOSITIONS = false;
-  public final static boolean APPROX_ONLY = true;
+  public final static boolean APPROX_ONLY = false;
 
   public static int hashMapSize() {
     return MOBILE ? HASH_MAP_SIZE_MOBILE : HASH_MAP_SIZE_DESKTOP;

@@ -107,8 +107,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
-    String evalRow = "";
-    String nextRows = "";
+    String rows = "";
     StoredBoard board = annotations.storedBoard;
     if (board == null) {
       return;
@@ -117,30 +116,37 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
 
-    String formatter = "%+.2f ";
+    boolean showMissing = false;
+    String formatter = "%+.2f";
     if (board.isSolved()) {
-      formatter = "%+.0f ";
+      formatter = "%+.0f";
     } else if (board.isPartiallySolved()) {
-      formatter = "%+.1f ";
+      formatter = "%+.1f";
+      showMissing = true;
     }
     String evalStr = String.format(formatter, -board.getEval(annotations.lower, annotations.upper) / 100.0);
     if (board.getEvaluation(lower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
-        evalRow = evalStr;
+        rows = evalStr;
       } else {
-        evalRow = "≤" + evalStr;
+        rows = "≤" + evalStr;
       }
     } else {
       if (board.getEvaluation(upper).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
-        evalRow = "≥" + evalStr;
+        rows = "≥" + evalStr;
       } else {
-        evalRow = "?";
+        rows = "?";
       }
     }
-    nextRows = Utils.prettyPrintDouble(board.getDescendants());
+    rows += "\n" + Utils.prettyPrintDouble(board.getDescendants());
+
+    if (showMissing) {
+      int eval = board.getEval(annotations.lower, annotations.upper);
+      rows += "\n" + Utils.prettyPrintDouble(board.getProofNumber(eval - 100) + board.getDisproofNumber(eval + 100));
+    }
 
     cases[ij.i][ij.j].setFontSizes(new double[] {0.25, 0.16});
-    cases[ij.i][ij.j].setAnnotations(evalRow + "\n" + nextRows);
+    cases[ij.i][ij.j].setAnnotations(rows);
     cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
     cases[ij.i][ij.j].repaint();
   }
