@@ -14,19 +14,11 @@
 
 package main;
 
-import android.os.Bundle;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
-
-import androidx.appcompat.app.AppCompatActivity;
+import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MULTIPLIER;
 
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 import board.Board;
@@ -39,10 +31,6 @@ import evaluateposition.EvaluatorMCTS.Status;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.PriorityQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,8 +42,6 @@ import java.util.logging.Logger;
 
 import ui.CaseAnnotations;
 //import ui.DesktopUI;
-import ui.DesktopUI;
-import ui.R;
 import ui.UI;
 
 /**
@@ -68,21 +54,48 @@ public class Main implements Runnable {
   final ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
   Board board;
+  Board[] boardsToEvaluate;
   private final HashMap HASH_MAP;
-  private final EvaluatorMCTS EVALUATOR;
+  private final EvaluatorMCTS EVALUATORS[] = new EvaluatorMCTS[20];
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   Future future = null;
   private long startTime;
   private final int updateTimes[] = {100, 1000};
   private static UI ui;
-  
+  private boolean stopping = false;
+
+  private static class EvaluatorWithBoard {
+    EvaluatorMCTS evaluator;
+    StoredBoard board;
+    private EvaluatorWithBoard(EvaluatorMCTS evaluator, StoredBoard board) {
+      this.evaluator = evaluator;
+      this.board = board;
+    }
+    private int getEval() {
+      return board.getEval(evaluator.getWeakLower(), evaluator.getWeakUpper());
+    }
+  }
+
   /**
    * Creates a new UI and sets the initial position.
    */
   public Main(UI ui) {
     this.ui = ui;
     HASH_MAP = new HashMap(Constants.hashMapSize());
-    EVALUATOR = new EvaluatorMCTS(Constants.MCTSSize(), 2 * Constants.MCTSSize(), HASH_MAP);
+    for (int i = 0; i < EVALUATORS.length; ++i) {
+      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTSSize() / 20, 2 * Constants.MCTSSize() / 20, HASH_MAP);
+    }
+  }
+
+  /**
+   * Action to perform when the case (i, j) was clicked.
+   * Performs the move.
+   * @param move: the row and the column (from 0 to 7)
+   */
+  public void play(int move) {
+    stop();
+    playMoveIfPossible(move);
+    evaluate();
   }
 
   public void stop() {
@@ -91,7 +104,9 @@ public class Main implements Runnable {
       if (future == null) {
         return;
       }
-      EVALUATOR.stop();
+      for (int i = 0; i < EVALUATORS.length; ++i) {
+        EVALUATORS[i].stop();
+      }
       try {
         future.get(100, TimeUnit.MILLISECONDS);
         future = null;
@@ -102,17 +117,20 @@ public class Main implements Runnable {
       } catch (TimeoutException ex) {}
     }
   }
-  
+
   public void resetHashMaps() {
     stop();
-    EVALUATOR.empty();
+    for (int i = 0; i < EVALUATORS.length; ++i) {
+      EVALUATORS[i].empty();
+    }
     HASH_MAP.reset();
     EvaluatorAlphaBeta.resetConstant();
     ui.setCases(board, blackTurn);
   }
 
   public void setEndgameBoard(int n) {
-    setBoard(EndgameTest.readIthBoard(n), true);    
+    stop();
+    setBoard(EndgameTest.readIthBoard(n), true);
   }
 
   /**
@@ -140,66 +158,102 @@ public class Main implements Runnable {
     this.oldBlackTurns.clear();
     ui.setCases(board, blackTurn);
   }
-  
-  /**
-   * Action to perform when the case (i, j) was clicked.
-   * Performs the move.
-   * @param ij: the row and the column (from 0 to 7)
-   */
-  public void play(PositionIJ ij) {
-    stop();
-    playMoveIfPossible(ij);
-    evaluate();
-  }
-  
-  public void evaluatePosition(Board b, int updateTime, boolean reset) {
-    if (stopping) {
-      return;
+
+  public boolean finished() {
+    long visited = 0;
+    boolean allSolved = true;
+    for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
+      EvaluatorMCTS evaluator = EVALUATORS[i];
+      visited += evaluator.getNVisited();
+      switch (evaluator.getStatus()) {
+        case NONE:
+        case FAILED:
+          return true;
+        case SOLVED:
+          break;
+        case KILLING:
+        case KILLED:
+        case RUNNING:
+        case STOPPED_TIME:
+        case STOPPED_POSITIONS:
+          allSolved = false;
+      }
     }
-    EVALUATOR.evaluatePosition(b, ui.lower(), ui.upper(), ui.depth(), updateTime);
+    return visited > ui.maxVisited() || allSolved;
   }
-  
-  private boolean stopping = false;
+
+  private void setEvaluators() {
+    if (ui.playWhiteMoves() || ui.playBlackMoves() || ui.delta() == 0) {
+      this.boardsToEvaluate = new Board[] {this.board};
+    } else {
+      this.boardsToEvaluate = GetMovesCache.getAllDescendants(this.board);
+    }
+  }
+
+  private double boardValue(EvaluatorMCTS evaluator) {
+    StoredBoard board = evaluator.getFirstPosition();
+    int maxLogDerivative = Integer.MIN_VALUE;
+    for (int evalGoal = evaluator.getWeakLower(); evalGoal <= evaluator.getWeakUpper(); evalGoal += 200) {
+      if (board.getProb(evalGoal) > Constants.PROB_INCREASE_WEAK_EVAL &&
+              board.getProb(evalGoal) < 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+        maxLogDerivative = Math.max(maxLogDerivative, board.maxLogDerivative(evalGoal));
+      }
+    }
+    double evalEffect = -board.getEval(evaluator.getWeakLower(), evaluator.getWeakUpper())
+                            * LOG_DERIVATIVE_MULTIPLIER / Math.max(1, ui.delta() * 100);
+    return evalEffect + maxLogDerivative;
+  }
+
+  private void evaluateFirst() {
+    for (int i = 0; i < 1; ++i) {
+      EvaluatorMCTS evaluator = EVALUATORS[i];
+      Board board = boardsToEvaluate[i];
+      evaluator.evaluatePosition(board, ui.lower(), ui.upper(), ui.maxVisited(), 20);
+    }
+  }
+
+  private void evaluate(int time) {
+    for (int step = 0; step < 10; ++step) {
+      EvaluatorMCTS nextEvaluator = EVALUATORS[0];
+      double best = Double.NEGATIVE_INFINITY;
+
+      for (int i = 0; i < 1; ++i) {
+        EvaluatorMCTS evaluator = EVALUATORS[i];
+        double value = boardValue(evaluator);
+        if (value > best) {
+          best = value;
+          nextEvaluator = evaluator;
+        }
+      }
+      nextEvaluator.evaluatePosition(nextEvaluator.getFirstPosition().getBoard(), ui.lower(), ui.upper(), ui.maxVisited(), time / 10);
+    }
+  }
 
   @Override
   public synchronized void run() {
     stopping = false;
-    boolean finished = false;
-    int nUpdate = 0;
-    
-    while (!stopping && !finished) {
-      int updateTime = updateTimes[Math.min(updateTimes.length - 1, nUpdate)];
-      evaluatePosition(board, updateTime, nUpdate == 0);
+    setEvaluators();
+    evaluateFirst();
+    showMCTSEvaluations();
+    while (!stopping && !finished()) {
+      evaluate(1000);
       showMCTSEvaluations();
-      finished = EVALUATOR.getStatus() == Status.SOLVED || EVALUATOR.getStatus() == Status.STOPPED_POSITIONS || EVALUATOR.getStatus() == Status.FAILED;
-      if (ui.delta() > 0 && finished) {
-        for (StoredBoard child : EVALUATOR.get(board).getChildren()) {
-          if (!child.isSolved()) {
-            finished = false;
-          }
-        }
-      }
-      nUpdate++;
     }
-    
+
     if ((ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn)) {
-      Board evaluatedBoard = EVALUATOR.getFirstPosition().getBoard();
-      if (evaluatedBoard.getPlayer() == this.board.getPlayer()
-          && evaluatedBoard.getOpponent() == this.board.getOpponent()) {
-        this.playMoveIfPossible(this.findBestMove(EVALUATOR.getFirstPosition().getChildren()));
-      }
+      this.playMoveIfPossible(this.findBestMove());
     }
   }
   
   /**
    * Plays a move at the coordinates (i, j), if it is possible.
    * 
-   * @param ij the row and the column (from 0 to 7)
+   * @param move the move (0 is h8, 1 is g8, ..., 63 is a1).
    */
-  private void playMoveIfPossible(PositionIJ ij) {
+  private void playMoveIfPossible(int move) {
     Board oldBoard = board.deepCopy();
     try {
-      board = GetMovesCache.moveIfPossible(board, ij.toMove());
+      board = GetMovesCache.moveIfPossible(board, move);
     } catch (IllegalArgumentException ex) {
       return;
     }
@@ -214,70 +268,33 @@ public class Main implements Runnable {
     ui.setCases(board, blackTurn);
   }
   
-  private void showHashMapEvaluations() {
-    GetMovesCache mover = new GetMovesCache();
-    long player = board.getPlayer();
-    long opponent = board.getOpponent();
-    long movesBit = mover.getMoves(board.getPlayer(), board.getOpponent());
-    long flip;
-    int move;
-    
-    while (movesBit != 0) {
-      flip = Long.lowestOneBit(movesBit);
-      move = Long.numberOfTrailingZeros(flip);      
-      movesBit = movesBit & (~flip);
-      flip = mover.getFlip(move);
-      HashMap.BoardInHash child = this.HASH_MAP.getStoredBoardNoUpdate(opponent & ~flip, player | flip);
-      if (child == null) {
-        continue;
-      }
-
-      CaseAnnotations annotations = new CaseAnnotations(child, false);
-//      annotations.eval = -child.lower / 100F;
-////      annotations.isBestMove = ij.equals(bestIJ);
-////      annotations.lower = -child.upper / 100F;
-////      annotations.upper = -child.lower / 100F;
-////      annotations.proofNumberCurEval = child.getDisproofNumberCurEval();
-////      annotations.proofNumberNextEval = child.getDisproofNumberNextEval();
-////      annotations.disproofNumberCurEval = child.getProofNumberCurEval();
-////      annotations.disproofNumberNextEval = child.getProofNumberNextEval();
-//      annotations.otherAnnotations =
-//          ">" + Utils.prettyPrintDouble(-child.upper / 100) + "@" + child.depthUpper + "\n" +
-//          "<" + Utils.prettyPrintDouble(-child.lower / 100) + "@" + child.depthLower;
-      ui.setAnnotations(annotations, new PositionIJ(move));
-    }
-    ui.repaint();
-  }
-  
-  private PositionIJ moveFromBoard(Board father, StoredBoard child) {
+  private int moveFromBoard(Board father, Board child) {
     long move = (child.getPlayer() | child.getOpponent()) & ~(father.getPlayer() | father.getOpponent());
     
-    return BitPattern.bitToMove(move);
+    return Long.numberOfTrailingZeros(move);
   }
 
-  private PositionIJ findBestMove(StoredBoard[] evaluations) {
+  private int findBestMove() {
     double best = Double.POSITIVE_INFINITY;
-    PositionIJ bestIJ = new PositionIJ(-1, -1);
+    int bestMove = -1;
 
-    if (evaluations == null || evaluations.length == 0|| evaluations[0] == null) {
-      return bestIJ;
-    }
-    for (StoredBoard evaluation : evaluations) {
-      if (evaluation == null) {
+    for (Board child : GetMovesCache.getAllDescendants(board)) {
+      EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(child);
+      if (evaluatorBoard.board == null) {
         continue;
       }
-      float eval = evaluation.getEval(EVALUATOR.getWeakLower(), EVALUATOR.getWeakUpper());
-      PositionIJ ij = moveFromBoard(board, evaluation);
+      int eval = evaluatorBoard.getEval();
+      int move = moveFromBoard(board, child);
       if (eval < best) {
         best = eval;
-        bestIJ = ij;
+        bestMove = move;
       }
     }
-    return bestIJ;
+    return bestMove;
   }
   
   private void evaluate() {
-    if (ui.depth() <= 0) {
+    if (ui.maxVisited() <= 0) {
       showMCTSEvaluations();
       return;
     }
@@ -291,31 +308,54 @@ public class Main implements Runnable {
     startTime = System.currentTimeMillis();
     future = EXECUTOR.submit(this);
   }
-  
-  
-  private void showMCTSEvaluations() {
-    StoredBoard current = EVALUATOR.get(board);
-    if (current == null) {
-      showHashMapEvaluations();
-      return;
-    }
-    ui.setExtras(
-        new CaseAnnotations(current, EVALUATOR.getWeakLower(), EVALUATOR.getWeakUpper(), false),
-        System.currentTimeMillis() - startTime);
-    if (current.getChildren() == null) {
-      showHashMapEvaluations();
-      return;
-    }
-    StoredBoard[] children = current.getChildren();
-    PositionIJ bestIJ = this.findBestMove(children);
-    for (StoredBoard child : children) {
-      if (child == null) {
+
+  private EvaluatorWithBoard getEvaluatorWithBoard(Board b) {
+    return getEvaluatorWithBoard(b.getPlayer(), b.getOpponent());
+  }
+
+  private EvaluatorWithBoard getEvaluatorWithBoard(long player, long opponent) {
+    EvaluatorMCTS bestEvaluator = null;
+    StoredBoard best = null;
+    for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
+      EvaluatorMCTS curEvaluator = EVALUATORS[i];
+      StoredBoard current = curEvaluator.get(player, opponent);
+      if (current == null) {
         continue;
       }
-      PositionIJ ij = moveFromBoard(board, child);
+      if (best == null || current.getDescendants() > best.getDescendants()) {
+        best = current;
+        bestEvaluator = curEvaluator;
+      }
+    }
+    return new EvaluatorWithBoard(bestEvaluator, best);
+  }
+  
+  private void showMCTSEvaluations() {
+    int bestMove = this.findBestMove();
 
-      CaseAnnotations annotations = new CaseAnnotations(child, EVALUATOR.getWeakLower(), EVALUATOR.getWeakUpper(), ij.equals(bestIJ));
-      ui.setAnnotations(annotations, ij);
+    for (Board child : GetMovesCache.getAllDescendants(board)) {
+      EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(child);
+      StoredBoard childStored = evaluatorBoard.board;
+      EvaluatorMCTS evaluator = evaluatorBoard.evaluator;
+      CaseAnnotations annotations;
+      int move = moveFromBoard(board, child);
+      if (childStored != null) {
+        annotations = new CaseAnnotations(childStored, evaluator.getWeakLower(),
+            evaluator.getWeakUpper(), move == bestMove);
+      } else {
+        HashMap.BoardInHash childHash = this.HASH_MAP.getStoredBoardNoUpdate(child);
+        if (childHash == null) {
+          continue;
+        }
+        annotations = new CaseAnnotations(childHash, move == bestMove);
+      }
+      ui.setAnnotations(annotations, move);
+    }
+    EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(board);
+    if (evaluatorBoard.board != null) {
+      ui.setExtras(
+          new CaseAnnotations(evaluatorBoard.board, evaluatorBoard.evaluator.getWeakLower(), evaluatorBoard.evaluator.getWeakUpper(), false),
+          System.currentTimeMillis() - startTime);
     }
     ui.repaint();
   }

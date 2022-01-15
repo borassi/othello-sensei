@@ -390,7 +390,7 @@ public class BitPattern {
   /**
    * Recursive version of existingBoardsInBitPattern(long bitPattern).
    * @param bitPattern the bit pattern.
-   * @param startingBoard the cases already filled.
+   * @param startingPattern the cases already filled.
    * @param currentCase the next case to be filled.
    * @return an ArrayList with all the possible boards.
    */
@@ -455,4 +455,8 @@ public class BitPattern {
   public final static boolean hasEdge(long bitPattern) {
     return (bitPattern & EDGE) != 0;
   }
+
+  public final static int getX(int move) { return 7 - move / 8; }
+  public final static int getY(int move) { return 7 - move % 8; }
+
 }

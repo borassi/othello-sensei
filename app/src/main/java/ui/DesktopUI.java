@@ -14,6 +14,7 @@
 
 package ui;
 
+import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -89,23 +90,23 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JTextArea extras;
   private final JTextArea extrasPosition;
 
-  public void getClick(PositionIJ ij, MouseEvent e) {
+  public void getClick(int move, MouseEvent e) {
     if (SwingUtilities.isLeftMouseButton(e)) {
-      main.play(ij);
+      main.play(move);
     } else if (SwingUtilities.isRightMouseButton(e)) {
       main.undo();
     }
   }
 
   @Override
-  public void setAnnotations(CaseAnnotations annotations, PositionIJ ij) {
+  public void setAnnotations(CaseAnnotations annotations, int move) {
     if (debugMode.isSelected()) {
-      setAnnotationsDebug(annotations, ij);
+      setAnnotationsDebug(annotations, move);
     } else {
-      setAnnotationsLarge(annotations, ij);
+      setAnnotationsLarge(annotations, move);
     }
   }
-  private void setAnnotationsLarge(CaseAnnotations annotations, PositionIJ ij) {
+  private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
     String rows;
     StoredBoard board = annotations.storedBoard;
     if (board == null) {
@@ -144,13 +145,15 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       rows += "\n" + Utils.prettyPrintDouble(board.getProofNumber(eval - 100) + board.getDisproofNumber(eval + 100));
     }
 
-    cases[ij.i][ij.j].setFontSizes(new double[] {0.25, 0.16});
-    cases[ij.i][ij.j].setAnnotations(rows);
-    cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
-    cases[ij.i][ij.j].repaint();
+    int x = BitPattern.getX(move);
+    int y = BitPattern.getY(move);
+    cases[x][y].setFontSizes(new double[] {0.25, 0.16});
+    cases[x][y].setAnnotations(rows);
+    cases[x][y].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
+    cases[x][y].repaint();
   }
 
-  private void setAnnotationsDebug(CaseAnnotations annotations, PositionIJ ij) {
+  private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
     StoredBoard board = annotations.storedBoard;
     if (board == null) {
       return;
@@ -159,6 +162,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
 
+    System.out.println(lower + " " + upper);
     String formatter = "%+.2f ";
     if (board.isSolved()) {
       formatter = "%+.0f ";
@@ -195,9 +199,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       }
     }
 
-    cases[ij.i][ij.j].setFontSizes(new double[] {0.125});
-    cases[ij.i][ij.j].setAnnotations(rows);
-    cases[ij.i][ij.j].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
+    int x = BitPattern.getX(move);
+    int y = BitPattern.getY(move);
+    cases[x][y].setFontSizes(new double[] {0.125});
+    cases[x][y].setAnnotations(rows);
+    cases[x][y].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
   }
 
   public void repaint() {
@@ -216,12 +222,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     casesContainer.setLayout(new GridLayout(0, 8));
 
-    for (int i = 0; i < 8; i++) {
-      for (int j = 0; j < 8; j++) {
-        PositionIJ ij = new PositionIJ(i, j);
-        cases[i][j] = new Case(this, ij);
-        casesContainer.add(cases[i][j]);
-      }
+    for (int i = 0; i < 64; i++) {
+      int x = BitPattern.getX(i);
+      int y = BitPattern.getY(i);
+
+      cases[x][y] = new Case(this, i);
+      casesContainer.add(cases[x][y]);
     }
 
     JPanel boardConstrain = new JPanel(new GridBagLayout());
@@ -319,7 +325,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public long depth() {
+  public long maxVisited() {
     try {
       return Long.parseLong((String) depth.getText());
     } catch (NumberFormatException e) {
@@ -362,9 +368,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
     for (int evalGoal = Math.min(upper + 400, 6300); evalGoal >= Math.max(lower - 400, -6300); evalGoal -= 200) {
       StoredBoard.Evaluation evaluation = board.getEvaluation(evalGoal);
-      firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (evaluation.getProb()) * 100,
-          Utils.prettyPrintDouble(evaluation.maxLogDerivative()), Utils.prettyPrintDouble(evaluation.getDescendants()),
-          Utils.prettyPrintDouble(evaluation.proofNumber()), Utils.prettyPrintDouble(evaluation.disproofNumber()));
+      if (evaluation != null) {
+        firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (evaluation.getProb()) * 100,
+            Utils.prettyPrintDouble(evaluation.maxLogDerivative()), Utils.prettyPrintDouble(evaluation.getDescendants()),
+            Utils.prettyPrintDouble(evaluation.proofNumber()), Utils.prettyPrintDouble(evaluation.disproofNumber()));
+      }
     }
 
     String tmp = firstPositionText;

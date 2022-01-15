@@ -23,7 +23,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import bitpattern.PositionIJ;
 import board.Board;
 
 import constants.Constants;
@@ -31,7 +30,6 @@ import helpers.Utils;
 import main.Main;
 
 public class MobileUI extends AppCompatActivity implements UI {
-  public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
   private BoardView boardView;
   private TextView posPerSec;
   public Main main;
@@ -60,7 +58,7 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   public void undo(View view) { main.undo(); }
 
-  public void getMove(PositionIJ move) {
+  public void getMove(int move) {
     main.play(move);
   }
 
@@ -77,9 +75,9 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public void setAnnotations(CaseAnnotations annotations, PositionIJ positionIJ) {
+  public void setAnnotations(CaseAnnotations annotations, int move) {
     BoardView boardView = findViewById(R.id.board);
-    boardView.setAnnotations(annotations, positionIJ);
+    boardView.setAnnotations(annotations, move);
   }
 
   @Override
@@ -98,7 +96,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public long depth() {
+  public long maxVisited() {
     Spinner depth = findViewById(R.id.depth_spinner);
     return Long.parseLong(depth.getSelectedItem().toString());
   }

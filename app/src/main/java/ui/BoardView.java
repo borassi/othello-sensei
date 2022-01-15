@@ -27,6 +27,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
+import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
 import board.Board;
 import evaluateposition.StoredBoard;
@@ -52,14 +53,14 @@ public class BoardView extends View {
   private OnTouchListener clickListener = new View.OnTouchListener() {
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-      PositionIJ move = new PositionIJ((int) (event.getX() / cellSize), (int) (event.getY() / cellSize));
+      int move = (int) (7 - (event.getX() / cellSize) + 8 * (int) (event.getY() / cellSize));
       main.getMove(move);
       return true;
     }
   };
 
-  public void setAnnotations(CaseAnnotations annotations, PositionIJ position) {
-    this.annotations[position.i][position.j] = annotations;
+  public void setAnnotations(CaseAnnotations annotations, int move) {
+    this.annotations[BitPattern.getX(move)][BitPattern.getY(move)] = annotations;
   }
 
   public void resetAnnotations() {

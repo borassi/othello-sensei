@@ -44,9 +44,9 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
    */
   private final DesktopUI ui;
   /**
-   * The row and the column (from 0 to 7).
+   * The move for this case (0=h8, 1=g8, ..., 63=a1).
    */
-  private final PositionIJ ij;
+  private final int move;
   /**
    * The annotations to be printed in this case (first line).
    */
@@ -61,10 +61,10 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
   /**
    * Constructor.
    * @param ui the UI that uses this case
-   * @param ij: the row and the column (from 0 to 7).
+   * @param move: the move.
    */
-  public Case(DesktopUI ui, PositionIJ ij) {
-    this.ij = ij;
+  public Case(DesktopUI ui, int move) {
+    this.move = move;
     this.ui = ui;
     super.addMouseListener(this);
     setState('-');
@@ -161,7 +161,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
 
   @Override
   public void mousePressed(MouseEvent e) {
-    ui.getClick(ij, e);
+    ui.getClick(move, e);
   }
 
   @Override

@@ -23,11 +23,11 @@ import board.Board;
  */
 public interface UI {
   void setCases(Board board, boolean blackTurn);
-  void setAnnotations(CaseAnnotations annotations, PositionIJ ij);
+  void setAnnotations(CaseAnnotations annotations, int move);
   void setExtras(CaseAnnotations firstPosition, double milliseconds);
   boolean playBlackMoves();
   boolean playWhiteMoves();
-  long depth();
+  long maxVisited();
   int delta();
   int lower();
   int upper();

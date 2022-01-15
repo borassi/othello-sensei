@@ -336,7 +336,9 @@ public class Board implements Serializable {
   /**
    * Computes the color of the disk at the given coordinates.
    * The coordinates are integers from 0 to 7 for rows and columns.
-   * @param coordinates the coordinates
+   * @param row the row
+   * @param column the column
+   * @param blackTurn if black is going to move
    * @return the color of the disk, 'O' for white, 'X' for black, '-' for empty.
    */
   public char getCase(int row, int column, boolean blackTurn) {

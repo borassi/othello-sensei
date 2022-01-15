@@ -14,6 +14,8 @@
 
 package evaluateposition;
 
+import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MINUS_INF;
+
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
@@ -29,7 +31,8 @@ import java.util.logging.Logger;
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   int threadWaitingForNextPos = 0;
   private long maxNVisited;
-  private long stopTimeMillis;
+  private long startTimeMillis;
+  private int maxTimeMillis;
   private final HashMap hashMap;
   static final ReentrantReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
   static final ReentrantReadWriteLock.WriteLock nextPositionLock = editNextPositionLock.writeLock();
@@ -38,6 +41,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private int weakLower = -6300;
   private int weakUpper = 6300;
   private long lastUpdateWeak = 0;
+  private double bestStepsUntilEnd = 0;
 
   private final Condition isNextPositionAvailable = nextPositionLock.newCondition();
 
@@ -243,6 +247,27 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
   }
 
+  public double stepsUntilEnd() {
+    // Lower means "better".
+    double maxDerivative = Double.NEGATIVE_INFINITY;
+    double stepsUntilEndProof = Double.POSITIVE_INFINITY;
+    double stepsUntilEndDisproof = Double.POSITIVE_INFINITY;
+    for (int eval = weakLower; eval <= weakUpper; eval += 200) {
+      StoredBoard.Evaluation curEval = firstPosition.getEvaluation(eval);
+      if (curEval.getProb() >= 1 - Constants.ZERO_PERC_FOR_WEAK) {
+        stepsUntilEndProof = Math.max(stepsUntilEndProof, curEval.proofNumber());
+      } else if (curEval.getProb() < Constants.ZERO_PERC_FOR_WEAK) {
+        stepsUntilEndDisproof = Math.max(stepsUntilEndDisproof, curEval.disproofNumber());
+      } else {
+        maxDerivative = Math.max(maxDerivative, curEval.maxLogDerivative);
+      }
+    }
+    if (maxDerivative == Double.NEGATIVE_INFINITY) {
+      return stepsUntilEndProof + stepsUntilEndDisproof;
+    }
+    return (-LOG_DERIVATIVE_MINUS_INF + maxDerivative) * 1E20;
+  }
+
   public int nextPositionEvalGoal(StoredBoard board) {
     assert nextPositionLock.isHeldByCurrentThread();
     StoredBoard.Evaluation bestEval = null;
@@ -254,7 +279,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       long curValue = 0;
       curValue += curEval.getProb() > Constants.MIN_PROB_EVAL_GOAL && curEval.getProb() < 1 - Constants.MIN_PROB_EVAL_GOAL ?
-                      -StoredBoard.LOG_DERIVATIVE_MINUS_INF * 1000L : 0;
+                      -LOG_DERIVATIVE_MINUS_INF * 1000L : 0;
       curValue += curEval.maxLogDerivative * 1000L;
       curValue += curEval.evalGoal == lastEvalGoal ? 0 : 1;
 
@@ -292,9 +317,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   
   protected boolean checkFinished() {
-    if (hashMap.size() > Constants.hashMapSize() / 2) {
-      hashMap.reset();
-    }
+    assert nextPositionLock.isHeldByCurrentThread();
+//    if (hashMap.size() > Constants.hashMapSize() / 2) {
+//      hashMap.reset();
+//    }
+    double stepsUntilEnd = this.stepsUntilEnd();
+    this.bestStepsUntilEnd = Math.min(this.bestStepsUntilEnd, stepsUntilEnd);
 
     if (status == Status.KILLING) {
       status = Status.KILLED;
@@ -303,13 +331,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (status == Status.KILLED) {
       return true;
     }
-    if (this.firstPosition.getDescendants() > maxNVisited && !justStarted) {
-      status = Status.STOPPED_POSITIONS;
-      return true;
+    if (firstPosition.getDescendants() > 0.8 * maxNVisited && !justStarted) {
+      if (firstPosition.getDescendants() > maxNVisited || stepsUntilEnd == bestStepsUntilEnd) {
+        status = Status.STOPPED_POSITIONS;
+        return true;
+      }
     }
-    if (System.currentTimeMillis() > stopTimeMillis) {
-      status = Status.STOPPED_TIME;
-      return true;
+    double currentTime = System.currentTimeMillis();
+    if (currentTime - startTimeMillis > maxTimeMillis * 0.8) {
+      if (currentTime - startTimeMillis > maxTimeMillis || stepsUntilEnd == bestStepsUntilEnd) {
+        status = Status.STOPPED_TIME;
+        return true;
+      }
     }
     if (isSolved()) {
       status = Status.SOLVED;
@@ -348,16 +381,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       firstPosition.updateDescendantsRecursive(Math.max(lower, newWeakLower), weakLower - 200);
     }
     lastUpdateWeak = this.getNVisited();
+//    System.out.println("(" + weakLower + ", " + weakUpper + ") -> (" + newWeakLower + " " + newWeakUpper + ")");
+//    System.out.println(firstPosition.getEvaluation(newWeakLower).getProb() + " " + firstPosition.getEvaluation(newWeakUpper).getProb());
     weakLower = newWeakLower;
     weakUpper = newWeakUpper;
   }
 
   protected int getAlpha(StoredBoard board) {
-    return board.depth % 2 == 0 ? Math.max(-6300, weakLower) : -weakUpper;
+    return board.depth % 2 == 0 ? weakLower : -weakUpper;
   }
 
   protected int getBeta(StoredBoard board) {
-    return board.depth % 2 == 0 ? weakUpper : Math.min(6300, -weakLower);
+    return board.depth % 2 == 0 ? weakUpper : -weakLower;
   }
 
   protected StoredBoardBestDescendant getNextPosition() {
@@ -406,14 +441,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     editLock.unlock();
     return result;
   }
-
-  public short evaluatePosition(Board board) {
-    return evaluatePosition(board, -6400, 6400, Long.MAX_VALUE, Long.MAX_VALUE);
-  }
-
-  public short evaluatePosition(Board board, long maxNVisited, long maxTimeMillis) {
-    return evaluatePosition(board, -6400, 6400, maxNVisited, maxTimeMillis);
-  }
   
   public Status getStatus() {
     return status;
@@ -433,20 +460,20 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     setFirstPosition(b.getPlayer(), b.getOpponent());
   }
 
-  Random random = new Random();
   void setFirstPosition(long player, long opponent) {
     empty();
-    random.setSeed(42);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
     add(firstPosition);
-    this.weakUpper = 6300;
-    this.weakLower = -6300;
+    this.weakUpper = upper;
+    this.weakLower = lower;
     nextPositionLock.lock();
     firstPosition.setBusy(-6300, 6300);
     firstPosition.setLeaf(0, -6300, 6300);
     StoredBoardBestDescendant firstPositionDescendant = StoredBoardBestDescendant.bestDescendant(
         firstPosition.getEvaluation(-100), -6300, 6300);
     assert firstPositionDescendant != null;
+    firstPositionDescendant.alpha = -6300;
+    firstPositionDescendant.beta = 6300;
     firstPosition.setBusy(-6300, 6300);
     threads[0].addChildren(firstPositionDescendant);
     nextPositionLock.unlock();
@@ -485,8 +512,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return false;
   }
 
+  public short evaluatePosition(Board board) {
+    return evaluatePosition(board, -6300, 6300, Long.MAX_VALUE, Integer.MAX_VALUE);
+  }
+
+  public short evaluatePosition(Board board, long maxNVisited, int maxTimeMillis) {
+    return evaluatePosition(board, -6300, 6300, maxNVisited, maxTimeMillis);
+  }
+
   public short evaluatePosition(
-      Board board, int lower, int upper, long maxNVisited, long maxTimeMillis) {
+      Board board, int lower, int upper, long maxNVisited, int maxTimeMillis) {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
@@ -495,6 +530,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
+    this.bestStepsUntilEnd = Double.POSITIVE_INFINITY;
 
     this.maxNVisited = maxNVisited;
     this.justStarted = true;
@@ -502,7 +538,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         firstPosition.getOpponent() != board.getOpponent()) {
       setFirstPosition(board.getPlayer(), board.getOpponent());
     }
-    this.stopTimeMillis = System.currentTimeMillis() + maxTimeMillis;
+    this.startTimeMillis = System.currentTimeMillis();
+    this.maxTimeMillis = maxTimeMillis;
 
     Thread[] threads = new Thread[this.threads.length];
 

@@ -304,7 +304,7 @@ public class StoredBoard {
   private static final int[] COMBINE_PROB;
   private static final int[] LOG_DERIVATIVE;
   public static final int LOG_DERIVATIVE_MINUS_INF = -20000000;
-  private static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
+  public static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
 
   static {
     ProbCombiner combiner = Constants.PROB_COMBINER;
@@ -326,9 +326,6 @@ public class StoredBoard {
   }
 
   static int toEvaluationIndex(int eval) {
-    if ((eval + 6300) % 200 != 0) {
-      System.out.println(eval);
-    }
     assert ((eval + 6300) % 200 == 0);
     assert (eval >= -6300);
     assert (eval <= 6300);

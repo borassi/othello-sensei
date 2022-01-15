@@ -38,7 +38,7 @@ public class HashMapVisitedPositions {
 
   public final void empty() {
     Arrays.fill(evaluationsHashMap, null);
-//    System.gc();
+    System.gc();
     firstPosition = StoredBoard.initialStoredBoard(new Board());
     size = 0;
   }
