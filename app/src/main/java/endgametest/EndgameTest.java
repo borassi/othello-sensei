@@ -108,7 +108,7 @@ public class EndgameTest {
       long cpuT;
       long t = System.currentTimeMillis();
 //      int result = evalMidgame.evaluatePosition(b, b.getEmptySquares(), 1, 199);
-      int result = -eval.evaluatePosition(b, -6300, 6300, Long.MAX_VALUE, 1200 * 1000, 0);
+      int result = -eval.evaluatePosition(b, -6300, 6300, Long.MAX_VALUE, 1200 * 1000);
       t = System.currentTimeMillis() - t;
       
 //      eval.resetHashMapVisitedPositions();

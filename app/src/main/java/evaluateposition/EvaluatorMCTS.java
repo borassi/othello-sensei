@@ -28,7 +28,6 @@ import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   int threadWaitingForNextPos = 0;
-  private final EvaluatorInterface nextEvaluator;
   private long maxNVisited;
   private long stopTimeMillis;
   private final HashMap hashMap;
@@ -38,7 +37,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private boolean justStarted = false;
   private int weakLower = -6300;
   private int weakUpper = 6300;
-  private int delta = 0;
   private long lastUpdateWeak = 0;
 
   private final Condition isNextPositionAvailable = nextPositionLock.newCondition();
@@ -221,7 +219,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       threads[i] = new EvaluatorThread(evaluatorMidgameBuilder.get(), this);
     }
     this.firstPosition = StoredBoard.initialStoredBoard(new Board(0, 0));
-    this.nextEvaluator = evaluatorMidgameBuilder.get();
   }
 
   public int getLower() { return lower; }
@@ -348,7 +345,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       firstPosition.updateDescendantsRecursive(weakUpper + 200, newWeakUpper);
     }
     if (newWeakLower < weakLower) {
-      firstPosition.updateDescendantsRecursive(Math.max(lower, newWeakLower - delta), weakLower - 200);
+      firstPosition.updateDescendantsRecursive(Math.max(lower, newWeakLower), weakLower - 200);
     }
     lastUpdateWeak = this.getNVisited();
     weakLower = newWeakLower;
@@ -356,11 +353,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   protected int getAlpha(StoredBoard board) {
-    return board.depth % 2 == 0 ? Math.max(-6300, weakLower - delta) : -weakUpper;
+    return board.depth % 2 == 0 ? Math.max(-6300, weakLower) : -weakUpper;
   }
 
   protected int getBeta(StoredBoard board) {
-    return board.depth % 2 == 0 ? weakUpper : Math.min(6300, -weakLower + delta);
+    return board.depth % 2 == 0 ? weakUpper : Math.min(6300, -weakLower);
   }
 
   protected StoredBoardBestDescendant getNextPosition() {
@@ -398,6 +395,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       evalGoal = nextPositionEvalGoal(firstPosition);
     }
     result = StoredBoardBestDescendant.bestDescendant(firstPosition.getEvaluation(evalGoal), weakLower, weakUpper);
+    assert result != null;
 //    System.out.println(Thread.currentThread().getName() + " downgrade!");
     editLock.lock();
     nextPositionLock.unlock();
@@ -410,11 +408,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public short evaluatePosition(Board board) {
-    return evaluatePosition(board, -6400, 6400, Long.MAX_VALUE, Long.MAX_VALUE, 0);
+    return evaluatePosition(board, -6400, 6400, Long.MAX_VALUE, Long.MAX_VALUE);
   }
 
   public short evaluatePosition(Board board, long maxNVisited, long maxTimeMillis) {
-    return evaluatePosition(board, -6400, 6400, maxNVisited, maxTimeMillis, 0);
+    return evaluatePosition(board, -6400, 6400, maxNVisited, maxTimeMillis);
   }
   
   public Status getStatus() {
@@ -448,6 +446,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     firstPosition.setLeaf(0, -6300, 6300);
     StoredBoardBestDescendant firstPositionDescendant = StoredBoardBestDescendant.bestDescendant(
         firstPosition.getEvaluation(-100), -6300, 6300);
+    assert firstPositionDescendant != null;
     firstPosition.setBusy(-6300, 6300);
     threads[0].addChildren(firstPositionDescendant);
     nextPositionLock.unlock();
@@ -487,31 +486,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public short evaluatePosition(
-      Board board, int lower, int upper, long maxNVisited, long maxTimeMillis, int delta) {
+      Board board, int lower, int upper, long maxNVisited, long maxTimeMillis) {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
-    assert delta % 200 == 0;
     constant = 0;
     EvaluatorAlphaBeta.resetConstant();
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
-    boolean changedDelta = this.delta != delta;
-    this.delta = delta;
 
     this.maxNVisited = maxNVisited;
     this.justStarted = true;
-//    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-//      this.firstPosition.setIsFinished(false);
-//    }
     if (firstPosition.getPlayer() != board.getPlayer() ||
         firstPosition.getOpponent() != board.getOpponent()) {
       setFirstPosition(board.getPlayer(), board.getOpponent());
-    } else if (changedDelta) {
-      nextPositionLock.lock();
-      firstPosition.updateDescendantsRecursive(getAlpha(firstPosition), getBeta(firstPosition));
-      nextPositionLock.unlock();
     }
     this.stopTimeMillis = System.currentTimeMillis() + maxTimeMillis;
 
