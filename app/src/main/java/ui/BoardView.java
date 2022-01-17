@@ -151,7 +151,7 @@ public class BoardView extends View {
             "-" + Utils.prettyPrintDouble(
                 storedBoard.getEvaluation(lower-100).proofNumber() +
                    storedBoard.getEvaluation(lower+100).disproofNumber()) :
-            ("(" + (-lower/100) + ", " + (-upper/100) + ")")
+            ("[" + (-lower/100) + ", " + (-upper/100) + "]")
     };
 
     Paint paint = new Paint();
@@ -161,12 +161,13 @@ public class BoardView extends View {
 
     for (int i = 0; i < rows.length; ++i) {
       String row = rows[i];
-      paint.setTextSize((i == 0) ? (cellSize / 3) : (cellSize / 5));
-
+      int textSize = (i == 0) ? (cellSize / 3) : (cellSize / 5);
+      paint.setTextSize(textSize);
       Rect textBounds = new Rect();
       paint.getTextBounds(row, 0, row.length(), textBounds);
-      y += (int) (textBounds.height() * 1.5);
+      y += textSize;
       canvas.drawText(row, (int) (x + cellSize / 2 - textBounds.exactCenterX()), y, paint);
+      y += (int) (textSize * 0.2);
     }
   }
 
