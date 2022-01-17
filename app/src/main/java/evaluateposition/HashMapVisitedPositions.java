@@ -38,7 +38,7 @@ public class HashMapVisitedPositions {
 
   public final void empty() {
     Arrays.fill(evaluationsHashMap, null);
-    System.gc();
+//    System.gc();
     firstPosition = StoredBoard.initialStoredBoard(new Board());
     size = 0;
   }
@@ -101,18 +101,18 @@ public class HashMapVisitedPositions {
     return null;
   }
   
-  @Override
-  public String toString() {
-    String result = "";
-    int i = 0;
-    for (StoredBoard a : evaluationsHashMap) {
-      result += i++ + "\n";
-      StoredBoard b = a;
-      while (b != null) {
-        result = result.concat(b.toString());
-        b = b.next;
-      }
-    }
-    return result;
-  }
+//  @Override
+//  public String toString() {
+//    String result = "";
+//    int i = 0;
+//    for (StoredBoard a : evaluationsHashMap) {
+//      result += i++ + "\n";
+//      StoredBoard b = a;
+//      while (b != null) {
+//        result = result.concat(b.toString());
+//        b = b.next;
+//      }
+//    }
+//    return result;
+//  }
 }

@@ -16,9 +16,6 @@ package main;
 
 import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MULTIPLIER;
 
-import bitpattern.BitPattern;
-import bitpattern.PositionIJ;
-
 import java.util.ArrayList;
 
 import board.Board;
@@ -27,7 +24,6 @@ import constants.Constants;
 import endgametest.EndgameTest;
 import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorMCTS;
-import evaluateposition.EvaluatorMCTS.Status;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
 
@@ -35,13 +31,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ui.CaseAnnotations;
-//import ui.DesktopUI;
 import ui.UI;
 
 /**
@@ -54,15 +47,13 @@ public class Main implements Runnable {
   final ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
   Board board;
-  Board[] boardsToEvaluate;
+  Board[] boardsToEvaluate = new Board[] {};
   private final HashMap HASH_MAP;
-  private final EvaluatorMCTS EVALUATORS[] = new EvaluatorMCTS[20];
+  private final EvaluatorMCTS[] EVALUATORS = new EvaluatorMCTS[20];
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
-  Future future = null;
   private long startTime;
-  private final int updateTimes[] = {100, 1000};
   private static UI ui;
-  private boolean stopping = false;
+  private final AtomicBoolean waitingTasks = new AtomicBoolean(false);
 
   private static class EvaluatorWithBoard {
     EvaluatorMCTS evaluator;
@@ -80,7 +71,7 @@ public class Main implements Runnable {
    * Creates a new UI and sets the initial position.
    */
   public Main(UI ui) {
-    this.ui = ui;
+    Main.ui = ui;
     HASH_MAP = new HashMap(Constants.hashMapSize());
     for (int i = 0; i < EVALUATORS.length; ++i) {
       EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTSSize() / 20, 2 * Constants.MCTSSize() / 20, HASH_MAP);
@@ -99,32 +90,25 @@ public class Main implements Runnable {
   }
 
   public void stop() {
-    stopping = true;
-    while (true) {
-      if (future == null) {
-        return;
-      }
-      for (int i = 0; i < EVALUATORS.length; ++i) {
-        EVALUATORS[i].stop();
-      }
-      try {
-        future.get(100, TimeUnit.MILLISECONDS);
-        future = null;
-        break;
-      } catch (InterruptedException | ExecutionException ex) {
-        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-        break;
-      } catch (TimeoutException ex) {}
+    for (int i = 0; i < EVALUATORS.length; ++i) {
+      EVALUATORS[i].stop();
     }
   }
 
   public void resetHashMaps() {
     stop();
-    for (int i = 0; i < EVALUATORS.length; ++i) {
-      EVALUATORS[i].empty();
+    Future finished = EXECUTOR.submit(() -> {
+      for (EvaluatorMCTS evaluator : EVALUATORS) {
+        evaluator.empty();
+      }
+      HASH_MAP.reset();
+      EvaluatorAlphaBeta.resetConstant();
+    });
+    try {
+      finished.get();
+    } catch (ExecutionException | InterruptedException e) {
+      e.printStackTrace();
     }
-    HASH_MAP.reset();
-    EvaluatorAlphaBeta.resetConstant();
     ui.setCases(board, blackTurn);
   }
 
@@ -134,7 +118,7 @@ public class Main implements Runnable {
   }
 
   /**
-   * Undos a move, if possible.
+   * Undoes a move, if possible.
    */
   public void undo() {
     stop();
@@ -167,13 +151,14 @@ public class Main implements Runnable {
       visited += evaluator.getNVisited();
       switch (evaluator.getStatus()) {
         case NONE:
+        case RUNNING:
+          assert false;
         case FAILED:
+        case KILLING:
+        case KILLED:
           return true;
         case SOLVED:
           break;
-        case KILLING:
-        case KILLED:
-        case RUNNING:
         case STOPPED_TIME:
         case STOPPED_POSITIONS:
           allSolved = false;
@@ -192,20 +177,15 @@ public class Main implements Runnable {
 
   private double boardValue(EvaluatorMCTS evaluator) {
     StoredBoard board = evaluator.getFirstPosition();
-    int maxLogDerivative = Integer.MIN_VALUE;
-    for (int evalGoal = evaluator.getWeakLower(); evalGoal <= evaluator.getWeakUpper(); evalGoal += 200) {
-      if (board.getProb(evalGoal) > Constants.PROB_INCREASE_WEAK_EVAL &&
-              board.getProb(evalGoal) < 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-        maxLogDerivative = Math.max(maxLogDerivative, board.maxLogDerivative(evalGoal));
-      }
+    if (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) {
+      return Double.NEGATIVE_INFINITY;
     }
-    double evalEffect = -board.getEval(evaluator.getWeakLower(), evaluator.getWeakUpper())
-                            * LOG_DERIVATIVE_MULTIPLIER / Math.max(1, ui.delta() * 100);
-    return evalEffect + maxLogDerivative;
+    double evalEffect = -board.getEval(evaluator.getWeakLower(), evaluator.getWeakUpper()) / Math.max(1, ui.delta() * 100);
+    return evalEffect - Math.log(board.getDescendants()) / Math.log(2);
   }
 
   private void evaluateFirst() {
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < boardsToEvaluate.length; ++i) {
       EvaluatorMCTS evaluator = EVALUATORS[i];
       Board board = boardsToEvaluate[i];
       evaluator.evaluatePosition(board, ui.lower(), ui.upper(), ui.maxVisited(), 20);
@@ -213,11 +193,11 @@ public class Main implements Runnable {
   }
 
   private void evaluate(int time) {
-    for (int step = 0; step < 10; ++step) {
+    for (int step = 0; step < 5 && !finished(); ++step) {
       EvaluatorMCTS nextEvaluator = EVALUATORS[0];
       double best = Double.NEGATIVE_INFINITY;
 
-      for (int i = 0; i < 1; ++i) {
+      for (int i = 0; i < boardsToEvaluate.length; ++i) {
         EvaluatorMCTS evaluator = EVALUATORS[i];
         double value = boardValue(evaluator);
         if (value > best) {
@@ -225,21 +205,21 @@ public class Main implements Runnable {
           nextEvaluator = evaluator;
         }
       }
-      nextEvaluator.evaluatePosition(nextEvaluator.getFirstPosition().getBoard(), ui.lower(), ui.upper(), ui.maxVisited(), time / 10);
+      nextEvaluator.evaluatePosition(nextEvaluator.getFirstPosition().getBoard(), ui.lower(), ui.upper(), ui.maxVisited(), time / 5);
     }
   }
 
   @Override
-  public synchronized void run() {
-    stopping = false;
+  public void run() {
+    startTime = System.currentTimeMillis();
+    waitingTasks.set(false);
     setEvaluators();
     evaluateFirst();
     showMCTSEvaluations();
-    while (!stopping && !finished()) {
+    while (!finished()) {
       evaluate(1000);
       showMCTSEvaluations();
     }
-
     if ((ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn)) {
       this.playMoveIfPossible(this.findBestMove());
     }
@@ -305,8 +285,9 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-    startTime = System.currentTimeMillis();
-    future = EXECUTOR.submit(this);
+    if (waitingTasks.compareAndSet(false, true)) {
+      EXECUTOR.submit(this);
+    }
   }
 
   private EvaluatorWithBoard getEvaluatorWithBoard(Board b) {
@@ -332,7 +313,6 @@ public class Main implements Runnable {
   
   private void showMCTSEvaluations() {
     int bestMove = this.findBestMove();
-
     for (Board child : GetMovesCache.getAllDescendants(board)) {
       EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(child);
       StoredBoard childStored = evaluatorBoard.board;
@@ -352,11 +332,19 @@ public class Main implements Runnable {
       ui.setAnnotations(annotations, move);
     }
     EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(board);
-    if (evaluatorBoard.board != null) {
-      ui.setExtras(
-          new CaseAnnotations(evaluatorBoard.board, evaluatorBoard.evaluator.getWeakLower(), evaluatorBoard.evaluator.getWeakUpper(), false),
-          System.currentTimeMillis() - startTime);
+    long nVisited = 0;
+    for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
+      nVisited += this.EVALUATORS[i].getNVisited();
     }
+    CaseAnnotations positionAnnotations = null;
+    if (evaluatorBoard.board != null) {
+      positionAnnotations = new CaseAnnotations(
+          evaluatorBoard.board, evaluatorBoard.evaluator.getWeakLower(),
+          evaluatorBoard.evaluator.getWeakUpper(), false);
+    }
+    ui.setExtras(
+        nVisited, System.currentTimeMillis() - startTime,
+        positionAnnotations);
     ui.repaint();
   }
 }

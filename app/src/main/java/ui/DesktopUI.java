@@ -82,7 +82,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
   private final JTextField depth;
-  private final JSpinner delta;
+  private final JTextField delta;
   private final JSpinner ffoPositions;
   private final JSpinner lower;
   private final JSpinner upper;
@@ -162,7 +162,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int lower = board.depth % 2 == 0 ? annotations.lower : -annotations.upper;
     int upper = board.depth % 2 == 0 ? annotations.upper : -annotations.lower;
 
-    System.out.println(lower + " " + upper);
     String formatter = "%+.2f ";
     if (board.isSolved()) {
       formatter = "%+.0f ";
@@ -256,8 +255,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
 
-    SpinnerModel allowedDeltas = new SpinnerNumberModel(0, 0, 64, 2);
-    delta = new JSpinner(allowedDeltas);
+    delta = new JTextField();
+    delta.setText("0");
     delta.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * delta.getPreferredSize().height));
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
@@ -349,18 +348,22 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   public void componentShown(ComponentEvent e) {}
 
   @Override
-  public int delta() {
-    return (int) delta.getValue();
+  public double delta() {
+    return Double.parseDouble(delta.getText());
   }
 
   @Override
-  public void setExtras(CaseAnnotations annotations, double milliseconds) {
-    StoredBoard board = annotations.storedBoard;
-    long descendants = board.getDescendants();
+  public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
     String text =
-        "Positions: " + Utils.prettyPrintDouble(descendants) + "\n" +
-            "Positions/s: " + Utils.prettyPrintDouble(descendants * 1000 / milliseconds) + "\n";
-
+        "Positions: " + Utils.prettyPrintDouble(nVisited) + "\n" +
+            "Positions/s: " + Utils.prettyPrintDouble(nVisited * 1000 / milliseconds) + "\n";
+    SwingUtilities.invokeLater(() -> {
+      extras.setText(text);
+    });
+    if (annotations == null) {
+      return;
+    }
+    StoredBoard board = annotations.storedBoard;
     String firstPositionText = board.getEval(annotations.lower, annotations.upper) + " " + board.getLower() + " " + board.getUpper() + "\n";
     assert board.threadId == 0;
 
@@ -376,11 +379,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
 
     String tmp = firstPositionText;
-    Runnable setExtras = () -> {
-      extras.setText(text);
+    SwingUtilities.invokeLater(() -> {
       extrasPosition.setText(tmp);
-    };
-    SwingUtilities.invokeLater(setExtras);
+    });
   }
 
   @Override

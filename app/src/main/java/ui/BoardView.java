@@ -27,9 +27,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
 import board.Board;
+import constants.Constants;
 import evaluateposition.StoredBoard;
 import helpers.Utils;
 import main.Main;
@@ -53,7 +56,7 @@ public class BoardView extends View {
   private OnTouchListener clickListener = new View.OnTouchListener() {
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-      int move = (int) (7 - (event.getX() / cellSize) + 8 * (int) (event.getY() / cellSize));
+      int move = 8 * (7 - (int) (event.getX() / cellSize)) + (7-(int) (event.getY() / cellSize));
       main.getMove(move);
       return true;
     }
@@ -135,13 +138,20 @@ public class BoardView extends View {
   }
 
   public void drawAnnotation(Canvas canvas, CaseAnnotations annotation, int x, int y) {
-    if (annotation == null) {
+    if (annotation == null || annotation.storedBoard == null) {
       return;
     }
     StoredBoard storedBoard = annotation.storedBoard;
+    int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
+    int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
     String rows[] = {
         String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval(annotation.lower, annotation.upper) / 100.0),
-        Utils.prettyPrintDouble(storedBoard.getDescendants())
+        Utils.prettyPrintDouble(storedBoard.getDescendants()),
+        lower == upper ?
+            "-" + Utils.prettyPrintDouble(
+                storedBoard.getEvaluation(lower-100).proofNumber() +
+                   storedBoard.getEvaluation(lower+100).disproofNumber()) :
+            ("(" + (-lower/100) + ", " + (-upper/100) + ")")
     };
 
     Paint paint = new Paint();
@@ -151,7 +161,7 @@ public class BoardView extends View {
 
     for (int i = 0; i < rows.length; ++i) {
       String row = rows[i];
-      paint.setTextSize((i == 0) ? (int) (cellSize / 3) : (int) (cellSize / 6));
+      paint.setTextSize((i == 0) ? (cellSize / 3) : (cellSize / 5));
 
       Rect textBounds = new Rect();
       paint.getTextBounds(row, 0, row.length(), textBounds);
@@ -160,6 +170,14 @@ public class BoardView extends View {
     }
   }
 
+  public void invalidate() {
+    main.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        BoardView.super.invalidate();
+      }
+    });
+  }
   public void setCases(Board board, boolean blackTurn) {
     this.board = board.deepCopy();
     this.blackTurn = blackTurn;

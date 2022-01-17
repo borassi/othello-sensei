@@ -18,8 +18,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -31,9 +34,9 @@ import main.Main;
 
 public class MobileUI extends AppCompatActivity implements UI {
   private BoardView boardView;
+  private TextView empties;
   private TextView posPerSec;
   public Main main;
-  public ArrayAdapter<CharSequence> adapter;
   public static Context context;
 
   @Override
@@ -43,11 +46,8 @@ public class MobileUI extends AppCompatActivity implements UI {
     Constants.MOBILE = true;
     main = new Main(this);
     setContentView(R.layout.activity_main);
-    Spinner spinner = findViewById(R.id.depth_spinner);
-    adapter = ArrayAdapter.createFromResource(this, R.array.depth, android.R.layout.simple_spinner_item);
-    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    spinner.setAdapter(adapter);
     boardView = findViewById(R.id.board);
+    empties = findViewById(R.id.empties);
     posPerSec = findViewById(R.id.posPerSec);
     main.newGame();
   }
@@ -66,7 +66,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   public void setCases(Board board, boolean blackTurn) {
     boardView.setCases(board, blackTurn);
     boardView.resetAnnotations();
-    ((TextView) findViewById(R.id.empties)).setText("Empties: " + board.getEmptySquares());
+    runOnUiThread(() -> empties.setText("Empties: " + board.getEmptySquares()));
   }
 
   @Override
@@ -81,8 +81,8 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public void setExtras(CaseAnnotations firstPosition, double milliseconds) {
-    posPerSec.setText("Pos/sec: " + Utils.prettyPrintDouble(firstPosition.storedBoard.getDescendants() * 1000.0 / milliseconds));
+  public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
+    runOnUiThread(() -> posPerSec.setText("Positions: " + Utils.prettyPrintDouble(nVisited) + "\nPos/sec: " + Utils.prettyPrintDouble(nVisited * 1000.0 / milliseconds)));
   }
 
   @Override
@@ -97,14 +97,14 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public long maxVisited() {
-    Spinner depth = findViewById(R.id.depth_spinner);
-    return Long.parseLong(depth.getSelectedItem().toString());
+    EditText depth = findViewById(R.id.depthValue);
+    return Long.parseLong(depth.getText().toString());
   }
 
   @Override
-  public int delta() {
-    Spinner delta = findViewById(R.id.delta_spinner);
-    return Integer.parseInt(delta.getSelectedItem().toString());
+  public double delta() {
+    TextView delta = findViewById(R.id.deltaValue);
+    return Double.parseDouble(delta.getText().toString());
   }
 
   @Override
@@ -115,5 +115,9 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public int upper() {
     return 6300;
+  }
+
+  public void stop(View view) {
+    main.stop();
   }
 }

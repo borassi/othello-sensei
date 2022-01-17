@@ -22,6 +22,7 @@ import board.GetMovesCache;
 import constants.Constants;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
@@ -58,7 +59,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     KILLED,
     FAILED,
   }
-  private Status status = Status.KILLED;
+  private Status status = Status.SOLVED;
   private final EvaluatorThread[] threads;
   private double constant = 0;
   private int lastEvalGoal = -6500;
@@ -175,8 +176,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         seenPositions += nextEvaluator.getNVisited();
       }
       editLock.lock();
-//      System.out.println(d);
-      board.setLeaf(curEval, getAlpha(board), getBeta(board), 3.0 / (3 + (d - 4)));
+      board.setLeaf(curEval, getAlpha(board), getBeta(board), 0.2 / (0.2 + (d - 4)));
       editLock.unlock();
       return seenPositions;
     }
@@ -316,11 +316,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
   }
   
-  protected boolean checkFinished() {
+  protected synchronized boolean checkFinished() {
     assert nextPositionLock.isHeldByCurrentThread();
-//    if (hashMap.size() > Constants.hashMapSize() / 2) {
-//      hashMap.reset();
-//    }
+    if (hashMap.size() > Constants.hashMapSize() / 2) {
+      hashMap.reset();
+    }
     double stepsUntilEnd = this.stepsUntilEnd();
     this.bestStepsUntilEnd = Math.min(this.bestStepsUntilEnd, stepsUntilEnd);
 
@@ -442,7 +442,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return result;
   }
   
-  public Status getStatus() {
+  public synchronized Status getStatus() {
     return status;
   }
 
@@ -527,6 +527,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert(lower <= upper);
     constant = 0;
     EvaluatorAlphaBeta.resetConstant();
+    if (status == Status.KILLING) {
+      status = Status.KILLED;
+      return -6500;
+    }
     status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
