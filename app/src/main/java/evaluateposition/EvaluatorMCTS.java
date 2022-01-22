@@ -353,6 +353,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   private void updateWeakLowerUpper() {
     assert nextPositionLock.isHeldByCurrentThread();
+    // TODO: Delete after we have a better handling of parallelization.
+    if (firstPosition.getDescendants() < 10000) {
+      return;
+    }
     if (firstPosition.getDescendants() < this.lastUpdateWeak * 1.2 &&
         firstPosition.lower - 200 <= weakLower &&
         firstPosition.upper + 200 >= weakUpper) {
