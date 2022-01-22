@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@ package evaluateposition;
 
 import androidx.annotation.NonNull;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
-
-import bitpattern.BitPattern;
 import board.Board;
 import board.GetMoves;
 import board.GetMovesCache;
@@ -35,15 +32,46 @@ public class StoredBoard {
       311, 290, 300, 265, 267, 249, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250,
       250, 250, 250, 250, 250};
 
-//  public static class ExtraInfo {
-//    public float minProofGreaterEqual = Float.POSITIVE_INFINITY;
-//    public float minDisproofStrictlyGreater = Float.POSITIVE_INFINITY;
-//    public float minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
-//    public float minDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
-//    public boolean isFinished = false;
-//    public boolean proofBeforeFinished = false;
-//    public boolean disproofBeforeFinished = false;
-//  }
+
+  private final long player;
+  private final long opponent;
+
+  final static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
+  public final ArrayList<StoredBoard> fathers;
+  StoredBoard[] children;
+
+  int nEmpties;
+  private final Evaluation[] evaluations = new Evaluation[64];
+  public int depth;
+
+  StoredBoard next;
+  StoredBoard prev;
+  public long threadId;
+  int leafEval = -6500;
+  int lower = -6400;
+  int upper = 6400;
+
+  private static final int PROB_STEP = 255;
+  private static final int[] COMBINE_PROB;
+  private static final int[] LOG_DERIVATIVE;
+  public static final int LOG_DERIVATIVE_MINUS_INF = -20000000;
+  public static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
+
+  static {
+    ProbCombiner combiner = Constants.PROB_COMBINER;
+    COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1)];
+    LOG_DERIVATIVE = new int[(PROB_STEP + 1)];
+    for (int i = 0; i <= PROB_STEP; ++i) {
+      double x = i / (double) PROB_STEP;
+      LOG_DERIVATIVE[i] = (int) Math.round(Math.max(LOG_DERIVATIVE_MINUS_INF,
+          -LOG_DERIVATIVE_MULTIPLIER * Math.log(combiner.derivative(x) / combiner.f(x))));
+
+      for (int j = 0; j <= PROB_STEP; ++j) {
+        double y = j / (double) PROB_STEP;
+        COMBINE_PROB[(i << 8) | j] = (int) Math.round(combiner.inverse(combiner.f(x) * combiner.f(y)) * PROB_STEP);
+      }
+    }
+  }
 
   public class Evaluation {
     private int prob;
@@ -134,11 +162,6 @@ public class StoredBoard {
     }
 
     public void addDescendants(long newDescendants) {
-//      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-//        if (extraInfo.isFinished) {
-//          return;
-//        }
-//      }
       descendants += newDescendants;
     }
 
@@ -222,30 +245,6 @@ public class StoredBoard {
         assert bestChildDisproof == null || bestChildDisproof.getStoredBoard().threadId == 0;
       }
       assert isChildLogDerivativeOK();
-//      if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-//        extraInfo.minProofGreaterEqual = Float.POSITIVE_INFINITY;
-//        extraInfo.minProofGreaterEqualVar = Float.POSITIVE_INFINITY;
-//        extraInfo.minDisproofStrictlyGreater = 0;
-//        extraInfo.minDisproofStrictlyGreaterVar = 0;
-//        float extraCostDisproofStrictlyGreaterVar = Float.POSITIVE_INFINITY;
-//        extraInfo.proofBeforeFinished = false;
-//        extraInfo.disproofBeforeFinished = true;
-//        for (StoredBoard child : getChildren()) {
-//          extraInfo.proofBeforeFinished = extraInfo.proofBeforeFinished || child.extraInfo.disproofBeforeFinished;
-//          extraInfo.minProofGreaterEqual = Math.min(extraInfo.minProofGreaterEqual, child.extraInfo.minDisproofStrictlyGreater);
-//          extraInfo.minProofGreaterEqualVar = Math.min(extraInfo.minProofGreaterEqualVar, child.extraInfo.minDisproofStrictlyGreaterVar);
-//          extraInfo.disproofBeforeFinished =extraInfo.disproofBeforeFinished && child.extraInfo.proofBeforeFinished;
-//          extraInfo.minDisproofStrictlyGreater += child.extraInfo.minProofGreaterEqual;
-//          extraInfo.minDisproofStrictlyGreaterVar += Math.min(child.extraInfo.minProofGreaterEqual, child.extraInfo.minProofGreaterEqualVar);
-//          if (extraInfo.minDisproofStrictlyGreaterVar == Float.POSITIVE_INFINITY) {
-//            extraCostDisproofStrictlyGreaterVar = 0;
-//          } else {
-//            extraCostDisproofStrictlyGreaterVar = Math.min(extraCostDisproofStrictlyGreaterVar, child.extraInfo.minProofGreaterEqualVar - child.extraInfo.minProofGreaterEqual);
-//          }
-//        }
-//        extraInfo.minDisproofStrictlyGreaterVar += Math.max(0, extraCostDisproofStrictlyGreaterVar);
-//        assert isExtraInfoOK();
-//      }
     }
 
     private boolean isChildLogDerivativeOK() {
@@ -273,54 +272,6 @@ public class StoredBoard {
     }
   }
 
-  protected static final HashMap HASH_MAP;
-  protected static EvaluatorInterface EVALUATOR_MIDGAME;
-  
-  static {
-    HASH_MAP = new HashMap(6000);
-    EVALUATOR_MIDGAME = new EvaluatorAlphaBeta(HASH_MAP);
-  }
-  
-  private final long player;
-  private final long opponent;
-
-  final static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
-  public final ArrayList<StoredBoard> fathers;
-  StoredBoard[] children;
-
-  int nEmpties;
-  private final Evaluation[] evaluations = new Evaluation[64];
-  public int depth;
-
-  StoredBoard next;
-  StoredBoard prev;
-//  public ExtraInfo extraInfo;
-  public long threadId;
-  int leafEval = -6500;
-  int lower = -6400;
-  int upper = 6400;
-  
-  private static final int PROB_STEP = 255;
-  private static final int[] COMBINE_PROB;
-  private static final int[] LOG_DERIVATIVE;
-  public static final int LOG_DERIVATIVE_MINUS_INF = -20000000;
-  public static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
-
-  static {
-    ProbCombiner combiner = Constants.PROB_COMBINER;
-    COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1)];
-    LOG_DERIVATIVE = new int[(PROB_STEP + 1)];
-    for (int i = 0; i <= PROB_STEP; ++i) {
-      double x = i / (double) PROB_STEP;
-      LOG_DERIVATIVE[i] = (int) Math.round(Math.max(LOG_DERIVATIVE_MINUS_INF,
-          -LOG_DERIVATIVE_MULTIPLIER * Math.log(combiner.derivative(x) / combiner.f(x))));
-
-      for (int j = 0; j <= PROB_STEP; ++j) {
-        double y = j / (double) PROB_STEP;
-        COMBINE_PROB[(i << 8) | j] = (int) Math.round(combiner.inverse(combiner.f(x) * combiner.f(y)) * PROB_STEP);
-      }
-    }
-  }
   private static int combineProb(int p1, int p2) {
     return COMBINE_PROB[(p1 << 8) | p2];
   }
@@ -341,9 +292,6 @@ public class StoredBoard {
     this.prev = null;
     this.next = null;
     this.nEmpties = 64 - Long.bitCount(player | opponent);
-//    if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-//      extraInfo = new ExtraInfo();
-//    }
   }
   
   public static StoredBoard initialStoredBoard(Board b) {
@@ -353,18 +301,6 @@ public class StoredBoard {
   public static StoredBoard initialStoredBoard(long player, long opponent) {
     return new StoredBoard(player, opponent, 0);
   }
-//
-//  public synchronized void setIsFinished(boolean newValue) {
-//    if (newValue == this.extraInfo.isFinished) {
-//      return;
-//    }
-//    this.extraInfo.isFinished = true;
-//    if (getChildren() != null) {
-//      for (StoredBoard child : getChildren()) {
-//        child.setIsFinished(newValue);
-//      }
-//    }
-//  }
   
   public synchronized void addFather(StoredBoard father) {
     fathers.add(father);
@@ -744,19 +680,6 @@ public class StoredBoard {
     }
     return true;
   }
-//
-//  boolean isExtraInfoOK() {
-//    if (!Constants.FIND_BEST_PROOF_AFTER_EVAL) {
-//      return true;
-//    }
-//    if (Float.isNaN(extraInfo.minDisproofStrictlyGreaterVar) || Float.isNaN(extraInfo.minProofGreaterEqualVar)) {
-//      throw new AssertionError(
-//          "Got (minDisproofVar, minProofVar) = " + extraInfo.minDisproofStrictlyGreaterVar + " " + extraInfo.minProofGreaterEqualVar
-//      );
-//    }
-//
-//    return true;
-//  }
   
   boolean isAllOK() {
     if (!isPrevNextOK()) {
@@ -771,6 +694,6 @@ public class StoredBoard {
     if (!areDescendantsOK()) {
       throw new AssertionError("Wrong areThisBoardEvalsOK or isEvalOK or areDescendantsOK.");
     }
-    return true; //isExtraInfoOK();
+    return true;
   }
 }
