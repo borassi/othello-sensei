@@ -15,7 +15,6 @@
 package ui;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -23,52 +22,27 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+import java.util.Arrays;
 
 import bitpattern.BitPattern;
-import bitpattern.PositionIJ;
 import board.Board;
 import constants.Constants;
 import evaluateposition.StoredBoard;
 import helpers.Utils;
-import main.Main;
-import ui.CaseAnnotations;
 
 public class BoardView extends View {
   MobileUI main;
-  private Canvas canvas;
-  private Paint fillGreen;
-  private Paint drawBlack;
-  private Paint fillBlack;
-  private Paint fillRed;
-  private Paint fillWhite;
-  private Bitmap bitmap;
-  private ImageView imageView;
+  private final Paint fillGreen;
+  private final Paint drawBlack;
+  private final Paint fillBlack;
+  private final Paint fillWhite;
   private int cellSize;
   private Board board = new Board();
   private boolean blackTurn = false;
-  private CaseAnnotations annotations[][];
-
-  private OnTouchListener clickListener = new View.OnTouchListener() {
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-      int move = 8 * (7 - (int) (event.getX() / cellSize)) + (7-(int) (event.getY() / cellSize));
-      main.getMove(move);
-      return true;
-    }
-  };
-
-  public void setAnnotations(CaseAnnotations annotations, int move) {
-    this.annotations[BitPattern.getX(move)][BitPattern.getY(move)] = annotations;
-  }
-
-  public void resetAnnotations() {
-    this.annotations = new CaseAnnotations[8][8];
-  }
+  private CaseAnnotations[][] annotations;
+  private final RectF[][] caseBorders;
 
   public BoardView(Context context, AttributeSet attrs) {
     super(context, attrs);
@@ -85,19 +59,34 @@ public class BoardView extends View {
     fillWhite = new Paint();
     fillWhite.setColor(Color.WHITE);
     fillWhite.setStyle(Paint.Style.FILL);
-    this.setOnTouchListener(clickListener);
+    caseBorders = new RectF[8][8];
+    for (int i = 0; i < 8; ++i) {
+      Arrays.fill(caseBorders[i], new RectF());
+    }
+    setOnTouchListener((v, event) -> {
+      int move = 8 * (7 - (int) (event.getX() / cellSize)) + (7-(int) (event.getY() / cellSize));
+      main.getMove(move);
+      v.performClick();
+      return true;
+    });
     resetAnnotations();
   }
 
-  @Override
-  protected void onDraw(Canvas canvas)
-  {
-    this.canvas = canvas;
+  public void setAnnotations(CaseAnnotations annotations, int move) {
+    this.annotations[BitPattern.getX(move)][BitPattern.getY(move)] = annotations;
+  }
 
+  public void resetAnnotations() {
+    this.annotations = new CaseAnnotations[8][8];
+  }
+
+  @Override
+  protected void onDraw(Canvas canvas) {
     cellSize = getWidth() / 8;
     for (int i = 0; i < 8; ++i) {
       for (int j = 0; j < 8; ++j) {
-        RectF rect = new RectF(i * cellSize, j * cellSize,
+        RectF rect = caseBorders[i][j];
+        rect.set(i * cellSize, j * cellSize,
             (i+1) * cellSize - 1, (j+1) * cellSize - 1);
         canvas.drawRect(rect, fillGreen);
         canvas.drawRect(rect, drawBlack);
@@ -144,13 +133,12 @@ public class BoardView extends View {
     StoredBoard storedBoard = annotation.storedBoard;
     int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
     int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
-    String rows[] = {
+    String[] rows = {
         String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval(annotation.lower, annotation.upper) / 100.0),
         Utils.prettyPrintDouble(storedBoard.getDescendants()),
         lower == upper ?
-            "-" + Utils.prettyPrintDouble(
-                storedBoard.getEvaluation(lower-100).proofNumber() +
-                   storedBoard.getEvaluation(lower+100).disproofNumber()) :
+            Utils.prettyPrintDouble(storedBoard.getProofNumber(lower-100)) + " " +
+                Utils.prettyPrintDouble(storedBoard.getDisproofNumber(lower+100)) :
             ("[" + (-lower/100) + ", " + (-upper/100) + "]")
     };
 
@@ -172,12 +160,7 @@ public class BoardView extends View {
   }
 
   public void invalidate() {
-    main.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        BoardView.super.invalidate();
-      }
-    });
+    main.runOnUiThread(BoardView.super::invalidate);
   }
   public void setCases(Board board, boolean blackTurn) {
     this.board = board.deepCopy();

@@ -461,10 +461,16 @@ public class StoredBoard {
   }
 
   public synchronized float getDisproofNumber(int evalGoal) {
+    if (evalGoal == 6500 || evalGoal == -6500) {
+      return 0;
+    }
     return getEvaluation(evalGoal).disproofNumber;
   }
 
   public synchronized float getProofNumber(int evalGoal) {
+    if (evalGoal == 6500 || evalGoal == -6500) {
+      return 0;
+    }
     return getEvaluation(evalGoal).proofNumber;
   }
 

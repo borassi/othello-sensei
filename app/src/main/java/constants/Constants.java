@@ -30,7 +30,7 @@ public class Constants {
   public final static int MCTS_SIZE_MOBILE = 3000000;
   public final static int MCTS_SIZE_DESKTOP = 14000000;
 
-  public final static int MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors() / 2;
+  public final static int MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
   public final static float MIN_PROB_LEAF = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
   public final static float MULT_STDDEV = 0.95F;
