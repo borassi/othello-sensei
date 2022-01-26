@@ -99,7 +99,7 @@ public class HashMap {
     reset();
   }
 
-  public final void reset() {
+  public final synchronized void reset() {
     for (int i = 0; i < boards.length; ++i) {
       boards[i].reset(0, 0);
     }
@@ -118,7 +118,7 @@ public class HashMap {
     return getStoredBoard(b.getPlayer(), b.getOpponent());
   }
   
-  public BoardInHash getOrAddStoredBoard(long player, long opponent) {    
+  public synchronized BoardInHash getOrAddStoredBoard(long player, long opponent) {
     int hash = hashBoard(player, opponent, arraySize);
     BoardInHash first = boards[hash];
     synchronized(first) {

@@ -30,14 +30,14 @@ public class Constants {
   public final static int MCTS_SIZE_MOBILE = 3000000;
   public final static int MCTS_SIZE_DESKTOP = 14000000;
 
-  public final static int MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
+  public final static int MAX_PARALLEL_TASKS = 12;//Runtime.getRuntime().availableProcessors();
   public final static float MIN_PROB_LEAF = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
   public final static float MULT_STDDEV = 0.95F;
   public final static float LEAF_MULTIPLIER = 0.8F;
   public final static float PROB_FOR_PROOF = 0.03F;
   public final static float ZERO_PERC_FOR_WEAK = 0.05F;
-  public final static ProbCombiner PROB_COMBINER = new ProbCombinerExpPolyLog(1.65);
+  public final static ProbCombiner PROB_COMBINER = new ProbCombinerExpPolyLog(1.7);
   public final static float MIN_PROB_EVAL_GOAL = 0.03F;
   public final static float PROB_REDUCE_WEAK_EVAL = 0.01F;
   public final static float PROB_FOR_ENDGAME_ALPHA_BETA = 0.01F;

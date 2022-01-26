@@ -19,42 +19,53 @@ package constants;
  */
 public class Stats {
   private static long nVisitedAlphaBetaSolve;
-  private static long nAlphaBetaSolve;
-  private static long nVisitedLastMoves;
-  private static long nLastMoves;
-
   public static synchronized long getNVisitedAlphaBetaSolve() {
     return nVisitedAlphaBetaSolve;
   }
-
-  public static synchronized long getNAlphaBetaSolve() {
-    return nAlphaBetaSolve;
-  }
-
-  public static synchronized long getNVisitedLastMoves() {
-    return nVisitedLastMoves;
-  }
-
-  public static synchronized long getNLastMoves() {
-    return nLastMoves;
-  }
-
   public static synchronized void addToNVisitedAlphaBetaSolve(long n) {
     Stats.nVisitedAlphaBetaSolve += n;
   }
 
+  private static long nAlphaBetaSolve;
+  public static synchronized long getNAlphaBetaSolve() {
+    return nAlphaBetaSolve;
+  }
   public static synchronized void addToNAlphaBetaSolve(long n) {
     Stats.nAlphaBetaSolve += n;
   }
 
+  private static long nVisitedLastMoves;
+  public static synchronized long getNVisitedLastMoves() {
+    return nVisitedLastMoves;
+  }
   public static synchronized void addToNVisitedLastMoves(long n) {
     Stats.nVisitedLastMoves += n;
   }
 
+  private static long nLastMoves;
+  public static synchronized long getNLastMoves() {
+    return nLastMoves;
+  }
   public static synchronized void addToNLastMoves(long n) {
     Stats.nLastMoves += n;
   }
-  
+
+  private static long nSuccessNextPosition;
+  public static synchronized long getNSuccessNextPosition() {
+    return nSuccessNextPosition;
+  }
+  public static synchronized void addToNSuccessNextPosition(long n) {
+    Stats.nSuccessNextPosition += n;
+  }
+
+  private static long nFailNextPosition;
+  public static synchronized long getNFailNextPosition() {
+    return nFailNextPosition;
+  }
+  public static synchronized void addToNFailNextPosition(long n) {
+    Stats.nFailNextPosition += n;
+  }
+
   static {
     reset();
   }
@@ -64,5 +75,7 @@ public class Stats {
     nAlphaBetaSolve = 0;
     nVisitedLastMoves = 0;
     nLastMoves = 0;
+    nSuccessNextPosition = 0;
+    nFailNextPosition = 0;
   }
 }

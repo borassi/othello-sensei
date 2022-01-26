@@ -205,7 +205,9 @@ public class Main implements Runnable {
           nextEvaluator = evaluator;
         }
       }
-      nextEvaluator.evaluatePosition(nextEvaluator.getFirstPosition().getBoard(), ui.lower(), ui.upper(), ui.maxVisited(), time / 5);
+      nextEvaluator.evaluatePosition(
+          nextEvaluator.getFirstPosition().getBoard(), ui.lower(), ui.upper(),
+          (long) (ui.maxVisited() * 1.4), time / 5);
     }
   }
 

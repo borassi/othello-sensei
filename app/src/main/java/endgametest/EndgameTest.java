@@ -100,7 +100,7 @@ public class EndgameTest {
     if (Constants.FIND_BEST_PROOF_AFTER_EVAL) {
       System.out.print("          Best");      
     }
-    System.out.println("   nVisPos/sec   nStored  n/end  n/mid  eval");
+    System.out.println("   nVisPos/sec   nStored  n/end  n/mid  nextposfail  eval");
     for (int i = 41; i <= 60; i++) {
       Board b = readIthBoard(i);
       System.out.print(String.format("%4d", i));
@@ -136,6 +136,7 @@ public class EndgameTest {
       System.out.print(String.format("%10d", eval.getNStored()));
       System.out.print(String.format("%7.0f", Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves()));
       System.out.print(String.format("%7.0f", Stats.getNVisitedAlphaBetaSolve() / (double) Stats.getNAlphaBetaSolve()));
+      System.out.print(String.format("%13.4f", Stats.getNFailNextPosition() / (double) (Stats.getNFailNextPosition() + Stats.getNSuccessNextPosition())));
       System.out.println(String.format("%6d", result / 100));
       Stats.reset();
     }
