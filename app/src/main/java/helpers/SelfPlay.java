@@ -47,7 +47,7 @@ public class SelfPlay extends Thread {
       if (evaluation == null) {
         continue;
       }
-      int eval = evaluation.getEval(player.getWeakLower(), player.getWeakUpper());
+      int eval = evaluation.getEval();
       if (eval < best) {// ||
 //          (eval == best && evaluation.getUpperBound() < bestUpper) ||
 //          (eval == best && evaluation.getUpperBound() == bestUpper &&

@@ -22,6 +22,8 @@ public class Constants {
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
   public final static int EMPTIES_FOR_FORCED_MIDGAME = 14;
+  public final static float PROB_FOR_EARLY_MIDGAME = 0.05F;
+  public final static int PROOF_NUMBER_GOAL_FOR_MIDGAME = 7000;
   public final static int VISITED_ENDGAME_GOAL = 150;
   public final static int EMPTIES_FOR_ENDGAME = 10;
 

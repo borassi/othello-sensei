@@ -43,8 +43,8 @@ public class StoredBoardTest {
 //    firstMove.setEvalGoalRecursive(1000);
     // Diag is much better than par. This means that proof numbers (for the
     // opponent) are harder.
-    assert diag.getProofNumber(- 100) > par.getProofNumber(- 100);
-    assert diag.getDisproofNumber(100) < par.getDisproofNumber(100);
+    assert diag.proofNumber(- 100) > par.proofNumber(- 100);
+    assert diag.disproofNumber(100) < par.disproofNumber(100);
   }
   @Test
   public void testToEvaluationIndex() {

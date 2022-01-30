@@ -134,11 +134,11 @@ public class BoardView extends View {
     int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
     int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
     String[] rows = {
-        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval(annotation.lower, annotation.upper) / 100.0),
+        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0),
         Utils.prettyPrintDouble(storedBoard.getDescendants()),
         lower == upper ?
-            Utils.prettyPrintDouble(storedBoard.getProofNumber(lower-100)) + " " +
-                Utils.prettyPrintDouble(storedBoard.getDisproofNumber(lower+100)) :
+            Utils.prettyPrintDouble(storedBoard.proofNumber(lower-100)) + " " +
+                Utils.prettyPrintDouble(storedBoard.disproofNumber(lower+100)) :
             ("[" + (-lower/100) + ", " + (-upper/100) + "]")
     };
 

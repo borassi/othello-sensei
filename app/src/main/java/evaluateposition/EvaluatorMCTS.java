@@ -22,6 +22,7 @@ import board.GetMovesCache;
 import constants.Constants;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -59,7 +60,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
   private Status status = Status.SOLVED;
   private final EvaluatorThread[] threads;
-  private double constant = 0;
 
   private class EvaluatorThread implements Runnable {    
     private final EvaluatorInterface nextEvaluator;
@@ -121,8 +121,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
               nVisited += childEval.nVisited;
               if (child.leafEval == -6500) {
                 child.getOrAddEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
-//                child.setBusy(-beta, -alpha);
-                child.setLeaf(childEval.eval, -beta, -alpha);
+                child.setLeaf(childEval.eval, -beta, -alpha, Constants.MULT_STDDEV);
                 child.updateFathers(-beta, -alpha);
               }
             }
@@ -150,9 +149,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         board.setLower(eval);
       }
       long seenPositions = nextEvaluator.getNVisited() + 1;
-      synchronized(main) {
-        constant = Math.max(0, constant + 0.05 * (10000 - seenPositions));
-      }
+      StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 10);
       editLock.lock();
       board.updateFathers(getAlpha(board), getBeta(board));
       editLock.unlock();
@@ -174,7 +171,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         seenPositions += nextEvaluator.getNVisited();
       }
       editLock.lock();
-      board.setLeaf(curEval, getAlpha(board), getBeta(board), 0.2 / (0.2 + (d - 4)));
+      int alpha = getAlpha(board);
+      int beta = getBeta(board);
+      board.setLeaf(curEval, alpha, beta, 0.2 / (0.2 + (d - 4)));
       board.updateFathers(getAlpha(board), getBeta(board));
       editLock.unlock();
       return seenPositions;
@@ -190,7 +189,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           break;
         }
         StoredBoard board = position.eval.getStoredBoard();
-        if (board != firstPosition && board.toBeSolved(position.eval.evalGoal, constant) && board.isLeaf()) {
+        if (board != firstPosition && board.toBeSolved(position.eval.evalGoal) && board.isLeaf()) {
           nVisited = solvePosition(position);
         } else if (size < 0.8 * maxSize ||
                    (size < 0.9 * maxSize && board.depth < 9) ||
@@ -274,6 +273,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       if (status == Status.KILLED) {
         return true;
       }
+      if (isSolved()) {
+        status = Status.SOLVED;
+        return true;
+      }
       if (firstPosition.getDescendants() > 0.8 * maxNVisited && !justStarted) {
         if (firstPosition.getDescendants() > maxNVisited || stepsUntilEnd == bestStepsUntilEnd) {
           status = Status.STOPPED_POSITIONS;
@@ -287,18 +290,21 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           return true;
         }
       }
-      if (isSolved()) {
-        status = Status.SOLVED;
-        return true;
-      }
       return false;
     }
   }
 
+  private AtomicBoolean updating = new AtomicBoolean(false);
+
   private void updateWeakLowerUpper() {
-    long descendants = getNVisited();
-    if (descendants < this.lastUpdateWeak * 1.2) {
+    if (updating.getAndSet(true)) {
       return;
+    }
+    synchronized (this) {
+      if (getNVisited() < this.lastUpdateWeak * 1.2) {
+        updating.set(false);
+        return;
+      }
     }
     int firstPosLower;
     int firstPosUpper;
@@ -306,7 +312,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     int newWeakUpper;
     float probLower;
     float probUpper;
-    synchronized (firstPosition) {
+    int oldWeakLower;
+    int oldWeakUpper;
+    synchronized (this) {
+      oldWeakLower = weakLower;
+      oldWeakUpper = weakUpper;
       firstPosLower = firstPosition.getLower();
       firstPosUpper = firstPosition.getUpper();
       probLower = firstPosition.getProb(weakLower);
@@ -315,33 +325,27 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       newWeakUpper = Math.min(upper, firstPosition.getPercentileUpper(Constants.PROB_REDUCE_WEAK_EVAL) + 100);
     }
 
-    if (newWeakLower > firstPosUpper) {
-      assert false;
-      newWeakLower = firstPosUpper;
-    } else if (newWeakUpper < firstPosLower) {
-      assert false;
-      newWeakUpper = firstPosLower;
-    }
+    assert newWeakLower <= firstPosUpper;
+    assert newWeakUpper >= firstPosLower;
 
-    if (newWeakLower < weakLower && probLower > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-      newWeakLower = weakLower;
+    if (newWeakLower < oldWeakLower && probLower > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+      newWeakLower = oldWeakLower;
     }
-    if (newWeakUpper > weakUpper && probUpper < Constants.PROB_INCREASE_WEAK_EVAL) {
-      newWeakUpper = weakUpper;
+    if (newWeakUpper > oldWeakUpper && probUpper < Constants.PROB_INCREASE_WEAK_EVAL) {
+      newWeakUpper = oldWeakUpper;
     }
-    nextPositionLock.lock();
-    lastUpdateWeak = this.getNVisited();
-//    System.out.println("(" + weakLower + ", " + weakUpper + ") -> (" + newWeakLower + " " + newWeakUpper + ")");
-    // TODO: PROBLEM: WHEN I UPDATE, OTHER THREADS MIGHT GET IT WRONG.
-    if (newWeakUpper > weakUpper) {
-      firstPosition.updateDescendantsRecursive(weakUpper + 200, newWeakUpper);
+//    nextPositionLock.lock();
+    synchronized (this) {
+      weakLower = newWeakLower;
+      weakUpper = newWeakUpper;
+      if (newWeakUpper > oldWeakUpper) {
+        firstPosition.updateDescendantsRecursive(oldWeakUpper + 200, newWeakUpper);
+      }
+      if (newWeakLower < oldWeakLower) {
+        firstPosition.updateDescendantsRecursive(newWeakLower, oldWeakLower - 200);
+      }
     }
-    if (newWeakLower < weakLower) {
-      firstPosition.updateDescendantsRecursive(newWeakLower, weakLower - 200);
-    }
-    weakLower = newWeakLower;
-    weakUpper = newWeakUpper;
-    nextPositionLock.unlock();
+    updating.set(false);
   }
 
   protected int getAlpha(StoredBoard board) {
@@ -364,7 +368,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         return null;
       }
       editLock.lock();
-      result = firstPosition.bestDescendant(weakLower, weakUpper);
+      result = firstPosition.bestDescendant();
       editLock.unlock();
       if (result != null) {
         break;
@@ -400,6 +404,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
   void setFirstPosition(long player, long opponent) {
     empty();
+    StoredBoard.proofNumberForAlphaBeta.set(0);
+    StoredBoard.avoidNextPosFailCoeff.set(8000);
     firstPosition = StoredBoard.initialStoredBoard(player, opponent);
     add(firstPosition);
     this.weakUpper = upper;
@@ -438,8 +444,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
-    constant = 0;
-    StoredBoard.avoidNextPosFailCoeff.set(4000);
     EvaluatorAlphaBeta.resetConstant();
     if (status == Status.KILLING) {
       status = Status.KILLED;
@@ -476,7 +480,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
-    return (short) -firstPosition.getEval(weakLower, weakUpper);
+    return (short) -firstPosition.getEval();
   }
 
   public StoredBoard getFirstPosition() {
@@ -505,6 +509,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public void addChildren(StoredBoard board) {
-    addChildren(board.bestDescendant(weakLower, weakUpper));
+    addChildren(board.bestDescendant());
   }
 }

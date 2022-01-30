@@ -63,7 +63,7 @@ public class Main implements Runnable {
       this.board = board;
     }
     private int getEval() {
-      return board.getEval(evaluator.getWeakLower(), evaluator.getWeakUpper());
+      return board.getEval();
     }
   }
 
@@ -180,7 +180,7 @@ public class Main implements Runnable {
     if (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) {
       return Double.NEGATIVE_INFINITY;
     }
-    double evalEffect = -board.getEval(evaluator.getWeakLower(), evaluator.getWeakUpper()) / Math.max(1, ui.delta() * 100);
+    double evalEffect = -board.getEval() / Math.max(1, ui.delta() * 100);
     return evalEffect - Math.log(board.getDescendants()) / Math.log(2);
   }
 
@@ -322,8 +322,7 @@ public class Main implements Runnable {
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
-        annotations = new CaseAnnotations(childStored, evaluator.getWeakLower(),
-            evaluator.getWeakUpper(), move == bestMove);
+        annotations = new CaseAnnotations(childStored, move == bestMove);
       } else {
         HashMap.BoardInHash childHash = this.HASH_MAP.getStoredBoardNoUpdate(child);
         if (childHash == null) {
@@ -341,8 +340,7 @@ public class Main implements Runnable {
     CaseAnnotations positionAnnotations = null;
     if (evaluatorBoard.board != null) {
       positionAnnotations = new CaseAnnotations(
-          evaluatorBoard.board, evaluatorBoard.evaluator.getWeakLower(),
-          evaluatorBoard.evaluator.getWeakUpper(), false);
+          evaluatorBoard.board, false);
     }
     ui.setExtras(
         nVisited, System.currentTimeMillis() - startTime,
