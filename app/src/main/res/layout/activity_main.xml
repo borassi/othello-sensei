@@ -83,7 +83,7 @@
             android:freezesText="false"
             android:inputType="number"
             android:numeric="integer"
-            android:text="1000000000"
+            android:text="300000000"
             android:textAlignment="textEnd"
             android:textSize="24sp"
             app:layout_constraintBaseline_toBaselineOf="@id/depthLabel"

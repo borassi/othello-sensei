@@ -84,7 +84,7 @@ public class HashMap {
   private final AtomicInteger size;
   
   public HashMap() {
-    this(Constants.hashMapSize());
+    this(Constants.HASH_MAP_SIZE);
   }
   
   public HashMap(int arraySize) {

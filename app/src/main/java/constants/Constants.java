@@ -17,25 +17,23 @@ import evaluateposition.ProbCombiner;
 import evaluateposition.ProbCombinerExpPolyLog;
 
 public class Constants {
-  public static boolean MOBILE = false;
+  public static boolean MOBILE = true;
 
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
-  public final static int EMPTIES_FOR_FORCED_MIDGAME = 14;
+  public final static int EMPTIES_FOR_FORCED_MIDGAME = MOBILE ? 15 : 14;
   public final static float PROB_FOR_EARLY_MIDGAME = 0.05F;
-  public final static int PROOF_NUMBER_GOAL_FOR_MIDGAME = 7000;
+  public final static int PROOF_NUMBER_GOAL_FOR_MIDGAME = MOBILE ? 20000 : 7000;
   public final static int VISITED_ENDGAME_GOAL = 150;
   public final static int EMPTIES_FOR_ENDGAME = 10;
 
-  public final static int HASH_MAP_SIZE_MOBILE = 100000;
-  public final static int HASH_MAP_SIZE_DESKTOP = 1000000;
-  public final static int MCTS_SIZE_MOBILE = 3000000;
-  public final static int MCTS_SIZE_DESKTOP = 14000000;
+  public final static int HASH_MAP_SIZE = MOBILE ? 100000 : 1000000;
+  public final static int MCTS_SIZE = MOBILE ? 1000000: 14000000;
 
-  public final static int MAX_PARALLEL_TASKS = 12;//Runtime.getRuntime().availableProcessors();
+  public final static int MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
   public final static float MIN_PROB_LEAF = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
-  public final static float MULT_STDDEV = 0.95F;
+  public final static float MULT_STDDEV = 1F;
   public final static float LEAF_MULTIPLIER = 0.8F;
   public final static float PROB_FOR_PROOF = 0.03F;
   public final static float ZERO_PERC_FOR_WEAK = 0.05F;
@@ -46,15 +44,8 @@ public class Constants {
   public final static float PROB_INCREASE_WEAK_EVAL = 0.05F;
 
   public final static boolean ASSERT_EXTENDED = false;
+  public final static boolean ASSERT_LOCKS = false;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
   public final static boolean IGNORE_TRANSPOSITIONS = false;
   public final static boolean APPROX_ONLY = false;
-
-  public static int hashMapSize() {
-    return MOBILE ? HASH_MAP_SIZE_MOBILE : HASH_MAP_SIZE_DESKTOP;
-  }
-
-  public static int MCTSSize() {
-    return MOBILE ? MCTS_SIZE_MOBILE : MCTS_SIZE_DESKTOP;
-  }
 }

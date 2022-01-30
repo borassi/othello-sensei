@@ -107,42 +107,17 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
-    String rows;
-    StoredBoard board = annotations.storedBoard;
-    if (board == null) {
-      return;
-    }
-
-    boolean showMissing = false;
-    String formatter = "%+.2f";
-    if (board.isSolved()) {
-      formatter = "%+.0f";
-    } else if (board.isPartiallySolved()) {
-      formatter = "%+.1f";
-      showMissing = true;
-    }
-    String evalStr = String.format(Locale.US, formatter, -board.getEval() / 100.0);
-    float probLower = board.getProb(board.getWeakLower());
-    float probUpper = board.getProb(board.getWeakUpper());
-    if (probLower > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-      if (probUpper < Constants.PROB_INCREASE_WEAK_EVAL) {
-        rows = evalStr;
-      } else {
-        rows = "≤" + evalStr;
-      }
-    } else {
-      if (probUpper < Constants.PROB_INCREASE_WEAK_EVAL) {
-        rows = "≥" + evalStr;
-      } else {
-        rows = "?";
-      }
-    }
-    rows += "\n" + Utils.prettyPrintDouble(board.getDescendants());
-
-    if (showMissing) {
-      int eval = board.getEval();
-      rows += "\n" + Utils.prettyPrintDouble(board.proofNumber(eval - 100) + board.disproofNumber(eval + 100));
-    }
+    StoredBoard storedBoard = annotations.storedBoard;
+    int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
+    int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
+    String rows =
+        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0) + "\n" +
+        Utils.prettyPrintDouble(storedBoard.getDescendants()) + "\n" + (
+        lower == upper ?
+            Utils.prettyPrintDouble(storedBoard.proofNumber(lower-100)) + " " +
+                Utils.prettyPrintDouble(storedBoard.disproofNumber(lower+100)) :
+            ("[" + (-lower/100) + ", " + (-upper/100) + "]")
+        );
 
     int x = BitPattern.getX(move);
     int y = BitPattern.getY(move);

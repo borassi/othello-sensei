@@ -88,7 +88,7 @@ public class EndgameTest {
           "---XXXX---XXXO-OXXOXOO-OOOOOXOOO-OOOOXO----OOOX----------------- X" // 61
       };
 //  EvaluatorMidgame eval = evalMidgame;
-  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTSSize(), 2 * Constants.MCTSSize());
+  EvaluatorMCTS eval = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE);
 
   public static Board readIthBoard(int i) {
     String[] boards = POSITIONS[i - 1].split(" ");

@@ -80,7 +80,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
   }
   
   public static void buildDataset(int minEmpties, int maxEmpties, double subsample) {
-    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTSSize(), 2 * Constants.MCTSSize());
+    EvaluatorMCTS evaluator = new EvaluatorMCTS(Constants.MCTS_SIZE, 2 * Constants.MCTS_SIZE);
     EndgameTimeEstimator endgameTimeEstimator = new EndgameTimeEstimator();
 
     ArrayList<BoardWithEvaluation> training = LoadDataset.loadTrainingSet(1990, 1990);

@@ -14,36 +14,31 @@
 
 package evaluateposition;
 
-import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MINUS_INF;
-
 import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
-  int threadWaitingForNextPos = 0;
   private long maxNVisited;
   private long startTimeMillis;
   private int maxTimeMillis;
   private final HashMap hashMap;
-  static final ReentrantReadWriteLock editNextPositionLock = new ReentrantReadWriteLock();
-  static final ReentrantReadWriteLock.WriteLock nextPositionLock = editNextPositionLock.writeLock();
-  static final ReentrantReadWriteLock.ReadLock editLock = editNextPositionLock.readLock();
   private boolean justStarted = false;
   private int weakLower = -6300;
   private int weakUpper = 6300;
   private long lastUpdateWeak = 0;
   private double bestStepsUntilEnd = 0;
+  private final AtomicBoolean updating = new AtomicBoolean(false);
 
   int lower = -6300;
   int upper = 6300;
@@ -61,13 +56,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private Status status = Status.SOLVED;
   private final EvaluatorThread[] threads;
 
-  private class EvaluatorThread implements Runnable {    
+  private class EvaluatorThread implements Runnable {
     private final EvaluatorInterface nextEvaluator;
-    private final EvaluatorMCTS main;
 
-    private EvaluatorThread(EvaluatorInterface nextEvaluator, EvaluatorMCTS main) {
+    private EvaluatorThread(EvaluatorInterface nextEvaluator) {
       this.nextEvaluator = nextEvaluator;
-      this.main = main;
     }
 
     class PartialEval {
@@ -88,10 +81,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       long[] moves = GetMovesCache.getAllMoves(father.getPlayer(), father.getOpponent());
 
       if (moves == null) {
-        editLock.lock();
         int finalEval = BitPattern.getEvaluationGameOver(father.getPlayer(), father.getOpponent());
         father.setSolved(finalEval, getAlpha(father), getBeta(father));
-        editLock.unlock();
         return 1;
       }
 
@@ -108,7 +99,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval)), nextEvaluator.getNVisited());
         }
       }
-      editLock.lock();
       int alpha = getAlpha(father);
       int beta = getBeta(father);
 
@@ -121,8 +111,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
               nVisited += childEval.nVisited;
               if (child.leafEval == -6500) {
                 child.getOrAddEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
-                child.setLeaf(childEval.eval, -beta, -alpha, Constants.MULT_STDDEV);
-                child.updateFathers(-beta, -alpha);
+                child.setLeaf(childEval.eval, -beta, -alpha, 4);
               }
             }
             child.addFather(father);
@@ -131,7 +120,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         father.children = children;
       }
       father.updateFathers(alpha, beta);
-      editLock.unlock();
       return nVisited;
     }
 
@@ -150,9 +138,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       long seenPositions = nextEvaluator.getNVisited() + 1;
       StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 10);
-      editLock.lock();
       board.updateFathers(getAlpha(board), getBeta(board));
-      editLock.unlock();
       return seenPositions;
     }
 
@@ -163,19 +149,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       int d;
       long seenPositions = 0;
       for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
-        if (board.nEmpties - d < Constants.EMPTIES_FOR_FORCED_MIDGAME + 2) {
-          return seenPositions + solvePosition(position);
+        if (board.nEmpties - d < Constants.EMPTIES_FOR_FORCED_MIDGAME - 2) {
+          seenPositions += solvePosition(position);
+          return seenPositions;
         }
         curEval = nextEvaluator.evaluate(
             board.getPlayer(), board.getOpponent(), d, -6400, 6400);
         seenPositions += nextEvaluator.getNVisited();
       }
-      editLock.lock();
       int alpha = getAlpha(board);
       int beta = getBeta(board);
-      board.setLeaf(curEval, alpha, beta, 0.2 / (0.2 + (d - 4)));
+      board.setLeaf(curEval, alpha, beta, d);
       board.updateFathers(getAlpha(board), getBeta(board));
-      editLock.unlock();
       return seenPositions;
     }
 
@@ -217,7 +202,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     this.hashMap = hashMap;
     threads = new EvaluatorThread[Constants.MAX_PARALLEL_TASKS];
     for (int i = 0; i < threads.length; ++i) {
-      threads[i] = new EvaluatorThread(evaluatorMidgameBuilder.get(), this);
+      threads[i] = new EvaluatorThread(evaluatorMidgameBuilder.get());
     }
     this.firstPosition = StoredBoard.initialStoredBoard(new Board(0, 0));
   }
@@ -225,10 +210,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   public int getLower() { return lower; }
 
   public int getUpper() { return upper; }
-
-  public int getWeakLower() { return weakLower; }
-
-  public int getWeakUpper() { return weakUpper; }
 
   public long getNVisited() {
     return this.firstPosition.getDescendants();
@@ -239,7 +220,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public synchronized void stop() {
-    if (status == Status.RUNNING) {
+    if (status == Status.RUNNING || status == Status.STOPPED_TIME) {
       status = Status.KILLING;
     }
   }
@@ -249,18 +230,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
-    editLock.lock();
-    try {
-      position.updateDescendants(nVisited);
-      justStarted = false;
-    } finally {
-      editLock.unlock();
-    }
+    position.updateDescendants(nVisited);
+    justStarted = false;
   }
   
-  protected boolean checkFinished() {
+  protected synchronized boolean checkFinished() {
     synchronized (firstPosition) {
-      if (hashMap.size() > Constants.hashMapSize() / 2) {
+      if (hashMap.size() > Constants.HASH_MAP_SIZE / 2) {
         hashMap.reset();
       }
       double stepsUntilEnd = this.stepsUntilEnd();
@@ -294,14 +270,12 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     }
   }
 
-  private AtomicBoolean updating = new AtomicBoolean(false);
-
   private void updateWeakLowerUpper() {
     if (updating.getAndSet(true)) {
       return;
     }
     synchronized (this) {
-      if (getNVisited() < this.lastUpdateWeak * 1.2) {
+      if (getNVisited() < this.lastUpdateWeak * 1.3 || firstPosition.isLeaf()) {
         updating.set(false);
         return;
       }
@@ -363,13 +337,13 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
     StoredBoardBestDescendant result;
     while (true) {
+//      System.out.println(weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
       updateWeakLowerUpper();
       if (checkFinished()) {
         return null;
       }
-      editLock.lock();
-      result = firstPosition.bestDescendant();
-      editLock.unlock();
+//      System.out.println("  " + weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
+      result = firstPosition.bestDescendant(weakLower, weakUpper);
       if (result != null) {
         break;
       }
@@ -386,16 +360,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   public synchronized Status getStatus() {
     return status;
-  }
-
-  public static int evalToBoundary(int eval) {
-    if (eval >= 6300) {
-      return 6300;
-    }
-    if (eval <= -6300) {
-      return 6300;
-    }
-    return 200 * Math.round((eval + 100.0F) / 200) - 100;
   }
 
   void setFirstPosition(Board b) {
@@ -439,17 +403,17 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return evaluatePosition(board, -6300, 6300, maxNVisited, maxTimeMillis);
   }
 
+  ExecutorService executor = Executors.newFixedThreadPool(Constants.MAX_PARALLEL_TASKS);
+
   public short evaluatePosition(
       Board board, int lower, int upper, long maxNVisited, int maxTimeMillis) {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
     EvaluatorAlphaBeta.resetConstant();
-    if (status == Status.KILLING) {
-      status = Status.KILLED;
-      return -6500;
+    synchronized (this) {
+      status = Status.RUNNING;
     }
-    status = Status.RUNNING;
     this.lower = lower;
     this.upper = upper;
     this.bestStepsUntilEnd = Double.POSITIVE_INFINITY;
@@ -463,21 +427,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     this.startTimeMillis = System.currentTimeMillis();
     this.maxTimeMillis = maxTimeMillis;
 
-    Thread[] threads = new Thread[this.threads.length];
-
-    Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-      this.status = Status.FAILED;
-      e.printStackTrace();
-    });
+    Future<?>[] futures = new Future<?>[threads.length];
     for (int i = 0; i < threads.length; ++i) {
-      threads[i] = new Thread(this.threads[i]);
-      threads[i].start();
+      futures[i] = executor.submit(threads[i]);
     }
-    for (Thread t : threads) {
+    for (Future<?> future : futures) {
       try {
-        t.join();
-      } catch (Exception ex) {
-        Logger.getLogger(EvaluatorMCTS.class.getName()).log(Level.SEVERE, null, ex);
+        future.get();
+      } catch (ExecutionException | InterruptedException e) {
+        e.printStackTrace();
+        status = Status.FAILED;
       }
     }
     return (short) -firstPosition.getEval();
@@ -500,6 +459,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     if (board.isLeaf()) {
       return;
     }
+    assert board.areChildrenOK();
   }
 
   public void addChildren(StoredBoardBestDescendant position) {
@@ -509,6 +469,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public void addChildren(StoredBoard board) {
-    addChildren(board.bestDescendant());
+    addChildren(board.bestDescendant(weakLower, weakUpper));
   }
 }
