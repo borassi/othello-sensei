@@ -17,7 +17,7 @@ import evaluateposition.ProbCombiner;
 import evaluateposition.ProbCombinerExpPolyLog;
 
 public class Constants {
-  public static boolean MOBILE = true;
+  public static boolean MOBILE = false;
 
   public final static int WEIGHT_DEPTH_1 = 1;
   public final static int WEIGHT_DEPTH_0 = 2;
@@ -28,9 +28,9 @@ public class Constants {
   public final static int EMPTIES_FOR_ENDGAME = 10;
 
   public final static int HASH_MAP_SIZE = MOBILE ? 100000 : 1000000;
-  public final static int MCTS_SIZE = MOBILE ? 1000000: 14000000;
+  public final static int MCTS_SIZE = MOBILE ? 1000000: 30000000;
 
-  public final static int MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
+  public final static int MAX_PARALLEL_TASKS = 12;//Runtime.getRuntime().availableProcessors();
   public final static float MIN_PROB_LEAF = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
   public final static float MULT_STDDEV = 1F;
@@ -45,6 +45,7 @@ public class Constants {
 
   public final static boolean ASSERT_EXTENDED = false;
   public final static boolean ASSERT_LOCKS = false;
+  public final static boolean ASSERT_LOWER_UPPER = true;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
   public final static boolean IGNORE_TRANSPOSITIONS = false;
   public final static boolean APPROX_ONLY = false;

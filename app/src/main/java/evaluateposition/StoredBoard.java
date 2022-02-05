@@ -24,6 +24,7 @@ import constants.Stats;
 import helpers.Gaussian;
 import helpers.Utils;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StoredBoard {
@@ -38,6 +39,7 @@ public class StoredBoard {
   private final long player;
   private final long opponent;
   static AtomicInteger lastEvalGoal = new AtomicInteger(-6500);
+  private AtomicBoolean updating;
 
   final static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
   public final ArrayList<StoredBoard> fathers;
@@ -53,8 +55,8 @@ public class StoredBoard {
   int lower = -6400;
   int upper = 6400;
   int lowerEvaluationValue;
-  int weakLower = -6300;
-  int weakUpper = 6300;
+  int weakLower = -6500;
+  int weakUpper = -6500;
 
   public static AtomicInteger avoidNextPosFailCoeff = new AtomicInteger(2000);
   public static AtomicInteger proofNumberForAlphaBeta = new AtomicInteger(0);
@@ -150,38 +152,31 @@ public class StoredBoard {
     }
 
     public Evaluation bestChild(boolean proof) {
-      synchronized (StoredBoard.this) {
-        assert !isLeaf();
-//        assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
-        Evaluation bestChild = null;
-        double bestChildValue = Double.NEGATIVE_INFINITY;
-        for (StoredBoard childBoard : getChildren()) {
-          synchronized (childBoard) {
-            Evaluation child = childBoard.getEvaluation(-evalGoal);
-            double childValue = child.getValue(this, proof);
-            if (childValue > bestChildValue) {
-              bestChild = child;
-              bestChildValue = childValue;
-            }
+      assert !isLeaf();
+      assert isLowerUpperOK();
+      Evaluation bestChild = null;
+      double bestChildValue = Double.NEGATIVE_INFINITY;
+      for (StoredBoard childBoard : getChildren()) {
+        synchronized (childBoard) {
+          Evaluation child = childBoard.getEvaluation(-evalGoal);
+          double childValue = child.getValue(this, proof);
+          if (childValue > bestChildValue) {
+            bestChild = child;
+            bestChildValue = childValue;
           }
         }
-        assert isNThreadsWorkingOK();
-        if (bestChild == null) {
-          return null;
-        }
-        if (bestChild.getStoredBoard().isLeaf() && bestChild.getStoredBoard().getNThreadsWorking() > 0) {
-          return null;
-        }
-        return bestChild;
       }
+      assert isNThreadsWorkingOK();
+      if (bestChild == null) {
+        return null;
+      }
+      if (bestChild.getStoredBoard().isLeaf() && bestChild.getStoredBoard().getNThreadsWorking() > 0) {
+        return null;
+      }
+      return bestChild;
     }
 
-    public StoredBoardBestDescendant bestDescendant(int alpha, int beta) {
-      boolean proof = getProb() > 1 - Constants.PROB_FOR_PROOF || getProb() < Constants.PROB_FOR_PROOF;
-      return bestDescendant(alpha, beta, proof, new ArrayList<>());
-    }
-    public StoredBoardBestDescendant bestDescendant(int alpha, int beta, boolean proof, ArrayList<Evaluation> ancestors) {
-//      assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
+    private StoredBoardBestDescendant bestDescendant(int alpha, int beta, boolean proof, ArrayList<Evaluation> ancestors) {
       Evaluation bestChild;
       synchronized (StoredBoard.this) {
         increaseNThreadsWorking();
@@ -259,65 +254,40 @@ public class StoredBoard {
       setLeaf(1, 0, Float.POSITIVE_INFINITY);
     }
 
-    protected void updateFather() {
-      assert !isLeaf();
-      if (Constants.ASSERT_LOCKS) {
-        assert Thread.holdsLock(StoredBoard.this);
-      }
-      proofNumber = Float.POSITIVE_INFINITY;
-      disproofNumber = 0;
-      prob = PROB_STEP;
-      maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
-      bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
-      assert getChildren().length > 0;
-      for (StoredBoard childBoard : getChildren()) {
-        synchronized (childBoard) {
-          Evaluation child = childBoard.getEvaluation(-evalGoal);
-          // When updating descendants, this Evaluation would be missing if any
-          // child's evaluation is missing. So child must not be null.
-          assert child != null;
-          if (child.isSolved()) {
-            if (child.getProb() > 0.5) {
-              continue;
-            } else {
-              prob = 0;
-              proofNumber = 0;
-              disproofNumber = Float.POSITIVE_INFINITY;
-              maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
-              break;
-            }
-          }
-          prob = combineProb(prob, child.prob);
-
-          float curProofNumber = Math.max(1, child.disproofNumber / Math.max(0.0001F, 1 - child.getProb()));
-          if (curProofNumber < proofNumber) {
-            assert Utils.arrayContains(getChildren(), child.getStoredBoard());
-            proofNumber = curProofNumber;
-          }
-
-          assert child.proofNumber > 0;
-          disproofNumber += child.proofNumber;
-          if (child.proofNumber > bestDisproofNumberValue) {
-            assert Utils.arrayContains(getChildren(), child.getStoredBoard());
-            bestDisproofNumberValue = child.proofNumber;
-          }
-          if (child.getProb() > 0 && child.getProb() < 1) {
-            int currentLogDerivative = child.maxLogDerivative - LOG_DERIVATIVE[child.prob];
-            if (currentLogDerivative > maxLogDerivative) {
-              assert Utils.arrayContains(getChildren(), child.getStoredBoard());
-              maxLogDerivative = currentLogDerivative;
-            }
-          }
+    protected void updateFatherWithThisChild(Evaluation child) {
+      assert child.evalGoal == -this.evalGoal;
+      assert child != null;
+      if (child.isSolved()) {
+        if (child.getProb() > 0.5) {
+          return;
+        } else {
+          prob = 0;
+          proofNumber = 0;
+          disproofNumber = Float.POSITIVE_INFINITY;
+          maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
         }
       }
-      if (getProb() == 1 || getProb() == 0) {
-        maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
-      } else {
-        maxLogDerivative = maxLogDerivative + LOG_DERIVATIVE[prob];
-        assert maxLogDerivative > LOG_DERIVATIVE_MINUS_INF;
+      prob = combineProb(prob, child.prob);
+
+      float curProofNumber = Math.max(1, child.disproofNumber / Math.max(0.0001F, 1 - child.getProb()));
+      if (curProofNumber < proofNumber) {
+        assert Utils.arrayContains(getChildren(), child.getStoredBoard());
+        proofNumber = curProofNumber;
       }
-      prob = PROB_STEP - prob;
-      assert Constants.MAX_PARALLEL_TASKS > 1 || isChildLogDerivativeOK();
+
+      assert child.proofNumber > 0;
+      disproofNumber += child.proofNumber;
+      if (child.proofNumber > bestDisproofNumberValue) {
+        assert Utils.arrayContains(getChildren(), child.getStoredBoard());
+        bestDisproofNumberValue = child.proofNumber;
+      }
+      if (child.getProb() > 0 && child.getProb() < 1) {
+        int currentLogDerivative = child.maxLogDerivative - LOG_DERIVATIVE[child.prob];
+        if (currentLogDerivative > maxLogDerivative) {
+          assert Utils.arrayContains(getChildren(), child.getStoredBoard());
+          maxLogDerivative = currentLogDerivative;
+        }
+      }
     }
 
     private boolean isChildLogDerivativeOK() {
@@ -368,13 +338,23 @@ public class StoredBoard {
     this.next = null;
     this.nEmpties = 64 - Long.bitCount(player | opponent);
   }
-  
+
   public static StoredBoard initialStoredBoard(Board b) {
-    return initialStoredBoard(b.getPlayer(), b.getOpponent());
+    return initialStoredBoard(b.getPlayer(), b.getOpponent(), 0);
+  }
+
+  private static final int roundEval(int eval) {
+    return Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));
   }
   
-  public static StoredBoard initialStoredBoard(long player, long opponent) {
-    return new StoredBoard(player, opponent, 0);
+  public static StoredBoard initialStoredBoard(long player, long opponent, int eval) {
+    StoredBoard result = new StoredBoard(player, opponent, 0);
+    result.updating = new AtomicBoolean(false);
+    int stddev = (int) (ERRORS[result.nEmpties] * Constants.MULT_STDDEV);
+    result.setWeakLowerUpper(roundEval(eval - 3 * stddev), roundEval(eval + 3 * stddev));
+    result.setLeaf(eval, 2);
+    result.setLeaf(0, 1);
+    return result;
   }
   
   public synchronized void addFather(StoredBoard father) {
@@ -405,7 +385,8 @@ public class StoredBoard {
     return nThreadsWorking;
   }
 
-  synchronized double stepsUntilEnd(int weakLower, int weakUpper) {
+  synchronized double stepsUntilEnd() {
+    assert isLowerUpperOK();
     // Lower means "better".
     double maxDerivative = Double.NEGATIVE_INFINITY;
     double stepsUntilEndProof = Double.POSITIVE_INFINITY;
@@ -426,41 +407,75 @@ public class StoredBoard {
     return (-LOG_DERIVATIVE_MINUS_INF + maxDerivative) * 1E20;
   }
 
-  protected synchronized void updateFather(int alpha, int beta) {
-    assert Constants.MAX_PARALLEL_TASKS > 1 || weakLower <= alpha;
-    assert Constants.MAX_PARALLEL_TASKS > 1 || weakUpper >= beta;
-    weakLower = Math.max(weakLower, alpha);
-    weakUpper = Math.min(weakUpper, beta);
+  private synchronized void updateFatherWithThisChild(StoredBoard father) {
+    assert fathers.contains(father);
+    if (Constants.ASSERT_LOCKS) {
+      assert Thread.holdsLock(father);
+    }
+    father.lower = Math.max(father.lower, -upper);
+    father.upper = Math.max(father.upper, -lower);
+    father.weakUpper = Math.min(father.weakUpper, -weakLower);
+    father.weakLower = Math.max(father.weakLower, -weakUpper);
+    for (int i = father.weakLower; i <= father.weakUpper; i += 200) {
+      Evaluation eval = getEvaluation(-i);
+      assert eval != null;
+      Evaluation fatherEval = father.getEvaluation(i);
+      fatherEval.updateFatherWithThisChild(eval);
+    }
+  }
+
+  protected synchronized void updateFather() {
     lower = -6400;
     upper = -6400;
+    assert !isLeaf();
+    for (int i = weakLower; i <= weakUpper; i += 200) {
+      Evaluation eval = getEvaluation(i);
+      assert eval != null;
+      eval.proofNumber = Float.POSITIVE_INFINITY;
+      eval.disproofNumber = 0;
+      eval.prob = PROB_STEP;
+      eval.maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      eval.bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
+    }
     for (StoredBoard childBoard : getChildren()) {
-      synchronized (childBoard) {
-        lower = Math.max(lower, -childBoard.upper);
-        upper = Math.max(upper, -childBoard.lower);
-      }
+      childBoard.updateFatherWithThisChild(this);
     }
     for (int i = weakLower; i <= weakUpper; i += 200) {
-//      System.out.print(i + " ");
       Evaluation eval = getEvaluation(i);
-      // Eval can be null if some other thread is updating all descendants.
-      if (eval != null) {
-        eval.updateFather();
+      if (eval.getProb() == 1 || eval.getProb() == 0) {
+        eval.maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
+      } else {
+        eval.maxLogDerivative = eval.maxLogDerivative + LOG_DERIVATIVE[eval.prob];
+        assert eval.maxLogDerivative > LOG_DERIVATIVE_MINUS_INF;
       }
+      eval.prob = PROB_STEP - eval.prob;
+      assert Constants.MAX_PARALLEL_TASKS > 1 || eval.isChildLogDerivativeOK();
     }
-//    System.out.println();
     assert isLowerUpperOK();
   }
 
-  protected void updateFathers(int alpha, int beta) {
+  protected synchronized void setNewLowerUpper(StoredBoard board) {
+    if (Constants.ASSERT_LOCKS) {
+      assert Thread.holdsLock(board);
+    }
+    if (updating.get()) {
+      return;
+    }
+    board.setWeakLowerUpper(
+        board.depth % 2 == 0 ? weakLower : -weakUpper,
+        board.depth % 2 == 0 ? weakUpper : -weakLower);
+  }
+
+  protected void updateFathers() {
     synchronized (this) {
       if (!isLeaf()) {
-        updateFather(alpha, beta);
+        updateFather();
       }
     }
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
     for (int i = 0; i < fathers.size(); ++i) {
       StoredBoard father = fathers.get(i);
-      father.updateFathers(-beta, -alpha);
+      father.updateFathers();
     }
   }
   public synchronized int getWeakLower() { return weakLower; }
@@ -529,7 +544,7 @@ public class StoredBoard {
   }
 
   public synchronized int getPercentileUpper(float p) {
-    for (int eval = -6300; eval < 6300; eval += 200) {
+    for (int eval = weakLower; eval <= weakUpper; eval += 200) {
       Evaluation curEval = getEvaluation(eval);
       if (curEval != null && curEval.getProb() <= p) {
         return eval - 100;
@@ -538,7 +553,7 @@ public class StoredBoard {
     return 6400;
   }
   public synchronized int getPercentileLower(float p) {
-    for (int eval = 6300; eval > -6300; eval -= 200) {
+    for (int eval = weakUpper; eval >= weakLower; eval -= 200) {
       Evaluation curEval = getEvaluation(eval);
       if (curEval != null && curEval.getProb() >= 1 - p) {
         return eval + 100;
@@ -573,26 +588,99 @@ public class StoredBoard {
     return eval.getDescendants();
   }
 
-  public synchronized StoredBoardBestDescendant bestDescendant(int alpha, int beta) {
+  protected boolean updateWeakLowerUpper() {
+    if (updating.getAndSet(true)) {
+      return true;
+    }
+    boolean extendLower = false;
+    boolean extendUpper = false;
+    boolean reduced = false;
+    synchronized (this) {
+      float probLower = getProb(weakLower);
+      float probUpper = getProb(weakUpper);
+      float probLowerNext = getProb(weakLower + 200);
+      float probUpperPrev = getProb(weakUpper - 200);
+      if (probLower < 1 - Constants.PROB_INCREASE_WEAK_EVAL && weakLower - 200 >= lower) {
+        extendLower = true;
+        assert upper > lower + 200;
+      }
+      if (probUpper > Constants.PROB_INCREASE_WEAK_EVAL && weakUpper + 200 <= upper) {
+        extendUpper = true;
+      }
+      if (!extendLower && !extendUpper && probLowerNext > 1 - Constants.PROB_REDUCE_WEAK_EVAL) {
+        weakLower += 200;
+        assert weakLower < weakUpper;
+        reduced = true;
+      }
+      if (!extendLower && !extendUpper && probUpperPrev < Constants.PROB_REDUCE_WEAK_EVAL && !extendLower) {
+        weakUpper -= 200;
+        assert weakLower < weakUpper;
+        reduced = true;
+      }
+    }
+    if (extendLower) {
+      this.extendEval(weakLower - 200);
+    }
+    if (extendUpper) {
+      this.extendEval(weakUpper + 200);
+    }
+    assert isLowerUpperOK();
+    updating.set(false);
+    return reduced || extendUpper || extendLower;
+  }
+
+  public void extendEval(int valueToUpdate) {
+    synchronized (this) {
+      getOrAddEvaluation(valueToUpdate);
+      if (isLeaf()) {
+        if (valueToUpdate < weakLower) {
+          weakLower = valueToUpdate;
+        } else if (valueToUpdate > weakUpper) {
+          weakUpper = valueToUpdate;
+        }
+        assert leafEval != -6500;
+        setLeaf(leafEval, 4);
+        assert isLowerUpperOK();
+        return;
+      }
+    }
+    for (StoredBoard child : children) {
+      child.extendEval(-valueToUpdate);
+    }
+    synchronized (this) {
+      if (valueToUpdate < weakLower) {
+        weakLower = valueToUpdate;
+      } else if (valueToUpdate > weakUpper) {
+        weakUpper = valueToUpdate;
+      }
+      updateFather();
+      assert isLowerUpperOK();
+    }
+  }
+
+  public synchronized StoredBoardBestDescendant bestDescendant() {
     int evalGoal = nextPositionEvalGoal();
     if (evalGoal == -6500) {
       return null;
     }
-    return getEvaluation(evalGoal).bestDescendant(Math.max(alpha, weakLower), Math.min(beta, weakUpper));
+    Evaluation firstEval = getEvaluation(evalGoal);
+    boolean proof = firstEval.getProb() > 1 - Constants.PROB_FOR_PROOF || firstEval.getProb() < Constants.PROB_FOR_PROOF;
+    return firstEval.bestDescendant(weakLower, weakUpper, proof, new ArrayList<>());
   }
 
   protected synchronized int nextPositionEvalGoal() {
-//    assert EvaluatorMCTS.nextPositionLock.isHeldByCurrentThread();
     StoredBoard.Evaluation bestEval = null;
     long bestValue = Long.MIN_VALUE;
     for (int eval = weakLower; eval <= weakUpper; eval += 200) {
       StoredBoard.Evaluation curEval = getEvaluation(eval);
-      if (curEval.proofNumber == 0 || curEval.disproofNumber == 0) {
+      if (curEval.proofNumber == 0 || curEval.disproofNumber == 0 ||
+              (eval < weakUpper && getEvaluation(eval + 200).getProb() > 1 - Constants.MIN_PROB_EVAL_GOAL) ||
+              (eval > weakLower && getEvaluation(eval - 200).getProb() < Constants.MIN_PROB_EVAL_GOAL)) {
         continue;
       }
       long curValue = 0;
       curValue += curEval.getProb() > Constants.MIN_PROB_EVAL_GOAL && curEval.getProb() < 1 - Constants.MIN_PROB_EVAL_GOAL ?
-                      -LOG_DERIVATIVE_MINUS_INF * 1000L : 0;
+                      -LOG_DERIVATIVE_MINUS_INF * 10000L : 0;
       curValue += curEval.maxLogDerivative * 1000L;
       curValue += curEval.evalGoal == lastEvalGoal.get() ? 0 : 1;
 
@@ -628,10 +716,10 @@ public class StoredBoard {
     return false;
   }
 
-  public final synchronized void setSolved(int newEval, int alpha, int beta) {
+  public final synchronized void setSolved(int newEval) {
     setUpper(newEval);
     setLower(newEval);
-    updateFathers(alpha, beta);
+    updateFathers();
   }
 
   public final synchronized void setLower(int newLower) {
@@ -666,10 +754,12 @@ public class StoredBoard {
     setLeaf(leafEval, 4);
   }
 
-  protected synchronized void setLeaf(int leafEval, int alpha, int beta, int depth) {
-    weakLower = Math.max(weakLower, alpha);
-    weakUpper = Math.min(weakUpper, beta);
-    setLeaf(leafEval, depth);
+  synchronized void setWeakLowerUpper(int weakLower, int weakUpper) {
+    this.weakLower = weakLower;
+    this.weakUpper = weakUpper;
+    for (int i = weakLower; i <= weakUpper; i += 200) {
+      getOrAddEvaluation(i);
+    }
   }
 
   protected synchronized void setLeaf(int leafEval, int depth) {
@@ -677,7 +767,8 @@ public class StoredBoard {
     assert leafEval != -6500;
     this.leafEval = leafEval;
     for (int i = weakLower; i <= weakUpper; i += 200) {
-      Evaluation evaluation = getOrAddEvaluation(i);
+      Evaluation evaluation = getEvaluation(i);
+      assert evaluation != null;
       if (i < lower) {
         evaluation.setProved();
       } else if (i > upper) {
@@ -691,29 +782,6 @@ public class StoredBoard {
         assert Float.isFinite(disproofNumber) && disproofNumber > 0;
         evaluation.setLeaf(prob, proofNumber, disproofNumber, depth < 12 ? (float) (-0.5F * Math.pow(depth - 4, 2)) : -100000);
       }
-    }
-  }
-
-  public void updateDescendantsRecursive(int alpha, int beta) {
-    synchronized (this) {
-      if (isLeaf()) {
-        weakLower = Math.min(weakLower, alpha);
-        weakUpper = Math.max(weakUpper, beta);
-        assert leafEval != -6500;
-        setLeaf(leafEval, 4);
-        return;
-      }
-    }
-    for (StoredBoard child : children) {
-      child.updateDescendantsRecursive(-beta, -alpha);
-    }
-    synchronized (this) {
-      weakLower = Math.min(weakLower, alpha);
-      weakUpper = Math.max(weakUpper, beta);
-      for (int i = alpha; i <= beta; i += 200) {
-        getOrAddEvaluation(i).updateFather();
-      }
-      assert isLowerUpperOK();
     }
   }
 
@@ -796,6 +864,21 @@ public class StoredBoard {
 
   boolean isLowerUpperOK() {
     assert lower <= upper;
+    assert weakLower < weakUpper;
+    for (int i = weakLower; i <= weakUpper; i += 200) {
+      assert getEvaluation(i) != null;
+    }
+    if (!isLeaf() && Constants.ASSERT_LOWER_UPPER && Constants.MAX_PARALLEL_TASKS == 1) {
+      for (StoredBoard child : getChildren()) {
+        synchronized (child) {
+          assert weakLower >= -child.weakUpper;
+          if (weakUpper > -child.weakLower) {
+            System.out.println(this + " " + weakUpper + " " + (-child.weakLower));
+          }
+          assert weakUpper <= -child.weakLower;
+        }
+      }
+    }
     return true;
   }
 

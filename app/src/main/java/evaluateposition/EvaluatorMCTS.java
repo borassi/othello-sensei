@@ -34,11 +34,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   private int maxTimeMillis;
   private final HashMap hashMap;
   private boolean justStarted = false;
-  private int weakLower = -6300;
-  private int weakUpper = 6300;
   private long lastUpdateWeak = 0;
   private double bestStepsUntilEnd = 0;
-  private final AtomicBoolean updating = new AtomicBoolean(false);
 
   int lower = -6300;
   int upper = 6300;
@@ -82,7 +79,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
 
       if (moves == null) {
         int finalEval = BitPattern.getEvaluationGameOver(father.getPlayer(), father.getOpponent());
-        father.setSolved(finalEval, getAlpha(father), getBeta(father));
+        father.setSolved(finalEval);
         return 1;
       }
 
@@ -99,10 +96,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval)), nextEvaluator.getNVisited());
         }
       }
-      int alpha = getAlpha(father);
-      int beta = getBeta(father);
-
       synchronized (father) {
+        assert father.weakLower <= evalGoal && evalGoal <= father.weakUpper;
         for (int i = 0; i < children.length; ++i) {
           StoredBoard child = children[i];
           synchronized (child) {
@@ -110,16 +105,19 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             if (childEval != null) {
               nVisited += childEval.nVisited;
               if (child.leafEval == -6500) {
-                child.getOrAddEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
-                child.setLeaf(childEval.eval, -beta, -alpha, 4);
+                child.setWeakLowerUpper(-father.weakUpper, -father.weakLower);
+                child.getEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
+                child.setLeaf(childEval.eval, 4);
               }
             }
             child.addFather(father);
           }
         }
         father.children = children;
+        assert father.isLowerUpperOK();
       }
-      father.updateFathers(alpha, beta);
+      firstPosition.setNewLowerUpper(father);
+      father.updateFathers();
       return nVisited;
     }
 
@@ -138,7 +136,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
       }
       long seenPositions = nextEvaluator.getNVisited() + 1;
       StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 10);
-      board.updateFathers(getAlpha(board), getBeta(board));
+      board.updateFathers();
       return seenPositions;
     }
 
@@ -157,10 +155,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             board.getPlayer(), board.getOpponent(), d, -6400, 6400);
         seenPositions += nextEvaluator.getNVisited();
       }
-      int alpha = getAlpha(board);
-      int beta = getBeta(board);
-      board.setLeaf(curEval, alpha, beta, d);
-      board.updateFathers(getAlpha(board), getBeta(board));
+      board.setLeaf(curEval, d);
+      board.updateFathers();
       return seenPositions;
     }
 
@@ -204,7 +200,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     for (int i = 0; i < threads.length; ++i) {
       threads[i] = new EvaluatorThread(evaluatorMidgameBuilder.get());
     }
-    this.firstPosition = StoredBoard.initialStoredBoard(new Board(0, 0));
   }
 
   public int getLower() { return lower; }
@@ -226,7 +221,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   private double stepsUntilEnd() {
-    return firstPosition.stepsUntilEnd(weakLower, weakUpper);
+    return firstPosition.stepsUntilEnd();
   }
 
   protected void finalizePosition(StoredBoardBestDescendant position, long nVisited) {
@@ -236,6 +231,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   
   protected synchronized boolean checkFinished() {
     synchronized (firstPosition) {
+      assert firstPosition.isLowerUpperOK();
       if (hashMap.size() > Constants.HASH_MAP_SIZE / 2) {
         hashMap.reset();
       }
@@ -271,63 +267,17 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   private void updateWeakLowerUpper() {
-    if (updating.getAndSet(true)) {
-      return;
-    }
-    synchronized (this) {
-      if (getNVisited() < this.lastUpdateWeak * 1.3 || firstPosition.isLeaf()) {
-        updating.set(false);
-        return;
+    synchronized (firstPosition) {
+      if (getNVisited() < this.lastUpdateWeak * 1.3) {
+        if (firstPosition.getProb(firstPosition.getWeakLower()) > Constants.PROB_INCREASE_WEAK_EVAL &&
+                firstPosition.getProb(firstPosition.getWeakUpper()) < 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+          return;
+        }
       }
     }
-    int firstPosLower;
-    int firstPosUpper;
-    int newWeakLower;
-    int newWeakUpper;
-    float probLower;
-    float probUpper;
-    int oldWeakLower;
-    int oldWeakUpper;
-    synchronized (this) {
-      oldWeakLower = weakLower;
-      oldWeakUpper = weakUpper;
-      firstPosLower = firstPosition.getLower();
-      firstPosUpper = firstPosition.getUpper();
-      probLower = firstPosition.getProb(weakLower);
-      probUpper = firstPosition.getProb(weakUpper);
-      newWeakLower = Math.max(lower, firstPosition.getPercentileLower(Constants.PROB_REDUCE_WEAK_EVAL) - 100);
-      newWeakUpper = Math.min(upper, firstPosition.getPercentileUpper(Constants.PROB_REDUCE_WEAK_EVAL) + 100);
+    if (!firstPosition.updateWeakLowerUpper()) {
+      lastUpdateWeak = getNVisited();
     }
-
-    assert newWeakLower <= firstPosUpper;
-    assert newWeakUpper >= firstPosLower;
-
-    if (newWeakLower < oldWeakLower && probLower > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-      newWeakLower = oldWeakLower;
-    }
-    if (newWeakUpper > oldWeakUpper && probUpper < Constants.PROB_INCREASE_WEAK_EVAL) {
-      newWeakUpper = oldWeakUpper;
-    }
-//    nextPositionLock.lock();
-    synchronized (this) {
-      weakLower = newWeakLower;
-      weakUpper = newWeakUpper;
-      if (newWeakUpper > oldWeakUpper) {
-        firstPosition.updateDescendantsRecursive(oldWeakUpper + 200, newWeakUpper);
-      }
-      if (newWeakLower < oldWeakLower) {
-        firstPosition.updateDescendantsRecursive(newWeakLower, oldWeakLower - 200);
-      }
-    }
-    updating.set(false);
-  }
-
-  protected int getAlpha(StoredBoard board) {
-    return board.depth % 2 == 0 ? weakLower : -weakUpper;
-  }
-
-  protected int getBeta(StoredBoard board) {
-    return board.depth % 2 == 0 ? weakUpper : -weakLower;
   }
 
   protected StoredBoardBestDescendant getNextPosition() {
@@ -343,7 +293,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         return null;
       }
 //      System.out.println("  " + weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
-      result = firstPosition.bestDescendant(weakLower, weakUpper);
+      result = firstPosition.bestDescendant();
       if (result != null) {
         break;
       }
@@ -370,15 +320,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     empty();
     StoredBoard.proofNumberForAlphaBeta.set(0);
     StoredBoard.avoidNextPosFailCoeff.set(8000);
-    firstPosition = StoredBoard.initialStoredBoard(player, opponent);
+    int eval = threads[0].nextEvaluator.evaluate(player, opponent, 4, -6400, 6400);
+    firstPosition = StoredBoard.initialStoredBoard(player, opponent, eval);
     add(firstPosition);
-    this.weakUpper = upper;
-    this.weakLower = lower;
-    firstPosition.setLeaf(0, -6300, 6300, 64);
     this.lastUpdateWeak = 0;
     if (Constants.ASSERT_EXTENDED) {
       assertIsAllOKRecursive(firstPosition);
     }
+    assert firstPosition.isLowerUpperOK();
   }
 
   int temp = 0;
@@ -469,6 +418,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
   }
 
   public void addChildren(StoredBoard board) {
-    addChildren(board.bestDescendant(weakLower, weakUpper));
+    addChildren(board.bestDescendant());
   }
 }

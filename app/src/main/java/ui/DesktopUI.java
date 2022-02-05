@@ -108,15 +108,15 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
     StoredBoard storedBoard = annotations.storedBoard;
-    int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
-    int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
+    int lower = storedBoard.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = storedBoard.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
     String rows =
         String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0) + "\n" +
         Utils.prettyPrintDouble(storedBoard.getDescendants()) + "\n" + (
         lower == upper ?
             Utils.prettyPrintDouble(storedBoard.proofNumber(lower-100)) + " " +
                 Utils.prettyPrintDouble(storedBoard.disproofNumber(lower+100)) :
-            ("[" + (-lower/100) + ", " + (-upper/100) + "]")
+            ("[" + (-upper/100) + ", " + (-lower/100) + "]")
         );
 
     int x = BitPattern.getX(move);
