@@ -130,7 +130,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         board.setLower(eval);
       }
       long seenPositions = nextEvaluator.getNVisited() + 1;
-      StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 10);
+      StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
       board.updateFathers();
       return seenPositions;
     }
@@ -166,11 +166,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         }
         StoredBoard board = position.eval.getStoredBoard();
         firstPosition.setNewLowerUpper(board);
-        if (board != firstPosition && board.toBeSolved(position.eval.evalGoal) && board.isLeaf()) {
+        assert board.isLeaf();
+        if (board != firstPosition && board.toBeSolved(position.eval.evalGoal)) {
           nVisited = solvePosition(position);
-        } else if (size < 0.8 * maxSize ||
-                   (size < 0.9 * maxSize && board.depth < 9) ||
-                   (size < maxSize && board.depth < 5)) {
+        } else if (size < maxSize) {
           nVisited = addChildren(position);
         } else {
           nVisited = deepenPosition(position);
@@ -325,15 +324,10 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     assert firstPosition.isLowerUpperOK();
   }
 
-  int temp = 0;
   public boolean isSolved() {
     if (Constants.APPROX_ONLY) {
       if (firstPosition.isPartiallySolved()) {
-        if (temp++ > this.size * Constants.SIZE_FOR_APPROX) {
-          return true;
-        }
-      } else {
-        temp = 0;
+        return true;
       }
     }
     return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;

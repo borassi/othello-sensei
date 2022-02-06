@@ -699,6 +699,9 @@ public class StoredBoard {
     } else if (nEmpties <= Constants.EMPTIES_FOR_FORCED_MIDGAME - 2) {
       return true;
     }
+    assert isLeaf();
+    assert eval.proofNumber > 0 && eval.disproofNumber > 0;
+    assert nEmpties > 0 && nEmpties <= 60;
     if (eval.getProb() >= 1 - Constants.PROB_FOR_EARLY_MIDGAME) {
       return eval.proofNumber < proofNumberForAlphaBeta.get();
     } else if (eval.getProb() <= Constants.PROB_FOR_EARLY_MIDGAME) {
