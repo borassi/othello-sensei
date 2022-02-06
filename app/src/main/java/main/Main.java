@@ -188,7 +188,7 @@ public class Main implements Runnable {
     for (int i = 0; i < boardsToEvaluate.length; ++i) {
       EvaluatorMCTS evaluator = EVALUATORS[i];
       Board board = boardsToEvaluate[i];
-      evaluator.evaluatePosition(board, ui.lower(), ui.upper(), ui.maxVisited(), 20);
+      evaluator.evaluatePosition(board, ui.lower(), ui.upper(), ui.maxVisited(), 50);
     }
   }
 

@@ -93,9 +93,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval)), nextEvaluator.getNVisited());
         }
       }
-      firstPosition.setNewLowerUpper(father);
       synchronized (father) {
-        assert father.weakLower <= evalGoal && evalGoal <= father.weakUpper;
         for (int i = 0; i < children.length; ++i) {
           StoredBoard child = children[i];
           synchronized (child) {
@@ -103,7 +101,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             if (childEval != null) {
               nVisited += childEval.nVisited;
               if (child.leafEval == -6500) {
-                child.setWeakLowerUpper((short) -father.weakUpper, (short) -father.weakLower);
+                child.setWeakLowerUpper((short) Math.min(-father.weakUpper, -evalGoal), (short) Math.max(-father.weakLower, -evalGoal));
                 child.getEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
                 child.setLeaf((short) childEval.eval, (short) 4);
               }
@@ -167,6 +165,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
           break;
         }
         StoredBoard board = position.eval.getStoredBoard();
+        firstPosition.setNewLowerUpper(board);
         if (board != firstPosition && board.toBeSolved(position.eval.evalGoal) && board.isLeaf()) {
           nVisited = solvePosition(position);
         } else if (size < 0.8 * maxSize ||
