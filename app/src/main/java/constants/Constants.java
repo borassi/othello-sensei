@@ -27,10 +27,10 @@ public class Constants {
   public final static int VISITED_ENDGAME_GOAL = 150;
   public final static int EMPTIES_FOR_ENDGAME = 10;
 
-  public final static int HASH_MAP_SIZE = MOBILE ? 100000 : 1000000;
-  public final static int MCTS_SIZE = MOBILE ? 1000000: 30000000;
+  public final static int HASH_MAP_SIZE = MOBILE ? 100000 : 5000000;
+  public final static int MCTS_SIZE = MOBILE ? 1000000: 16000000;
 
-  public final static int MAX_PARALLEL_TASKS = 12;//Runtime.getRuntime().availableProcessors();
+  public final static int MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
   public final static float MIN_PROB_LEAF = 0F;
   public final static float SIZE_FOR_APPROX = 0F;
   public final static float MULT_STDDEV = 1F;

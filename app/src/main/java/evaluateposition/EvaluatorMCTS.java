@@ -23,10 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class EvaluatorMCTS extends HashMapVisitedPositions {
   private long maxNVisited;
@@ -89,13 +86,14 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         long flip = moves[i];
         long newPlayer = father.getOpponent() & ~flip;
         long newOpponent = father.getPlayer() | flip;
-        StoredBoard child = getOrAdd(newPlayer, newOpponent, father.depth + 1);
+        StoredBoard child = getOrAdd(newPlayer, newOpponent, (short) (father.depth + 1));
         children[i] = child;
         if (child.leafEval == -6500) {
           int eval = nextEvaluator.evaluate(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
           childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval)), nextEvaluator.getNVisited());
         }
       }
+      firstPosition.setNewLowerUpper(father);
       synchronized (father) {
         assert father.weakLower <= evalGoal && evalGoal <= father.weakUpper;
         for (int i = 0; i < children.length; ++i) {
@@ -105,9 +103,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             if (childEval != null) {
               nVisited += childEval.nVisited;
               if (child.leafEval == -6500) {
-                child.setWeakLowerUpper(-father.weakUpper, -father.weakLower);
+                child.setWeakLowerUpper((short) -father.weakUpper, (short) -father.weakLower);
                 child.getEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
-                child.setLeaf(childEval.eval, 4);
+                child.setLeaf((short) childEval.eval, (short) 4);
               }
             }
             child.addFather(father);
@@ -116,7 +114,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         father.children = children;
         assert father.isLowerUpperOK();
       }
-      firstPosition.setNewLowerUpper(father);
       father.updateFathers();
       return nVisited;
     }
@@ -155,7 +152,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
             board.getPlayer(), board.getOpponent(), d, -6400, 6400);
         seenPositions += nextEvaluator.getNVisited();
       }
-      board.setLeaf(curEval, d);
+      board.setLeaf((short) curEval, (short) d);
       board.updateFathers();
       return seenPositions;
     }
@@ -303,7 +300,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         e.printStackTrace();
       }
     }
-    assert result != null;
     assert result.eval.getStoredBoard().isLeaf();
     return result;
   }
@@ -321,7 +317,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     StoredBoard.proofNumberForAlphaBeta.set(0);
     StoredBoard.avoidNextPosFailCoeff.set(8000);
     int eval = threads[0].nextEvaluator.evaluate(player, opponent, 4, -6400, 6400);
-    firstPosition = StoredBoard.initialStoredBoard(player, opponent, eval);
+    firstPosition = StoredBoard.initialStoredBoard(player, opponent, (short) eval);
     add(firstPosition);
     this.lastUpdateWeak = 0;
     if (Constants.ASSERT_EXTENDED) {

@@ -30,10 +30,10 @@ public class PossibleEndgameProofsTest {
 
   @Test
   public void testOperations() {
-    PossibleEndgameProofs c1 = new PossibleEndgameProofs(new StoredBoard(2, 1, 0), 1);
-    PossibleEndgameProofs c2 = new PossibleEndgameProofs(new StoredBoard(4, 1, 0), 1);
-    PossibleEndgameProofs c3 = new PossibleEndgameProofs(new StoredBoard(8, 1, 0), 1);
-    PossibleEndgameProofs c4 = new PossibleEndgameProofs(new StoredBoard(16, 1, 0), 1);
+    PossibleEndgameProofs c1 = new PossibleEndgameProofs(new StoredBoard(2, 1, (short) 0), 1);
+    PossibleEndgameProofs c2 = new PossibleEndgameProofs(new StoredBoard(4, 1, (short) 0), 1);
+    PossibleEndgameProofs c3 = new PossibleEndgameProofs(new StoredBoard(8, 1, (short) 0), 1);
+    PossibleEndgameProofs c4 = new PossibleEndgameProofs(new StoredBoard(16, 1, (short) 0), 1);
     PossibleEndgameProofs.EndgameProof p1 = new PossibleEndgameProofs.EndgameProof(100, c1, c2);
     PossibleEndgameProofs.EndgameProof p2 = new PossibleEndgameProofs.EndgameProof(120, c1);
     PossibleEndgameProofs.EndgameProof greaterThanP2 = new PossibleEndgameProofs.EndgameProof(140, c1, c3);
@@ -41,7 +41,7 @@ public class PossibleEndgameProofsTest {
     PossibleEndgameProofs.EndgameProof greaterThanMany = new PossibleEndgameProofs.EndgameProof(140, c1, c2, c3);
     PossibleEndgameProofs.EndgameProof p4 = new PossibleEndgameProofs.EndgameProof(200);
     
-    StoredBoard tmp = new StoredBoard(0, 0, 0);
+    StoredBoard tmp = new StoredBoard(0, 0, (short) 0);
     PossibleEndgameProofs proofs = new PossibleEndgameProofs(tmp, p3, greaterThanP2, p1, p2, p3, greaterThanMany);
     proofs.simplify();
     assertListEqualsIgnoreOrder(Arrays.asList(p3, p1, p2), proofs.orClauses);
@@ -91,14 +91,14 @@ public class PossibleEndgameProofsTest {
       long n5 = (int) (Math.random() * 1000);
       long n6 = (int) (Math.random() * 1000);
 
-      PossibleEndgameProofs g = new PossibleEndgameProofs(new StoredBoard(7, 0, 0), n6);
+      PossibleEndgameProofs g = new PossibleEndgameProofs(new StoredBoard(7, 0, (short) 0), n6);
       PossibleEndgameProofs c = new PossibleEndgameProofs(
-          new StoredBoard(3, 0, 0),
+          new StoredBoard(3, 0, (short) 0),
           new PossibleEndgameProofs.EndgameProof(n4),
           new PossibleEndgameProofs.EndgameProof(n5, g)        
       );
       PossibleEndgameProofs f = new PossibleEndgameProofs(
-          new StoredBoard(1, 0, 0),
+          new StoredBoard(1, 0, (short) 0),
           new PossibleEndgameProofs.EndgameProof(n1),
           new PossibleEndgameProofs.EndgameProof(n2, c, g),
           new PossibleEndgameProofs.EndgameProof(n3, c)

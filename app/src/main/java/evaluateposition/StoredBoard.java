@@ -35,34 +35,31 @@ public class StoredBoard {
       311, 290, 300, 265, 267, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250,
       250, 250, 250, 250, 250};
 
+  static AtomicInteger lastEvalGoal = new AtomicInteger(-6500);
+  final static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
 
   private final long player;
   private final long opponent;
-  static AtomicInteger lastEvalGoal = new AtomicInteger(-6500);
   private AtomicBoolean updating;
-
-  final static EndgameTimeEstimatorInterface endgameTimeEstimator = new EndgameTimeEstimator();
-  public final ArrayList<StoredBoard> fathers;
   StoredBoard[] children;
-
-  int nEmpties;
+  short nEmpties;
+  short depth;
+  short lower = -6400;
+  short upper = 6400;
+  short weakLower = -6500;
+  short weakUpper = -6500;
+  short leafEval = -6500;
+  public final ArrayList<StoredBoard> fathers;
   private final Evaluation[] evaluations = new Evaluation[64];
-  public int depth;
 
   StoredBoard next;
   StoredBoard prev;
-  int leafEval = -6500;
-  int lower = -6400;
-  int upper = 6400;
-  int lowerEvaluationValue;
-  int weakLower = -6500;
-  int weakUpper = -6500;
 
   public static AtomicInteger avoidNextPosFailCoeff = new AtomicInteger(2000);
   public static AtomicInteger proofNumberForAlphaBeta = new AtomicInteger(0);
 
-  private static final int PROB_STEP = 255;
-  private static final int[] COMBINE_PROB;
+  private static final short PROB_STEP = 255;
+  private static final short[] COMBINE_PROB;
   private static final int[] LOG_DERIVATIVE;
   public static final int LOG_DERIVATIVE_MINUS_INF = -1000000000;
   public static final int LOG_DERIVATIVE_MULTIPLIER = 10000;
@@ -70,7 +67,7 @@ public class StoredBoard {
 
   static {
     ProbCombiner combiner = Constants.PROB_COMBINER;
-    COMBINE_PROB = new int[(PROB_STEP + 1) * (PROB_STEP + 1)];
+    COMBINE_PROB = new short[(PROB_STEP + 1) * (PROB_STEP + 1)];
     LOG_DERIVATIVE = new int[(PROB_STEP + 1)];
     for (int i = 0; i <= PROB_STEP; ++i) {
       double x1 = i / (double) PROB_STEP;
@@ -79,32 +76,31 @@ public class StoredBoard {
 
       for (int j = 0; j <= PROB_STEP; ++j) {
         double x2 = j / (double) PROB_STEP;
-        COMBINE_PROB[(i << 8) | j] = (int) Math.round(combiner.inverse(combiner.f(x1) * combiner.f(x2)) * PROB_STEP);
+        COMBINE_PROB[(i << 8) | j] = (short) Math.round(combiner.inverse(combiner.f(x1) * combiner.f(x2)) * PROB_STEP);
       }
     }
   }
 
   public class Evaluation {
-    private int prob;
+    private short prob;
+    final short evalGoal;
     protected float proofNumber;
     protected float disproofNumber;
     int maxLogDerivative;
-    final int evalGoal;
-    float bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
     long descendants = 0;
 
     public float proofNumber() { return proofNumber; }
     public float disproofNumber() { return disproofNumber; }
     public int maxLogDerivative() { return maxLogDerivative; }
 
-    public Evaluation(int evalGoal) {
+    public Evaluation(short evalGoal) {
       assert evalGoal <= 6400 && evalGoal >= -6400;
       assert (evalGoal + 6400) % 200 == 100;
       if (Constants.ASSERT_LOCKS) {
         assert Thread.holdsLock(StoredBoard.this);
       }
       this.evalGoal = evalGoal;
-      this.prob = PROB_STEP;
+      this.prob = (short) PROB_STEP;
     }
 
     private boolean isSolved() {
@@ -277,10 +273,6 @@ public class StoredBoard {
 
       assert child.proofNumber > 0;
       disproofNumber += child.proofNumber;
-      if (child.proofNumber > bestDisproofNumberValue) {
-        assert Utils.arrayContains(getChildren(), child.getStoredBoard());
-        bestDisproofNumberValue = child.proofNumber;
-      }
       if (child.getProb() > 0 && child.getProb() < 1) {
         int currentLogDerivative = child.maxLogDerivative - LOG_DERIVATIVE[child.prob];
         if (currentLogDerivative > maxLogDerivative) {
@@ -317,8 +309,8 @@ public class StoredBoard {
     }
   }
 
-  private static int combineProb(int p1, int p2) {
-    return COMBINE_PROB[(p1 << 8) | p2];
+  private static short combineProb(int p1, int p2) {
+    return COMBINE_PROB[(((int) p1) << 8) | p2];
   }
 
   static int toEvaluationIndex(int eval) {
@@ -328,7 +320,7 @@ public class StoredBoard {
     return (eval + 6300) / 200;
   }
 
-  protected StoredBoard(long player, long opponent, int depth) {
+  protected StoredBoard(long player, long opponent, short depth) {
     this.player = player;
     this.opponent = opponent;
     this.depth = depth;
@@ -336,24 +328,24 @@ public class StoredBoard {
     this.children = null;
     this.prev = null;
     this.next = null;
-    this.nEmpties = 64 - Long.bitCount(player | opponent);
+    this.nEmpties = (short) (64 - Long.bitCount(player | opponent));
   }
 
   public static StoredBoard initialStoredBoard(Board b) {
-    return initialStoredBoard(b.getPlayer(), b.getOpponent(), 0);
+    return initialStoredBoard(b.getPlayer(), b.getOpponent(), (short) 0);
   }
 
-  private static final int roundEval(int eval) {
-    return Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));
+  private static short roundEval(int eval) {
+    return (short) Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));
   }
   
-  public static StoredBoard initialStoredBoard(long player, long opponent, int eval) {
-    StoredBoard result = new StoredBoard(player, opponent, 0);
+  public static StoredBoard initialStoredBoard(long player, long opponent, short eval) {
+    StoredBoard result = new StoredBoard(player, opponent, (short) 0);
     result.updating = new AtomicBoolean(false);
     int stddev = (int) (ERRORS[result.nEmpties] * Constants.MULT_STDDEV);
     result.setWeakLowerUpper(roundEval(eval - 3 * stddev), roundEval(eval + 3 * stddev));
-    result.setLeaf(eval, 2);
-    result.setLeaf(0, 1);
+    result.setLeaf(eval, (short) 2);
+    result.setLeaf((short) 0, (short) 1);
     return result;
   }
   
@@ -412,10 +404,10 @@ public class StoredBoard {
     if (Constants.ASSERT_LOCKS) {
       assert Thread.holdsLock(father);
     }
-    father.lower = Math.max(father.lower, -upper);
-    father.upper = Math.max(father.upper, -lower);
-    father.weakUpper = Math.min(father.weakUpper, -weakLower);
-    father.weakLower = Math.max(father.weakLower, -weakUpper);
+    father.lower = (short) Math.max(father.lower, -upper);
+    father.upper = (short) Math.max(father.upper, -lower);
+    father.weakUpper = (short) Math.min(father.weakUpper, -weakLower);
+    father.weakLower = (short) Math.max(father.weakLower, -weakUpper);
     for (int i = father.weakLower; i <= father.weakUpper; i += 200) {
       Evaluation eval = getEvaluation(-i);
       assert eval != null;
@@ -433,9 +425,8 @@ public class StoredBoard {
       assert eval != null;
       eval.proofNumber = Float.POSITIVE_INFINITY;
       eval.disproofNumber = 0;
-      eval.prob = PROB_STEP;
+      eval.prob = (short) PROB_STEP;
       eval.maxLogDerivative = LOG_DERIVATIVE_MINUS_INF;
-      eval.bestDisproofNumberValue = Float.NEGATIVE_INFINITY;
     }
     for (StoredBoard childBoard : getChildren()) {
       childBoard.updateFatherWithThisChild(this);
@@ -448,7 +439,7 @@ public class StoredBoard {
         eval.maxLogDerivative = eval.maxLogDerivative + LOG_DERIVATIVE[eval.prob];
         assert eval.maxLogDerivative > LOG_DERIVATIVE_MINUS_INF;
       }
-      eval.prob = PROB_STEP - eval.prob;
+      eval.prob = (short) (PROB_STEP - eval.prob);
       assert Constants.MAX_PARALLEL_TASKS > 1 || eval.isChildLogDerivativeOK();
     }
     assert isLowerUpperOK();
@@ -462,8 +453,8 @@ public class StoredBoard {
       return;
     }
     board.setWeakLowerUpper(
-        board.depth % 2 == 0 ? weakLower : -weakUpper,
-        board.depth % 2 == 0 ? weakUpper : -weakLower);
+        (short) (board.depth % 2 == 0 ? weakLower : -weakUpper),
+        (short) (board.depth % 2 == 0 ? weakUpper : -weakLower));
   }
 
   protected void updateFathers() {
@@ -612,26 +603,26 @@ public class StoredBoard {
         assert weakLower < weakUpper;
         reduced = true;
       }
-      if (!extendLower && !extendUpper && probUpperPrev < Constants.PROB_REDUCE_WEAK_EVAL && !extendLower) {
+      if (!extendLower && !extendUpper && probUpperPrev < Constants.PROB_REDUCE_WEAK_EVAL) {
         weakUpper -= 200;
         assert weakLower < weakUpper;
         reduced = true;
       }
     }
     if (extendLower) {
-      this.extendEval(weakLower - 200);
+      this.extendEval((short) (weakLower - 200));
     }
     if (extendUpper) {
-      this.extendEval(weakUpper + 200);
+      this.extendEval((short) (weakUpper + 200));
     }
     assert isLowerUpperOK();
     updating.set(false);
     return reduced || extendUpper || extendLower;
   }
 
-  public void extendEval(int valueToUpdate) {
+  public void extendEval(short valueToUpdate) {
     synchronized (this) {
-      getOrAddEvaluation(valueToUpdate);
+      addEvaluation(valueToUpdate);
       if (isLeaf()) {
         if (valueToUpdate < weakLower) {
           weakLower = valueToUpdate;
@@ -639,13 +630,13 @@ public class StoredBoard {
           weakUpper = valueToUpdate;
         }
         assert leafEval != -6500;
-        setLeaf(leafEval, 4);
+        setLeaf(leafEval, (short) 4);
         assert isLowerUpperOK();
         return;
       }
     }
     for (StoredBoard child : children) {
-      child.extendEval(-valueToUpdate);
+      child.extendEval((short) -valueToUpdate);
     }
     synchronized (this) {
       if (valueToUpdate < weakLower) {
@@ -725,8 +716,8 @@ public class StoredBoard {
   public final synchronized void setLower(int newLower) {
     assert isLeaf();
     assert leafEval != -6500;
-    this.leafEval = Math.max(this.leafEval, newLower);
-    lower = Math.max(lower, newLower);
+    this.leafEval = (short) Math.max(this.leafEval, newLower);
+    lower = (short) Math.max(lower, newLower);
     for (int eval = -6300; eval < newLower; eval += 200) {
       Evaluation e = getEvaluation(eval);
       if (e != null) {
@@ -739,8 +730,8 @@ public class StoredBoard {
   public final synchronized void setUpper(int newUpper) {
     assert isLeaf();
     assert leafEval != -6500;
-    this.leafEval = Math.min(this.leafEval, newUpper);
-    upper = Math.min(upper, newUpper);
+    this.leafEval = (short) Math.min(this.leafEval, newUpper);
+    upper = (short) Math.min(upper, newUpper);
     for (int eval = newUpper + 100; eval <= 6300; eval += 200) {
       Evaluation e = getEvaluation(eval);
       if (e != null) {
@@ -750,19 +741,15 @@ public class StoredBoard {
     assert isLowerUpperOK();
   }
 
-  public synchronized void setLeaf(int leafEval) {
-    setLeaf(leafEval, 4);
-  }
-
-  synchronized void setWeakLowerUpper(int weakLower, int weakUpper) {
+  synchronized void setWeakLowerUpper(short weakLower, short weakUpper) {
     this.weakLower = weakLower;
     this.weakUpper = weakUpper;
-    for (int i = weakLower; i <= weakUpper; i += 200) {
-      getOrAddEvaluation(i);
+    for (short i = weakLower; i <= weakUpper; i += 200) {
+      addEvaluation(i);
     }
   }
 
-  protected synchronized void setLeaf(int leafEval, int depth) {
+  protected synchronized void setLeaf(short leafEval, short depth) {
     assert isLeaf();
     assert leafEval != -6500;
     this.leafEval = leafEval;
@@ -792,7 +779,7 @@ public class StoredBoard {
     return evaluations[toEvaluationIndex(evalGoal)];
   }
 
-  private Evaluation addEvaluation(int evalGoal) {
+  private Evaluation addEvaluation(short evalGoal) {
 //    assert threadId == Thread.currentThread().getId();
     int index = toEvaluationIndex(evalGoal);
     if (evaluations[index] != null) {
@@ -803,21 +790,13 @@ public class StoredBoard {
     return eval;
   }
 
-  protected synchronized Evaluation getOrAddEvaluation(int evalGoal) {
-    Evaluation eval = evaluations[toEvaluationIndex(evalGoal)];
-    if (eval != null) {
-      return eval;
-    }
-    return addEvaluation(evalGoal);
-  }
-
-  private static int roundProb(float prob) {
+  private static short roundProb(float prob) {
     if (prob <= Constants.MIN_PROB_LEAF) {
       return 0;
     } else if (prob >= 1 - Constants.MIN_PROB_LEAF) {
       return PROB_STEP;
     }
-    return Math.round(prob * PROB_STEP);
+    return (short) Math.round(prob * PROB_STEP);
   }
 
   public int childLogDerivative(StoredBoard child, int evalGoal) {

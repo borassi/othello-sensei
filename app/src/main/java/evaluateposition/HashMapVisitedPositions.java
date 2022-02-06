@@ -59,7 +59,7 @@ public class HashMapVisitedPositions {
     assert b.isPrevNextOK();
   }
 
-  public synchronized StoredBoard getOrAdd(long player, long opponent, int depth) {
+  public synchronized StoredBoard getOrAdd(long player, long opponent, short depth) {
     StoredBoard b = get(player, opponent);
     if (b == null || b.depth != depth || Constants.IGNORE_TRANSPOSITIONS) {
       b = new StoredBoard(player, opponent, depth);

@@ -74,7 +74,7 @@ public class Main implements Runnable {
     Main.ui = ui;
     HASH_MAP = new HashMap(Constants.HASH_MAP_SIZE);
     for (int i = 0; i < EVALUATORS.length; ++i) {
-      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTS_SIZE / 20, 2 * Constants.MCTS_SIZE / 20, HASH_MAP);
+      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
     }
   }
 
