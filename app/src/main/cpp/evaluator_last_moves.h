@@ -19,8 +19,7 @@
 
 #include <jni.h>
 #include "get_flip.h"
-
-constexpr Eval kMinEval = -66;
+#include "hash_map.h"
 
 inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept {
@@ -57,9 +56,22 @@ Eval EvalFiveEmpties(
     const BitPattern last_flip, const BitPattern stable,
     int* const n_visited);
 
-Eval Evaluate(
+class EvaluatorLastMoves {
+ public:
+  EvaluatorLastMoves(HashMap* hash_map) : hash_map_(hash_map) {}
+  Eval Evaluate(
     const BitPattern player, const BitPattern opponent,
     const Eval lower, const Eval upper, int* const n_visited);
+
+ private:
+  HashMap* hash_map_;
+  Eval Evaluate(
+    const BitPattern player, const BitPattern opponent,
+    const Eval lower, const Eval upper, bool passed,
+    const BitPattern last_flip, const BitPattern stable,
+    int* const n_visited);
+  Epoch epoch_;
+};
 
 #ifdef __cplusplus
 extern "C" {

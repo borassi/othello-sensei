@@ -15,6 +15,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <math.h>
 #include <stdio.h>
 #include "bitpattern.h"
 
@@ -90,7 +91,8 @@ TEST(BitPattern, RowToFirstRow) {
     Move move = rand() % 64;
     BitPattern row = GetRow(move);
     LastRow result = RowToLastRow(p, row, move & 56);
-    EXPECT_TRUE(result < 256);
+    // To silence a warning, in case we change the type of LastRow.
+    EXPECT_TRUE((int) result < 256);
     EXPECT_EQ((p & row), LastRowToRow(result, move & 56));
   }
 }
@@ -101,7 +103,7 @@ TEST(BitPattern, ColumnToFirstRow) {
     Move move = rand() % 64;
     BitPattern column = GetColumn(move);
     LastRow result = ColumnToLastRow(p, column, move & 7);
-    EXPECT_TRUE(result < 256);
+    EXPECT_TRUE((int) result < 256);
     EXPECT_EQ((p & column), LastRowToColumn(result, move & 7));
   }
 }
@@ -112,7 +114,34 @@ TEST(BitPattern, DiagonalToFirstRow) {
     Move move = rand() % 64;
     BitPattern diagonal = rand() % 2 ? GetDiag7(move) : GetDiag9(move);
     LastRow result = DiagonalToLastRow(p, diagonal);
-    EXPECT_TRUE(result < 256);
+    EXPECT_TRUE((int) result < 256);
     EXPECT_EQ((p & diagonal), LastRowToDiagonal(result, diagonal));
   }
+}
+
+TEST(BitPattern, Hash) {
+  BitPattern player = RandomPattern();
+  BitPattern opponent = RandomPattern() & ~player;
+  int n = 1 << kBitHashMap;
+  std::vector<int> hashes(n, 0);
+
+  for (int i = 0; i < n; ++i) {
+    if (rand() % 2 == 0) {
+      player = player ^ (1L << (rand() % 64));
+      opponent = opponent & ~player;
+    } else {
+      opponent = opponent ^ (1L << (rand() % 64));
+      player = player & ~opponent;
+    }
+    int hash = Hash(player, opponent);
+    EXPECT_GE(hash, 0);
+    EXPECT_LT(hash, 1L << kBitHashMap);
+    hashes[hash % n]++;
+  }
+  int full = 0;
+  for (int i = 0; i < n; ++i) {
+    full += hashes[i] > 0 ? 1 : 0;
+    EXPECT_LT(hashes[i], log(n));
+  }
+  EXPECT_GT(full, 0.9 * n / exp(1));
 }

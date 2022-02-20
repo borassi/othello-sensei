@@ -99,7 +99,7 @@ struct StableDisksEdge {
     arr[Hash(player, opponent)] = stable;
   }
 
-  constexpr StableDisksEdge():arr() {
+  constexpr StableDisksEdge() : arr() {
     for (int empties = 0; empties < 256; empties++) {
       for (int player = 0; player < 256; player++) {
         FillStableDisks(player, 255 & ~(empties | player));
@@ -179,9 +179,9 @@ inline BitPattern GetFullRows(BitPattern empty) {
 }
 BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable = 0);
 
-inline Eval GetUpperBoundFromStable(long stable, long opponent) __attribute__((always_inline));
+inline Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) __attribute__((always_inline));
 
-inline Eval GetUpperBoundFromStable(long stable, long opponent) {
+inline Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) {
   return 64 - 2 * __builtin_popcountll(stable & opponent);
 }
 

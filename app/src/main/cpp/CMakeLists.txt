@@ -16,6 +16,11 @@
 # cd .../AndroidStudioProjects/OthelloSensei/app
 # cmake -S src/main/cpp -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
 
+# Profile:
+# cmake -S src/main/cpp -B build -DANDROID=FALSE -DPROFILE=TRUE && cmake --build build
+# valgrind --tool=callgrind --log_file=/tmp/valgrind ./build/evaluator_last_moves_profile
+# kcachegrind callgrind.out.XXXXX
+
 # Sets the minimum version of CMake required to build the native library.
 cmake_minimum_required(VERSION 3.10.2)
 
@@ -25,6 +30,9 @@ project("othellosensei")
 
 IF(NOT DEFINED ANDROID)
     SET(ANDROID TRUE)
+ENDIF()
+IF(NOT DEFINED PROFILE)
+    SET(PROFILE FALSE)
 ENDIF()
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
@@ -66,6 +74,51 @@ IF(NOT ANDROID)
           -m64
           -march=native
   )
+ENDIF()
+IF (PROFILE)
+    SET(
+            RELEASE_FLAGS
+            ${RELEASE_FLAGS}
+            -g
+    )
+ENDIF()
+
+add_library(
+        constants
+        constants.h
+)
+
+set_target_properties(
+        constants PROPERTIES LINKER_LANGUAGE CXX
+)
+
+add_library(
+        random
+        random.h
+)
+set_target_properties(
+        random PROPERTIES LINKER_LANGUAGE CXX
+)
+
+target_compile_options(
+        random
+        PUBLIC
+        ${RELEASE_FLAGS}
+)
+
+IF(NOT ANDROID)
+    add_executable(
+            random_test
+            random_test.cpp
+    )
+
+    target_link_libraries(
+            random_test
+            LINK_PUBLIC
+            random
+            GTest::gtest
+            GTest::gtest_main
+    )
 ENDIF()
 
 add_library(
@@ -205,6 +258,48 @@ IF(NOT ANDROID)
 ENDIF()
 
 add_library(
+        hash_map
+        hash_map.h
+        hash_map.cpp
+)
+
+target_link_libraries(
+        hash_map
+        LINK_PRIVATE
+        bitpattern
+)
+
+target_compile_options(
+        hash_map
+        PUBLIC
+        ${RELEASE_FLAGS}
+)
+
+IF(${PDEP_PEXT})
+    target_compile_options(
+            hash_map
+            PUBLIC
+            -mbmi2
+            ${RELEASE_FLAGS}
+    )
+ENDIF()
+
+IF(NOT ANDROID)
+    add_executable(
+            hash_map_test
+            hash_map_test.cpp
+    )
+
+    target_link_libraries(
+            hash_map_test
+            LINK_PRIVATE
+            hash_map
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF()
+
+add_library(
         evaluator_last_moves
         SHARED
         evaluator_last_moves.h
@@ -226,11 +321,12 @@ ELSE()
 
 ENDIF()
 
-target_link_libraries( # SpecIFies the target library.
+target_link_libraries( # Specifies the target library.
         evaluator_last_moves
         LINK_PUBLIC
         bitpattern
         get_flip
+        hash_map
         stable
         ${JNI_LIBRARIES}
 )

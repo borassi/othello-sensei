@@ -66,7 +66,27 @@ TEST(EvaluatorLastMoves, ManyPass) {
   EXPECT_EQ(EvalBasic(b.GetPlayer(), b.GetOpponent(), false), 24);
 }
 
+TEST(EvaluatorLastMoves, UsesHashMap) {
+  HashMap hash_map;
+  EvaluatorLastMoves evaluator(&hash_map);
+  Board b = RandomBoard(0.45, 0.45);
+
+  while (b.NEmpties() > 10 || b.NEmpties() < 6) {
+    b = RandomBoard(0.45, 0.45);
+  }
+
+  int nVisited = 0;
+  int actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
+  EXPECT_GT(nVisited, 1);
+
+  nVisited = 0;
+  actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
+  EXPECT_EQ(nVisited, 1);
+}
+
 TEST(EvaluatorLastMoves, E2E) {
+  HashMap hash_map;
+  EvaluatorLastMoves evaluator(&hash_map);
   for (int i = 0; i < 10000; i++) {
     double perc_player = (double) rand() / RAND_MAX * 0.9;
     double perc_opponent = 0.9 - perc_player;
@@ -91,7 +111,7 @@ TEST(EvaluatorLastMoves, E2E) {
       }
     }
     if (nEmpties > 5) {
-      actual = Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
+      actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
     } else if (nEmpties == 5) {
       actual = EvalFiveEmpties(b.GetPlayer(), b.GetOpponent(), -64, 64, 0, 0, &nVisited);
     } else if (nEmpties == 4) {

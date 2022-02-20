@@ -34,6 +34,8 @@ typedef struct TestCase {
 } TestCase;
 
 int main(int argc, char** argv) {
+  HashMap hash_map;
+  EvaluatorLastMoves evaluator(&hash_map);
   TestCase tests[10000];
   ifstream tests_file("testdata/evaluator_last_moves_profile_examples.txt");
   std::string line;
@@ -45,28 +47,28 @@ int main(int argc, char** argv) {
   }
   tests_file.close();
 
-  int N = 100;
+  int N = 1;
   long long n_positions = 0;
   int n_visited = 0;
   long long tot_n_visited = 0;
   unsigned long long tmp = 12;
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < N; ++i) {
-    for (int i = 0; i < 10000; ++i) {
-      const auto& test = tests[i];
+    for (const auto& test : tests) {
       n_positions++;
       n_visited = 0;
 //      std::cout << Board(test.player, test.opponent).GetEmpties() << "\n";
-      tmp ^= Evaluate(test.player, test.opponent, test.alpha, test.beta, &n_visited);
+      tmp ^= evaluator.Evaluate(test.player, test.opponent, (Eval) test.alpha, (Eval) test.beta, &n_visited);
       tot_n_visited += n_visited;
     }
   }
   auto end = std::chrono::high_resolution_clock::now();
-  double millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  std::cout << tmp << "\n";
 
 
-  std::cout << "Visited/sec: " << (int) (1000.0 / millis * tot_n_visited) << "\n";
-  std::cout << "Visited/test: " << tot_n_visited / (double) n_positions << "\n";
+  std::cout << "Visited/sec: " << (int) (1000.0 / millis * (double) tot_n_visited) << "\n";
+  std::cout << "Visited/test: " << (double) tot_n_visited / n_positions << "\n";
   std::cout << "Total time: " << millis / 1000.0 << "\n";
 
   return (EXIT_SUCCESS);
