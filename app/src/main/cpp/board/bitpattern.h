@@ -17,11 +17,12 @@
 #ifndef BITPATTERN_H
 #define BITPATTERN_H
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <string>
-#include "constants.h"
-#include "random.h"
+
+#include "../constants.h"
+#include "../utils/random.h"
 
 typedef int8_t Eval;
 typedef unsigned long long BitPattern;

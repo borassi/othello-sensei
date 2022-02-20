@@ -20,9 +20,9 @@
 #include <iostream>
 #include <vector>
 
-#include "board.h"
+#include "../board/board.h"
 #include "evaluator_last_moves.h"
-#include "get_flip.h"
+#include "../board/get_flip.h"
 
 using namespace std;
 

@@ -18,8 +18,8 @@
 #define EVALUATOR_LAST_MOVES_H
 
 #include <jni.h>
-#include "get_flip.h"
-#include "hash_map.h"
+#include "../board/get_flip.h"
+#include "../hashmap/hash_map.h"
 
 inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept {

@@ -17,10 +17,10 @@
 #include <cassert>
 #include <cstring>
 
-#include "get_flip.h"
+#include "../board/get_flip.h"
 #include "evaluator_last_moves.h"
-#include "stable.h"
-#include "board.h"
+#include "../board/stable.h"
+#include "../board/board.h"
 
 constexpr BitPattern kCentralPattern = ParsePattern(
     "--------"

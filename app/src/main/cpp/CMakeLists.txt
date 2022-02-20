@@ -94,7 +94,7 @@ set_target_properties(
 
 add_library(
         random
-        random.h
+        utils/random.h
 )
 set_target_properties(
         random PROPERTIES LINKER_LANGUAGE CXX
@@ -109,7 +109,7 @@ target_compile_options(
 IF(NOT ANDROID)
     add_executable(
             random_test
-            random_test.cpp
+            utils/random_test.cpp
     )
 
     target_link_libraries(
@@ -123,8 +123,8 @@ ENDIF()
 
 add_library(
         bitpattern
-        bitpattern.h
-        bitpattern.cpp
+        board/bitpattern.h
+        board/bitpattern.cpp
 )
 
 target_compile_options(
@@ -136,7 +136,7 @@ target_compile_options(
 IF(NOT ANDROID)
     add_executable(
             bitpattern_test
-            bitpattern_test.cpp
+            board/bitpattern_test.cpp
     )
 
     target_link_libraries(
@@ -150,16 +150,16 @@ ENDIF()
 
 add_library(
         board
-        board.h
-        board.cpp
+        board/board.h
+        board/board.cpp
 )
 
 target_link_libraries(board LINK_PUBLIC bitpattern)
 
 add_library(
         get_flip
-        get_flip.h
-        get_flip.cpp
+        board/get_flip.h
+        board/get_flip.cpp
 )
 
 target_link_libraries(get_flip LINK_PUBLIC bitpattern)
@@ -181,7 +181,7 @@ ENDIF()
 IF(NOT ANDROID)
     add_executable(
             get_flip_test
-            get_flip_test.cpp
+            board/get_flip_test.cpp
     )
 
     target_link_libraries(
@@ -196,7 +196,7 @@ ENDIF()
 
 add_executable(
         get_flip_profile
-        get_flip_profile.cpp
+        board/get_flip_profile.cpp
 )
 
 target_link_libraries(
@@ -214,8 +214,8 @@ target_compile_options(
 
 add_library(
         stable
-        stable.h
-        stable.cpp
+        board/stable.h
+        board/stable.cpp
 )
 
 target_link_libraries(
@@ -244,7 +244,7 @@ ENDIF()
 IF(NOT ANDROID)
     add_executable(
             stable_test
-            stable_test.cpp
+            board/stable_test.cpp
     )
 
     target_link_libraries(
@@ -259,8 +259,8 @@ ENDIF()
 
 add_library(
         hash_map
-        hash_map.h
-        hash_map.cpp
+        hashmap/hash_map.h
+        hashmap/hash_map.cpp
 )
 
 target_link_libraries(
@@ -287,7 +287,7 @@ ENDIF()
 IF(NOT ANDROID)
     add_executable(
             hash_map_test
-            hash_map_test.cpp
+            hashmap/hash_map_test.cpp
     )
 
     target_link_libraries(
@@ -302,8 +302,8 @@ ENDIF()
 add_library(
         evaluator_last_moves
         SHARED
-        evaluator_last_moves.h
-        evaluator_last_moves.cpp
+        evaluateindepth/evaluator_last_moves.h
+        evaluateindepth/evaluator_last_moves.cpp
 )
 
 IF(ANDROID)
@@ -334,7 +334,7 @@ target_link_libraries( # Specifies the target library.
 IF(NOT ANDROID)
     add_executable(
             evaluator_last_moves_test
-            evaluator_last_moves_test.cpp
+            evaluateindepth/evaluator_last_moves_test.cpp
     )
 
     target_link_libraries(
@@ -350,7 +350,7 @@ ENDIF()
 
 add_executable(
         evaluator_last_moves_profile
-        evaluator_last_moves_profile.cpp
+        evaluateindepth/evaluator_last_moves_profile.cpp
 )
 
 target_link_libraries(

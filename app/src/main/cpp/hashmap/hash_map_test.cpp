@@ -15,9 +15,9 @@
  */
 
 #include <gtest/gtest.h>
-#include "bitpattern.h"
+#include "../board/bitpattern.h"
 #include "hash_map.h"
-#include "board.h"
+#include "../board/board.h"
 
 void ExpectEntryEq(
     const HashMapEntry& entry, BitPattern player, BitPattern opponent,

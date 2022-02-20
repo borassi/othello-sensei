@@ -15,8 +15,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "bitpattern.h"
-#include "board.h"
+#include "../board/bitpattern.h"
+#include "../board/board.h"
 #include "evaluator_last_moves.h"
 
 Board THREE_EMPTIES(

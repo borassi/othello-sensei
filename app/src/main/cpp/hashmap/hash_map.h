@@ -17,8 +17,8 @@
 #include <array>
 #include <memory>
 #include <mutex>
-#include "bitpattern.h"
-#include "constants.h"
+#include "../board/bitpattern.h"
+#include "../constants.h"
 
 
 #ifndef HASH_MAP_H
