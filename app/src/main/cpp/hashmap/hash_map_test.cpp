@@ -20,9 +20,9 @@
 #include "../board/board.h"
 
 void ExpectEntryEq(
-    const HashMapEntry& entry, BitPattern player, BitPattern opponent,
-    Eval lower, Eval upper, DepthValue depth,
-    Move best_move, Move second_best_move) {
+  const HashMapEntry& entry, BitPattern player, BitPattern opponent,
+  Eval lower, Eval upper, DepthValue depth,
+  Square best_move, Square second_best_move) {
   EXPECT_EQ(entry.Player(), player);
   EXPECT_EQ(entry.Opponent(), opponent);
   EXPECT_EQ(entry.Lower(), lower);
@@ -41,7 +41,7 @@ TEST(HashMapEntry, Update) {
   // BASE
   {
     // Update both
-    ExpectEntryEq(entry, 0, 0, kMinEval, kMaxEval, 0, kNoMove, kNoMove);
+    ExpectEntryEq(entry, 0, 0, kMinEval, kMaxEval, 0, kNoSquare, kNoSquare);
 
     entry.Update(1, 2, 0, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);

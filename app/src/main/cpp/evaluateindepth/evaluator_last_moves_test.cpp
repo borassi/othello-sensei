@@ -34,7 +34,7 @@ int EvalBasic(long player, long opponent, bool passed) {
   long empties = ~(player | opponent);
   int eval = -66;
 
-  for (Move m = 0; m < 64; ++m) {
+  for (Square m = 0; m < 64; ++m) {
     if (((1L << m) & empties) == 0) {
       continue;
     }
@@ -96,7 +96,7 @@ TEST(EvaluatorLastMoves, E2E) {
     int actual;
     BitPattern empties = b.GetEmpties();
     int nEmpties = b.NEmpties();
-    Move x[4];
+    Square x[4];
     int xCounter = 0;
     
     if (nEmpties > 8 || nEmpties == 0) {

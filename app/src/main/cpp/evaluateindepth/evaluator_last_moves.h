@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@
 #include "../board/get_flip.h"
 #include "../hashmap/hash_map.h"
 
-inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
-inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcept {
+inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept {
   BitPattern flip = GetFlip(x, player, opponent);
   if (__builtin_expect(flip, 1)) {
-    return (__builtin_popcountll(player | flip) << 1) - 64;
+    return (__builtin_popcountll(NewOpponent(flip, player)) << 1) - 64;
   }
   flip = GetFlip(x, opponent, player);
   if (flip) {
@@ -36,20 +36,20 @@ inline Eval EvalOneEmpty(Move x, BitPattern player, BitPattern opponent) noexcep
 }
 
 Eval EvalTwoEmpties(
-    const Move x1, const Move x2, const BitPattern player,
-    const BitPattern opponent, const Eval lower, const Eval upper,
-    int* const n_visited) noexcept;
+  const Square x1, const Square x2, const BitPattern player,
+  const BitPattern opponent, const Eval lower, const Eval upper,
+  int* const n_visited) noexcept;
 Eval EvalThreeEmpties(
-    const Move x1, const Move x2, const Move x3,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper,
-    int* const n_visited);
+  const Square x1, const Square x2, const Square x3,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper,
+  int* const n_visited);
 Eval EvalFourEmpties(
-    const Move x1, const Move x2, const Move x3, const Move x4,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper, const bool swap,
-    const BitPattern last_flip, const BitPattern stable, 
-    int* const n_visited);
+  const Square x1, const Square x2, const Square x3, const Square x4,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper, const bool swap,
+  const BitPattern last_flip, const BitPattern stable,
+  int* const n_visited);
 Eval EvalFiveEmpties(
     const BitPattern player, const BitPattern opponent,
     const Eval lower, const Eval upper,

@@ -106,7 +106,7 @@ TEST(GetFlip, Outflank) {
 TEST(GetFlip, Random) {
   for (int i = 0; i < 1000000; ++i) {
     Board b = RandomBoard();
-    Move move = rand() % 64;
+    Square move = rand() % 64;
     if (b.IsEmpty(move)) {
       BitPattern flip_basic = GetFlipBasic(move, b.GetPlayer(), b.GetOpponent());
       BitPattern flip = GetFlip(move, b.GetPlayer(), b.GetOpponent());

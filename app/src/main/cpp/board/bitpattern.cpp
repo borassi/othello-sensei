@@ -26,15 +26,15 @@
 #include <string>
 #include "bitpattern.h"
 
-int GetEvaluationGameOver(BitPattern player, BitPattern opponent) {
+Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent) {
   int playerDisks = __builtin_popcountll(player);
   int opponentDisks = __builtin_popcountll(opponent);
   int diff = playerDisks - opponentDisks;
-  return (diff + (int) ((diff > 0) - (diff < 0)) * (64 - playerDisks - opponentDisks));
+  return static_cast<Eval>(diff + (int) ((diff > 0) - (diff < 0)) * (64 - playerDisks - opponentDisks));
 }
 
 std::string PatternToString(BitPattern pattern) {
-  std::string result = "";
+  std::string result;
   for (int i = 63; i >= 0; --i) {
     BitPattern mask = (1L << i);
     if ((pattern & mask) != 0) {

@@ -69,7 +69,7 @@ void PrintOutflank() {
 void PrintFlip() {
   std::string result = "constexpr u_int8_t FLIP[] = {";
   
-  for (Move move = 0; move < 8; ++move) {
+  for (Square move = 0; move < 8; ++move) {
     for (unsigned int outflank = 0; outflank < 256; ++outflank) {
       if (outflank % 32 == 0) {
         if (move != 0 || outflank != 0) {
@@ -125,7 +125,7 @@ void PrintFlip() {
 void PrintMoveMetadata() {
   std::string result = "constexpr MoveMetadata MOVE_METADATA[] = {";
   
-  for (Move move = 0; move < 64; ++move) {
+  for (Square move = 0; move < 64; ++move) {
     if (move % 4 == 0) {
       if (move != 0) {
         result += ",";

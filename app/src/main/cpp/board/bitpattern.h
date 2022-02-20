@@ -26,13 +26,13 @@
 
 typedef int8_t Eval;
 typedef unsigned long long BitPattern;
-typedef u_int8_t Move;
+typedef u_int8_t Square;
 typedef u_int8_t DepthValue;
 typedef u_int16_t MoveShift;
 typedef u_int8_t LastRow;
 
 constexpr Eval kLessThenMinEval = -66;
-constexpr Move kNoMove = 255;
+constexpr Square kNoSquare = 255;
 constexpr Eval kMinEval = -64;
 constexpr Eval kMaxEval = 64;
 
@@ -108,21 +108,21 @@ constexpr BitPattern kCornerPattern = ParsePattern(
         "--------"
         "--------"
         "X------X");
-int GetEvaluationGameOver(BitPattern player, BitPattern opponent);
+Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent);
 
-constexpr BitPattern GetRow(Move move) {
+constexpr BitPattern GetRow(Square move) {
   return kLastRowPattern << (move & 56);
 }
-constexpr BitPattern GetColumn(Move move) {
+constexpr BitPattern GetColumn(Square move) {
   return kLastColumnPattern << (move & 7);
 }
-constexpr BitPattern GetDiag7(Move move) {
+constexpr BitPattern GetDiag7(Square move) {
   int shift = (int) ((move & 56) + ((move & 7) << 3)) - 56;
   return shift > 0 ?
          kMainDiag7Pattern << shift :
          kMainDiag7Pattern >> -shift;
 }
-constexpr BitPattern GetDiag9(Move move) {
+constexpr BitPattern GetDiag9(Square move) {
   int shift = (int) (move & 56) - ((move & 7) << 3);
   return shift > 0 ?
          kMainDiag9Pattern << shift :
@@ -228,6 +228,10 @@ inline BitPattern FirstLastInEdges(BitPattern empties) {
           | FirstLastSet(empties & kFirstRowPattern)
           | FirstLastSet(empties & kFirstColumnPattern)
           | FirstLastSet(empties & kLastColumnPattern)) & ~kCornerPattern;
+}
+
+inline bool IsFull(BitPattern pattern, Square move) {
+  return ((1ULL << move) & pattern) != 0;
 }
 
 BitPattern RandomPattern(double percentage);

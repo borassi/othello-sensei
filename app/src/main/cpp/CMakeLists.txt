@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.10.2)
 
 # Declares and names the project.
 
-project("othellosensei")
+project("othellosensei" CXX)
 
 IF(NOT DEFINED ANDROID)
     SET(ANDROID TRUE)
@@ -155,6 +155,42 @@ add_library(
 )
 
 target_link_libraries(board LINK_PUBLIC bitpattern)
+
+add_library(
+        get_moves
+        board/get_moves.h
+        board/get_moves.cpp
+)
+
+target_link_libraries(
+        get_moves
+        LINK_PRIVATE
+        bitpattern
+)
+
+target_compile_options(
+        get_moves
+        PUBLIC
+        ${RELEASE_FLAGS}
+)
+
+IF(NOT ANDROID)
+    add_executable(
+            get_moves_test
+            board/get_moves_test.cpp
+    )
+
+    target_link_libraries(
+            get_moves_test
+            LINK_PRIVATE
+            bitpattern
+            board
+            get_flip
+            get_moves
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF()
 
 add_library(
         get_flip
@@ -358,3 +394,31 @@ target_link_libraries(
         LINK_PRIVATE
         evaluator_last_moves
 )
+
+add_library(
+        test_evaluator
+        evaluatedepthone/test_evaluator.h
+)
+
+target_link_libraries(
+        test_evaluator
+        LINK_PRIVATE
+        board
+)
+
+IF(NOT ANDROID)
+    add_executable(
+            test_evaluator_test
+            evaluatedepthone/test_evaluator_test.cpp
+    )
+
+    target_link_libraries(
+            test_evaluator_test
+            LINK_PRIVATE
+            board
+            get_moves
+            test_evaluator
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,7 +174,7 @@ constexpr BitPattern PExt(BitPattern x, BitPattern mask) {
   }
   return res;
 }
-constexpr MoveShift GetPositionInPattern(Move move, BitPattern pattern) {
+constexpr MoveShift GetPositionInPattern(Square move, BitPattern pattern) {
   return __builtin_ctz(PExt(1ULL << move, pattern));
 }
 
@@ -194,7 +194,7 @@ struct MoveMetadata {
   MoveShift column_shift;
 #endif
 
-  constexpr MoveMetadata(Move move) :
+  constexpr MoveMetadata(Square move) :
     row(GetRow(move)),
     column(GetColumn(move)),
     diag7(GetDiag7(move)),
@@ -235,8 +235,9 @@ constexpr MoveMetadata kMoveMetadata[] = {
     MoveMetadata(56), MoveMetadata(57), MoveMetadata(58), MoveMetadata(59),
     MoveMetadata(60), MoveMetadata(61), MoveMetadata(62), MoveMetadata(63)};
 
-inline BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
-inline BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noexcept {
+inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept {
+  assert(((1ULL << move) & (player | opponent)) == 0);
   MoveMetadata m = kMoveMetadata[move];
   if ((m.neighbors & opponent) == 0) {
     return 0;
@@ -266,7 +267,18 @@ inline BitPattern GetFlip(Move move, BitPattern player, BitPattern opponent) noe
   return flip;
 }
 
-constexpr BitPattern GetFlipBasic(Move move, BitPattern player, BitPattern opponent) { 
+inline BitPattern NewPlayer(BitPattern flip, BitPattern opponent) noexcept __attribute__((always_inline));
+inline BitPattern NewPlayer(BitPattern flip, BitPattern opponent) noexcept {
+  return opponent & ~flip;
+}
+inline BitPattern NewOpponent(BitPattern flip, BitPattern player) noexcept __attribute__((always_inline));
+inline BitPattern NewOpponent(BitPattern flip, BitPattern player) noexcept {
+  return player | flip;
+}
+
+
+constexpr BitPattern GetFlipBasic(Square move, BitPattern player, BitPattern opponent) {
+  assert(((1ULL << move) & (player | opponent)) == 0);
   int directions[] = {-9, -8, -7, -1, 1, 7, 8, 9};
   BitPattern flip = 0;
   

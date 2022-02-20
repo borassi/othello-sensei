@@ -18,6 +18,7 @@
 #define BOARD_H
 
 #include "bitpattern.h"
+#include "get_flip.h"
 
 class Board {
   
@@ -37,10 +38,21 @@ public:
   long NEmpties() const {
     return __builtin_popcountll(GetEmpties());
   }
-  bool IsEmpty(Move move) const {
-    return (player_ & (1L << move)) == 0 && (opponent_ & (1L << move)) == 0;
+  bool IsEmpty(Square move) const {
+    return !IsFull(player_, move) && !IsFull(opponent_, move);
+  }
+  bool IsPlayer(Square move) const {
+    return IsFull(player_, move);
+  }
+  bool IsOpponent(Square move) const {
+    return IsFull(opponent_, move);
   }
   std::string ToString() const;
+  void PlayMove(BitPattern flip) {
+    BitPattern tmp = opponent_;
+    opponent_ = NewOpponent(flip, player_);
+    player_ = NewPlayer(flip, tmp);
+  }
 
 private:
   long player_;

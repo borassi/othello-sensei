@@ -75,7 +75,7 @@ struct StableDisksEdge {
     return player | (opponent << 8);
   }
   
-  constexpr uint8_t GetFlipOneDirection(Move x, uint8_t player, uint8_t opponent) {
+  constexpr uint8_t GetFlipOneDirection(Square x, uint8_t player, uint8_t opponent) {
     return kFlip[(x << 8) | (kOutflank[(x << 8) | opponent] & player)];
   }
 
@@ -88,7 +88,7 @@ struct StableDisksEdge {
     }
 
     for (int x = 0; x < 8; ++x) {
-      Move move = 1 << x;
+      Square move = 1 << x;
       if ((empties & move) != 0) {
         uint8_t flip = GetFlipOneDirection(x, player, opponent) | move;
         stable = stable & ~flip & arr[Hash(opponent & ~flip, player | flip)];

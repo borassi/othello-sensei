@@ -17,8 +17,8 @@
 #include "hash_map.h"
 
 void HashMapEntry::Update(
-    BitPattern player, BitPattern opponent, Epoch epoch, DepthValue depth, Eval eval,
-    Eval lower, Eval upper, Move best_move, Move second_best_move) {
+  BitPattern player, BitPattern opponent, Epoch epoch, DepthValue depth, Eval eval,
+  Eval lower, Eval upper, Square best_move, Square second_best_move) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (epoch != epoch_ || depth > depth_) {
     player_ = player;

@@ -79,13 +79,13 @@ Eval max(Eval e1, Eval e2) {
   return e1 > e2 ? e1 : e2;
 }
 
-Eval EvalTwoEmptiesOrMin(const Move x1, const Move x2, const BitPattern player, const BitPattern opponent, const Eval upper, int* const n_visited) noexcept {
+Eval EvalTwoEmptiesOrMin(const Square x1, const Square x2, const BitPattern player, const BitPattern opponent, const Eval upper, int* const n_visited) noexcept {
   (*n_visited)++;
   Eval eval = kLessThenMinEval;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
     (*n_visited)++;
-    eval = -EvalOneEmpty(x2, opponent & ~flip, player | flip);
+    eval = -EvalOneEmpty(x2, NewPlayer(flip, opponent), NewOpponent(flip, player));
     if (eval >= upper) {
       return eval;
     }
@@ -93,12 +93,12 @@ Eval EvalTwoEmptiesOrMin(const Move x1, const Move x2, const BitPattern player, 
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
     (*n_visited)++;
-    return max(eval, -EvalOneEmpty(x1, opponent & ~flip, player | flip));
+    return max(eval, -EvalOneEmpty(x1, NewPlayer(flip, opponent), NewOpponent(flip, player)));
   }
   return eval;
 }
 
-Eval EvalTwoEmpties(const Move x1, const Move x2, const BitPattern player, const BitPattern opponent, const Eval lower, const Eval upper, int* const n_visited) noexcept {
+Eval EvalTwoEmpties(const Square x1, const Square x2, const BitPattern player, const BitPattern opponent, const Eval lower, const Eval upper, int* const n_visited) noexcept {
   Eval eval = EvalTwoEmptiesOrMin(x1, x2, player, opponent, upper, n_visited);
   if (eval > kLessThenMinEval) {
     return eval;
@@ -111,38 +111,38 @@ Eval EvalTwoEmpties(const Move x1, const Move x2, const BitPattern player, const
 }
 
 Eval EvalThreeEmptiesOrMin(
-    const Move x1, const Move x2, const Move x3,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper,
-    int* const n_visited) {
+  const Square x1, const Square x2, const Square x3,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper,
+  int* const n_visited) {
   (*n_visited)++;
   Eval eval = kLessThenMinEval;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
-    eval = -EvalTwoEmpties(x2, x3, opponent & ~flip, player | flip, -upper, -lower, n_visited);
+    eval = -EvalTwoEmpties(x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -lower, n_visited);
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalTwoEmpties(x1, x3, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+    eval = max(eval, -EvalTwoEmpties(x1, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
-    return max(eval, -EvalTwoEmpties(x1, x2, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+    return max(eval, -EvalTwoEmpties(x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
   }
   return eval;
 }
 
 Eval EvalThreeEmpties(
-    const Move x1, const Move x2, const Move x3,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper,
-    int* const n_visited) {
+  const Square x1, const Square x2, const Square x3,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper,
+  int* const n_visited) {
   Eval eval = EvalThreeEmptiesOrMin(x1, x2, x3, player, opponent, lower, upper, n_visited);
   if (eval > kLessThenMinEval) {
     return eval;
@@ -155,22 +155,22 @@ Eval EvalThreeEmpties(
 }
 
 Eval EvalFourEmptiesOrMin(
-    const Move x1, const Move x2, const Move x3, const Move x4,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper, const bool swap,
-    int* const n_visited) {
+  const Square x1, const Square x2, const Square x3, const Square x4,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper, const bool swap,
+  int* const n_visited) {
   (*n_visited)++;
   Eval eval = kLessThenMinEval;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
-    eval = -EvalThreeEmpties(x2, x3, x4, opponent & ~flip, player | flip, -upper, -lower, n_visited);
+    eval = -EvalThreeEmpties(x2, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -lower, n_visited);
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalThreeEmpties(x1, x3, x4, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+    eval = max(eval, -EvalThreeEmpties(x1, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
     if (eval >= upper) {
       return eval;
     }
@@ -178,9 +178,9 @@ Eval EvalFourEmptiesOrMin(
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalThreeEmpties(x4, x1, x2, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+      eval = max(eval, -EvalThreeEmpties(x4, x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
     } else {
-      eval = max(eval, -EvalThreeEmpties(x1, x2, x4, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+      eval = max(eval, -EvalThreeEmpties(x1, x2, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
     }
     if (eval >= upper) {
       return eval;
@@ -189,20 +189,20 @@ Eval EvalFourEmptiesOrMin(
   flip = GetFlip(x4, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalThreeEmpties(x3, x1, x2, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+      eval = max(eval, -EvalThreeEmpties(x3, x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
     } else {
-      eval = max(eval, -EvalThreeEmpties(x1, x2, x3, opponent & ~flip, player | flip, -upper, -max(lower, eval), n_visited));
+      eval = max(eval, -EvalThreeEmpties(x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
     }
   }
   return eval;
 }
 
 Eval EvalFourEmpties(
-    const Move x1, const Move x2, const Move x3, const Move x4,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper, const bool swap,
-    const BitPattern last_flip, const BitPattern stable, 
-    int* const n_visited) {
+  const Square x1, const Square x2, const Square x3, const Square x4,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper, const bool swap,
+  const BitPattern last_flip, const BitPattern stable,
+  int* const n_visited) {
   if (GetUpperBoundFromStable(stable, opponent) - ((last_flip & kCornerPattern) == 0 ? 10 : 20) <= lower) {
     Eval stability_cutoff_upper = GetUpperBoundFromStable(GetStableDisks(opponent, player, stable), opponent);
     if (stability_cutoff_upper <= lower) {
@@ -221,30 +221,30 @@ Eval EvalFourEmpties(
 }
 
 Eval EvalFiveEmptiesOrMin(
-    const Move x1, const Move x2, const Move x3, const Move x4, const Move x5,
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper, const bool swap,
-    const BitPattern stable,
-    int* const n_visited) {
+  const Square x1, const Square x2, const Square x3, const Square x4, const Square x5,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper, const bool swap,
+  const BitPattern stable,
+  int* const n_visited) {
   (*n_visited)++;
   Eval eval = kLessThenMinEval;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
-    eval = -EvalFourEmpties(x2, x3, x4, x5, opponent & ~flip, player | flip, -upper, -lower, swap, flip, stable, n_visited);
+    eval = -EvalFourEmpties(x2, x3, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -lower, swap, flip, stable, n_visited);
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalFourEmpties(x1, x3, x4, x5, opponent & ~flip, player | flip, -upper, -max(lower, eval), flip, swap, stable, n_visited));
+    eval = max(eval, -EvalFourEmpties(x1, x3, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalFourEmpties(x1, x2, x4, x5, opponent & ~flip, player | flip, -upper, -max(lower, eval), flip, swap, stable, n_visited));
+    eval = max(eval, -EvalFourEmpties(x1, x2, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
     if (eval >= upper) {
       return eval;
     }
@@ -252,9 +252,9 @@ Eval EvalFiveEmptiesOrMin(
   flip = GetFlip(x4, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalFourEmpties(x5, x1, x2, x3, opponent & ~flip, player | flip, -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = max(eval, -EvalFourEmpties(x5, x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
     } else {
-      eval = max(eval, -EvalFourEmpties(x1, x2, x3, x5, opponent & ~flip, player | flip, -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = max(eval, -EvalFourEmpties(x1, x2, x3, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
     }
     if (eval >= upper) {
       return eval;
@@ -263,9 +263,9 @@ Eval EvalFiveEmptiesOrMin(
   flip = GetFlip(x5, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalFourEmpties(x4, x1, x2, x3, opponent & ~flip, player | flip, -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = max(eval, -EvalFourEmpties(x4, x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
     } else {
-      eval = max(eval, -EvalFourEmpties(x1, x2, x3, x4, opponent & ~flip, player | flip, -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = max(eval, -EvalFourEmpties(x1, x2, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
     }
   }
   return eval;
@@ -284,11 +284,11 @@ Eval EvalFiveEmpties(
     }
   }
   BitPattern empties = ~(player | opponent);
-  Move x[5];
-  Move space_3[3];
+  Square x[5];
+  Square space_3[3];
   int new_cont_x = 0;
   int cont_x = 0;
-  Move move;
+  Square move;
   bool has_space_2 = false;
   bool has_space_3 = false;
   for (BitPattern space : {kSpace0Pattern, kSpace1Pattern, kSpace2Pattern, kSpace3Pattern}) {
@@ -332,9 +332,9 @@ Eval EvalFiveEmpties(
   }
   if (has_space_3) {
     if (has_space_2) {
-      std::memcpy(x, space_3, sizeof(Move) * 3);
+      std::memcpy(x, space_3, sizeof(Square) * 3);
     } else {
-      std::memcpy(x + 2, space_3, sizeof(Move) * 3);
+      std::memcpy(x + 2, space_3, sizeof(Square) * 3);
     }
   }
   
@@ -377,7 +377,7 @@ Eval EvaluatorLastMoves::Evaluate(
       return hash_eval.second;
     }
   }
-  Move move;
+  Square move;
   Eval eval = kLessThenMinEval;
   BitPattern flip;
   BitPattern move_bit;
@@ -406,13 +406,15 @@ Eval EvaluatorLastMoves::Evaluate(
         eval = max(
             eval, 
             -EvalFiveEmpties(
-                opponent & ~flip, player | flip, -upper, -max(lower, eval),
+                NewPlayer(flip, opponent), NewOpponent(flip, player),
+                -upper, -max(lower, eval),
                 flip, new_stable, n_visited));
       } else {
         eval = max(
             eval, 
             -Evaluate(
-                opponent & ~flip, player | flip, -upper, -max(lower, eval),
+                NewPlayer(flip, opponent), NewOpponent(flip, player),
+                -upper, -max(lower, eval),
                 false, flip, new_stable, n_visited));        
       }
       if (eval >= upper) {
@@ -451,7 +453,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_evaluateposition_EvaluatorLastMoves_ev
 //  int n_visited = 0;
 //  return Evaluate(player, opponent, lower, upper, &n_visited);
   int n_visited = 0;
-  int eval = kEvaluatorLastMoves.Evaluate(player, opponent, lower, upper, &n_visited);
+  int eval = kEvaluatorLastMoves.Evaluate(player, opponent, static_cast<Eval>(lower), static_cast<Eval>(upper), &n_visited);
 //  return eval;
   jclass EvalWithVisited = env->FindClass("evaluateposition/EvalWithVisited");
   return env->NewObject(EvalWithVisited, env->GetMethodID(EvalWithVisited, "<init>", "(IJ)V"), eval, (long long) n_visited);

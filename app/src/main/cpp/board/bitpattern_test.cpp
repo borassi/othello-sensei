@@ -88,7 +88,7 @@ TEST(BitPattern, UniqueInEdges) {
 TEST(BitPattern, RowToFirstRow) {
   for (int i = 0; i < 1000; ++i) {
     BitPattern p = RandomPattern();
-    Move move = rand() % 64;
+    Square move = rand() % 64;
     BitPattern row = GetRow(move);
     LastRow result = RowToLastRow(p, row, move & 56);
     // To silence a warning, in case we change the type of LastRow.
@@ -100,7 +100,7 @@ TEST(BitPattern, RowToFirstRow) {
 TEST(BitPattern, ColumnToFirstRow) {
   for (int i = 0; i < 1000; ++i) {
     BitPattern p = RandomPattern();
-    Move move = rand() % 64;
+    Square move = rand() % 64;
     BitPattern column = GetColumn(move);
     LastRow result = ColumnToLastRow(p, column, move & 7);
     EXPECT_TRUE((int) result < 256);
@@ -111,7 +111,7 @@ TEST(BitPattern, ColumnToFirstRow) {
 TEST(BitPattern, DiagonalToFirstRow) {
   for (int i = 0; i < 1000; ++i) {
     BitPattern p = RandomPattern();
-    Move move = rand() % 64;
+    Square move = rand() % 64;
     BitPattern diagonal = rand() % 2 ? GetDiag7(move) : GetDiag9(move);
     LastRow result = DiagonalToLastRow(p, diagonal);
     EXPECT_TRUE((int) result < 256);

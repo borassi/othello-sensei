@@ -27,7 +27,7 @@ using namespace std;
 
 class TestCase {
  public:
-  Move move;
+  Square move;
   BitPattern player;
   BitPattern opponent;
 };

@@ -28,7 +28,7 @@ public class Constants {
   public final static int EMPTIES_FOR_ENDGAME = 10;
 
   public final static int HASH_MAP_SIZE = MOBILE ? 300000 : 5000000;
-  public final static int MCTS_SIZE = MOBILE ? 700000: 16000000;
+  public final static int MCTS_SIZE = MOBILE ? 700000: 14000000;
 
   public final static int MAX_PARALLEL_TASKS = 1;//Runtime.getRuntime().availableProcessors();
   public final static float MIN_PROB_LEAF = 0F;
