@@ -212,6 +212,42 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
     EVALS = readEvals();
   }
 
+  final static int[] longToFeature(long pattern) {
+    int[] feature = new int[Long.bitCount(pattern)];
+    int currentBit = 0;
+    int square;
+    while (true) {
+      square = Long.numberOfTrailingZeros(pattern);
+      feature[currentBit++] = square;
+      pattern = pattern & ~(1L << square);
+      if (pattern == 0) {
+        break;
+      }
+    }
+    return feature;
+  }
+
+  final static long featureToLong(int[] feature) {
+    long result = 0;
+    for (int i : feature) {
+      result |= 1L << i;
+    }
+    return result;
+  }
+
+  final static int[] horizMirrorFeature(int[] feature) {
+    int[] newFeature = new int[feature.length];
+    for (int i = 0; i < feature.length; ++i) {
+      int f = feature[i];
+      int row = f / 8;
+      int column = f % 8;
+      int newRow = row;
+      int newColumn = 7 - column;
+      newFeature[i] = newRow * 8 + newColumn;
+    }
+    return newFeature;
+  }
+
   final static int[] rotateFeature(int[] feature) {
     int[] newFeature = new int[feature.length];
     for (int i = 0; i < feature.length; ++i) {
@@ -238,6 +274,7 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
         }
         feature = rotateFeature(feature);
       }
+      feature = horizMirrorFeature(feature);
     }
     return result;
   }
@@ -312,42 +349,6 @@ public class PatternEvaluatorImproved implements DepthOneEvaluator {
       Logger.getLogger(PatternEvaluatorImproved.class.getName()).log(Level.SEVERE, null, ex);
       return emptyEvals();
     }
-  }
-  
-  final static int[] longToFeature(long pattern) {
-    int[] feature = new int[Long.bitCount(pattern)];
-    int currentBit = 0;
-    int square;
-    while (true) {
-      square = Long.numberOfTrailingZeros(pattern);
-      feature[currentBit++] = square;
-      pattern = pattern & ~(1L << square);
-      if (pattern == 0) {
-        break;
-      }
-    }
-    return feature;
-  }
-
-  final static long featureToLong(int[] feature) {
-    long result = 0;
-    for (int i : feature) {
-      result |= 1L << i;
-    }
-    return result;
-  }
-  
-  final static int[] horizMirrorFeature(int[] feature) {
-    int[] newFeature = new int[feature.length];
-    for (int i = 0; i < feature.length; ++i) {
-      int f = feature[i];
-      int row = f / 8;
-      int column = f % 8;
-      int newRow = row;
-      int newColumn = 7 - column;
-      newFeature[i] = newRow * 8 + newColumn;
-    }
-    return newFeature;
   }
   
   public int[] hashes() {
