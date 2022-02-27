@@ -20,6 +20,7 @@
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "../constants.h"
 #include "../utils/random.h"
@@ -35,6 +36,7 @@ constexpr Eval kLessThenMinEval = -66;
 constexpr Square kNoSquare = 255;
 constexpr Eval kMinEval = -64;
 constexpr Eval kMaxEval = 64;
+constexpr Square kNumSquares = 64;
 
 constexpr BitPattern ParsePattern(const char* pattern, char letter) {
   BitPattern result = 0;
@@ -233,6 +235,14 @@ inline BitPattern FirstLastInEdges(BitPattern empties) {
 inline bool IsFull(BitPattern pattern, Square move) {
   return ((1ULL << move) & pattern) != 0;
 }
+
+/**
+ * Returns all the possible bitpatterns that are empty outside the bitPattern
+ * provided.
+ * @param p the bit pattern.
+ * @return a vector with all the possible patterns.
+ */
+std::vector<BitPattern> AllSubBitPatterns(BitPattern p);
 
 BitPattern RandomPattern(double percentage);
 BitPattern RandomPattern();

@@ -36,13 +36,15 @@ class TestEvaluator {
     opponent_ = opponent;
   }
 
-  void Update(Square square, BitPattern flip) {
+  void Update(BitPattern square, BitPattern flip) {
+    assert(__builtin_popcountll(square) == 1);
     BitPattern tmp = player_;
     player_ = NewPlayer(flip, opponent_);
     opponent_ = NewOpponent(flip, tmp);
   }
 
-  void UndoUpdate(Square square, BitPattern flip) {
+  void UndoUpdate(BitPattern square, BitPattern flip) {
+    assert(__builtin_popcountll(square) == 1);
     BitPattern tmp = player_;
     player_ = (opponent_ & ~flip) & ~(1L << square);
     opponent_ = (tmp | flip) & ~(1L << square);

@@ -24,8 +24,38 @@ ENDIF()
 
 
 add_library(
+        feature
+        feature.h
+)
+
+target_link_libraries(
+        feature
+        LINK_PRIVATE
+        bitpattern
+)
+
+IF(NOT ANDROID)
+    add_executable(
+            feature_test
+            feature_test.cpp
+    )
+
+    target_link_libraries(
+            feature_test
+            LINK_PRIVATE
+            feature
+            bitpattern
+            GTest::gtest
+            GTest::gtest_main
+            gmock
+    )
+ENDIF()
+
+
+add_library(
         pattern_evaluator
         pattern_evaluator.h
+        pattern_evaluator.cpp
 )
 
 target_link_libraries(
@@ -43,11 +73,13 @@ IF(NOT ANDROID)
 
     target_link_libraries(
             pattern_evaluator_test
-            LINK_PRIVATE
+            LINK_PUBLIC
             board
-            test_evaluator
+            get_moves
+            pattern_evaluator
             GTest::gtest
             GTest::gtest_main
+            gmock
     )
 ENDIF()
 

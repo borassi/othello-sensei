@@ -122,7 +122,7 @@ TEST(BitPattern, DiagonalToFirstRow) {
 TEST(BitPattern, Hash) {
   BitPattern player = RandomPattern();
   BitPattern opponent = RandomPattern() & ~player;
-  int n = 1 << kBitHashMap;
+  int n = 1 << 20;
   std::vector<int> hashes(n, 0);
 
   for (int i = 0; i < n; ++i) {
@@ -144,4 +144,20 @@ TEST(BitPattern, Hash) {
     EXPECT_LT(hashes[i], log(n));
   }
   EXPECT_GT(full, 0.9 * n / exp(1));
+}
+
+TEST(BitPattern, AllSubBitPatterns) {
+  for (int i = 0; i < 100; ++i) {
+    BitPattern pattern = RandomPattern(0.1);
+    if (__builtin_popcountll(pattern) > 12) {
+      continue;
+    }
+    std::vector<BitPattern> sub_patterns = AllSubBitPatterns(pattern);
+    EXPECT_EQ((int) pow(2, __builtin_popcountll(pattern)), sub_patterns.size());
+    EXPECT_EQ((int) pow(2, __builtin_popcountll(pattern)),
+              std::set<BitPattern>(sub_patterns.begin(), sub_patterns.end()).size());
+    for (BitPattern sub_pattern : sub_patterns) {
+      EXPECT_EQ(0, sub_pattern & ~pattern);
+    }
+  }
 }

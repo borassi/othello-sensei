@@ -69,13 +69,13 @@ constexpr BitPattern kEdgesPattern = kTopEdgePattern | kBottomEdgePattern | kLef
 constexpr BitPattern kNonEdgePattern = ~kEdgesPattern;
 
 struct StableDisksEdge {
-  uint8_t arr[65536];
+  LastRow arr[65536];
 
   constexpr static int Hash(BitPattern player, BitPattern opponent) {
     return player | (opponent << 8);
   }
   
-  constexpr uint8_t GetFlipOneDirection(Square x, uint8_t player, uint8_t opponent) {
+  constexpr LastRow GetFlipOneDirection(Square x, LastRow player, LastRow opponent) {
     return kFlip[(x << 8) | (kOutflank[(x << 8) | opponent] & player)];
   }
 

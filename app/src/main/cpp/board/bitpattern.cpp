@@ -63,3 +63,19 @@ BitPattern RandomPattern(double percentage) {
 BitPattern RandomPattern() {
   return RandomPattern((double) rand() / RAND_MAX);
 }
+
+std::vector<BitPattern> AllSubBitPatterns(BitPattern p) {
+  if (p == 0) {
+    return std::vector<BitPattern>({0});
+  }
+
+  int last_full_square = __builtin_ctzll(p);
+  BitPattern last_full_square_pattern = 1ULL << last_full_square;
+  std::vector<BitPattern> patterns = AllSubBitPatterns(
+      p & ~last_full_square_pattern);
+  auto n_patterns_no_last_square = patterns.size();
+  for (int i = 0; i < n_patterns_no_last_square; ++i) {
+    patterns.push_back(last_full_square_pattern | patterns[i]);
+  }
+  return patterns;
+}
