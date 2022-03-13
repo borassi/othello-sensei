@@ -128,7 +128,7 @@ int main() {
   int num_distinct_boards = 0;
   std::unordered_map<EvaluatedBoard, int> train_board_set;
   train_board_set.reserve(full_train_board.size());
-  auto train_board_converted = new TrainingBoard[full_train_board.size()];
+  TrainingBoard* train_board_converted = new TrainingBoard[full_train_board.size()];
 
   for (const auto& boards : {full_train_board, test_board}) {
     for (const EvaluatedBoard& b : boards) {
@@ -143,7 +143,7 @@ int main() {
     }
   }
 
-  int num_splits = 10;
+  int num_splits = 12;
 
   const auto train0 = BuildTrainSet(
       full_train_board, train_board_set, train_board_converted, 1, 0);
@@ -173,8 +173,8 @@ int main() {
 
 //  result = Step(regressions, train1, test, 0.01F);
 //  std::cout << ElapsedTime(start) << ": step 1\n" << result << "\n";
-//  result = Step(regressions, train1, test, 0.005F);
-//  std::cout << ElapsedTime(start) << ": step 2\n" << result << "\n";
+  result = Step(regressions, train1, test, 0.005F);
+  std::cout << ElapsedTime(start) << ": step 2\n" << result << "\n";
   result = Step(regressions, train1, test, 0.002F);
   std::cout << ElapsedTime(start) << ": step 3\n" << result << "\n";
   result = Step(regressions, train1, test, 0.001F);

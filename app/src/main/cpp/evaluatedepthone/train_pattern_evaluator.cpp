@@ -31,7 +31,8 @@ TrainingBoard::TrainingBoard(
   }
 }
 
-std::size_t std::hash<TrainingBoard>::operator()(const TrainingBoard& f) const noexcept {
+std::size_t std::hash<TrainingBoard>::operator()(
+    const TrainingBoard& f) const noexcept {
   std::size_t result = std::hash<float>{}(f.Eval());
   for (const FeatureValue& feature : f.Features()) {
     result = result ^ std::hash<Pattern>{}(feature);
@@ -56,14 +57,20 @@ bool TrainingBoard::operator==(const TrainingBoard& other) const {
   return true;
 }
 
+std::size_t std::hash<TrainingBoard>::operator()(
+    const TrainingBoard& f) const noexcept {
+  std::size_t result = std::hash<float>{}(f.Eval());
+  for (const FeatureValue& feature : f.Features()) {
+    result = result ^ std::hash<Pattern>{}(feature);
+  }
+  return result;
+}
+
 void TrainingFeature::UpdateValue(float error, float learning_rate, float lambda) {
   assert (isfinite(error));
-  visited_ = std::min(visited_ + 1, 1000);
   float update = error - lambda * value_;
   m_bias_ *= beta_1;
-  v_bias_ *= beta_2;
   m_t_ = beta_1 * m_t_ + (1 - beta_1) * update;
-  v_t_ = beta_2 * v_t_ + (1 - beta_2) * update * update;
   value_ += 2 * learning_rate * m_t_ / (1 - m_bias_);
   value_ = std::max(-12.0F, std::min(value_, 12.0F));
 }

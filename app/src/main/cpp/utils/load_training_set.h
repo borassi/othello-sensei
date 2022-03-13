@@ -41,7 +41,7 @@ class EvaluatedBoard {
     return opponent_;
   }
 
-  float GetEval() const {
+  int GetEval() const {
     return eval_;
   }
 
@@ -63,7 +63,7 @@ class EvaluatedBoard {
  private:
   BitPattern player_;
   BitPattern opponent_;
-  float eval_;
+  int eval_;
 };
 
 template<>

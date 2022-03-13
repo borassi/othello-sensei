@@ -25,14 +25,14 @@
 class TrainingBoard {
  public:
   TrainingBoard() {}
-  TrainingBoard(std::vector<FeatureValue> features, float eval) :
+  TrainingBoard(std::vector<FeatureValue> features, int eval) :
       features_(features), eval_(eval) {}
 
   TrainingBoard(
       const EvaluatedBoard& b,
       const std::vector<std::vector<FeatureValue>>& feature_value_to_canonical);
 
-  float Eval() const { return eval_; }
+  int Eval() const { return eval_; }
 
   const std::vector<FeatureValue>& Features() const { return features_; }
 
@@ -40,7 +40,7 @@ class TrainingBoard {
 
  private:
   std::vector<FeatureValue> features_;
-  float eval_;
+  int eval_;
 };
 
 template<>
@@ -50,10 +50,8 @@ struct std::hash<TrainingBoard> {
 
 class TrainingFeature {
  public:
-  static constexpr float beta_1 = 0.9;
-  static constexpr float beta_2 = 0.999;
-  static constexpr float eps = 1E-2;
-  TrainingFeature() : value_(0), update_(0), m_t_(0), v_t_(0), visited_(0), m_bias_(1), v_bias_(1) {}
+  static constexpr double beta_1 = 0.9;
+  TrainingFeature() : value_(0), update_(0), m_t_(0), m_bias_(1) {}
 
   float GetValue() { return value_; }
 
@@ -62,13 +60,10 @@ class TrainingFeature {
   void Round();
 
  private:
-  float v_bias_;
   float m_bias_;
   float value_;
   float m_t_;
-  float v_t_;
   float update_;
-  int visited_;
 };
 
 class CategoricalRegression {
