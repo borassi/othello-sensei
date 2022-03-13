@@ -50,3 +50,27 @@ IF(NOT ANDROID)
             GTest::gtest_main
     )
 ENDIF()
+
+add_library(
+        load_training_set
+        load_training_set.h
+        load_training_set.cpp
+)
+
+target_link_libraries(
+        load_training_set
+        LINK_PUBLIC
+        bitpattern
+        board
+)
+
+add_executable(
+        load_training_set_main
+        load_training_set_main.cpp
+)
+
+target_link_libraries(
+        load_training_set_main
+        LINK_PRIVATE
+        load_training_set
+)

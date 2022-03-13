@@ -127,29 +127,29 @@ public class MultilinearRegressionImproved {
       }
 //      System.out.println(correctEval);
 //      System.out.println(eval);
-      double expectedSquaredError = 0;
-      for (int i = 0; i < curHashes.length; ++i) {
-        expectedSquaredError += curEval[i][curHashes[i]].squaredError;
-      }
+//      double expectedSquaredError = 0;
+//      for (int i = 0; i < curHashes.length; ++i) {
+//        expectedSquaredError += curEval[i][curHashes[i]].squaredError;
+//      }
 //      if (speed > 0 && Math.random() < 0.001) {
 //        System.out.println(Math.sqrt(expectedSquaredError) + " " + error);
 //      }
       for (int i = 0; i < curHashes.length; ++i) {
         Feature feature = curEval[i][curHashes[i]];
-        if (updateAppearences) {
-          feature.appearences = Math.min(100000, feature.appearences + 1);
-        } else {
-          float expectedErrorUpdateSize = (float) (2 * speed * (error * error - expectedSquaredError));
-          feature.squaredError += expectedErrorUpdateSize;
-          feature.squaredError = (float) Math.max(
-              Math.min(feature.squaredError, 2000 * 2000),
-              200.0 * 200.0 / this.patternEvaluator.EVALS[0].length);
+//        if (updateAppearences) {
+//          feature.appearences = Math.min(100000, feature.appearences + 1);
+//        } else {
+//          float expectedErrorUpdateSize = (float) (2 * speed * (error * error - expectedSquaredError));
+//          feature.squaredError += expectedErrorUpdateSize;
+//          feature.squaredError = (float) Math.max(
+//              Math.min(feature.squaredError, 2000 * 2000),
+//              200.0 * 200.0 / this.patternEvaluator.EVALS[0].length);
 
           double ridgeUpdateSize = 2 * speed * (error - lambda * feature.eval);// * 800 / Math.sqrt(expectedSquaredError);
 //              / Math.min(1000, Math.max(feature.appearences, 5)); // Math.signum(error) * 600; //
           feature.eval += ridgeUpdateSize;
           feature.eval = Math.max(Math.min(feature.eval, 1500), -1500);
-        }
+//        }
       }
 //      System.out.println(eval(curEval, curHashes) + "\n");
     }
@@ -184,49 +184,49 @@ public class MultilinearRegressionImproved {
     return curError;
   }
   
-  
-  public void selfTrainEndgameBoard(Board b, ArrayList<BoardWithEvaluation> trainingSet) {
-    int evalB = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6600, 6600).eval;
-    trainingSet.add(new BoardWithEvaluation(b, evalB));
-    if (b.getEmptySquares() == 1) {
-      return;
-    }
-    long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
-    for (long move : moves) {
-      if (Math.random() < 0.6) {
-        continue;
-      }
-      selfTrainEndgameBoard(b.move(move), trainingSet);
-    }
-  }
-  
-  public void selfTrainEndgame(Feature[][][] evals) {
-    ArrayList<BoardWithEvaluation> startingBoards = LoadDataset.loadTrainingSet();
-    ArrayList<BoardWithEvaluation> trainingSet = new ArrayList<>();
-    int iter = 0;
-    for (BoardWithEvaluation be : startingBoards) {
-      Board b = be.board;
-      if (iter++ % 500000 == 0) {
-        this.train(evals, trainingSet, 0.01F, 0.001F, 1, false);
-        trainingSet = new ArrayList<>();
-//        System.out.println(iter + " " + startingBoards.size());
-      }
-      if (b.getEmptySquares() != 12) {
-        continue;
-      }
-//      trainingSet.add(new BoardWithEvaluation(b, this.eval.evaluatePosition(b, -6600, 6600, 0)));
-//      System.out.print(be.evaluation);
-      this.selfTrainEndgameBoard(b, trainingSet);
-    }
-//    double[] errors = test();
-//    System.out.println("  Testing error total: " + errors[0]);
-//    System.out.print("  Testing error part:  ");
-//    for (int i = 1; i < errors.length; ++i) {
-//      System.out.print(((i-1) * 60 / (errors.length-1)) + ":" + (int) errors[i] + " ");
+//
+//  public void selfTrainEndgameBoard(Board b, ArrayList<BoardWithEvaluation> trainingSet) {
+//    int evalB = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6600, 6600).eval;
+//    trainingSet.add(new BoardWithEvaluation(b, evalB));
+//    if (b.getEmptySquares() == 1) {
+//      return;
 //    }
-//    System.out.println();
-    
-  }
+//    long[] moves = pmf.possibleMovesAdvanced(b.getPlayer(), b.getOpponent());
+//    for (long move : moves) {
+//      if (Math.random() < 0.6) {
+//        continue;
+//      }
+//      selfTrainEndgameBoard(b.move(move), trainingSet);
+//    }
+//  }
+//
+//  public void selfTrainEndgame(Feature[][][] evals) {
+//    ArrayList<BoardWithEvaluation> startingBoards = LoadDataset.loadTrainingSet();
+//    ArrayList<BoardWithEvaluation> trainingSet = new ArrayList<>();
+//    int iter = 0;
+//    for (BoardWithEvaluation be : startingBoards) {
+//      Board b = be.board;
+//      if (iter++ % 500000 == 0) {
+//        this.train(evals, trainingSet, 0.01F, 0.001F, 1, false);
+//        trainingSet = new ArrayList<>();
+////        System.out.println(iter + " " + startingBoards.size());
+//      }
+//      if (b.getEmptySquares() != 12) {
+//        continue;
+//      }
+////      trainingSet.add(new BoardWithEvaluation(b, this.eval.evaluatePosition(b, -6600, 6600, 0)));
+////      System.out.print(be.evaluation);
+//      this.selfTrainEndgameBoard(b, trainingSet);
+//    }
+////    double[] errors = test();
+////    System.out.println("  Testing error total: " + errors[0]);
+////    System.out.print("  Testing error part:  ");
+////    for (int i = 1; i < errors.length; ++i) {
+////      System.out.print(((i-1) * 60 / (errors.length-1)) + ":" + (int) errors[i] + " ");
+////    }
+////    System.out.println();
+//
+//  }
   
 //  public void selfTrain() {
 //    int nThreads = 1;

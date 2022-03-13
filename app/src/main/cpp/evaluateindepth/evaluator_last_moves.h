@@ -70,7 +70,7 @@ class EvaluatorLastMoves {
     const Eval lower, const Eval upper, bool passed,
     const BitPattern last_flip, const BitPattern stable,
     int* const n_visited);
-  Epoch epoch_;
+  EpochValue epoch_;
 };
 
 #ifdef __cplusplus

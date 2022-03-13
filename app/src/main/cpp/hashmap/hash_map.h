@@ -24,7 +24,7 @@
 #ifndef HASH_MAP_H
 #define HASH_MAP_H
 
-typedef u_int8_t Epoch;
+typedef u_int8_t EpochValue;
 
 class HashMapEntry {
  public:
@@ -39,7 +39,7 @@ class HashMapEntry {
     second_best_move_(kNoSquare) {}
 
   void Update(
-    BitPattern player, BitPattern opponent, Epoch epoch, DepthValue depth, Eval eval,
+    BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth, Eval eval,
     Eval lower, Eval upper, Square best_move, Square second_best_move);
 
   std::pair<Eval, Eval> GetLowerUpper(
@@ -61,6 +61,10 @@ class HashMapEntry {
     const std::lock_guard<std::mutex> lock(mutex_);
     return upper_;
   }
+  EpochValue Epoch() const {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    return epoch_;
+  }
   DepthValue Depth() const {
     const std::lock_guard<std::mutex> lock(mutex_);
     return depth_;
@@ -77,7 +81,7 @@ class HashMapEntry {
  private:
   BitPattern player_;
   BitPattern opponent_;
-  Epoch epoch_;
+  EpochValue epoch_;
   Eval lower_;
   Eval upper_;
   DepthValue depth_;
@@ -93,12 +97,18 @@ class HashMap {
   }
 
   void Update(
-    BitPattern player, BitPattern opponent, Epoch epoch, DepthValue depth,
+    BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth,
     Eval eval, Eval lower, Eval upper, Square best_move,
     Square second_best_move) {
     hash_map_[Hash(player, opponent)].Update(
       player, opponent, epoch, depth, eval, lower, upper, best_move,
       second_best_move);
+  }
+
+  void Reset() {
+    for (int i = 0; i < kHashMapSize; ++i) {
+      hash_map_[i].Update(0, 0, hash_map_[i].Epoch() == 0 ? 1 : 0, 0, 0, kMinEval, kMaxEval, kNoSquare, kNoSquare);
+    }
   }
 
   std::pair<Eval, Eval> GetLowerUpper (

@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
   }
   tests_file.close();
 
-  int N = 1;
+  int N = 12;
   long long n_positions = 0;
   int n_visited = 0;
   long long tot_n_visited = 0;
@@ -67,9 +67,9 @@ int main(int argc, char** argv) {
   std::cout << tmp << "\n";
 
 
-  std::cout << "Visited/sec: " << (int) (1000.0 / millis * (double) tot_n_visited) << "\n";
-  std::cout << "Visited/test: " << (double) tot_n_visited / n_positions << "\n";
-  std::cout << "Total time: " << millis / 1000.0 << "\n";
+  std::cout << "Visited/sec: " << (int) (1000.0 / (double) millis * (double) tot_n_visited) << "\n";
+  std::cout << "Visited/test: " << (double) tot_n_visited / (double) n_positions << "\n";
+  std::cout << "Total time: " << (double) millis / 1000.0 << "\n";
 
   return (EXIT_SUCCESS);
 }

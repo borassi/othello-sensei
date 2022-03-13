@@ -14,4 +14,14 @@
  * limitations under the License.
  */
 
-#include "pattern_evaluator.h"
+#include <iostream>
+#include "../board/board.h"
+#include "load_training_set.h"
+
+int main(int argc, char** argv) {
+  std::vector<EvaluatedBoard> b = load_hard_set(184);
+  std::cout << b.size() << "\n";
+  for (int i = 0; i < 120; ++i) {
+    std::cout << b[i].GetBoard().ToString() << (int) b[i].GetEval() << "\n\n";
+  }
+}

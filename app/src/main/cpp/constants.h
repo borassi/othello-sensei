@@ -19,7 +19,7 @@
 
 constexpr int kBitHashMap = 24;
 constexpr int kHashMapSize = 1L << kBitHashMap;
-constexpr int kMinEmptiesForHashMap = 8;
+constexpr int kMinEmptiesForHashMap = 15;
 
 
 #endif /* CONSTANTS_H */

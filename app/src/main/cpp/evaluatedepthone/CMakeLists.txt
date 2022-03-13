@@ -24,27 +24,30 @@ ENDIF()
 
 
 add_library(
-        feature
-        feature.h
+        pattern
+        pattern.cpp
+        pattern.h
 )
 
 target_link_libraries(
-        feature
+        pattern
         LINK_PRIVATE
         bitpattern
+        board
 )
 
 IF(NOT ANDROID)
     add_executable(
-            feature_test
-            feature_test.cpp
+            pattern_test
+            pattern_test.cpp
     )
 
     target_link_libraries(
-            feature_test
+            pattern_test
             LINK_PRIVATE
-            feature
             bitpattern
+            board
+            pattern
             GTest::gtest
             GTest::gtest_main
             gmock
@@ -53,13 +56,13 @@ ENDIF()
 
 
 add_library(
-        pattern_evaluator
-        pattern_evaluator.h
-        pattern_evaluator.cpp
+        evaluator
+        evaluator.h
+        evaluator.cpp
 )
 
 target_link_libraries(
-        pattern_evaluator
+        evaluator
         LINK_PRIVATE
         bitpattern
         board
@@ -67,16 +70,17 @@ target_link_libraries(
 
 IF(NOT ANDROID)
     add_executable(
-            pattern_evaluator_test
-            pattern_evaluator_test.cpp
+            evaluator_test
+            evaluator_test.cpp
     )
 
     target_link_libraries(
-            pattern_evaluator_test
+            evaluator_test
             LINK_PUBLIC
             board
+            evaluator
             get_moves
-            pattern_evaluator
+            pattern
             GTest::gtest
             GTest::gtest_main
             gmock
@@ -110,3 +114,44 @@ IF(NOT ANDROID)
             GTest::gtest_main
     )
 ENDIF()
+
+add_library(
+        train_pattern_evaluator
+        train_pattern_evaluator.h
+        train_pattern_evaluator.cpp
+)
+
+target_link_libraries(
+        train_pattern_evaluator
+        LINK_PRIVATE
+        evaluator
+        pattern
+)
+
+IF(NOT ANDROID)
+    add_executable(
+            train_pattern_evaluator_test
+            train_pattern_evaluator_test.cpp
+    )
+
+    target_link_libraries(
+            train_pattern_evaluator_test
+            LINK_PRIVATE
+            train_pattern_evaluator
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF()
+
+add_executable(
+        train_pattern_evaluator_main
+        train_pattern_evaluator_main.cpp
+)
+
+target_link_libraries(
+        train_pattern_evaluator_main
+        LINK_PRIVATE
+        evaluator
+        load_training_set
+        train_pattern_evaluator
+)
