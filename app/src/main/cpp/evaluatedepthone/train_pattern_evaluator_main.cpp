@@ -173,8 +173,8 @@ int main() {
 
 //  result = Step(regressions, train1, test, 0.01F);
 //  std::cout << ElapsedTime(start) << ": step 1\n" << result << "\n";
-  result = Step(regressions, train1, test, 0.005F);
-  std::cout << ElapsedTime(start) << ": step 2\n" << result << "\n";
+//  result = Step(regressions, train1, test, 0.005F);
+//  std::cout << ElapsedTime(start) << ": step 2\n" << result << "\n";
   result = Step(regressions, train1, test, 0.002F);
   std::cout << ElapsedTime(start) << ": step 3\n" << result << "\n";
   result = Step(regressions, train1, test, 0.001F);
@@ -182,8 +182,8 @@ int main() {
 
 //  result = Step(regressions, train2, test, 0.002F);
 //  std::cout << ElapsedTime(start) << ": step 2.1\n" << result << "\n";
-  result = Step(regressions, train2, test, 0.001F);
-  std::cout << ElapsedTime(start) << ": step 2.2\n" << result << "\n";
+//  result = Step(regressions, train2, test, 0.001F);
+//  std::cout << ElapsedTime(start) << ": step 2.2\n" << result << "\n";
   result = Step(regressions, train2, test, 0.0005F);
   std::cout << ElapsedTime(start) << ": step 2.3\n" << result << "\n";
   result = Step(regressions, train2, test, 0.0002F);

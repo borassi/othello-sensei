@@ -31,15 +31,6 @@ TrainingBoard::TrainingBoard(
   }
 }
 
-std::size_t std::hash<TrainingBoard>::operator()(
-    const TrainingBoard& f) const noexcept {
-  std::size_t result = std::hash<float>{}(f.Eval());
-  for (const FeatureValue& feature : f.Features()) {
-    result = result ^ std::hash<Pattern>{}(feature);
-  }
-  return result;
-}
-
 bool TrainingBoard::operator==(const TrainingBoard& other) const {
   if (Eval() != other.Eval()) {
     return false;
