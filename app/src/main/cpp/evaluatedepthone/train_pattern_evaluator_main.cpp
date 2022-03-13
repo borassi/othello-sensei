@@ -22,6 +22,8 @@
 #include "train_pattern_evaluator.h"
 #include "../utils/load_training_set.h"
 
+// TODO: Split into train/test. There is a bug when the test set is split
+// differently from the number of regressions.
 std::string Step(std::vector<CategoricalRegression>& regressions,
                  const std::vector<std::vector<const TrainingBoard*>>& train,
                  const std::vector<std::vector<const TrainingBoard*>>& test,
@@ -47,6 +49,7 @@ double ElapsedTime(std::chrono::time_point<std::chrono::system_clock> start) {
   return diff.count();
 }
 
+// TODO: Handle this better.
 std::vector<FeatureValue> FeatureValueToCanonical(int i) {
   std::vector<FeatureValue> result(kFeatures.max_feature_value[i] + 1);
   for (int j = 0; j == 0 ||
@@ -110,7 +113,6 @@ std::vector<std::vector<const TrainingBoard *>> BuildTrainSet(
 
 int main() {
   auto start = std::chrono::system_clock::now();
-//  std::vector<EvaluatedBoard> full_train_board = load_set(1987, 2000);
   std::vector<EvaluatedBoard> full_train_board = load_hard_set(184);
   std::vector<EvaluatedBoard> train_board = load_train_set();
   full_train_board.insert(full_train_board.end(), train_board.begin(), train_board.end());
@@ -143,12 +145,12 @@ int main() {
     }
   }
 
-  int num_splits = 12;
+  int num_splits = 10;
 
   const auto train0 = BuildTrainSet(
       full_train_board, train_board_set, train_board_converted, 1, 0);
   const auto train1 = BuildTrainSet(
-      full_train_board, train_board_set, train_board_converted, num_splits, 0);
+      full_train_board, train_board_set, train_board_converted, num_splits, 2);
   const auto train2 = BuildTrainSet(
       train_board, train_board_set, train_board_converted, num_splits, 0);
   const auto test = BuildTrainSet(
@@ -180,10 +182,10 @@ int main() {
   result = Step(regressions, train1, test, 0.001F);
   std::cout << ElapsedTime(start) << ": step 4\n" << result << "\n";
 
-//  result = Step(regressions, train2, test, 0.002F);
-//  std::cout << ElapsedTime(start) << ": step 2.1\n" << result << "\n";
-//  result = Step(regressions, train2, test, 0.001F);
-//  std::cout << ElapsedTime(start) << ": step 2.2\n" << result << "\n";
+  result = Step(regressions, train2, test, 0.002F);
+  std::cout << ElapsedTime(start) << ": step 2.1\n" << result << "\n";
+  result = Step(regressions, train2, test, 0.001F);
+  std::cout << ElapsedTime(start) << ": step 2.2\n" << result << "\n";
   result = Step(regressions, train2, test, 0.0005F);
   std::cout << ElapsedTime(start) << ": step 2.3\n" << result << "\n";
   result = Step(regressions, train2, test, 0.0002F);
