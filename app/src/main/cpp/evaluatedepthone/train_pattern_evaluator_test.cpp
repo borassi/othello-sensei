@@ -55,3 +55,23 @@ TEST(TrainPatternEvaluator, Simple) {
 //  EXPECT_FLOAT_EQ(regression.Error(TrainingBoard({0, 4, 2}, 7)), 1);
 //  EXPECT_NEAR(regression.Test(test_set), 0, 1E-5);
 }
+
+TEST(TrainPatternEvaluator, Save) {
+  std::vector<FeatureValue> max_feature_value = {1, 5, 7};
+  std::vector<FeatureValue> canonical_rotation = {0, 1, 2};
+  std::vector<TrainingBoard> train_set_board = TrainingSet(1000, max_feature_value);
+  std::vector<TrainingBoard> test_set = TrainingSet(1000, max_feature_value);
+
+  std::vector<const TrainingBoard*> train_set;
+
+  for (TrainingBoard& b : train_set_board) {
+    train_set.push_back(&b);
+  }
+
+  CategoricalRegression regression(max_feature_value, canonical_rotation);
+  regression.Train(train_set, 0.1, 0);
+//  EXPECT_FLOAT_EQ(regression.Eval(TrainingBoard({0, 4, 2}, 6)), 6);
+//  EXPECT_FLOAT_EQ(regression.Error(TrainingBoard({0, 4, 2}, 6)), 0);
+//  EXPECT_FLOAT_EQ(regression.Error(TrainingBoard({0, 4, 2}, 7)), 1);
+//  EXPECT_NEAR(regression.Test(test_set), 0, 1E-5);
+}

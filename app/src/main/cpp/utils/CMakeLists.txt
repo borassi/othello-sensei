@@ -52,6 +52,15 @@ IF(NOT ANDROID)
 ENDIF()
 
 add_library(
+        misc
+        misc.h
+)
+
+set_target_properties(
+        misc PROPERTIES LINKER_LANGUAGE CXX
+)
+
+add_library(
         load_training_set
         load_training_set.h
         load_training_set.cpp
