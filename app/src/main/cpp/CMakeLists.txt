@@ -35,6 +35,7 @@ IF(NOT DEFINED PROFILE)
     SET(PROFILE FALSE)
 ENDIF()
 
+add_subdirectory(analyzers)
 add_subdirectory(board)
 add_subdirectory(evaluatedepthone)
 add_subdirectory(evaluateindepth)

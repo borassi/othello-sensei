@@ -90,10 +90,10 @@ TEST(PatternEvaluator, CanonicalRotation) {
   EXPECT_EQ(
     std::set<int>(std::begin(kFeatures.canonical_rotation),
                   std::end(kFeatures.canonical_rotation)).size(),
-    kNumEquivalentFeatures
+    kNumBaseRotations
   );
   for (int i = 0; i < kNumFeatures; ++i) {
-    EXPECT_LT(kFeatures.canonical_rotation[i], kNumEquivalentFeatures);
+    EXPECT_LT(kFeatures.canonical_rotation[i], kNumBaseRotations);
     for (int j = i+1; j < kNumFeatures; ++j) {
       if (kFeatures.canonical_rotation[i] == kFeatures.canonical_rotation[j]) {
         EXPECT_EQ(kFeatures.max_feature_value[i],
@@ -172,6 +172,7 @@ TEST(TestEvaluator, UpdateAndUndo) {
     if (flip == 0) {
       continue;
     }
+    ASSERT_EQ(eval.Empties(), b.NEmpties());
     eval.Invert();
     eval.Update(1ULL << move, flip);
     Board after(b.GetPlayer(), b.GetOpponent());

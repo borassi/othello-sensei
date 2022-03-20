@@ -53,6 +53,9 @@ TEST(GetMoves, GetAllMoves) {
       ASSERT_THAT(moves_set, ::testing::Contains(flip));
       n_moves++;
     }
+    if (n_moves == 0) {
+      ASSERT_TRUE(HaveToPass(b.GetPlayer(), b.GetOpponent()));
+    }
     ASSERT_EQ(moves.size(), n_moves);
   }
 }

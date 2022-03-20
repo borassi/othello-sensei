@@ -28,6 +28,8 @@ typedef int EvalApprox;
 class EvaluatedBoard {
  public:
   EvaluatedBoard() : player_(0), opponent_(0), eval_(0) {}
+  EvaluatedBoard(BitPattern player, BitPattern opponent, EvalApprox eval)
+      : player_(player), opponent_(opponent), eval_(eval) {}
 
   Board GetBoard() const {
     return Board(player_, opponent_);

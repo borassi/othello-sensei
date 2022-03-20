@@ -21,6 +21,7 @@ void Evaluator::Setup(BitPattern player, BitPattern opponent) {
   for (int i = 0; i < kNumPatterns; ++i) {
     patterns_[i] = kFeatures.patterns[i].GetValue(player, opponent);
   }
+  empties_ = kNumSquares - __builtin_popcountll(player | opponent);
 }
 
 void Evaluator::Update(BitPattern square, BitPattern flip) {
@@ -101,7 +102,7 @@ std::array<Pattern, kMaxFeatureSize> Evaluator::PatternsForFeature(int i) {
   return result;
 }
 
-FeatureValue Evaluator::GetFeature(int i) {
+FeatureValue Evaluator::GetFeature(int i) const {
   std::array<FeatureValue, kMaxFeatureSize> pattern_values = {};
   const auto& feature_to_patterns = kFeatures.features_to_patterns[i];
   for (int j = 0; j < kMaxFeatureSize; ++j) {
@@ -143,3 +144,35 @@ FeatureValue Evaluator::GetCanonicalFeature(int i, BitPattern player, BitPattern
   }
   return result;
 }
+
+int8_t* LoadEvals(const std::string& filepath) {
+  std::ifstream file;
+  file.open(filepath, std::ios_base::binary | std::ios_base::in);
+  assert (file.is_open());
+  int num_splits;
+  file.read((char*) &num_splits, sizeof(num_splits));
+  assert (num_splits == kSplits);
+  std::vector<int8_t> result;
+  for (int i = 0; i < num_splits; ++i) {
+    int num_features;
+    file.read((char*) &num_features, sizeof(num_features));
+    assert (num_features == kNumBaseRotations);
+    for (int j = 0; j < num_features; ++j) {
+      int feature_size;
+      file.read((char*) &feature_size, sizeof(feature_size));
+      auto tmp = new int8_t[feature_size];
+      file.read((char*) tmp, feature_size);
+      result.reserve(result.size() + feature_size);
+      std::copy(&tmp[0], &tmp[feature_size], std::back_inserter(result));
+      delete[] tmp;
+    }
+  }
+
+  auto result_array = (int8_t*) malloc(result.size() * sizeof(int8_t));
+  memcpy(result_array, &result[0], result.size() * sizeof(int8_t));
+  file.close();
+  return result_array;
+}
+
+int8_t* Evaluator::evals_ = LoadEvals(
+    "src/main/assets/coefficients/pattern_evaluator_cpp.dat");

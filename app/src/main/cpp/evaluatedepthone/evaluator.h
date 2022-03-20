@@ -19,11 +19,14 @@
 
 #include <array>
 #include <cassert>
+#include <fstream>
 #include <math.h>
 #include <sstream>
 #include <string.h>
 #include "pattern.h"
 #include "../board/bitpattern.h"
+
+typedef int EvalLarge;
 
 constexpr BitPattern kCorner4x4 = ParsePattern("--------"
                                      "--------"
@@ -100,18 +103,19 @@ constexpr BitPattern k4LastRowSmall = ParsePattern("--------"
 constexpr int kMaxFeatureSize = 5;
 constexpr int kNumFeatures = 26;
 constexpr int kNumPatterns = 42;
+constexpr int kSplits = 10;
 
 constexpr std::array<BitPattern, kMaxFeatureSize> kFeatureDefinition[] = {
   {kCorner, kLastRowSmall, k2LastRowSmall, k3LastRowSmall, k4LastRowSmall},
-  {kCorner4x4},
   {kDiagonalImproved},
+  {kCorner4x4},
   {kLastRowPattern << 16},
   {kLastRowPattern << 24},
   {kMainDiag7Pattern << 8},
   {kMainDiag7Pattern << 16},
 };
 
-constexpr int kNumEquivalentFeatures =
+constexpr int kNumBaseRotations =
     std::end(kFeatureDefinition) - std::begin(kFeatureDefinition);
 
 typedef int8_t PatternNumber ;
@@ -131,12 +135,22 @@ struct UpdatePatterns {
   constexpr UpdatePatterns() : num_patterns(0), pattern() {}
 };
 
+constexpr int GetSplit(int empties, int num_splits) {
+  return (empties - 1) * num_splits / 60;
+}
+
+template<int num_splits>
+constexpr int GetSplit(int empties) {
+  return GetSplit(empties, num_splits);
+}
+
 // TODO: Cleanup.
 struct Features {
   UpdatePatterns square_to_update_patterns[kNumSquares];
   FeatureValue max_pattern_value[kNumPatterns];
   int canonical_rotation[kNumFeatures];
   FeatureValue max_feature_value[kNumFeatures];
+  FeatureValue start_feature[kNumBaseRotations + 1];
   int features_to_patterns[kNumFeatures][kMaxFeatureSize + 1];
   Pattern patterns[kNumPatterns];
   Pattern equivalent_features[kNumFeatures][kMaxPatternTranspositions][
@@ -174,6 +188,7 @@ struct Features {
       max_pattern_value(),
       canonical_rotation(),
       max_feature_value(),
+      start_feature(),
       features_to_patterns(),
       patterns(),
       equivalent_features() {
@@ -183,6 +198,7 @@ struct Features {
     Pattern transpositions[kMaxPatternTranspositions];
     // Equivalent = same squares in different order.
     int equivalent_transposition[kMaxPatternTranspositions] = {};
+    start_feature[0] = 0;
 
     for (const auto &feature : kFeatureDefinition) {
       EquivalentTransposition(feature, equivalent_transposition);
@@ -244,9 +260,12 @@ struct Features {
 
         ++num_features;
       }
+      start_feature[num_canonical_rotations + 1] =
+          1 + max_feature_value[num_features - 1] +
+          start_feature[num_canonical_rotations];
       num_canonical_rotations++;
     }
-    assert (kNumEquivalentFeatures == num_canonical_rotations);
+    assert (kNumBaseRotations == num_canonical_rotations);
     assert (kNumPatterns == num_patterns);
     assert (kNumFeatures == num_features);
   }
@@ -274,13 +293,34 @@ class Evaluator {
 
   int Empties() const { return empties_; }
 
+  template<bool verbose>
+  EvalLarge EvaluateBase() const {
+    int split = GetSplit<kSplits>(empties_);
+    int8_t* base_evals =
+        evals_ + kFeatures.start_feature[kNumBaseRotations] * split;
+    EvalLarge result = 0;
+
+    for (int i = 0; i < kNumFeatures; ++i) {
+      int canonical_rotation = kFeatures.canonical_rotation[i];
+      int8_t* evals = base_evals + kFeatures.start_feature[canonical_rotation];
+      result += evals[GetFeature(i)];
+      if (verbose) {
+        std::cout << i << " " << GetFeature(i) << " "
+                  << evals[GetFeature(i)] / 8.0 << "\n";
+      }
+    }
+    return result;
+  }
+
+  EvalLarge Evaluate() const { return EvaluateBase<false>(); }
+
   static FeatureValue GetFeature(
       std::array<FeatureValue, kMaxFeatureSize> pattern_values,
       std::array<Pattern, kMaxFeatureSize> patterns);
 
   static std::array<Pattern, kMaxFeatureSize> PatternsForFeature(int i);
 
-  FeatureValue GetFeature(int i);
+  FeatureValue GetFeature(int i) const;
 
   static FeatureValue GetFeature(
       std::array<Pattern, kMaxFeatureSize> patterns,
@@ -291,6 +331,7 @@ class Evaluator {
   static FeatureValue GetCanonicalFeature(int i, BitPattern player, BitPattern opponent);
 
  private:
+  static int8_t* evals_;
   FeatureValue patterns_[kNumPatterns];
   int empties_;
 };

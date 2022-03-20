@@ -25,20 +25,24 @@ int main() {
   std::vector<EvaluatedBoard> full_train_board = load_hard_set(184);
   std::vector<EvaluatedBoard> train_board = load_train_set();
   full_train_board.insert(full_train_board.end(), train_board.begin(), train_board.end());
-//  std::vector<EvaluatedBoard> full_train_board = load_set(1987, 1997);
+//  std::vector<EvaluatedBoard> full_train_board = load_set(1987, 1991);
 //  std::vector<EvaluatedBoard> train_board = full_train_board;
   std::vector<EvaluatedBoard> test_board = load_test_set();
   int num_splits = 10;
 
-  CategoricalRegressions trainer(1, test_board);
+  CategoricalRegressions trainer(1, test_board, full_train_board.size() + test_board.size());
 
-  trainer.Train(full_train_board, 0, {0.01, 0.005, 0.002, 0.001, 0.0005});
+  trainer.Train(full_train_board, 0, {0.005, 0.002, 0.001, 0.0005});
 
   trainer.Split(num_splits);
 
-  trainer.Train(full_train_board, 0, {0.001});
+//  trainer.Train(full_train_board, 2, {0.001});
   trainer.Train(train_board, 4, {0.001});
   trainer.Train(train_board, 2, {0.001});
   trainer.Train(train_board, 1, {0.001});
   trainer.Train(train_board, 0, {0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.0001});
+  trainer.Round();
+  trainer.Save("src/main/assets/coefficients/pattern_evaluator_cpp_new.dat");
+
+  return 0;
 }

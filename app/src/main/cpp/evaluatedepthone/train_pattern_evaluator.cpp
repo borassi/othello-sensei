@@ -63,11 +63,7 @@ void TrainingFeature::UpdateValue(float error, float learning_rate, float lambda
   m_bias_ *= beta_1;
   m_t_ = beta_1 * m_t_ + (1 - beta_1) * update;
   value_ += 2 * learning_rate * m_t_ / (1 - m_bias_);
-  value_ = std::max(-12.0F, std::min(value_, 12.0F));
-}
-
-void TrainingFeature::Round() {
-  value_ = round(value_ * 8) / 8;
+  value_ = std::max(-15.0F, std::min(value_, 15.0F));
 }
 
 CategoricalRegression::CategoricalRegression(
@@ -132,4 +128,182 @@ void CategoricalRegression::Round() {
       value.Round();
     }
   }
+}
+
+CategoricalRegressions::CategoricalRegressions(
+    int num_splits,
+    std::vector<EvaluatedBoard> test_set,
+    int max_num_boards) : max_num_boards(max_num_boards) {
+  std::vector<FeatureValue> max_feature_value(
+      std::begin(kFeatures.max_feature_value),
+      std::end(kFeatures.max_feature_value));
+  std::vector<int> canonical_rotation(
+      std::begin(kFeatures.canonical_rotation),
+      std::end(kFeatures.canonical_rotation));
+  feature_value_to_canonical_ = FeatureValueToCanonical();
+  test_set_ = test_set;
+  training_boards_ =
+      (TrainingBoard*) malloc(max_num_boards * sizeof(TrainingBoard));
+  regressions_ =
+      std::vector<CategoricalRegression>(num_splits, CategoricalRegression(
+          max_feature_value, canonical_rotation));
+}
+
+CategoricalRegressions::~CategoricalRegressions() {
+  free(training_boards_);
+}
+
+void CategoricalRegressions::Split(int new_num_splits) {
+  assert (regressions_.size() == 1);
+  regressions_ =
+      std::vector<CategoricalRegression>(new_num_splits, regressions_[0]);
+}
+
+void CategoricalRegressions::Train(const std::vector<EvaluatedBoard>& boards,
+                                   int distance,
+                                   std::vector<double> learning_rates) {
+  std::vector<std::vector<const TrainingBoard*>>
+      training = BuildTrainSet(boards, distance);
+  std::vector<std::vector<const TrainingBoard*>>
+      test = BuildTrainSet(test_set_, distance);
+  if (boards.size() > 0) {
+    std::cout << elapsed_time_.Get() << ": Prepared for training on "
+              << boards.size() << " examples, distance " << distance << "\n";
+  }
+  std::string result;
+  for (int i = 0; i < learning_rates.size(); ++i) {
+    result = Step(training, test, learning_rates[i]);
+    std::cout << "  " << elapsed_time_.Get() << ": step " << i + 1
+              << " (learning rate: " << learning_rates[i] << ")\n" << result
+              << "\n";
+  }
+}
+
+void CategoricalRegressions::Round() {
+  for (auto& regression : regressions_) {
+    regression.Round();
+  }
+  std::cout << "Rounded.\n";
+  Train({}, 0, {0});
+}
+
+void CategoricalRegressions::Save(const std::string& filepath) const {
+  std::ofstream file;
+  file.open(filepath, std::ios_base::binary | std::ios::out);
+  assert (file.is_open());
+  int size = regressions_.size();
+  file.write((char*) &size, sizeof(size));
+
+  for (const CategoricalRegression& r : regressions_) {
+    const std::vector<std::vector<TrainingFeature>>& features = r.GetFeatures();
+    size = features.size();
+    file.write((char*) &size, sizeof(size));
+    for (int i = 0; i < features.size(); ++i) {
+      const std::vector<TrainingFeature>& feature = features[i];
+      size = feature.size();
+      file.write((char*) &size, sizeof(size));
+      std::vector<int8_t> converted_feature;
+      converted_feature.reserve(feature.size());
+      for (int j = 0; j < feature.size(); ++j) {
+        converted_feature.push_back(
+            feature[feature_value_to_canonical_[i][j]].GetCompressedValue());
+      }
+      file.write((char*) &converted_feature[0],
+                 sizeof(int8_t) * feature.size());
+    }
+  }
+  file.close();
+}
+
+std::string CategoricalRegressions::Step(
+    const std::vector<std::vector<const TrainingBoard*>>& train,
+    const std::vector<std::vector<const TrainingBoard*>>& test,
+    float learning_rate) {
+  double total_error = 0;
+  double total_examples = 0;
+  std::stringstream result;
+  result << "    Errors: ";
+  for (int i = 0; i < regressions_.size(); ++i) {
+    regressions_[i].Train(train[i], learning_rate, 0);
+    float error = regressions_[i].Test(test[i]);
+    total_error += (error * error) * (float) test[i].size();
+    total_examples += test[i].size();
+    result << error << " ";
+  }
+  result << "\n    Total: " << sqrt(total_error / total_examples);
+  return result.str();
+}
+
+std::vector<std::vector<const TrainingBoard*>>
+    CategoricalRegressions::BuildTrainSet(
+        const std::vector<EvaluatedBoard>& boards,
+        int distance) {
+  int num_splits = regressions_.size();
+  std::vector<std::vector<int>> board_to_index(num_splits);
+  std::vector<std::vector<const TrainingBoard*>> result(num_splits);
+
+  for (const EvaluatedBoard& b : boards) {
+    int size = board_to_index_.size();
+    auto value = board_to_index_.insert(std::make_pair(b, size));
+    int current_board = value.first->second;
+    assert((current_board == size) == value.second);
+    if (current_board == size) {
+      assert(current_board < max_num_boards);
+      training_boards_[current_board] =
+          TrainingBoard(b, feature_value_to_canonical_);
+    }
+    int exact_value = GetSplit(b.Empties(), num_splits);
+    for (int i = std::max(0, exact_value - distance);
+         i <= std::min((int) board_to_index.size() - 1, exact_value + distance);
+         ++i) {
+      board_to_index[i].push_back(current_board);
+    }
+  }
+  for (int i = 0; i < board_to_index.size(); ++i) {
+    result[i].reserve(board_to_index[i].size());
+    for (int j = 0; j < board_to_index[i].size(); ++j) {
+      result[i].push_back(&(training_boards_[board_to_index[i][j]]));
+    }
+  }
+  return result;
+}
+
+std::vector<FeatureValue> CategoricalRegressions::FeatureValueToCanonical(int i) {
+  std::vector<FeatureValue> result(kFeatures.max_feature_value[i] + 1);
+  for (int j = 0; j == 0 ||
+                  (kFeatures.features_to_patterns[i][j] != -1
+                   && j + 1 < kMaxFeatureSize
+                   && kFeatures.features_to_patterns[i][j + 1] != -1); ++j) {
+    const BitPattern cur_pattern =
+        kFeatures.patterns[kFeatures.features_to_patterns[i][j]]
+            .ToBitPattern();
+    BitPattern next_pattern = 0;
+    if (kFeatures.features_to_patterns[i][j + 1] != -1) {
+      next_pattern =
+          kFeatures.patterns[kFeatures.features_to_patterns[i][j + 1]]
+              .ToBitPattern();
+    }
+    const BitPattern pattern = cur_pattern | next_pattern;
+
+    for (BitPattern player : AllSubBitPatterns(pattern)) {
+      for (BitPattern opponent : AllSubBitPatterns(pattern & ~player)) {
+        result[Evaluator::GetFeature(i, player, opponent)] =
+            Evaluator::GetCanonicalFeature(i, player, opponent);
+      }
+    }
+  }
+  return result;
+}
+
+std::vector<std::vector<FeatureValue>> CategoricalRegressions::FeatureValueToCanonical() {
+  std::vector<std::vector<FeatureValue>> result;
+  int old_canonical_rotation = -1;
+  for (int i = 0; i < kNumFeatures; ++i) {
+    if (old_canonical_rotation == kFeatures.canonical_rotation[i]) {
+      continue;
+    }
+    old_canonical_rotation = kFeatures.canonical_rotation[i];
+    result.push_back(std::move(FeatureValueToCanonical(i)));
+  }
+  return result;
 }
