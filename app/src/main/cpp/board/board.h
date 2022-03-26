@@ -21,10 +21,11 @@
 #include "get_flip.h"
 
 class Board {
-  
+
 public:
   Board(BitPattern player, BitPattern opponent) : player_(player), opponent_(opponent) {}
   Board(const char* board);
+  Board();
 
   long GetPlayer() const {
     return player_;
@@ -53,7 +54,10 @@ public:
     opponent_ = NewOpponent(flip, player_);
     player_ = NewPlayer(flip, tmp);
   }
-
+  bool operator==(const Board& rhs) const {
+    return GetPlayer() == rhs.GetPlayer()
+           && GetOpponent() == rhs.GetOpponent();
+  }
 private:
   long player_;
   long opponent_;

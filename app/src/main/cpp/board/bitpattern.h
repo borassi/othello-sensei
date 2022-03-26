@@ -31,6 +31,7 @@ typedef u_int8_t Square;
 typedef u_int8_t DepthValue;
 typedef u_int16_t MoveShift;
 typedef u_int8_t LastRow;
+typedef unsigned long long NVisited;
 
 constexpr Eval kLessThenMinEval = -66;
 constexpr Square kNoSquare = 255;

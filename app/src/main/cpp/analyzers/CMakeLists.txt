@@ -30,7 +30,9 @@ add_executable(
 target_link_libraries(
         evaluate_thor_main
         LINK_PUBLIC
-        evaluator
+        bitpattern
+        pattern_evaluator
+        test_evaluator
         get_moves
         load_training_set
 )

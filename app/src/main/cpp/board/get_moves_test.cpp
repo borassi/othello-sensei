@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <gmock/gmock-matchers.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <vector>
@@ -58,6 +59,50 @@ TEST(GetMoves, GetAllMoves) {
     }
     ASSERT_EQ(moves.size(), n_moves);
   }
+}
+
+TEST(GetMoves, GetAllMovesWithPass) {
+  Board b;
+  ASSERT_THAT(
+      GetAllMovesWithPass(b.GetPlayer(), b.GetOpponent()),
+      ::testing::UnorderedElementsAre(
+          ParsePattern(
+              "--------"
+              "--------"
+              "--------"
+              "--------"
+              "----X---"
+              "----X---"
+              "--------"
+              "--------"),
+          ParsePattern(
+              "--------"
+              "--------"
+              "--------"
+              "--------"
+              "----XX--"
+              "--------"
+              "--------"
+              "--------"),
+          ParsePattern(
+              "--------"
+              "--------"
+              "--------"
+              "--XX----"
+              "--------"
+              "--------"
+              "--------"
+              "--------"),
+          ParsePattern(
+              "--------"
+              "--------"
+              "---X----"
+              "---X----"
+              "--------"
+              "--------"
+              "--------"
+              "--------"))
+  );
 }
 
 TEST(GetMoves, SquareFromFlip) {

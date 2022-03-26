@@ -19,7 +19,7 @@
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../board/get_moves.h"
-#include "evaluator.h"
+#include "pattern_evaluator.h"
 
 using ::testing::ContainerEq;
 
@@ -31,7 +31,7 @@ TEST(PatternEvaluator, BitPatternsAsExpected) {
 }
 
 TEST(PatternEvaluator, Patterns) {
-  Evaluator evaluator;
+  PatternEvaluator evaluator;
   for (int i = 0; i < kNumPatterns; ++i) {
     std::map<FeatureValue, std::unique_ptr<Board>> visited_patterns;
     const BitPattern pattern = kFeatures.patterns[i].ToBitPattern();
@@ -56,7 +56,7 @@ TEST(PatternEvaluator, Patterns) {
 }
 
 TEST(PatternEvaluator, Features) {
-  Evaluator evaluator;
+  PatternEvaluator evaluator;
   for (int i = 0; i < kNumFeatures; ++i) {
     std::map<int, std::unique_ptr<Board>> visited_patterns;
     for (int j = 0; kFeatures.features_to_patterns[i][j+1] != -1; ++j) {
@@ -158,8 +158,8 @@ TEST(PatternEvaluator, EquivalentFeatures) {
 }
 
 TEST(TestEvaluator, UpdateAndUndo) {
-  Evaluator eval;
-  Evaluator test;
+  PatternEvaluator eval;
+  PatternEvaluator test;
   for (int i = 0; i < 10000; ++i) {
     Board b = RandomBoard();
     std::vector<BitPattern> moves = GetAllMoves(b.GetPlayer(), b.GetOpponent());

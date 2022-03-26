@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef BOARD_GET_MOVES_H
+#define BOARD_GET_MOVES_H
+
 #include "get_flip.h"
 
 constexpr BitPattern kNonVerticalFlipMask = ParsePattern(
@@ -79,7 +82,11 @@ BitPattern GetMovesBasic(BitPattern player, BitPattern opponent);
 
 std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent);
 
+std::vector<BitPattern> GetAllMovesWithPass(BitPattern player, BitPattern opponent);
+
 inline Square SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline Square SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept {
   return __builtin_ctzll(flip & ~player & ~opponent);
 }
+
+#endif  // BOARD_GET_MOVES_H

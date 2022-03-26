@@ -82,3 +82,31 @@ target_link_libraries(
         LINK_PRIVATE
         evaluator_last_moves
 )
+
+add_library(
+        test_evaluator
+        test_evaluator.h
+)
+
+target_link_libraries(
+        test_evaluator
+        LINK_PRIVATE
+        board
+)
+
+IF (NOT ANDROID)
+    add_executable(
+            test_evaluator_test
+            test_evaluator_test.cpp
+    )
+
+    target_link_libraries(
+            test_evaluator_test
+            LINK_PRIVATE
+            board
+            get_moves
+            test_evaluator_depth_one
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()

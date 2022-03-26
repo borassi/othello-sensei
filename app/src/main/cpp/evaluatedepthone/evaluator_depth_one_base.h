@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+typedef int EvalLarge;
 
-constexpr int kBitHashMap = 24;
-constexpr int kHashMapSize = 1L << kBitHashMap;
-constexpr int kMinEmptiesForHashMap = 15;
-constexpr int kWeightDepthOne = 2;
-constexpr int kWeightDepthZero = 1;
+#ifndef EVALUATE_DEPTH_ONE_EVALUATOR_DEPTH_ONE_BASE_H
+#define EVALUATE_DEPTH_ONE_EVALUATOR_DEPTH_ONE_BASE_H
 
+class EvaluatorDepthOneBase {
 
-#endif /* CONSTANTS_H */
+ public:
+  virtual void Setup(BitPattern player, BitPattern opponent) = 0;
+  virtual void Update(BitPattern square, BitPattern flip) = 0;
+  virtual void UndoUpdate(BitPattern square, BitPattern flip) = 0;
+  virtual void Invert() = 0;
+  virtual EvalLarge Evaluate() const = 0;
+
+};
+
+#endif

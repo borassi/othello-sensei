@@ -56,29 +56,30 @@ ENDIF()
 
 
 add_library(
-        evaluator
-        evaluator.h
-        evaluator.cpp
+        pattern_evaluator
+        pattern_evaluator.h
+        pattern_evaluator.cpp
 )
 
 target_link_libraries(
-        evaluator
+        pattern_evaluator
         LINK_PRIVATE
         bitpattern
         board
+        evaluator_depth_one_base
 )
 
 IF(NOT ANDROID)
     add_executable(
-            evaluator_test
-            evaluator_test.cpp
+            pattern_evaluator_test
+            pattern_evaluator_test.cpp
     )
 
     target_link_libraries(
-            evaluator_test
+            pattern_evaluator_test
             LINK_PUBLIC
             board
-            evaluator
+            pattern_evaluator
             get_moves
             pattern
             GTest::gtest
@@ -88,24 +89,34 @@ IF(NOT ANDROID)
 ENDIF()
 
 add_library(
-        test_evaluator
-        test_evaluator.h
+        evaluator_depth_one_base
+        evaluator_depth_one_base.h
+)
+
+set_target_properties(
+        evaluator_depth_one_base PROPERTIES LINKER_LANGUAGE CXX
+)
+
+add_library(
+        test_evaluator_depth_one
+        test_evaluator_depth_one.h
 )
 
 target_link_libraries(
-        test_evaluator
+        test_evaluator_depth_one
         LINK_PRIVATE
         board
+        evaluator_depth_one_base
 )
 
 IF(NOT ANDROID)
     add_executable(
-            test_evaluator_test
-            test_evaluator_test.cpp
+            test_evaluator_depth_one_test
+            test_evaluator_depth_one_test.cpp
     )
 
     target_link_libraries(
-            test_evaluator_test
+            test_evaluator_depth_one_test
             LINK_PRIVATE
             board
             get_moves
@@ -124,7 +135,7 @@ add_library(
 target_link_libraries(
         train_pattern_evaluator
         LINK_PRIVATE
-        evaluator
+        pattern_evaluator
         pattern
 )
 
@@ -151,7 +162,7 @@ add_executable(
 target_link_libraries(
         train_pattern_evaluator_main
         LINK_PRIVATE
-        evaluator
+        pattern_evaluator
         load_training_set
         train_pattern_evaluator
 )

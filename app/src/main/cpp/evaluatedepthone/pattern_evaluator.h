@@ -24,9 +24,8 @@
 #include <sstream>
 #include <string.h>
 #include "pattern.h"
+#include "evaluator_depth_one_base.h"
 #include "../board/bitpattern.h"
-
-typedef int EvalLarge;
 
 constexpr BitPattern kCorner4x4 = ParsePattern("--------"
                                      "--------"
@@ -276,10 +275,10 @@ constexpr Features kFeatures;
 #define FOR_EACH_SET_BIT(pattern, name) \
   for (BitPattern name = pattern; name != 0; name = name & (name - 1))
 
-class Evaluator {
+class PatternEvaluator : public EvaluatorDepthOneBase {
 
  public:
-  Evaluator() : empties_(0) {}
+  PatternEvaluator() : empties_(0) {}
 
   void Setup(BitPattern player, BitPattern opponent);
 

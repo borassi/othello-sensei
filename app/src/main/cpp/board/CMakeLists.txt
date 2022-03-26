@@ -55,7 +55,23 @@ add_library(
         board.cpp
 )
 
+
 target_link_libraries(board LINK_PUBLIC bitpattern)
+
+IF (NOT ANDROID)
+    add_executable(
+            board_test
+            board_test.cpp
+    )
+
+    target_link_libraries(
+            board_test
+            LINK_PUBLIC
+            board
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()
 
 add_library(
         get_moves
@@ -88,6 +104,7 @@ IF(NOT ANDROID)
             board
             get_flip
             get_moves
+            GTest::gmock
             GTest::gtest
             GTest::gtest_main
     )

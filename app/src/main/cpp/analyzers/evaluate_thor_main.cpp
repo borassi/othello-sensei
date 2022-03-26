@@ -15,50 +15,109 @@
  */
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
+#include "../board/bitpattern.h"
 #include "../board/get_moves.h"
-#include "../evaluatedepthone/evaluator.h"
+#include "../evaluatedepthone/pattern_evaluator.h"
+#include "../evaluateindepth/test_evaluator.h"
 #include "../utils/load_training_set.h"
+#include "../utils/misc.h"
+
+class Evaluator {
+ public:
+  virtual EvalLarge operator()(BitPattern player, BitPattern opponent) = 0;
+  virtual NVisited GetNVisited() const = 0;
+};
+
+class EvaluateDepth0 : public Evaluator {
+ public:
+  EvalLarge operator() (BitPattern player, BitPattern opponent) override {
+    PatternEvaluator eval;
+    eval.Setup(player, opponent);
+    return eval.Evaluate();
+  }
+  NVisited GetNVisited() const override { return 1; }
+};
+
+class EvaluateInDepth : public Evaluator {
+ public:
+  explicit EvaluateInDepth(int depth) :
+      depth_(depth),
+      depth_one_evaluator_(),
+      test_evaluator_(&depth_one_evaluator_) {}
+
+  EvalLarge operator()(BitPattern player, BitPattern opponent) override {
+    return test_evaluator_.Evaluate(player, opponent, depth_);
+  }
+  NVisited GetNVisited() const override { return test_evaluator_.GetNVisited(); }
+ private:
+  DepthValue depth_;
+  PatternEvaluator depth_one_evaluator_;
+  TestEvaluator test_evaluator_;
+};
 
 class EvaluateThor {
  public:
-  EvaluateThor() {
-    boards = load_test_set();
-  }
+  EvaluateThor() :
+      boards_(load_test_set()),
+      sum_error_squared_(0),
+      num_boards_(0),
+      n_visited_(0),
+      elapsed_time_() {}
 
-  double GetError(EvaluatedBoard board) {
-    Evaluator eval;
-    eval.Setup(board.GetPlayer(), board.GetOpponent());
-    return eval.Evaluate() / 8.0 - (board.GetEval());
-  }
+  void Run(Evaluator* evaluator, int min_error_print, int print_every) {
+    sum_error_squared_ = 0;
+    num_boards_ = 0;
+    n_visited_ = 0;
+    int i = 0;
 
-  double Run() {
-    double sum_error_squared = 0;
-    double num_boards = 0;
-
-    for (EvaluatedBoard board : boards) {
-      if (board.Empties() < 1 || board.Empties() > 60) {
+    for (EvaluatedBoard board : boards_) {
+      if (board.Empties() < 4 || board.Empties() > 60 ||
+          HaveToPass(board.GetPlayer(), board.GetOpponent())) {
         continue;
       }
-      double error = GetError(board);
-      if ((error > 12 || error < -12) && (double) rand() / RAND_MAX < 0.001) {
-        Evaluator eval;
+      EvalLarge eval = (*evaluator)(board.GetPlayer(), board.GetOpponent());
+      double error = eval / 8.0 - board.GetEval();
+      if ((error > min_error_print || error < -min_error_print)
+          && (double) rand() / RAND_MAX < 0.001) {
+        PatternEvaluator eval;
         eval.Setup(board.GetPlayer(), board.GetOpponent());
         std::cout << board.GetBoard().ToString() << "\n";
         double result = eval.EvaluateBase<true>() / 8.0;
         std::cout << result << " " << board.GetEval() << "\n\n";
       }
-      sum_error_squared += error * error;
-      num_boards++;
+      sum_error_squared_ += error * error;
+      num_boards_++;
+      n_visited_ += evaluator->GetNVisited();
+      if (++i % print_every == 0) {
+        Print();
+      }
     }
-    return sqrt(sum_error_squared / num_boards);
   }
 
+  NVisited GetNVisited() const { return n_visited_; }
+
+  void Print() {
+    double time = elapsed_time_.Get();
+    std::cout << "After " << num_boards_ << ":\n";
+    std::cout << "  Error: " << sqrt(sum_error_squared_ / num_boards_) << "\n";
+    std::cout << "  Positions: " << n_visited_ << "\n";
+    std::cout << "  Positions / sec: " << (double) n_visited_ / time << "\n";
+    std::cout << "  Total time: " << time << "\n";
+  }
  private:
-  std::vector<EvaluatedBoard> boards;
+  double sum_error_squared_;
+  int num_boards_;
+  std::vector<EvaluatedBoard> boards_;
+  NVisited n_visited_;
+  ElapsedTime elapsed_time_;
 };
 
 int main() {
-  std::cout << EvaluateThor().Run() << "\n";
+  EvaluateDepth0 eval_depth_0;
+  EvaluateInDepth eval_in_depth(4);
+  EvaluateThor evaluate_thor;
+  evaluate_thor.Run(&eval_in_depth, 10000, 1000);
+  evaluate_thor.Print();
   return 0;
 }

@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 
+#ifndef EVALUATE_DEPTH_ONE_TEST_EVALUATOR_DEPTH_ONE_H
+#define EVALUATE_DEPTH_ONE_TEST_EVALUATOR_DEPTH_ONE_H
+
 #include <utility>
+#include "evaluator_depth_one_base.h"
 #include "../board/board.h"
 
 /**
  * Test-only evaluator that returns the disk difference plus 2.
  */
 
-class TestEvaluator {
+class TestEvaluatorDepthOne : public EvaluatorDepthOneBase {
  private:
   long player_;
   long opponent_;
 
  public:
-  int Eval() {
-    return 100 * (__builtin_popcountll(player_) - __builtin_popcountll(opponent_) + 2);
+  EvalLarge Evaluate() const {
+    return 8 * (__builtin_popcountll(player_) - __builtin_popcountll(opponent_) + 2);
   }
 
   void Setup(BitPattern player, BitPattern opponent) {
@@ -52,3 +56,5 @@ class TestEvaluator {
 
   void Invert() {}
 };
+
+#endif  // EVALUATE_DEPTH_ONE_TEST_EVALUATOR_DEPTH_ONE_H

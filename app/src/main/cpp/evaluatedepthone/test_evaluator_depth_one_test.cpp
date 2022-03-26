@@ -19,12 +19,12 @@
 
 #include "../board/board.h"
 #include "../board/get_moves.h"
-#include "test_evaluator.h"
+#include "test_evaluator_depth_one.h"
 
 
 TEST(TestEvaluator, UpdateAndUndo) {
-  TestEvaluator eval;
-  TestEvaluator test;
+  TestEvaluatorDepthOne eval;
+  TestEvaluatorDepthOne test;
   for (int i = 0; i < 10000; ++i) {
     Board b = RandomBoard();
     std::vector<BitPattern> moves = GetAllMoves(b.GetPlayer(), b.GetOpponent());
@@ -42,11 +42,11 @@ TEST(TestEvaluator, UpdateAndUndo) {
     Board after(b.GetPlayer(), b.GetOpponent());
     after.PlayMove(flip);
     test.Setup(after.GetPlayer(), after.GetOpponent());
-    EXPECT_EQ(eval.Eval(), test.Eval());
+    EXPECT_EQ(eval.Evaluate(), test.Evaluate());
 
     eval.UndoUpdate(move, flip);
     eval.Invert();
     test.Setup(b.GetPlayer(), b.GetOpponent());
-    EXPECT_EQ(eval.Eval(), test.Eval());
+    EXPECT_EQ(eval.Evaluate(), test.Evaluate());
   }
 }

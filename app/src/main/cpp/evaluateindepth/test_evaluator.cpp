@@ -13,15 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
-
-constexpr int kBitHashMap = 24;
-constexpr int kHashMapSize = 1L << kBitHashMap;
-constexpr int kMinEmptiesForHashMap = 15;
-constexpr int kWeightDepthOne = 2;
-constexpr int kWeightDepthZero = 1;
-
-
-#endif /* CONSTANTS_H */

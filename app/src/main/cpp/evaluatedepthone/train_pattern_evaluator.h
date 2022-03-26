@@ -21,7 +21,7 @@
 #include <random>
 #include <set>
 #include <unordered_map>
-#include "evaluator.h"
+#include "pattern_evaluator.h"
 #include "../utils/load_training_set.h"
 #include "../utils/misc.h"
 
@@ -53,8 +53,8 @@ struct std::hash<TrainingBoard> {
 
 class TrainingFeature {
  public:
-  static constexpr double beta_1 = 0.9;
-  TrainingFeature() : value_(0), update_(0), m_t_(0), m_bias_(1) {}
+  static constexpr float beta_1 = 0.9F;
+  TrainingFeature() : value_(0), update_(0), m_t_(0), n_appearences_(0) {}
 
   float GetValue() const { return value_; }
 
@@ -71,7 +71,7 @@ class TrainingFeature {
   }
 
  private:
-  float m_bias_;
+  int n_appearences_;
   float value_;
   float m_t_;
   float update_;
@@ -115,7 +115,7 @@ class CategoricalRegressions {
   void Split(int new_num_splits);
 
   void Train(const std::vector<EvaluatedBoard>& boards, int distance,
-             std::vector<double> learning_rates);
+             std::vector<float> learning_rates);
 
   void Round();
 
@@ -134,12 +134,10 @@ class CategoricalRegressions {
 
   static std::vector<std::vector<FeatureValue>> FeatureValueToCanonical();
 
-  int num_features_;
   std::vector<CategoricalRegression> regressions_;
   std::unordered_map<EvaluatedBoard, int> board_to_index_;
   TrainingBoard* training_boards_;
   int max_num_boards;
-  int num_distinct_boards_;
   std::vector<std::vector<FeatureValue>> feature_value_to_canonical_;
   std::vector<EvaluatedBoard> test_set_;
   ElapsedTime elapsed_time_;

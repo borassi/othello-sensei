@@ -16,7 +16,7 @@
 
 #include <unordered_map>
 
-#include "evaluator.h"
+#include "pattern_evaluator.h"
 #include "train_pattern_evaluator.h"
 #include "../utils/load_training_set.h"
 
@@ -30,7 +30,7 @@ int main() {
   std::vector<EvaluatedBoard> test_board = load_test_set();
   int num_splits = 10;
 
-  CategoricalRegressions trainer(1, test_board, full_train_board.size() + test_board.size());
+  CategoricalRegressions trainer(1, test_board, (int) (full_train_board.size() + test_board.size()));
 
   trainer.Train(full_train_board, 0, {0.005, 0.002, 0.001, 0.0005});
 

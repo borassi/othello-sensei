@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "evaluator.h"
+#include "pattern_evaluator.h"
 
-void Evaluator::Setup(BitPattern player, BitPattern opponent) {
+void PatternEvaluator::Setup(BitPattern player, BitPattern opponent) {
   memset(patterns_, 0, sizeof(patterns_));
   for (int i = 0; i < kNumPatterns; ++i) {
     patterns_[i] = kFeatures.patterns[i].GetValue(player, opponent);
@@ -24,7 +24,7 @@ void Evaluator::Setup(BitPattern player, BitPattern opponent) {
   empties_ = kNumSquares - __builtin_popcountll(player | opponent);
 }
 
-void Evaluator::Update(BitPattern square, BitPattern flip) {
+void PatternEvaluator::Update(BitPattern square, BitPattern flip) {
   assert(__builtin_popcountll(square) == 1);
   empties_--;
   const UpdatePatterns& update_patterns =
@@ -43,7 +43,7 @@ void Evaluator::Update(BitPattern square, BitPattern flip) {
   }
 }
 
-void Evaluator::UndoUpdate(BitPattern square, BitPattern flip) {
+void PatternEvaluator::UndoUpdate(BitPattern square, BitPattern flip) {
   assert(__builtin_popcountll(square) == 1);
   empties_--;
   const UpdatePatterns& update_patterns =
@@ -62,13 +62,13 @@ void Evaluator::UndoUpdate(BitPattern square, BitPattern flip) {
   }
 }
 
-void Evaluator::Invert() {
+void PatternEvaluator::Invert() {
   for (int i = 0; i < kNumPatterns; ++i) {
     patterns_[i] = kFeatures.max_pattern_value[i] - patterns_[i];
   }
 }
 
-FeatureValue Evaluator::GetFeature(
+FeatureValue PatternEvaluator::GetFeature(
     std::array<FeatureValue, kMaxFeatureSize> pattern_values,
     std::array<Pattern, kMaxFeatureSize> patterns) {
   FeatureValue result = 0;
@@ -89,7 +89,7 @@ FeatureValue Evaluator::GetFeature(
   return result;
 }
 
-std::array<Pattern, kMaxFeatureSize> Evaluator::PatternsForFeature(int i) {
+std::array<Pattern, kMaxFeatureSize> PatternEvaluator::PatternsForFeature(int i) {
   std::array<Pattern, kMaxFeatureSize> result;
   const auto& feature_to_patterns = kFeatures.features_to_patterns[i];
   for (int j = 0; j < kMaxFeatureSize; ++j) {
@@ -102,7 +102,7 @@ std::array<Pattern, kMaxFeatureSize> Evaluator::PatternsForFeature(int i) {
   return result;
 }
 
-FeatureValue Evaluator::GetFeature(int i) const {
+FeatureValue PatternEvaluator::GetFeature(int i) const {
   std::array<FeatureValue, kMaxFeatureSize> pattern_values = {};
   const auto& feature_to_patterns = kFeatures.features_to_patterns[i];
   for (int j = 0; j < kMaxFeatureSize; ++j) {
@@ -114,7 +114,7 @@ FeatureValue Evaluator::GetFeature(int i) const {
   return GetFeature(pattern_values, PatternsForFeature(i));
 }
 
-FeatureValue Evaluator::GetFeature(
+FeatureValue PatternEvaluator::GetFeature(
     std::array<Pattern, kMaxFeatureSize> patterns,
     BitPattern player, BitPattern opponent) {
   std::array<FeatureValue, kMaxFeatureSize> pattern_values = {};
@@ -127,14 +127,14 @@ FeatureValue Evaluator::GetFeature(
   return GetFeature(pattern_values, patterns);
 }
 
-FeatureValue Evaluator::GetFeature(int i, BitPattern player, BitPattern opponent) {
+FeatureValue PatternEvaluator::GetFeature(int i, BitPattern player, BitPattern opponent) {
   const auto& feature = kFeatures.equivalent_features[i][0];
   std::array<Pattern, kMaxFeatureSize> patterns;
   std::copy(std::begin(feature), std::end(feature), std::begin(patterns));
   return GetFeature(patterns, player, opponent);
 }
 
-FeatureValue Evaluator::GetCanonicalFeature(int i, BitPattern player, BitPattern opponent) {
+FeatureValue PatternEvaluator::GetCanonicalFeature(int i, BitPattern player, BitPattern opponent) {
   FeatureValue result = kFeatures.max_feature_value[i] + 1;
   for (const auto& feature : kFeatures.equivalent_features[i]) {
     if (feature[0].Size() == 0) { break; }
@@ -174,5 +174,5 @@ int8_t* LoadEvals(const std::string& filepath) {
   return result_array;
 }
 
-int8_t* Evaluator::evals_ = LoadEvals(
+int8_t* PatternEvaluator::evals_ = LoadEvals(
     "src/main/assets/coefficients/pattern_evaluator_cpp.dat");

@@ -17,6 +17,16 @@
 #include <iostream>
 #include "board.h"
 
+const char kInitialBoard[] =
+    "--------"
+    "--------"
+    "--------"
+    "---OX---"
+    "---XO---"
+    "--------"
+    "--------"
+    "--------";
+
 std::string Board::ToString() const {
   std::string result;
   for (int i = 63; i >= 0; --i) {
@@ -37,6 +47,8 @@ std::string Board::ToString() const {
 
 Board::Board (const char* board)
     : Board(ParsePattern(board, 'X'), ParsePattern(board, 'O')) {}
+
+Board::Board() : Board(kInitialBoard) {}
 
 Board RandomBoard() {
   double percentage_player = (double) std::rand() / RAND_MAX;
