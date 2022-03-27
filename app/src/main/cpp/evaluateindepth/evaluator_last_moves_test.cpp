@@ -75,31 +75,33 @@ TEST(EvaluatorLastMoves, UsesHashMap) {
     b = RandomBoard(0.45, 0.45);
   }
 
-  int nVisited = 0;
-  int actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
-  EXPECT_GT(nVisited, 1);
+  int n_visited = 0;
+  int actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
+  EXPECT_GT(n_visited, 1);
 
-  nVisited = 0;
-  actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
-  EXPECT_EQ(nVisited, 1);
+  if (b.NEmpties() > kMinEmptiesForHashMap) {
+    n_visited = 0;
+    actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
+    EXPECT_EQ(n_visited, 1);
+  }
 }
 
 TEST(EvaluatorLastMoves, E2E) {
   HashMap hash_map;
-  EvaluatorLastMoves evaluator(&hash_map);
+//  EvaluatorLastMoves evaluator(&hash_map);
   for (int i = 0; i < 10000; i++) {
     double perc_player = (double) rand() / RAND_MAX * 0.9;
     double perc_opponent = 0.9 - perc_player;
     Board b = RandomBoard(perc_player, perc_opponent);
 
-    int nVisited = 0;
+    int n_visited = 0;
     int actual;
     BitPattern empties = b.GetEmpties();
     int nEmpties = b.NEmpties();
     Square x[4];
     int xCounter = 0;
     
-    if (nEmpties > 8 || nEmpties == 0) {
+    if (nEmpties > 5 || nEmpties == 0) {
       i--;
       continue;
     }
@@ -110,16 +112,14 @@ TEST(EvaluatorLastMoves, E2E) {
         xCounter++;
       }
     }
-    if (nEmpties > 5) {
-      actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
-    } else if (nEmpties == 5) {
-      actual = EvalFiveEmpties(b.GetPlayer(), b.GetOpponent(), -64, 64, 0, 0, &nVisited);
+    if (nEmpties == 5) {
+      actual = EvalFiveEmpties(b.GetPlayer(), b.GetOpponent(), -64, 64, 0, 0, &n_visited);
     } else if (nEmpties == 4) {
-      actual = EvalFourEmpties(x[0], x[1], x[2], x[3], b.GetPlayer(), b.GetOpponent(), -64, 64, rand() % 2, 0, 0, &nVisited);
+      actual = EvalFourEmpties(x[0], x[1], x[2], x[3], b.GetPlayer(), b.GetOpponent(), -64, 64, rand() % 2, 0, 0, &n_visited);
     } else if (nEmpties == 3) {
-      actual = EvalThreeEmpties(x[0], x[1], x[2], b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
+      actual = EvalThreeEmpties(x[0], x[1], x[2], b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
     } else if (nEmpties == 2) {
-      actual = EvalTwoEmpties(x[0], x[1], b.GetPlayer(), b.GetOpponent(), -64, 64, &nVisited);
+      actual = EvalTwoEmpties(x[0], x[1], b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
     } else if (nEmpties == 1) {
       actual = EvalOneEmpty(x[0], b.GetPlayer(), b.GetOpponent());
     }

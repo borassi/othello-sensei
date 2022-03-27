@@ -26,6 +26,7 @@
 #include "../utils/random.h"
 
 typedef int8_t Eval;
+typedef int EvalLarge;
 typedef unsigned long long BitPattern;
 typedef u_int8_t Square;
 typedef u_int8_t DepthValue;
@@ -38,6 +39,12 @@ constexpr Square kNoSquare = 255;
 constexpr Eval kMinEval = -64;
 constexpr Eval kMaxEval = 64;
 constexpr Square kNumSquares = 64;
+
+constexpr EvalLarge EvalToEvalLarge(Eval eval) { return eval * 8; }
+
+constexpr EvalLarge kLessThenMinEvalLarge = EvalToEvalLarge(kLessThenMinEval);
+constexpr EvalLarge kMinEvalLarge = EvalToEvalLarge(kMinEval);
+constexpr EvalLarge kMaxEvalLarge = EvalToEvalLarge(kMaxEval);
 
 constexpr BitPattern ParsePattern(const char* pattern, char letter) {
   BitPattern result = 0;

@@ -13,3 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "../board/bitpattern.h"
+#include "test_evaluator.h"
+
+EvalLarge TestEvaluator::EvaluateInternal(BitPattern player, BitPattern opponent, int depth) {
+  ++n_visited_;
+  if (depth <= 0) {
+    depth_one_evaluator_->Setup(player, opponent);
+    return depth_one_evaluator_->Evaluate();
+  }
+  std::vector <BitPattern> moves = GetAllMoves(player, opponent);
+
+  if (moves.empty()) {
+    return EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
+  }
+
+  EvalLarge best_eval = kMinEval * 8;
+  for (BitPattern flip : moves) {
+    EvalLarge current_eval = -EvaluateInternal(
+        NewPlayer(flip, opponent), NewOpponent(flip, player), depth - 1);
+    best_eval = std::max(best_eval, current_eval);
+  }
+  if (depth == 1) {
+    depth_one_evaluator_->Setup(player, opponent);
+    return (best_eval * kWeightDepthOne +
+            depth_one_evaluator_->Evaluate() * kWeightDepthZero)
+           / (kWeightDepthOne + kWeightDepthZero);
+  }
+  return best_eval;
+}

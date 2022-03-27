@@ -41,10 +41,8 @@ class EvaluateDepth0 : public Evaluator {
 
 class EvaluateInDepth : public Evaluator {
  public:
-  explicit EvaluateInDepth(int depth) :
-      depth_(depth),
-      depth_one_evaluator_(),
-      test_evaluator_(&depth_one_evaluator_) {}
+  explicit EvaluateInDepth(int depth) : depth_(depth), test_evaluator_(
+      TestEvaluator(&PatternEvaluator::Create)) {}
 
   EvalLarge operator()(BitPattern player, BitPattern opponent) override {
     return test_evaluator_.Evaluate(player, opponent, depth_);
@@ -52,7 +50,6 @@ class EvaluateInDepth : public Evaluator {
   NVisited GetNVisited() const override { return test_evaluator_.GetNVisited(); }
  private:
   DepthValue depth_;
-  PatternEvaluator depth_one_evaluator_;
   TestEvaluator test_evaluator_;
 };
 
@@ -115,9 +112,9 @@ class EvaluateThor {
 
 int main() {
   EvaluateDepth0 eval_depth_0;
-  EvaluateInDepth eval_in_depth(4);
+  EvaluateInDepth eval_in_depth(1);
   EvaluateThor evaluate_thor;
-  evaluate_thor.Run(&eval_in_depth, 10000, 1000);
+  evaluate_thor.Run(&eval_in_depth, 10000, 100000);
   evaluate_thor.Print();
   return 0;
 }

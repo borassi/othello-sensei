@@ -21,6 +21,7 @@
 #include <cassert>
 #include <fstream>
 #include <math.h>
+#include <memory>
 #include <sstream>
 #include <string.h>
 #include "pattern.h"
@@ -279,6 +280,11 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
 
  public:
   PatternEvaluator() : empties_(0) {}
+  ~PatternEvaluator() {}
+
+  static std::unique_ptr<EvaluatorDepthOneBase> Create() {
+    return std::make_unique<PatternEvaluator>(PatternEvaluator());
+  }
 
   void Setup(BitPattern player, BitPattern opponent);
 

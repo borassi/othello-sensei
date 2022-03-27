@@ -74,9 +74,7 @@ inline BitPattern GetMoves(BitPattern player, BitPattern opponent) noexcept {
       (opponentNearPlayer9 >> 9));
 }
 
-bool HaveToPass(BitPattern player, BitPattern opponent) {
-  return GetMoves(player, opponent) == 0;
-}
+bool HaveToPass(BitPattern player, BitPattern opponent);
 
 BitPattern GetMovesBasic(BitPattern player, BitPattern opponent);
 

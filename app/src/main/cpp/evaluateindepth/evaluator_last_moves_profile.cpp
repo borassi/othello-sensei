@@ -21,8 +21,10 @@
 #include <vector>
 
 #include "../board/board.h"
-#include "evaluator_last_moves.h"
 #include "../board/get_flip.h"
+#include "../evaluatedepthone/pattern_evaluator.h"
+#include "evaluator_alpha_beta.h"
+#include "evaluator_last_moves.h"
 
 using namespace std;
 
@@ -35,7 +37,8 @@ typedef struct TestCase {
 
 int main(int argc, char** argv) {
   HashMap hash_map;
-  EvaluatorLastMoves evaluator(&hash_map);
+  EvaluatorAlphaBeta evaluator(&hash_map, &PatternEvaluator::Create);
+//  EvaluatorLastMoves evaluator(&hash_map);
   TestCase tests[10000];
   ifstream tests_file("testdata/evaluator_last_moves_profile_examples.txt");
   std::string line;
@@ -50,16 +53,17 @@ int main(int argc, char** argv) {
   int N = 12;
   long long n_positions = 0;
   int n_visited = 0;
-  long long tot_n_visited = 0;
+  NVisited tot_n_visited = 0;
   unsigned long long tmp = 12;
   auto start = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < N; ++i) {
     for (const auto& test : tests) {
       n_positions++;
-      n_visited = 0;
+//      n_visited = 0;
 //      std::cout << Board(test.player, test.opponent).GetEmpties() << "\n";
-      tmp ^= evaluator.Evaluate(test.player, test.opponent, (Eval) test.alpha, (Eval) test.beta, &n_visited);
-      tot_n_visited += n_visited;
+      tmp ^= evaluator.Evaluate(test.player, test.opponent, 64, EvalToEvalLarge((Eval) test.alpha),
+                                EvalToEvalLarge((Eval) test.beta));
+      tot_n_visited += evaluator.GetNVisited();
     }
   }
   auto end = std::chrono::high_resolution_clock::now();

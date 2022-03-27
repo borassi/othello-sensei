@@ -75,10 +75,6 @@ constexpr BitPattern kSpace1Pattern = kSpace0Pattern << 4;
 constexpr BitPattern kSpace2Pattern = kSpace0Pattern << 32;
 constexpr BitPattern kSpace3Pattern = kSpace0Pattern << 36;
 
-Eval max(Eval e1, Eval e2) {
-  return e1 > e2 ? e1 : e2;
-}
-
 Eval EvalTwoEmptiesOrMin(const Square x1, const Square x2, const BitPattern player, const BitPattern opponent, const Eval upper, int* const n_visited) noexcept {
   (*n_visited)++;
   Eval eval = kLessThenMinEval;

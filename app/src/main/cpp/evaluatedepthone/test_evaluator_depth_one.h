@@ -31,6 +31,10 @@ class TestEvaluatorDepthOne : public EvaluatorDepthOneBase {
   long opponent_;
 
  public:
+  static std::unique_ptr<EvaluatorDepthOneBase> Create() {
+    return std::make_unique<TestEvaluatorDepthOne>(TestEvaluatorDepthOne());
+  }
+  ~TestEvaluatorDepthOne() {}
   EvalLarge Evaluate() const {
     return 8 * (__builtin_popcountll(player_) - __builtin_popcountll(opponent_) + 2);
   }

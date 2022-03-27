@@ -21,6 +21,10 @@
 #include "../board/get_flip.h"
 #include "../hashmap/hash_map.h"
 
+Eval max(Eval e1, Eval e2) {
+  return e1 > e2 ? e1 : e2;
+}
+
 inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept {
   BitPattern flip = GetFlip(x, player, opponent);

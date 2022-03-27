@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
+#ifndef EVALUATE_IN_DEPTH_TEST_EVALUATOR_H
+#define EVALUATE_IN_DEPTH_TEST_EVALUATOR_H
+
 #include <math.h>
+#include <memory>
 #include "../board/get_moves.h"
 #include "../evaluatedepthone/evaluator_depth_one_base.h"
 #include "../evaluatedepthone/test_evaluator_depth_one.h"
 
 class TestEvaluator {
  public:
-  TestEvaluator(EvaluatorDepthOneBase* depth_one_evaluator) :
-      n_visited_(0), depth_one_evaluator_(depth_one_evaluator) {}
+  TestEvaluator(std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory()) :
+      n_visited_(0),
+      depth_one_evaluator_(evaluator_depth_one_factory()) {}
 
   NVisited GetNVisited() const { return n_visited_; }
 
@@ -32,33 +37,10 @@ class TestEvaluator {
   }
  private:
 
-  EvalLarge EvaluateInternal(BitPattern player, BitPattern opponent, int depth) {
-    ++n_visited_;
-    if (depth <= 0) {
-      depth_one_evaluator_->Setup(player, opponent);
-      return depth_one_evaluator_->Evaluate();
-    }
-    std::vector<BitPattern> moves = GetAllMoves(player, opponent);
-
-    if (moves.size() == 0) {
-      return GetEvaluationGameOver(player, opponent);
-    }
-
-    EvalLarge best_eval = kMinEval * 8;
-    for (BitPattern flip : moves) {
-      EvalLarge current_eval = -EvaluateInternal(
-          NewPlayer(flip, opponent), NewOpponent(flip, player), depth - 1);
-      best_eval = std::max(best_eval, current_eval);
-    }
-    if (depth == 1) {
-      depth_one_evaluator_->Setup(player, opponent);
-      return (best_eval * kWeightDepthOne +
-              depth_one_evaluator_->Evaluate() * kWeightDepthZero)
-             / (kWeightDepthOne + kWeightDepthZero);
-    }
-    return best_eval;
-  }
+  EvalLarge EvaluateInternal(BitPattern player, BitPattern opponent, int depth);
 
   NVisited n_visited_;
-  EvaluatorDepthOneBase* depth_one_evaluator_;
+  std::unique_ptr<EvaluatorDepthOneBase> depth_one_evaluator_;
 };
+
+#endif  // EVALUATE_IN_DEPTH_TEST_EVALUATOR_H

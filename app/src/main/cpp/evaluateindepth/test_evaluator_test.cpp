@@ -24,8 +24,7 @@
 
 
 TEST(TestEvaluator, InitialBoard) {
-  TestEvaluatorDepthOne depth_one_eval;
-  TestEvaluator eval(&depth_one_eval);
+  TestEvaluator eval(TestEvaluatorDepthOne::Create);
   Board board;
 
   EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),

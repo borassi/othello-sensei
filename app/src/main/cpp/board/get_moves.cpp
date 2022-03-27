@@ -19,6 +19,7 @@
 #include "bitpattern.h"
 #include "board.h"
 #include "get_flip.h"
+#include "get_moves.h"
 
 namespace {
 Square IJToSquare(int i, int j) {
@@ -65,4 +66,8 @@ std::vector<BitPattern> GetAllMovesWithPass(BitPattern player, BitPattern oppone
     return {};
   }
   return {0};
+}
+
+bool HaveToPass(BitPattern player, BitPattern opponent) {
+  return GetMoves(player, opponent) == 0;
 }

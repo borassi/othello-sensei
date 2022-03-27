@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-typedef int EvalLarge;
-
 #ifndef EVALUATE_DEPTH_ONE_EVALUATOR_DEPTH_ONE_BASE_H
 #define EVALUATE_DEPTH_ONE_EVALUATOR_DEPTH_ONE_BASE_H
 
@@ -27,6 +25,7 @@ class EvaluatorDepthOneBase {
   virtual void UndoUpdate(BitPattern square, BitPattern flip) = 0;
   virtual void Invert() = 0;
   virtual EvalLarge Evaluate() const = 0;
+  virtual ~EvaluatorDepthOneBase() {}
 
 };
 
