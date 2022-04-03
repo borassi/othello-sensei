@@ -27,8 +27,8 @@
 
 class TestEvaluatorDepthOne : public EvaluatorDepthOneBase {
  private:
-  long player_;
-  long opponent_;
+  BitPattern player_;
+  BitPattern opponent_;
 
  public:
   static std::unique_ptr<EvaluatorDepthOneBase> Create() {
@@ -46,19 +46,21 @@ class TestEvaluatorDepthOne : public EvaluatorDepthOneBase {
 
   void Update(BitPattern square, BitPattern flip) {
     assert(__builtin_popcountll(square) == 1);
-    BitPattern tmp = player_;
-    player_ = NewPlayer(flip, opponent_);
-    opponent_ = NewOpponent(flip, tmp);
+    player_ = NewPlayer(flip, player_);
+    opponent_ = NewOpponent(flip, opponent_);
   }
 
   void UndoUpdate(BitPattern square, BitPattern flip) {
     assert(__builtin_popcountll(square) == 1);
-    BitPattern tmp = player_;
-    player_ = (opponent_ & ~flip) & ~(1L << square);
-    opponent_ = (tmp | flip) & ~(1L << square);
+    player_ = (player_ | flip) & ~square;
+    opponent_ = (opponent_ & ~flip);
   }
 
-  void Invert() {}
+  void Invert() {
+    BitPattern tmp = player_;
+    player_ = opponent_;
+    opponent_ = tmp;
+  }
 };
 
 #endif  // EVALUATE_DEPTH_ONE_TEST_EVALUATOR_DEPTH_ONE_H

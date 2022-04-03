@@ -56,9 +56,9 @@ public class EvaluatorLastMoves {
       System.loadLibrary("evaluator_last_moves");
     } else {
       try {
-        System.load(System.getProperty("user.dir") + "/app/build/libevaluator_last_moves.so");
+        System.load(System.getProperty("user.dir") + "/app/build/evaluateindepth/libevaluator_last_moves.so");
       } catch (UnsatisfiedLinkError e) {
-        System.load(System.getProperty("user.dir") + "/build/libevaluator_last_moves.so");
+        System.load(System.getProperty("user.dir") + "/build/evaluateindepth/libevaluator_last_moves.so");
       }
     }
   }

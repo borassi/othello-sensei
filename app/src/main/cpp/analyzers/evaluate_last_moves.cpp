@@ -23,8 +23,8 @@
 #include "../board/board.h"
 #include "../board/get_flip.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
-#include "evaluator_alpha_beta.h"
-#include "evaluator_last_moves.h"
+#include "../evaluateindepth/evaluator_alpha_beta.h"
+#include "../evaluateindepth/evaluator_last_moves.h"
 
 using namespace std;
 

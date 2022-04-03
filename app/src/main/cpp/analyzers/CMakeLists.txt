@@ -31,8 +31,21 @@ target_link_libraries(
         evaluate_thor_main
         LINK_PUBLIC
         bitpattern
-        pattern_evaluator
-        test_evaluator
+        evaluator_alpha_beta
         get_moves
         load_training_set
+        test_evaluator
+        pattern_evaluator
+)
+
+add_executable(
+        evaluate_last_moves
+        evaluate_last_moves.cpp
+)
+
+target_link_libraries(
+        evaluate_last_moves
+        LINK_PRIVATE
+        evaluator_alpha_beta
+        pattern_evaluator
 )

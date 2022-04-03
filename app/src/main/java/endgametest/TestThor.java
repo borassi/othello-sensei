@@ -84,7 +84,7 @@ public class TestThor {
         continue;
       }
       n++;
-      float curError = errorSingleBoard(be, nEmpties < 22 ? 2 : 4);
+      float curError = errorSingleBoard(be, 3);
       visitedPositions += eval.getNVisited();
       totalErrors[nEmpties] += (curError * curError);
       nPositions[nEmpties]++;

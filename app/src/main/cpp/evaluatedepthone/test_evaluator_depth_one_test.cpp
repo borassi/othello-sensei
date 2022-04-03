@@ -27,26 +27,28 @@ TEST(TestEvaluator, UpdateAndUndo) {
   TestEvaluatorDepthOne test;
   for (int i = 0; i < 10000; ++i) {
     Board b = RandomBoard();
-    std::vector<BitPattern> moves = GetAllMoves(b.GetPlayer(), b.GetOpponent());
+    std::vector<BitPattern> moves = GetAllMovesWithPass(b.GetPlayer(), b.GetOpponent());
     if (moves.empty()) {
       continue;
     }
-    BitPattern flip = moves[rand() % moves.size()];
-    int move = SquareFromFlip(flip, b.GetPlayer(), b.GetOpponent());
+
     eval.Setup(b.GetPlayer(), b.GetOpponent());
-    if (flip == 0) {
-      continue;
+    eval.Invert();
+    for (BitPattern flip : moves) {
+      BitPattern square = SquareFromFlip(flip, b.GetPlayer(), b.GetOpponent());
+      Board after(b.GetPlayer(), b.GetOpponent());
+      after.PlayMove(flip);
+      if (flip != 0) {
+        eval.Update(square, flip);
+      }
+      test.Setup(after.GetPlayer(), after.GetOpponent());
+      ASSERT_EQ(eval.Evaluate(), test.Evaluate());
+      if (flip != 0) {
+        eval.UndoUpdate(square, flip);
+      }
     }
     eval.Invert();
-    eval.Update(move, flip);
-    Board after(b.GetPlayer(), b.GetOpponent());
-    after.PlayMove(flip);
-    test.Setup(after.GetPlayer(), after.GetOpponent());
-    EXPECT_EQ(eval.Evaluate(), test.Evaluate());
-
-    eval.UndoUpdate(move, flip);
-    eval.Invert();
     test.Setup(b.GetPlayer(), b.GetOpponent());
-    EXPECT_EQ(eval.Evaluate(), test.Evaluate());
+    ASSERT_EQ(eval.Evaluate(), test.Evaluate());
   }
 }

@@ -177,7 +177,31 @@ inline BitPattern GetFullRows(BitPattern empty) {
     
   return ~(emptyL | emptyR);
 }
-BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable = 0);
+
+inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent,
+                                 BitPattern stable = 0) noexcept __attribute__((always_inline));
+inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable) noexcept {
+  stable |= GetStableDisksEdges(player, opponent);
+  BitPattern empties = ~(player | opponent);
+  BitPattern full_rows = GetFullRows(empties);
+  BitPattern full_columns = GetFullColumns(empties);
+  BitPattern full_diags9 = GetFullDiags9(empties);
+  BitPattern full_diags7 = GetFullDiags7(empties);
+  stable = stable | (full_rows & full_columns & full_diags9 & full_diags7);
+  BitPattern stablePlayer = stable & player;
+  BitPattern newStable = stablePlayer;
+
+  while (newStable != 0) {
+    newStable = ((stablePlayer << 1) | (stablePlayer >> 1) | full_rows);
+    newStable &= ((stablePlayer << 8) | (stablePlayer >> 8) | full_columns);
+    newStable &= ((stablePlayer << 7) | (stablePlayer >> 7) | full_diags7);
+    newStable &= ((stablePlayer << 9) | (stablePlayer >> 9) | full_diags9);
+    newStable = newStable & player & kNonEdgePattern & ~stablePlayer;
+    stablePlayer |= newStable;
+  }
+
+  return stable | stablePlayer;
+}
 
 inline Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) __attribute__((always_inline));
 

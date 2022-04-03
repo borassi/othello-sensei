@@ -63,7 +63,7 @@ add_library(
 
 target_link_libraries(
         pattern_evaluator
-        LINK_PRIVATE
+        LINK_PUBLIC
         bitpattern
         board
         evaluator_depth_one_base
@@ -79,9 +79,9 @@ IF(NOT ANDROID)
             pattern_evaluator_test
             LINK_PUBLIC
             board
-            pattern_evaluator
             get_moves
             pattern
+            pattern_evaluator
             GTest::gtest
             GTest::gtest_main
             gmock

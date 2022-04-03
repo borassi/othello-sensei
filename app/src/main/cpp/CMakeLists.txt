@@ -17,9 +17,10 @@
 # cmake -S src/main/cpp -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
 
 # Profile:
-# cmake -S src/main/cpp -B build -DANDROID=FALSE -DPROFILE=TRUE && cmake --build build
-# valgrind --tool=callgrind --log_file=/tmp/valgrind ./build/evaluator_last_moves_profile
-# kcachegrind callgrind.out.XXXXX
+# cmake -S src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
+# cmake --build build && \
+# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/evaluate_thor_main && \
+# kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
 cmake_minimum_required(VERSION 3.10.2)
@@ -34,13 +35,6 @@ ENDIF()
 IF(NOT DEFINED PROFILE)
     SET(PROFILE FALSE)
 ENDIF()
-
-add_subdirectory(analyzers)
-add_subdirectory(board)
-add_subdirectory(evaluatedepthone)
-add_subdirectory(evaluateindepth)
-add_subdirectory(hashmap)
-add_subdirectory(utils)
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
 
@@ -89,6 +83,13 @@ IF (PROFILE)
             -g
     )
 ENDIF()
+
+add_subdirectory(analyzers)
+add_subdirectory(board)
+add_subdirectory(evaluatedepthone)
+add_subdirectory(evaluateindepth)
+add_subdirectory(hashmap)
+add_subdirectory(utils)
 
 add_library(
         constants

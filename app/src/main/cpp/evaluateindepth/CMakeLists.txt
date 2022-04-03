@@ -104,18 +104,6 @@ IF (NOT ANDROID)
     )
 ENDIF ()
 
-add_executable(
-        evaluator_last_moves_profile
-        evaluator_last_moves_profile.cpp
-)
-
-target_link_libraries(
-        evaluator_last_moves_profile
-        LINK_PRIVATE
-        evaluator_alpha_beta
-        pattern_evaluator
-)
-
 add_library(
         test_evaluator
         test_evaluator.h

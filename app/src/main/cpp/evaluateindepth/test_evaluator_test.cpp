@@ -36,3 +36,27 @@ TEST(TestEvaluator, InitialBoard) {
             / (kWeightDepthOne + kWeightDepthZero));
   EXPECT_EQ(eval.GetNVisited(), 1 + 4 + 12);
 }
+
+TEST(TestEvaluator, Pass) {
+  TestEvaluator eval(TestEvaluatorDepthOne::Create);
+  Board board(
+      "XXXXO---"
+      "--------"
+      "--------"
+      "--------"
+      "--------"
+      "------OO"
+      "--------"
+      "------OX"
+  );
+
+  EXPECT_EQ(
+      eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+      8 * (/*depth 1*/(4-2) * kWeightDepthOne + /*depth 0*/ (1+2) * kWeightDepthZero)
+      / (kWeightDepthOne + kWeightDepthZero));
+
+  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+      8 * (/*depth 1*/(7-2) * kWeightDepthOne + /*depth 0*/ (4+2) * kWeightDepthZero)
+      / (kWeightDepthOne + kWeightDepthZero));
+  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
+}

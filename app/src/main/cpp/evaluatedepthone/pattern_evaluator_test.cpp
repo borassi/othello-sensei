@@ -157,6 +157,18 @@ TEST(PatternEvaluator, EquivalentFeatures) {
   }
 }
 
+void AssertEvalsEQ(const PatternEvaluator& eval1, const PatternEvaluator& eval2) {
+  for (int i = 0; i < kNumPatterns; ++i) {
+    ASSERT_EQ(eval1.GetPatterns()[i], eval2.GetPatterns()[i]);
+  }
+  for (int i = 0; i < kNumFeatures; ++i) {
+    ASSERT_EQ(eval1.GetFeature(i), eval2.GetFeature(i));
+  }
+  ASSERT_EQ(eval1.Empties(), eval2.Empties());
+  ASSERT_EQ(eval1.Evaluate(), eval2.Evaluate());
+  ASSERT_EQ(eval1.EvaluateBase<false>(), eval2.Evaluate());
+}
+
 TEST(TestEvaluator, UpdateAndUndo) {
   PatternEvaluator eval;
   PatternEvaluator test;
@@ -166,26 +178,24 @@ TEST(TestEvaluator, UpdateAndUndo) {
     if (moves.empty()) {
       continue;
     }
-    BitPattern flip = moves[rand() % moves.size()];
-    int move = SquareFromFlip(flip, b.GetPlayer(), b.GetOpponent());
     eval.Setup(b.GetPlayer(), b.GetOpponent());
-    if (flip == 0) {
-      continue;
-    }
-    ASSERT_EQ(eval.Empties(), b.NEmpties());
     eval.Invert();
-    eval.Update(1ULL << move, flip);
-    Board after(b.GetPlayer(), b.GetOpponent());
-    after.PlayMove(flip);
-    test.Setup(after.GetPlayer(), after.GetOpponent());
-    for (int i = 0; i < kNumPatterns; ++i) {
-      ASSERT_EQ(eval.GetPatterns()[i], test.GetPatterns()[i]);
+    ASSERT_EQ(eval.Empties(), b.NEmpties());
+    for (BitPattern flip : moves) {
+      BitPattern square = SquareFromFlip(flip, b.GetPlayer(), b.GetOpponent());
+      Board after(b.GetPlayer(), b.GetOpponent());
+      after.PlayMove(flip);
+      if (flip != 0) {
+        eval.Update(square, flip);
+      }
+      test.Setup(after.GetPlayer(), after.GetOpponent());
+      AssertEvalsEQ(eval, test);
+      if (flip != 0) {
+        eval.UndoUpdate(square, flip);
+      }
     }
-    eval.UndoUpdate(1ULL << move, flip);
     eval.Invert();
     test.Setup(b.GetPlayer(), b.GetOpponent());
-    for (int i = 0; i < kNumPatterns; ++i) {
-      ASSERT_EQ(eval.GetPatterns()[i], test.GetPatterns()[i]);
-    }
+    AssertEvalsEQ(eval, test);
   }
 }

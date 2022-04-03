@@ -82,9 +82,9 @@ std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent);
 
 std::vector<BitPattern> GetAllMovesWithPass(BitPattern player, BitPattern opponent);
 
-inline Square SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
-inline Square SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept {
-  return __builtin_ctzll(flip & ~player & ~opponent);
+inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept {
+  return flip & ~(player | opponent);
 }
 
 #endif  // BOARD_GET_MOVES_H

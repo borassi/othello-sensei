@@ -223,7 +223,7 @@ inline BitPattern UniqueSet(BitPattern b) {
 }
 
 inline BitPattern FirstLastSet(BitPattern b) {
-  return (1ULL << __builtin_ctzll(b)) | (1ULL << (63 - __builtin_clzll(b)));
+  return b == 0 ? 0 : (1ULL << __builtin_ctzll(b)) | (1ULL << (63 - __builtin_clzll(b)));
 }
 
 inline BitPattern UniqueInEdges(BitPattern empties) {

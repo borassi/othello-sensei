@@ -20,24 +20,32 @@
 EvalLarge TestEvaluator::EvaluateInternal(BitPattern player, BitPattern opponent, int depth) {
   ++n_visited_;
   if (depth <= 0) {
-    depth_one_evaluator_->Setup(player, opponent);
     return depth_one_evaluator_->Evaluate();
   }
-  std::vector <BitPattern> moves = GetAllMoves(player, opponent);
+  std::vector<BitPattern> flips = GetAllMovesWithPass(player, opponent);
 
-  if (moves.empty()) {
+  if (flips.empty()) {
     return EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
   }
 
-  EvalLarge best_eval = kMinEval * 8;
-  for (BitPattern flip : moves) {
+  depth_one_evaluator_->Invert();
+  EvalLarge best_eval = kMinEvalLarge;
+  for (BitPattern flip : flips) {
+    BitPattern square = SquareFromFlip(flip, player, opponent);
+    if (flip != 0) {
+      depth_one_evaluator_->Update(square, flip);
+    }
     EvalLarge current_eval = -EvaluateInternal(
-        NewPlayer(flip, opponent), NewOpponent(flip, player), depth - 1);
+        NewPlayer(flip, opponent), NewOpponent(flip, player),
+        depth - (flip == 0 ? 0 : 1));
     best_eval = std::max(best_eval, current_eval);
+    if (flip != 0) {
+      depth_one_evaluator_->UndoUpdate(square, flip);
+    }
   }
-  if (depth == 1) {
-    depth_one_evaluator_->Setup(player, opponent);
-    return (best_eval * kWeightDepthOne +
+  depth_one_evaluator_->Invert();
+  if (depth == 1 && flips[0] != 0) {
+    best_eval = (best_eval * kWeightDepthOne +
             depth_one_evaluator_->Evaluate() * kWeightDepthZero)
            / (kWeightDepthOne + kWeightDepthZero);
   }

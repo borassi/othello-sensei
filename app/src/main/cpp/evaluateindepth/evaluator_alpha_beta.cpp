@@ -15,6 +15,7 @@
  */
 
 #include "../board/bitpattern.h"
+#include "../board/board.h"
 #include "../board/stable.h"
 #include "evaluator_alpha_beta.h"
 #include "evaluator_last_moves.h"
@@ -63,77 +64,161 @@ constexpr int NextNEmpties(int n_empties) {
   return std::min(64, std::max(0, n_empties - 1));
 }
 
+MoveIteratorQuick::MoveIteratorQuick(BitPattern player, BitPattern opponent, BitPattern last_flip) :
+    player_(player), opponent_(opponent), masks_() {
+  BitPattern empties = ~(player | opponent);
+  candidate_moves_ = Neighbors(opponent) & empties;
+  BitPattern neighbors_player = Neighbors(player);
+  masks_[0] = ~Neighbors(empties) & neighbors_player;
+  masks_[1] = UniqueInEdges(empties) & neighbors_player;
+  masks_[2] = Neighbors(last_flip) & kCornerPattern;
+  masks_[3] = kCornerPattern;
+  masks_[4] = FirstLastInEdges(empties);
+  masks_[5] = ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0;
+  masks_[6] = kCentralPattern;
+  masks_[7] = kEdgePattern;
+  masks_[8] = ~0ULL;
+}
+
+EvaluatorAlphaBeta::EvaluateInternalFunction
+    EvaluatorAlphaBeta::solvers_[65] =  {
+    &EvaluatorAlphaBeta::EvaluateInternal<0, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<1, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<2, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<3, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<4, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<5, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<6, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<7, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<8, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<9, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<10, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<11, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<12, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<13, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<14, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<15, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<16, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<17, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<18, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<19, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<20, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<21, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<22, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<23, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<24, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<25, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<26, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<27, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<28, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<29, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<30, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<31, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<32, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<33, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<34, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<35, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<36, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<37, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<38, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<39, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<40, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<41, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<42, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<43, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<44, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<45, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<46, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<47, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<48, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<49, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<50, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<51, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<52, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<53, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<54, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<55, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<56, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<57, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<58, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<59, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<60, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<61, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<62, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<63, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<64, false, true>,
+};
 EvaluatorAlphaBeta::EvaluateInternalFunction
     EvaluatorAlphaBeta::evaluators_[65] = {
-    &EvaluatorAlphaBeta::EvaluateInternal<0, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<1, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<2, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<3, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<4, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<5, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<6, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<7, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<8, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<9, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<10, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<11, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<12, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<13, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<14, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<15, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<16, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<17, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<18, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<19, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<20, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<21, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<22, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<23, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<24, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<25, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<26, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<27, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<28, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<29, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<30, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<31, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<32, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<33, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<34, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<35, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<36, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<37, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<38, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<39, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<40, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<41, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<42, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<43, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<44, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<45, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<46, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<47, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<48, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<49, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<50, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<51, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<52, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<53, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<54, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<55, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<56, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<57, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<58, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<59, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<60, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<61, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<62, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<63, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<64, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<0, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<1, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<2, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<3, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<4, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<5, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<6, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<7, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<8, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<9, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<10, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<11, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<12, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<13, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<14, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<15, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<16, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<17, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<18, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<19, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<20, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<21, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<22, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<23, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<24, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<25, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<26, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<27, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<28, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<29, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<30, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<31, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<32, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<33, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<34, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<35, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<36, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<37, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<38, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<39, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<40, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<41, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<42, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<43, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<44, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<45, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<46, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<47, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<48, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<49, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<50, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<51, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<52, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<53, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<54, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<55, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<56, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<57, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<58, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<59, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<60, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<61, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<62, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<63, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<64, false, false>,
 };
 
 // clangtidy: no-warning.
-template<int depth, bool passed>
+template<int depth, bool passed, bool solve>
 EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     const BitPattern player, const BitPattern opponent,
     const EvalLarge lower, const EvalLarge upper,
@@ -158,52 +243,46 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       return hash_eval.second;
     }
   }
-  Square move;
+  EvalLarge depth_zero_eval;
+  if (!solve) {
+    if (depth == 1) {
+      depth_zero_eval = evaluator_depth_one_->Evaluate();
+    }
+    evaluator_depth_one_->Invert();
+  }
+  BitPattern square;
   EvalLarge eval = kLessThenMinEvalLarge;
-  BitPattern flip;
-  BitPattern move_bit;
-  BitPattern empties = ~(player | opponent);
-  BitPattern neighbors_player = Neighbors(player);
-  BitPattern empties_neighbors_opponent = Neighbors(opponent) & empties;
-
-  for (BitPattern mask : {
-      ~Neighbors(empties) & neighbors_player,
-      UniqueInEdges(empties) & neighbors_player,
-      Neighbors(last_flip) & kCornerPattern,
-      kCornerPattern,
-      FirstLastInEdges(empties),
-      ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0,
-      kCentralPattern,
-      kEdgePattern,
-      kXCPattern}) {
-    while ((mask & empties_neighbors_opponent) != 0) {
-      move = __builtin_ctzll(mask & empties_neighbors_opponent);
-      move_bit = 1ULL << move;
-      empties_neighbors_opponent = empties_neighbors_opponent & (~move_bit);
-      flip = GetFlip(move, player, opponent);
-      if (flip == 0) {
-        continue;
-      }
-      if (depth == 6) {
-        int cur_n_visited = 0;
-        eval = std::max(
-            eval,
-            -EvalToEvalLarge(EvalFiveEmpties(
-                NewPlayer(flip, opponent), NewOpponent(flip, player),
-                (Eval) ((-upper - 1024) / 8 + 128),
-                (Eval) ((-(std::max(lower, eval)) + 1024) / 8 - 128),
-                flip, new_stable, &cur_n_visited)));
-        n_visited_ += cur_n_visited;
-      } else {
-        eval = std::max(
-            eval,
-            -EvaluateInternal<NextNEmpties(depth), false>(
-                NewPlayer(flip, opponent), NewOpponent(flip, player),
-                    -upper, -std::max(lower, eval), flip, new_stable));
-      }
-      if (eval >= upper) {
-        break;
-      }
+  int cur_n_visited;
+  MoveIteratorQuick moves(player, opponent, last_flip);
+  for (BitPattern flip = moves.NextFlip(); flip != 0; flip = moves.NextFlip()) {
+    if (!solve) {
+      square = SquareFromFlip(flip, player, opponent);
+      evaluator_depth_one_->Update(square, flip);
+    }
+    if (depth == 6 && solve) {
+      cur_n_visited = 0;
+      eval = std::max(
+          eval,
+          -EvalToEvalLarge(EvalFiveEmpties(
+              NewPlayer(flip, opponent), NewOpponent(flip, player),
+              (Eval) ((-upper - 1024) / 8 + 128),
+              (Eval) ((-(std::max(lower, eval)) + 1024) / 8 - 128),
+              flip, new_stable, &cur_n_visited)));
+      n_visited_ += cur_n_visited;
+    } else if (!solve && depth == 1) {
+      eval = std::max(
+          eval,
+          (depth_zero_eval * kWeightDepthZero - evaluator_depth_one_->Evaluate() * kWeightDepthOne) / (kWeightDepthZero + kWeightDepthOne));
+      ++n_visited_;
+    } else {
+      eval = std::max(
+          eval,
+          -EvaluateInternal<NextNEmpties(depth), false, solve>(
+              NewPlayer(flip, opponent), NewOpponent(flip, player),
+                  -upper, -std::max(lower, eval), flip, new_stable));
+    }
+    if (!solve) {
+      evaluator_depth_one_->UndoUpdate(square, flip);
     }
     if (eval >= upper) {
       break;
@@ -211,12 +290,17 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   }
   if (eval == kLessThenMinEvalLarge) {
     if (passed) {
-      return EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
+      eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
+    } else {
+      eval = -EvaluateInternal<depth, true, solve>(
+          opponent, player, -upper, -lower, last_flip, new_stable);
     }
-    return -EvaluateInternal<depth, true>(opponent, player, -upper, -lower, last_flip, new_stable);
   } else if (depth >= kMinEmptiesForHashMap) {
     hash_map_
         ->Update(player, opponent, epoch_, depth, eval, lower, upper, 0, 0);
+  }
+  if (!solve) {
+    evaluator_depth_one_->Invert();
   }
   return eval;
 }

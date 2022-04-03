@@ -20,6 +20,7 @@
 #include "../board/get_moves.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../evaluateindepth/test_evaluator.h"
+#include "../evaluateindepth/evaluator_alpha_beta.h"
 #include "../utils/load_training_set.h"
 #include "../utils/misc.h"
 
@@ -42,7 +43,7 @@ class EvaluateDepth0 : public Evaluator {
 class EvaluateInDepth : public Evaluator {
  public:
   explicit EvaluateInDepth(int depth) : depth_(depth), test_evaluator_(
-      TestEvaluator(&PatternEvaluator::Create)) {}
+      EvaluatorAlphaBeta(&hash_map_, &PatternEvaluator::Create)) {}
 
   EvalLarge operator()(BitPattern player, BitPattern opponent) override {
     return test_evaluator_.Evaluate(player, opponent, depth_);
@@ -50,7 +51,8 @@ class EvaluateInDepth : public Evaluator {
   NVisited GetNVisited() const override { return test_evaluator_.GetNVisited(); }
  private:
   DepthValue depth_;
-  TestEvaluator test_evaluator_;
+  EvaluatorAlphaBeta test_evaluator_;
+  HashMap hash_map_;
 };
 
 class EvaluateThor {
@@ -62,7 +64,7 @@ class EvaluateThor {
       n_visited_(0),
       elapsed_time_() {}
 
-  void Run(Evaluator* evaluator, int min_error_print, int print_every) {
+  void Run(Evaluator* evaluator, int min_error_print, int stop_after) {
     sum_error_squared_ = 0;
     num_boards_ = 0;
     n_visited_ = 0;
@@ -86,8 +88,9 @@ class EvaluateThor {
       sum_error_squared_ += error * error;
       num_boards_++;
       n_visited_ += evaluator->GetNVisited();
-      if (++i % print_every == 0) {
+      if (++i % 1000 == 0 && elapsed_time_.Get() > stop_after) {
         Print();
+        return;
       }
     }
   }
@@ -99,7 +102,8 @@ class EvaluateThor {
     std::cout << "After " << num_boards_ << ":\n";
     std::cout << "  Error: " << sqrt(sum_error_squared_ / num_boards_) << "\n";
     std::cout << "  Positions: " << n_visited_ << "\n";
-    std::cout << "  Positions / sec: " << (double) n_visited_ / time << "\n";
+    std::cout << "  Positions / test: " << n_visited_ / num_boards_ << "\n";
+    std::cout << "  Positions / sec: " << std::fixed << n_visited_ / time << "\n";
     std::cout << "  Total time: " << time << "\n";
   }
  private:
@@ -112,9 +116,9 @@ class EvaluateThor {
 
 int main() {
   EvaluateDepth0 eval_depth_0;
-  EvaluateInDepth eval_in_depth(1);
+  EvaluateInDepth eval_in_depth(3);
   EvaluateThor evaluate_thor;
-  evaluate_thor.Run(&eval_in_depth, 10000, 100000);
+  evaluate_thor.Run(&eval_in_depth, 10000, 10000);
   evaluate_thor.Print();
   return 0;
 }

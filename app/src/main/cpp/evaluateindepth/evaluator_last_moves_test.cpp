@@ -30,7 +30,7 @@ Board THREE_EMPTIES(
         "XXXXOOO-");
 
 
-int EvalBasic(long player, long opponent, bool passed) {
+int SolveBasic(long player, long opponent, bool passed) {
   long empties = ~(player | opponent);
   int eval = -66;
 
@@ -42,13 +42,13 @@ int EvalBasic(long player, long opponent, bool passed) {
     if (flip == 0) {
       continue;
     }
-    eval = std::max(eval, -EvalBasic(opponent & ~flip, player | flip, false));
+    eval = std::max(eval, -SolveBasic(opponent & ~flip, player | flip, false));
   }
   if (eval == -66) {
     if (passed) {
       return GetEvaluationGameOver(player, opponent);
     }
-    return -EvalBasic(opponent, player, true);
+    return -SolveBasic(opponent, player, true);
   }
   return eval;
 }
@@ -56,14 +56,14 @@ int EvalBasic(long player, long opponent, bool passed) {
 TEST(EvaluatorLastMoves, DoublePass) {
   int visited = 0;
   Board b("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXXX");
-  EXPECT_EQ(EvalBasic(b.GetPlayer(), b.GetOpponent(), false), 0);
+  EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 0);
   b = Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX");
-  EXPECT_EQ(EvalBasic(b.GetPlayer(), b.GetOpponent(), false), -4);
+  EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), -4);
 }
 
 TEST(EvaluatorLastMoves, ManyPass) {
   Board b("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX");
-  EXPECT_EQ(EvalBasic(b.GetPlayer(), b.GetOpponent(), false), 24);
+  EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 24);
 }
 
 TEST(EvaluatorLastMoves, UsesHashMap) {
@@ -123,7 +123,7 @@ TEST(EvaluatorLastMoves, E2E) {
     } else if (nEmpties == 1) {
       actual = EvalOneEmpty(x[0], b.GetPlayer(), b.GetOpponent());
     }
-    int expected = EvalBasic(b.GetPlayer(), b.GetOpponent(), false);
+    int expected = SolveBasic(b.GetPlayer(), b.GetOpponent(), false);
 
     EXPECT_EQ(actual, expected);
   }

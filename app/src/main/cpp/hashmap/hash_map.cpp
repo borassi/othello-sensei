@@ -17,26 +17,26 @@
 #include "hash_map.h"
 
 void HashMapEntry::Update(
-  BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth, Eval eval,
-  Eval lower, Eval upper, Square best_move, Square second_best_move) {
+  BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth, EvalLarge eval,
+  EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move) {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (epoch != epoch_ || depth > depth_) {
     player_ = player;
     opponent_ = opponent;
     epoch_ = epoch;
-    lower_ = eval > lower ? eval : kMinEval;
-    upper_ = eval < upper ? eval : kMaxEval;
+    lower_ = eval > lower ? eval : kMinEvalLarge;
+    upper_ = eval < upper ? eval : kMaxEvalLarge;
     depth_ = depth;
     best_move_ = best_move;
     second_best_move_ = second_best_move;
   }
 }
 
-std::pair<Eval, Eval> HashMapEntry::GetLowerUpper(
+std::pair<EvalLarge, EvalLarge> HashMapEntry::GetLowerUpper(
     BitPattern player, BitPattern opponent, DepthValue min_depth) const {
   const std::lock_guard<std::mutex> lock(mutex_);
   if (player != player_ || opponent != opponent_ || depth_ < min_depth) {
-    return std::make_pair(kMinEval, kMaxEval);
+    return std::make_pair(kMinEvalLarge, kMaxEvalLarge);
   }
   return std::make_pair(lower_, upper_);
 }

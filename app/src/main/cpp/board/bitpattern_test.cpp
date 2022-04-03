@@ -64,7 +64,8 @@ TEST(BitPattern, UniqueInEdges) {
                                               "X-------"
                                               "--------"
                                               "--------");
-  EXPECT_EQ(FirstLastInEdges(~p1), expectedFirstLast);
+  EXPECT_EQ(FirstLastInEdges(~p1), expectedFirstLast) <<
+      PatternToString(FirstLastInEdges(~p1));
   EXPECT_EQ(UniqueInEdges(~p1), expected1);
   BitPattern p2 = ParsePattern("X-XXXXXX"
                                "X-------"

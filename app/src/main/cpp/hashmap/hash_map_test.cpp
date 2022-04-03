@@ -21,7 +21,7 @@
 
 void ExpectEntryEq(
   const HashMapEntry& entry, BitPattern player, BitPattern opponent,
-  Eval lower, Eval upper, DepthValue depth,
+  EvalLarge lower, EvalLarge upper, DepthValue depth,
   Square best_move, Square second_best_move) {
   EXPECT_EQ(entry.Player(), player);
   EXPECT_EQ(entry.Opponent(), opponent);
@@ -41,16 +41,16 @@ TEST(HashMapEntry, Update) {
   // BASE
   {
     // Update both
-    ExpectEntryEq(entry, 0, 0, kMinEval, kMaxEval, 0, kNoSquare, kNoSquare);
+    ExpectEntryEq(entry, 0, 0, kMinEvalLarge, kMaxEvalLarge, 0, kNoSquare, kNoSquare);
 
     entry.Update(1, 2, 0, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
     // Update only lower
     entry.Update(1, 2, 0, 6, 4, -2, 2, 36, 37);
-    ExpectEntryEq(entry, 1, 2, 4, kMaxEval, 6, 36, 37);
+    ExpectEntryEq(entry, 1, 2, 4, kMaxEvalLarge, 6, 36, 37);
     // Update only upper
     entry.Update(1, 2, 0, 8, -4, -2, 2, 38, 39);
-    ExpectEntryEq(entry, 1, 2, kMinEval, -4, 8, 38, 39);
+    ExpectEntryEq(entry, 1, 2, kMinEvalLarge, -4, 8, 38, 39);
   }
 
   // NEW EPOCH
@@ -76,12 +76,12 @@ TEST(HashMapEntry, Update) {
 
     // Higher depth: update.
     entry.Update(1, 4, 1, 6, -6, -4, 4, 36, 37);
-    ExpectEntryEq(entry, 1, 4, kMinEval, -6, 6, 36, 37);
+    ExpectEntryEq(entry, 1, 4, kMinEvalLarge, -6, 6, 36, 37);
 
     entry.Update(1, 2, 2, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
     entry.Update(1, 4, 2, 6, 6, -4, 4, 36, 37);
-    ExpectEntryEq(entry, 1, 4, 6, kMaxEval, 6, 36, 37);
+    ExpectEntryEq(entry, 1, 4, 6, kMaxEvalLarge, 6, 36, 37);
   }
 
   // SAME EPOCH, SAME BOARD
@@ -96,36 +96,36 @@ TEST(HashMapEntry, Update) {
 
     // Higher depth: update.
     entry.Update(1, 2, 1, 6, -6, -4, 4, 36, 37);
-    ExpectEntryEq(entry, 1, 2, kMinEval, -6, 6, 36, 37);
+    ExpectEntryEq(entry, 1, 2, kMinEvalLarge, -6, 6, 36, 37);
 
     entry.Update(1, 2, 2, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
     entry.Update(1, 4, 2, 6, 6, -4, 4, 36, 37);
-    ExpectEntryEq(entry, 1, 4, 6, kMaxEval, 6, 36, 37);
+    ExpectEntryEq(entry, 1, 4, 6, kMaxEvalLarge, 6, 36, 37);
   }
 }
 
 TEST(HashMapEntry, GetLower) {
   HashMapEntry entry;
-  const auto no_result = std::make_pair(kMinEval, kMaxEval);
+  const auto no_result = std::make_pair(kMinEvalLarge, kMaxEvalLarge);
   entry.Update(1, 4, 2, 6, 2, -4, 4, 36, 37);
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 6), std::make_pair((Eval) 2, (Eval) 2));
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((Eval) 2, (Eval) 2));
+  EXPECT_EQ(entry.GetLowerUpper(1, 4, 6), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
+  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
   EXPECT_EQ(entry.GetLowerUpper(1, 4, 8), no_result);
   EXPECT_EQ(entry.GetLowerUpper(1, 2, 6), no_result);
   EXPECT_EQ(entry.GetLowerUpper(0, 4, 6), no_result);
 
   entry.Update(1, 4, 3, 4, -8, -4, 4, 36, 37);
   // Know: <= -8.
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair(kMinEval, (Eval) -8));
+  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair(kMinEvalLarge, (EvalLarge) -8));
 
   entry.Update(1, 4, 4, 4, 8, -4, 4, 36, 37);
   // Know: >= 8.
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((Eval) 8, kMaxEval));
+  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 8, kMaxEvalLarge));
 }
 
 TEST(HashMap, Base) {
   HashMap hash_map;
   hash_map.Update(1, 4, 2, 6, 2, -64, 64, 36, 37);
-  EXPECT_EQ(hash_map.GetLowerUpper(1, 4, 4), std::make_pair((Eval) 2, (Eval) 2));
+  EXPECT_EQ(hash_map.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
 }

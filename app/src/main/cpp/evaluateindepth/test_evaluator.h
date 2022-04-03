@@ -33,6 +33,7 @@ class TestEvaluator {
 
   EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth) {
     n_visited_ = 0;
+    depth_one_evaluator_->Setup(player, opponent);
     return EvaluateInternal(player, opponent, depth);
   }
  private:

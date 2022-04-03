@@ -61,7 +61,7 @@ std::vector<BitPattern> GetAllMovesWithPass(BitPattern player, BitPattern oppone
   if (!result.empty()) {
     return result;
   }
-  if (!GetAllMoves(opponent, player).empty()) {
+  if (GetAllMoves(opponent, player).empty()) {
     // Game over.
     return {};
   }

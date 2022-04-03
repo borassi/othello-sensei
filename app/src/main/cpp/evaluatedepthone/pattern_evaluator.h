@@ -155,6 +155,7 @@ struct Features {
   Pattern patterns[kNumPatterns];
   Pattern equivalent_features[kNumFeatures][kMaxPatternTranspositions][
       kMaxFeatureSize] = {};
+  int splits[60];
 
   static constexpr void EquivalentTransposition(
       const std::array<BitPattern, kMaxFeatureSize>& feature,
@@ -191,7 +192,8 @@ struct Features {
       start_feature(),
       features_to_patterns(),
       patterns(),
-      equivalent_features() {
+      equivalent_features(),
+      splits() {
     int num_features = 0;
     int num_patterns = 0;
     int num_canonical_rotations = 0;
@@ -199,6 +201,10 @@ struct Features {
     // Equivalent = same squares in different order.
     int equivalent_transposition[kMaxPatternTranspositions] = {};
     start_feature[0] = 0;
+
+    for (int i = 0; i < 60; ++i) {
+      splits[i] = GetSplit(i, kSplits);
+    }
 
     for (const auto &feature : kFeatureDefinition) {
       EquivalentTransposition(feature, equivalent_transposition);
@@ -288,9 +294,13 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
 
   void Setup(BitPattern player, BitPattern opponent);
 
-  void Update(BitPattern square, BitPattern flip);
+  void Update(BitPattern square, BitPattern flip) {
+    Update<1>(square, flip);
+  }
 
-  void UndoUpdate(BitPattern square, BitPattern flip);
+  void UndoUpdate(BitPattern square, BitPattern flip) {
+    Update<-1>(square, flip);
+  }
 
   void Invert();
 
@@ -309,6 +319,7 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
       int canonical_rotation = kFeatures.canonical_rotation[i];
       int8_t* evals = base_evals + kFeatures.start_feature[canonical_rotation];
       result += evals[GetFeature(i)];
+//      std::cout << i << " " << result << "\n";
       if (verbose) {
         std::cout << i << " " << GetFeature(i) << " "
                   << evals[GetFeature(i)] / 8.0 << "\n";
@@ -317,7 +328,7 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
     return result;
   }
 
-  EvalLarge Evaluate() const { return EvaluateBase<false>(); }
+  EvalLarge Evaluate() const;
 
   static FeatureValue GetFeature(
       std::array<FeatureValue, kMaxFeatureSize> pattern_values,
@@ -336,6 +347,9 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
   static FeatureValue GetCanonicalFeature(int i, BitPattern player, BitPattern opponent);
 
  private:
+  template<int multiplier>
+  void Update(BitPattern square, BitPattern flip);
+
   static int8_t* evals_;
   FeatureValue patterns_[kNumPatterns];
   int empties_;
