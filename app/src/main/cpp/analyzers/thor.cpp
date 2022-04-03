@@ -116,9 +116,9 @@ class EvaluateThor {
 
 int main() {
   EvaluateDepth0 eval_depth_0;
-  EvaluateInDepth eval_in_depth(3);
+  EvaluateInDepth eval_in_depth(4);
   EvaluateThor evaluate_thor;
-  evaluate_thor.Run(&eval_in_depth, 10000, 10000);
+  evaluate_thor.Run(&eval_in_depth, 10000, 20);
   evaluate_thor.Print();
   return 0;
 }

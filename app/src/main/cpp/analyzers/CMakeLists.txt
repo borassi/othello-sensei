@@ -23,12 +23,12 @@ ELSE ()
 ENDIF ()
 
 add_executable(
-        evaluate_thor_main
-        evaluate_thor_main.cpp
+        thor
+        thor.cpp
 )
 
 target_link_libraries(
-        evaluate_thor_main
+        thor
         LINK_PUBLIC
         bitpattern
         evaluator_alpha_beta
@@ -39,12 +39,12 @@ target_link_libraries(
 )
 
 add_executable(
-        evaluate_last_moves
-        evaluate_last_moves.cpp
+        last_moves
+        last_moves.cpp
 )
 
 target_link_libraries(
-        evaluate_last_moves
+        last_moves
         LINK_PRIVATE
         evaluator_alpha_beta
         pattern_evaluator

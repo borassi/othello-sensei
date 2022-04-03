@@ -33,9 +33,10 @@ constexpr int kSquareValue[] = {
 
 class Move {
  public:
-  Move() : flip_(0), value_(0) {}
-  Move(BitPattern flip, int value) : flip_(flip), value_(value) {}
-
+  void Set(BitPattern flip, int value) {
+    flip_ = flip;
+    value_ = value;
+  }
   BitPattern GetFlip() const { return flip_; }
   int GetValue() const { return value_; }
 
@@ -66,67 +67,51 @@ class Move {
   BitPattern flip_;
   int value_;
 };
-//
-//class MoveIteratorBase {
-//  using iterator_category = std::input_iterator_tag;
-//  using difference_type = std::ptrdiff_t;
-//  using value_type = Move;
-//  using pointer = Move*;
-//  using reference = Move&;
-//
-//  virtual Move& operator*() const = 0;
-//  virtual MoveIteratorBase operator++(int) = 0;
-//  bool operator==(const MoveIteratorBase& other) = 0;
-//
-//  virtual Move* operator->() {
-//    return &(*this);
-//  }
-//  virtual MoveIteratorBase& operator++() {
-//    Move move = *this;
-//    ++(*this);
-//    return move;
-//  };
-//  bool operator!=(const MoveIteratorBase& other) {
-//    return !(*this == other);
-//  }
-//};
 
-class MoveIteratorQuick {
-
+class MoveIteratorBase {
  public:
-  MoveIteratorQuick(BitPattern player, BitPattern opponent, BitPattern last_flip);
+  virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+                     EvaluatorDepthOneBase* evaluator_depth_one) = 0;
+  virtual BitPattern NextFlip() = 0;
+};
 
-  BitPattern NextFlip() {
-    BitPattern mask = masks_[current_mask_];
-    BitPattern flip = 0;
-    while (flip == 0 && candidate_moves_ != 0) {
-      while ((mask & candidate_moves_) == 0) {
-        ++current_mask_;
-        mask = masks_[current_mask_];
-      }
-      int move = __builtin_ctzll(mask & candidate_moves_);
-      candidate_moves_ &= (~(1ULL << move));
-      flip = GetFlip(move, player_, opponent_);
-    }
-    return flip;
-  }
+class MoveIteratorQuick : public MoveIteratorBase {
+ public:
+  MoveIteratorQuick();
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+             EvaluatorDepthOneBase* evaluator_depth_one) override;
+  BitPattern NextFlip() override;
 
  private:
   BitPattern player_;
   BitPattern opponent_;
   BitPattern candidate_moves_;
   BitPattern masks_[9];
-  int current_mask_ = 0;
+  int current_mask_;
+};
+
+class MoveIteratorEval : public MoveIteratorBase {
+ public:
+  MoveIteratorEval() : moves_() {};
+
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+             EvaluatorDepthOneBase* evaluator_depth_one_base) override;
+
+  BitPattern NextFlip() override;
+
+ private:
+  BitPattern player_;
+  BitPattern opponent_;
+  BitPattern candidate_moves_;
+  Move moves_[64];
+  int remaining_moves_;
 };
 
 class EvaluatorAlphaBeta {
  public:
   EvaluatorAlphaBeta(
       HashMap* hash_map,
-      std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory()) :
-      n_visited_(0),
-      hash_map_(hash_map),
-      evaluator_depth_one_(evaluator_depth_one_factory()) {}
+      std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory());
 
   NVisited GetNVisited() const { return n_visited_; }
 
@@ -146,6 +131,10 @@ class EvaluatorAlphaBeta {
   }
 
  private:
+  static constexpr int MoveIteratorOffset(int depth, bool solve) {
+    return depth + (solve ? kMaxDepth : 0);
+  }
+
   typedef EvalLarge(EvaluatorAlphaBeta::*EvaluateInternalFunction)(
       const BitPattern, const BitPattern, const EvalLarge, const EvalLarge,
       const BitPattern, const BitPattern);
@@ -156,11 +145,12 @@ class EvaluatorAlphaBeta {
       const EvalLarge lower, const EvalLarge upper,
       const BitPattern last_flip, const BitPattern stable);
 
-  static EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[65];
-  static EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[65];
+  static constexpr int kMaxDepth = 64;
+  static EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
+  static EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
   HashMap* hash_map_;
   EpochValue epoch_;
   NVisited n_visited_;
-  Move moves_[64][64];
+  std::shared_ptr<MoveIteratorBase> move_iterators_[2 * kMaxDepth];
   std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
 };

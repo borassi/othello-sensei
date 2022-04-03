@@ -279,9 +279,6 @@ struct Features {
 
 constexpr Features kFeatures;
 
-#define FOR_EACH_SET_BIT(pattern, name) \
-  for (BitPattern name = pattern; name != 0; name = name & (name - 1))
-
 class PatternEvaluator : public EvaluatorDepthOneBase {
 
  public:
@@ -319,7 +316,6 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
       int canonical_rotation = kFeatures.canonical_rotation[i];
       int8_t* evals = base_evals + kFeatures.start_feature[canonical_rotation];
       result += evals[GetFeature(i)];
-//      std::cout << i << " " << result << "\n";
       if (verbose) {
         std::cout << i << " " << GetFeature(i) << " "
                   << evals[GetFeature(i)] / 8.0 << "\n";

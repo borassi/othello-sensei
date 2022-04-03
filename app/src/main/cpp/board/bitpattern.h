@@ -120,6 +120,9 @@ constexpr BitPattern kCornerPattern = ParsePattern(
         "X------X");
 Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent);
 
+#define FOR_EACH_SET_BIT(pattern, name) \
+  for (BitPattern name = pattern; name != 0; name = name & (name - 1))
+
 constexpr BitPattern GetRow(Square move) {
   return kLastRowPattern << (move & 56);
 }

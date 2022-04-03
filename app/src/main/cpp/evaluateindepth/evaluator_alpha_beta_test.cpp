@@ -49,63 +49,63 @@ Eval SolveBasic(long player, long opponent, bool passed) {
   return eval;
 }
 
-//TEST(EvaluatorAlphaBeta, InitialBoard) {
-//  HashMap hash_map;
-//  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
-//  Board board;
-//
-//  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
-//            8 * (/*depth 1*/(3-2) * kWeightDepthOne + /*depth 0*/ (0+2) * kWeightDepthZero)
-//            / (kWeightDepthOne + kWeightDepthZero));
-//  EXPECT_EQ(eval.GetNVisited(), 5);
-//  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
-//            8 * (/*depth 2*/(0+2) * kWeightDepthOne + /*depth 1*/ (3-2) * kWeightDepthZero)
-//            / (kWeightDepthOne + kWeightDepthZero));
-//  EXPECT_EQ(eval.GetNVisited(), 1 + 4 + 6  /*3 for first move, 1 for other 3 */);
-//}
-//
-//TEST(EvaluatorAlphaBeta, Pass) {
-//  HashMap hash_map;
-//  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
-//  Board board(
-//      "XXXXO---"
-//      "--------"
-//      "--------"
-//      "--------"
-//      "--------"
-//      "------OO"
-//      "--------"
-//      "------OX"
-//  );
-//
-//  EXPECT_EQ(
-//      eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
-//      8 * (/*depth 1*/(4-2) * kWeightDepthOne + /*depth 0*/ (1+2) * kWeightDepthZero)
-//      / (kWeightDepthOne + kWeightDepthZero));
-//
-//  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
-//      8 * (/*depth 1*/(7-2) * kWeightDepthOne + /*depth 0*/ (4+2) * kWeightDepthZero)
-//      / (kWeightDepthOne + kWeightDepthZero));
-//  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
-//}
-//
-//TEST(EvaluatorAlphaBeta, CompareWithTest) {
-//  HashMap hash_map;
-//  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
-//  TestEvaluator test_eval(TestEvaluatorDepthOne::Create);
-//
-//  for (int i = 0; i < 1000; ++i) {
-//    Board board = RandomBoard();
-//    for (int d = 1; d < 4; ++d) {
-//      if (d >= board.NEmpties()) {
-//        break;
-//      }
-//      ASSERT_EQ(
-//          test_eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d),
-//          eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d)) << board.ToString() << " " << d;
-//    }
-//  }
-//}
+TEST(EvaluatorAlphaBeta, InitialBoard) {
+  HashMap hash_map;
+  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
+  Board board;
+
+  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+            8 * (/*depth 1*/(3-2) * kWeightDepthOne + /*depth 0*/ (0+2) * kWeightDepthZero)
+            / (kWeightDepthOne + kWeightDepthZero));
+  EXPECT_EQ(eval.GetNVisited(), 5);
+  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+            8 * (/*depth 2*/(0+2) * kWeightDepthOne + /*depth 1*/ (3-2) * kWeightDepthZero)
+            / (kWeightDepthOne + kWeightDepthZero));
+  EXPECT_EQ(eval.GetNVisited(), 1 + 4 + 6  /*3 for first move, 1 for other 3 */);
+}
+
+TEST(EvaluatorAlphaBeta, Pass) {
+  HashMap hash_map;
+  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
+  Board board(
+      "XXXXO---"
+      "--------"
+      "--------"
+      "--------"
+      "--------"
+      "------OO"
+      "--------"
+      "------OX"
+  );
+
+  EXPECT_EQ(
+      eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+      8 * (/*depth 1*/(4-2) * kWeightDepthOne + /*depth 0*/ (1+2) * kWeightDepthZero)
+      / (kWeightDepthOne + kWeightDepthZero));
+
+  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+      8 * (/*depth 1*/(7-2) * kWeightDepthOne + /*depth 0*/ (4+2) * kWeightDepthZero)
+      / (kWeightDepthOne + kWeightDepthZero));
+  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
+}
+
+TEST(EvaluatorAlphaBeta, CompareWithTest) {
+  HashMap hash_map;
+  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
+  TestEvaluator test_eval(TestEvaluatorDepthOne::Create);
+
+  for (int i = 0; i < 1000; ++i) {
+    Board board = RandomBoard();
+    for (int d = 1; d <= 4; ++d) {
+      if (d >= board.NEmpties()) {
+        break;
+      }
+      ASSERT_EQ(
+          test_eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d),
+          eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d)) << board.ToString() << " " << d;
+    }
+  }
+}
 
 TEST(EvaluatorLastMoves, Endgame) {
   HashMap hash_map;

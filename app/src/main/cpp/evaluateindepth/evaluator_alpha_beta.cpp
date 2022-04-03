@@ -64,24 +64,82 @@ constexpr int NextNEmpties(int n_empties) {
   return std::min(64, std::max(0, n_empties - 1));
 }
 
-MoveIteratorQuick::MoveIteratorQuick(BitPattern player, BitPattern opponent, BitPattern last_flip) :
-    player_(player), opponent_(opponent), masks_() {
-  BitPattern empties = ~(player | opponent);
-  candidate_moves_ = Neighbors(opponent) & empties;
-  BitPattern neighbors_player = Neighbors(player);
-  masks_[0] = ~Neighbors(empties) & neighbors_player;
-  masks_[1] = UniqueInEdges(empties) & neighbors_player;
-  masks_[2] = Neighbors(last_flip) & kCornerPattern;
+MoveIteratorQuick::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
   masks_[3] = kCornerPattern;
-  masks_[4] = FirstLastInEdges(empties);
-  masks_[5] = ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0;
   masks_[6] = kCentralPattern;
   masks_[7] = kEdgePattern;
   masks_[8] = ~0ULL;
 }
 
+void MoveIteratorQuick::Setup(BitPattern player, BitPattern opponent,
+                              BitPattern last_flip,
+                              EvaluatorDepthOneBase* evaluator_depth_one) {
+  player_ = player;
+  opponent_ = opponent;
+  BitPattern empties = ~(player | opponent);
+  candidate_moves_ = Neighbors(opponent) & empties;
+  current_mask_ = 0;
+  BitPattern neighbors_player = Neighbors(player);
+  masks_[0] = ~Neighbors(empties) & neighbors_player;
+  masks_[1] = UniqueInEdges(empties) & neighbors_player;
+  masks_[2] = Neighbors(last_flip) & kCornerPattern;
+  masks_[4] = FirstLastInEdges(empties);
+  masks_[5] = ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0;
+}
+
+BitPattern MoveIteratorQuick::NextFlip() {
+  BitPattern mask = masks_[current_mask_];
+  BitPattern flip = 0;
+  while (flip == 0 && candidate_moves_ != 0) {
+    while ((mask & candidate_moves_) == 0) {
+      ++current_mask_;
+      mask = masks_[current_mask_];
+    }
+    int move = __builtin_ctzll(mask & candidate_moves_);
+    candidate_moves_ &= (~(1ULL << move));
+    flip = GetFlip(move, player_, opponent_);
+  }
+  return flip;
+}
+
+void MoveIteratorEval::Setup(
+    BitPattern player, BitPattern opponent, BitPattern last_flip,
+    EvaluatorDepthOneBase* evaluator_depth_one_base) {
+  BitPattern empties = ~(player | opponent);
+  BitPattern candidate_moves = Neighbors(opponent) & empties;
+  BitPattern flip;
+  remaining_moves_ = 0;
+  FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
+    Square square = __builtin_ctzll(square_pattern);
+    flip = GetFlip(square, player, opponent);
+    if (flip == 0) {
+      continue;
+    }
+    evaluator_depth_one_base->Update(square_pattern, flip);
+    moves_[remaining_moves_].Set(flip, -evaluator_depth_one_base->Evaluate());
+    evaluator_depth_one_base->UndoUpdate(square_pattern, flip);
+    remaining_moves_++;
+  }
+}
+
+BitPattern MoveIteratorEval::NextFlip() {
+  if (remaining_moves_ == 0) {
+    return 0;
+  }
+  Move* best_move = moves_;
+  for (int i = 0; i < remaining_moves_; ++i) {
+    if (moves_[i].GetValue() > best_move->GetValue()) {
+      best_move = moves_ + i;
+    }
+  }
+  BitPattern flip = best_move->GetFlip();
+  --remaining_moves_;
+  *best_move = moves_[remaining_moves_];
+  return flip;
+}
+
 EvaluatorAlphaBeta::EvaluateInternalFunction
-    EvaluatorAlphaBeta::solvers_[65] =  {
+    EvaluatorAlphaBeta::solvers_[kMaxDepth] =  {
     &EvaluatorAlphaBeta::EvaluateInternal<0, false, true>,
     &EvaluatorAlphaBeta::EvaluateInternal<1, false, true>,
     &EvaluatorAlphaBeta::EvaluateInternal<2, false, true>,
@@ -145,11 +203,10 @@ EvaluatorAlphaBeta::EvaluateInternalFunction
     &EvaluatorAlphaBeta::EvaluateInternal<60, false, true>,
     &EvaluatorAlphaBeta::EvaluateInternal<61, false, true>,
     &EvaluatorAlphaBeta::EvaluateInternal<62, false, true>,
-    &EvaluatorAlphaBeta::EvaluateInternal<63, false, true>,
-    &EvaluatorAlphaBeta::EvaluateInternal<64, false, true>,
+    &EvaluatorAlphaBeta::EvaluateInternal<63, false, true>
 };
 EvaluatorAlphaBeta::EvaluateInternalFunction
-    EvaluatorAlphaBeta::evaluators_[65] = {
+    EvaluatorAlphaBeta::evaluators_[kMaxDepth] = {
     &EvaluatorAlphaBeta::EvaluateInternal<0, false, false>,
     &EvaluatorAlphaBeta::EvaluateInternal<1, false, false>,
     &EvaluatorAlphaBeta::EvaluateInternal<2, false, false>,
@@ -213,9 +270,27 @@ EvaluatorAlphaBeta::EvaluateInternalFunction
     &EvaluatorAlphaBeta::EvaluateInternal<60, false, false>,
     &EvaluatorAlphaBeta::EvaluateInternal<61, false, false>,
     &EvaluatorAlphaBeta::EvaluateInternal<62, false, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<63, false, false>,
-    &EvaluatorAlphaBeta::EvaluateInternal<64, false, false>,
+    &EvaluatorAlphaBeta::EvaluateInternal<63, false, false>
 };
+
+EvaluatorAlphaBeta::EvaluatorAlphaBeta(
+    HashMap* hash_map,
+    std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory()) :
+    n_visited_(0),
+    epoch_(0),
+    hash_map_(hash_map),
+    evaluator_depth_one_(evaluator_depth_one_factory()) {
+  for (int i = 0; i < 64; ++i) {
+    for (bool solve : {true, false}) {
+      int offset = MoveIteratorOffset(i, solve);
+      if (!solve && i >= 4) {
+        move_iterators_[offset] = std::make_unique<MoveIteratorEval>();
+      } else {
+        move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();
+      }
+    }
+  }
+}
 
 // clangtidy: no-warning.
 template<int depth, bool passed, bool solve>
@@ -253,8 +328,10 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   BitPattern square;
   EvalLarge eval = kLessThenMinEvalLarge;
   int cur_n_visited;
-  MoveIteratorQuick moves(player, opponent, last_flip);
-  for (BitPattern flip = moves.NextFlip(); flip != 0; flip = moves.NextFlip()) {
+  MoveIteratorBase* moves =
+      move_iterators_[MoveIteratorOffset(depth, solve)].get();
+  moves->Setup(player, opponent, last_flip, evaluator_depth_one_.get());
+  for (BitPattern flip = moves->NextFlip(); flip != 0; flip = moves->NextFlip()) {
     if (!solve) {
       square = SquareFromFlip(flip, player, opponent);
       evaluator_depth_one_->Update(square, flip);
