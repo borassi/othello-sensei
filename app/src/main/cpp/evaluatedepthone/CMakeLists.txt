@@ -135,6 +135,7 @@ add_library(
 target_link_libraries(
         train_pattern_evaluator
         LINK_PRIVATE
+        misc
         pattern_evaluator
         pattern
 )

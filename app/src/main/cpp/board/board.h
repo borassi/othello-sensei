@@ -27,16 +27,16 @@ public:
   Board(const char* board);
   Board();
 
-  long GetPlayer() const {
+  BitPattern GetPlayer() const {
     return player_;
   }
-  long GetOpponent() const {
+  BitPattern GetOpponent() const {
     return opponent_;
   }
-  long GetEmpties() const {
+  BitPattern GetEmpties() const {
     return ~(player_ | opponent_);
   }
-  long NEmpties() const {
+  int NEmpties() const {
     return __builtin_popcountll(GetEmpties());
   }
   bool IsEmpty(Square move) const {
@@ -59,8 +59,8 @@ public:
            && GetOpponent() == rhs.GetOpponent();
   }
 private:
-  long player_;
-  long opponent_;
+  BitPattern player_;
+  BitPattern opponent_;
   
 };
 

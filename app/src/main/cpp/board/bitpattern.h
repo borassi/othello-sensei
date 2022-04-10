@@ -25,7 +25,7 @@
 #include "../constants.h"
 #include "../utils/random.h"
 
-typedef int8_t Eval;
+typedef int Eval;
 typedef int EvalLarge;
 typedef unsigned long long BitPattern;
 typedef u_int8_t Square;
@@ -227,6 +227,10 @@ inline BitPattern UniqueSet(BitPattern b) {
 
 inline BitPattern FirstLastSet(BitPattern b) {
   return b == 0 ? 0 : (1ULL << __builtin_ctzll(b)) | (1ULL << (63 - __builtin_clzll(b)));
+}
+
+inline Square NEmpties(BitPattern player, BitPattern opponent) {
+  return (Square) (64 - __builtin_popcountll(player | opponent));
 }
 
 inline BitPattern UniqueInEdges(BitPattern empties) {

@@ -238,33 +238,27 @@ constexpr MoveMetadata kMoveMetadata[] = {
 inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept {
   assert(((1ULL << move) & (player | opponent)) == 0);
-  MoveMetadata m = kMoveMetadata[move];
-  if ((m.neighbors & opponent) == 0) {
-    return 0;
-  }
-  BitPattern flip;
+  const MoveMetadata* m = kMoveMetadata + move;
 #if PDEP_PEXT
-  flip = _pdep_u64(kFlip[m.position_in_row | (kOutflank[m.position_in_row | _pext_u64(opponent, m.row)] & _pext_u64(player, m.row))], m.row);
-  flip |= _pdep_u64(kFlip[m.position_in_column | (kOutflank[m.position_in_column | _pext_u64(opponent, m.column)] & _pext_u64(player, m.column))], m.column);
-  flip |= _pdep_u64(kFlip[m.position_in_diag7 | (kOutflank[m.position_in_diag7 | _pext_u64(opponent, m.diag7)] & _pext_u64(player, m.diag7))], m.diag7);
-  flip |= _pdep_u64(kFlip[m.position_in_diag9 | (kOutflank[m.position_in_diag9 | _pext_u64(opponent, m.diag9)] & _pext_u64(player, m.diag9))], m.diag9);
+  return _pdep_u64(kFlip[m->position_in_row | (kOutflank[m->position_in_row | _pext_u64(opponent, m->row)] & _pext_u64(player, m->row))], m->row)
+      | _pdep_u64(kFlip[m->position_in_column | (kOutflank[m->position_in_column | _pext_u64(opponent, m->column)] & _pext_u64(player, m->column))], m->column)
+      | _pdep_u64(kFlip[m->position_in_diag7 | (kOutflank[m->position_in_diag7 | _pext_u64(opponent, m->diag7)] & _pext_u64(player, m->diag7))], m->diag7)
+      | _pdep_u64(kFlip[m->position_in_diag9 | (kOutflank[m->position_in_diag9 | _pext_u64(opponent, m->diag9)] & _pext_u64(player, m->diag9))], m->diag9);
 #else
-  flip = LastRowToRow(
-      kFlip[m.position_in_row | (kOutflank[m.position_in_row | RowToLastRow(opponent, m.row, m.row_shift)] & RowToLastRow(player, m.row, m.row_shift))],
-      m.row_shift
-  );
-  flip |= LastRowToColumn(
-      kFlip[m.position_in_column | (
-          kOutflank[m.position_in_column | ColumnToLastRow(opponent, m.column, m.column_shift)] & ColumnToLastRow(player, m.column, m.column_shift))],
-      m.column_shift
-  );
-  flip |= LastRowToDiagonal(
-      kFlip[m.position_in_diag7 | (kOutflank[m.position_in_diag7 | DiagonalToLastRow(opponent, m.diag7)] & DiagonalToLastRow(player, m.diag7))], m.diag7);
-  flip |= LastRowToDiagonal(
-      kFlip[m.position_in_diag9 | (kOutflank[m.position_in_diag9 | DiagonalToLastRow(opponent, m.diag9)] & DiagonalToLastRow(player, m.diag9))], m.diag9);
+  return LastRowToRow(
+      kFlip[m->position_in_row | (kOutflank[m->position_in_row | RowToLastRow(opponent, m->row, m->row_shift)] & RowToLastRow(player, m->row, m->row_shift))],
+          m->row_shift)
+      | LastRowToColumn(
+      kFlip[m->position_in_column | (
+          kOutflank[m->position_in_column | ColumnToLastRow(opponent, m->column, m->column_shift)] & ColumnToLastRow(player, m->column, m->column_shift))],
+          m->column_shift)
+      | LastRowToDiagonal(
+      kFlip[m->position_in_diag7 | (kOutflank[m->position_in_diag7 | DiagonalToLastRow(opponent, m->diag7)] & DiagonalToLastRow(player, m->diag7))],
+          m->diag7)
+      | LastRowToDiagonal(
+      kFlip[m->position_in_diag9 | (kOutflank[m->position_in_diag9 | DiagonalToLastRow(opponent, m->diag9)] & DiagonalToLastRow(player, m->diag9))],
+          m->diag9);
 #endif
-
-  return flip;
 }
 
 inline BitPattern NewPlayer(BitPattern flip, BitPattern opponent) noexcept __attribute__((always_inline));

@@ -19,7 +19,7 @@
 # Profile:
 # cmake -S src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
 # cmake --build build && \
-# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/evaluate_thor_main && \
+# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/thor && \
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
@@ -86,8 +86,9 @@ ENDIF()
 
 add_subdirectory(analyzers)
 add_subdirectory(board)
+add_subdirectory(evaluatealphabeta)
 add_subdirectory(evaluatedepthone)
-add_subdirectory(evaluateindepth)
+add_subdirectory(evaluatederivative)
 add_subdirectory(hashmap)
 add_subdirectory(utils)
 

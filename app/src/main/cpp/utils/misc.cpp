@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#include <chrono>
+#include <ctime>
+#include "misc.h"
 
-constexpr int kBitHashMap = 24;
-constexpr int kHashMapSize = 1L << kBitHashMap;
-constexpr int kMinEmptiesForHashMap = 10;
-constexpr int kMinDepthForHashMap = 3;
-constexpr int kWeightDepthOne = 2;
-constexpr int kWeightDepthZero = 1;
+ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
 
-
-#endif /* CONSTANTS_H */
+double ElapsedTime::Get() {
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> diff = end - start_;
+  return diff.count();
+}

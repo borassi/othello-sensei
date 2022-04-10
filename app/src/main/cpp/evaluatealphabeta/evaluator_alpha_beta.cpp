@@ -115,9 +115,13 @@ void MoveIteratorEval::Setup(
     if (flip == 0) {
       continue;
     }
-    evaluator_depth_one_base->Update(square_pattern, flip);
-    moves_[remaining_moves_].Set(flip, -evaluator_depth_one_base->Evaluate());
-    evaluator_depth_one_base->UndoUpdate(square_pattern, flip);
+//    evaluator_depth_one_base->Update(square_pattern, flip);
+    int value = 0;//-evaluator_depth_one_base->Evaluate();
+    BitPattern moves = GetMoves(NewPlayer(flip, opponent), NewOpponent(flip, player));
+    value = -(__builtin_popcountll(moves) + __builtin_popcountll(moves & kCornerPattern)) * 1000;
+    value += kSquareValue[square];
+    moves_[remaining_moves_].Set(flip, value);
+//    evaluator_depth_one_base->UndoUpdate(square_pattern, flip);
     remaining_moves_++;
   }
 }
@@ -273,6 +277,19 @@ EvaluatorAlphaBeta::EvaluateInternalFunction
     &EvaluatorAlphaBeta::EvaluateInternal<63, false, false>
 };
 
+constexpr bool UseMoveIteratorQuick(int depth, bool solve) {
+  return (solve && depth < 11) || (!solve && depth < 3);
+}
+
+constexpr bool UpdateDepthOneEvaluator(int depth, bool solve) {
+  return !solve || !UseMoveIteratorQuick(depth, solve);
+}
+
+constexpr bool UseHashMap(int depth, bool solve) {
+  return (solve && depth >= kMinEmptiesForHashMap)
+         || (!solve && depth >= kMinDepthForHashMap);
+}
+
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap* hash_map,
     std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory()) :
@@ -283,10 +300,10 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
   for (int i = 0; i < 64; ++i) {
     for (bool solve : {true, false}) {
       int offset = MoveIteratorOffset(i, solve);
-      if (!solve && i >= 4) {
-        move_iterators_[offset] = std::make_unique<MoveIteratorEval>();
-      } else {
+      if (UseMoveIteratorQuick(i, solve)) {
         move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();
+      } else {
+        move_iterators_[offset] = std::make_unique<MoveIteratorEval>();
       }
     }
   }
@@ -309,8 +326,8 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     return stability_cutoff_upper;
   }
 
-  if (depth >= kMinEmptiesForHashMap) {
-    std::pair<Eval, Eval> hash_eval =
+  if (UseHashMap(depth, solve)) {
+    std::pair<EvalLarge, EvalLarge> hash_eval =
         hash_map_->GetLowerUpper(player, opponent, depth);
     if (hash_eval.first >= upper || hash_eval.first == hash_eval.second) {
       return hash_eval.first;
@@ -319,7 +336,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     }
   }
   EvalLarge depth_zero_eval;
-  if (!solve) {
+  if (UpdateDepthOneEvaluator(depth, solve)) {
     if (depth == 1) {
       depth_zero_eval = evaluator_depth_one_->Evaluate();
     }
@@ -332,7 +349,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       move_iterators_[MoveIteratorOffset(depth, solve)].get();
   moves->Setup(player, opponent, last_flip, evaluator_depth_one_.get());
   for (BitPattern flip = moves->NextFlip(); flip != 0; flip = moves->NextFlip()) {
-    if (!solve) {
+    if (UpdateDepthOneEvaluator(depth, solve)) {
       square = SquareFromFlip(flip, player, opponent);
       evaluator_depth_one_->Update(square, flip);
     }
@@ -358,7 +375,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
               NewPlayer(flip, opponent), NewOpponent(flip, player),
                   -upper, -std::max(lower, eval), flip, new_stable));
     }
-    if (!solve) {
+    if (UpdateDepthOneEvaluator(depth, solve)) {
       evaluator_depth_one_->UndoUpdate(square, flip);
     }
     if (eval >= upper) {
@@ -372,7 +389,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       eval = -EvaluateInternal<depth, true, solve>(
           opponent, player, -upper, -lower, last_flip, new_stable);
     }
-  } else if (depth >= kMinEmptiesForHashMap) {
+  } else if (UseHashMap(depth, solve)) {
     hash_map_
         ->Update(player, opponent, epoch_, depth, eval, lower, upper, 0, 0);
   }

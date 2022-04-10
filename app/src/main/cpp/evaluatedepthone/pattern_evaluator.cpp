@@ -215,7 +215,7 @@ EvalLarge PatternEvaluator::Evaluate() const {
       base_evals[2270106 + patterns_[36]] + base_evals[2270106 + patterns_[37]] +
       base_evals[2272293 + patterns_[38]] + base_evals[2272293 + patterns_[39]] +
       base_evals[2272293 + patterns_[40]] + base_evals[2272293 + patterns_[41]];
-  return eval;//getEvalAndSetupLastError(eval);
+  return std::max(kMinEvalLarge, std::min(kMaxEvalLarge, eval));//getEvalAndSetupLastError(eval);
 }
 
 int8_t* LoadEvals(const std::string& filepath) {

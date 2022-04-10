@@ -54,11 +54,23 @@ ENDIF()
 add_library(
         misc
         misc.h
+        misc.cpp
 )
 
-set_target_properties(
-        misc PROPERTIES LINKER_LANGUAGE CXX
-)
+IF (NOT ANDROID)
+    add_executable(
+            misc_test
+            misc_test.cpp
+    )
+
+    target_link_libraries(
+            misc_test
+            LINK_PUBLIC
+            misc
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()
 
 add_library(
         load_training_set

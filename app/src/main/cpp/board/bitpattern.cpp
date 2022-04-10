@@ -27,10 +27,10 @@
 #include "bitpattern.h"
 
 Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent) {
-  int playerDisks = __builtin_popcountll(player);
-  int opponentDisks = __builtin_popcountll(opponent);
-  int diff = playerDisks - opponentDisks;
-  return static_cast<Eval>(diff + (int) ((diff > 0) - (diff < 0)) * (64 - playerDisks - opponentDisks));
+  int player_disks = __builtin_popcountll(player);
+  int opponent_disks = __builtin_popcountll(opponent);
+  int diff = player_disks - opponent_disks;
+  return static_cast<Eval>(diff + (int) ((diff > 0) - (diff < 0)) * (64 - player_disks - opponent_disks));
 }
 
 std::string PatternToString(BitPattern pattern) {

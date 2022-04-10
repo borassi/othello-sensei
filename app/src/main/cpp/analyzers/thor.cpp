@@ -19,8 +19,8 @@
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
-#include "../evaluateindepth/test_evaluator.h"
-#include "../evaluateindepth/evaluator_alpha_beta.h"
+#include "../evaluatealphabeta/test_evaluator.h"
+#include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../utils/load_training_set.h"
 #include "../utils/misc.h"
 
@@ -88,7 +88,7 @@ class EvaluateThor {
       sum_error_squared_ += error * error;
       num_boards_++;
       n_visited_ += evaluator->GetNVisited();
-      if (++i % 1000 == 0 && elapsed_time_.Get() > stop_after) {
+      if (++i % 5000 == 0 && elapsed_time_.Get() > stop_after) {
         Print();
         return;
       }

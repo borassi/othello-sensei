@@ -15,6 +15,7 @@
  */
 
 #include <cmath>
+#include "../utils/misc.h"
 #include "pattern_evaluator.h"
 #include "train_pattern_evaluator.h"
 

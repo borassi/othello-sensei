@@ -44,7 +44,7 @@ target_link_libraries( # Specifies the target library.
         hash_map
         stable
         ${JNI_LIBRARIES}
-        )
+)
 
 IF(NOT ANDROID)
     add_executable(

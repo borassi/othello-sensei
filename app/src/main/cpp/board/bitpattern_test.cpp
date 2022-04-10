@@ -162,3 +162,26 @@ TEST(BitPattern, AllSubBitPatterns) {
     }
   }
 }
+
+TEST(BitPattern, Empties) {
+  BitPattern player = ParsePattern("XXXXXXXX"
+                               "X------X"
+                               "X------X"
+                               "X------X"
+                               "X------X"
+                               "X------X"
+                               "X------X"
+                               "XXXXXXXX");
+  BitPattern opponent = ParsePattern("--------"
+                                      "--XXXX--"
+                                      "--XXXX--"
+                                      "--------"
+                                      "--------"
+                                      "--------"
+                                      "--------"
+                                      "--------");
+  EXPECT_EQ(28, NEmpties(player, opponent));
+  EXPECT_EQ(36, NEmpties(player, 0));
+  EXPECT_EQ(56, NEmpties(0, opponent));
+  EXPECT_EQ(64, NEmpties(0, 0));
+}

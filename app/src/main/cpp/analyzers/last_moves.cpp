@@ -23,8 +23,8 @@
 #include "../board/board.h"
 #include "../board/get_flip.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
-#include "../evaluateindepth/evaluator_alpha_beta.h"
-#include "../evaluateindepth/evaluator_last_moves.h"
+#include "../evaluatealphabeta/evaluator_alpha_beta.h"
+#include "../evaluatealphabeta/evaluator_last_moves.h"
 
 using namespace std;
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   }
   tests_file.close();
 
-  int N = 12;
+  int N = 1;
   long long n_positions = 0;
   int n_visited = 0;
   NVisited tot_n_visited = 0;
@@ -60,7 +60,8 @@ int main(int argc, char** argv) {
     for (const auto& test : tests) {
       n_positions++;
 //      n_visited = 0;
-//      std::cout << Board(test.player, test.opponent).GetEmpties() << "\n";
+//      std::cout << Board(test.player, test.opponent).NEmpties() << " " << EvalToEvalLarge(
+//          (Eval) test.alpha) << " " << EvalToEvalLarge((Eval) test.beta) << "\n";
       tmp ^= evaluator.Evaluate(test.player, test.opponent, 64, EvalToEvalLarge((Eval) test.alpha),
                                 EvalToEvalLarge((Eval) test.beta));
       tot_n_visited += evaluator.GetNVisited();

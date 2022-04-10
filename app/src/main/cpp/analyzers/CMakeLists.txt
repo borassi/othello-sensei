@@ -34,8 +34,9 @@ target_link_libraries(
         evaluator_alpha_beta
         get_moves
         load_training_set
-        test_evaluator
+        misc
         pattern_evaluator
+        test_evaluator
 )
 
 add_executable(
