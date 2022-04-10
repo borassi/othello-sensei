@@ -185,3 +185,11 @@ TEST(BitPattern, Empties) {
   EXPECT_EQ(56, NEmpties(0, opponent));
   EXPECT_EQ(64, NEmpties(0, 0));
 }
+
+TEST(BitPattern, MoveToSquare) {
+  EXPECT_EQ(MoveToSquare("h8"), 0);
+  EXPECT_EQ(MoveToSquare("g8"), 1);
+  EXPECT_EQ(MoveToSquare("h6"), 16);
+  EXPECT_EQ(MoveToSquare("d4"), 36);
+  EXPECT_EQ(MoveToSquare("a1"), 63);
+}

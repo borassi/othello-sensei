@@ -47,8 +47,7 @@ TEST(TestEvaluator, Pass) {
       "--------"
       "------OO"
       "--------"
-      "------OX"
-  );
+      "------OX", true);
 
   EXPECT_EQ(
       eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),

@@ -23,6 +23,7 @@ constexpr int kMinEmptiesForHashMap = 10;
 constexpr int kMinDepthForHashMap = 3;
 constexpr int kWeightDepthOne = 2;
 constexpr int kWeightDepthZero = 1;
+constexpr float kMultStddev = 1;
 
 
 #endif /* CONSTANTS_H */

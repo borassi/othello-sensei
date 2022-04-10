@@ -24,7 +24,8 @@ class Board {
 
 public:
   Board(BitPattern player, BitPattern opponent) : player_(player), opponent_(opponent) {}
-  Board(const char* board);
+  Board(const char* board, bool player_black);
+  Board(const std::string& sequence);
   Board();
 
   BitPattern GetPlayer() const {
@@ -48,7 +49,6 @@ public:
   bool IsOpponent(Square move) const {
     return IsFull(opponent_, move);
   }
-  std::string ToString() const;
   void PlayMove(BitPattern flip) {
     BitPattern tmp = opponent_;
     opponent_ = NewOpponent(flip, player_);
@@ -64,6 +64,7 @@ private:
   
 };
 
+std::ostream& operator<<(std::ostream& stream, const Board& b);
 Board RandomBoard(double percentage_player, double percentage_opponent);
 Board RandomBoard();
 #endif /* BOARD_H */

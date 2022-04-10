@@ -38,3 +38,26 @@ TEST(ConstexprMath, Pow) {
     }
   }
 }
+
+TEST(Gaussian, Gaussian) {
+  EXPECT_NEAR(0.5, GaussianCDF(0, 0, 1), 1.E-5);
+  // 68-95-99.7 rule.
+  EXPECT_NEAR((1-0.6827) / 2, GaussianCDF(-1, 0, 1), 1.E-4);
+  EXPECT_NEAR((1-0.9545) / 2, GaussianCDF(-2, 0, 1), 1.E-4);
+  EXPECT_NEAR((1-0.9974) / 2, GaussianCDF(-3, 0, 1), 1.E-4);
+  EXPECT_NEAR((1-0.99997) / 2, GaussianCDF(-4, 0, 1), 1.E-4);
+  EXPECT_NEAR(0, GaussianCDF(-5, 0, 1), 1.E-5);
+  EXPECT_NEAR(0, GaussianCDF(-10, 0, 1), 1.E-5);
+  EXPECT_NEAR(0, GaussianCDF(-20, 0, 1), 1.E-5);
+
+  EXPECT_NEAR(1-(1-0.6827) / 2, GaussianCDF(1, 0, 1), 1.E-4);
+  EXPECT_NEAR(1-(1-0.9545) / 2, GaussianCDF(2, 0, 1), 1.E-4);
+  EXPECT_NEAR(1-(1-0.9974) / 2, GaussianCDF(3, 0, 1), 1.E-4);
+  EXPECT_NEAR(1-(1-0.99997) / 2, GaussianCDF(4, 0, 1), 1.E-4);
+  EXPECT_NEAR(1, GaussianCDF(5, 0, 1), 1.E-5);
+  EXPECT_NEAR(1, GaussianCDF(10, 0, 1), 1.E-5);
+  EXPECT_NEAR(1, GaussianCDF(20, 0, 1), 1.E-5);
+
+  EXPECT_NEAR(1, GaussianCDF(1, 0, 0.00001), 1.E-5);
+  EXPECT_NEAR((1-0.6827) / 2, GaussianCDF(4, 6, 2), 1.E-5);
+}

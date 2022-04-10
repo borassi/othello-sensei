@@ -141,8 +141,8 @@ TEST(PatternTest, GetValue) {
         // We do it like this because the testing::Contains is too slow.
         ASSERT_TRUE(visited_patterns.find(key) == visited_patterns.end())
             << "Found the pattern " << key << " twice:\n"
-            << Board(player, opponent).ToString() << "\n"
-            << visited_patterns[key]->ToString();
+            << Board(player, opponent) << "\n"
+            << *(visited_patterns[key]);
         visited_patterns[key] = std::unique_ptr<Board>(new Board(player, opponent));
       }
     }

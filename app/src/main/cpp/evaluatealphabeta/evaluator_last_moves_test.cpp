@@ -27,7 +27,7 @@ Board THREE_EMPTIES(
         "X-XXOOOO"
         "XXXXOOOO"
         "XXXXOOOO"
-        "XXXXOOO-");
+        "XXXXOOO-", true);
 
 
 int SolveBasic(long player, long opponent, bool passed) {
@@ -55,14 +55,14 @@ int SolveBasic(long player, long opponent, bool passed) {
 
 TEST(EvaluatorLastMoves, DoublePass) {
   int visited = 0;
-  Board b("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXXX");
+  Board b("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXXX", true);
   EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 0);
-  b = Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX");
+  b = Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX", true);
   EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), -4);
 }
 
 TEST(EvaluatorLastMoves, ManyPass) {
-  Board b("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX");
+  Board b("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX", true);
   EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 24);
 }
 

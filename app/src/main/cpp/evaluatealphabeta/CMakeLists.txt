@@ -30,12 +30,6 @@ add_library(
         evaluator_last_moves.cpp
 )
 
-target_compile_options(
-        evaluator_last_moves
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
-
 target_link_libraries( # Specifies the target library.
         evaluator_last_moves
         LINK_PUBLIC
@@ -68,12 +62,6 @@ add_library(
         SHARED
         evaluator_alpha_beta.h
         evaluator_alpha_beta.cpp
-)
-
-target_compile_options(
-        evaluator_alpha_beta
-        PUBLIC
-        ${RELEASE_FLAGS}
 )
 
 target_link_libraries( # Specifies the target library.

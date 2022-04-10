@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+#include <cassert>
 #include <iostream>
 #include "board.h"
+#include "get_flip.h"
 
 const char kInitialBoard[] =
     "--------"
@@ -27,28 +29,40 @@ const char kInitialBoard[] =
     "--------"
     "--------";
 
-std::string Board::ToString() const {
-  std::string result;
+std::ostream& operator<<(std::ostream& stream, const Board& b) {
   for (int i = 63; i >= 0; --i) {
     BitPattern mask = (1L << i);
-    if ((player_ & mask) != 0) {
-      result += 'X';
-    } else if ((opponent_ & mask) != 0) {
-      result += 'O';
+    if ((b.GetPlayer() & mask) != 0) {
+      stream << 'X';
+    } else if ((b.GetOpponent() & mask) != 0) {
+      stream << 'O';
     } else {
-      result += '-';
+      stream << '-';
     }
     if (i % 8 == 0) {
-      result += '\n';
+      stream << '\n';
     }
   }
-  return result;
+  return stream;
 }
 
-Board::Board (const char* board)
-    : Board(ParsePattern(board, 'X'), ParsePattern(board, 'O')) {}
+Board::Board(const char* board, bool player_x)
+    : Board(ParsePattern(board, player_x ? 'X' : 'O'),
+            ParsePattern(board, player_x ? 'O' : 'X')) {}
 
-Board::Board() : Board(kInitialBoard) {}
+Board::Board(const std::string& sequence) : Board() {
+  assert(sequence.length() % 2 == 0);
+  for (int i = 0; i < sequence.length(); i += 2) {
+    Square move = MoveToSquare(sequence.substr(i, 2));
+    BitPattern flip = GetFlip(move, player_, opponent_);
+    assert(flip != 0);
+    BitPattern tmp = player_;
+    player_ = NewPlayer(flip, opponent_);
+    opponent_ = NewOpponent(flip, tmp);
+  }
+}
+
+Board::Board() : Board(kInitialBoard, true) {}
 
 Board RandomBoard() {
   double percentage_player = (double) std::rand() / RAND_MAX;
@@ -71,5 +85,5 @@ Board RandomBoard(double percentage_player, double percentage_opponent) {
       board_string += "-";
     }
   }
-  return {board_string.c_str()};
+  return {board_string.c_str(), true};
 }

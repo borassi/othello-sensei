@@ -30,12 +30,6 @@ set_target_properties(
         random PROPERTIES LINKER_LANGUAGE CXX
 )
 
-target_compile_options(
-        random
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
-
 IF(NOT ANDROID)
     add_executable(
             random_test

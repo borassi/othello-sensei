@@ -29,7 +29,7 @@ TEST(GetFlip, Basic) {
               "XOOOOOO-"
               "-----XOO"
               "--------"
-              "OOX-----");
+              "OOX-----", true);
   BitPattern flip1 = ParsePattern("--------"
                                   "-----XX-"
                                   "--------"
@@ -110,13 +110,7 @@ TEST(GetFlip, Random) {
     if (b.IsEmpty(move)) {
       BitPattern flip_basic = GetFlipBasic(move, b.GetPlayer(), b.GetOpponent());
       BitPattern flip = GetFlip(move, b.GetPlayer(), b.GetOpponent());
-      if (flip_basic != flip) {
-        std::cout << "Error\n";
-        std::cout << b.ToString() << " " << move << "\n";
-        std::cout << PatternToString(flip_basic) << "\n";
-        std::cout << PatternToString(flip) << "\n";
-      }
-      EXPECT_EQ(flip_basic, flip);
+      EXPECT_EQ(flip_basic, flip) << b << " " << move << "\n"  << PatternToString(flip_basic) << "\n" << PatternToString(flip) << "\n";
     }
   }
   PrintMoveMetadata();

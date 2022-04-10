@@ -28,12 +28,6 @@ add_library(
         bitpattern.cpp
 )
 
-target_compile_options(
-        bitpattern
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
-
 IF(NOT ANDROID)
     add_executable(
             bitpattern_test
@@ -55,8 +49,11 @@ add_library(
         board.cpp
 )
 
-
-target_link_libraries(board LINK_PUBLIC bitpattern)
+target_link_libraries(
+        board
+        LINK_PUBLIC
+        bitpattern
+        get_flip)
 
 IF (NOT ANDROID)
     add_executable(
@@ -85,12 +82,6 @@ target_link_libraries(
         bitpattern
 )
 
-target_compile_options(
-        get_moves
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
-
 IF(NOT ANDROID)
     add_executable(
             get_moves_test
@@ -117,12 +108,6 @@ add_library(
 )
 
 target_link_libraries(get_flip LINK_PUBLIC bitpattern)
-
-target_compile_options(
-        get_flip
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
 
 IF(${PDEP_PEXT})
     target_compile_options(
@@ -160,12 +145,6 @@ target_link_libraries(
         get_flip
 )
 
-target_compile_options(
-        get_flip_profile
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
-
 add_library(
         stable
         stable.h
@@ -183,7 +162,6 @@ target_compile_options(
         stable
         PUBLIC
         -fconstexpr-steps=1000000000
-        ${RELEASE_FLAGS}
 )
 
 IF(${PDEP_PEXT})
@@ -191,7 +169,6 @@ IF(${PDEP_PEXT})
             stable
             PUBLIC
             -mbmi2
-            ${RELEASE_FLAGS}
     )
 ENDIF()
 

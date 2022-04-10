@@ -75,8 +75,7 @@ TEST(EvaluatorAlphaBeta, Pass) {
       "--------"
       "------OO"
       "--------"
-      "------OX"
-  );
+      "------OX", true);
 
   EXPECT_EQ(
       eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
@@ -102,7 +101,7 @@ TEST(EvaluatorAlphaBeta, CompareWithTest) {
       }
       ASSERT_EQ(
           test_eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d),
-          eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d)) << board.ToString() << " " << d;
+          eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d)) << board << " " << d;
     }
   }
 }
@@ -127,7 +126,7 @@ TEST(EvaluatorLastMoves, Endgame) {
     actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), 64);
     int expected = SolveBasic(b.GetPlayer(), b.GetOpponent(), false) * 8;
 
-    ASSERT_EQ(actual, expected) << b.ToString();
+    ASSERT_EQ(actual, expected) << b;
   }
 }
 

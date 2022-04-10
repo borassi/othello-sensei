@@ -262,5 +262,9 @@ std::vector<BitPattern> AllSubBitPatterns(BitPattern p);
 BitPattern RandomPattern(double percentage);
 BitPattern RandomPattern();
 
+inline Square MoveToSquare(std::string move) {
+  return ('h' - move[0]) + ('8' - move[1]) * 8;
+}
+
 #endif /* BITPATTERN_H */
 

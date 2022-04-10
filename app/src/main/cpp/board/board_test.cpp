@@ -27,7 +27,7 @@ TEST(Board, Basic) {
                              "--------"
                              "--------"
                              "------OX";
-  Board b(board_string.c_str());
+  Board b(board_string.c_str(), true);
   EXPECT_EQ(b, Board(1, 2));
   EXPECT_EQ(b.GetPlayer(), 1);
   EXPECT_EQ(b.GetOpponent(), 2);
@@ -44,5 +44,20 @@ TEST(Board, Basic) {
   EXPECT_TRUE(b.IsOpponent(1));
   EXPECT_FALSE(b.IsOpponent(2));
 
-  EXPECT_EQ(std::regex_replace(b.ToString(), std::regex("\\n"), ""), board_string);
+  std::ostringstream ss;
+  ss << b;
+  EXPECT_EQ(std::regex_replace(ss.str(), std::regex("\\n"), ""), board_string);
+}
+
+TEST(Board, Sequence) {
+  Board b("e6f4c3c4d3");
+  Board b_copy("--------"
+               "--------"
+               "--XX----"
+               "--OXOO--"
+               "---XX---"
+               "----X---"
+               "--------"
+               "--------", false);
+  EXPECT_EQ(b, b_copy);
 }

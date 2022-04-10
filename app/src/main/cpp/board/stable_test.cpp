@@ -27,7 +27,7 @@ TEST(Stable, Simple) {
                   "--------"
                   "--------"
                   "--------"
-                  "-------X");
+                  "-------X", true);
   BitPattern stable = GetStableDisks(testBoard.GetPlayer(), testBoard.GetOpponent());
   BitPattern expected = ParsePattern(
           "--------"
@@ -49,7 +49,7 @@ TEST(Stable, Left) {
                   "X-------"
                   "X-------"
                   "X-------"
-                  "X-------");
+                  "X-------", true);
   BitPattern stable = GetStableDisks(testBoard.GetPlayer(), testBoard.GetOpponent());
   EXPECT_EQ(testBoard.GetPlayer(), stable);
 }
@@ -62,7 +62,7 @@ TEST(Stable, Center) {
           "---OOO--"
           "XXXXXXXX"
           "---XXX--"
-          "--X-X-X-");
+          "--X-X-X-", true);
   BitPattern stable = GetStableDisks(b.GetPlayer(), b.GetOpponent());
   BitPattern expected = ParsePattern(
           "--------"
@@ -72,7 +72,7 @@ TEST(Stable, Center) {
           "--------" 
           "----X---" 
           "--------"
-          "--------");
+          "--------", true);
   std::cout << PatternToString(stable);
   EXPECT_EQ(expected, stable);
 }
@@ -85,7 +85,7 @@ TEST(Stable, Update) {
           "--------"
           "-------O"
           "-----XXO"
-          "---OOOOO");
+          "---OOOOO", true);
   BitPattern stable = GetStableDisks(b.GetPlayer(), b.GetOpponent());
   BitPattern expected = ParsePattern("XXXX----"
                                      "XXX-----" 
@@ -147,13 +147,14 @@ TEST(Stable, All) {
       stableOpponent = stablePlayer;
       stablePlayer = tmp;
 
-      if ((stablePlayer & opponent) != 0) {
-        std::cout << "Original\n" << b.ToString();
-        std::cout << "Stable\n" << Board(stablePlayer, stableOpponent).ToString();
-        std::cout << "After moves\n" << Board(player, opponent).ToString();
-      }
-      EXPECT_EQ(stableOpponent & player, 0);
-    }
+      EXPECT_EQ(stablePlayer & opponent, 0)
+          << "Original\n" << b << "Stable\n"
+          << Board(stablePlayer, stableOpponent)
+          << "After moves\n" << Board(player, opponent);
+      EXPECT_EQ(stableOpponent & player, 0)
+          << "Original\n" << b << "Stable\n"
+          << Board(stablePlayer, stableOpponent)
+          << "After moves\n" << Board(player, opponent);    }
   }
 }
 

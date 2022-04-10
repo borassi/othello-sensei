@@ -34,18 +34,11 @@ target_link_libraries(
         bitpattern
 )
 
-target_compile_options(
-        hash_map
-        PUBLIC
-        ${RELEASE_FLAGS}
-)
-
 IF(${PDEP_PEXT})
     target_compile_options(
             hash_map
             PUBLIC
             -mbmi2
-            ${RELEASE_FLAGS}
     )
 ENDIF()
 

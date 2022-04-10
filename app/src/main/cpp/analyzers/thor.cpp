@@ -81,7 +81,7 @@ class EvaluateThor {
           && (double) rand() / RAND_MAX < 0.001) {
         PatternEvaluator eval;
         eval.Setup(board.GetPlayer(), board.GetOpponent());
-        std::cout << board.GetBoard().ToString() << "\n";
+        std::cout << board.GetBoard() << "\n";
         double result = eval.EvaluateBase<true>() / 8.0;
         std::cout << result << " " << board.GetEval() << "\n\n";
       }
@@ -116,7 +116,7 @@ class EvaluateThor {
 
 int main() {
   EvaluateDepth0 eval_depth_0;
-  EvaluateInDepth eval_in_depth(4);
+  EvaluateInDepth eval_in_depth(3);
   EvaluateThor evaluate_thor;
   evaluate_thor.Run(&eval_in_depth, 10000, 20);
   evaluate_thor.Print();

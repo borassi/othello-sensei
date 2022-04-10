@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <chrono>
 #include <limits>
+#include <math.h>
 
 class ElapsedTime {
  public:
@@ -93,4 +94,9 @@ constexpr double ConstexprPow(double x, double y) {
   }
   return ConstexprExp(ConstexprLog(x) * y);
 }
+
+double GaussianCDF(double value);
+
+double GaussianCDF(double x, double mean, double stddev);
+
 #endif  // UTILS_MISC_H

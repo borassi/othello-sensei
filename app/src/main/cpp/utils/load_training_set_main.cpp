@@ -22,6 +22,6 @@ int main(int argc, char** argv) {
   std::vector<EvaluatedBoard> b = load_hard_set(184);
   std::cout << b.size() << "\n";
   for (int i = 0; i < 120; ++i) {
-    std::cout << b[i].GetBoard().ToString() << (int) b[i].GetEval() << "\n\n";
+    std::cout << b[i].GetBoard() << (int) b[i].GetEval() << "\n\n";
   }
 }
