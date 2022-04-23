@@ -14,19 +14,16 @@
 
 package evaluateposition;
 
-import static board.BoardTest.assertListEqualsIgnoreOrder;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import bitpattern.BitPattern;
 import board.Board;
 import board.BoardTest;
 import board.PossibleMovesFinderImproved;
-import static board.PossibleMovesFinderImprovedTest.assertArrayEqualsListIgnoreOrder;
 import constants.Constants;
+import jni.JNI;
 import evaluatedepthone.DiskDifferenceEvaluatorPlusTwo;
-import java.util.ArrayList;
 
 public class EvaluatorAlphaBetaTest {
   final PossibleMovesFinderImproved possibleMovesFinder = PossibleMovesFinderImproved.load();
@@ -294,7 +291,6 @@ public class EvaluatorAlphaBetaTest {
   
   @Test
   public void testEndgame() {
-    EvaluatorLastMoves eval = new EvaluatorLastMoves();
     for (int i = 0; i < 10000; ++i) {
       Board b = Board.randomBoard();
       if (b.getEmptySquares() > 12) {
@@ -307,7 +303,7 @@ public class EvaluatorAlphaBetaTest {
         lower = upper;
         upper = tmp;
       }
-      int expected = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), lower, upper).eval;
+      int expected = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), lower, upper).eval;
       int actual = evaluator.evaluate(b, 100, lower, upper);
       
       int expectedWithBound = Math.min(upper, Math.max(actual, lower));

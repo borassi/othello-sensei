@@ -14,23 +14,4 @@
  * limitations under the License.
  */
 
-#include <functional>
-#include <memory>
 
-#ifndef EVALUATE_DEPTH_ONE_EVALUATOR_DEPTH_ONE_BASE_H
-#define EVALUATE_DEPTH_ONE_EVALUATOR_DEPTH_ONE_BASE_H
-
-class EvaluatorDepthOneBase {
-
- public:
-  virtual void Setup(BitPattern player, BitPattern opponent) = 0;
-  virtual void Update(BitPattern square, BitPattern flip) = 0;
-  virtual void UndoUpdate(BitPattern square, BitPattern flip) = 0;
-  virtual void Invert() = 0;
-  virtual EvalLarge Evaluate() const = 0;
-  virtual ~EvaluatorDepthOneBase() {}
-
-};
-
-typedef std::function<std::unique_ptr<EvaluatorDepthOneBase>()> EvaluatorFactory;
-#endif

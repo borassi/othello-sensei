@@ -438,19 +438,3 @@ Eval EvaluatorLastMoves::Evaluate(
   epoch_++;
   return Evaluate(player, opponent, lower, upper, false, 0, 0, n_visited);
 }
-
-HashMap kHashMap;
-EvaluatorLastMoves kEvaluatorLastMoves(&kHashMap);
-
-extern "C" JNIEXPORT jobject JNICALL Java_evaluateposition_EvaluatorLastMoves_evaluateCPPInternal(
-    JNIEnv* env, jclass, jlong player, jlong opponent, jint lower,
-    jint upper) {
-//  return lower + upper;
-//  int n_visited = 0;
-//  return Evaluate(player, opponent, lower, upper, &n_visited);
-  int n_visited = 0;
-  int eval = kEvaluatorLastMoves.Evaluate(player, opponent, static_cast<Eval>(lower), static_cast<Eval>(upper), &n_visited);
-//  return eval;
-  jclass EvalWithVisited = env->FindClass("evaluateposition/EvalWithVisited");
-  return env->NewObject(EvalWithVisited, env->GetMethodID(EvalWithVisited, "<init>", "(IJ)V"), eval, (long long) n_visited);
-}

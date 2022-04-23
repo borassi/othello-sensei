@@ -25,7 +25,7 @@
 
 class TestEvaluator {
  public:
-  TestEvaluator(std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory()) :
+  TestEvaluator(EvaluatorFactory evaluator_depth_one_factory) :
       n_visited_(0),
       depth_one_evaluator_(evaluator_depth_one_factory()) {}
 

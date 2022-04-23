@@ -15,21 +15,16 @@ package endgametest;
 
 import board.Board;
 import board.GetMovesCache;
-import constants.Constants;
 import constants.Stats;
+import jni.JNI;
 import evaluatedepthone.BoardWithEvaluation;
-import evaluatedepthone.PatternEvaluatorImproved;
 import evaluateposition.EvalWithVisited;
-import evaluateposition.EvaluatorMCTS;
-import evaluateposition.EvaluatorAlphaBeta;
-import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.HashMap;
 import helpers.LoadDataset;
 import helpers.Utils;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -69,7 +64,7 @@ public class EndgameThor {
     int beta = (int) 6400; // (alpha + generator.nextDouble() * 1000);
 
     t -= System.currentTimeMillis();
-    EvalWithVisited eval = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), alpha, beta);
+    EvalWithVisited eval = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), alpha, beta);
 //    int result = evalMidgame.evaluate(b.getPlayer(), b.getOpponent(), b.getEmptySquares(), alpha, beta);
 //    int result = evalLast.evaluate(b, alpha, beta, 0);
     t += System.currentTimeMillis();
@@ -131,7 +126,7 @@ public class EndgameThor {
       for (BoardWithEvaluation be : boards) {
         es.submit(() -> {
 //          (new EvaluatorAlphaBeta(new PatternEvaluatorImproved(), h)).evaluate(be.board.getPlayer(), be.board.getOpponent(), be.board.getEmptySquares(), 100, 100);
-          EvaluatorLastMoves.evaluateCPP(be.board.getPlayer(), be.board.getOpponent(), 100, 100);
+          JNI.evaluateCPP(be.board.getPlayer(), be.board.getOpponent(), 100, 100);
 //          new EvaluatorLastMoves().evaluate(be.board, -6400, 6400, 0);
         });
       }

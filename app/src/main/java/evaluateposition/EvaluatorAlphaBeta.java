@@ -22,6 +22,7 @@ import board.GetMovesCache;
 import constants.Constants;
 import static constants.Constants.VISITED_ENDGAME_GOAL;
 import constants.Stats;
+import jni.JNI;
 import evaluatedepthone.DepthOneEvaluator;
 import evaluatedepthone.FindStableDisks;
 import evaluatedepthone.PatternEvaluatorImproved;
@@ -263,7 +264,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
           (nEmpties < Constants.EMPTIES_FOR_ENDGAME + 4) &&
           (nEmpties <= Constants.EMPTIES_FOR_ENDGAME ||
            (-curMove.value < constant.get()))) {
-        EvalWithVisited eval = EvaluatorLastMoves.evaluateCPP(
+        EvalWithVisited eval = JNI.evaluateCPP(
             opponent & ~flip, player | flip, -upper, -newLower);
         currentEval = -eval.eval;
         nVisited = eval.nVisited;

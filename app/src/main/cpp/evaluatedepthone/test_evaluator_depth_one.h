@@ -31,8 +31,8 @@ class TestEvaluatorDepthOne : public EvaluatorDepthOneBase {
   BitPattern opponent_;
 
  public:
-  static std::unique_ptr<EvaluatorDepthOneBase> Create() {
-    return std::make_unique<TestEvaluatorDepthOne>(TestEvaluatorDepthOne());
+  static EvaluatorFactory Factory() {
+    return []() { return std::make_unique<TestEvaluatorDepthOne>(); };
   }
   ~TestEvaluatorDepthOne() {}
   EvalLarge Evaluate() const {

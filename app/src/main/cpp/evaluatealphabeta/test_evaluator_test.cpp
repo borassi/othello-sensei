@@ -24,7 +24,7 @@
 
 
 TEST(TestEvaluator, InitialBoard) {
-  TestEvaluator eval(TestEvaluatorDepthOne::Create);
+  TestEvaluator eval(TestEvaluatorDepthOne::Factory());
   Board board;
 
   EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
@@ -38,7 +38,7 @@ TEST(TestEvaluator, InitialBoard) {
 }
 
 TEST(TestEvaluator, Pass) {
-  TestEvaluator eval(TestEvaluatorDepthOne::Create);
+  TestEvaluator eval(TestEvaluatorDepthOne::Factory());
   Board board(
       "XXXXO---"
       "--------"

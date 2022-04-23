@@ -32,18 +32,24 @@ class Evaluator {
 
 class EvaluateDepth0 : public Evaluator {
  public:
+  explicit EvaluateDepth0(const int8_t* const evals) : evals_(evals) {}
   EvalLarge operator() (BitPattern player, BitPattern opponent) override {
-    PatternEvaluator eval;
+    PatternEvaluator eval(evals_);
     eval.Setup(player, opponent);
     return eval.Evaluate();
   }
   NVisited GetNVisited() const override { return 1; }
+
+ private:
+  const int8_t* const evals_;
 };
 
 class EvaluateInDepth : public Evaluator {
  public:
-  explicit EvaluateInDepth(int depth) : depth_(depth), test_evaluator_(
-      EvaluatorAlphaBeta(&hash_map_, &PatternEvaluator::Create)) {}
+  EvaluateInDepth(const int8_t* const evals, int depth) :
+      depth_(depth),
+      evals_(evals),
+      test_evaluator_(EvaluatorAlphaBeta(&hash_map_, PatternEvaluator::Factory(evals))) {}
 
   EvalLarge operator()(BitPattern player, BitPattern opponent) override {
     return test_evaluator_.Evaluate(player, opponent, depth_);
@@ -53,6 +59,7 @@ class EvaluateInDepth : public Evaluator {
   DepthValue depth_;
   EvaluatorAlphaBeta test_evaluator_;
   HashMap hash_map_;
+  const int8_t* const evals_;
 };
 
 class EvaluateThor {
@@ -77,14 +84,14 @@ class EvaluateThor {
       }
       EvalLarge eval = (*evaluator)(board.GetPlayer(), board.GetOpponent());
       double error = eval / 8.0 - board.GetEval();
-      if ((error > min_error_print || error < -min_error_print)
-          && (double) rand() / RAND_MAX < 0.001) {
-        PatternEvaluator eval;
-        eval.Setup(board.GetPlayer(), board.GetOpponent());
-        std::cout << board.GetBoard() << "\n";
-        double result = eval.EvaluateBase<true>() / 8.0;
-        std::cout << result << " " << board.GetEval() << "\n\n";
-      }
+//      if ((error > min_error_print || error < -min_error_print)
+//          && (double) rand() / RAND_MAX < 0.001) {
+//        PatternEvaluator eval;
+//        eval.Setup(board.GetPlayer(), board.GetOpponent());
+//        std::cout << board.GetBoard() << "\n";
+//        double result = eval.EvaluateBase<true>() / 8.0;
+//        std::cout << result << " " << board.GetEval() << "\n\n";
+//      }
       sum_error_squared_ += error * error;
       num_boards_++;
       n_visited_ += evaluator->GetNVisited();
@@ -115,8 +122,9 @@ class EvaluateThor {
 };
 
 int main() {
-  EvaluateDepth0 eval_depth_0;
-  EvaluateInDepth eval_in_depth(3);
+  const std::vector<int8_t> evals = LoadEvals();
+  EvaluateDepth0 eval_depth_0(evals.data());
+  EvaluateInDepth eval_in_depth(evals.data(), 3);
   EvaluateThor evaluate_thor;
   evaluate_thor.Run(&eval_in_depth, 10000, 20);
   evaluate_thor.Print();

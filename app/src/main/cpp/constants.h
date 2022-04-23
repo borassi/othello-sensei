@@ -17,13 +17,32 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#ifdef MOBILE
+constexpr int kBitHashMap = 20;
+constexpr int kDerivativeEvaluatorSize = 700000;
+#else
 constexpr int kBitHashMap = 24;
+constexpr int kDerivativeEvaluatorSize = 14000000;
+#endif
+
+constexpr int kWeightDepthOne = 2;
+constexpr int kWeightDepthZero = 1;
+
 constexpr int kHashMapSize = 1L << kBitHashMap;
 constexpr int kMinEmptiesForHashMap = 10;
 constexpr int kMinDepthForHashMap = 3;
-constexpr int kWeightDepthOne = 2;
-constexpr int kWeightDepthZero = 1;
+
 constexpr float kMultStddev = 1;
+constexpr float kLeafMultiplier = 0.8F;
+
+constexpr int kMaxParallelTasks = 1;
+constexpr float kProbForProof = 0.03F;
+
+constexpr float kZeroPercForWeak = 0.05F;
+constexpr float kMinProbEvalGoal = 0.03F;
+constexpr float kProbReduceWeakEval = 0.01F;
+constexpr float kProbIncreaseWeakEval = 0.05F;
+constexpr float kProbForEndgameAlphaBeta = 0.01F;
 
 
 #endif /* CONSTANTS_H */

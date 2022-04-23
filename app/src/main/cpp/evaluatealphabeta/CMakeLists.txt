@@ -14,15 +14,6 @@
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
 
-IF(ANDROID)
-    find_library(log-lib JNI_LIBRARIES)
-ELSE()
-    find_package(GTest)
-    find_package(JNI REQUIRED)
-    include_directories( ${JNI_INCLUDE_DIRS} )
-ENDIF()
-
-
 add_library(
         evaluator_last_moves
         SHARED

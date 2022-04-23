@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef EVALUATOR_ALPHA_BETA_H
+#define EVALUATOR_ALPHA_BETA_H
 
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
@@ -111,7 +113,7 @@ class EvaluatorAlphaBeta {
  public:
   EvaluatorAlphaBeta(
       HashMap* hash_map,
-      std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory());
+      EvaluatorFactory evaluator_depth_one_factory);
 
   NVisited GetNVisited() const { return n_visited_; }
 
@@ -154,3 +156,4 @@ class EvaluatorAlphaBeta {
   std::shared_ptr<MoveIteratorBase> move_iterators_[2 * kMaxDepth];
   std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
 };
+#endif  // EVALUATOR_ALPHA_BETA_H

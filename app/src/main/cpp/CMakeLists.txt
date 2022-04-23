@@ -91,6 +91,7 @@ add_subdirectory(evaluatedepthone)
 add_subdirectory(evaluatederivative)
 add_subdirectory(hashmap)
 add_subdirectory(utils)
+add_subdirectory(jni)
 
 add_library(
         constants

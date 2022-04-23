@@ -277,16 +277,16 @@ struct Features {
   }
 };
 
+typedef std::vector<int8_t> EvalType;
+EvalType LoadEvals();
 constexpr Features kFeatures;
 
 class PatternEvaluator : public EvaluatorDepthOneBase {
-
  public:
-  PatternEvaluator() : empties_(0) {}
-  ~PatternEvaluator() {}
-
-  static std::unique_ptr<EvaluatorDepthOneBase> Create() {
-    return std::make_unique<PatternEvaluator>(PatternEvaluator());
+  PatternEvaluator (const PatternEvaluator&) = delete;
+  PatternEvaluator(const int8_t* const evals) : empties_(0), evals_(evals) {}
+  static EvaluatorFactory Factory(const int8_t* const evals) {
+    return [evals]() { return std::make_unique<PatternEvaluator>(evals); };
   }
 
   void Setup(BitPattern player, BitPattern opponent);
@@ -308,20 +308,20 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
   template<bool verbose>
   EvalLarge EvaluateBase() const {
     int split = GetSplit<kSplits>(empties_);
-    int8_t* base_evals =
+    const int8_t* const base_evals =
         evals_ + kFeatures.start_feature[kNumBaseRotations] * split;
     EvalLarge result = 0;
 
     for (int i = 0; i < kNumFeatures; ++i) {
       int canonical_rotation = kFeatures.canonical_rotation[i];
-      int8_t* evals = base_evals + kFeatures.start_feature[canonical_rotation];
+      const int8_t* const evals = base_evals + kFeatures.start_feature[canonical_rotation];
       result += evals[GetFeature(i)];
       if (verbose) {
         std::cout << i << " " << GetFeature(i) << " "
                   << evals[GetFeature(i)] / 8.0 << "\n";
       }
     }
-    return result;
+    return std::max(kMinEvalLarge, std::min(kMaxEvalLarge, result));
   }
 
   EvalLarge Evaluate() const;
@@ -346,7 +346,7 @@ class PatternEvaluator : public EvaluatorDepthOneBase {
   template<int multiplier>
   void Update(BitPattern square, BitPattern flip);
 
-  static int8_t* evals_;
+  const int8_t* const evals_;
   FeatureValue patterns_[kNumPatterns];
   int empties_;
 };

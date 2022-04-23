@@ -1,0 +1,144 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+add_library(
+        prob_combiners
+        SHARED
+        prob_combiners.h
+)
+
+set_target_properties(
+        prob_combiners PROPERTIES LINKER_LANGUAGE CXX
+)
+
+target_link_libraries( # Specifies the target library.
+        prob_combiners
+        LINK_PUBLIC
+        misc
+)
+
+target_compile_options(
+        prob_combiners
+        PUBLIC
+        -fconstexpr-steps=100000000
+)
+
+IF (NOT ANDROID)
+    add_executable(
+            prob_combiners_test
+            prob_combiners_test.cpp
+    )
+
+    target_link_libraries(
+            prob_combiners_test
+            LINK_PRIVATE
+            prob_combiners
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()
+
+add_library(
+        evaluation
+        SHARED
+        evaluation.h
+        evaluation.cpp
+)
+
+target_link_libraries( # Specifies the target library.
+        evaluation
+        LINK_PUBLIC
+        bitpattern
+        misc
+        prob_combiners
+)
+
+IF (NOT ANDROID)
+    add_executable(
+            evaluation_test
+            evaluation_test.cpp
+    )
+
+    target_link_libraries(
+            evaluation_test
+            LINK_PRIVATE
+            evaluation
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()
+
+add_library(
+        tree_node
+        SHARED
+        tree_node.h
+        tree_node.cpp
+        endgame_time_estimator.h
+)
+
+target_link_libraries( # Specifies the target library.
+        tree_node
+        LINK_PUBLIC
+        bitpattern
+        board
+        get_moves
+        misc
+)
+
+IF (NOT ANDROID)
+    add_executable(
+            tree_node_test
+            tree_node_test.cpp
+    )
+
+    target_link_libraries(
+            tree_node_test
+            LINK_PRIVATE
+            board
+            tree_node
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()
+
+add_library(
+        evaluator_derivative
+        SHARED
+        evaluator_derivative.h
+        evaluator_derivative.cpp
+)
+
+target_link_libraries( # Specifies the target library.
+        evaluator_derivative
+        LINK_PUBLIC
+        bitpattern
+        board
+        get_moves
+        misc
+)
+
+IF (NOT ANDROID)
+    add_executable(
+            evaluator_derivative_test
+            evaluator_derivative_test.cpp
+    )
+
+    target_link_libraries(
+            evaluator_derivative_test
+            LINK_PRIVATE
+            evaluator_derivative
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()

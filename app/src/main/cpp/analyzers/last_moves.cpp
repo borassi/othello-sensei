@@ -37,7 +37,8 @@ typedef struct TestCase {
 
 int main(int argc, char** argv) {
   HashMap hash_map;
-  EvaluatorAlphaBeta evaluator(&hash_map, &PatternEvaluator::Create);
+  auto evals = LoadEvals();
+  EvaluatorAlphaBeta evaluator(&hash_map, PatternEvaluator::Factory(evals.data()));
 //  EvaluatorLastMoves evaluator(&hash_map);
   TestCase tests[10000];
   ifstream tests_file("testdata/evaluator_last_moves_profile_examples.txt");

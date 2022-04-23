@@ -15,8 +15,8 @@ package endgametest;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
+import jni.JNI;
 import evaluateposition.EvalWithVisited;
-import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorAlphaBeta;
 import tmp.OptimumAlphaBeta;
 
@@ -110,8 +110,6 @@ public class EndgameUpperBound {
     "OOOOOOOOXXXXXXOOXXOOXOOOXOXOOX--XOOOXX--XOOXOO--XOOOOO--XXXX---- O",
     "O-OOOOOOO-OOOXO-OXOOXOXXOXOOXXXXOXXXXXXXOXXOXOXX-XXXXX-X----X--- O"};
 
-  final EvaluatorLastMoves eval = new EvaluatorLastMoves();
-
   public Board readBoardFromFFOFormat(String ffoFormat) {
     String[] boards = ffoFormat.split(" ");
     return new Board(boards[0], boards[1].equals("X"));
@@ -124,7 +122,7 @@ public class EndgameUpperBound {
       Board b = readBoardFromFFOFormat(POSITIONS_AFTER_MOVES[i]);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
-      EvalWithVisited eval = EvaluatorLastMoves.evaluateCPP(b.getPlayer(), b.getOpponent(), -6600, 6600);
+      EvalWithVisited eval = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), -6600, 6600);
       int result = eval.eval;
       long lower = OptimumAlphaBeta.computeOptimumLower(b, (int) result);
       long upper = OptimumAlphaBeta.computeOptimumUpper(b, (int) result);

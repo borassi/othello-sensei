@@ -19,14 +19,12 @@ import java.util.Collections;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import evaluateposition.EvaluatorLastMoves;
 import helpers.LoadDataset;
 
 public class MultilinearRegressionImproved {
 
   private final PatternEvaluatorImproved patternEvaluator;
   private final PossibleMovesFinderImproved pmf = new PossibleMovesFinderImproved();
-  private final EvaluatorLastMoves evaluatorLastMoves = new EvaluatorLastMoves();
   final ArrayList<BoardWithEvaluation> testingSet;
   
   public MultilinearRegressionImproved(
@@ -38,7 +36,7 @@ public class MultilinearRegressionImproved {
   static class Feature {
     public float eval; // Between -1500 and 1500
     public int appearences = 0;
-    public float squaredError = 1200F * 1200F / 42F; // Between 2000 * 2000, 200 * 200 / 42.0
+    public float squaredError;
 
     public Feature(long eval) {
       this.eval = eval;// >> PatternEvaluatorImproved.EVAL_SHIFT;

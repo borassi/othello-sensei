@@ -292,7 +292,7 @@ constexpr bool UseHashMap(int depth, bool solve) {
 
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap* hash_map,
-    std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_factory()) :
+    EvaluatorFactory evaluator_depth_one_factory) :
     n_visited_(0),
     epoch_(0),
     hash_map_(hash_map),

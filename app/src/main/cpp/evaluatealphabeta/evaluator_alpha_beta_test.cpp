@@ -49,9 +49,14 @@ Eval SolveBasic(long player, long opponent, bool passed) {
   return eval;
 }
 
-TEST(EvaluatorAlphaBeta, InitialBoard) {
+class EvaluatorAlphaBetaTest : public testing::Test {
+ protected:
+  EvalType evals_ = LoadEvals();
+};
+
+TEST(EvaluatorAlphaBetaTest, InitialBoard) {
   HashMap hash_map;
-  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
+  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
   Board board;
 
   EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
@@ -64,9 +69,9 @@ TEST(EvaluatorAlphaBeta, InitialBoard) {
   EXPECT_EQ(eval.GetNVisited(), 1 + 4 + 6  /*3 for first move, 1 for other 3 */);
 }
 
-TEST(EvaluatorAlphaBeta, Pass) {
+TEST(EvaluatorAlphaBetaTest, Pass) {
   HashMap hash_map;
-  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
+  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
   Board board(
       "XXXXO---"
       "--------"
@@ -88,10 +93,10 @@ TEST(EvaluatorAlphaBeta, Pass) {
   EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
 }
 
-TEST(EvaluatorAlphaBeta, CompareWithTest) {
+TEST(EvaluatorAlphaBetaTest, CompareWithTest) {
   HashMap hash_map;
-  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Create);
-  TestEvaluator test_eval(TestEvaluatorDepthOne::Create);
+  EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
+  TestEvaluator test_eval(TestEvaluatorDepthOne::Factory());
 
   for (int i = 0; i < 1000; ++i) {
     Board board = RandomBoard();
@@ -106,10 +111,10 @@ TEST(EvaluatorAlphaBeta, CompareWithTest) {
   }
 }
 
-TEST(EvaluatorLastMoves, Endgame) {
+TEST_F(EvaluatorAlphaBetaTest, Endgame) {
   HashMap hash_map;
-  EvaluatorAlphaBeta evaluator(&hash_map, &PatternEvaluator::Create);
-  for (int i = 0; i < 10000; i++) {
+  EvaluatorAlphaBeta evaluator(&hash_map, PatternEvaluator::Factory(evals_.data()));
+  for (int i = 0; i < 1000; i++) {
     double perc_player = (double) rand() / RAND_MAX * 0.9;
     double perc_opponent = 0.9 - perc_player;
     Board b = RandomBoard(perc_player, perc_opponent);

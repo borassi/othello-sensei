@@ -17,7 +17,6 @@
 #ifndef EVALUATOR_LAST_MOVES_H
 #define EVALUATOR_LAST_MOVES_H
 
-#include <jni.h>
 #include "../board/get_flip.h"
 #include "../hashmap/hash_map.h"
 
@@ -76,18 +75,6 @@ class EvaluatorLastMoves {
     int* const n_visited);
   EpochValue epoch_;
 };
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-JNIEXPORT jobject JNICALL Java_evaluateposition_EvaluatorLastMoves_evaluateCPPInternal(
-    JNIEnv* env, jclass java_class, jlong player, jlong opponent, jint lower,
-    jint upper);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* EVALUATOR_LAST_MOVES_H */
 

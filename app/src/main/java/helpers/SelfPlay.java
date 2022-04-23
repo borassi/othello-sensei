@@ -15,7 +15,6 @@ package helpers;
 
 import board.Board;
 import board.PossibleMovesFinderImproved;
-import evaluateposition.EvaluatorLastMoves;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.StoredBoard;
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ public class SelfPlay extends Thread {
   
   public synchronized Board bestMove(Board b, EvaluatorMCTS player) {
     player.evaluatePosition(b, 100000000, 1000);
-    StoredBoard evaluations[] = player.getFirstPosition().getChildren();
+    StoredBoard[] evaluations = player.getFirstPosition().getChildren();
     double best = Double.POSITIVE_INFINITY;
 //    double bestUpper = Double.POSITIVE_INFINITY;
 //    double bestPlayerVariates = Double.POSITIVE_INFINITY;

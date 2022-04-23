@@ -23,15 +23,20 @@
 
 using ::testing::ContainerEq;
 
-TEST(PatternEvaluator, BitPatternsAsExpected) {
+class PatternEvaluatorTest : public testing::Test {
+ protected:
+  EvalType evals_ = LoadEvals();
+};
+
+TEST(PatternEvaluatorTest, BitPatternsAsExpected) {
   EXPECT_EQ(kFeatures.patterns[0].ToBitPattern(), kCorner);
   EXPECT_EQ(kFeatures.patterns[1].ToBitPattern(), kLastRowSmall);
   EXPECT_EQ(kFeatures.patterns[2].ToBitPattern(), k2LastRowSmall);
   EXPECT_EQ(kFeatures.patterns[20].ToBitPattern(), kDiagonalImproved);
 }
 
-TEST(PatternEvaluator, Patterns) {
-  PatternEvaluator evaluator;
+TEST_F(PatternEvaluatorTest, Patterns) {
+  PatternEvaluator evaluator(evals_.data());
   for (int i = 0; i < kNumPatterns; ++i) {
     std::map<FeatureValue, std::unique_ptr<Board>> visited_patterns;
     const BitPattern pattern = kFeatures.patterns[i].ToBitPattern();
@@ -55,8 +60,8 @@ TEST(PatternEvaluator, Patterns) {
   }
 }
 
-TEST(PatternEvaluator, Features) {
-  PatternEvaluator evaluator;
+TEST_F(PatternEvaluatorTest, Features) {
+  PatternEvaluator evaluator(evals_.data());
   for (int i = 0; i < kNumFeatures; ++i) {
     std::map<int, std::unique_ptr<Board>> visited_patterns;
     for (int j = 0; kFeatures.features_to_patterns[i][j+1] != -1; ++j) {
@@ -86,7 +91,7 @@ TEST(PatternEvaluator, Features) {
   }
 }
 
-TEST(PatternEvaluator, CanonicalRotation) {
+TEST(PatternEvaluatorTest, CanonicalRotation) {
   EXPECT_EQ(
     std::set<int>(std::begin(kFeatures.canonical_rotation),
                   std::end(kFeatures.canonical_rotation)).size(),
@@ -103,7 +108,7 @@ TEST(PatternEvaluator, CanonicalRotation) {
   }
 }
 
-TEST(PatternEvaluator, EquivalentTransposition) {
+TEST(PatternEvaluatorTest, EquivalentTransposition) {
   BitPattern p = 1;
   int equivalent[kMaxPatternTranspositions];
   std::array<BitPattern, kMaxFeatureSize> feature = {1, 0, 0, 0, 0};
@@ -119,7 +124,7 @@ TEST(PatternEvaluator, EquivalentTransposition) {
   EXPECT_THAT(equivalent, testing::ElementsAre(0, 0, 0, 0, 0, 0, 0, 0));
 }
 
-TEST(PatternEvaluator, EquivalentFeatures) {
+TEST(PatternEvaluatorTest, EquivalentFeatures) {
   EXPECT_THAT(kFeatures.equivalent_features[4][0], testing::ElementsAre(
       Pattern(12, (Square[]) {0, 1, 8, 9, 18, 27, 36, 45, 54, 55, 62, 63}),
       Pattern(0, {}),
@@ -169,9 +174,9 @@ void AssertEvalsEQ(const PatternEvaluator& eval1, const PatternEvaluator& eval2)
   ASSERT_EQ(eval1.EvaluateBase<false>(), eval2.Evaluate());
 }
 
-TEST(TestEvaluator, UpdateAndUndo) {
-  PatternEvaluator eval;
-  PatternEvaluator test;
+TEST_F(PatternEvaluatorTest, UpdateAndUndo) {
+  PatternEvaluator eval(evals_.data());;
+  PatternEvaluator test(evals_.data());;
   for (int i = 0; i < 10000; ++i) {
     Board b = RandomBoard();
     std::vector<BitPattern> moves = GetAllMoves(b.GetPlayer(), b.GetOpponent());

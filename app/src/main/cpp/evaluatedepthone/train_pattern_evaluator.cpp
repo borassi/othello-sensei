@@ -24,13 +24,13 @@ TrainingBoard::TrainingBoard(
     const EvaluatedBoard& b,
     const std::vector <std::vector<
         FeatureValue>>& feature_value_to_canonical) {
-  PatternEvaluator p;
+  PatternEvaluator p(nullptr);
   eval_ = b.GetEval();
   p.Setup(b.GetPlayer(), b.GetOpponent());
   for (int i = 0; i < kNumFeatures; ++i) {
     features_.push_back(
-        feature_value_to_canonical[kFeatures.canonical_rotation[i]][p
-            .GetFeature(i)]);
+        feature_value_to_canonical[kFeatures.canonical_rotation[i]]
+                                  [p.GetFeature(i)]);
   }
 }
 
@@ -205,7 +205,7 @@ void CategoricalRegressions::Save(const std::string& filepath) const {
       const std::vector<TrainingFeature>& feature = features[i];
       size = (int) feature.size();
       file.write((char*) &size, sizeof(size));
-      std::vector<int8_t> converted_feature;
+      EvalType converted_feature;
       converted_feature.reserve(feature.size());
       for (int j = 0; j < feature.size(); ++j) {
         converted_feature.push_back(

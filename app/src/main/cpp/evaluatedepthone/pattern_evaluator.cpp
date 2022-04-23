@@ -157,12 +157,10 @@ FeatureValue PatternEvaluator::GetCanonicalFeature(int i, BitPattern player, Bit
   return result;
 }
 
-//template<bool verbose>
-//EvalLarge PatternEvaluator::EvaluateBase() const;
-
 EvalLarge PatternEvaluator::Evaluate() const {
   int split = kFeatures.splits[empties_];
-  int8_t* base_evals = evals_ + kFeatures.start_feature[kNumBaseRotations] * split;
+  const int8_t* const base_evals =
+      evals_ + kFeatures.start_feature[kNumBaseRotations] * split;
   int eval = 0;
 
   if (patterns_[0] != 40) {
@@ -218,9 +216,11 @@ EvalLarge PatternEvaluator::Evaluate() const {
   return std::max(kMinEvalLarge, std::min(kMaxEvalLarge, eval));//getEvalAndSetupLastError(eval);
 }
 
-int8_t* LoadEvals(const std::string& filepath) {
+constexpr char kEvalFilepath[] = "/home/michele/AndroidStudioProjects/OthelloSensei/app/src/main/assets/coefficients/pattern_evaluator_cpp.dat";
+
+EvalType LoadEvals() {
   std::ifstream file;
-  file.open(filepath, std::ios_base::binary | std::ios_base::in);
+  file.open(kEvalFilepath, std::ios_base::binary | std::ios_base::in);
   assert (file.is_open());
   int num_splits;
   file.read((char*) &num_splits, sizeof(num_splits));
@@ -240,12 +240,5 @@ int8_t* LoadEvals(const std::string& filepath) {
       delete[] tmp;
     }
   }
-
-  auto result_array = (int8_t*) malloc(result.size() * sizeof(int8_t));
-  memcpy(result_array, &result[0], result.size() * sizeof(int8_t));
-  file.close();
-  return result_array;
+  return result;
 }
-
-int8_t* PatternEvaluator::evals_ = LoadEvals(
-    "src/main/assets/coefficients/pattern_evaluator_cpp.dat");
