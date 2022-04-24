@@ -49,10 +49,12 @@ class EvaluatorDerivative {
 //    }
 //  }
 
-  Eval Evaluate(
+  void Evaluate(
       BitPattern player, BitPattern opponent, Eval lower, Eval upper,
       NVisited max_n_visited, double max_time) {
-    return 0;
+    int eval = 8;
+    first_position_.Reset(player, opponent);
+    first_position_.SetLeaf(eval, 4, -7, 9, 12, 1);
 //    assert Math.abs(lower % 200) == 100;
 //    assert Math.abs(upper % 200) == 100;
 //    assert(lower <= upper);
@@ -88,6 +90,14 @@ class EvaluatorDerivative {
 //    return (short) -firstPosition.getEval();
   }
 
+  const TreeNode& GetFirstPosition() {
+    return first_position_;
+  }
+
+  const TreeNode& Get(BitPattern player, BitPattern opponent) {
+    return first_position_;
+  }
+
 //  void stop() {
 //    if (status == Status.RUNNING || status == Status.STOPPED_TIME) {
 //      status = Status.KILLING;
@@ -96,8 +106,6 @@ class EvaluatorDerivative {
 
   Eval Lower() { return lower_; }
   Eval Upper() { return upper_; }
-
-  NVisited GetNVisited() { return first_position_.GetNVisited(); }
 
 //  NVisited GetNStored() {
 //    return this.size;

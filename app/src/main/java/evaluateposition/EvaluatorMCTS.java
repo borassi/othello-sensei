@@ -25,7 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-public class EvaluatorMCTS extends HashMapVisitedPositions {
+public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorDerivativeInterface {
   private long maxNVisited;
   private long startTimeMillis;
   private int maxTimeMillis;
@@ -333,17 +333,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
     return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;
   }
 
-  public short evaluatePosition(Board board) {
-    return evaluatePosition(board, -6300, 6300, Long.MAX_VALUE, Integer.MAX_VALUE);
+  public void evaluate(Board board) {
+    evaluate(board, -6300, 6300, Long.MAX_VALUE, Integer.MAX_VALUE);
   }
 
-  public short evaluatePosition(Board board, long maxNVisited, int maxTimeMillis) {
-    return evaluatePosition(board, -6300, 6300, maxNVisited, maxTimeMillis);
+  public void evaluate(Board board, long maxNVisited, int maxTimeMillis) {
+    evaluate(board, -6300, 6300, maxNVisited, maxTimeMillis);
   }
 
   ExecutorService executor = Executors.newFixedThreadPool(Constants.MAX_PARALLEL_TASKS);
 
-  public short evaluatePosition(
+  @Override
+  public void evaluate(
       Board board, int lower, int upper, long maxNVisited, int maxTimeMillis) {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
@@ -377,7 +378,6 @@ public class EvaluatorMCTS extends HashMapVisitedPositions {
         status = Status.FAILED;
       }
     }
-    return (short) -firstPosition.getEval();
   }
 
   public StoredBoard getFirstPosition() {

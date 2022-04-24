@@ -57,6 +57,10 @@ const CombineProb kCombineProb;
 class Evaluation {
  public:
   Evaluation() : max_log_derivative_(0), n_visited_(0) {}
+  void Reset() {
+    max_log_derivative_ = 0;
+    n_visited_ = 0;
+  }
   float ProofNumber() const { return proof_number_; }
   float DisproofNumber() const { return disproof_number_; }
   int MaxLogDerivative() const { return max_log_derivative_; }

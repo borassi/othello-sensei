@@ -23,11 +23,13 @@ import constants.Constants;
 import constants.Stats;
 import helpers.Gaussian;
 import helpers.Utils;
+import sun.reflect.generics.tree.Tree;
+
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StoredBoard {
+public class StoredBoard extends TreeNodeInterface {
 
   private static final int[] ERRORS = {
       0, 0, 0, 0, 530, 585, 636, 696, 736, 780, 794, 828, 814, 821, 807, 797, 772, 768, 753, 732,
@@ -320,7 +322,7 @@ public class StoredBoard {
     return (eval + 6300) / 200;
   }
 
-  protected StoredBoard(long player, long opponent, short depth) {
+  public StoredBoard(long player, long opponent, short depth) {
     this.player = player;
     this.opponent = opponent;
     this.depth = depth;
@@ -561,14 +563,6 @@ public class StoredBoard {
   public synchronized int getLower() {
     assert isLowerUpperOK();
     return lower;
-  }
-  
-  public synchronized long getDescendants() {
-    long descendants = 0;
-    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
-      descendants += getDescendants(evalGoal);
-    }
-    return descendants;
   }
 
   public synchronized long getDescendants(int evalGoal) {

@@ -15,7 +15,7 @@
 package ui;
 
 import bitpattern.BitPattern;
-import bitpattern.PositionIJ;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -40,6 +40,7 @@ import javax.swing.SpinnerModel;
 import board.Board;
 import constants.Constants;
 import evaluateposition.StoredBoard;
+import evaluateposition.TreeNodeInterface;
 import helpers.Utils;
 
 import javax.swing.JLabel;
@@ -107,15 +108,15 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
-    StoredBoard storedBoard = annotations.storedBoard;
-    int lower = storedBoard.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
-    int upper = storedBoard.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
+    TreeNodeInterface treeNode = annotations.treeNode;
+    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
     String rows =
-        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0) + "\n" +
-        Utils.prettyPrintDouble(storedBoard.getDescendants()) + "\n" + (
+        String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n" +
+        Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
         lower == upper ?
-            Utils.prettyPrintDouble(storedBoard.proofNumber(lower-100)) + " " +
-                Utils.prettyPrintDouble(storedBoard.disproofNumber(lower+100)) :
+            Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
+                Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
             ("[" + (-upper/100) + ", " + (-lower/100) + "]")
         );
 
@@ -128,7 +129,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
-    StoredBoard board = annotations.storedBoard;
+    TreeNodeInterface board = annotations.treeNode;
     if (board == null) {
       return;
     }
@@ -335,7 +336,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (annotations == null) {
       return;
     }
-    StoredBoard board = annotations.storedBoard;
+    TreeNodeInterface board = annotations.treeNode;
     String firstPositionText = board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n";
 
     int lower = board.getWeakLower();

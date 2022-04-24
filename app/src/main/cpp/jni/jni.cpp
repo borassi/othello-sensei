@@ -22,6 +22,14 @@
 
 class JNIWrapper {
  public:
+  static jobject TreeNodeToJava(const TreeNode* const n, JNIEnv* env) {
+    jclass TreeNodeCPP = env->FindClass("jni/TreeNodeCPP");
+    return env->NewObject(
+        TreeNodeCPP,
+        env->GetMethodID(TreeNodeCPP, "<init>", "(J)V"),
+        (jlong) n);
+  }
+
   JNIWrapper() :
       evals_(LoadEvals()),
       hash_map_(),
@@ -39,13 +47,17 @@ class JNIWrapper {
         static_cast<jlong>(n_visited));
 
   }
-  jint EvalDerivative(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge upper, NVisited max_n_visited, double max_time) {
-    return evaluator_derivative_.Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
-  }
-  jlong GetNVisitedDerivative() {
-    return static_cast<jlong>(evaluator_derivative_.GetNVisited());
+  void EvalDerivative(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge upper, NVisited max_n_visited, double max_time) {
+    evaluator_derivative_.Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
   }
 
+  jobject GetFirstPosition(JNIEnv* env) {
+    return TreeNodeToJava(&evaluator_derivative_.GetFirstPosition(), env);
+  }
+
+  jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
+    return TreeNodeToJava(&evaluator_derivative_.Get(player, opponent), env);
+  }
  private:
   static EvalLarge EvalJavaToEvalLarge(jint eval) {
     int tmp = ((eval + 100000) / 200) * 2 - 1000;
@@ -56,6 +68,7 @@ class JNIWrapper {
   }
   EvalType evals_;
   HashMap hash_map_;
+  TreeNode t;
   EvaluatorAlphaBeta evaluator_alpha_beta_;
   EvaluatorDerivative evaluator_derivative_;
 };
@@ -70,6 +83,90 @@ JNIEXPORT jobject JNICALL Java_jni_JNI_evaluateCPPInternal(
     JNIEnv* env, jclass, jlong player, jlong opponent, jint lower,
     jint upper) {
   return kJNIWrapper.EvalEndgame(env, player, opponent, lower, upper);
+}
+
+JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
+    JNIEnv* env, jobject obj, jlong player, jlong opponent, jint lower,
+    jint upper, jlong maxNVisited, jint maxTimeMillis) {
+  kJNIWrapper.EvalDerivative(player, opponent, lower / 100, upper / 100, maxNVisited, maxTimeMillis);
+}
+
+JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jclass) {
+
+}
+
+JNIEXPORT void JNICALL Java_jni_JNI_stop(JNIEnv* env, jclass) {
+
+}
+
+JNIEXPORT jlong JNICALL Java_jni_JNI_getNVisited(JNIEnv* env, jclass) {
+  return 1;
+}
+
+JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jclass) {
+  return 0;
+}
+
+JNIEXPORT jobject JNICALL Java_jni_JNI_getFirstPosition(JNIEnv* env, jclass) {
+  return kJNIWrapper.GetFirstPosition(env);
+}
+
+JNIEXPORT jobject JNICALL Java_jni_JNI_get(JNIEnv* env, jclass, jlong player, jlong opponent) {
+  return kJNIWrapper.Get(env, static_cast<BitPattern>(player), static_cast<BitPattern>(opponent));
+}
+
+TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
+  jclass cls = env->GetObjectClass(tree_node_java);
+  jmethodID mid = env->GetMethodID(cls, "getNodeAddress", "()J");
+  return (TreeNode*) env->CallLongMethod(tree_node_java, mid);\
+}
+
+JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
+  return TreeNodeFromJava(env, tree_node_java)->GetNVisited(eval_goal / 100);
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getEval(JNIEnv* env, jobject tree_node_java) {
+  return TreeNodeFromJava(env, tree_node_java)->GetEval() * 100;
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLower(JNIEnv* env, jobject tree_node_java) {
+  return TreeNodeFromJava(env, tree_node_java)->Lower() * 100;
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getUpper(JNIEnv* env, jobject tree_node_java) {
+  return TreeNodeFromJava(env, tree_node_java)->Upper() * 100;
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakLower(JNIEnv* env, jobject tree_node_java) {
+  return TreeNodeFromJava(env, tree_node_java)->WeakLower() * 100;
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakUpper(JNIEnv* env, jobject tree_node_java) {
+  return TreeNodeFromJava(env, tree_node_java)->WeakUpper() * 100;
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileLower(JNIEnv* env, jobject tree_node_java, jfloat p) {
+  return TreeNodeFromJava(env, tree_node_java)->GetPercentileLower(p) * 100;
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobject tree_node_java, jfloat p) {
+  return TreeNodeFromJava(env, tree_node_java)->GetPercentileUpper(p) * 100;
+}
+
+JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
+  return TreeNodeFromJava(env, tree_node_java)->ProofNumber(eval_goal / 100);
+}
+
+JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_disproofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
+  return TreeNodeFromJava(env, tree_node_java)->DisproofNumber(eval_goal / 100);
+}
+
+JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
+  return TreeNodeFromJava(env, tree_node_java)->ProbGreaterEqual(eval_goal / 100);
+}
+
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_maxLogDerivative(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
+  return TreeNodeFromJava(env, tree_node_java)->MaxLogDerivative(eval_goal / 100);
 }
 
 #ifdef __cplusplus

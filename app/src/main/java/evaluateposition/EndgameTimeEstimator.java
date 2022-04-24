@@ -99,12 +99,13 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
       }
       requests.clear();
       LOG = true;
-      evaluator.evaluatePosition(b.board, -6300, 6300, Long.MAX_VALUE, 20 * 1000);
+      evaluator.evaluate(b.board, -6300, 6300, Long.MAX_VALUE, 20 * 1000);
       LOG = false;
       for (EndgameTimeEstimatorRequest request : requests) {
         Board current = new Board(request.player, request.opponent);
-        int eval = -evaluator.evaluatePosition(
+        evaluator.evaluate(
             current, request.lower, request.lower, Long.MAX_VALUE, 20 * 1000);
+        int eval = evaluator.getFirstPosition().getEval();
         double nVisited = evaluator.getNVisited();
         double logNVisited = Math.log(evaluator.getNVisited());
         double predicted = eval > request.lower ?

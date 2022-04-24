@@ -15,22 +15,23 @@ package ui;
 
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
+import evaluateposition.TreeNodeInterface;
 
 public class CaseAnnotations {
-  public final StoredBoard storedBoard;
+  public final TreeNodeInterface treeNode;
   public final HashMap.BoardInHash boardInHash;
   public final boolean isBestMove;
 
-  public CaseAnnotations(StoredBoard storedBoard, boolean isBestMove) {
-    this(storedBoard, null, isBestMove);
+  public CaseAnnotations(TreeNodeInterface treeNode, boolean isBestMove) {
+    this(treeNode, null, isBestMove);
   }
 
   public CaseAnnotations(HashMap.BoardInHash boardInHash, boolean isBestMove) {
     this(null, boardInHash, isBestMove);
   }
 
-  private CaseAnnotations(StoredBoard storedBoard, HashMap.BoardInHash boardInHash, boolean isBestMove) {
-    this.storedBoard = storedBoard;
+  private CaseAnnotations(TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, boolean isBestMove) {
+    this.treeNode = treeNode;
     this.boardInHash = boardInHash;
     this.isBestMove = isBestMove;
   }

@@ -13,20 +13,15 @@
 // limitations under the License.
 package jni;
 
+import board.Board;
 import constants.Constants;
 import constants.Stats;
 import evaluateposition.EvalWithVisited;
+import evaluateposition.EvaluatorDerivativeInterface;
+import evaluateposition.EvaluatorMCTS;
+import evaluateposition.StoredBoard;
 
-public class JNI {
-  public static EvalWithVisited evaluateCPP(
-      long player, long opponent, int lower, int upper) {
-    EvalWithVisited eval = evaluateCPPInternal(player, opponent, lower, upper);
-    Stats.addToNLastMoves(1);
-    Stats.addToNVisitedLastMoves(eval.nVisited);
-    return eval;
-  }
-  public static native EvalWithVisited evaluateCPPInternal(
-      long player, long opponent, int lower, int upper);
+public class JNI implements EvaluatorDerivativeInterface {
 
   static {
     if (Constants.MOBILE) {
@@ -39,4 +34,40 @@ public class JNI {
       }
     }
   }
+  @Override
+  public void evaluate(Board board, int lower, int upper, long maxNVisited, int maxTimeMillis) {
+    evaluate(board.getPlayer(), board.getOpponent(), lower, upper, maxNVisited, maxTimeMillis);
+  }
+
+  public native void evaluate(long player, long opponent, int lower,
+                              int upper, long maxNVisited, int maxTimeMillis);
+
+  @Override
+  public native void empty();
+
+  @Override
+  public native void stop();
+
+  @Override
+  public EvaluatorMCTS.Status getStatus() {
+    return EvaluatorMCTS.Status.SOLVED;
+  }
+
+  @Override
+  public native StoredBoard getFirstPosition();
+
+  @Override
+  public native StoredBoard get(long player, long opponent);
+
+  public static EvalWithVisited evaluateCPP(
+      long player, long opponent, int lower, int upper) {
+    EvalWithVisited eval = evaluateCPPInternal(player, opponent, lower, upper);
+    Stats.addToNLastMoves(1);
+    Stats.addToNVisitedLastMoves(eval.nVisited);
+    return eval;
+  }
+
+  public static native EvalWithVisited evaluateCPPInternal(
+      long player, long opponent, int lower, int upper);
+
 }

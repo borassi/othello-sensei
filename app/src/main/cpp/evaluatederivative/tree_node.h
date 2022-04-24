@@ -80,6 +80,26 @@ class TreeNode {
     return weak_upper_;
   }
 
+  int ProofNumber(Eval eval_goal) const {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return GetEvaluation(eval_goal, guard).ProofNumber();
+  }
+
+  int DisproofNumber(Eval eval_goal) const {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return GetEvaluation(eval_goal, guard).DisproofNumber();
+  }
+
+  float ProbGreaterEqual(Eval eval_goal) const {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return GetEvaluation(eval_goal, guard).ProbGreaterEqual();
+  }
+
+  int MaxLogDerivative(Eval eval_goal) const {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return GetEvaluation(eval_goal, guard).MaxLogDerivative();
+  }
+
   void IncreaseNThreadsWorking() {
     std::lock_guard<std::mutex> guard(mutex_);
     n_threads_working_++;
@@ -206,6 +226,15 @@ class TreeNode {
     fathers_.clear();
     children_.clear();
     n_empties_ = NEmpties(player, opponent);
+    lower_ = kMinEval;
+    upper_ = kMaxEval;
+    weak_lower_ = kMinEval;
+    weak_upper_ = kMaxEval;
+    leaf_eval_ = kLessThenMinEval;
+    n_threads_working_ = 0;
+    for (Evaluation& e : evaluations_) {
+      e.Reset();
+    }
   }
 
   void SetLeaf(EvalLarge leaf_eval, Square depth, Eval weak_lower, Eval weak_upper, NVisited n_visited, Eval eval_goal) {
@@ -227,10 +256,10 @@ class TreeNode {
       } else if (i > upper_) {
         evaluation->SetDisproved();
       } else {
-        float prob = 1 - (float) GaussianCDF(i, leaf_eval_, kErrors[n_empties_] * kMultStddev);
-        float proof_number = ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
+        float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * kMultStddev);
+        float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
         assert(isfinite(proof_number) && proof_number > 0);
-        float disproof_number = (float) DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
+        float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
         assert(isfinite(disproof_number) && disproof_number > 0);
         evaluation->SetLeaf(prob, proof_number, disproof_number, depth < 12 ? (float) (-0.5F * pow(depth - 4, 2)) : -100000);
       }
@@ -273,11 +302,16 @@ class TreeNode {
 
   NVisited GetNVisited() {
     std::lock_guard<std::mutex> guard(mutex_);
-    NVisited descendants = 0;
+    NVisited n = 0;
     for (int i = -63; i <= 63; i += 2) {
-      descendants += GetEvaluation(i, guard).GetNVisited();
+      n += GetNVisited(i, guard);
     }
-    return descendants;
+    return n;
+  }
+
+  NVisited GetNVisited(int eval_goal) {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return GetNVisited(eval_goal, guard);
   }
 
   bool IsSolved() {
@@ -324,6 +358,11 @@ class TreeNode {
 //
 //  public static AtomicInteger avoidNextPosFailCoeff = new AtomicInteger(2000);
 //  public static AtomicInteger proofNumberForAlphaBeta = new AtomicInteger(0);
+
+
+  NVisited GetNVisited(int eval_goal, const std::lock_guard<std::mutex>& guard) {
+    return GetEvaluation(eval_goal, guard).GetNVisited();
+  }
 
   Eval GetPercentileUpper(float p, const std::lock_guard<std::mutex>& guard) {
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {

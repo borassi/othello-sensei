@@ -30,6 +30,7 @@ import bitpattern.BitPattern;
 import board.Board;
 import constants.Constants;
 import evaluateposition.StoredBoard;
+import evaluateposition.TreeNodeInterface;
 import helpers.Utils;
 
 public class BoardView extends View {
@@ -127,10 +128,10 @@ public class BoardView extends View {
   }
 
   public void drawAnnotation(Canvas canvas, CaseAnnotations annotation, int x, int y) {
-    if (annotation == null || annotation.storedBoard == null) {
+    if (annotation == null || annotation.treeNode == null) {
       return;
     }
-    StoredBoard storedBoard = annotation.storedBoard;
+    TreeNodeInterface storedBoard = annotation.treeNode;
     int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
     int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
     String[] rows = {

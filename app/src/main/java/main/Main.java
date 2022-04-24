@@ -14,8 +14,6 @@
 
 package main;
 
-import static evaluateposition.StoredBoard.LOG_DERIVATIVE_MULTIPLIER;
-
 import java.util.ArrayList;
 
 import board.Board;
@@ -23,6 +21,7 @@ import board.GetMovesCache;
 import constants.Constants;
 import endgametest.EndgameTest;
 import evaluateposition.EvaluatorAlphaBeta;
+import evaluateposition.EvaluatorDerivativeInterface;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.HashMap;
 import evaluateposition.StoredBoard;
@@ -32,8 +31,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import evaluateposition.TreeNodeInterface;
+import jni.JNI;
 import ui.CaseAnnotations;
 import ui.UI;
 
@@ -49,16 +49,16 @@ public class Main implements Runnable {
   Board board;
   Board[] boardsToEvaluate = new Board[] {};
   private final HashMap HASH_MAP;
-  private final EvaluatorMCTS[] EVALUATORS = new EvaluatorMCTS[20];
+  private final EvaluatorDerivativeInterface[] EVALUATORS = new EvaluatorDerivativeInterface[20];
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   private long startTime;
   private static UI ui;
   private final AtomicBoolean waitingTasks = new AtomicBoolean(false);
 
   private static class EvaluatorWithBoard {
-    EvaluatorMCTS evaluator;
+    EvaluatorDerivativeInterface evaluator;
     StoredBoard board;
-    private EvaluatorWithBoard(EvaluatorMCTS evaluator, StoredBoard board) {
+    private EvaluatorWithBoard(EvaluatorDerivativeInterface evaluator, StoredBoard board) {
       this.evaluator = evaluator;
       this.board = board;
     }
@@ -74,7 +74,7 @@ public class Main implements Runnable {
     Main.ui = ui;
     HASH_MAP = new HashMap(Constants.HASH_MAP_SIZE);
     for (int i = 0; i < EVALUATORS.length; ++i) {
-      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
+      EVALUATORS[i] = new JNI();//(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
     }
   }
 
@@ -98,7 +98,7 @@ public class Main implements Runnable {
   public void resetHashMaps() {
     stop();
     Future finished = EXECUTOR.submit(() -> {
-      for (EvaluatorMCTS evaluator : EVALUATORS) {
+      for (EvaluatorDerivativeInterface evaluator : EVALUATORS) {
         evaluator.empty();
       }
       HASH_MAP.reset();
@@ -147,8 +147,8 @@ public class Main implements Runnable {
     long visited = 0;
     boolean allSolved = true;
     for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
-      EvaluatorMCTS evaluator = EVALUATORS[i];
-      visited += evaluator.getNVisited();
+      EvaluatorDerivativeInterface evaluator = EVALUATORS[i];
+      visited += evaluator.getFirstPosition().getDescendants();
       switch (evaluator.getStatus()) {
         case NONE:
         case RUNNING:
@@ -175,7 +175,7 @@ public class Main implements Runnable {
     }
   }
 
-  private double boardValue(EvaluatorMCTS evaluator) {
+  private double boardValue(EvaluatorDerivativeInterface evaluator) {
     StoredBoard board = evaluator.getFirstPosition();
     if (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) {
       return Double.NEGATIVE_INFINITY;
@@ -186,26 +186,26 @@ public class Main implements Runnable {
 
   private void evaluateFirst() {
     for (int i = 0; i < boardsToEvaluate.length; ++i) {
-      EvaluatorMCTS evaluator = EVALUATORS[i];
+      EvaluatorDerivativeInterface evaluator = EVALUATORS[i];
       Board board = boardsToEvaluate[i];
-      evaluator.evaluatePosition(board, ui.lower(), ui.upper(), ui.maxVisited(), 50);
+      evaluator.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 50);
     }
   }
 
   private void evaluate(int time) {
     for (int step = 0; step < 5 && !finished(); ++step) {
-      EvaluatorMCTS nextEvaluator = EVALUATORS[0];
+      EvaluatorDerivativeInterface nextEvaluator = EVALUATORS[0];
       double best = Double.NEGATIVE_INFINITY;
 
       for (int i = 0; i < boardsToEvaluate.length; ++i) {
-        EvaluatorMCTS evaluator = EVALUATORS[i];
+        EvaluatorDerivativeInterface evaluator = EVALUATORS[i];
         double value = boardValue(evaluator);
         if (value > best) {
           best = value;
           nextEvaluator = evaluator;
         }
       }
-      nextEvaluator.evaluatePosition(
+      nextEvaluator.evaluate(
           nextEvaluator.getFirstPosition().getBoard(), ui.lower(), ui.upper(),
           (long) (ui.maxVisited() * 1.4), time / 5);
     }
@@ -261,11 +261,11 @@ public class Main implements Runnable {
     int bestMove = -1;
 
     for (Board child : GetMovesCache.getAllDescendants(board)) {
-      EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(child);
-      if (evaluatorBoard.board == null) {
+      TreeNodeInterface b = getStoredBoard(child);
+      if (b == null) {
         continue;
       }
-      int eval = evaluatorBoard.getEval();
+      int eval = b.getEval();
       int move = moveFromBoard(board, child);
       if (eval < best) {
         best = eval;
@@ -292,16 +292,16 @@ public class Main implements Runnable {
     }
   }
 
-  private EvaluatorWithBoard getEvaluatorWithBoard(Board b) {
-    return getEvaluatorWithBoard(b.getPlayer(), b.getOpponent());
+  private TreeNodeInterface getStoredBoard(Board b) {
+    return getStoredBoard(b.getPlayer(), b.getOpponent());
   }
 
-  private EvaluatorWithBoard getEvaluatorWithBoard(long player, long opponent) {
-    EvaluatorMCTS bestEvaluator = null;
-    StoredBoard best = null;
+  private TreeNodeInterface getStoredBoard(long player, long opponent) {
+    EvaluatorDerivativeInterface bestEvaluator = null;
+    TreeNodeInterface best = null;
     for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
-      EvaluatorMCTS curEvaluator = EVALUATORS[i];
-      StoredBoard current = curEvaluator.get(player, opponent);
+      EvaluatorDerivativeInterface curEvaluator = EVALUATORS[i];
+      TreeNodeInterface current = curEvaluator.get(player, opponent);
       if (current == null) {
         continue;
       }
@@ -310,15 +310,13 @@ public class Main implements Runnable {
         bestEvaluator = curEvaluator;
       }
     }
-    return new EvaluatorWithBoard(bestEvaluator, best);
+    return best;
   }
   
   private void showMCTSEvaluations() {
     int bestMove = this.findBestMove();
     for (Board child : GetMovesCache.getAllDescendants(board)) {
-      EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(child);
-      StoredBoard childStored = evaluatorBoard.board;
-      EvaluatorMCTS evaluator = evaluatorBoard.evaluator;
+      TreeNodeInterface childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
@@ -332,15 +330,14 @@ public class Main implements Runnable {
       }
       ui.setAnnotations(annotations, move);
     }
-    EvaluatorWithBoard evaluatorBoard = getEvaluatorWithBoard(board);
+    TreeNodeInterface boardStored = getStoredBoard(board);
     long nVisited = 0;
     for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
-      nVisited += this.EVALUATORS[i].getNVisited();
+      nVisited += this.EVALUATORS[i].getFirstPosition().getDescendants();
     }
     CaseAnnotations positionAnnotations = null;
-    if (evaluatorBoard.board != null) {
-      positionAnnotations = new CaseAnnotations(
-          evaluatorBoard.board, false);
+    if (boardStored != null) {
+      positionAnnotations = new CaseAnnotations(boardStored, false);
     }
     ui.setExtras(
         nVisited, System.currentTimeMillis() - startTime,
