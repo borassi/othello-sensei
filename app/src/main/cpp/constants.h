@@ -22,7 +22,7 @@ constexpr int kBitHashMap = 20;
 constexpr int kDerivativeEvaluatorSize = 700000;
 #else
 constexpr int kBitHashMap = 24;
-constexpr int kDerivativeEvaluatorSize = 14000000;
+constexpr int kDerivativeEvaluatorSize = 1000000;
 #endif
 
 constexpr int kWeightDepthOne = 2;
@@ -42,7 +42,10 @@ constexpr float kZeroPercForWeak = 0.05F;
 constexpr float kMinProbEvalGoal = 0.03F;
 constexpr float kProbReduceWeakEval = 0.01F;
 constexpr float kProbIncreaseWeakEval = 0.05F;
-constexpr float kProbForEndgameAlphaBeta = 0.01F;
+constexpr float kProbForEndgameAlphaBeta = 0.05F;
+constexpr float kProbForEarlyMidgame = 0.05F;
 
+constexpr int kEmptiesForForcedMidgame = 14;
+constexpr int kEmptiesForEndgame = 10;
 
 #endif /* CONSTANTS_H */

@@ -13,6 +13,7 @@
 // limitations under the License.
 package jni;
 
+import board.Board;
 import evaluateposition.TreeNodeInterface;
 
 public class TreeNodeCPP extends TreeNodeInterface {
@@ -57,4 +58,12 @@ public class TreeNodeCPP extends TreeNodeInterface {
 
   @Override
   public native int maxLogDerivative(int evalGoal);
+
+  public native long getPlayer();
+  public native long getOpponent();
+
+  @Override
+  public Board getBoard() {
+    return new Board(getPlayer(), getOpponent());
+  }
 }

@@ -19,7 +19,9 @@ import constants.Stats;
 import evaluateposition.EvalWithVisited;
 import evaluateposition.EvaluatorDerivativeInterface;
 import evaluateposition.EvaluatorMCTS;
+import evaluateposition.Status;
 import evaluateposition.StoredBoard;
+import evaluateposition.TreeNodeInterface;
 
 public class JNI implements EvaluatorDerivativeInterface {
 
@@ -45,29 +47,29 @@ public class JNI implements EvaluatorDerivativeInterface {
   @Override
   public native void empty();
 
+  public static native void resetHashMap();
+
   @Override
   public native void stop();
 
   @Override
-  public EvaluatorMCTS.Status getStatus() {
-    return EvaluatorMCTS.Status.SOLVED;
-  }
+  public native Status getStatus();
 
   @Override
-  public native StoredBoard getFirstPosition();
+  public native TreeNodeInterface getFirstPosition();
 
   @Override
-  public native StoredBoard get(long player, long opponent);
+  public native TreeNodeInterface get(long player, long opponent);
 
   public static EvalWithVisited evaluateCPP(
-      long player, long opponent, int lower, int upper) {
-    EvalWithVisited eval = evaluateCPPInternal(player, opponent, lower, upper);
+      long player, long opponent, int depth, int lower, int upper) {
+    EvalWithVisited eval = evaluateCPPInternal(player, opponent, depth, lower, upper);
     Stats.addToNLastMoves(1);
     Stats.addToNVisitedLastMoves(eval.nVisited);
     return eval;
   }
 
   public static native EvalWithVisited evaluateCPPInternal(
-      long player, long opponent, int lower, int upper);
+      long player, long opponent, int depth, int lower, int upper);
 
 }

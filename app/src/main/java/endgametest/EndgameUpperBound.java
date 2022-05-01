@@ -122,7 +122,7 @@ public class EndgameUpperBound {
       Board b = readBoardFromFFOFormat(POSITIONS_AFTER_MOVES[i]);
       System.out.print(String.format("%4d", i));
       System.out.print(String.format("%8d", b.getEmptySquares()));
-      EvalWithVisited eval = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), -6600, 6600);
+      EvalWithVisited eval = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), 64, -6600, 6600);
       int result = eval.eval;
       long lower = OptimumAlphaBeta.computeOptimumLower(b, (int) result);
       long upper = OptimumAlphaBeta.computeOptimumUpper(b, (int) result);

@@ -125,7 +125,7 @@ public class EndgameTimeEstimator extends EndgameTimeEstimatorInterface {
             FindStableDisks.getLowerBound(current.getPlayer(), current.getOpponent()) + " " +
             FindStableDisks.getUpperBound(current.getPlayer(), current.getOpponent()) + " " +
             eval + " " +
-            (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) + " "// +
+            (evaluator.getStatus() == Status.SOLVED) + " "// +
 //            evaluator.firstPosition.proofNumberGreaterEqual + " " +
 //            evaluator.firstPosition.disproofNumberStrictlyGreater
         );

@@ -24,6 +24,7 @@ import evaluateposition.EvaluatorAlphaBeta;
 import evaluateposition.EvaluatorDerivativeInterface;
 import evaluateposition.EvaluatorMCTS;
 import evaluateposition.HashMap;
+import evaluateposition.Status;
 import evaluateposition.StoredBoard;
 
 import java.util.concurrent.ExecutionException;
@@ -74,7 +75,8 @@ public class Main implements Runnable {
     Main.ui = ui;
     HASH_MAP = new HashMap(Constants.HASH_MAP_SIZE);
     for (int i = 0; i < EVALUATORS.length; ++i) {
-      EVALUATORS[i] = new JNI();//(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
+      EVALUATORS[i] = new JNI();
+//      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
     }
   }
 
@@ -102,6 +104,7 @@ public class Main implements Runnable {
         evaluator.empty();
       }
       HASH_MAP.reset();
+      JNI.resetHashMap();
       EvaluatorAlphaBeta.resetConstant();
     });
     try {
@@ -176,8 +179,8 @@ public class Main implements Runnable {
   }
 
   private double boardValue(EvaluatorDerivativeInterface evaluator) {
-    StoredBoard board = evaluator.getFirstPosition();
-    if (evaluator.getStatus() == EvaluatorMCTS.Status.SOLVED) {
+    TreeNodeInterface board = evaluator.getFirstPosition();
+    if (evaluator.getStatus() == Status.SOLVED) {
       return Double.NEGATIVE_INFINITY;
     }
     double evalEffect = -board.getEval() / Math.max(1, ui.delta() * 100);
@@ -297,7 +300,6 @@ public class Main implements Runnable {
   }
 
   private TreeNodeInterface getStoredBoard(long player, long opponent) {
-    EvaluatorDerivativeInterface bestEvaluator = null;
     TreeNodeInterface best = null;
     for (int i = 0; i < this.boardsToEvaluate.length; ++i) {
       EvaluatorDerivativeInterface curEvaluator = EVALUATORS[i];
@@ -307,7 +309,6 @@ public class Main implements Runnable {
       }
       if (best == null || current.getDescendants() > best.getDescendants()) {
         best = current;
-        bestEvaluator = curEvaluator;
       }
     }
     return best;

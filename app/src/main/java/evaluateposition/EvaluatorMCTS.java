@@ -18,6 +18,7 @@ import bitpattern.BitPattern;
 import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
+import jni.JNI;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -36,17 +37,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
 
   int lower = -6300;
   int upper = 6300;
-  
-  public enum Status {
-    NONE,
-    RUNNING,
-    STOPPED_TIME,
-    STOPPED_POSITIONS,
-    SOLVED,
-    KILLING,
-    KILLED,
-    FAILED,
-  }
+
   private Status status = Status.SOLVED;
   private final EvaluatorThread[] threads;
 
@@ -89,8 +80,9 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
         StoredBoard child = getOrAdd(newPlayer, newOpponent, (short) (father.depth + 1));
         children[i] = child;
         if (child.leafEval == -6500) {
-          int eval = nextEvaluator.evaluate(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
-          childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval)), nextEvaluator.getNVisited());
+          // WARNING: DOES NOT WORK IN PARALLEL!!!
+          EvalWithVisited eval = JNI.evaluateCPP(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
+          childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval.eval)), eval.nVisited);
         }
       }
       synchronized (father) {
@@ -102,7 +94,7 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
               nVisited += childEval.nVisited;
               if (child.leafEval == -6500) {
                 child.setWeakLowerUpper((short) Math.min(-father.weakUpper, -evalGoal), (short) Math.max(-father.weakLower, -evalGoal));
-                child.getEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
+                child.getEvaluation(-evalGoal).addDescendants(childEval.nVisited);
                 child.setLeaf((short) childEval.eval, (short) 4);
               }
             }
@@ -314,8 +306,8 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
     empty();
     StoredBoard.proofNumberForAlphaBeta.set(0);
     StoredBoard.avoidNextPosFailCoeff.set(8000);
-    int eval = threads[0].nextEvaluator.evaluate(player, opponent, 4, -6400, 6400);
-    firstPosition = StoredBoard.initialStoredBoard(player, opponent, (short) eval);
+    EvalWithVisited eval = JNI.evaluateCPP(player, opponent, 4, -6400, 6400);
+    firstPosition = StoredBoard.initialStoredBoard(player, opponent, (short) eval.eval);
     add(firstPosition);
     this.lastUpdateWeak = 0;
     if (Constants.ASSERT_EXTENDED) {

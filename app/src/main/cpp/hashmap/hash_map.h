@@ -107,7 +107,7 @@ class HashMap {
 
   void Reset() {
     for (int i = 0; i < kHashMapSize; ++i) {
-      hash_map_[i].Update(0, 0, hash_map_[i].Epoch() == 0 ? 1 : 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
+      hash_map_[i].Update(0, 0, 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
     }
   }
 

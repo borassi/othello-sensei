@@ -13,8 +13,7 @@
 // limitations under the License.
 package evaluateposition;
 
-import constants.Constants;
-import helpers.Utils;
+import board.Board;
 
 public abstract class TreeNodeInterface {
   public abstract long getDescendants(int evalGoal);
@@ -29,6 +28,7 @@ public abstract class TreeNodeInterface {
   public abstract float disproofNumber(int evalGoal);
   public abstract float getProb(int evalGoal);
   public abstract int maxLogDerivative(int evalGoal);
+  public abstract Board getBoard();
 
   public long getDescendants() {
     long descendants = 0;

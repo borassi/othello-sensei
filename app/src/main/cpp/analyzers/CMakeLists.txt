@@ -23,12 +23,45 @@ ELSE ()
 ENDIF ()
 
 add_executable(
+        endgame_ffo
+        endgame_ffo.cpp
+)
+
+target_link_libraries(
+        endgame_ffo
+        LINK_PUBLIC
+        evaluator_alpha_beta
+        evaluator_derivative
+        hash_map
+        load_training_set
+        misc
+        pattern_evaluator
+)
+
+add_executable(
         thor
         thor.cpp
 )
 
 target_link_libraries(
         thor
+        LINK_PUBLIC
+        bitpattern
+        evaluator_alpha_beta
+        get_moves
+        load_training_set
+        misc
+        pattern_evaluator
+        test_evaluator
+)
+
+add_executable(
+        thor_endgame
+        thor_endgame.cpp
+)
+
+target_link_libraries(
+        thor_endgame
         LINK_PUBLIC
         bitpattern
         evaluator_alpha_beta

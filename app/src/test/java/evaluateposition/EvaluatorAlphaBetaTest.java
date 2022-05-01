@@ -303,7 +303,7 @@ public class EvaluatorAlphaBetaTest {
         lower = upper;
         upper = tmp;
       }
-      int expected = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), lower, upper).eval;
+      int expected = JNI.evaluateCPP(b.getPlayer(), b.getOpponent(), 64, lower, upper).eval;
       int actual = evaluator.evaluate(b, 100, lower, upper);
       
       int expectedWithBound = Math.min(upper, Math.max(actual, lower));

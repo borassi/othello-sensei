@@ -23,7 +23,6 @@ import constants.Constants;
 import constants.Stats;
 import helpers.Gaussian;
 import helpers.Utils;
-import sun.reflect.generics.tree.Tree;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -337,7 +336,7 @@ public class StoredBoard extends TreeNodeInterface {
     return initialStoredBoard(b.getPlayer(), b.getOpponent(), (short) 0);
   }
 
-  private static short roundEval(int eval) {
+  public static short roundEval(int eval) {
     return (short) Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));
   }
   
@@ -346,8 +345,7 @@ public class StoredBoard extends TreeNodeInterface {
     result.updating = new AtomicBoolean(false);
     int stddev = (int) (ERRORS[result.nEmpties] * Constants.MULT_STDDEV);
     result.setWeakLowerUpper(roundEval(eval - 3 * stddev), roundEval(eval + 3 * stddev));
-    result.setLeaf(eval, (short) 2);
-    result.setLeaf((short) 0, (short) 1);
+    result.setLeaf(eval, (short) 4);
     return result;
   }
   
@@ -650,7 +648,9 @@ public class StoredBoard extends TreeNodeInterface {
     }
     Evaluation firstEval = getEvaluation(evalGoal);
     boolean proof = firstEval.getProb() > 1 - Constants.PROB_FOR_PROOF || firstEval.getProb() < Constants.PROB_FOR_PROOF;
-    return firstEval.bestDescendant(weakLower, weakUpper, proof, new ArrayList<>());
+    int alpha = Math.min(evalGoal, getPercentileLower(Constants.PROB_FOR_ENDGAME_ALPHA_BETA));
+    int beta = Math.max(evalGoal, getPercentileUpper(Constants.PROB_FOR_ENDGAME_ALPHA_BETA));
+    return firstEval.bestDescendant(alpha, beta, proof, new ArrayList<>());
   }
 
   protected synchronized int nextPositionEvalGoal() {
@@ -803,7 +803,7 @@ public class StoredBoard extends TreeNodeInterface {
   @NonNull
   @Override
   public String toString() {
-    return new Board(player, opponent).toString() + "\n";
+    return new Board(player, opponent) + "\n";
   }
   
   public synchronized StoredBoard[] getChildren() {

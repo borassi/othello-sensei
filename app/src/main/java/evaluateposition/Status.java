@@ -13,14 +13,13 @@
 // limitations under the License.
 package evaluateposition;
 
-import board.Board;
-
-public interface EvaluatorDerivativeInterface {
-  void evaluate(Board board, int lower, int upper, long maxNVisited,
-                int maxTimeMillis);
-  void empty();
-  void stop();
-  Status getStatus();
-  TreeNodeInterface getFirstPosition();
-  TreeNodeInterface get(long player, long opponent);
+public enum Status {
+  NONE,
+  RUNNING,
+  STOPPED_TIME,
+  STOPPED_POSITIONS,
+  SOLVED,
+  KILLING,
+  KILLED,
+  FAILED,
 }

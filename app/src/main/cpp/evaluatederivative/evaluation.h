@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <float.h>
 #include "prob_combiners.h"
 #include "../board/bitpattern.h"
 #include "../utils/misc.h"
@@ -23,7 +24,7 @@
 typedef uint8_t Probability;
 constexpr Probability kProbStep = 255;
 constexpr int kLogDerivativeMinusInf = -1000000000;
-constexpr int kNoLogDerivative = kLogDerivativeMinusInf - 1;
+constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
 constexpr int kLogDerivativeMultiplier = 10000;
 
 struct CombineProb {
@@ -39,7 +40,7 @@ struct CombineProb {
       } else {
         log_derivative[i] = (int) (
             -kLogDerivativeMultiplier
-            * ConstexprLog(combiner.derivative(x1) / combiner.f(x1)) + 0.5);
+            * log(combiner.derivative(x1) / combiner.f(x1)) + 0.5);
         assert(log_derivative[i] > kLogDerivativeMinusInf);
       }
       for (int j = i; j <= kProbStep; ++j) {
@@ -56,29 +57,29 @@ const CombineProb kCombineProb;
 
 class Evaluation {
  public:
-  Evaluation() : max_log_derivative_(0), n_visited_(0) {}
+  Evaluation() { Reset(); }
   void Reset() {
-    max_log_derivative_ = 0;
+    max_log_derivative_ = kNoLogDerivative;
     n_visited_ = 0;
   }
   float ProofNumber() const { return proof_number_; }
   float DisproofNumber() const { return disproof_number_; }
   int MaxLogDerivative() const { return max_log_derivative_; }
-  bool IsValid() const { return max_log_derivative_ < 0; }
+  bool IsValid() const { return max_log_derivative_ != kNoLogDerivative; }
   NVisited GetNVisited() const { return n_visited_; }
 
   float ProbGreaterEqual() const {
-    assert(IsValid());
-    return ProbGreaterEqualUnsafe();
+    return IsValid() ? ProbGreaterEqualUnsafe() : -1;
   }
 
   bool IsSolved() const {
-    assert(IsValid());
-    return proof_number_ == 0 || disproof_number_ == 0;
+    return IsValid() && (proof_number_ == 0 || disproof_number_ == 0);
   }
 
   int LogDerivative(const Evaluation& father) const {
-    assert(IsValid());
+    if (!IsValid()) {
+      return 0;
+    }
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep ||
         father.prob_greater_equal_ == 0 || father.prob_greater_equal_ == kProbStep) {
       return kLogDerivativeMinusInf;
@@ -88,13 +89,19 @@ class Evaluation {
   }
 
   NVisited Descendants() const {
-    assert(IsValid());
     return n_visited_;
   }
 
   void AddDescendants(NVisited new_descendants) {
     assert(IsValid());
     n_visited_ += new_descendants;
+  }
+
+  void Initialize() {
+    proof_number_ = INFINITY;
+    disproof_number_ = 0;
+    prob_greater_equal_ = kProbStep;
+    max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
   void UpdateFatherWithThisChild(const Evaluation& child) {
@@ -129,6 +136,17 @@ class Evaluation {
       }
     }
   }
+  // TODO: FIX!!
+  void Finalize() {
+    if (ProbGreaterEqual() == 1 || ProbGreaterEqual() == 0) {
+      max_log_derivative_ = kLogDerivativeMinusInf;
+    } else {
+      max_log_derivative_ = max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_];
+      assert(max_log_derivative_ < 0);
+      assert(max_log_derivative_ > kLogDerivativeMinusInf);
+    }
+    prob_greater_equal_ = (kProbStep - prob_greater_equal_);
+  }
 
   void SetLeaf(float prob_greater_equal, float proof_number,
                float disproof_number) {
@@ -156,6 +174,23 @@ class Evaluation {
 
   void SetProved() {
     SetLeaf(1, 0, INFINITY);
+  }
+
+  double GetValue(const Evaluation& father, bool proof) {
+    float prob = father.ProbGreaterEqual();
+    if (IsSolved()) {
+      return -DBL_MAX;
+    }
+    if (prob == 0) {
+      return ProofNumber();
+//             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
+    } else if (prob == 1 || (proof && prob > 0.5)) {
+      return -DisproofNumber() / std::max(0.0001F, 1 - ProbGreaterEqual());
+    } else {
+      return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
+//             * avoidNextPosFailCoeff.get()
+//             * child.getStoredBoard().getNThreadsWorking();
+    }
   }
 
  private:
@@ -198,33 +233,6 @@ class Evaluation {
 //    }
 //  }
 //
-// public
-//  Evaluation bestChild(boolean proof) {
-//    assert !isLeaf();
-//    assert isLowerUpperOK();
-//    Evaluation bestChild = null;
-//    double bestChildValue = Double.NEGATIVE_INFINITY;
-//    for (StoredBoard childBoard : getChildren()) {
-//      synchronized(childBoard)
-//      {
-//        Evaluation child = childBoard.getEvaluation(-evalGoal);
-//        double childValue = child.getValue(this, proof);
-//        if (childValue > bestChildValue) {
-//          bestChild = child;
-//          bestChildValue = childValue;
-//        }
-//      }
-//    }
-//    assert isNThreadsWorkingOK();
-//    if (bestChild == null) {
-//      return null;
-//    }
-//    if (bestChild.getStoredBoard().isLeaf()
-//        && bestChild.getStoredBoard().getNThreadsWorking() > 0) {
-//      return null;
-//    }
-//    return bestChild;
-//  }
 //
 // private
 //  StoredBoardBestDescendant bestDescendant(int alpha, int beta, boolean proof,

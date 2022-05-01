@@ -234,7 +234,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
 
-    SpinnerModel allowedFFOPositions = new SpinnerNumberModel(46, 40, 61, 1);
+    SpinnerModel allowedFFOPositions = new SpinnerNumberModel(40, 40, 61, 1);
     ffoPositions = new JSpinner(allowedFFOPositions);
     commands.add(ffoPositions);
     ffoPositions.addChangeListener((ChangeEvent e) -> main.setEndgameBoard((int) ffoPositions.getValue()));
@@ -339,9 +339,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     TreeNodeInterface board = annotations.treeNode;
     String firstPositionText = board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n";
 
-    int lower = board.getWeakLower();
-    int upper = board.getWeakUpper();
-    for (int evalGoal = Math.min(upper + 400, 6300); evalGoal >= Math.max(lower - 400, -6300); evalGoal -= 200) {
+    int eval = board.getEval();
+    for (int evalGoal = StoredBoard.roundEval(eval + 1200); evalGoal >= StoredBoard.roundEval(eval - 1200); evalGoal -= 200) {
       firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
             Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)), Utils.prettyPrintDouble(board.getDescendants(evalGoal)),
             Utils.prettyPrintDouble(board.proofNumber(evalGoal)), Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));

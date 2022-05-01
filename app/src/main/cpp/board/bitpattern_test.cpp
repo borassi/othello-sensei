@@ -19,6 +19,15 @@
 #include <stdio.h>
 #include "bitpattern.h"
 
+TEST(BitPattern, EvalToEvalLarge) {
+  for (Eval i = kMinEval; i <= kMaxEval; ++i) {
+    EXPECT_EQ(i, EvalLargeToEval(EvalToEvalLarge(i)));
+  }
+  for (EvalLarge i = kMinEvalLarge; i <= kMaxEvalLarge; ++i) {
+    EXPECT_NEAR(EvalToEvalLarge(EvalLargeToEval(i)), i, 4);
+  }
+}
+
 TEST(BitPattern, Neighbors) {
   BitPattern p = ParsePattern("X--X---X"
                               "--------"

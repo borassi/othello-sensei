@@ -47,6 +47,6 @@ public class Constants {
   public final static boolean ASSERT_LOCKS = false;
   public final static boolean ASSERT_LOWER_UPPER = true;
   public final static boolean FIND_BEST_PROOF_AFTER_EVAL = false;
-  public final static boolean IGNORE_TRANSPOSITIONS = false;
+  public final static boolean IGNORE_TRANSPOSITIONS = true;
   public final static boolean APPROX_ONLY = false;
 }

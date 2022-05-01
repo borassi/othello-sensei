@@ -42,7 +42,7 @@
 //  INF   0    1K  1K
 TEST(TreeNodeTest, OneThread) {
   TreeNode e6;
-  e6.Reset(Board("e6"));
+  e6.Reset(Board("e6"), 0);
   e6.SetLeaf(1, 4, (Eval) -5, 1, 40, -1);
   EXPECT_EQ(e6.Lower(), -64);
   EXPECT_EQ(e6.Upper(), 64);
@@ -52,13 +52,13 @@ TEST(TreeNodeTest, OneThread) {
   EXPECT_NEAR(e6.GetEvaluation(1).ProbGreaterEqual(), 0.5, 1.01 / kProbStep);
   EXPECT_EQ(e6.GetEvaluation(-1).GetNVisited(), 40);
   TreeNode e6f4;
-  e6f4.Reset(Board("e6f4"));
+  e6f4.Reset(Board("e6f4"), 1);
   e6f4.SetLeaf(0, 4, (Eval) -1, 5, 10, -1);
   TreeNode e6f6;
-  e6f6.Reset(Board("e6f6"));
+  e6f6.Reset(Board("e6f6"), 1);
   e6f6.SetLeaf(0, 4, (Eval) -1, 5, 10, -1);
   TreeNode e6d6;
-  e6d6.Reset(Board("e6d6"));
+  e6d6.Reset(Board("e6d6"), 1);
   e6d6.SetLeaf(-8, 4, (Eval) -1, 5, 10, -1);
   e6.SetChildren({&e6f4, &e6f6, &e6d6});
   #ifndef NDEBUG

@@ -35,7 +35,7 @@ typedef struct TestCase {
   int beta;
 } TestCase;
 
-int main(int argc, char** argv) {
+int main() {
   HashMap hash_map;
   auto evals = LoadEvals();
   EvaluatorAlphaBeta evaluator(&hash_map, PatternEvaluator::Factory(evals.data()));

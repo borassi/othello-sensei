@@ -265,7 +265,7 @@ public class EvaluatorAlphaBeta implements EvaluatorInterface {
           (nEmpties <= Constants.EMPTIES_FOR_ENDGAME ||
            (-curMove.value < constant.get()))) {
         EvalWithVisited eval = JNI.evaluateCPP(
-            opponent & ~flip, player | flip, -upper, -newLower);
+            opponent & ~flip, player | flip, 64, -upper, -newLower);
         currentEval = -eval.eval;
         nVisited = eval.nVisited;
         constant.update(nVisited);

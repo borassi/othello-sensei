@@ -124,6 +124,7 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bitpattern
         board
+        constants
         get_moves
         misc
 )
@@ -137,7 +138,10 @@ IF (NOT ANDROID)
     target_link_libraries(
             evaluator_derivative_test
             LINK_PRIVATE
+            evaluator_alpha_beta
             evaluator_derivative
+            hash_map
+            pattern_evaluator
             GTest::gtest
             GTest::gtest_main
     )
