@@ -80,11 +80,19 @@ IF (NOT ANDROID)
 ENDIF ()
 
 add_library(
+        endgame_time_estimator
+        endgame_time_estimator.h
+)
+
+set_target_properties(
+        endgame_time_estimator PROPERTIES LINKER_LANGUAGE CXX
+)
+
+add_library(
         tree_node
         SHARED
         tree_node.h
         tree_node.cpp
-        endgame_time_estimator.h
 )
 
 target_link_libraries( # Specifies the target library.
@@ -92,6 +100,7 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bitpattern
         board
+        endgame_time_estimator
         get_moves
         misc
 )

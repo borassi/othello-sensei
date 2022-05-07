@@ -113,15 +113,16 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
       assert board.isLeaf();
       int alpha = position.alpha;
       int beta = position.beta;
-      int eval = nextEvaluator.evaluate(
+      EvalWithVisited tmp = JNI.evaluateCPP(
           board.getPlayer(), board.getOpponent(), board.nEmpties, alpha, beta);
+      int eval = tmp.eval;
       if (eval < beta) {
         board.setUpper(eval);
       }
       if (eval > alpha) {
         board.setLower(eval);
       }
-      long seenPositions = nextEvaluator.getNVisited() + 1;
+      long seenPositions = tmp.nVisited + 1;
       StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
       board.updateFathers();
       return seenPositions;

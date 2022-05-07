@@ -72,7 +72,7 @@ class Move {
 
 class MoveIteratorBase {
  public:
-  virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+  virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
                      EvaluatorDepthOneBase* evaluator_depth_one) = 0;
   virtual BitPattern NextFlip() = 0;
 };
@@ -80,7 +80,7 @@ class MoveIteratorBase {
 class MoveIteratorQuick : public MoveIteratorBase {
  public:
   MoveIteratorQuick();
-  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -96,8 +96,10 @@ class MoveIteratorEval : public MoveIteratorBase {
  public:
   MoveIteratorEval() : moves_() {};
 
-  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
              EvaluatorDepthOneBase* evaluator_depth_one_base) override;
+
+  virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) = 0;
 
   BitPattern NextFlip() override;
 
@@ -107,6 +109,18 @@ class MoveIteratorEval : public MoveIteratorBase {
   BitPattern candidate_moves_;
   Move moves_[64];
   int remaining_moves_;
+ protected:
+  EvaluatorDepthOneBase* depth_one_evaluator_;
+};
+
+class MoveIteratorMinimizeOpponentMoves : public MoveIteratorEval {
+ public:
+  int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) final;
+};
+
+class MoveIteratorDisproofNumber : public MoveIteratorEval {
+ public:
+  int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) final;
 };
 
 class EvaluatorAlphaBeta {
@@ -124,10 +138,10 @@ class EvaluatorAlphaBeta {
     n_visited_ = 0;
     int n_empties = __builtin_popcountll(~(player | opponent));
     depth = std::min(depth, n_empties);
+    evaluator_depth_one_->Setup(player, opponent);
     if (depth == n_empties) {
       return (this->*solvers_[depth])(player, opponent, lower, upper, 0, 0);
     } else {
-      evaluator_depth_one_->Setup(player, opponent);
       return (this->*evaluators_[depth])(player, opponent, lower, upper, 0, 0);
     }
   }

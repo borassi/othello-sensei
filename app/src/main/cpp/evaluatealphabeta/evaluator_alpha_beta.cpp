@@ -17,6 +17,8 @@
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../board/stable.h"
+#include "../evaluatederivative/endgame_time_estimator.h"
+#include "../utils/misc.h"
 #include "evaluator_alpha_beta.h"
 #include "evaluator_last_moves.h"
 
@@ -72,7 +74,7 @@ MoveIteratorQuick::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), can
 }
 
 void MoveIteratorQuick::Setup(BitPattern player, BitPattern opponent,
-                              BitPattern last_flip,
+                              BitPattern last_flip, int upper,
                               EvaluatorDepthOneBase* evaluator_depth_one) {
   player_ = player;
   opponent_ = opponent;
@@ -103,12 +105,13 @@ BitPattern MoveIteratorQuick::NextFlip() {
 }
 
 void MoveIteratorEval::Setup(
-    BitPattern player, BitPattern opponent, BitPattern last_flip,
+    BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
     EvaluatorDepthOneBase* evaluator_depth_one_base) {
   BitPattern empties = ~(player | opponent);
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   BitPattern flip;
   remaining_moves_ = 0;
+  depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
     Square square = __builtin_ctzll(square_pattern);
     flip = GetFlip(square, player, opponent);
@@ -116,14 +119,28 @@ void MoveIteratorEval::Setup(
       continue;
     }
 //    evaluator_depth_one_base->Update(square_pattern, flip);
-    int value = 0;//-evaluator_depth_one_base->Evaluate();
-    BitPattern moves = GetMoves(NewPlayer(flip, opponent), NewOpponent(flip, player));
-    value = -(__builtin_popcountll(moves) + __builtin_popcountll(moves & kCornerPattern)) * 1000;
-    value += kSquareValue[square];
-    moves_[remaining_moves_].Set(flip, value);
+    moves_[remaining_moves_].Set(flip, Eval(player, opponent, flip, upper, square));
 //    evaluator_depth_one_base->UndoUpdate(square_pattern, flip);
     remaining_moves_++;
   }
+}
+
+int MoveIteratorMinimizeOpponentMoves::Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) {
+  BitPattern moves = GetMoves(NewPlayer(flip, opponent), NewOpponent(flip, player));
+  return
+      -(__builtin_popcountll(moves) + __builtin_popcountll(moves & kCornerPattern)) * 1000
+      + kSquareValue[square];
+}
+
+int MoveIteratorDisproofNumber::Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) {
+  BitPattern square_pattern = 1ULL << square;
+  depth_one_evaluator_->Update(square_pattern, flip);
+  EvalLarge eval = depth_one_evaluator_->Evaluate();
+  int result = -(int) (
+      DisproofNumber(NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, eval)
+      / (GaussianCDF(-upper, eval, 80)));
+  depth_one_evaluator_->UndoUpdate(square_pattern, flip);
+  return result;
 }
 
 BitPattern MoveIteratorEval::NextFlip() {
@@ -278,11 +295,15 @@ EvaluatorAlphaBeta::EvaluateInternalFunction
 };
 
 constexpr bool UseMoveIteratorQuick(int depth, bool solve) {
-  return (solve && depth < 11) || (!solve && depth < 3);
+  return (solve && depth < 10) || (!solve && depth < 3);
 }
 
 constexpr bool UpdateDepthOneEvaluator(int depth, bool solve) {
   return !solve || !UseMoveIteratorQuick(depth, solve);
+}
+
+constexpr bool UseMoveIteratorMinimizeOpponentMoves(int depth, bool solve) {
+  return (solve && depth < 11) || (!solve);
 }
 
 constexpr bool UseHashMap(int depth, bool solve) {
@@ -302,11 +323,17 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
       int offset = MoveIteratorOffset(i, solve);
       if (UseMoveIteratorQuick(i, solve)) {
         move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();
+      } else if (UseMoveIteratorMinimizeOpponentMoves(i, solve)) {
+        move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>();
       } else {
-        move_iterators_[offset] = std::make_unique<MoveIteratorEval>();
+        move_iterators_[offset] = std::make_unique<MoveIteratorDisproofNumber>();
       }
     }
   }
+}
+
+constexpr bool UseStabilityCutoff(int depth) {
+  return depth > 3;
 }
 
 // clangtidy: no-warning.
@@ -320,10 +347,12 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   assert(kMinEvalLarge < upper && upper <= kMaxEvalLarge);
 
   BitPattern new_stable = stable;
-  new_stable = GetStableDisks(opponent, player, new_stable);
-  EvalLarge stability_cutoff_upper = EvalToEvalLarge(GetUpperBoundFromStable(new_stable, opponent));
-  if (stability_cutoff_upper <= lower) {
-    return stability_cutoff_upper;
+  if (UseStabilityCutoff(depth)) {
+    new_stable = GetStableDisks(opponent, player, new_stable);
+    EvalLarge stability_cutoff_upper = EvalToEvalLarge(GetUpperBoundFromStable(new_stable, opponent));
+    if (stability_cutoff_upper <= lower) {
+      return stability_cutoff_upper;
+    }
   }
 
   if (UseHashMap(depth, solve)) {
@@ -347,7 +376,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   int cur_n_visited;
   MoveIteratorBase* moves =
       move_iterators_[MoveIteratorOffset(depth, solve)].get();
-  moves->Setup(player, opponent, last_flip, evaluator_depth_one_.get());
+  moves->Setup(player, opponent, last_flip, upper, evaluator_depth_one_.get());
   for (BitPattern flip = moves->NextFlip(); flip != 0; flip = moves->NextFlip()) {
     if (UpdateDepthOneEvaluator(depth, solve)) {
       square = SquareFromFlip(flip, player, opponent);
@@ -393,7 +422,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     hash_map_
         ->Update(player, opponent, epoch_, depth, eval, lower, upper, 0, 0);
   }
-  if (!solve) {
+  if (UpdateDepthOneEvaluator(depth, solve)) {
     evaluator_depth_one_->Invert();
   }
   return eval;

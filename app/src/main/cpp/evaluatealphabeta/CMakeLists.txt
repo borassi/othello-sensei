@@ -59,9 +59,11 @@ target_link_libraries( # Specifies the target library.
         evaluator_alpha_beta
         LINK_PUBLIC
         bitpattern
+        endgame_time_estimator
         evaluator_last_moves
         get_flip
         hash_map
+        misc
         stable)
 
 IF (NOT ANDROID)
