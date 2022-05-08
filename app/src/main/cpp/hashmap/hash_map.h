@@ -38,6 +38,16 @@ class HashMapEntry {
     best_move_(kNoSquare),
     second_best_move_(kNoSquare) {}
 
+  HashMapEntry(const HashMapEntry& e) :
+    epoch_(e.epoch_),
+    player_(e.player_),
+    opponent_(e.opponent_),
+    lower_(e.lower_),
+    upper_(e.upper_),
+    depth_(e.depth_),
+    best_move_(e.best_move_),
+    second_best_move_(e.second_best_move_) {}
+
   void Update(
     BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth, EvalLarge eval,
     EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move);
@@ -111,9 +121,12 @@ class HashMap {
     }
   }
 
-  std::pair<EvalLarge, EvalLarge> GetLowerUpper (
-      BitPattern player, BitPattern opponent, DepthValue depth) const {
-    return hash_map_[Hash(player, opponent)].GetLowerUpper(player, opponent, depth);
+  std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) const {
+    HashMapEntry result = hash_map_[Hash(player, opponent)];
+    if (result.Player() == player && result.Opponent() == opponent) {
+      return std::make_unique<HashMapEntry>(result);
+    }
+    return nullptr;
   }
  private:
   HashMapEntry* hash_map_ = new HashMapEntry[kHashMapSize]();

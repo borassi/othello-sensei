@@ -24,6 +24,8 @@
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../utils/misc.h"
 
+constexpr bool kUseTranspositions = true;
+
 enum Status {
     NONE = 0,
     RUNNING = 1,
@@ -133,9 +135,9 @@ class EvaluatorDerivative {
 
   Status GetStatus() { return status_; }
 
-  const TreeNode* const Get(BitPattern player, BitPattern opponent) {
+  TreeNode* Get(BitPattern player, BitPattern opponent) {
     int index = tree_node_index_[Hash(player, opponent)];
-    const TreeNode& node = tree_nodes_[index];
+    TreeNode& node = tree_nodes_[index];
     if (node.Player() == player && node.Opponent() == opponent) {
       return &node;
     }
@@ -177,10 +179,10 @@ class EvaluatorDerivative {
       }
 //      firstPosition.setNewLowerUpper(board);
       assert(leaf->IsLeaf());
-      if (leaf != first_position && leaf->ToBeSolved(next_leaf.eval_goal)) {
+      if (leaf != first_position && leaf->ToBeSolved(next_leaf.eval_goal, num_tree_nodes_)) {
         n_visited = SolvePosition(next_leaf);
       } else {
-        n_visited = AddChildren(leaf);
+        n_visited = AddChildren(next_leaf);
       }
 //      else {
 //        nVisited = deepenPosition(position);
@@ -199,7 +201,7 @@ class EvaluatorDerivative {
     EvalLarge eval = next_evaluator_->Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     num_tree_nodes_ = 0;
     TreeNode* first_position = AddTreeNode(player, opponent, 0);
-    first_position->SetLeaf(eval, 4, kMinEval + 1, kMaxEval - 1, next_evaluator_->GetNVisited(), 1);
+    first_position->SetLeaf(eval, 4, next_evaluator_->GetNVisited(), 1);
     last_update_weak_ = 0;
 //    if (Constants.ASSERT_EXTENDED) {
 //      assertIsAllOKRecursive(firstPosition);
@@ -269,31 +271,31 @@ class EvaluatorDerivative {
     return result;
   }
 
-  NVisited AddChildren(TreeNode* father) {
-    assert(father->IsLeaf());
-//    TreeNode father = position.eval.getStoredBoard();
-    int depth = father->NEmpties() < 22 ? 2 : 4;
+  NVisited AddChildren(const LeafToUpdate& leaf) {
+    TreeNode* node = leaf.leaf;
+    assert(node->IsLeaf());
+    int depth = node->NEmpties() < 24 ? 2 : 4;
 //    int evalGoal = position.eval.evalGoal;
-    int eval_goal = 1;
+    int eval_goal = leaf.eval_goal;
     NVisited n_visited = 0;
-    BitPattern player = father->Player();
-    BitPattern opponent = father->Opponent();
+    BitPattern player = node->Player();
+    BitPattern opponent = node->Opponent();
 
     auto moves = GetAllMovesWithPass(player, opponent);
 
     if (moves.empty()) {
       int final_eval = GetEvaluationGameOver(player, opponent);
-      father->SetSolved(final_eval);
+      node->SetSolved(final_eval);
       return 1;
     }
 
     std::pair<EvalLarge, NVisited> children_eval[moves.size()];
     std::vector<TreeNode*> children(moves.size());
     for (int i = 0; i < moves.size(); ++i) {
-      long flip = moves[i];
+      BitPattern flip = moves[i];
       BitPattern new_player = NewPlayer(flip, opponent);
       BitPattern new_opponent = NewOpponent(flip, player);
-      TreeNode* child = AddTreeNode(new_player, new_opponent, father->Depth() + 1);  // TODO: GET THE EXISTING CHILD IF POSSIBLE.
+      TreeNode* child = AddTreeNode(new_player, new_opponent, node->Depth() + 1);
       children[i] = child;
       if (!child->IsValid()) {
        int eval = next_evaluator_->Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
@@ -306,19 +308,18 @@ class EvaluatorDerivative {
       TreeNode* child = children[i];
 //      synchronized (child) {
       if (!child->IsValid()) {
-          child->SetLeaf(
-              children_eval[i].first,
-              4, // TODO: FIX!!!
-              std::min(-father->WeakUpper(), -eval_goal),
-              std::max(-father->WeakLower(), -eval_goal),
-              children_eval[i].second,
-              -eval_goal);
+        child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
+        child->SetLeaf(
+            children_eval[i].first,
+            depth,
+            children_eval[i].second,
+            -eval_goal);
       }
 //     }
 //      assert father.isLowerUpperOK();
     }
-    father->SetChildren(children);
-    father->UpdateFathers();
+    node->SetChildren(children);
+    node->UpdateFathers();
     return n_visited;
   }
 
@@ -327,7 +328,7 @@ class EvaluatorDerivative {
     assert(node->IsLeaf());
     Eval alpha = leaf.alpha;
     Eval beta = leaf.beta;
-    Eval eval = EvalLargeToEval(next_evaluator_->Evaluate(
+    Eval eval = EvalLargeToEvalRound(next_evaluator_->Evaluate(
         node->Player(), node->Opponent(), node->NEmpties(), EvalToEvalLarge(alpha), EvalToEvalLarge(beta)));
 
     if (eval < beta) {
@@ -337,6 +338,7 @@ class EvaluatorDerivative {
       node->SetLower(eval);
     }
     NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
+    node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
 //    StoredBoard.proofNumberForAlphaBeta.addAndGet(
 //        (int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
     node->UpdateFathers();
@@ -394,19 +396,28 @@ class EvaluatorDerivative {
 
   void UpdateWeakLowerUpper() {
 //     synchronized (firstPosition) {
-//       if (getNVisited() < this.lastUpdateWeak * 1.3) {
-//         if (firstPosition.getProb(firstPosition.getWeakLower()) > Constants.PROB_INCREASE_WEAK_EVAL &&
-//                 firstPosition.getProb(firstPosition.getWeakUpper()) < 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-//           return;
-//         }
-//       }
+    auto first_position = GetFirstPosition();
+//    if (NVisited() < this->last_update_weak_ * 1.3) {
+//      if (first_position->ProbGreaterEqual(first_position->WeakLower())
+//          > kProbIncreaseWeakEval &&
+//          first_position->ProbGreaterEqual(first_position->WeakUpper())
+//          < 1 - kProbIncreaseWeakEval) {
+//        return;
+//      }
+//    }
 //     }
-//     if (!firstPosition.UpdateWeakLowerUpper()) {
-//       lastUpdateWeak = getNVisited();
-//     }
+    while (first_position->UpdateWeakLowerUpper()) {
+      last_update_weak_ = NVisited();
+    }
   }
 
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth) {
+    if (kUseTranspositions) {
+      TreeNode* existing_node = Get(player, opponent);
+      if (existing_node != nullptr) {
+        return existing_node;
+      }
+    }
     int node_id = num_tree_nodes_++;
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth);

@@ -59,22 +59,5 @@ Eval EvalFiveEmpties(
     const BitPattern last_flip, const BitPattern stable,
     int* const n_visited);
 
-class EvaluatorLastMoves {
- public:
-  EvaluatorLastMoves(HashMap* hash_map) : hash_map_(hash_map) {}
-  Eval Evaluate(
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper, int* const n_visited);
-
- private:
-  HashMap* hash_map_;
-  Eval Evaluate(
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper, bool passed,
-    const BitPattern last_flip, const BitPattern stable,
-    int* const n_visited);
-  EpochValue epoch_;
-};
-
 #endif /* EVALUATOR_LAST_MOVES_H */
 

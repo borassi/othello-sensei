@@ -66,26 +66,6 @@ TEST(EvaluatorLastMoves, ManyPass) {
   EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 24);
 }
 
-TEST(EvaluatorLastMoves, UsesHashMap) {
-  HashMap hash_map;
-  EvaluatorLastMoves evaluator(&hash_map);
-  Board b = RandomBoard(0.45, 0.45);
-
-  while (b.NEmpties() > 10 || b.NEmpties() < 6) {
-    b = RandomBoard(0.45, 0.45);
-  }
-
-  int n_visited = 0;
-  int actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
-  EXPECT_GT(n_visited, 1);
-
-  if (b.NEmpties() > kMinEmptiesForHashMap) {
-    n_visited = 0;
-    actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
-    EXPECT_EQ(n_visited, 1);
-  }
-}
-
 TEST(EvaluatorLastMoves, E2E) {
   HashMap hash_map;
 //  EvaluatorLastMoves evaluator(&hash_map);

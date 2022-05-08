@@ -19,7 +19,7 @@
 # Profile:
 # cmake -S src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
 # cmake --build build && \
-# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/thor && \
+# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/endgame_ffo && \
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.

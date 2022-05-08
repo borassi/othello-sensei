@@ -72,15 +72,30 @@ class Move {
 
 class MoveIteratorBase {
  public:
-  virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
+  virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper, HashMapEntry* entry,
                      EvaluatorDepthOneBase* evaluator_depth_one) = 0;
   virtual BitPattern NextFlip() = 0;
+};
+
+class MoveIteratorVeryQuick : public MoveIteratorBase {
+ public:
+  MoveIteratorVeryQuick() {}
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+             int upper, HashMapEntry* entry,
+             EvaluatorDepthOneBase* evaluator_depth_one) override;
+  BitPattern NextFlip() override;
+
+ private:
+  BitPattern player_;
+  BitPattern opponent_;
+  BitPattern candidate_moves_;
 };
 
 class MoveIteratorQuick : public MoveIteratorBase {
  public:
   MoveIteratorQuick();
-  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+             int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -96,7 +111,8 @@ class MoveIteratorEval : public MoveIteratorBase {
  public:
   MoveIteratorEval() : moves_() {};
 
-  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
+  void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
+             int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one_base) override;
 
   virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) = 0;
@@ -109,6 +125,7 @@ class MoveIteratorEval : public MoveIteratorBase {
   BitPattern candidate_moves_;
   Move moves_[64];
   int remaining_moves_;
+
  protected:
   EvaluatorDepthOneBase* depth_one_evaluator_;
 };
@@ -146,10 +163,8 @@ class EvaluatorAlphaBeta {
     }
   }
 
+  static constexpr int kMaxDepth = 64;
  private:
-  static constexpr int MoveIteratorOffset(int depth, bool solve) {
-    return depth + (solve ? kMaxDepth : 0);
-  }
 
   typedef EvalLarge(EvaluatorAlphaBeta::*EvaluateInternalFunction)(
       const BitPattern, const BitPattern, const EvalLarge, const EvalLarge,
@@ -161,13 +176,12 @@ class EvaluatorAlphaBeta {
       const EvalLarge lower, const EvalLarge upper,
       const BitPattern last_flip, const BitPattern stable);
 
-  static constexpr int kMaxDepth = 64;
   static EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
   HashMap* hash_map_;
   EpochValue epoch_;
   NVisited n_visited_;
-  std::shared_ptr<MoveIteratorBase> move_iterators_[2 * kMaxDepth];
+  std::shared_ptr<MoveIteratorBase> move_iterators_[4 * kMaxDepth];
   std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
 };
 #endif  // EVALUATOR_ALPHA_BETA_H

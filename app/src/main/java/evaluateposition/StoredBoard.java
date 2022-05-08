@@ -609,6 +609,9 @@ public class StoredBoard extends TreeNodeInterface {
     }
     assert isLowerUpperOK();
     updating.set(false);
+//    if (reduced || extendUpper || extendLower) {
+//      System.out.println(this.getDescendants() + ": " + weakLower + " " + weakUpper);
+//    }
     return reduced || extendUpper || extendLower;
   }
 

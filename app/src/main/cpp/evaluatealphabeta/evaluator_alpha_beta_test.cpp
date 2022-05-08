@@ -49,7 +49,7 @@ Eval SolveBasic(long player, long opponent, bool passed) {
   return eval;
 }
 
-class EvaluatorAlphaBetaTest : public testing::Test {
+class EvaluatorAlphaBetaEndgameTest : public testing::Test {
  protected:
   EvalType evals_ = LoadEvals();
 };
@@ -93,6 +93,26 @@ TEST(EvaluatorAlphaBetaTest, Pass) {
   EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
 }
 
+TEST(EvaluatorAlphaBetaTest, UsesHashMap) {
+  HashMap hash_map;
+  EvaluatorAlphaBeta evaluator(&hash_map, TestEvaluatorDepthOne::Factory());
+  Board b = RandomBoard(0.45, 0.45);
+
+  while (b.NEmpties() > 10 || b.NEmpties() < 6) {
+    b = RandomBoard(0.45, 0.45);
+  }
+
+  int n_visited = 0;
+  int actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), 64, kMinEvalLarge, kMaxEvalLarge);
+  EXPECT_GT(n_visited, 1);
+
+  if (b.NEmpties() > kMinEmptiesForHashMap) {
+    n_visited = 0;
+    actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), 64, kMinEvalLarge, kMaxEvalLarge);
+    EXPECT_EQ(n_visited, 1);
+  }
+}
+
 TEST(EvaluatorAlphaBetaTest, CompareWithTest) {
   HashMap hash_map;
   EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
@@ -111,7 +131,7 @@ TEST(EvaluatorAlphaBetaTest, CompareWithTest) {
   }
 }
 
-TEST_F(EvaluatorAlphaBetaTest, Endgame) {
+TEST_F(EvaluatorAlphaBetaEndgameTest, Endgame) {
   HashMap hash_map;
   EvaluatorAlphaBeta evaluator(&hash_map, PatternEvaluator::Factory(evals_.data()));
   for (int i = 0; i < 1000; i++) {

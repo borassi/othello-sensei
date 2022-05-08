@@ -41,7 +41,9 @@ constexpr Eval kMaxEval = 64;
 constexpr Square kNumSquares = 64;
 
 constexpr EvalLarge EvalToEvalLarge(Eval eval) { return eval * 8; }
-constexpr EvalLarge EvalLargeToEval(EvalLarge eval) { return (Eval) ((eval + 8004) / 8 - 1000); }
+constexpr EvalLarge EvalLargeToEvalRound(EvalLarge eval) { return (Eval) ((eval + 8004) / 8 - 1000); }
+constexpr EvalLarge EvalLargeToEvalLower(EvalLarge eval) { return (Eval) ((eval + 8000) / 8 - 1000); }
+constexpr EvalLarge EvalLargeToEvalUpper(EvalLarge eval) { return (Eval) ((eval + 8007) / 8 - 1000); }
 
 constexpr EvalLarge kLessThenMinEvalLarge = EvalToEvalLarge(kLessThenMinEval);
 constexpr EvalLarge kMinEvalLarge = EvalToEvalLarge(kMinEval);

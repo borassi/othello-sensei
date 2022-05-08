@@ -105,27 +105,28 @@ TEST(HashMapEntry, Update) {
   }
 }
 
-TEST(HashMapEntry, GetLower) {
-  HashMapEntry entry;
-  const auto no_result = std::make_pair(kMinEvalLarge, kMaxEvalLarge);
-  entry.Update(1, 4, 2, 6, 2, -4, 4, 36, 37);
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 6), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 8), no_result);
-  EXPECT_EQ(entry.GetLowerUpper(1, 2, 6), no_result);
-  EXPECT_EQ(entry.GetLowerUpper(0, 4, 6), no_result);
-
-  entry.Update(1, 4, 3, 4, -8, -4, 4, 36, 37);
-  // Know: <= -8.
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair(kMinEvalLarge, (EvalLarge) -8));
-
-  entry.Update(1, 4, 4, 4, 8, -4, 4, 36, 37);
-  // Know: >= 8.
-  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 8, kMaxEvalLarge));
-}
+//TEST(HashMapEntry, GetLower) {
+//  HashMapEntry entry;
+//  const auto no_result = std::make_pair(kMinEvalLarge, kMaxEvalLarge);
+//  entry.Update(1, 4, 2, 6, 2, -4, 4, 36, 37);
+//  EXPECT_EQ(entry.GetLowerUpper(1, 4, 6), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
+//  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
+//  EXPECT_EQ(entry.GetLowerUpper(1, 4, 8), no_result);
+//  EXPECT_EQ(entry.GetLowerUpper(1, 2, 6), no_result);
+//  EXPECT_EQ(entry.GetLowerUpper(0, 4, 6), no_result);
+//
+//  entry.Update(1, 4, 3, 4, -8, -4, 4, 36, 37);
+//  // Know: <= -8.
+//  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair(kMinEvalLarge, (EvalLarge) -8));
+//
+//  entry.Update(1, 4, 4, 4, 8, -4, 4, 36, 37);
+//  // Know: >= 8.
+//  EXPECT_EQ(entry.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 8, kMaxEvalLarge));
+//}
 
 TEST(HashMap, Base) {
   HashMap hash_map;
-  hash_map.Update(1, 4, 2, 6, 2, -64, 64, 36, 37);
-  EXPECT_EQ(hash_map.GetLowerUpper(1, 4, 4), std::make_pair((EvalLarge) 2, (EvalLarge) 2));
+  HashMapEntry entry;
+  entry.Update(1, 4, 2, 6, 2, -64, 64, 36, 37);
+  ExpectEntryEq(*hash_map.Get(1, 4), 1, 4, -64, 64, 6, 36, 37);
 }

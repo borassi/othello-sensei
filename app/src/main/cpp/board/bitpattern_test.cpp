@@ -21,10 +21,15 @@
 
 TEST(BitPattern, EvalToEvalLarge) {
   for (Eval i = kMinEval; i <= kMaxEval; ++i) {
-    EXPECT_EQ(i, EvalLargeToEval(EvalToEvalLarge(i)));
+    EXPECT_EQ(i, EvalLargeToEvalRound(EvalToEvalLarge(i)));
+    EXPECT_EQ(i, EvalLargeToEvalLower(EvalToEvalLarge(i)));
+    EXPECT_EQ(i, EvalLargeToEvalUpper(EvalToEvalLarge(i)));
   }
   for (EvalLarge i = kMinEvalLarge; i <= kMaxEvalLarge; ++i) {
-    EXPECT_NEAR(EvalToEvalLarge(EvalLargeToEval(i)), i, 4);
+    EXPECT_NEAR(EvalToEvalLarge(EvalLargeToEvalLower(i)), i, 7);
+    EXPECT_LE(EvalToEvalLarge(EvalLargeToEvalLower(i)), i);
+    EXPECT_NEAR(EvalToEvalLarge(EvalLargeToEvalUpper(i)), i, 7);
+    EXPECT_GE(EvalToEvalLarge(EvalLargeToEvalUpper(i)), i);
   }
 }
 

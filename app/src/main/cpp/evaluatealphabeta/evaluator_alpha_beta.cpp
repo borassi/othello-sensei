@@ -66,6 +66,10 @@ constexpr int NextNEmpties(int n_empties) {
   return std::min(64, std::max(0, n_empties - 1));
 }
 
+constexpr int MoveIteratorOffset(int depth, bool solve, bool unlikely) {
+  return depth + (solve ? EvaluatorAlphaBeta::kMaxDepth : 0) + (unlikely ? 2 * EvaluatorAlphaBeta::kMaxDepth : 0);
+}
+
 MoveIteratorQuick::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
   masks_[3] = kCornerPattern;
   masks_[6] = kCentralPattern;
@@ -73,9 +77,29 @@ MoveIteratorQuick::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), can
   masks_[8] = ~0ULL;
 }
 
-void MoveIteratorQuick::Setup(BitPattern player, BitPattern opponent,
-                              BitPattern last_flip, int upper,
-                              EvaluatorDepthOneBase* evaluator_depth_one) {
+void MoveIteratorVeryQuick::Setup(
+    BitPattern player, BitPattern opponent,
+    BitPattern last_flip, int upper, HashMapEntry* entry,
+    EvaluatorDepthOneBase* evaluator_depth_one) {
+  player_ = player;
+  opponent_ = opponent;
+  candidate_moves_ = Neighbors(opponent) & ~(player | opponent);
+}
+
+BitPattern MoveIteratorVeryQuick::NextFlip() {
+  BitPattern flip = 0;
+  while (flip == 0 && candidate_moves_ != 0) {
+    int move = __builtin_ctzll(candidate_moves_);
+    candidate_moves_ &= (~(1ULL << move));
+    flip = GetFlip(move, player_, opponent_);
+  }
+  return flip;
+}
+
+void MoveIteratorQuick::Setup(
+    BitPattern player, BitPattern opponent,
+    BitPattern last_flip, int upper, HashMapEntry* entry,
+    EvaluatorDepthOneBase* evaluator_depth_one) {
   player_ = player;
   opponent_ = opponent;
   BitPattern empties = ~(player | opponent);
@@ -106,11 +130,24 @@ BitPattern MoveIteratorQuick::NextFlip() {
 
 void MoveIteratorEval::Setup(
     BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
-    EvaluatorDepthOneBase* evaluator_depth_one_base) {
+    HashMapEntry* entry, EvaluatorDepthOneBase* evaluator_depth_one_base) {
   BitPattern empties = ~(player | opponent);
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   BitPattern flip;
   remaining_moves_ = 0;
+  if (entry != nullptr && entry->BestMove() != kNoSquare) {
+    if (GetFlip(entry->BestMove(), player, opponent) == 0) {
+      std::cout << "MISTAKE\n";
+    }
+//    moves_[remaining_moves_].Set(entry->BestMove(), 999999);
+//    candidate_moves = candidate_moves & ~(1ULL << entry->BestMove());
+//    remaining_moves_++;
+////    if (entry->SecondBestMove() != kNoSquare) {
+////      moves_[remaining_moves_].Set(entry->SecondBestMove(), 99999998);
+////      candidate_moves = candidate_moves & ~(1ULL << entry->SecondBestMove());
+////      remaining_moves_++;
+////    }
+  }
   depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
     Square square = __builtin_ctzll(square_pattern);
@@ -118,11 +155,31 @@ void MoveIteratorEval::Setup(
     if (flip == 0) {
       continue;
     }
-//    evaluator_depth_one_base->Update(square_pattern, flip);
-    moves_[remaining_moves_].Set(flip, Eval(player, opponent, flip, upper, square));
-//    evaluator_depth_one_base->UndoUpdate(square_pattern, flip);
+    int value;
+    if (entry != nullptr && square == entry->BestMove()) {
+      value = 99999999;
+    } else {
+      value = Eval(player, opponent, flip, upper, square);
+    }
+    moves_[remaining_moves_].Set(flip, value);
     remaining_moves_++;
   }
+}
+
+BitPattern MoveIteratorEval::NextFlip() {
+  if (remaining_moves_ == 0) {
+    return 0;
+  }
+  Move* best_move = moves_;
+  for (int i = 0; i < remaining_moves_; ++i) {
+    if (moves_[i].GetValue() > best_move->GetValue()) {
+      best_move = moves_ + i;
+    }
+  }
+  BitPattern flip = best_move->GetFlip();
+  --remaining_moves_;
+  *best_move = moves_[remaining_moves_];
+  return flip;
 }
 
 int MoveIteratorMinimizeOpponentMoves::Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) {
@@ -141,22 +198,6 @@ int MoveIteratorDisproofNumber::Eval(BitPattern player, BitPattern opponent, Bit
       / (GaussianCDF(-upper, eval, 80)));
   depth_one_evaluator_->UndoUpdate(square_pattern, flip);
   return result;
-}
-
-BitPattern MoveIteratorEval::NextFlip() {
-  if (remaining_moves_ == 0) {
-    return 0;
-  }
-  Move* best_move = moves_;
-  for (int i = 0; i < remaining_moves_; ++i) {
-    if (moves_[i].GetValue() > best_move->GetValue()) {
-      best_move = moves_ + i;
-    }
-  }
-  BitPattern flip = best_move->GetFlip();
-  --remaining_moves_;
-  *best_move = moves_[remaining_moves_];
-  return flip;
 }
 
 EvaluatorAlphaBeta::EvaluateInternalFunction
@@ -294,16 +335,8 @@ EvaluatorAlphaBeta::EvaluateInternalFunction
     &EvaluatorAlphaBeta::EvaluateInternal<63, false, false>
 };
 
-constexpr bool UseMoveIteratorQuick(int depth, bool solve) {
-  return (solve && depth < 10) || (!solve && depth < 3);
-}
-
 constexpr bool UpdateDepthOneEvaluator(int depth, bool solve) {
-  return !solve || !UseMoveIteratorQuick(depth, solve);
-}
-
-constexpr bool UseMoveIteratorMinimizeOpponentMoves(int depth, bool solve) {
-  return (solve && depth < 11) || (!solve);
+  return !solve || depth > 12;
 }
 
 constexpr bool UseHashMap(int depth, bool solve) {
@@ -313,20 +346,27 @@ constexpr bool UseHashMap(int depth, bool solve) {
 
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap* hash_map,
-    EvaluatorFactory evaluator_depth_one_factory) :
+    const EvaluatorFactory& evaluator_depth_one_factory) :
     n_visited_(0),
     epoch_(0),
     hash_map_(hash_map),
     evaluator_depth_one_(evaluator_depth_one_factory()) {
-  for (int i = 0; i < 64; ++i) {
+  for (int depth = 0; depth < 64; ++depth) {
     for (bool solve : {true, false}) {
-      int offset = MoveIteratorOffset(i, solve);
-      if (UseMoveIteratorQuick(i, solve)) {
-        move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();
-      } else if (UseMoveIteratorMinimizeOpponentMoves(i, solve)) {
-        move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>();
-      } else {
-        move_iterators_[offset] = std::make_unique<MoveIteratorDisproofNumber>();
+      for (bool unlikely : {true, false}) {
+        int offset = MoveIteratorOffset(depth, solve, unlikely);
+        if (unlikely) {
+          move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>();
+        } else if (solve && depth <= 3) {
+          move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>();
+        } else if ((solve && depth <= 9) || (!solve && depth <= 2)) {
+          move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();
+        } else if ((solve && depth <= 12) || (!solve)) {
+          move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>();
+        } else {
+          assert(UpdateDepthOneEvaluator(depth, solve));
+          move_iterators_[offset] = std::make_unique<MoveIteratorDisproofNumber>();
+        }
       }
     }
   }
@@ -346,6 +386,10 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   assert(kMinEvalLarge <= lower && lower < kMaxEvalLarge);
   assert(kMinEvalLarge < upper && upper <= kMaxEvalLarge);
 
+  EvalLarge best_eval = kLessThenMinEvalLarge;
+  Square best_move = kNoSquare;
+  EvalLarge second_best_eval = kLessThenMinEvalLarge;
+  Square second_best_move = kNoSquare;
   BitPattern new_stable = stable;
   if (UseStabilityCutoff(depth)) {
     new_stable = GetStableDisks(opponent, player, new_stable);
@@ -354,76 +398,93 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       return stability_cutoff_upper;
     }
   }
-
+  std::unique_ptr<HashMapEntry> hash_entry = nullptr;
   if (UseHashMap(depth, solve)) {
-    std::pair<EvalLarge, EvalLarge> hash_eval =
-        hash_map_->GetLowerUpper(player, opponent, depth);
-    if (hash_eval.first >= upper || hash_eval.first == hash_eval.second) {
-      return hash_eval.first;
-    } else if (hash_eval.second <= lower) {
-      return hash_eval.second;
+    hash_entry = hash_map_->Get(player, opponent);
+    if (hash_entry != nullptr && hash_entry->Depth() >= depth) {
+      if (hash_entry->Lower() >= upper || hash_entry->Lower() == hash_entry->Upper()) {
+        return hash_entry->Lower();
+      } else if (hash_entry->Upper() <= lower) {
+        return hash_entry->Upper();
+      }
     }
   }
-  EvalLarge depth_zero_eval;
+  EvalLarge depth_zero_eval = lower;
   if (UpdateDepthOneEvaluator(depth, solve)) {
-    if (depth == 1) {
-      depth_zero_eval = evaluator_depth_one_->Evaluate();
-    }
+//    if (depth == 1) {
+    depth_zero_eval = evaluator_depth_one_->Evaluate();
+//    }
     evaluator_depth_one_->Invert();
   }
   BitPattern square;
-  EvalLarge eval = kLessThenMinEvalLarge;
   int cur_n_visited;
+  bool unlikely = depth_zero_eval < lower - 80;
   MoveIteratorBase* moves =
-      move_iterators_[MoveIteratorOffset(depth, solve)].get();
-  moves->Setup(player, opponent, last_flip, upper, evaluator_depth_one_.get());
+      move_iterators_[MoveIteratorOffset(depth, solve, unlikely)].get();
+  moves->Setup(player, opponent, last_flip, upper, hash_entry.get(), evaluator_depth_one_.get());
   for (BitPattern flip = moves->NextFlip(); flip != 0; flip = moves->NextFlip()) {
+    square = SquareFromFlip(flip, player, opponent);
     if (UpdateDepthOneEvaluator(depth, solve)) {
-      square = SquareFromFlip(flip, player, opponent);
       evaluator_depth_one_->Update(square, flip);
     }
+    int current_eval;
     if (depth == 6 && solve) {
       cur_n_visited = 0;
-      eval = std::max(
-          eval,
-          -EvalToEvalLarge(EvalFiveEmpties(
-              NewPlayer(flip, opponent), NewOpponent(flip, player),
-              (Eval) ((-upper - 1024) / 8 + 128),
-              (Eval) ((-(std::max(lower, eval)) + 1024) / 8 - 128),
-              flip, new_stable, &cur_n_visited)));
+      current_eval = -EvalToEvalLarge(EvalFiveEmpties(
+          NewPlayer(flip, opponent), NewOpponent(flip, player),
+          EvalLargeToEvalLower(-upper),
+          EvalLargeToEvalUpper(-std::max(lower, best_eval)),
+          flip, new_stable, &cur_n_visited));
       n_visited_ += cur_n_visited;
     } else if (!solve && depth == 1) {
-      eval = std::max(
-          eval,
-          (depth_zero_eval * kWeightDepthZero - evaluator_depth_one_->Evaluate() * kWeightDepthOne) / (kWeightDepthZero + kWeightDepthOne));
+      current_eval = (depth_zero_eval * kWeightDepthZero - evaluator_depth_one_->Evaluate() * kWeightDepthOne) / (kWeightDepthZero + kWeightDepthOne);
       ++n_visited_;
     } else {
-      eval = std::max(
-          eval,
-          -EvaluateInternal<NextNEmpties(depth), false, solve>(
-              NewPlayer(flip, opponent), NewOpponent(flip, player),
-                  -upper, -std::max(lower, eval), flip, new_stable));
+      int max_lower_eval = std::max(lower, best_eval);
+//      if (eval == kLessThenMinEvalLarge || upper - lower <= 8 || true) {
+        current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
+            NewPlayer(flip, opponent), NewOpponent(flip, player),
+            -upper, -max_lower_eval, flip, new_stable);
+//      } else {
+//        current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
+//            NewPlayer(flip, opponent), NewOpponent(flip, player),
+//            -max_lower_eval - 1, -max_lower_eval, flip, new_stable);
+//        if (current_eval > max_lower_eval) {
+//          current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
+//              NewPlayer(flip, opponent), NewOpponent(flip, player),
+//              -upper, -max_lower_eval, flip, new_stable);
+//        }
+//      }
+    }
+    if (current_eval > best_eval) {
+      second_best_eval = best_eval;
+      second_best_move = best_move;
+      best_eval = current_eval;
+      best_move = __builtin_ctzll(square);
+    } else if (current_eval > second_best_eval) {
+      second_best_eval = current_eval;
+      second_best_move = __builtin_ctzll(square);
     }
     if (UpdateDepthOneEvaluator(depth, solve)) {
       evaluator_depth_one_->UndoUpdate(square, flip);
     }
-    if (eval >= upper) {
+    if (best_eval >= upper) {
       break;
     }
   }
-  if (eval == kLessThenMinEvalLarge) {
+  if (best_eval == kLessThenMinEvalLarge) {
     if (passed) {
-      eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
+      best_eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
     } else {
-      eval = -EvaluateInternal<depth, true, solve>(
+      best_eval = -EvaluateInternal<depth, true, solve>(
           opponent, player, -upper, -lower, last_flip, new_stable);
     }
   } else if (UseHashMap(depth, solve)) {
     hash_map_
-        ->Update(player, opponent, epoch_, depth, eval, lower, upper, 0, 0);
+        ->Update(player, opponent, epoch_, depth, best_eval, lower, upper, best_move, second_best_move);
   }
   if (UpdateDepthOneEvaluator(depth, solve)) {
     evaluator_depth_one_->Invert();
   }
-  return eval;
+  return best_eval;
 }
