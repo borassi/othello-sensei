@@ -156,6 +156,8 @@ class EvaluatorDerivative {
 //    return this.size;
 //  }
 
+  void Reset() { num_tree_nodes_ = 0; }
+
  private:
   atomic_int num_tree_nodes_;
   NVisited max_n_visited_;

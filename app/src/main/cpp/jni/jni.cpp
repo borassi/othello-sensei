@@ -60,8 +60,14 @@ class JNIWrapper {
     return TreeNodeToJava(evaluator_derivative_.Get(player, opponent), env);
   }
 
-  void Empty() { Stop(); hash_map_.Reset(); }
+  void Empty() {
+    Stop();
+    hash_map_.Reset();
+    evaluator_derivative_.Reset();
+  }
+
   void Stop() { evaluator_derivative_.Stop(); }
+
   jobject GetStatus(JNIEnv* env) {
     Status status = evaluator_derivative_.GetStatus();
     jclass JavaStatus = env->FindClass("evaluateposition/Status");
