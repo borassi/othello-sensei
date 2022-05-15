@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cmath>
 #include <jni.h>
 #include "../hashmap/hash_map.h"
 #include "../evaluatederivative/evaluator_derivative.h"
@@ -157,14 +158,14 @@ TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
   return (TreeNode*) env->CallLongMethod(tree_node_java, mid);\
 }
 
-JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
+JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 0 : static_cast<long>(node->GetNVisited(eval_goal / 100));
+  return node == nullptr ? 0 : static_cast<long>(node->GetNVisited());
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getEval(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 0 : static_cast<int>(node->GetEval() * 100 + 0.5F);
+  return node == nullptr ? 0 : lround(node->GetEval() * 100);
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLower(JNIEnv* env, jobject tree_node_java) {

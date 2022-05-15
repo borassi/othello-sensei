@@ -137,6 +137,9 @@ class EvaluatorDerivative {
 
   TreeNode* Get(BitPattern player, BitPattern opponent) {
     int index = tree_node_index_[Hash(player, opponent)];
+    if (index >= num_tree_nodes_) {
+      return nullptr;
+    }
     TreeNode& node = tree_nodes_[index];
     if (node.Player() == player && node.Opponent() == opponent) {
       return &node;
@@ -188,8 +191,7 @@ class EvaluatorDerivative {
 //        nVisited = deepenPosition(position);
 //      }
       for (TreeNode* parent : next_leaf.parents) {
-        Eval parent_eval_goal = parent->Depth() % 2 == leaf->Depth() % 2 ? next_leaf.eval_goal : -next_leaf.eval_goal;
-        parent->AddDescendants(n_visited, parent_eval_goal);
+        parent->AddDescendants(n_visited);
       }
       just_started_ = false;
     }
@@ -203,6 +205,7 @@ class EvaluatorDerivative {
     TreeNode* first_position = AddTreeNode(player, opponent, 0);
     first_position->SetLeaf(eval, 4, next_evaluator_->GetNVisited(), 1);
     last_update_weak_ = 0;
+    next_evaluator_->AddEpoch();
 //    if (Constants.ASSERT_EXTENDED) {
 //      assertIsAllOKRecursive(firstPosition);
 //    }

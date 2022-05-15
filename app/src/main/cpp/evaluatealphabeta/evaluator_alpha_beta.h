@@ -144,7 +144,7 @@ class EvaluatorAlphaBeta {
  public:
   EvaluatorAlphaBeta(
       HashMap* hash_map,
-      EvaluatorFactory evaluator_depth_one_factory);
+      const EvaluatorFactory& evaluator_depth_one_factory);
 
   NVisited GetNVisited() const { return n_visited_; }
 
@@ -163,6 +163,9 @@ class EvaluatorAlphaBeta {
     }
   }
 
+  void AddEpoch() {
+    epoch_ = (EpochValue) (epoch_ + 1);
+  }
   static constexpr int kMaxDepth = 64;
  private:
 

@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <string.h>
 #include "endgame_time_estimator.h"
 #include "evaluation.h"
 #include "../board/bitpattern.h"
@@ -75,10 +76,9 @@ class TreeNode {
       upper_(copy.upper_),
       weak_lower_(copy.weak_lower_),
       weak_upper_(copy.weak_upper_),
+      min_evaluation_(copy.min_evaluation_),
       n_threads_working_(copy.n_threads_working_) {
-    for (int i = 0; i < 64; ++i) {
-      evaluations_[i] = copy.evaluations_[i];
-    }
+    evaluations_ = copy.evaluations_;
   }
 
   Square NEmpties() {
@@ -190,7 +190,9 @@ class TreeNode {
     father->lower_ = std::max(father->lower_, (Eval) -upper_);
     father->upper_ = std::max(father->upper_, (Eval) -lower_);
     father->weak_lower_ = std::max(father->weak_lower_, (Eval) -weak_upper_);
+    assert(father->min_evaluation_ <= father->weak_lower_);
     father->weak_upper_ = std::min(father->weak_upper_, (Eval) -weak_lower_);
+    assert(AllValidEvals(guard));
     for (int i = father->weak_lower_; i <= father->weak_upper_; i += 2) {
       const Evaluation& eval = GetEvaluation(-i, guard);
       assert(eval.IsValid());
@@ -214,8 +216,8 @@ class TreeNode {
   }
 
   void UpdateFather(const std::lock_guard<std::mutex>& guard) {
-    lower_ = -64;
-    upper_ = -64;
+    lower_ = kMinEval;
+    upper_ = kMinEval;
     assert(!IsLeaf(guard));
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       MutableEvaluation(i, guard)->Initialize();
@@ -265,11 +267,11 @@ class TreeNode {
     upper_ = kMaxEval;
     weak_lower_ = kMinEval + 1;
     weak_upper_ = kMaxEval - 1;
+    min_evaluation_ = weak_lower_;
     leaf_eval_ = kLessThenMinEvalLarge;
     n_threads_working_ = 0;
-    for (Evaluation& e : evaluations_) {
-      e.Reset();
-    }
+    n_visited_ = 0;
+    evaluations_.clear();
   }
 
   void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
@@ -278,6 +280,8 @@ class TreeNode {
     assert(weak_lower >= kMinEval && weak_lower <= kMaxEval && (weak_lower - kMinEval) % 2 == 1);
     assert(weak_upper >= kMinEval && weak_upper <= kMaxEval && (weak_upper - kMinEval) % 2 == 1);
     assert(weak_lower <= weak_upper);
+    assert(weak_lower >= weak_lower_);
+    assert(weak_upper <= weak_upper_);
     weak_lower_ = weak_lower;
     weak_upper_ = weak_upper;
   }
@@ -287,11 +291,16 @@ class TreeNode {
     assert(IsLeaf(guard));
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
     assert(n_visited > 0);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     leaf_eval_ = leaf_eval;
+    min_evaluation_ = weak_lower_;
+    EnlargeEvaluations(guard);
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, depth, guard);
     }
-    MutableEvaluation(eval_goal, guard)->AddDescendants(n_visited);
+    AddDescendants(n_visited);
+    assert(min_evaluation_ <= weak_lower_);
+    assert(AllValidEvals(guard));
   }
 
   void SetSolved(int eval) {
@@ -306,7 +315,7 @@ class TreeNode {
     assert(IsLeaf(guard));
     leaf_eval_ = (Eval) std::max(leaf_eval_, eval);
     lower_ = std::max(lower_, eval);
-    for (int i = -63; i <= eval; i += 2) {
+    for (int i = weak_lower_; i <= std::min(eval, weak_upper_); i += 2) {
       MutableEvaluation(i, guard)->SetProved();
     }
     // assert isLowerUpperOK();
@@ -318,7 +327,7 @@ class TreeNode {
     assert(IsLeaf(guard));
     leaf_eval_ = (Eval) std::min(leaf_eval_, eval);
     upper_ = std::min(upper_, eval);
-    for (int i = 63; i >= eval; i -= 2) {
+    for (int i = weak_upper_; i >= std::max(eval, weak_lower_); i -= 2) {
       MutableEvaluation(i, guard)->SetDisproved();
     }
     // assert isLowerUpperOK();
@@ -331,6 +340,7 @@ class TreeNode {
 
   TreeNode* BestChild(bool proof, Eval eval_goal) {
     assert(!IsLeaf());
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     TreeNode* best_child = nullptr;
     double best_child_value = -DBL_MAX;
     Evaluation cur_evaluation = GetEvaluation(eval_goal);
@@ -353,20 +363,10 @@ class TreeNode {
 
   NVisited GetNVisited() {
     std::lock_guard<std::mutex> guard(mutex_);
-    NVisited n = 0;
-    for (int i = -63; i <= 63; i += 2) {
-      n += GetNVisited(i, guard);
-    }
-    return n;
-  }
-
-  NVisited GetNVisited(int eval_goal) {
-    std::lock_guard<std::mutex> guard(mutex_);
-    return GetNVisited(eval_goal, guard);
+    return n_visited_;
   }
 
   bool IsSolved() {
-    std::lock_guard<std::mutex> guard(mutex_);
     return lower_ == upper_;
   }
 
@@ -392,6 +392,7 @@ class TreeNode {
     if (eval_goal == kLessThenMinEval) {
       return LeafToUpdate();
     }
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     const Evaluation& first_eval = GetEvaluation(eval_goal);
     bool proof = first_eval.ProbGreaterEqual() > 1 - kProbForProof || first_eval.ProbGreaterEqual() < kProbForProof;
     std::vector<TreeNode*> parents;
@@ -406,6 +407,7 @@ class TreeNode {
   }
 
   bool ToBeSolved(Eval eval_goal, int tree_nodes) {
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     std::lock_guard<std::mutex> guard(mutex_);
     Evaluation eval = GetEvaluation(eval_goal, guard);
     if (n_empties_ <= kEmptiesForForcedMidgame - 1) {
@@ -429,9 +431,8 @@ class TreeNode {
     return false;
   }
 
-  void AddDescendants(NVisited descendants, Eval eval_goal) {
-    std::lock_guard<std::mutex> guard(mutex_);
-    MutableEvaluation(eval_goal, guard)->AddDescendants(descendants);
+  void AddDescendants(NVisited n) {
+    n_visited_ += n;
   }
 
   bool UpdateWeakLowerUpper() {
@@ -453,7 +454,6 @@ class TreeNode {
       if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_) {
         extend_upper = true;
       }
-//      std::cout << "  HI " << std::setprecision(4) << prob_lower_next << " " << prob_upper_prev << " " << (int) extend_lower << (int) extend_upper << "\n";
       if (!extend_lower && !extend_upper && prob_lower_next > 1 - kProbReduceWeakEval) {
         weak_lower_ += 2;
         assert(weak_lower_ < weak_upper_);
@@ -496,12 +496,15 @@ class TreeNode {
   Eval upper_;
   Eval weak_lower_;
   Eval weak_upper_;
+  Eval min_evaluation_;
   EvalLarge leaf_eval_;
-  Evaluation evaluations_[64];
+  std::vector<Evaluation> evaluations_;
   int n_threads_working_;
   mutable std::mutex mutex_;
+  NVisited n_visited_;
 
   void UpdateLeafEvaluation(int i, int depth, const std::lock_guard<std::mutex>& guard) {
+    assert(i >= weak_lower_ && i <= weak_upper_);
     Evaluation* evaluation = MutableEvaluation(i, guard);
     if (i < lower_) {
       evaluation->SetProved();
@@ -529,10 +532,6 @@ class TreeNode {
     fathers_.push_back(father);
   }
 
-  NVisited GetNVisited(int eval_goal, const std::lock_guard<std::mutex>& guard) {
-    return GetEvaluation(eval_goal, guard).GetNVisited();
-  }
-
   Eval GetPercentileUpper(float p, const std::lock_guard<std::mutex>& guard) {
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       const Evaluation& eval = GetEvaluation(i, guard);
@@ -554,18 +553,34 @@ class TreeNode {
 
   const Evaluation& GetEvaluation(int eval_goal, const std::lock_guard<std::mutex>& guard) const {
     assert((eval_goal - kMinEval) % 2 == 1);
-    return evaluations_[ToEvaluationIndex(eval_goal)];
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
+    assert(min_evaluation_ <= weak_lower_);
+    int index = ToEvaluationIndex(eval_goal);
+    assert(index >= 0 && index < evaluations_.size());
+    return evaluations_[index];
   }
 
-  Evaluation* MutableEvaluation(int eval_goal, const std::lock_guard<std::mutex>& lock_guard) {
-    return evaluations_ + ToEvaluationIndex(eval_goal);
+  Evaluation* MutableEvaluation(Eval eval_goal, const std::lock_guard<std::mutex>& guard) {
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
+    assert(min_evaluation_ <= weak_lower_);
+    int index = ToEvaluationIndex(eval_goal);
+    assert(index >= 0 && index < evaluations_.size());
+    return &evaluations_[index];
   }
 
-  static int ToEvaluationIndex(Eval eval) {
+  void EnlargeEvaluations(const std::lock_guard<std::mutex>& lock_guard) {
+    int desired_size = ToEvaluationIndex(weak_upper_) + 1;
+    if (evaluations_.size() < desired_size) {
+      evaluations_.insert(evaluations_.end(), desired_size - evaluations_.size(), Evaluation());
+    }
+  }
+
+  int ToEvaluationIndex(Eval eval) const {
     assert((eval - kMinEval) % 2 == 1);
     assert(eval >= kMinEval);
     assert(eval <= kMaxEval);
-    return (eval + 63) / 2;
+    return ((int) eval - min_evaluation_) / 2;
   }
 
   bool AreChildrenCorrect(const std::lock_guard<std::mutex>& guard) {
@@ -737,15 +752,29 @@ class TreeNode {
 //
 //
   void ExtendEval(Eval value, const std::lock_guard<std::mutex>& guard) {
-
 //    synchronized (this) {
-//      addEvaluation(value);
+    if (value < weak_lower_) {
+      assert(value == weak_lower_ - 2);
+      if (value < min_evaluation_) {
+        int shift = (min_evaluation_ - value) / 2;
+        int old_size = ToEvaluationIndex(weak_upper_) + 1;
+        min_evaluation_ = value;
+        EnlargeEvaluations(guard);
+        assert(evaluations_.size() >= old_size + shift);
+//        if (evaluations_.size() < old_size + shift) {
+//          std::cout << old_size << " " << shift << "misty\n";
+//        }
+        memmove(evaluations_.data() + shift,
+                evaluations_.data(),
+                sizeof(Evaluation) * old_size);
+      }
+      weak_lower_ = value;
+    } else if (value > weak_upper_) {
+      assert(value == weak_upper_ + 2);
+      weak_upper_ = value;
+      EnlargeEvaluations(guard);
+    }
       if (IsLeaf(guard)) {
-        if (value < weak_lower_) {
-          weak_lower_ = value;
-        } else if (value > weak_upper_) {
-          weak_upper_ = value;
-        }
 //        assert(IsValid());
         UpdateLeafEvaluation(value, 4, guard);
 //        assert isLowerUpperOK();
@@ -756,14 +785,19 @@ class TreeNode {
       child->ExtendEval(-value, guard);
     }
 //    synchronized (this) {
-      if (value < weak_lower_) {
-        weak_lower_ = value;
-      } else if (value > weak_upper_) {
-        weak_upper_ = value;
-      }
-      UpdateFather(guard);
+    UpdateFather(guard);
+    assert(AllValidEvals(guard));
 //      assert isLowerUpperOK();
 //    }
+  }
+
+  bool AllValidEvals(const std::lock_guard<std::mutex>& guard) const {
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      if (!GetEvaluation(i, guard).IsValid()) {
+        return false;
+      }
+    }
+    return true;
   }
 //
 //

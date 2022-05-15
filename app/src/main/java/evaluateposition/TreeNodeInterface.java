@@ -16,7 +16,7 @@ package evaluateposition;
 import board.Board;
 
 public abstract class TreeNodeInterface {
-  public abstract long getDescendants(int evalGoal);
+  public abstract long getDescendants();
   public abstract int getEval();
   public abstract int getPercentileLower(float prob);
   public abstract int getPercentileUpper(float prob);
@@ -29,14 +29,6 @@ public abstract class TreeNodeInterface {
   public abstract float getProb(int evalGoal);
   public abstract int maxLogDerivative(int evalGoal);
   public abstract Board getBoard();
-
-  public long getDescendants() {
-    long descendants = 0;
-    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
-      descendants += getDescendants(evalGoal);
-    }
-    return descendants;
-  }
 
   public boolean isSolved() {
     return getLower() == getUpper();

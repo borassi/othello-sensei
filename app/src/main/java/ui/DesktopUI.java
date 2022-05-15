@@ -73,7 +73,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       if (c != null) {
         return new Dimension(c.getHeight(), c.getHeight());
       }
-      return new Dimension((int) 800, (int) 800);
+      return new Dimension(800, 800);
     }
   };
   private final Main main;
@@ -299,7 +299,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public long maxVisited() {
     try {
-      return Long.parseLong((String) depth.getText());
+      return Long.parseLong(depth.getText());
     } catch (NumberFormatException e) {
       return 0;
     }
@@ -341,8 +341,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     int eval = board.getEval();
     for (int evalGoal = StoredBoard.roundEval(eval + 1200); evalGoal >= StoredBoard.roundEval(eval - 1200); evalGoal -= 200) {
-      firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
-            Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)), Utils.prettyPrintDouble(board.getDescendants(evalGoal)),
+      firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
+            Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
             Utils.prettyPrintDouble(board.proofNumber(evalGoal)), Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
     }
 

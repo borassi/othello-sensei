@@ -24,7 +24,7 @@ public class TreeNodeCPP extends TreeNodeInterface {
 
   public long getNodeAddress() { return nodeAddress; }
   @Override
-  public native long getDescendants(int evalGoal);
+  public native long getDescendants();
 
   @Override
   public native int getEval();

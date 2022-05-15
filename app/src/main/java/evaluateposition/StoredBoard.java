@@ -563,6 +563,15 @@ public class StoredBoard extends TreeNodeInterface {
     return lower;
   }
 
+
+  public synchronized long getDescendants() {
+    long descendants = 0;
+    for (int evalGoal = -6300; evalGoal <= 6300; evalGoal += 200) {
+      descendants += getDescendants(evalGoal);
+    }
+    return descendants;
+  }
+
   public synchronized long getDescendants(int evalGoal) {
     Evaluation eval = getEvaluation(evalGoal);
     if (eval == null) {

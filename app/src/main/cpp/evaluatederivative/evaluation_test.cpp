@@ -19,7 +19,6 @@
 TEST(EvaluationTest, Base) {
   Evaluation e;
   e.SetLeaf(0.3, 10000, 5000);
-  e.AddDescendants(10);
   EXPECT_NEAR(e.ProbGreaterEqual(), 0.3, 1.0 / 500.0);  // 1/255 precision.
   EXPECT_FLOAT_EQ(e.ProofNumber(), 10000);
   EXPECT_FLOAT_EQ(e.DisproofNumber(), 5000);

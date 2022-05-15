@@ -60,13 +60,11 @@ class Evaluation {
   Evaluation() { Reset(); }
   void Reset() {
     max_log_derivative_ = kNoLogDerivative;
-    n_visited_ = 0;
   }
   float ProofNumber() const { return proof_number_; }
   float DisproofNumber() const { return disproof_number_; }
   int MaxLogDerivative() const { return max_log_derivative_; }
   bool IsValid() const { return max_log_derivative_ != kNoLogDerivative; }
-  NVisited GetNVisited() const { return n_visited_; }
 
   float ProbGreaterEqual() const {
     return IsValid() ? ProbGreaterEqualUnsafe() : -1;
@@ -86,15 +84,6 @@ class Evaluation {
     }
     return max_log_derivative_ - kCombineProb.log_derivative[prob_greater_equal_]
            + kCombineProb.log_derivative[kProbStep - father.prob_greater_equal_];
-  }
-
-  NVisited Descendants() const {
-    return n_visited_;
-  }
-
-  void AddDescendants(NVisited new_descendants) {
-    assert(IsValid());
-    n_visited_ += new_descendants;
   }
 
   void Initialize() {
@@ -207,7 +196,6 @@ class Evaluation {
   float proof_number_;
   float disproof_number_;
   int max_log_derivative_;
-  NVisited n_visited_ = 0;
 };
 
 //

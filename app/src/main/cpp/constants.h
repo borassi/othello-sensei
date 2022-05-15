@@ -22,7 +22,7 @@ constexpr int kBitHashMap = 20;
 constexpr int kDerivativeEvaluatorSize = 700000;
 #else
 constexpr int kBitHashMap = 24;
-constexpr int kDerivativeEvaluatorSize = 1000000;
+constexpr int kDerivativeEvaluatorSize = 20000000;
 #endif
 
 constexpr int kWeightDepthOne = 2;

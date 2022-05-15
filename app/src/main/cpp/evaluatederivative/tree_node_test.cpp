@@ -51,7 +51,7 @@ TEST(TreeNodeTest, OneThread) {
   EXPECT_EQ(e6.WeakUpper(), 1);
   EXPECT_EQ(e6.GetNVisited(), 40);
   EXPECT_NEAR(e6.GetEvaluation(1).ProbGreaterEqual(), 0.5, 1.01 / kProbStep);
-  EXPECT_EQ(e6.GetEvaluation(-1).GetNVisited(), 40);
+  EXPECT_EQ(e6.GetNVisited(), 40);
   TreeNode e6f4;
   e6f4.Reset(Board("e6f4"), 1);
   e6f4.SetWeakLowerUpper(-1, 5);
