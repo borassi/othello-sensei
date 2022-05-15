@@ -445,8 +445,8 @@ class TreeNode {
 //    synchronized (this) {
       float prob_lower = ProbGreaterEqual(weak_lower_);
       float prob_upper = ProbGreaterEqual(weak_upper_);
-      float prob_lower_next = ProbGreaterEqual(weak_lower_ + 2);
-      float prob_upper_prev = ProbGreaterEqual(weak_upper_ - 2);
+      float prob_lower_next = weak_lower_ == weak_upper_ ? 0 : ProbGreaterEqual(weak_lower_ + 2);
+      float prob_upper_prev = weak_lower_ == weak_upper_ ? 1 : ProbGreaterEqual(weak_upper_ - 2);
       if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_) {
         extend_lower = true;
         assert(upper_ > lower_ + 2);
@@ -456,12 +456,12 @@ class TreeNode {
       }
       if (!extend_lower && !extend_upper && prob_lower_next > 1 - kProbReduceWeakEval) {
         weak_lower_ += 2;
-        assert(weak_lower_ < weak_upper_);
+        assert(weak_lower_ <= weak_upper_);
         reduced = true;
       }
       if (!extend_lower && !extend_upper && prob_upper_prev < kProbReduceWeakEval) {
         weak_upper_ -= 2;
-        assert(weak_lower_ < weak_upper_);
+        assert(weak_lower_ <= weak_upper_);
         reduced = true;
       }
 //    }

@@ -164,6 +164,10 @@ TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
   return (TreeNode*) env->CallLongMethod(tree_node_java, mid);\
 }
 
+bool IsEvalGoalInvalid(TreeNode* node, Eval eval_goal) {
+  return node == nullptr || node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
+}
+
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return node == nullptr ? 0 : static_cast<long>(node->GetNVisited());
@@ -206,22 +210,22 @@ JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobj
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? NAN : node->ProofNumber(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProofNumber(eval_goal / 100);
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_disproofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? NAN : node->DisproofNumber(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->DisproofNumber(eval_goal / 100);
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? NAN : node->ProbGreaterEqual(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProbGreaterEqual(eval_goal / 100);
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_maxLogDerivative(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? kLogDerivativeMinusInf : node->MaxLogDerivative(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? kLogDerivativeMinusInf : node->MaxLogDerivative(eval_goal / 100);
 }
 
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree_node_java) {

@@ -293,6 +293,7 @@ class EvaluatorDerivative {
     if (moves.empty()) {
       int final_eval = GetEvaluationGameOver(player, opponent);
       node->SetSolved(final_eval);
+      node->UpdateFathers();
       return 1;
     }
 
