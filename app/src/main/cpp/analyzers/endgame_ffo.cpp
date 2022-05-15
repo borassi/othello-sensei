@@ -96,7 +96,19 @@ Board GetIthBoard(int i) {
   return {board.c_str(), color == "X"};
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+  bool approx = false;
+  if (argc > 2) {
+    std::cout << "Only argument --approx can be provided.\n";
+    return 1;
+  } else if (argc == 2) {
+    if (std::string("--approx").compare(argv[1])) {
+      std::cout << "Only argument --approx can be provided.\n";
+      return 1;
+    } else {
+      approx = true;
+    }
+  }
   using std::setw;
   HashMap hash_map;
   auto evals = LoadEvals();
@@ -107,7 +119,7 @@ int main() {
     Board b = GetIthBoard(i);
     std::cout << setw(4) << i << setw(8) << b.NEmpties();
     ElapsedTime t;
-    evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200);
+    evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
     std::cout

@@ -69,11 +69,12 @@ class EvaluatorDerivative {
 
   void Evaluate(
       BitPattern player, BitPattern opponent, Eval lower, Eval upper,
-      NVisited max_n_visited, double max_time) {
+      NVisited max_n_visited, double max_time, bool approx = false) {
     assert((lower - kMinEval) % 2 == 1);
     assert((upper - kMinEval) % 2 == 1);
     assert(lower <= upper);
     TreeNode* first_position = GetFirstPosition();
+    approx_ = approx;
     if (first_position == nullptr || first_position->Player() != player || first_position->Opponent() != opponent) {
       SetFirstPosition(player, opponent);
     }
@@ -169,6 +170,7 @@ class EvaluatorDerivative {
   EvaluatorAlphaBeta* next_evaluator_;
   ElapsedTime elapsed_time_;
   bool just_started_;
+  bool approx_;
 
   void Run() {
     LeafToUpdate next_leaf;
@@ -364,7 +366,7 @@ class EvaluatorDerivative {
 //      std::cout << "KILLED\n";
       return true;
     }
-    if (GetFirstPosition()->IsSolved()) {
+    if (first_position->IsSolved() || (first_position->IsPartiallySolved() && approx_)) {
       status_ = SOLVED;
 //      std::cout << "SOLVED\n";
       return true;
