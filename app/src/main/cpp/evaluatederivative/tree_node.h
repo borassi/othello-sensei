@@ -126,12 +126,12 @@ class TreeNode {
     return weak_upper_;
   }
 
-  int ProofNumber(Eval eval_goal) const {
+  float ProofNumber(Eval eval_goal) const {
     std::lock_guard<std::mutex> guard(mutex_);
     return GetEvaluation(eval_goal, guard).ProofNumber();
   }
 
-  int DisproofNumber(Eval eval_goal) const {
+  float DisproofNumber(Eval eval_goal) const {
     std::lock_guard<std::mutex> guard(mutex_);
     return GetEvaluation(eval_goal, guard).DisproofNumber();
   }
@@ -656,6 +656,7 @@ class TreeNode {
   }
 
   Eval NextPositionEvalGoal() {
+    static Eval last_eval_goal;
     Eval best_eval = kLessThenMinEval;
     double best_value = -DBL_MAX;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
@@ -669,7 +670,7 @@ class TreeNode {
       cur_value += (eval.ProbGreaterEqual() > kMinProbEvalGoal && eval.ProbGreaterEqual() < 1 - kMinProbEvalGoal) ?
                       0 : kLogDerivativeMinusInf * 1000.0;
       cur_value += eval.MaxLogDerivative() * 10;
-//      cur_value += i == lastEvalGoal ? 0 : 1;
+      cur_value += i == last_eval_goal ? 0 : 1;
 
       if (cur_value > best_value) {
         best_value = cur_value;
@@ -678,6 +679,7 @@ class TreeNode {
     }
     // assert best_eval != kLessThenMinEval || Constants.MAX_PARALLEL_TASKS > 1;
 
+    last_eval_goal = best_eval;
 //    lastEvalGoal.set(bestEval.evalGoal);
     return best_eval;
   }

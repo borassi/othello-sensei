@@ -421,10 +421,23 @@ class EvaluatorDerivative {
         return existing_node;
       }
     }
+    int hash = Hash(player, opponent);
+    int old_index = tree_node_index_[hash];
+    if (old_index < num_tree_nodes_) {
+      auto& old_tree_node = tree_nodes_[old_index];
+      if (Hash(old_tree_node.Player(), old_tree_node.Opponent()) != hash) {
+        // Node is outdated. There is a tiny probability that the hash remains
+        // the same and this check fails, but it does not affect correctness,
+        // only efficiency.
+        old_index = num_tree_nodes_ + 1;
+      }
+    }
     int node_id = num_tree_nodes_++;
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth);
-    tree_node_index_[Hash(player, opponent)] = node_id;
+    if (old_index >= num_tree_nodes_) {
+      tree_node_index_[hash] = node_id;
+    }
     return &node;
   }
 //   double bestStepsUntilEnd = 0;

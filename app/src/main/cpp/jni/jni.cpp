@@ -200,12 +200,12 @@ JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobj
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? NAN : static_cast<float>(node->ProofNumber(eval_goal / 100));
+  return node == nullptr ? NAN : node->ProofNumber(eval_goal / 100);
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_disproofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? NAN : static_cast<float>(node->DisproofNumber(eval_goal / 100));
+  return node == nullptr ? NAN : node->DisproofNumber(eval_goal / 100);
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {

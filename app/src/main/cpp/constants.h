@@ -21,7 +21,7 @@
 constexpr int kBitHashMap = 20;
 constexpr int kDerivativeEvaluatorSize = 700000;
 #else
-constexpr int kBitHashMap = 24;
+constexpr int kBitHashMap = 25;
 constexpr int kDerivativeEvaluatorSize = 20000000;
 #endif
 
