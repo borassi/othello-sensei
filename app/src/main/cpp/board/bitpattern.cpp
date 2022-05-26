@@ -79,3 +79,23 @@ std::vector<BitPattern> AllSubBitPatterns(BitPattern p) {
   }
   return patterns;
 }
+
+int Hash(BitPattern player, BitPattern opponent) {
+  return
+      kHashValues.hash_player[0][player & kLastRowPattern] ^
+      kHashValues.hash_player[1][(player >> 8) & kLastRowPattern] ^
+      kHashValues.hash_player[2][(player >> 16) & kLastRowPattern] ^
+      kHashValues.hash_player[3][(player >> 24) & kLastRowPattern] ^
+      kHashValues.hash_player[4][(player >> 32) & kLastRowPattern] ^
+      kHashValues.hash_player[5][(player >> 40) & kLastRowPattern] ^
+      kHashValues.hash_player[6][(player >> 48) & kLastRowPattern] ^
+      kHashValues.hash_player[7][(player >> 56)] ^
+      kHashValues.hash_opponent[0][opponent & kLastRowPattern] ^
+      kHashValues.hash_opponent[1][(opponent >> 8) & kLastRowPattern] ^
+      kHashValues.hash_opponent[2][(opponent >> 16) & kLastRowPattern] ^
+      kHashValues.hash_opponent[3][(opponent >> 24) & kLastRowPattern] ^
+      kHashValues.hash_opponent[4][(opponent >> 32) & kLastRowPattern] ^
+      kHashValues.hash_opponent[5][(opponent >> 40) & kLastRowPattern] ^
+      kHashValues.hash_opponent[6][(opponent >> 48) & kLastRowPattern] ^
+      kHashValues.hash_opponent[7][(opponent >> 56)];
+}

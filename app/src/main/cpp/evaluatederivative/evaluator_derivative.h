@@ -44,6 +44,9 @@ class EvaluatorDerivative {
       next_evaluator_(next_evaluator) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
     tree_node_index_ = new atomic_int[kHashMapSize];
+    for (int i = 0; i < kHashMapSize; ++i) {
+      tree_node_index_[i] = kDerivativeEvaluatorSize;
+    }
   }
   ~EvaluatorDerivative() {
     delete[] tree_nodes_;
@@ -196,6 +199,8 @@ class EvaluatorDerivative {
 //      }
       for (TreeNode* parent : next_leaf.parents) {
         parent->AddDescendants(n_visited);
+        parent->DecreaseNThreadsWorking();
+        assert(parent->NThreadsWorking() == 0);
       }
       just_started_ = false;
     }
@@ -334,10 +339,11 @@ class EvaluatorDerivative {
   NVisited SolvePosition(const LeafToUpdate& leaf) {
     TreeNode* node = leaf.leaf;
     assert(node->IsLeaf());
-    Eval alpha = leaf.alpha;
-    Eval beta = leaf.beta;
-    Eval eval = EvalLargeToEvalRound(next_evaluator_->Evaluate(
-        node->Player(), node->Opponent(), node->NEmpties(), EvalToEvalLarge(alpha), EvalToEvalLarge(beta)));
+    EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
+    EvalLarge beta = EvalToEvalLarge(leaf.beta);
+    EvalLarge eval = next_evaluator_->Evaluate(
+        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta);
+    node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
 
     if (eval < beta) {
       node->SetUpper(eval);
@@ -346,7 +352,6 @@ class EvaluatorDerivative {
       node->SetLower(eval);
     }
     NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
-    node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
 //    StoredBoard.proofNumberForAlphaBeta.addAndGet(
 //        (int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
     node->UpdateFathers();

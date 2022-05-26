@@ -21,14 +21,14 @@
 constexpr int kBitHashMap = 20;
 constexpr int kDerivativeEvaluatorSize = 700000;
 #else
-constexpr int kBitHashMap = 24;
-constexpr int kDerivativeEvaluatorSize = 20000000;
+constexpr int kBitHashMap = 22;
+constexpr int kDerivativeEvaluatorSize = 13000000;
 #endif
 
 constexpr int kWeightDepthOne = 2;
 constexpr int kWeightDepthZero = 1;
 
-constexpr int kHashMapSize = 1L << kBitHashMap;
+constexpr int kHashMapSize = 1 << kBitHashMap;
 constexpr int kMinEmptiesForHashMap = 10;
 constexpr int kMinDepthForHashMap = 3;
 

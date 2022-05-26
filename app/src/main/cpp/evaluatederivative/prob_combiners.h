@@ -21,7 +21,7 @@
 template<int lambda_100>
 constexpr double Exponential(double x) {
   assert(x >= 0 && x <= 1);
-  return exp(1 - pow(x, lambda_100 / 100.0));
+  return exp(1 - pow(x, -lambda_100 / 100.0));
 }
 
 template<int lambda_100>

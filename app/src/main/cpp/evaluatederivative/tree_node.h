@@ -64,21 +64,21 @@ struct LeafToUpdate {
 
 class TreeNode {
  public:
-  TreeNode() : lower_(kMinEval), upper_(kMaxEval), weak_lower_(-63), weak_upper_(63), leaf_eval_(kLessThenMinEval) {}
-  TreeNode(const TreeNode& copy) :
-      player_(copy.player_),
-      opponent_(copy.opponent_),
-      children_(copy.children_),
-      fathers_(copy.fathers_),
-      n_empties_(copy.n_empties_),
-      depth_(copy.depth_),
-      lower_(copy.lower_),
-      upper_(copy.upper_),
-      weak_lower_(copy.weak_lower_),
-      weak_upper_(copy.weak_upper_),
-      min_evaluation_(copy.min_evaluation_),
-      n_threads_working_(copy.n_threads_working_) {
-    evaluations_ = copy.evaluations_;
+  TreeNode() : lower_(kMinEval), upper_(kMaxEval), weak_lower_(-63), weak_upper_(63), leaf_eval_(kLessThenMinEvalLarge), n_fathers_(0), n_children_(0) {}
+  TreeNode(const TreeNode&) = delete;
+  ~TreeNode() {
+    if (n_fathers_ != 0) {
+      free(fathers_);
+      n_fathers_ = 0;
+    }
+    if (n_children_ != 0) {
+      delete[] children_;
+      n_children_ = 0;
+    }
+//    std::cout << (int) leaf_eval_ << "\n";
+    if (IsValid()) {
+      free(evaluations_);
+    }
   }
 
   Square NEmpties() {
@@ -147,12 +147,10 @@ class TreeNode {
   }
 
   void IncreaseNThreadsWorking() {
-    std::lock_guard<std::mutex> guard(mutex_);
     n_threads_working_++;
   }
 
   void DecreaseNThreadsWorking() {
-    std::lock_guard<std::mutex> guard(mutex_);
     n_threads_working_--;
   }
 
@@ -162,8 +160,7 @@ class TreeNode {
   }
 
   bool IsValid() const {
-    std::lock_guard<std::mutex> guard(mutex_);
-    return leaf_eval_ >= kMinEvalLarge && leaf_eval_ <= kMaxEvalLarge;
+    return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
   float GetEval() const {
@@ -181,17 +178,26 @@ class TreeNode {
     return eval;
   }
 
+  bool ContainsFather(TreeNode* father) {
+    for (int i = 0; i < n_fathers_; ++i) {
+      if (fathers_[i] == father) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void UpdateFatherWithThisChild(TreeNode* father, const std::lock_guard<std::mutex>& father_guard) const {
     std::lock_guard<std::mutex> guard(mutex_);
-    assert(std::find_if(fathers_.begin(), fathers_.end(), [father](TreeNode* f) { return father == f; }) != fathers_.end());
+    assert(ContainsFather(father));
 //    if (Constants.ASSERT_LOCKS) {
 //      assert(Thread.holdsLock(father));
 //    }
-    father->lower_ = std::max(father->lower_, (Eval) -upper_);
-    father->upper_ = std::max(father->upper_, (Eval) -lower_);
-    father->weak_lower_ = std::max(father->weak_lower_, (Eval) -weak_upper_);
+    father->lower_ = MaxEval(father->lower_, (Eval) -upper_);
+    father->upper_ = MaxEval(father->upper_, (Eval) -lower_);
+    father->weak_lower_ = MaxEval(father->weak_lower_, (Eval) -weak_upper_);
     assert(father->min_evaluation_ <= father->weak_lower_);
-    father->weak_upper_ = std::min(father->weak_upper_, (Eval) -weak_lower_);
+    father->weak_upper_ = MinEval(father->weak_upper_, (Eval) -weak_lower_);
     assert(AllValidEvals(guard));
     for (int i = father->weak_lower_; i <= father->weak_upper_; i += 2) {
       const Evaluation& eval = GetEvaluation(-i, guard);
@@ -210,7 +216,7 @@ class TreeNode {
       }
     }
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
-    for (int i = 0; i < fathers_.size(); ++i) {
+    for (int i = 0; i < n_fathers_; ++i) {
       fathers_[i]->UpdateFathers();
     }
   }
@@ -222,8 +228,8 @@ class TreeNode {
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       MutableEvaluation(i, guard)->Initialize();
     }
-    for (const TreeNode* const child : GetChildren()) {
-      child->UpdateFatherWithThisChild(this, guard);
+    for (int i = 0; i < n_children_; ++i) {
+      children_[i]->UpdateFatherWithThisChild(this, guard);
     }
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       MutableEvaluation(i, guard)->Finalize();
@@ -232,8 +238,8 @@ class TreeNode {
 //    assert isLowerUpperOK();
   }
 
-  std::vector<TreeNode*>* MutableChildren() { return &children_; }
-  const std::vector<TreeNode*>& GetChildren() { return children_; }
+//   std::vector<TreeNode*>* MutableChildren() { return &children_; }
+//   const std::vector<TreeNode*>& GetChildren() { return children_; }
 
   bool IsLeaf() const {
     std::lock_guard<std::mutex> guard(mutex_);
@@ -242,11 +248,14 @@ class TreeNode {
 
   void SetChildren(std::vector<TreeNode*> children) {
     std::lock_guard<std::mutex> guard(mutex_);
-    children_ = children;
-    for (TreeNode* child : children) {
+    n_children_ = (Square) children.size();
+    children_ = new TreeNode*[n_children_];
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children[i];
       assert(child->IsValid());
       child->depth_ = depth_ + 1;
       child->AddFather(this);
+      children_[i] = child;
     }
     assert(AreChildrenCorrect(guard));
   }
@@ -260,8 +269,14 @@ class TreeNode {
     player_ = player;
     opponent_ = opponent;
     depth_ = depth;
-    fathers_.clear();
-    children_.clear();
+    if (n_fathers_ != 0) {
+      free(fathers_);
+      n_fathers_ = 0;
+    }
+    if (n_children_ != 0) {
+      delete[] children_;
+      n_children_ = 0;
+    }
     n_empties_ = ::NEmpties(player, opponent);
     lower_ = kMinEval;
     upper_ = kMaxEval;
@@ -271,7 +286,9 @@ class TreeNode {
     leaf_eval_ = kLessThenMinEvalLarge;
     n_threads_working_ = 0;
     n_visited_ = 0;
-    evaluations_.clear();
+    if (IsValid()) {
+      free(evaluations_);
+    }
   }
 
   void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
@@ -292,9 +309,9 @@ class TreeNode {
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
     assert(n_visited > 0);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
+    EnlargeEvaluations(guard);
     leaf_eval_ = leaf_eval;
     min_evaluation_ = weak_lower_;
-    EnlargeEvaluations(guard);
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, depth, guard);
     }
@@ -303,31 +320,33 @@ class TreeNode {
     assert(AllValidEvals(guard));
   }
 
-  void SetSolved(int eval) {
+  void SetSolved(EvalLarge eval) {
     SetUpper(eval);
     SetLower(eval);
     // updateFathers();
   }
 
-  void SetLower(int eval) {
+  void SetLower(EvalLarge eval) {
     std::lock_guard<std::mutex> guard(mutex_);
     assert(eval % 2 == 0);
     assert(IsLeaf(guard));
-    leaf_eval_ = (Eval) std::max(leaf_eval_, eval);
-    lower_ = std::max(lower_, eval);
-    for (int i = weak_lower_; i <= std::min(eval, weak_upper_); i += 2) {
+    leaf_eval_ = std::max(leaf_eval_, eval);
+    Eval eval_small = EvalLargeToEvalRound(eval);
+    lower_ = MaxEval(lower_, eval_small);
+    for (int i = weak_lower_; i <= MinEval(eval_small, weak_upper_); i += 2) {
       MutableEvaluation(i, guard)->SetProved();
     }
     // assert isLowerUpperOK();
   }
 
-  void SetUpper(int eval) {
+  void SetUpper(EvalLarge eval) {
     std::lock_guard<std::mutex> guard(mutex_);
     assert(eval % 2 == 0);
     assert(IsLeaf(guard));
-    leaf_eval_ = (Eval) std::min(leaf_eval_, eval);
-    upper_ = std::min(upper_, eval);
-    for (int i = weak_upper_; i >= std::max(eval, weak_lower_); i -= 2) {
+    leaf_eval_ = std::min(leaf_eval_, eval);
+    Eval eval_small = EvalLargeToEvalRound(eval);
+    upper_ = MinEval(upper_, eval_small);
+    for (int i = weak_upper_; i >= MaxEval(eval_small, weak_lower_); i -= 2) {
       MutableEvaluation(i, guard)->SetDisproved();
     }
     // assert isLowerUpperOK();
@@ -338,21 +357,22 @@ class TreeNode {
     return GetEvaluation(eval_goal, guard);
   }
 
-  TreeNode* BestChild(bool proof, Eval eval_goal) {
+  TreeNode* BestChild(Eval eval_goal) {
     assert(!IsLeaf());
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     TreeNode* best_child = nullptr;
     double best_child_value = -DBL_MAX;
     Evaluation cur_evaluation = GetEvaluation(eval_goal);
-    for (TreeNode* child : children_) {
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children_[i];
 //      synchronized(childBoard)
 //      {
-        Evaluation child_eval = child->GetEvaluation(-eval_goal);
-        double child_value = child_eval.GetValue(cur_evaluation, proof);
-        if (child_value > best_child_value) {
-          best_child = child;
-          best_child_value = child_value;
-        }
+      Evaluation child_eval = child->GetEvaluation(-eval_goal);
+      double child_value = child_eval.GetValue(cur_evaluation);
+      if (child_value > best_child_value) {
+        best_child = child;
+        best_child_value = child_value;
+      }
 //      }
     }
     if (best_child != nullptr && best_child->IsLeaf() && best_child->NThreadsWorking() > 0) {
@@ -394,7 +414,6 @@ class TreeNode {
     }
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     const Evaluation& first_eval = GetEvaluation(eval_goal);
-    bool proof = first_eval.ProbGreaterEqual() > 1 - kProbForProof || first_eval.ProbGreaterEqual() < kProbForProof;
     std::vector<TreeNode*> parents;
     LeafToUpdate result;
     result.eval_goal = eval_goal;
@@ -402,7 +421,7 @@ class TreeNode {
     result.beta = std::max(eval_goal, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1);
     result.weak_lower = weak_lower_;
     result.weak_upper = weak_upper_;
-    BestDescendant(proof, &result);
+    BestDescendant(&result);
     return result;
   }
 
@@ -424,9 +443,13 @@ class TreeNode {
     assert(n_empties_ > 0 && n_empties_ <= 60);
 //    return eval.ProofNumber() < 20000 || eval.DisproofNumber() < 20000;
     if (eval.ProbGreaterEqual() >= 1 - 0.2) {
-      return eval.ProofNumber() < 10000; // proofNumberForAlphaBeta.get();
+//      return eval.ProofNumber() < 10000;
+//      return n_empties_ < kEmptiesForForcedMidgame + 2;
+      return ::ProofNumber(player_, opponent_, EvalToEvalLarge(eval_goal), leaf_eval_) < 10000;
     } else if (eval.ProbGreaterEqual() <= 0.2) {
-      return eval.DisproofNumber() < 10000; // proofNumberForAlphaBeta.get();
+//      return eval.DisproofNumber() < 10000;
+//      return n_empties_ < kEmptiesForForcedMidgame + 2;
+      return ::DisproofNumber(player_, opponent_, EvalToEvalLarge(eval_goal), leaf_eval_) < 10000;
     }
     return false;
   }
@@ -488,8 +511,15 @@ class TreeNode {
  private:
   BitPattern player_;
   BitPattern opponent_;
-  std::vector<TreeNode*> children_;
-  std::vector<TreeNode*> fathers_;
+  NVisited n_visited_;
+  TreeNode** children_;
+  TreeNode** fathers_;
+  Evaluation* evaluations_;
+  mutable std::mutex mutex_;
+  EvalLarge leaf_eval_;
+  u_int8_t n_threads_working_;
+  Square n_children_;
+  Square n_fathers_;
   Square n_empties_;
   Square depth_;
   Eval lower_;
@@ -497,11 +527,6 @@ class TreeNode {
   Eval weak_lower_;
   Eval weak_upper_;
   Eval min_evaluation_;
-  EvalLarge leaf_eval_;
-  std::vector<Evaluation> evaluations_;
-  int n_threads_working_;
-  mutable std::mutex mutex_;
-  NVisited n_visited_;
 
   void UpdateLeafEvaluation(int i, int depth, const std::lock_guard<std::mutex>& guard) {
     assert(i >= weak_lower_ && i <= weak_upper_);
@@ -516,7 +541,7 @@ class TreeNode {
       assert(isfinite(proof_number) && proof_number > 0);
       float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(disproof_number) && disproof_number > 0);
-      evaluation->SetLeaf(prob, proof_number, disproof_number, depth < 12 ? (float) (-0.5F * pow(std::max(0, depth - 4), 2)) : -100000);
+      evaluation->SetLeaf(prob, proof_number, disproof_number, 0);
     }
   }
 
@@ -529,7 +554,13 @@ class TreeNode {
 
   void AddFather(TreeNode* father) {
     std::lock_guard<std::mutex> guard(mutex_);
-    fathers_.push_back(father);
+    if (n_fathers_ == 0) {
+      fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
+    } else {
+      fathers_ = (TreeNode**) realloc(fathers_, (n_fathers_ + 1) * sizeof(TreeNode*));
+    }
+    fathers_[n_fathers_] = father;
+    n_fathers_++;
   }
 
   Eval GetPercentileUpper(float p, const std::lock_guard<std::mutex>& guard) {
@@ -556,7 +587,7 @@ class TreeNode {
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     assert(min_evaluation_ <= weak_lower_);
     int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index < evaluations_.size());
+    assert(index >= 0 && index < (weak_upper_ - weak_lower_) / 2);
     return evaluations_[index];
   }
 
@@ -565,14 +596,16 @@ class TreeNode {
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     assert(min_evaluation_ <= weak_lower_);
     int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index < evaluations_.size());
+    assert(index >= 0 && index < (weak_upper_ - weak_lower_) / 2);
     return &evaluations_[index];
   }
 
   void EnlargeEvaluations(const std::lock_guard<std::mutex>& lock_guard) {
     int desired_size = ToEvaluationIndex(weak_upper_) + 1;
-    if (evaluations_.size() < desired_size) {
-      evaluations_.insert(evaluations_.end(), desired_size - evaluations_.size(), Evaluation());
+    if (IsValid()) {
+      evaluations_ = (Evaluation*) realloc(evaluations_, desired_size * sizeof(Evaluation));
+    } else {
+      evaluations_ = (Evaluation*) malloc(desired_size * sizeof(Evaluation));
     }
   }
 
@@ -585,11 +618,12 @@ class TreeNode {
 
   bool AreChildrenCorrect(const std::lock_guard<std::mutex>& guard) {
     std::vector<BitPattern> flips = GetAllMovesWithPass(player_, opponent_);
-    if (children_.size() != flips.size()) {
+    if (n_children_ != flips.size()) {
       throw ChildError("Wrong children size");
     }
 
-    for (TreeNode* child : children_) {
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children_[i];
       if (child->depth_ != depth_ + 1) {
         throw ChildError("Wrong child depth");
       }
@@ -611,14 +645,14 @@ class TreeNode {
   }
 
   bool IsLeaf(const std::lock_guard<std::mutex>& guard) const {
-    return children_.empty();
+    return n_children_ == 0;
   }
 
-  void BestDescendant(bool proof, LeafToUpdate* result) {
+  void BestDescendant(LeafToUpdate* result) {
     TreeNode* best_child;
 //    Evaluation bestChild;
 //    synchronized (StoredBoard.this) {
-//      increaseNThreadsWorking();
+    IncreaseNThreadsWorking();
     result->parents.push_back(this);
     if (IsSolved()
 //          || (IsLeaf() && getNThreadsWorking() > 1)
@@ -631,16 +665,16 @@ class TreeNode {
         result->leaf = this;
         return;
       }
-      result->alpha = std::max(result->alpha, std::min(GetPercentileLower(kProbForEndgameAlphaBeta) + 1, result->eval_goal));
-      result->beta = std::min(result->beta, std::max(GetPercentileUpper(kProbForEndgameAlphaBeta) - 1, result->eval_goal));
-      best_child = BestChild(proof, result->eval_goal);
+      result->alpha = MaxEval(result->alpha, MinEval(GetPercentileLower(kProbForEndgameAlphaBeta) + 1, result->eval_goal));
+      result->beta = MinEval(result->beta, MaxEval(GetPercentileUpper(kProbForEndgameAlphaBeta) - 1, result->eval_goal));
+      best_child = BestChild(result->eval_goal);
     }
 //    }
     if (best_child == nullptr) {
 //      avoidNextPosFailCoeff.addAndGet(10);
-//      for (Evaluation eval : ancestors) {
-//        eval.getStoredBoard().decreaseNThreadsWorking();
-//      }
+      for (TreeNode* eval : result->parents) {
+        eval->DecreaseNThreadsWorking();
+      }
 //      Stats.addToNFailNextPosition(1);
       result->leaf = nullptr;
       return;
@@ -652,7 +686,7 @@ class TreeNode {
     tmp = result->weak_lower;
     result->weak_lower = -result->weak_upper;
     result->weak_upper = -tmp;
-    best_child->BestDescendant(proof, result);
+    best_child->BestDescendant(result);
   }
 
   Eval NextPositionEvalGoal() {
@@ -762,13 +796,7 @@ class TreeNode {
         int old_size = ToEvaluationIndex(weak_upper_) + 1;
         min_evaluation_ = value;
         EnlargeEvaluations(guard);
-        assert(evaluations_.size() >= old_size + shift);
-//        if (evaluations_.size() < old_size + shift) {
-//          std::cout << old_size << " " << shift << "misty\n";
-//        }
-        memmove(evaluations_.data() + shift,
-                evaluations_.data(),
-                sizeof(Evaluation) * old_size);
+        memmove(evaluations_ + shift, evaluations_, sizeof(Evaluation) * old_size);
       }
       weak_lower_ = value;
     } else if (value > weak_upper_) {
@@ -783,8 +811,8 @@ class TreeNode {
         return;
       }
 //    }
-    for (TreeNode* child : *MutableChildren()) {
-      child->ExtendEval(-value, guard);
+    for (int i = 0; i < n_children_; ++i) {
+      children_[i]->ExtendEval(-value, guard);
     }
 //    synchronized (this) {
     UpdateFather(guard);

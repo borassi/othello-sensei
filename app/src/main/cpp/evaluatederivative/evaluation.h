@@ -27,6 +27,10 @@ constexpr int kLogDerivativeMinusInf = -1000000000;
 constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
 constexpr int kLogDerivativeMultiplier = 10000;
 
+constexpr inline int LeafLogDerivative(float prob) {
+  return round(kLogDerivativeMultiplier * kLeafMultiplier * log(prob * (1 - prob)));
+}
+
 struct CombineProb {
   Probability combine_prob[kProbStep + 1][kProbStep + 1];
   int log_derivative[kProbStep + 1];
@@ -97,6 +101,7 @@ class Evaluation {
     assert(IsValid());
     assert(child.IsValid());
     if (child.IsSolved()) {
+      assert(child.ProbGreaterEqual() == 0 || child.ProbGreaterEqual() == 1);
       if (child.ProbGreaterEqual() > 0.5) {
         return;
       } else {
@@ -149,10 +154,7 @@ class Evaluation {
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
-      max_log_derivative_ = round(
-          kLogDerivativeMultiplier * kLeafMultiplier
-          * (log(ProbGreaterEqualUnsafe() * (1 - ProbGreaterEqualUnsafe()))
-             + log_derivative_add));
+      max_log_derivative_ = LeafLogDerivative(ProbGreaterEqualUnsafe());
     }
     assert(max_log_derivative_ < 0);
   }
@@ -165,16 +167,16 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father, bool proof) {
+  double GetValue(const Evaluation& father) {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
     }
     if (prob == 0) {
-      return ProofNumber();
+      return ProofNumber() + 1E12;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
-    } else if (prob == 1 || (proof && prob > 0.5)) {
-      return -DisproofNumber() / std::max(0.0001F, 1 - ProbGreaterEqual());
+    } else if (prob == 1) {
+      return -DisproofNumber();
     } else {
       return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
 //             * avoidNextPosFailCoeff.get()
@@ -183,6 +185,10 @@ class Evaluation {
   }
 
  private:
+  float proof_number_;
+  float disproof_number_;
+  int max_log_derivative_;
+  Probability prob_greater_equal_;
 
   static Probability RoundProb(float prob) {
     return (Probability) round(prob * kProbStep);
@@ -191,11 +197,6 @@ class Evaluation {
   float ProbGreaterEqualUnsafe() const {
     return ((float) prob_greater_equal_) / kProbStep;
   }
-
-  Probability prob_greater_equal_;
-  float proof_number_;
-  float disproof_number_;
-  int max_log_derivative_;
 };
 
 //

@@ -25,7 +25,7 @@
 #include "../constants.h"
 #include "../utils/random.h"
 
-typedef int Eval;
+typedef int8_t Eval;
 typedef int EvalLarge;
 typedef unsigned long long BitPattern;
 typedef u_int8_t Square;
@@ -126,6 +126,14 @@ Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent);
 #define FOR_EACH_SET_BIT(pattern, name) \
   for (BitPattern name = pattern; name != 0; name = name & (name - 1))
 
+constexpr inline Eval MaxEval(Eval eval1, Eval eval2) {
+  return eval1 > eval2 ? eval1 : eval2;
+}
+
+constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
+  return eval1 < eval2 ? eval1 : eval2;
+}
+
 constexpr BitPattern GetRow(Square move) {
   return kLastRowPattern << (move & 56);
 }
@@ -150,38 +158,19 @@ struct HashValues {
   int hash_opponent[8][256];
 
   constexpr HashValues() : hash_player(), hash_opponent() {
-      Random random;
-      int hash_size = 1 << kBitHashMap;
-      for (int row = 0; row < 8; row++) {
-        for (int i = 0; i < 256; i++) {
-          hash_player[row][i] = random.next() % hash_size;
-          hash_opponent[row][i] = random.next() % hash_size;
-        }
+    Random random;
+    for (int row = 0; row < 8; row++) {
+      for (int i = 0; i < 256; i++) {
+        hash_player[row][i] = random.next() % kHashMapSize;
+        hash_opponent[row][i] = random.next() % kHashMapSize;
       }
     }
+  }
 };
 
 constexpr HashValues kHashValues;
 
-constexpr int Hash(BitPattern player, BitPattern opponent) {
-  return
-      kHashValues.hash_player[0][player & kLastRowPattern] ^
-      kHashValues.hash_player[1][(player >> 8) & kLastRowPattern] ^
-      kHashValues.hash_player[2][(player >> 16) & kLastRowPattern] ^
-      kHashValues.hash_player[3][(player >> 24) & kLastRowPattern] ^
-      kHashValues.hash_player[4][(player >> 32) & kLastRowPattern] ^
-      kHashValues.hash_player[5][(player >> 40) & kLastRowPattern] ^
-      kHashValues.hash_player[6][(player >> 48) & kLastRowPattern] ^
-      kHashValues.hash_player[7][(player >> 56)] ^
-      kHashValues.hash_opponent[0][opponent & kLastRowPattern] ^
-      kHashValues.hash_opponent[1][(opponent >> 8) & kLastRowPattern] ^
-      kHashValues.hash_opponent[2][(opponent >> 16) & kLastRowPattern] ^
-      kHashValues.hash_opponent[3][(opponent >> 24) & kLastRowPattern] ^
-      kHashValues.hash_opponent[4][(opponent >> 32) & kLastRowPattern] ^
-      kHashValues.hash_opponent[5][(opponent >> 40) & kLastRowPattern] ^
-      kHashValues.hash_opponent[6][(opponent >> 48) & kLastRowPattern] ^
-      kHashValues.hash_opponent[7][(opponent >> 56)];
-}
+int Hash(BitPattern player, BitPattern opponent);
 
 std::string PatternToString(BitPattern pattern);
 
