@@ -19,9 +19,10 @@
 #include "../board/get_moves.h"
 
 double LogProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  int empties = NEmpties(player, opponent);
-  return -3.29 + 0.5395 * empties + 2.4157 * log(1 + GetNMoves(opponent, player))
-      -0.000615 * 100 / 8 * (approx_eval - lower);
+  BitPattern empties = ~(player | opponent);
+  int n_empties = __builtin_popcountll(empties);
+  return -3.29 + 0.5395 * n_empties + 2.4157 * log(1 + GetNMoves(opponent, player))
+      -0.0615 / 8 * (approx_eval - lower);
 }
 
 double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
@@ -29,9 +30,10 @@ double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, Eval
 }
 
 double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  int empties = NEmpties(player, opponent);
-  return -3.6659 + 0.5501 * empties + 2.7047 * log(1 + GetNMoves(player, opponent))
-      -0.000590 * 100 / 8 * (lower - approx_eval);
+  BitPattern empties = ~(player | opponent);
+  int n_empties = __builtin_popcountll(empties);
+  return -3.6659 + 0.5501 * n_empties + 2.7047 * log(1 + GetNMoves(player, opponent))
+      -0.0590 / 8 * (lower - approx_eval);
 }
 
 double DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {

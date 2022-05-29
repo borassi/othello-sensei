@@ -48,7 +48,7 @@ class JNIWrapper {
         static_cast<jlong>(n_visited));
 
   }
-  void EvalDerivative(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge upper, NVisited max_n_visited, double max_time) {
+  void EvalDerivative(BitPattern player, BitPattern opponent, Eval lower, Eval upper, NVisited max_n_visited, double max_time) {
     evaluator_derivative_.Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
   }
 
@@ -57,7 +57,26 @@ class JNIWrapper {
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    return TreeNodeToJava(evaluator_derivative_.Get(player, opponent), env);
+    TreeNode* node = evaluator_derivative_.Get(player, opponent);
+    if (node == nullptr) {
+      for (BitPattern flip : GetAllMovesWithPass(player, opponent)) {
+        TreeNode* child = evaluator_derivative_.Get(NewPlayer(flip, opponent),
+                                                    NewOpponent(flip, player));
+        if (child == nullptr) {
+          continue;
+        }
+        for (TreeNode* father : child->Fathers()) {
+          if (father->Player() == player && father->Opponent() == opponent) {
+            node = father;
+            break;
+          }
+        }
+        if (node != nullptr) {
+          break;
+        }
+      }
+    }
+    return TreeNodeToJava(node, env);
   }
 
   void Empty() {
@@ -164,7 +183,7 @@ TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
   return (TreeNode*) env->CallLongMethod(tree_node_java, mid);\
 }
 
-bool IsEvalGoalInvalid(TreeNode* node, Eval eval_goal) {
+bool IsEvalGoalInvalid(TreeNode* node, int eval_goal) {
   return node == nullptr || node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
 }
 
@@ -210,22 +229,22 @@ JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobj
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProofNumber(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProofNumber(static_cast<Eval>(eval_goal / 100));
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_disproofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->DisproofNumber(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->DisproofNumber(static_cast<Eval>(eval_goal / 100));
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProbGreaterEqual(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProbGreaterEqual(static_cast<Eval>(eval_goal / 100));
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_maxLogDerivative(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? kLogDerivativeMinusInf : node->MaxLogDerivative(eval_goal / 100);
+  return IsEvalGoalInvalid(node, eval_goal) ? kLogDerivativeMinusInf : node->MaxLogDerivative(static_cast<Eval>(eval_goal / 100));
 }
 
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree_node_java) {

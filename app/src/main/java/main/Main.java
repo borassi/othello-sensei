@@ -14,8 +14,12 @@
 
 package main;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 
+import bitpattern.PositionIJ;
 import board.Board;
 import board.GetMovesCache;
 import constants.Constants;
@@ -344,5 +348,16 @@ public class Main implements Runnable {
         nVisited, System.currentTimeMillis() - startTime,
         positionAnnotations);
     ui.repaint();
+  }
+
+  public void copy() {
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    String game = "";
+    for (int i = 1; i < oldBoards.size(); ++i) {
+      int move = moveFromBoard(oldBoards.get(i-1), oldBoards.get(i));
+      game += new PositionIJ(move).toString();
+    }
+    game += new PositionIJ(moveFromBoard(oldBoards.get(oldBoards.size() - 1), board));
+    clipboard.setContents(new StringSelection(game), null);
   }
 }

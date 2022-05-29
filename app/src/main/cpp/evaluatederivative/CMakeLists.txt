@@ -136,6 +136,7 @@ target_link_libraries( # Specifies the target library.
         constants
         get_moves
         misc
+        tree_node
 )
 
 IF (NOT ANDROID)

@@ -68,7 +68,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
      * with no GridBagConstraint (so it is centered).
      */
     @Override
-    public final Dimension getPreferredSize() {
+    public Dimension getPreferredSize() {
       Component c = getParent();
       if (c != null) {
         return new Dimension(c.getHeight(), c.getHeight());
@@ -133,7 +133,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (board == null) {
       return;
     }
-    String rows;
+    StringBuilder rows;
 
     String formatter = "%+.2f ";
     if (board.isSolved()) {
@@ -144,37 +144,37 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     String evalStr = String.format(Locale.US, formatter, -board.getEval() / 100.0);
     if (board.getProb(board.getWeakLower()) > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
       if (board.getProb(board.getWeakUpper()) < Constants.PROB_INCREASE_WEAK_EVAL) {
-        rows = evalStr;
+        rows = new StringBuilder(evalStr);
       } else {
-        rows = "≤" + evalStr;
+        rows = new StringBuilder("≤" + evalStr);
       }
     } else {
       if (board.getProb(board.getWeakUpper()) < Constants.PROB_INCREASE_WEAK_EVAL) {
-        rows = "≥" + evalStr;
+        rows = new StringBuilder("≥" + evalStr);
       } else {
-        rows = "?";
+        rows = new StringBuilder("?");
       }
     }
-    rows += " " + Utils.prettyPrintDouble(board.getDescendants());
+    rows.append(" ").append(Utils.prettyPrintDouble(board.getDescendants()));
 
 
     for (int evalGoal = board.getWeakUpper(); evalGoal >= board.getWeakLower(); evalGoal -= 200) {
       float prob = board.getProb(evalGoal);
-      rows += String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (prob) * 100);
+      rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (prob) * 100));
 
       if (board.maxLogDerivative(evalGoal) > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
-        rows += Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal));
+        rows.append(Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
       } else if (prob == 0) {
-        rows += Utils.prettyPrintDouble(board.disproofNumber(evalGoal));
+        rows.append(Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
       } else {
-        rows += Utils.prettyPrintDouble(board.proofNumber(evalGoal));
+        rows.append(Utils.prettyPrintDouble(board.proofNumber(evalGoal)));
       }
     }
 
     int x = BitPattern.getX(move);
     int y = BitPattern.getY(move);
     cases[x][y].setFontSizes(new double[] {0.125});
-    cases[x][y].setAnnotations(rows);
+    cases[x][y].setAnnotations(rows.toString());
     cases[x][y].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
   }
 
@@ -199,7 +199,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       int y = BitPattern.getY(i);
 
       cases[x][y] = new Case(this, i);
-      casesContainer.add(cases[x][y]);
+    }
+    for (int x = 0; x < 8; ++x) {
+      for (int y = 0; y < 8; ++y) {
+        casesContainer.add(cases[x][y]);
+      }
     }
 
     JPanel boardConstrain = new JPanel(new GridBagLayout());
@@ -209,12 +213,14 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     JButton newGame = new JButton("New game");
     JButton stop = new JButton("Stop");
     JButton resetHashMaps = new JButton("Reset hash maps");
+    JButton copy = new JButton("Copy");
     commands.add(newGame);
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
     commands.add(debugMode);
     commands.add(stop);
     commands.add(resetHashMaps);
+    commands.add(copy);
 
     main = new Main(this);
 
@@ -223,6 +229,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     stop.addActionListener((ActionEvent e) -> main.stop());
 
     resetHashMaps.addActionListener((ActionEvent e) -> main.resetHashMaps());
+    copy.addActionListener((ActionEvent e) -> main.copy());
     depth = new JTextField();
     depth.setText("1000000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
@@ -337,16 +344,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       return;
     }
     TreeNodeInterface board = annotations.treeNode;
-    String firstPositionText = board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n";
+    StringBuilder firstPositionText = new StringBuilder(board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n");
 
     int eval = board.getEval();
     for (int evalGoal = StoredBoard.roundEval(eval + 1200); evalGoal >= StoredBoard.roundEval(eval - 1200); evalGoal -= 200) {
-      firstPositionText += String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
-            Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
-            Utils.prettyPrintDouble(board.proofNumber(evalGoal)), Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
+      firstPositionText.append(String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
+          Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
+          Utils.prettyPrintDouble(board.proofNumber(evalGoal)), Utils.prettyPrintDouble(board.disproofNumber(evalGoal))));
     }
 
-    String tmp = firstPositionText;
+    String tmp = firstPositionText.toString();
     SwingUtilities.invokeLater(() -> {
       extrasPosition.setText(tmp);
     });

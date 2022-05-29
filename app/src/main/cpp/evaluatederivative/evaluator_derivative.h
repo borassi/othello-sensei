@@ -212,9 +212,10 @@ class EvaluatorDerivative {
     EvalLarge eval = next_evaluator_->Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     num_tree_nodes_ = 0;
     TreeNode* first_position = AddTreeNode(player, opponent, 0);
-    first_position->SetLeaf(eval, 4, next_evaluator_->GetNVisited(), 1);
+    first_position->SetLeaf(eval, 4, next_evaluator_->GetNVisited());
     last_update_weak_ = 0;
     next_evaluator_->AddEpoch();
+    TreeNode::ResetVisitedForEndgame();
 //    if (Constants.ASSERT_EXTENDED) {
 //      assertIsAllOKRecursive(firstPosition);
 //    }
@@ -322,11 +323,7 @@ class EvaluatorDerivative {
 //      synchronized (child) {
       if (!child->IsValid()) {
         child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
-        child->SetLeaf(
-            children_eval[i].first,
-            depth,
-            children_eval[i].second,
-            -eval_goal);
+        child->SetLeaf(children_eval[i].first, depth, children_eval[i].second);
       }
 //     }
 //      assert father.isLowerUpperOK();
@@ -343,6 +340,8 @@ class EvaluatorDerivative {
     EvalLarge beta = EvalToEvalLarge(leaf.beta);
     EvalLarge eval = next_evaluator_->Evaluate(
         node->Player(), node->Opponent(), node->NEmpties(), alpha, beta);
+    NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
+    TreeNode::UpdateVisitedForEndgame(seen_positions);
     node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
 
     if (eval < beta) {
@@ -351,7 +350,6 @@ class EvaluatorDerivative {
     if (eval > alpha) {
       node->SetLower(eval);
     }
-    NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
 //    StoredBoard.proofNumberForAlphaBeta.addAndGet(
 //        (int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
     node->UpdateFathers();
@@ -432,22 +430,22 @@ class EvaluatorDerivative {
       }
     }
     int hash = Hash(player, opponent);
-    int old_index = tree_node_index_[hash];
-    if (old_index < num_tree_nodes_) {
-      auto& old_tree_node = tree_nodes_[old_index];
-      if (Hash(old_tree_node.Player(), old_tree_node.Opponent()) != hash) {
-        // Node is outdated. There is a tiny probability that the hash remains
-        // the same and this check fails, but it does not affect correctness,
-        // only efficiency.
-        old_index = num_tree_nodes_ + 1;
-      }
-    }
+//    int old_index = tree_node_index_[hash];
+//    if (old_index < num_tree_nodes_) {
+//      auto& old_tree_node = tree_nodes_[old_index];
+//      if (Hash(old_tree_node.Player(), old_tree_node.Opponent()) != hash) {
+//        // Node is outdated. There is a tiny probability that the hash remains
+//        // the same and this check fails, but it does not affect correctness,
+//        // only efficiency.
+//        old_index = num_tree_nodes_ + 1;
+//      }
+//    }
     int node_id = num_tree_nodes_++;
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth);
-    if (old_index >= num_tree_nodes_) {
+//    if (old_index >= num_tree_nodes_) {
       tree_node_index_[hash] = node_id;
-    }
+//    }
     return &node;
   }
 //   double bestStepsUntilEnd = 0;

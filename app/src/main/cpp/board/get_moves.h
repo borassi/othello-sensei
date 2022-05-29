@@ -74,6 +74,11 @@ inline BitPattern GetMoves(BitPattern player, BitPattern opponent) noexcept {
       (opponentNearPlayer9 >> 9));
 }
 
+inline int GetNMovesApprox(BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+inline int GetNMovesApprox(BitPattern empties, BitPattern opponent) noexcept {
+  return __builtin_popcountll(Neighbors(opponent) & empties);
+}
+
 inline int GetNMoves(BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline int GetNMoves(BitPattern player, BitPattern opponent) noexcept {
   return __builtin_popcountll(GetMoves(player, opponent));

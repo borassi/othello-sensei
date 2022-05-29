@@ -27,7 +27,7 @@ constexpr int kLogDerivativeMinusInf = -1000000000;
 constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
 constexpr int kLogDerivativeMultiplier = 10000;
 
-constexpr inline int LeafLogDerivative(float prob) {
+inline int LeafLogDerivative(float prob) {
   return round(kLogDerivativeMultiplier * kLeafMultiplier * log(prob * (1 - prob)));
 }
 
@@ -36,7 +36,7 @@ struct CombineProb {
   int log_derivative[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative() {
-    ProbCombiner combiner(ExpPolyLog<170>);
+    ProbCombiner combiner(ExpPolyLog<180>);
     for (int i = 0; i <= kProbStep; ++i) {
       double x1 = i / (double) kProbStep;
       if (x1 < 1E-15 || x1 > 1 - 1E-15) {
@@ -100,9 +100,10 @@ class Evaluation {
   void UpdateFatherWithThisChild(const Evaluation& child) {
     assert(IsValid());
     assert(child.IsValid());
+    float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
     if (child.IsSolved()) {
-      assert(child.ProbGreaterEqual() == 0 || child.ProbGreaterEqual() == 1);
-      if (child.ProbGreaterEqual() > 0.5) {
+      assert(child_prob_greater_equal == 0 || child_prob_greater_equal == 1);
+      if (child_prob_greater_equal > 0.5) {
         return;
       } else {
         prob_greater_equal_ = 0;
@@ -113,7 +114,7 @@ class Evaluation {
     }
     prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
 
-    float cur_proof_number = std::max(1.0F, child.disproof_number_ / std::max(0.0001F, 1.0F - child.ProbGreaterEqual()));
+    float cur_proof_number = std::max(1.0F, child.disproof_number_ / std::max(0.0001F, 1.0F - child_prob_greater_equal));
     if (cur_proof_number < proof_number_) {
 //      assert(Utils.arrayContains(getChildren(), child.getStoredBoard()));
       proof_number_ = cur_proof_number;
@@ -121,7 +122,7 @@ class Evaluation {
 
     assert(child.proof_number_ > 0);
     disproof_number_ += child.proof_number_;
-    if (child.ProbGreaterEqual() > 0 && child.ProbGreaterEqual() < 1) {
+    if (child_prob_greater_equal > 0 && child_prob_greater_equal < 1) {
       int current_log_derivative =
           child.max_log_derivative_ - kCombineProb.log_derivative[child.prob_greater_equal_];
       if (current_log_derivative > max_log_derivative_) {
@@ -132,7 +133,8 @@ class Evaluation {
   }
   // TODO: FIX!!
   void Finalize() {
-    if (ProbGreaterEqual() == 1 || ProbGreaterEqual() == 0) {
+    float prob_greater_equal = ProbGreaterEqual();
+    if (prob_greater_equal == 1 || prob_greater_equal == 0) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
       max_log_derivative_ = max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_];
@@ -167,7 +169,7 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father) {
+  double GetValue(const Evaluation& father, bool proof) {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
@@ -175,13 +177,18 @@ class Evaluation {
     if (prob == 0) {
       return ProofNumber() + 1E12;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
-    } else if (prob == 1) {
-      return -DisproofNumber();
+    } else if (prob == 1 || (proof && prob > 0.5)) {
+      return -DisproofNumber();// / std::max(0.0001F, 1 - ProbGreaterEqual());
     } else {
       return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
 //             * avoidNextPosFailCoeff.get()
 //             * child.getStoredBoard().getNThreadsWorking();
     }
+  }
+
+  float RemainingWork() const {
+    float prob_greater_equal = ProbGreaterEqual();
+    return proof_number_ * prob_greater_equal + disproof_number_ * (1 - prob_greater_equal);
   }
 
  private:
