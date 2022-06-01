@@ -37,12 +37,12 @@ public class JNI implements EvaluatorDerivativeInterface {
     }
   }
   @Override
-  public void evaluate(Board board, int lower, int upper, long maxNVisited, int maxTimeMillis) {
-    evaluate(board.getPlayer(), board.getOpponent(), lower, upper, maxNVisited, maxTimeMillis);
+  public void evaluate(Board board, int lower, int upper, long maxNVisited, int maxTimeMillis, float gap) {
+    evaluate(board.getPlayer(), board.getOpponent(), lower, upper, maxNVisited, maxTimeMillis, gap);
   }
 
   public native void evaluate(long player, long opponent, int lower,
-                              int upper, long maxNVisited, int maxTimeMillis);
+                              int upper, long maxNVisited, int maxTimeMillis, float gap);
 
   @Override
   public native void empty();
@@ -60,6 +60,9 @@ public class JNI implements EvaluatorDerivativeInterface {
 
   @Override
   public native TreeNodeInterface get(long player, long opponent);
+
+  @Override
+  public native boolean finished(long maxNVisited);
 
   public static EvalWithVisited evaluateCPP(
       long player, long opponent, int depth, int lower, int upper) {

@@ -64,7 +64,7 @@ struct LeafToUpdate {
 
 class TreeNode {
  public:
-  TreeNode() : lower_(kMinEval), upper_(kMaxEval), weak_lower_(-63), weak_upper_(63), leaf_eval_(kLessThenMinEvalLarge), n_fathers_(0), n_children_(0) {}
+  TreeNode() {}
   TreeNode(const TreeNode&) = delete;
   ~TreeNode() {
     if (n_fathers_ != 0) {
@@ -242,11 +242,12 @@ class TreeNode {
     assert(AreChildrenCorrect());
   }
 
-  void Reset(const Board& b, int depth) {
-    Reset(b.GetPlayer(), b.GetOpponent(), depth);
+  void Reset(const Board& b, int depth, u_int8_t evaluator) {
+    Reset(b.GetPlayer(), b.GetOpponent(), depth, evaluator);
   }
 
-  void Reset(BitPattern player, BitPattern opponent, int depth) {
+  void Reset(BitPattern player, BitPattern opponent, int depth, u_int8_t evaluator) {
+    evaluator_ = evaluator;
     if (n_fathers_ != 0) {
       free(fathers_);
       n_fathers_ = 0;
@@ -509,6 +510,7 @@ class TreeNode {
     }
     return result;
   }
+  u_int8_t Evaluator() { return evaluator_; }
 
   static int visited_for_endgame_;
   static float prob_leaf_easy_;
@@ -530,6 +532,7 @@ class TreeNode {
   Eval weak_lower_;
   Eval weak_upper_;
   Eval min_evaluation_;
+  u_int8_t evaluator_;
 
   void UpdateLeafEvaluation(int i, int depth) {
     assert(i >= weak_lower_ && i <= weak_upper_);

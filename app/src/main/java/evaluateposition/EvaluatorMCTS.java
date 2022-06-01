@@ -327,18 +327,18 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
   }
 
   public void evaluate(Board board) {
-    evaluate(board, -6300, 6300, Long.MAX_VALUE, Integer.MAX_VALUE);
+    evaluate(board, -6300, 6300, Long.MAX_VALUE, Integer.MAX_VALUE, 0);
   }
 
   public void evaluate(Board board, long maxNVisited, int maxTimeMillis) {
-    evaluate(board, -6300, 6300, maxNVisited, maxTimeMillis);
+    evaluate(board, -6300, 6300, maxNVisited, maxTimeMillis, 0);
   }
 
   ExecutorService executor = Executors.newFixedThreadPool(Constants.MAX_PARALLEL_TASKS);
 
   @Override
   public void evaluate(
-      Board board, int lower, int upper, long maxNVisited, int maxTimeMillis) {
+      Board board, int lower, int upper, long maxNVisited, int maxTimeMillis, float gap) {
     assert Math.abs(lower % 200) == 100;
     assert Math.abs(upper % 200) == 100;
     assert(lower <= upper);
@@ -375,6 +375,11 @@ public class EvaluatorMCTS extends HashMapVisitedPositions implements EvaluatorD
 
   public StoredBoard getFirstPosition() {
     return firstPosition;
+  }
+
+  @Override
+  public boolean finished(long maxNVisited) {
+    return status == Status.SOLVED || firstPosition.getDescendants() >= maxNVisited;
   }
 
   public void assertIsAllOKRecursive(StoredBoard board) {

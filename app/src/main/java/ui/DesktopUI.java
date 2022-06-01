@@ -190,6 +190,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   public DesktopUI() {
     super("Othello");
 
+    addWindowListener(new java.awt.event.WindowAdapter() {
+      @Override
+      public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+        main.stop();
+      }
+    });
     setDefaultCloseOperation(EXIT_ON_CLOSE);
 
     casesContainer.setLayout(new GridLayout(0, 8));

@@ -17,10 +17,11 @@ import board.Board;
 
 public interface EvaluatorDerivativeInterface {
   void evaluate(Board board, int lower, int upper, long maxNVisited,
-                int maxTimeMillis);
+                int maxTimeMillis, float gap);
   void empty();
   void stop();
   Status getStatus();
   TreeNodeInterface getFirstPosition();
   TreeNodeInterface get(long player, long opponent);
+  boolean finished(long maxNVisited);
 }

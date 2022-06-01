@@ -155,7 +155,7 @@ struct Features {
   Pattern patterns[kNumPatterns];
   Pattern equivalent_features[kNumFeatures][kMaxPatternTranspositions][
       kMaxFeatureSize] = {};
-  int splits[60];
+  int splits[61];
 
   static constexpr void EquivalentTransposition(
       const std::array<BitPattern, kMaxFeatureSize>& feature,
@@ -202,7 +202,7 @@ struct Features {
     int equivalent_transposition[kMaxPatternTranspositions] = {};
     start_feature[0] = 0;
 
-    for (int i = 0; i < 60; ++i) {
+    for (int i = 0; i <= 60; ++i) {
       splits[i] = GetSplit(i, kSplits);
     }
 

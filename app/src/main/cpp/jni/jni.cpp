@@ -20,6 +20,9 @@
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
+#include <jni.h>
+
+constexpr int kNumEvaluators = 60;
 
 class JNIWrapper {
  public:
@@ -34,34 +37,111 @@ class JNIWrapper {
   JNIWrapper() :
       evals_(LoadEvals()),
       hash_map_(),
-      evaluator_alpha_beta_(&hash_map_, PatternEvaluator::Factory(evals_.data())),
-      evaluator_derivative_(&evaluator_alpha_beta_) {}
+      tree_node_supplier_(),
+      last_player_(0),
+      last_opponent_(0),
+      last_gap_(-1),
+      num_active_evaluators_(0) {
+    evaluator_alpha_beta_.reserve(kNumEvaluators);
+    evaluator_derivative_.reserve(kNumEvaluators);
+    for (int i = 0; i < kNumEvaluators; ++i) {
+      evaluator_alpha_beta_.emplace_back(
+          &hash_map_,
+          PatternEvaluator::Factory(evals_.data())),
+      evaluator_derivative_.emplace_back(
+          &tree_node_supplier_, &evaluator_alpha_beta_[i],
+          static_cast<u_int8_t>(i));
+    }
+  }
 
   jobject EvalAlphaBeta(JNIEnv* env, BitPattern player, BitPattern opponent, jint depth, jint lower, jint upper) {
     jclass EvalWithVisited = env->FindClass("evaluateposition/EvalWithVisited");
-    EvalLarge eval = evaluator_alpha_beta_.Evaluate(player, opponent, depth, EvalJavaToEvalLarge(lower), EvalJavaToEvalLarge(upper));
-    NVisited n_visited = evaluator_alpha_beta_.GetNVisited();
+    EvalLarge eval = evaluator_alpha_beta_[0].Evaluate(player, opponent, depth, EvalJavaToEvalLarge(lower), EvalJavaToEvalLarge(upper));
+    NVisited n_visited = evaluator_alpha_beta_[0].GetNVisited();
     return env->NewObject(
         EvalWithVisited,
         env->GetMethodID(EvalWithVisited, "<init>", "(IJ)V"),
         static_cast<jint>(EvalLargeToEvalJava(eval)),
         static_cast<jlong>(n_visited));
-
   }
-  void EvalDerivative(BitPattern player, BitPattern opponent, Eval lower, Eval upper, NVisited max_n_visited, double max_time) {
-    evaluator_derivative_.Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
+
+  EvaluatorDerivative* BestEvaluator(float gap) {
+    double best = -INFINITY;
+    EvaluatorDerivative* best_evaluator = nullptr;
+    for (int i = 0; i < num_active_evaluators_; ++i) {
+      EvaluatorDerivative* evaluator = &evaluator_derivative_[i];
+      double value = evaluator->Progress(gap);
+      if (value > best) {
+        best = value;
+        best_evaluator = evaluator;
+      }
+    }
+    return best_evaluator;
+  }
+
+  bool Finished(NVisited max_n_visited) {
+    NVisited visited = 0;
+    bool all_solved = true;
+    for (int i = 0; i < this->num_active_evaluators_; ++i) {
+      EvaluatorDerivative* evaluator = &evaluator_derivative_[i];
+      visited += evaluator->GetFirstPosition()->GetNVisited();
+      switch (evaluator->GetStatus()) {
+        case NONE:
+        case RUNNING:
+          assert(false);
+        case FAILED:
+        case KILLING:
+        case KILLED:
+          return true;
+        case SOLVED:
+          break;
+        case STOPPED_TIME:
+        case STOPPED_POSITIONS:
+          all_solved = false;
+      }
+    }
+    return visited > max_n_visited || all_solved;
+  }
+
+  void EvalDerivative(
+      BitPattern player, BitPattern opponent, Eval lower, Eval upper, NVisited max_n_visited, double max_time, float gap) {
+    bool reset = player != last_player_ || opponent != last_opponent_ || ((gap == 0) != (last_gap_ == 0));
+    if (reset) {
+      tree_node_supplier_.Reset();
+      if (gap <= 0) {
+        num_active_evaluators_ = 1;
+        evaluator_derivative_[0].Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
+      } else {
+        const auto flips = GetAllMovesWithPass(player, opponent);
+        num_active_evaluators_ = static_cast<int>(flips.size());
+        for (int i = 0; i < num_active_evaluators_; ++i) {
+          auto flip = flips[i];
+          evaluator_derivative_[i].Evaluate(
+              NewPlayer(flip, opponent),
+              NewOpponent(flip, player), lower, upper, max_n_visited,
+              max_time / num_active_evaluators_);
+        }
+      }
+    } else {
+      for (int step = 0; step < 5 && !Finished(max_n_visited); ++step) {
+        BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / 5);
+      }
+    }
+    last_player_ = player;
+    last_opponent_ = opponent;
+    last_gap_ = gap;
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
-    return TreeNodeToJava(evaluator_derivative_.GetFirstPosition(), env);
+    return TreeNodeToJava(evaluator_derivative_[0].GetFirstPosition(), env);
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    TreeNode* node = evaluator_derivative_.Get(player, opponent);
+    TreeNode* node = tree_node_supplier_.Get(player, opponent);
     if (node == nullptr) {
       for (BitPattern flip : GetAllMovesWithPass(player, opponent)) {
-        TreeNode* child = evaluator_derivative_.Get(NewPlayer(flip, opponent),
-                                                    NewOpponent(flip, player));
+        TreeNode* child = tree_node_supplier_.Get(NewPlayer(flip, opponent),
+                                                  NewOpponent(flip, player));
         if (child == nullptr) {
           continue;
         }
@@ -82,13 +162,17 @@ class JNIWrapper {
   void Empty() {
     Stop();
     hash_map_.Reset();
-    evaluator_derivative_.Reset();
+    tree_node_supplier_.Reset();
   }
 
-  void Stop() { evaluator_derivative_.Stop(); }
+  void Stop() {
+    for (int i = 0; i < kNumEvaluators; ++i) {
+      evaluator_derivative_[i].Stop();
+    }
+  }
 
   jobject GetStatus(JNIEnv* env) {
-    Status status = evaluator_derivative_.GetStatus();
+    Status status = evaluator_derivative_[0].GetStatus();
     jclass JavaStatus = env->FindClass("evaluateposition/Status");
     jfieldID status_id;
     switch (status) {
@@ -128,11 +212,16 @@ class JNIWrapper {
   static jint EvalLargeToEvalJava(EvalLarge eval) {
     return eval * 100 / 8;
   }
+  int num_active_evaluators_;
   EvalType evals_;
   HashMap hash_map_;
   TreeNode t;
-  EvaluatorAlphaBeta evaluator_alpha_beta_;
-  EvaluatorDerivative evaluator_derivative_;
+  std::vector<EvaluatorAlphaBeta> evaluator_alpha_beta_;
+  std::vector<EvaluatorDerivative> evaluator_derivative_;
+  TreeNodeSupplier tree_node_supplier_;
+  BitPattern last_player_;
+  BitPattern last_opponent_;
+  float last_gap_;
 };
 
 JNIWrapper kJNIWrapper;
@@ -149,8 +238,8 @@ JNIEXPORT jobject JNICALL Java_jni_JNI_evaluateCPPInternal(
 
 JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
     JNIEnv* env, jobject obj, jlong player, jlong opponent, jint lower,
-    jint upper, jlong maxNVisited, jint maxTimeMillis) {
-  kJNIWrapper.EvalDerivative(player, opponent, lower / 100, upper / 100, maxNVisited, maxTimeMillis / 1000.0);
+    jint upper, jlong maxNVisited, jint maxTimeMillis, jfloat gap) {
+  kJNIWrapper.EvalDerivative(player, opponent, lower / 100, upper / 100, maxNVisited, maxTimeMillis / 1000.0, gap);
 }
 
 JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jobject) {
@@ -255,6 +344,10 @@ JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return static_cast<long long>(node->Opponent());
+}
+
+JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject thiz, jlong max_nvisited) {
+  return kJNIWrapper.Finished(max_nvisited);
 }
 
 #ifdef __cplusplus

@@ -113,12 +113,14 @@ int main(int argc, char* argv[]) {
   HashMap hash_map;
   auto evals = LoadEvals();
   EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
-  EvaluatorDerivative evaluator(&evaluator_alpha_beta);
+  TreeNodeSupplier tree_node_supplier;
+  EvaluatorDerivative evaluator(&tree_node_supplier, &evaluator_alpha_beta);
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored  n/end  n/mid  nextposfail  eval\n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);
     std::cout << setw(4) << i << setw(8) << b.NEmpties();
     ElapsedTime t;
+    tree_node_supplier.Reset();
     evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
@@ -127,7 +129,7 @@ int main(int argc, char* argv[]) {
         << setw(9) << std::setprecision(4) << time << " "
         << setw(13) << std::setprecision(0) << first_position->GetNVisited()
         << setw(14) << static_cast<double>(first_position->GetNVisited() / time)
-        << setw(10) << evaluator.NumTreeNodes()
+        << setw(10) << tree_node_supplier.NumTreeNodes()
         << setw(7) << 0 // Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves())
         << setw(7) << 0 // Stats.getNVisitedAlphaBetaSolve() / (double) Stats.getNAlphaBetaSolve())
         << setw(13) << std::setprecision(4) << 0 // Stats.getNFailNextPosition() / (double) (Stats.getNFailNextPosition() + Stats.getNSuccessNextPosition()))
