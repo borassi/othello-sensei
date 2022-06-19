@@ -15,15 +15,17 @@ package thor;
 
 public class Game {
   private byte moves[];
+  private short year;
   private String black;
   private String white;
   private String tournament;
   private int theoretical;
   private int score;
 
-  public Game(String tournament, String black, String white, byte theoretical, byte score, byte[] moves) {
+  public Game(String tournament, short year, String black, String white, byte theoretical, byte score, byte[] moves) {
     this.black = black;
     this.white = white;
+    this.year = year;
     this.tournament = tournament;
     this.score = score;
     this.moves = moves;
@@ -32,6 +34,7 @@ public class Game {
   public String black() { return black; }
   public String white() { return white; }
   public String tournament() { return tournament; }
+  public int year() { return year; }
   public int score() { return score; }
 
   public static String moveToString(byte move) {

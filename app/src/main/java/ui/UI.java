@@ -14,8 +14,11 @@
 
 package ui;
 
+import java.util.ArrayList;
+
 import bitpattern.PositionIJ;
 import board.Board;
+import thor.Game;
 
 /**
  *
@@ -32,4 +35,6 @@ public interface UI {
   int lower();
   int upper();
   void repaint();
+  boolean wantThorGames();
+  void setThorGames(Board b, ArrayList<Game> games);
 }

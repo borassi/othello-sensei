@@ -112,7 +112,8 @@ class EvaluatorDerivative {
   EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, EvaluatorAlphaBeta* next_evaluator, u_int8_t index = 0) :
       tree_node_supplier_(tree_node_supplier),
       next_evaluator_(next_evaluator),
-      index_(index) {}
+      index_(index),
+      first_position_(nullptr) {}
 //  EvaluatorDerivative(int max_size, int array_size, HashMap hashMap) {
 //    this(maxSize, arraySize, hashMap, () -> new EvaluatorAlphaBeta(hashMap));
 //  }

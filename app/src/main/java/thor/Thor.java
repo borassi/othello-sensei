@@ -69,6 +69,7 @@ public class Thor {
   }
 
   public void lookupPositions(Set<String> black, Set<String> white, Set<String> tournaments) {
+    gamesForPosition.clear();
     for (Game game : games) {
       if ((!black.isEmpty() && !black.contains(game.black())) ||
           (!white.isEmpty() && !white.contains(game.white())) ||
@@ -88,17 +89,21 @@ public class Thor {
     }
   }
 
-  public int getNumGames(Board child) {
-    int result = 0;
+  public ArrayList<Game> getGames(Board child) {
+    ArrayList<Game> result = new ArrayList<>();
     HashSet<Board> seenBoards = new HashSet<>();
     for (Board b : child.allTranspositions()) {
       if (seenBoards.contains(b)) {
         continue;
       }
       seenBoards.add(b);
-      result += gamesForPosition.getOrDefault(b, new ArrayList<>()).size();
+      result.addAll(gamesForPosition.getOrDefault(b, new ArrayList<>()));
     }
     return result;
+  }
+
+  public int getNumGames(Board child) {
+    return getGames(child).size();
   }
 
   public void loadFiles(List<String> gamesFilepath, String playersFilepath, String tournamentsFilepath) {
@@ -135,7 +140,9 @@ public class Thor {
   public void loadGames(String filepath, ArrayList<String> players, ArrayList<String> tournaments) {
     try {
       DataInputStream s = new DataInputStream(FileAccessor.fileInputStream(filepath));
-      s.skip(16);
+      s.skip(10);
+      short year = Short.reverseBytes(s.readShort());
+      s.skip(4);
       while (s.available() > 0) {
         String tournament = tournaments.get(Short.reverseBytes(s.readShort()));
         String black = players.get(Short.reverseBytes(s.readShort()));
@@ -145,7 +152,7 @@ public class Thor {
         byte[] moves = new byte[60];
         s.readFully(moves);
 
-        games.add(new Game(tournament, black, white, blackScoreTheoretical, blackScore, moves));
+        games.add(new Game(tournament, year, black, white, blackScoreTheoretical, blackScore, moves));
       }
     } catch (IOException e) {
       System.out.println("Cannot load Thor games " + filepath + ".");

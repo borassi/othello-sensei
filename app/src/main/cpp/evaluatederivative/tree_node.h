@@ -223,7 +223,13 @@ class TreeNode {
   }
 
 //   std::vector<TreeNode*>* MutableChildren() { return &children_; }
-//   const std::vector<TreeNode*>& GetChildren() { return children_; }
+  std::vector<TreeNode*> GetChildren() {
+    std::vector<TreeNode*> children;
+    for (int i = 0; i < n_children_; ++i) {
+      children.push_back(children_[i]);
+    }
+    return children;
+  }
 
   bool IsLeaf() const {
     return n_children_ == 0;

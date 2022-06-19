@@ -56,6 +56,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import main.Main;
+import thor.Game;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
 
@@ -102,6 +103,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JTextArea extrasPosition;
   private final JButton lookupThor;
   private final JCheckBox thorActive;
+  private final ThorGamesWindow thorGamesWindow;
 
 
   public DesktopUI() {
@@ -234,8 +236,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         thorActive.setSelected(true);
       }
     });
+    thorGamesWindow = new ThorGamesWindow();
     commands.add(lookupThor);
     thorActive = new JCheckBox("Thor mode");
+    thorActive.addChangeListener((ChangeEvent e) -> thorGamesWindow.setVisible(thorActive.isSelected()));
     commands.add(thorActive);
 
     setSize(1200, 800);
@@ -265,15 +269,15 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
     int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
     String rows;
-    if (!thorActive.isSelected()) {
-    rows =
-        String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n" +
-        Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
-            lower == upper ?
-                Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
-                    Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
-                ("[" + (-upper/100) + ", " + (-lower/100) + "]")
-        );
+    if (!thorActive.isSelected() || annotations.thorGames < 0) {
+      rows =
+          String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n" +
+          Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
+              lower == upper ?
+                  Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
+                      Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
+                  ("[" + (-upper/100) + ", " + (-lower/100) + "]")
+          );
     } else {
       rows = (annotations.thorGames == 0 ? "" : annotations.thorGames) + "\n" +
           String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n"
@@ -398,6 +402,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   public void componentResized(ComponentEvent e) {
     casesContainer.setSize(this.getHeight() / 2, this.getHeight() / 2);
     casesContainer.setVisible(true);
+    thorGamesWindow.setLocation(this.getX() + this.getWidth(), this.getY());
   }
 
   @Override
@@ -408,6 +413,15 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     return Double.parseDouble(delta.getText());
   }
 
+  @Override
+  public boolean wantThorGames() {
+    return this.thorActive.isSelected();
+  }
+
+  @Override
+  public void setThorGames(Board b, ArrayList<Game> thorGames) {
+    thorGamesWindow.setGames(b, thorGames);
+  }
   @Override
   public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
     String text =

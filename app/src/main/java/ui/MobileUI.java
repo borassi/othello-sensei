@@ -26,11 +26,14 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 import board.Board;
 
 import constants.Constants;
 import helpers.Utils;
 import main.Main;
+import thor.Game;
 
 public class MobileUI extends AppCompatActivity implements UI {
   private BoardView boardView;
@@ -73,6 +76,14 @@ public class MobileUI extends AppCompatActivity implements UI {
   public void repaint() {
     boardView.invalidate();
   }
+
+  @Override
+  public boolean wantThorGames() {
+    return false;
+  }
+
+  @Override
+  public void setThorGames(Board b, ArrayList<Game> games) {}
 
   @Override
   public void setAnnotations(CaseAnnotations annotations, int move) {

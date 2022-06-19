@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import evaluateposition.TreeNodeInterface;
 import jni.JNI;
+import thor.Game;
 import thor.Thor;
 import ui.CaseAnnotations;
 import ui.UI;
@@ -186,6 +187,9 @@ public class Main implements Runnable {
     waitingTasks.set(false);
     setEvaluators();
     EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 50, (float) ui.delta());
+    if (ui.wantThorGames()) {
+      ui.setThorGames(board, thor.getGames(board));
+    }
     while (!EVALUATOR.finished(ui.maxVisited())) {
       showMCTSEvaluations();
       EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
@@ -274,12 +278,13 @@ public class Main implements Runnable {
   private void showMCTSEvaluations() {
     int bestMove = this.findBestMove();
     long nVisited = 0;
+    boolean hasThor = thor.getNumGames(board) > 0;
     for (Board child : GetMovesCache.getAllDescendants(board)) {
       TreeNodeInterface childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
-        annotations = new CaseAnnotations(childStored, thor.getNumGames(child), move == bestMove);
+        annotations = new CaseAnnotations(childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
       } else {
         HashMap.BoardInHash childHash = this.HASH_MAP.getStoredBoardNoUpdate(child);
         if (childHash == null) {
