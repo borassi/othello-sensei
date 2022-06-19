@@ -321,7 +321,7 @@ public class GetMovesCache implements Serializable {
     GetMovesCache mover = new GetMovesCache();
     long movesBit = mover.getMoves(b.getPlayer(), b.getOpponent());
     if (((1L << move) & movesBit) == 0) {
-      throw new IllegalArgumentException("Invalid move.");
+      throw new IllegalArgumentException("Invalid move " + move);
     }
     return b.move(mover.getFlip(move));
   }  

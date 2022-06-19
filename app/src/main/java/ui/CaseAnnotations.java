@@ -21,9 +21,14 @@ public class CaseAnnotations {
   public final TreeNodeInterface treeNode;
   public final HashMap.BoardInHash boardInHash;
   public final boolean isBestMove;
+  public final int thorGames;
 
   public CaseAnnotations(TreeNodeInterface treeNode, boolean isBestMove) {
     this(treeNode, null, isBestMove);
+  }
+
+  public CaseAnnotations(TreeNodeInterface treeNode, int thorGames, boolean isBestMove) {
+    this(treeNode, null, thorGames, isBestMove);
   }
 
   public CaseAnnotations(HashMap.BoardInHash boardInHash, boolean isBestMove) {
@@ -31,8 +36,13 @@ public class CaseAnnotations {
   }
 
   private CaseAnnotations(TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, boolean isBestMove) {
+    this(treeNode, boardInHash, -1, isBestMove);
+  }
+
+  private CaseAnnotations(TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, int thorGames, boolean isBestMove) {
     this.treeNode = treeNode;
     this.boardInHash = boardInHash;
     this.isBestMove = isBestMove;
+    this.thorGames = thorGames;
   }
 }

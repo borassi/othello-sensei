@@ -31,6 +31,8 @@ import evaluateposition.HashMap;
 import evaluateposition.Status;
 import evaluateposition.StoredBoard;
 
+import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import evaluateposition.TreeNodeInterface;
 import jni.JNI;
+import thor.Thor;
 import ui.CaseAnnotations;
 import ui.UI;
 
@@ -59,6 +62,7 @@ public class Main implements Runnable {
   private long startTime;
   private static UI ui;
   private final AtomicBoolean waitingTasks = new AtomicBoolean(false);
+  private Thor thor = new Thor();
 
   private static class EvaluatorWithBoard {
     EvaluatorDerivativeInterface evaluator;
@@ -83,6 +87,18 @@ public class Main implements Runnable {
 //      EVALUATOR = new JNI();
 ////      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
 //    }
+  }
+
+  public SortedSet<String> getThorTournaments() {
+    return thor.getTournaments();
+  }
+
+  public SortedSet<String> getThorPlayers() {
+    return thor.getPlayers();
+  }
+
+  public void thorLookup(Set<String> black, Set<String> white, Set<String> tournaments) {
+    thor.lookupPositions(black, white, tournaments);
   }
 
   /**
@@ -263,7 +279,7 @@ public class Main implements Runnable {
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
-        annotations = new CaseAnnotations(childStored, move == bestMove);
+        annotations = new CaseAnnotations(childStored, thor.getNumGames(child), move == bestMove);
       } else {
         HashMap.BoardInHash childHash = this.HASH_MAP.getStoredBoardNoUpdate(child);
         if (childHash == null) {

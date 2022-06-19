@@ -26,8 +26,13 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -35,6 +40,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JToolBar;
+import javax.swing.SpinnerListModel;
 import javax.swing.SpinnerModel;
 
 import board.Board;
@@ -89,102 +95,13 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner upper;
   private final JLabel empties;
   private final JTextArea extras;
+  private final JSpinner thorWhite;
+  private final JTextArea thorWhiteAll;
+  private final JSpinner thorBlack;
+  private final JTextArea thorBlackAll;
   private final JTextArea extrasPosition;
-
-  public void getClick(int move, MouseEvent e) {
-    if (SwingUtilities.isLeftMouseButton(e)) {
-      main.play(move);
-    } else if (SwingUtilities.isRightMouseButton(e)) {
-      main.undo();
-    }
-  }
-
-  @Override
-  public void setAnnotations(CaseAnnotations annotations, int move) {
-    if (debugMode.isSelected()) {
-      setAnnotationsDebug(annotations, move);
-    } else {
-      setAnnotationsLarge(annotations, move);
-    }
-  }
-  private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
-    TreeNodeInterface treeNode = annotations.treeNode;
-    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
-    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
-    String rows =
-        String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n" +
-        Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
-        lower == upper ?
-            Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
-                Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
-            ("[" + (-upper/100) + ", " + (-lower/100) + "]")
-        );
-
-    int x = BitPattern.getX(move);
-    int y = BitPattern.getY(move);
-    cases[x][y].setFontSizes(new double[] {0.25, 0.16});
-    cases[x][y].setAnnotations(rows);
-    cases[x][y].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
-    cases[x][y].repaint();
-  }
-
-  private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
-    TreeNodeInterface board = annotations.treeNode;
-    if (board == null) {
-      return;
-    }
-    StringBuilder rows;
-
-    String formatter = "%+.2f ";
-    if (board.isSolved()) {
-      formatter = "%+.0f ";
-    } else if (board.isPartiallySolved()) {
-      formatter = "%+.1f ";
-    }
-    String evalStr = String.format(Locale.US, formatter, -board.getEval() / 100.0);
-    if (board.getProb(board.getWeakLower()) > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-      if (board.getProb(board.getWeakUpper()) < Constants.PROB_INCREASE_WEAK_EVAL) {
-        rows = new StringBuilder(evalStr);
-      } else {
-        rows = new StringBuilder("≤" + evalStr);
-      }
-    } else {
-      if (board.getProb(board.getWeakUpper()) < Constants.PROB_INCREASE_WEAK_EVAL) {
-        rows = new StringBuilder("≥" + evalStr);
-      } else {
-        rows = new StringBuilder("?");
-      }
-    }
-    rows.append(" ").append(Utils.prettyPrintDouble(board.getDescendants()));
-
-
-    for (int evalGoal = board.getWeakUpper(); evalGoal >= board.getWeakLower(); evalGoal -= 200) {
-      float prob = board.getProb(evalGoal);
-      rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (prob) * 100));
-
-      if (board.maxLogDerivative(evalGoal) > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
-        rows.append(Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
-      } else if (prob == 0) {
-        rows.append(Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
-      } else {
-        rows.append(Utils.prettyPrintDouble(board.proofNumber(evalGoal)));
-      }
-    }
-
-    int x = BitPattern.getX(move);
-    int y = BitPattern.getY(move);
-    cases[x][y].setFontSizes(new double[] {0.125});
-    cases[x][y].setAnnotations(rows.toString());
-    cases[x][y].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
-  }
-
-  public void repaint() {
-    for (Case[] row : cases) {
-      for (Case c : row) {
-        c.repaint();
-      }
-    }
-  }
+  private final JButton lookupThor;
+  private final JCheckBox thorActive;
 
 
   public DesktopUI() {
@@ -271,11 +188,164 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     extrasPosition.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
     commands.add(extrasPosition);
 
+    JLabel thorBlackLabel = new JLabel("Thor black player:");
+    commands.add(thorBlackLabel);
+    thorBlackAll = new JTextArea();
+    thorBlackAll.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    thorBlackAll.addMouseListener(new MouseAdapter() {
+      public void mousePressed(MouseEvent me) {
+        thorBlackAll.setText("");
+      }
+    });
+
+    SpinnerModel thorBlackModel = new SpinnerListModel(new ArrayList<>(main.getThorPlayers()));
+    thorBlack = new JSpinner(thorBlackModel);
+    thorBlack.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    thorBlack.addChangeListener((ChangeEvent e) -> thorBlackAll.setText(thorBlackAll.getText() + thorBlack.getValue()));
+    commands.add(thorBlack);
+    commands.add(thorBlackAll);
+
+    JLabel thorWhiteLabel = new JLabel("Thor white player:");
+    commands.add(thorWhiteLabel);
+    thorWhiteAll = new JTextArea();
+    thorWhiteAll.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    thorWhiteAll.addMouseListener(new MouseAdapter() {
+      public void mousePressed(MouseEvent me) {
+        thorWhiteAll.setText("");
+      }
+    });
+
+    SpinnerModel thorWhiteModel = new SpinnerListModel(new ArrayList<>(main.getThorPlayers()));
+    thorWhite = new JSpinner(thorWhiteModel);
+    thorWhite.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    thorWhite.addChangeListener((ChangeEvent e) -> thorWhiteAll.setText(thorWhiteAll.getText() + thorWhite.getValue()));
+    commands.add(thorWhite);
+    commands.add(thorWhiteAll);
+    lookupThor = new JButton("Lookup Thor");
+    lookupThor.addMouseListener(new MouseAdapter() {
+      public void mousePressed(MouseEvent me) {
+        Set<String> black = new HashSet<>();
+        black.addAll(Arrays.asList(thorBlackAll.getText().split("\n")));
+        black.remove("");
+        Set<String> white = new HashSet<>();
+        white.addAll(Arrays.asList(thorWhiteAll.getText().split("\n")));
+        white.remove("");
+        main.thorLookup(black, white, new HashSet<>());
+        thorActive.setSelected(true);
+      }
+    });
+    commands.add(lookupThor);
+    thorActive = new JCheckBox("Thor mode");
+    commands.add(thorActive);
+
     setSize(1200, 800);
 
     setVisible(true);
     main.newGame();
   }
+
+  public void getClick(int move, MouseEvent e) {
+    if (SwingUtilities.isLeftMouseButton(e)) {
+      main.play(move);
+    } else if (SwingUtilities.isRightMouseButton(e)) {
+      main.undo();
+    }
+  }
+
+  @Override
+  public void setAnnotations(CaseAnnotations annotations, int move) {
+    if (debugMode.isSelected()) {
+      setAnnotationsDebug(annotations, move);
+    } else {
+      setAnnotationsLarge(annotations, move);
+    }
+  }
+  private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
+    TreeNodeInterface treeNode = annotations.treeNode;
+    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
+    String rows;
+    if (!thorActive.isSelected()) {
+    rows =
+        String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n" +
+        Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
+            lower == upper ?
+                Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
+                    Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
+                ("[" + (-upper/100) + ", " + (-lower/100) + "]")
+        );
+    } else {
+      rows = (annotations.thorGames == 0 ? "" : annotations.thorGames) + "\n" +
+          String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n"
+          + Utils.prettyPrintDouble(treeNode.getDescendants());
+    }
+
+    int x = BitPattern.getX(move);
+    int y = BitPattern.getY(move);
+    cases[x][y].setFontSizes(new double[] {0.25, 0.16});
+    cases[x][y].setAnnotations(rows);
+    cases[x][y].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
+    cases[x][y].repaint();
+  }
+
+  private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
+    TreeNodeInterface board = annotations.treeNode;
+    if (board == null) {
+      return;
+    }
+    StringBuilder rows;
+
+    String formatter = "%+.2f ";
+    if (board.isSolved()) {
+      formatter = "%+.0f ";
+    } else if (board.isPartiallySolved()) {
+      formatter = "%+.1f ";
+    }
+    String evalStr = String.format(Locale.US, formatter, -board.getEval() / 100.0);
+    if (board.getProb(board.getWeakLower()) > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
+      if (board.getProb(board.getWeakUpper()) < Constants.PROB_INCREASE_WEAK_EVAL) {
+        rows = new StringBuilder(evalStr);
+      } else {
+        rows = new StringBuilder("≤" + evalStr);
+      }
+    } else {
+      if (board.getProb(board.getWeakUpper()) < Constants.PROB_INCREASE_WEAK_EVAL) {
+        rows = new StringBuilder("≥" + evalStr);
+      } else {
+        rows = new StringBuilder("?");
+      }
+    }
+    rows.append(" ").append(Utils.prettyPrintDouble(board.getDescendants()));
+
+
+    for (int evalGoal = board.getWeakUpper(); evalGoal >= board.getWeakLower(); evalGoal -= 200) {
+      float prob = board.getProb(evalGoal);
+      rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (prob) * 100));
+
+      if (board.maxLogDerivative(evalGoal) > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
+        rows.append(Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
+      } else if (prob == 0) {
+        rows.append(Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
+      } else {
+        rows.append(Utils.prettyPrintDouble(board.proofNumber(evalGoal)));
+      }
+    }
+
+    int x = BitPattern.getX(move);
+    int y = BitPattern.getY(move);
+    cases[x][y].setFontSizes(new double[] {0.125});
+    cases[x][y].setAnnotations(rows.toString());
+    cases[x][y].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
+  }
+
+  public void repaint() {
+    for (Case[] row : cases) {
+      for (Case c : row) {
+        c.repaint();
+      }
+    }
+  }
+
 
   @Override
   public void setCases(Board board, boolean blackTurn) {
