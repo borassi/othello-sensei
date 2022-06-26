@@ -381,7 +381,7 @@ template<int depth, bool passed, bool solve>
 EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     const BitPattern player, const BitPattern opponent,
     const EvalLarge lower, const EvalLarge upper,
-    const BitPattern last_flip, const BitPattern stable) {
+    const BitPattern last_flip, const BitPattern stable, int max_visited) {
   n_visited_++;
   assert(kMinEvalLarge <= lower && lower < kMaxEvalLarge);
   assert(kMinEvalLarge < upper && upper <= kMaxEvalLarge);
@@ -444,7 +444,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
 //      if (eval == kLessThenMinEvalLarge || upper - lower <= 8 || true) {
         current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
             NewPlayer(flip, opponent), NewOpponent(flip, player),
-            -upper, -max_lower_eval, flip, new_stable);
+            -upper, -max_lower_eval, flip, new_stable, max_visited);
 //      } else {
 //        current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
 //            NewPlayer(flip, opponent), NewOpponent(flip, player),
@@ -455,6 +455,9 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
 //              -upper, -max_lower_eval, flip, new_stable);
 //        }
 //      }
+    }
+    if (depth > 3 && n_visited_ > max_visited) {
+      return kLessThenMinEvalLarge;
     }
     if (current_eval > best_eval) {
       second_best_eval = best_eval;
@@ -477,7 +480,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       best_eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
     } else {
       best_eval = -EvaluateInternal<depth, true, solve>(
-          opponent, player, -upper, -lower, last_flip, new_stable);
+          opponent, player, -upper, -lower, last_flip, new_stable, max_visited);
     }
   } else if (UseHashMap(depth, solve)) {
     hash_map_

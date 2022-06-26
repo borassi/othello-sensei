@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &evaluator_alpha_beta);
-  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored  n/end  n/mid  nextposfail  eval\n";
+  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid  nextposfail  eval\n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);
     std::cout << setw(4) << i << setw(8) << b.NEmpties();
@@ -124,14 +124,16 @@ int main(int argc, char* argv[]) {
     evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
+    auto n_visited = first_position->GetNVisited();
     std::cout
         << std::fixed
         << setw(9) << std::setprecision(4) << time << " "
-        << setw(13) << std::setprecision(0) << first_position->GetNVisited()
-        << setw(14) << static_cast<double>(first_position->GetNVisited() / time)
+        << setw(13) << std::setprecision(0) << n_visited
+        << setw(14) << static_cast<double>(n_visited / time)
         << setw(10) << tree_node_supplier.NumTreeNodes()
-        << setw(7) << 0 // Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves())
-        << setw(7) << 0 // Stats.getNVisitedAlphaBetaSolve() / (double) Stats.getNAlphaBetaSolve())
+//        << setw(7) << evaluator.GetNVisitedMidgame() // Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves())
+        << setw(8) << n_visited / tree_node_supplier.NumTreeNodes()
+        << setw(8) << n_visited / evaluator.GetNVisitedMidgame()
         << setw(13) << std::setprecision(4) << 0 // Stats.getNFailNextPosition() / (double) (Stats.getNFailNextPosition() + Stats.getNSuccessNextPosition()))
         << setw(6) << std::setprecision(0) << first_position->GetEval()
         << "\n";

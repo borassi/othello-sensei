@@ -22,7 +22,7 @@ constexpr int kBitHashMap = 20;
 constexpr int kDerivativeEvaluatorSize = 700000;
 #else
 constexpr int kBitHashMap = 22;
-constexpr int kDerivativeEvaluatorSize = 13000000;
+constexpr int kDerivativeEvaluatorSize = 10000000;
 #endif
 
 constexpr int kWeightDepthOne = 2;
@@ -32,7 +32,7 @@ constexpr int kHashMapSize = 1 << kBitHashMap;
 constexpr int kMinEmptiesForHashMap = 10;
 constexpr int kMinDepthForHashMap = 3;
 
-constexpr float kMultStddev = 1;
+constexpr float kMultStddev = 1.01;
 constexpr float kLeafMultiplier = 0.8F;
 
 constexpr int kMaxParallelTasks = 1;

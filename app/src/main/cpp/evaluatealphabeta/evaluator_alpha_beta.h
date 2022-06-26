@@ -16,6 +16,8 @@
 #ifndef EVALUATOR_ALPHA_BETA_H
 #define EVALUATOR_ALPHA_BETA_H
 
+#include <limits.h>
+
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
 #include "../evaluatedepthone/evaluator_depth_one_base.h"
@@ -151,15 +153,15 @@ class EvaluatorAlphaBeta {
   EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth) {
     return Evaluate(player, opponent, depth, kMinEvalLarge, kMaxEvalLarge);
   }
-  EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth, EvalLarge lower, EvalLarge upper) {
+  EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth, EvalLarge lower, EvalLarge upper, int max_visited = INT_MAX) {
     n_visited_ = 0;
     int n_empties = __builtin_popcountll(~(player | opponent));
     depth = std::min(depth, n_empties);
     evaluator_depth_one_->Setup(player, opponent);
     if (depth == n_empties) {
-      return (this->*solvers_[depth])(player, opponent, lower, upper, 0, 0);
+      return (this->*solvers_[depth])(player, opponent, lower, upper, 0, 0, max_visited);
     } else {
-      return (this->*evaluators_[depth])(player, opponent, lower, upper, 0, 0);
+      return (this->*evaluators_[depth])(player, opponent, lower, upper, 0, 0, max_visited);
     }
   }
 
@@ -171,13 +173,13 @@ class EvaluatorAlphaBeta {
 
   typedef EvalLarge(EvaluatorAlphaBeta::*EvaluateInternalFunction)(
       const BitPattern, const BitPattern, const EvalLarge, const EvalLarge,
-      const BitPattern, const BitPattern);
+      const BitPattern, const BitPattern, int);
 
   template<int depth, bool passed, bool solve>
   EvalLarge EvaluateInternal(
       const BitPattern player, const BitPattern opponent,
       const EvalLarge lower, const EvalLarge upper,
-      const BitPattern last_flip, const BitPattern stable);
+      const BitPattern last_flip, const BitPattern stable, int max_visited);
 
   static EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];

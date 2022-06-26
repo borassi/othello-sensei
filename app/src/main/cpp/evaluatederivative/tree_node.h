@@ -298,14 +298,9 @@ class TreeNode {
     EnlargeEvaluations();
     leaf_eval_ = leaf_eval;
     min_evaluation_ = weak_lower_;
-    bool leaf_easy = false;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, depth);
-      if (GetEvaluation(i).RemainingWork() < 2000) {
-        leaf_easy = true;
-      }
     }
-    prob_leaf_easy_ = prob_leaf_easy_ * 0.99 + 0.01 * (leaf_easy ? 1 : 0);
     AddDescendants(n_visited);
     assert(min_evaluation_ <= weak_lower_);
     assert(AllValidEvals());
@@ -425,31 +420,19 @@ class TreeNode {
     return result;
   }
 
-  bool ToBeSolved(Eval eval_goal, int tree_nodes) {
-    return ToBeSolved(eval_goal, tree_nodes, true);
-  }
-  bool ToBeSolved(Eval eval_goal, int tree_nodes, bool real) {
+  bool ToBeSolved(Eval alpha, Eval beta, NVisited max_proof) {
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     assert(IsLeaf());
     assert(eval.ProofNumber() > 0 && eval.DisproofNumber() > 0);
     assert(n_empties_ > 0 && n_empties_ <= 60);
 
-    Evaluation eval = GetEvaluation(eval_goal);
-    float prob_greater_equal = eval.ProbGreaterEqual();
-    if (tree_nodes > 0.8 * kDerivativeEvaluatorSize && n_empties_ < 18) {
-      return true;
+    for (Eval i = alpha; i <= beta; i += 2) {
+      Evaluation eval = GetEvaluation(i);
+      if (eval.RemainingWork() > max_proof) {
+        return false;
+      }
     }
-//    if (real) {
-//      fathers_[0]->ToBeSolved(-eval_goal, tree_nodes, false);
-//    } else {
-//      std::cout << player_ << " " << opponent_ << " Number " << ::ProofNumber(player_, opponent_, EvalToEvalLarge(eval_goal), leaf_eval_) * eval.ProbGreaterEqual()
-//          + ::DisproofNumber(player_, opponent_, EvalToEvalLarge(eval_goal), leaf_eval_) * (1 - eval.ProbGreaterEqual()) << " " << visited_for_endgame_ << "\n";
-//    }
-//    if (player_ == 324418209746651518ULL && opponent_ == 35584982636312064ULL) {
-//      std::cout << player_ << " " << opponent_ << " Number " << ::ProofNumber(player_, opponent_, EvalToEvalLarge(eval_goal), leaf_eval_) * eval.ProbGreaterEqual()
-//          + ::DisproofNumber(player_, opponent_, EvalToEvalLarge(eval_goal), leaf_eval_) * (1 - eval.ProbGreaterEqual()) << " " << visited_for_endgame_ << "\n";
-//    }
-    return GetEvaluation(eval_goal).RemainingWork() < visited_for_endgame_ / (1 - prob_leaf_easy_);
+    return true;
   }
 
   void AddDescendants(NVisited n) {
@@ -505,10 +488,6 @@ class TreeNode {
     return reduced || extend_upper || extend_lower;
   }
 
-  static void UpdateVisitedForEndgame(int visited_cur_endgame);
-
-  static void ResetVisitedForEndgame();
-
   std::vector<TreeNode*> Fathers() const {
     std::vector<TreeNode*> result;
     for (int i = 0; i < n_fathers_; ++i) {
@@ -518,8 +497,7 @@ class TreeNode {
   }
   u_int8_t Evaluator() { return evaluator_; }
 
-  static int visited_for_endgame_;
-  static float prob_leaf_easy_;
+  EvalLarge leaf_eval_;
  private:
   BitPattern player_;
   BitPattern opponent_;
@@ -527,7 +505,6 @@ class TreeNode {
   TreeNode** children_;
   TreeNode** fathers_;
   Evaluation* evaluations_;
-  EvalLarge leaf_eval_;
   u_int8_t n_threads_working_;
   Square n_children_;
   Square n_fathers_;

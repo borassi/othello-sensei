@@ -203,7 +203,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     SpinnerModel thorBlackModel = new SpinnerListModel(new ArrayList<>(main.getThorPlayers()));
     thorBlack = new JSpinner(thorBlackModel);
     thorBlack.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-    thorBlack.addChangeListener((ChangeEvent e) -> thorBlackAll.setText(thorBlackAll.getText() + thorBlack.getValue()));
+    thorBlack.addChangeListener((ChangeEvent e) -> thorBlackAll.setText(thorBlackAll.getText() + "\n" + thorBlack.getValue()));
     commands.add(thorBlack);
     commands.add(thorBlackAll);
 
@@ -220,7 +220,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     SpinnerModel thorWhiteModel = new SpinnerListModel(new ArrayList<>(main.getThorPlayers()));
     thorWhite = new JSpinner(thorWhiteModel);
     thorWhite.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-    thorWhite.addChangeListener((ChangeEvent e) -> thorWhiteAll.setText(thorWhiteAll.getText() + thorWhite.getValue()));
+    thorWhite.addChangeListener((ChangeEvent e) -> thorWhiteAll.setText(thorWhiteAll.getText() + "\n" + thorWhite.getValue()));
     commands.add(thorWhite);
     commands.add(thorWhiteAll);
     lookupThor = new JButton("Lookup Thor");

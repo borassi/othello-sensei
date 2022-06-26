@@ -24,8 +24,11 @@
 #include "../constants.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../utils/misc.h"
+#include "../evaluatedepthone/pattern_evaluator.h"
 
 constexpr bool kUseTranspositions = true;
+constexpr int kVisitedEndgameStart = 10000;
+constexpr int kVisitedEndgameGoal = 10000;
 
 enum Status {
     NONE = 0,
@@ -82,16 +85,6 @@ class TreeNodeSupplier {
       }
     }
     int hash = Hash(player, opponent);
-//    int old_index = tree_node_index_[hash];
-//    if (old_index < num_tree_nodes_) {
-//      auto& old_tree_node = tree_nodes_[old_index];
-//      if (Hash(old_tree_node.Player(), old_tree_node.Opponent()) != hash) {
-//        // Node is outdated. There is a tiny probability that the hash remains
-//        // the same and this check fails, but it does not affect correctness,
-//        // only efficiency.
-//        old_index = num_tree_nodes_ + 1;
-//      }
-//    }
     int node_id = num_tree_nodes_++;
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth, evaluator_index);
@@ -164,7 +157,8 @@ class EvaluatorDerivative {
     first_position_->SetLeaf(eval, 4, next_evaluator_->GetNVisited());
     last_update_weak_ = 0;
     next_evaluator_->AddEpoch();
-    TreeNode::ResetVisitedForEndgame();
+    visited_for_endgame_ = kVisitedEndgameStart;
+    visited_midgame_ = 0;
     lower_ = lower;
     upper_ = upper;
     ContinueEvaluate(max_n_visited, max_time);
@@ -182,9 +176,11 @@ class EvaluatorDerivative {
 
   Status GetStatus() { return status_; }
 
-
+  NVisited GetNVisitedMidgame() { return visited_midgame_; }
 
  private:
+  int visited_for_endgame_;
+  NVisited visited_midgame_;
   NVisited max_n_visited_;
   double start_time_;
   double max_time_;
@@ -212,7 +208,7 @@ class EvaluatorDerivative {
       }
 //      firstPosition.setNewLowerUpper(board);
       assert(leaf->IsLeaf());
-      if (leaf != first_position && leaf->ToBeSolved(next_leaf.eval_goal, tree_node_supplier_->NumTreeNodes())) {
+      if (leaf != first_position && leaf->ToBeSolved(next_leaf.alpha, next_leaf.beta, visited_for_endgame_)) {
         n_visited = SolvePosition(next_leaf);
       } else {
         n_visited = AddChildren(next_leaf);
@@ -304,8 +300,6 @@ class EvaluatorDerivative {
     TreeNode* node = leaf.leaf;
     assert(node->IsLeaf());
     int depth = node->NEmpties() < 24 ? 2 : 4;
-//    int evalGoal = position.eval.evalGoal;
-    int eval_goal = leaf.eval_goal;
     NVisited n_visited = 0;
     BitPattern player = node->Player();
     BitPattern opponent = node->Opponent();
@@ -316,22 +310,25 @@ class EvaluatorDerivative {
       int final_eval = GetEvaluationGameOver(player, opponent);
       node->SetSolved(final_eval);
       node->UpdateFathers();
+      visited_midgame_++;
       return 1;
     }
 
     std::pair<EvalLarge, NVisited> children_eval[moves.size()];
     std::vector<TreeNode*> children(moves.size());
+
     for (int i = 0; i < moves.size(); ++i) {
       BitPattern flip = moves[i];
       BitPattern new_player = NewPlayer(flip, opponent);
       BitPattern new_opponent = NewOpponent(flip, player);
       TreeNode* child = tree_node_supplier_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, index_);
       children[i] = child;
-      if (!child->IsValid()) {
-       int eval = next_evaluator_->Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-       n_visited += next_evaluator_->GetNVisited();
-       children_eval[i] = {eval, next_evaluator_->GetNVisited()};
+      if (child->IsValid()) {
+        continue;
       }
+      int eval = next_evaluator_->Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+      n_visited += next_evaluator_->GetNVisited();
+      children_eval[i] = {eval, next_evaluator_->GetNVisited()};
     }
 //    synchronized (father) {
     for (int i = 0; i < moves.size(); ++i) {
@@ -340,12 +337,31 @@ class EvaluatorDerivative {
       if (!child->IsValid()) {
         child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
         child->SetLeaf(children_eval[i].first, depth, children_eval[i].second);
+        // TODO: Check if this works.
+//        EvalLarge alpha = EvalToEvalLarge(-leaf.beta);
+//        EvalLarge beta = EvalToEvalLarge(-leaf.alpha);
+//        if (child->ToBeSolved(-leaf.beta, -leaf.alpha, visited_for_endgame_ / 10)) {
+////          std::cout << children_eval[i].first / 8.0 << "\n";
+//          EvalLarge eval = next_evaluator_->Evaluate(
+//              node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, visited_for_endgame_ / 3);
+//          n_visited += next_evaluator_->GetNVisited();
+//          if (eval != kLessThenMinEvalLarge) {
+//            visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) next_evaluator_->GetNVisited() - kVisitedEndgameGoal) / 10));
+//            if (eval < beta) {
+//              node->SetUpper(eval);
+//            }
+//            if (eval > alpha) {
+//              node->SetLower(eval);
+//            }
+//          }
+//        }
       }
 //     }
 //      assert father.isLowerUpperOK();
     }
     node->SetChildren(children);
     node->UpdateFathers();
+    visited_midgame_ += n_visited;
     return n_visited;
   }
 
@@ -355,9 +371,15 @@ class EvaluatorDerivative {
     EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
     EvalLarge beta = EvalToEvalLarge(leaf.beta);
     EvalLarge eval = next_evaluator_->Evaluate(
-        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta);
+        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, visited_for_endgame_ * 5);
     NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
-    TreeNode::UpdateVisitedForEndgame(seen_positions);
+    visited_for_endgame_ = std::min(100000, std::max(1000, visited_for_endgame_ - ((int) seen_positions - kVisitedEndgameGoal) / 30));
+//    if (rand() % 100 == 0) {
+//      std::cout << visited_for_endgame_ << "\n";
+//    }
+    if (eval == kLessThenMinEvalLarge) {
+      return seen_positions + AddChildren(leaf);
+    }
     node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
 
     if (eval < beta) {
