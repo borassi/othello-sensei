@@ -36,7 +36,7 @@ struct CombineProb {
   int log_derivative[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative() {
-    ProbCombiner combiner(ExpPolyLog<180>);
+    ProbCombiner combiner(ExpPolyLog<190>);
     for (int i = 0; i <= kProbStep; ++i) {
       double x1 = i / (double) kProbStep;
       if (x1 < 1E-15 || x1 > 1 - 1E-15) {

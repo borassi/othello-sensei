@@ -32,7 +32,7 @@ constexpr int kHashMapSize = 1 << kBitHashMap;
 constexpr int kMinEmptiesForHashMap = 10;
 constexpr int kMinDepthForHashMap = 3;
 
-constexpr float kMultStddev = 1.01;
+constexpr float kMultStddev = 1.03;
 constexpr float kLeafMultiplier = 0.8F;
 
 constexpr int kMaxParallelTasks = 1;
