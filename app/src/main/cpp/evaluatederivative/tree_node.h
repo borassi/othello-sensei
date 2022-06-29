@@ -290,7 +290,7 @@ class TreeNode {
     weak_upper_ = weak_upper;
   }
 
-  void SetLeaf(EvalLarge leaf_eval, Square depth, NVisited n_visited) {
+  void SetLeaf(EvalLarge leaf_eval, Square depth, NVisited n_visited, bool endgame = false) {
     assert(IsLeaf());
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
     assert(n_visited > 0);
@@ -299,7 +299,7 @@ class TreeNode {
     leaf_eval_ = leaf_eval;
     min_evaluation_ = weak_lower_;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      UpdateLeafEvaluation(i, depth);
+      UpdateLeafEvaluation(i, endgame);
     }
     AddDescendants(n_visited);
     assert(min_evaluation_ <= weak_lower_);
@@ -318,8 +318,8 @@ class TreeNode {
     leaf_eval_ = std::max(leaf_eval_, eval);
     Eval eval_small = EvalLargeToEvalRound(eval);
     lower_ = MaxEval(lower_, eval_small);
-    for (int i = weak_lower_; i <= MinEval(eval_small, weak_upper_); i += 2) {
-      MutableEvaluation(i)->SetProved();
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      UpdateLeafEvaluation(i, false);
     }
     // assert isLowerUpperOK();
   }
@@ -330,8 +330,8 @@ class TreeNode {
     leaf_eval_ = std::min(leaf_eval_, eval);
     Eval eval_small = EvalLargeToEvalRound(eval);
     upper_ = MinEval(upper_, eval_small);
-    for (int i = weak_upper_; i >= MaxEval(eval_small, weak_lower_); i -= 2) {
-      MutableEvaluation(i)->SetDisproved();
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      UpdateLeafEvaluation(i, false);
     }
     // assert isLowerUpperOK();
   }
@@ -517,20 +517,20 @@ class TreeNode {
   Eval min_evaluation_;
   u_int8_t evaluator_;
 
-  void UpdateLeafEvaluation(int i, int depth) {
+  void UpdateLeafEvaluation(int i, bool to_be_solved) {
     assert(i >= weak_lower_ && i <= weak_upper_);
     Evaluation* evaluation = MutableEvaluation(i);
-    if (i < lower_) {
+    if (i < lower_ || (n_threads_working_ > 0 && EvalLargeToEvalRound(leaf_eval_) >= i && to_be_solved)) {
       evaluation->SetProved();
-    } else if (i > upper_) {
+    } else if (i > upper_ || (n_threads_working_ > 0 && EvalLargeToEvalRound(leaf_eval_) < i && to_be_solved)) {
       evaluation->SetDisproved();
     } else {
-      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * kMultStddev);
+      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * 0.9);
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
       float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(disproof_number) && disproof_number > 0);
-      evaluation->SetLeaf(prob, proof_number, disproof_number, 0);
+      evaluation->SetLeaf(prob, proof_number, disproof_number, -n_threads_working_ * 20000000);
     }
   }
 
@@ -610,14 +610,10 @@ class TreeNode {
 //    synchronized (StoredBoard.this) {
     IncreaseNThreadsWorking();
     result->parents.push_back(this);
-    if (IsSolved()
-//          || (IsLeaf() && getNThreadsWorking() > 1)
-        ) {
+    if (IsSolved()) {
       result->leaf = nullptr;
     } else {
       if (IsLeaf()) {
-//          avoidNextPosFailCoeff.addAndGet(-1);
-//          Stats.addToNSuccessNextPosition(1);
         result->leaf = this;
         return;
       }
@@ -762,7 +758,7 @@ class TreeNode {
     }
       if (IsLeaf()) {
 //        assert(IsValid());
-        UpdateLeafEvaluation(value, 4);
+        UpdateLeafEvaluation(value, false);
 //        assert isLowerUpperOK();
         return;
       }

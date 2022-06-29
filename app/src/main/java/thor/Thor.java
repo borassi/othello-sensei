@@ -14,8 +14,10 @@
 package thor;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,8 +37,11 @@ public class Thor {
 
   public Thor() {
     ArrayList<String> thorGames = new ArrayList<>();
-    for (int i = 1977; i < 2100; ++i) {
-      thorGames.add("games/WTH_" + i + ".wtb");
+    for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
+      String filename = "games/WTH_" + i + ".wtb";
+      if (new File(filename).exists()) {
+        thorGames.add(filename);
+      }
     }
     loadFiles(thorGames, "games/WTHOR.JOU", "games/WTHOR.TRN");
     loadFiles(Arrays.asList(new String[]{"games/PLAYOK.wtb"}), "games/PLAYOK.JOU", "games/PLAYOK.TRN");

@@ -36,7 +36,7 @@ struct CombineProb {
   int log_derivative[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative() {
-    ProbCombiner combiner(ExpPolyLog<190>);
+    ProbCombiner combiner(ExpPolyLog<165>);
     for (int i = 0; i <= kProbStep; ++i) {
       double x1 = i / (double) kProbStep;
       if (x1 < 1E-15 || x1 > 1 - 1E-15) {
@@ -156,7 +156,7 @@ class Evaluation {
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
-      max_log_derivative_ = LeafLogDerivative(ProbGreaterEqualUnsafe());
+      max_log_derivative_ = LeafLogDerivative(ProbGreaterEqualUnsafe()) + log_derivative_add;
     }
     assert(max_log_derivative_ < 0);
   }

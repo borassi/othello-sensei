@@ -296,10 +296,58 @@ class EvaluatorDerivative {
     return result;
   }
 
+  std::vector<LeafToUpdate> leaves;
+
+  LeafToUpdate GetNextPositionNew() {
+//     if (Constants.ASSERT_EXTENDED) {
+//       assertIsAllOKRecursive(firstPosition);
+//     }
+
+    int max_leaves = 1;
+    leaves.reserve(max_leaves);
+    if (leaves.size() > 0) {
+      LeafToUpdate result = leaves.back();
+      leaves.pop_back();
+      return result;
+    }
+    LeafToUpdate result;
+      //      System.out.println(weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
+    UpdateWeakLowerUpper();
+    if (CheckFinished()) {
+      return LeafToUpdate();
+    }
+    //      System.out.println("  " + weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
+    while (leaves.size() < max_leaves) {
+      result = GetFirstPosition()->BestDescendant();
+      if (result.leaf == nullptr) {
+        assert(!leaves.empty());
+        break;
+      }
+      result.leaf->SetLeaf(result.leaf->leaf_eval_, 4, 0, first_position_->IsPartiallySolved());
+      result.leaf->UpdateFathers();
+      leaves.push_back(result);
+      if (result.leaf->NThreadsWorking() > 1) {
+        break;
+      }
+    }
+//    std::cout << "Stop after " << leaves.size() << " " << first_position_->IsPartiallySolved() << "\n";
+    for (LeafToUpdate leaf : leaves) {
+      leaf.leaf->DecreaseNThreadsWorking();
+      leaf.leaf->SetLeaf(leaf.leaf->leaf_eval_, 4, 0);
+      leaf.leaf->UpdateFathers();
+      leaf.leaf->IncreaseNThreadsWorking();
+    }
+    result = leaves.back();
+    leaves.pop_back();
+    assert(result.leaf != nullptr);
+    assert(result.leaf->IsLeaf());
+    return result;
+  }
+
   NVisited AddChildren(const LeafToUpdate& leaf) {
     TreeNode* node = leaf.leaf;
     assert(node->IsLeaf());
-    int depth = node->NEmpties() < 24 ? 2 : 4;
+    int depth = node->NEmpties() < 24 ? (node->NEmpties() < 22 ? 2 : 3) : 4;
     NVisited n_visited = 0;
     BitPattern player = node->Player();
     BitPattern opponent = node->Opponent();
@@ -337,24 +385,6 @@ class EvaluatorDerivative {
       if (!child->IsValid()) {
         child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
         child->SetLeaf(children_eval[i].first, depth, children_eval[i].second);
-        // TODO: Check if this works.
-//        EvalLarge alpha = EvalToEvalLarge(-leaf.beta);
-//        EvalLarge beta = EvalToEvalLarge(-leaf.alpha);
-//        if (child->ToBeSolved(-leaf.beta, -leaf.alpha, visited_for_endgame_ / 10)) {
-////          std::cout << children_eval[i].first / 8.0 << "\n";
-//          EvalLarge eval = next_evaluator_->Evaluate(
-//              node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, visited_for_endgame_ / 3);
-//          n_visited += next_evaluator_->GetNVisited();
-//          if (eval != kLessThenMinEvalLarge) {
-//            visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) next_evaluator_->GetNVisited() - kVisitedEndgameGoal) / 10));
-//            if (eval < beta) {
-//              node->SetUpper(eval);
-//            }
-//            if (eval > alpha) {
-//              node->SetLower(eval);
-//            }
-//          }
-//        }
       }
 //     }
 //      assert father.isLowerUpperOK();
@@ -371,7 +401,7 @@ class EvaluatorDerivative {
     EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
     EvalLarge beta = EvalToEvalLarge(leaf.beta);
     EvalLarge eval = next_evaluator_->Evaluate(
-        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, visited_for_endgame_ * 5);
+        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 300000);
     NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
     visited_for_endgame_ = std::min(100000, std::max(1000, visited_for_endgame_ - ((int) seen_positions - kVisitedEndgameGoal) / 30));
 //    if (rand() % 100 == 0) {
@@ -382,12 +412,14 @@ class EvaluatorDerivative {
     }
     node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
 
+    node->DecreaseNThreadsWorking();
     if (eval < beta) {
       node->SetUpper(eval);
     }
     if (eval > alpha) {
       node->SetLower(eval);
     }
+    node->IncreaseNThreadsWorking();
 //    StoredBoard.proofNumberForAlphaBeta.addAndGet(
 //        (int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
     node->UpdateFathers();
