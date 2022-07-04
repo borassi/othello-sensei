@@ -403,7 +403,7 @@ class EvaluatorDerivative {
     EvalLarge eval = next_evaluator_->Evaluate(
         node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 300000);
     NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
-    visited_for_endgame_ = std::min(100000, std::max(1000, visited_for_endgame_ - ((int) seen_positions - kVisitedEndgameGoal) / 30));
+    visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) seen_positions - kVisitedEndgameGoal) / 30));
 //    if (rand() % 100 == 0) {
 //      std::cout << visited_for_endgame_ << "\n";
 //    }

@@ -169,13 +169,13 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father, bool proof) {
+  double GetValue(const Evaluation& father, bool proof, NVisited n_visited) {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
     }
     if (prob == 0) {
-      return ProofNumber() + 1E12;
+      return ProofNumber() * (1 + 5000 / n_visited) - 1E15;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
     } else if (prob == 1 || (proof && prob > 0.5)) {
       return -DisproofNumber();// / std::max(0.0001F, 1 - ProbGreaterEqual());

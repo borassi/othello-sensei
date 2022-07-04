@@ -39,9 +39,9 @@ public class Thor {
     ArrayList<String> thorGames = new ArrayList<>();
     for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
       String filename = "games/WTH_" + i + ".wtb";
-      if (new File(filename).exists()) {
+      // if (new File(filename).exists()) {
         thorGames.add(filename);
-      }
+      // }
     }
     loadFiles(thorGames, "games/WTHOR.JOU", "games/WTHOR.TRN");
     loadFiles(Arrays.asList(new String[]{"games/PLAYOK.wtb"}), "games/PLAYOK.JOU", "games/PLAYOK.TRN");

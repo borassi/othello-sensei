@@ -356,7 +356,7 @@ class TreeNode {
 //      synchronized(childBoard)
 //      {
       Evaluation child_eval = child->GetEvaluation(-eval_goal);
-      double child_value = child_eval.GetValue(cur_evaluation, proof);
+      double child_value = child_eval.GetValue(cur_evaluation, proof, child->n_visited_);
       if (child_value > best_child_value) {
         best_child = child;
         best_child_value = child_value;
@@ -416,7 +416,7 @@ class TreeNode {
     result.beta = std::max(eval_goal, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1);
     result.weak_lower = weak_lower_;
     result.weak_upper = weak_upper_;
-    BestDescendant(&result, IsPartiallySolved());
+    BestDescendant(&result, GetPercentileLower(0.00001) == GetPercentileUpper(0.00001));
     return result;
   }
 
@@ -525,7 +525,7 @@ class TreeNode {
     } else if (i > upper_ || (n_threads_working_ > 0 && EvalLargeToEvalRound(leaf_eval_) < i && to_be_solved)) {
       evaluation->SetDisproved();
     } else {
-      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * 0.9);
+      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * 0.85);
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
       float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
