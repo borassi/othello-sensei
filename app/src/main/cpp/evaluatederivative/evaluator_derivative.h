@@ -161,6 +161,8 @@ class EvaluatorDerivative {
     visited_midgame_ = 0;
     lower_ = lower;
     upper_ = upper;
+    num_batches_ = 0;
+    sum_batch_sizes_ = 0;
     ContinueEvaluate(max_n_visited, max_time);
   }
 
@@ -177,6 +179,8 @@ class EvaluatorDerivative {
   Status GetStatus() { return status_; }
 
   NVisited GetNVisitedMidgame() { return visited_midgame_; }
+
+  float AverageBatchSize() { return sum_batch_sizes_ / num_batches_; }
 
  private:
   int visited_for_endgame_;
@@ -195,32 +199,31 @@ class EvaluatorDerivative {
   TreeNodeSupplier* tree_node_supplier_;
   TreeNode* first_position_;
   u_int8_t index_;
+  float num_batches_;
+  float sum_batch_sizes_;
 
   void Run() {
-    LeafToUpdate next_leaf;
+    std::vector<LeafToUpdate> next_leaves;
     NVisited n_visited;
     TreeNode* first_position = GetFirstPosition();
-    while (true) {
-      next_leaf = GetNextPosition();
-      TreeNode* leaf = next_leaf.leaf;
-      if (next_leaf.leaf == nullptr) {
-        break;
+    while (!CheckFinished()) {
+      next_leaves = GetNextPosition();
+      num_batches_++;
+      sum_batch_sizes_ += next_leaves.size();
+      for (const auto& next_leaf : next_leaves) {
+        TreeNode* leaf = next_leaf.leaf;
+        assert(leaf->IsLeaf());
+        if (leaf != first_position && leaf->ToBeSolved(next_leaf.alpha, next_leaf.beta, visited_for_endgame_)) {
+          n_visited = SolvePosition(next_leaf);
+        } else {
+          n_visited = AddChildren(next_leaf);
+        }
+        for (TreeNode* parent : next_leaf.parents) {
+          parent->AddDescendants(n_visited);
+          parent->DecreaseNThreadsWorking();
+        }
       }
-//      firstPosition.setNewLowerUpper(board);
-      assert(leaf->IsLeaf());
-      if (leaf != first_position && leaf->ToBeSolved(next_leaf.alpha, next_leaf.beta, visited_for_endgame_)) {
-        n_visited = SolvePosition(next_leaf);
-      } else {
-        n_visited = AddChildren(next_leaf);
-      }
-//      else {
-//        nVisited = deepenPosition(position);
-//      }
-      for (TreeNode* parent : next_leaf.parents) {
-        parent->AddDescendants(n_visited);
-        parent->DecreaseNThreadsWorking();
-        assert(parent->NThreadsWorking() == 0);
-      }
+      assert (first_position->NThreadsWorking() == 0);
       just_started_ = false;
     }
   }
@@ -272,75 +275,14 @@ class EvaluatorDerivative {
 //
 
 
-  LeafToUpdate GetNextPosition() {
-//     if (Constants.ASSERT_EXTENDED) {
-//       assertIsAllOKRecursive(firstPosition);
-//     }
-
-    LeafToUpdate result;
-    while (true) {
-      //      System.out.println(weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
-      UpdateWeakLowerUpper();
-      if (CheckFinished()) {
-        return LeafToUpdate();
-      }
-      //      System.out.println("  " + weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
-      result = GetFirstPosition()->BestDescendant();
-      if (result.leaf != nullptr) {
-        break;
-      }
-      using namespace std::chrono_literals;
-      std::this_thread::sleep_for(100ms);
-    }
-    assert(result.leaf->IsLeaf());
-    return result;
-  }
-
-  std::vector<LeafToUpdate> leaves;
-
-  LeafToUpdate GetNextPositionNew() {
-//     if (Constants.ASSERT_EXTENDED) {
-//       assertIsAllOKRecursive(firstPosition);
-//     }
-
-    int max_leaves = 1;
-    leaves.reserve(max_leaves);
-    if (leaves.size() > 0) {
-      LeafToUpdate result = leaves.back();
-      leaves.pop_back();
-      return result;
-    }
-    LeafToUpdate result;
-      //      System.out.println(weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
+  std::vector<LeafToUpdate> GetNextPosition() {
+    std::vector<LeafToUpdate> result;
     UpdateWeakLowerUpper();
     if (CheckFinished()) {
-      return LeafToUpdate();
+      return {};
     }
-    //      System.out.println("  " + weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
-    while (leaves.size() < max_leaves) {
-      result = GetFirstPosition()->BestDescendant();
-      if (result.leaf == nullptr) {
-        assert(!leaves.empty());
-        break;
-      }
-      result.leaf->SetLeaf(result.leaf->leaf_eval_, 4, 0, first_position_->IsPartiallySolved());
-      result.leaf->UpdateFathers();
-      leaves.push_back(result);
-      if (result.leaf->NThreadsWorking() > 1) {
-        break;
-      }
-    }
-//    std::cout << "Stop after " << leaves.size() << " " << first_position_->IsPartiallySolved() << "\n";
-    for (LeafToUpdate leaf : leaves) {
-      leaf.leaf->DecreaseNThreadsWorking();
-      leaf.leaf->SetLeaf(leaf.leaf->leaf_eval_, 4, 0);
-      leaf.leaf->UpdateFathers();
-      leaf.leaf->IncreaseNThreadsWorking();
-    }
-    result = leaves.back();
-    leaves.pop_back();
-    assert(result.leaf != nullptr);
-    assert(result.leaf->IsLeaf());
+    result = GetFirstPosition()->BestDescendant3();
+    assert (!result.empty());
     return result;
   }
 

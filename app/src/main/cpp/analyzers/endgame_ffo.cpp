@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &evaluator_alpha_beta);
-  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid  nextposfail  eval\n";
+  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval\n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);
     std::cout << setw(4) << i << setw(8) << b.NEmpties();
@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
 //        << setw(7) << evaluator.GetNVisitedMidgame() // Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves())
         << setw(8) << n_visited / tree_node_supplier.NumTreeNodes()
         << setw(8) << n_visited / evaluator.GetNVisitedMidgame()
-        << setw(13) << std::setprecision(4) << 0 // Stats.getNFailNextPosition() / (double) (Stats.getNFailNextPosition() + Stats.getNSuccessNextPosition()))
+        << setw(13) << std::setprecision(2) << evaluator.AverageBatchSize()
         << setw(6) << std::setprecision(0) << first_position->GetEval()
         << "\n";
   }

@@ -15,3 +15,7 @@
  */
 
 #include "tree_node.h"
+
+double LeafToUpdate::TotalLoss() const {
+  return loss;
+}

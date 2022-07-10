@@ -28,7 +28,7 @@ constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
 constexpr int kLogDerivativeMultiplier = 10000;
 
 inline int LeafLogDerivative(float prob) {
-  return round(kLogDerivativeMultiplier * kLeafMultiplier * log(prob * (1 - prob)));
+  return round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
 }
 
 struct CombineProb {
@@ -169,7 +169,7 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father, bool proof, NVisited n_visited) {
+  double GetValue(const Evaluation& father, bool proof, NVisited n_visited, int n_threads_working) {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
@@ -177,8 +177,8 @@ class Evaluation {
     if (prob == 0) {
       return ProofNumber() * (1 + 5000 / n_visited) - 1E15;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
-    } else if (prob == 1 || (proof && prob > 0.5)) {
-      return -DisproofNumber();// / std::max(0.0001F, 1 - ProbGreaterEqual());
+    } else if (prob == 1) {
+      return -DisproofNumber();
     } else {
       return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
 //             * avoidNextPosFailCoeff.get()
