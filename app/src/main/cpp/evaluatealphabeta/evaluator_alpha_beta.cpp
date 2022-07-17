@@ -348,7 +348,6 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap* hash_map,
     const EvaluatorFactory& evaluator_depth_one_factory) :
     n_visited_(0),
-    epoch_(0),
     hash_map_(hash_map),
     evaluator_depth_one_(evaluator_depth_one_factory()) {
   for (int depth = 0; depth < 64; ++depth) {
@@ -484,7 +483,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     }
   } else if (UseHashMap(depth, solve)) {
     hash_map_
-        ->Update(player, opponent, epoch_, depth, best_eval, lower, upper, best_move, second_best_move);
+        ->Update(player, opponent, depth, best_eval, lower, upper, best_move, second_best_move);
   }
   if (UpdateDepthOneEvaluator(depth, solve)) {
     evaluator_depth_one_->Invert();

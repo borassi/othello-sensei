@@ -137,6 +137,7 @@ target_link_libraries( # Specifies the target library.
         get_moves
         misc
         tree_node
+        evaluator_depth_one_base
 )
 
 IF (NOT ANDROID)

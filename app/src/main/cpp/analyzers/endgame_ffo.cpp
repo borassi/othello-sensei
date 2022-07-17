@@ -112,9 +112,8 @@ int main(int argc, char* argv[]) {
   using std::setw;
   HashMap hash_map;
   auto evals = LoadEvals();
-  EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
   TreeNodeSupplier tree_node_supplier;
-  EvaluatorDerivative evaluator(&tree_node_supplier, &evaluator_alpha_beta);
+  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 1);
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval\n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);

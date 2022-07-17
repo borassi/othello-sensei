@@ -169,13 +169,15 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father, bool proof, NVisited n_visited, int n_threads_working) {
+  double GetValue(const Evaluation& father) {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
     }
     if (prob == 0) {
-      return ProofNumber() * (1 + 5000 / n_visited) - 1E15;
+      return ProofNumber()
+         //* (1 + 5000 / n_visited)
+         - 1000.0 * kLogDerivativeMinusInf;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
     } else if (prob == 1) {
       return -DisproofNumber();

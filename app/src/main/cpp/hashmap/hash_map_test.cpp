@@ -43,64 +43,53 @@ TEST(HashMapEntry, Update) {
     // Update both
     ExpectEntryEq(entry, 0, 0, kMinEvalLarge, kMaxEvalLarge, 0, kNoSquare, kNoSquare);
 
-    entry.Update(1, 2, 0, 4, 1, -2, 2, 34, 35);
+    entry.Update(1, 2, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
     // Update only lower
-    entry.Update(1, 2, 0, 6, 4, -2, 2, 36, 37);
+    entry.Update(1, 2, 6, 4, -2, 2, 36, 37);
     ExpectEntryEq(entry, 1, 2, 4, kMaxEvalLarge, 6, 36, 37);
     // Update only upper
-    entry.Update(1, 2, 0, 8, -4, -2, 2, 38, 39);
+    entry.Update(1, 2, 8, -4, -2, 2, 38, 39);
     ExpectEntryEq(entry, 1, 2, kMinEvalLarge, -4, 8, 38, 39);
-  }
-
-  // NEW EPOCH
-  {
-    entry.Update(1, 2, 1, 6, 1, -2, 2, 34, 35);
-    // Update in any case.
-    entry.Update(1, 4, 2, 4, 0, -2, 2, 36, 37);
-    ExpectEntryEq(entry, 1, 4, 0, 0, 4, 36, 37);
-
-    entry.Update(1, 4, 3, 2, 0, -2, 2, 38, 39);
-    ExpectEntryEq(entry, 1, 4, 0, 0, 2, 38, 39);
   }
 
   // SAME EPOCH, DIFFERENT BOARD
   {
-    entry.Update(1, 2, 1, 4, 1, -2, 2, 34, 35);
+    entry.Update(1, 2, 4, 1, -2, 2, 34, 35);
 
     // Smaller or equal depth: do not update.
-    entry.Update(1, 4, 1, 2, 0, -4, 4, 36, 37);
+    entry.Update(1, 4, 2, 0, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
-    entry.Update(1, 4, 1, 4, 0, -4, 4, 36, 37);
+    entry.Update(1, 4, 4, 0, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
 
     // Higher depth: update.
-    entry.Update(1, 4, 1, 6, -6, -4, 4, 36, 37);
+    entry.Update(1, 4, 6, -6, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 4, kMinEvalLarge, -6, 6, 36, 37);
 
-    entry.Update(1, 2, 2, 4, 1, -2, 2, 34, 35);
+    entry.Update(1, 2, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
-    entry.Update(1, 4, 2, 6, 6, -4, 4, 36, 37);
+    entry.Update(1, 4, 6, 6, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 4, 6, kMaxEvalLarge, 6, 36, 37);
   }
 
   // SAME EPOCH, SAME BOARD
   {
-    entry.Update(1, 2, 0, 4, 1, -2, 2, 34, 35);
+    entry.Update(1, 2, 4, 1, -2, 2, 34, 35);
 
     // Smaller or equal depth: do not update.
-    entry.Update(1, 2, 0, 2, 0, -4, 4, 36, 37);
+    entry.Update(1, 2, 2, 0, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
-    entry.Update(1, 2, 0, 4, 0, -4, 4, 36, 37);
+    entry.Update(1, 2, 4, 0, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
 
     // Higher depth: update.
-    entry.Update(1, 2, 1, 6, -6, -4, 4, 36, 37);
+    entry.Update(1, 2, 6, -6, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 2, kMinEvalLarge, -6, 6, 36, 37);
 
-    entry.Update(1, 2, 2, 4, 1, -2, 2, 34, 35);
+    entry.Update(1, 2, 4, 1, -2, 2, 34, 35);
     ExpectEntryEq(entry, 1, 2, 1, 1, 4, 34, 35);
-    entry.Update(1, 4, 2, 6, 6, -4, 4, 36, 37);
+    entry.Update(1, 4, 6, 6, -4, 4, 36, 37);
     ExpectEntryEq(entry, 1, 4, 6, kMaxEvalLarge, 6, 36, 37);
   }
 }
@@ -127,6 +116,6 @@ TEST(HashMapEntry, Update) {
 TEST(HashMap, Base) {
   HashMap hash_map;
   HashMapEntry entry;
-  entry.Update(1, 4, 2, 6, 2, -64, 64, 36, 37);
+  entry.Update(1, 4, 6, 2, -64, 64, 36, 37);
   ExpectEntryEq(*hash_map.Get(1, 4), 1, 4, -64, 64, 6, 36, 37);
 }

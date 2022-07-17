@@ -42,27 +42,13 @@ class JNIWrapper {
       last_opponent_(0),
       last_gap_(-1),
       num_active_evaluators_(0) {
-    evaluator_alpha_beta_.reserve(kNumEvaluators);
     evaluator_derivative_.reserve(kNumEvaluators);
     for (int i = 0; i < kNumEvaluators; ++i) {
-      evaluator_alpha_beta_.emplace_back(
-          &hash_map_,
-          PatternEvaluator::Factory(evals_.data())),
       evaluator_derivative_.emplace_back(
-          &tree_node_supplier_, &evaluator_alpha_beta_[i],
+          &tree_node_supplier_, &hash_map_,
+          PatternEvaluator::Factory(evals_.data()), 1,
           static_cast<u_int8_t>(i));
     }
-  }
-
-  jobject EvalAlphaBeta(JNIEnv* env, BitPattern player, BitPattern opponent, jint depth, jint lower, jint upper) {
-    jclass EvalWithVisited = env->FindClass("evaluateposition/EvalWithVisited");
-    EvalLarge eval = evaluator_alpha_beta_[0].Evaluate(player, opponent, depth, EvalJavaToEvalLarge(lower), EvalJavaToEvalLarge(upper));
-    NVisited n_visited = evaluator_alpha_beta_[0].GetNVisited();
-    return env->NewObject(
-        EvalWithVisited,
-        env->GetMethodID(EvalWithVisited, "<init>", "(IJ)V"),
-        static_cast<jint>(EvalLargeToEvalJava(eval)),
-        static_cast<jlong>(n_visited));
   }
 
   EvaluatorDerivative* BestEvaluator(float gap) {
@@ -227,7 +213,6 @@ class JNIWrapper {
   EvalType evals_;
   HashMap hash_map_;
   TreeNode t;
-  std::vector<EvaluatorAlphaBeta> evaluator_alpha_beta_;
   std::vector<EvaluatorDerivative> evaluator_derivative_;
   TreeNodeSupplier tree_node_supplier_;
   BitPattern last_player_;
@@ -240,12 +225,6 @@ JNIWrapper kJNIWrapper;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-JNIEXPORT jobject JNICALL Java_jni_JNI_evaluateCPPInternal(
-    JNIEnv* env, jclass, jlong player, jlong opponent, jint depth, jint lower,
-    jint upper) {
-  return kJNIWrapper.EvalAlphaBeta(env, player, opponent, depth, lower, upper);
-}
 
 JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
     JNIEnv* env, jobject obj, jlong player, jlong opponent, jint lower,

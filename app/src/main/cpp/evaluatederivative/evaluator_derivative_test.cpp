@@ -22,9 +22,8 @@
 TEST(EvaluatorDerivativeTest, Base) {
   EvalType evals = LoadEvals();
   HashMap hash_map;
-  EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
   TreeNodeSupplier supplier;
-  EvaluatorDerivative evaluator_derivative(&supplier, &evaluator_alpha_beta);
+  EvaluatorDerivative evaluator_derivative(&supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 1);
   Board initial_board("e6");
   evaluator_derivative.Evaluate(initial_board.GetPlayer(), initial_board.GetOpponent(), kMinEval + 1, kMaxEval - 1, 100000, 1);
   evaluator_derivative.Evaluate(initial_board.GetPlayer(), initial_board.GetOpponent(), kMinEval + 1, kMaxEval - 1, 100000, 1);
@@ -37,8 +36,7 @@ TEST(EvaluatorDerivativeTest, Endgame) {
   EvalType evals = LoadEvals();
   HashMap hash_map;
   TreeNodeSupplier supplier;
-  EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
-  EvaluatorDerivative evaluator_derivative(&supplier, &evaluator_alpha_beta);
+  EvaluatorDerivative evaluator_derivative(&supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 1);
   Board initial_board("e6f4c3c4d3d6e3c2b3c5b4f3d2c1d7c6f5c7f6e8b5e7b6g6g5h6g4h5g3h2h4h3f7f8g7f2e1d1g8e2b1b2");
   evaluator_derivative.Evaluate(initial_board.GetPlayer(), initial_board.GetOpponent(), kMinEval + 1, kMaxEval - 1, 1000000, 1);
 

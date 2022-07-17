@@ -17,19 +17,16 @@
 #include "hash_map.h"
 
 void HashMapEntry::Update(
-  BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth, EvalLarge eval,
-  EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move) {
+    BitPattern player, BitPattern opponent, DepthValue depth, EvalLarge eval,
+    EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move) {
   const std::lock_guard<std::mutex> lock(mutex_);
-//   if (epoch != epoch_ || depth > depth_) {
-    player_ = player;
-    opponent_ = opponent;
-    epoch_ = epoch;
-    lower_ = eval > lower ? eval : kMinEvalLarge;
-    upper_ = eval < upper ? eval : kMaxEvalLarge;
-    depth_ = depth;
-    best_move_ = best_move;
-    second_best_move_ = second_best_move;
-//   }
+  player_ = player;
+  opponent_ = opponent;
+  lower_ = eval > lower ? eval : kMinEvalLarge;
+  upper_ = eval < upper ? eval : kMaxEvalLarge;
+  depth_ = depth;
+  best_move_ = best_move;
+  second_best_move_ = second_best_move;
 }
 
 std::pair<EvalLarge, EvalLarge> HashMapEntry::GetLowerUpper(

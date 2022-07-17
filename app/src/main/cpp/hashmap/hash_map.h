@@ -24,12 +24,9 @@
 #ifndef HASH_MAP_H
 #define HASH_MAP_H
 
-typedef u_int8_t EpochValue;
-
 class HashMapEntry {
  public:
   HashMapEntry() :
-    epoch_(0),
     player_(0),
     opponent_(0),
     lower_(kMinEvalLarge),
@@ -39,7 +36,6 @@ class HashMapEntry {
     second_best_move_(kNoSquare) {}
 
   HashMapEntry(const HashMapEntry& e) :
-    epoch_(e.epoch_),
     player_(e.player_),
     opponent_(e.opponent_),
     lower_(e.lower_),
@@ -49,7 +45,7 @@ class HashMapEntry {
     second_best_move_(e.second_best_move_) {}
 
   void Update(
-    BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth, EvalLarge eval,
+    BitPattern player, BitPattern opponent, DepthValue depth, EvalLarge eval,
     EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move);
 
   std::pair<EvalLarge, EvalLarge> GetLowerUpper(
@@ -71,10 +67,6 @@ class HashMapEntry {
     const std::lock_guard<std::mutex> lock(mutex_);
     return upper_;
   }
-  EpochValue Epoch() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
-    return epoch_;
-  }
   DepthValue Depth() const {
     const std::lock_guard<std::mutex> lock(mutex_);
     return depth_;
@@ -91,7 +83,6 @@ class HashMapEntry {
  private:
   BitPattern player_;
   BitPattern opponent_;
-  EpochValue epoch_;
   EvalLarge lower_;
   EvalLarge upper_;
   DepthValue depth_;
@@ -107,17 +98,17 @@ class HashMap {
   }
 
   void Update(
-    BitPattern player, BitPattern opponent, EpochValue epoch, DepthValue depth,
+    BitPattern player, BitPattern opponent, DepthValue depth,
     EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
     Square second_best_move) {
     hash_map_[Hash(player, opponent)].Update(
-      player, opponent, epoch, depth, eval, lower, upper, best_move,
+      player, opponent, depth, eval, lower, upper, best_move,
       second_best_move);
   }
 
   void Reset() {
     for (int i = 0; i < kHashMapSize; ++i) {
-      hash_map_[i].Update(0, 0, 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
+      hash_map_[i].Update(0, 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
     }
   }
 

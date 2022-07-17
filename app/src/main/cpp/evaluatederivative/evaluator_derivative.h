@@ -24,6 +24,7 @@
 #include "../constants.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../utils/misc.h"
+#include "../evaluatedepthone/evaluator_depth_one_base.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
 
 constexpr bool kUseTranspositions = true;
@@ -102,11 +103,16 @@ class TreeNodeSupplier {
 
 class EvaluatorDerivative {
  public:
-  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, EvaluatorAlphaBeta* next_evaluator, u_int8_t index = 0) :
+  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap* hash_map, EvaluatorFactory evaluator_depth_one, int n_threads, u_int8_t index = 0) :
       tree_node_supplier_(tree_node_supplier),
-      next_evaluator_(next_evaluator),
+      n_threads_(n_threads),
+      next_evaluators_(),
       index_(index),
-      first_position_(nullptr) {}
+      first_position_(nullptr) {
+    for (int i = 0; i < n_threads_; ++i) {
+      next_evaluators_.push_back(EvaluatorAlphaBeta(hash_map, evaluator_depth_one));
+    }
+  }
 //  EvaluatorDerivative(int max_size, int array_size, HashMap hashMap) {
 //    this(maxSize, arraySize, hashMap, () -> new EvaluatorAlphaBeta(hashMap));
 //  }
@@ -152,11 +158,10 @@ class EvaluatorDerivative {
     TreeNode* first_position = GetFirstPosition();
     approx_ = approx;
 
-    EvalLarge eval = next_evaluator_->Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
+    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
-    first_position_->SetLeaf(eval, 4, next_evaluator_->GetNVisited());
+    first_position_->SetLeaf(eval, 4, next_evaluators_[0].GetNVisited());
     last_update_weak_ = 0;
-    next_evaluator_->AddEpoch();
     visited_for_endgame_ = kVisitedEndgameStart;
     visited_midgame_ = 0;
     lower_ = lower;
@@ -183,6 +188,7 @@ class EvaluatorDerivative {
   float AverageBatchSize() { return sum_batch_sizes_ / num_batches_; }
 
  private:
+  int n_threads_;
   int visited_for_endgame_;
   NVisited visited_midgame_;
   NVisited max_n_visited_;
@@ -192,7 +198,7 @@ class EvaluatorDerivative {
   Eval lower_ = -63;
   Eval upper_ = 63;
   Status status_ = SOLVED;
-  EvaluatorAlphaBeta* next_evaluator_;
+  std::vector<EvaluatorAlphaBeta> next_evaluators_;
   ElapsedTime elapsed_time_;
   bool just_started_;
   bool approx_;
@@ -227,53 +233,6 @@ class EvaluatorDerivative {
       just_started_ = false;
     }
   }
-  void SetFirstPosition(BitPattern player, BitPattern opponent) {
-//    Empty();
-//    StoredBoard.proofNumberForAlphaBeta.set(0);
-//    StoredBoard.avoidNextPosFailCoeff.set(8000);
-//    if (Constants.ASSERT_EXTENDED) {
-//      assertIsAllOKRecursive(firstPosition);
-//    }
-//    assert firstPosition.isLowerUpperOK();
-  }
-
-//   private class EvaluatorThread implements Runnable {
-//     private final EvaluatorInterface nextEvaluator;
-//
-//     private EvaluatorThread(EvaluatorInterface nextEvaluator) {
-//       this.nextEvaluator = nextEvaluator;
-//     }
-//
-//     class PartialEval {
-//       int eval;
-//       long nVisited;
-//       public PartialEval(int eval, long nVisited) {
-//         this.eval = eval;
-//         this.nVisited = nVisited;
-//       }
-//     }
-//
-//     public long deepenPosition(StoredBoardBestDescendant position) {
-//       StoredBoard board = position.eval.getStoredBoard();
-//       int curEval = nextEvaluator.evaluate(
-//             board.getPlayer(), board.getOpponent(), 2, -6400, 6400);
-//       int d;
-//       long seenPositions = 0;
-//       for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
-//         if (board.nEmpties - d < Constants.EMPTIES_FOR_FORCED_MIDGAME - 2) {
-//           seenPositions += solvePosition(position);
-//           return seenPositions;
-//         }
-//         curEval = nextEvaluator.evaluate(
-//             board.getPlayer(), board.getOpponent(), d, -6400, 6400);
-//         seenPositions += nextEvaluator.getNVisited();
-//       }
-//       board.setLeaf((short) curEval, (short) d);
-//       board.updateFathers();
-//       return seenPositions;
-//     }
-//
-
 
   std::vector<LeafToUpdate> GetNextPosition() {
     std::vector<LeafToUpdate> result;
@@ -281,7 +240,7 @@ class EvaluatorDerivative {
     if (CheckFinished()) {
       return {};
     }
-    result = GetFirstPosition()->BestDescendant3();
+    result = GetFirstPosition()->BestDescendants();
     assert (!result.empty());
     return result;
   }
@@ -316,20 +275,11 @@ class EvaluatorDerivative {
       if (child->IsValid()) {
         continue;
       }
-      int eval = next_evaluator_->Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-      n_visited += next_evaluator_->GetNVisited();
-      children_eval[i] = {eval, next_evaluator_->GetNVisited()};
-    }
-//    synchronized (father) {
-    for (int i = 0; i < moves.size(); ++i) {
-      TreeNode* child = children[i];
-//      synchronized (child) {
-      if (!child->IsValid()) {
-        child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
-        child->SetLeaf(children_eval[i].first, depth, children_eval[i].second);
-      }
-//     }
-//      assert father.isLowerUpperOK();
+      int eval = next_evaluators_[0].Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+      auto cur_visited = next_evaluators_[0].GetNVisited();
+      n_visited += cur_visited;
+      child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
+      child->SetLeaf(eval, depth, cur_visited);
     }
     node->SetChildren(children);
     node->UpdateFathers();
@@ -342,9 +292,9 @@ class EvaluatorDerivative {
     assert(node->IsLeaf());
     EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
     EvalLarge beta = EvalToEvalLarge(leaf.beta);
-    EvalLarge eval = next_evaluator_->Evaluate(
+    EvalLarge eval = next_evaluators_[0].Evaluate(
         node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 300000);
-    NVisited seen_positions = next_evaluator_->GetNVisited() + 1;
+    NVisited seen_positions = next_evaluators_[0].GetNVisited() + 1;
     visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) seen_positions - kVisitedEndgameGoal) / 30));
 //    if (rand() % 100 == 0) {
 //      std::cout << visited_for_endgame_ << "\n";

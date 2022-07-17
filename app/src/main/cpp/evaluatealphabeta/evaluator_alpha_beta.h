@@ -16,6 +16,7 @@
 #ifndef EVALUATOR_ALPHA_BETA_H
 #define EVALUATOR_ALPHA_BETA_H
 
+#include <functional>
 #include <limits.h>
 
 #include "../board/bitpattern.h"
@@ -165,9 +166,6 @@ class EvaluatorAlphaBeta {
     }
   }
 
-  void AddEpoch() {
-    epoch_ = (EpochValue) (epoch_ + 1);
-  }
   static constexpr int kMaxDepth = 64;
  private:
 
@@ -184,9 +182,10 @@ class EvaluatorAlphaBeta {
   static EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
   HashMap* hash_map_;
-  EpochValue epoch_;
   NVisited n_visited_;
   std::shared_ptr<MoveIteratorBase> move_iterators_[4 * kMaxDepth];
   std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
 };
+
+typedef std::function<EvaluatorAlphaBeta> EvaluatorAlphaBetaFactory;
 #endif  // EVALUATOR_ALPHA_BETA_H
