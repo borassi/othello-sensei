@@ -24,6 +24,7 @@
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../evaluatealphabeta/evaluator_last_moves.h"
 #include "../utils/misc.h"
+#include "../utils/parse_flags.h"
 
 constexpr char const* kPositions[] = {
       "XXXXXXXOOOOOXX-O-OOOXXOX-OXOXOXXOXXXOXXX--XOXOXX-XXXOOO--OOOOO-- X",
@@ -97,23 +98,14 @@ Board GetIthBoard(int i) {
 }
 
 int main(int argc, char* argv[]) {
-  bool approx = false;
-  if (argc > 2) {
-    std::cout << "Only argument --approx can be provided.\n";
-    return 1;
-  } else if (argc == 2) {
-    if (std::string("--approx").compare(argv[1])) {
-      std::cout << "Only argument --approx can be provided.\n";
-      return 1;
-    } else {
-      approx = true;
-    }
-  }
+  ParseFlags parse_flags(argc, argv);
+  bool approx = parse_flags.GetBoolFlagOrDefault("approx", false);
+  int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", 1);
   using std::setw;
   HashMap hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
-  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 1);
+  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), n_threads);
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval\n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);

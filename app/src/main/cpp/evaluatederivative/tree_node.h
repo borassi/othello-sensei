@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <atomic>
 #include <float.h>
 #include <functional>
 #include <iomanip>
@@ -75,7 +76,7 @@ bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
 
 class TreeNode {
  public:
-  TreeNode() : n_children_(0), n_fathers_(0), leaf_eval_(kLessThenMinEval) {}
+  TreeNode() : n_children_(0), n_fathers_(0), leaf_eval_(kLessThenMinEvalLarge), evaluator_(255) {}
   TreeNode(const TreeNode&) = delete;
   ~TreeNode() {
     if (n_fathers_ != 0) {
@@ -185,6 +186,7 @@ class TreeNode {
   }
 
   void UpdateFatherWithThisChild(TreeNode* father) const {
+    const std::lock_guard<std::mutex> guard(mutex_);
     assert(ContainsFather(father));
 //    if (Constants.ASSERT_LOCKS) {
 //      assert(Thread.holdsLock(father));
@@ -217,6 +219,7 @@ class TreeNode {
   }
 
   void UpdateFather() {
+    const std::lock_guard<std::mutex> guard(mutex_);
     lower_ = kMinEval;
     upper_ = kMinEval;
     assert(!IsLeaf());
@@ -247,6 +250,7 @@ class TreeNode {
   }
 
   void SetChildren(std::vector<TreeNode*> children) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     n_children_ = (Square) children.size();
     children_ = new TreeNode*[n_children_];
     for (int i = 0; i < n_children_; ++i) {
@@ -291,6 +295,7 @@ class TreeNode {
   }
 
   void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     assert(IsLeaf());
     assert(weak_lower >= kMinEval && weak_lower <= kMaxEval && (weak_lower - kMinEval) % 2 == 1);
     assert(weak_upper >= kMinEval && weak_upper <= kMaxEval && (weak_upper - kMinEval) % 2 == 1);
@@ -302,6 +307,7 @@ class TreeNode {
   }
 
   void SetLeaf(EvalLarge leaf_eval, Square depth, NVisited n_visited, bool endgame = false) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     assert(IsLeaf());
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
     assert(n_visited > 0);
@@ -319,10 +325,10 @@ class TreeNode {
   void SetSolved(EvalLarge eval) {
     SetUpper(eval);
     SetLower(eval);
-    // updateFathers();
   }
 
   void SetLower(EvalLarge eval) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     assert(eval % 2 == 0);
     assert(IsLeaf());
     leaf_eval_ = std::max(leaf_eval_, eval);
@@ -331,10 +337,10 @@ class TreeNode {
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, false);
     }
-    // assert isLowerUpperOK();
   }
 
   void SetUpper(EvalLarge eval) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     assert(eval % 2 == 0);
     assert(IsLeaf());
     leaf_eval_ = std::min(leaf_eval_, eval);
@@ -343,7 +349,6 @@ class TreeNode {
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, false);
     }
-    // assert isLowerUpperOK();
   }
 
   const Evaluation& GetEvaluation(int eval_goal) const {
@@ -363,24 +368,13 @@ class TreeNode {
     Evaluation cur_evaluation = GetEvaluation(eval_goal);
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
-//      synchronized(childBoard)
-//      {
       Evaluation child_eval = child->GetEvaluation(-eval_goal);
       double child_value = child_eval.GetValue(cur_evaluation);
       if (child_value > best_child_value) {
         best_child = child;
         best_child_value = child_value;
       }
-//      }
     }
-//    if (ProbGreaterEqual(eval_goal) == 1) {
-//      if (best_child->n_threads_working_ + 1 != n_threads_working_) {
-//        std::cout << "BIG MISTAKE!! " << (int) n_threads_working_ << " " << (int) best_child->n_threads_working_ << "\n";
-//      }
-//    }
-//    if (best_child != nullptr && best_child->IsLeaf() && best_child->NThreadsWorking() > 0) {
-//      return nullptr;
-//    }
     return best_child;
   }
 
@@ -434,9 +428,6 @@ class TreeNode {
         continue;
       }
       LeafToUpdate node;
-//      if (eval.ProbGreaterEqual() < kMinProbEvalGoal || eval.ProbGreaterEqual() > 1 - kMinProbEvalGoal) {
-//        node.loss += kLogDerivativeMinusInf * 1000.0;
-//      }
       node.eval_goal = eval_goal;
       node.alpha = std::min(eval_goal, GetPercentileLower(kProbForEndgameAlphaBeta) + 1);
       node.beta = std::max(eval_goal, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1);
@@ -544,16 +535,16 @@ class TreeNode {
     return result;
   }
   u_int8_t Evaluator() { return evaluator_; }
-
   EvalLarge leaf_eval_;
+
  private:
   BitPattern player_;
   BitPattern opponent_;
-  NVisited n_visited_;
+  std::atomic_uint64_t n_visited_;
   TreeNode** children_;
   TreeNode** fathers_;
   Evaluation* evaluations_;
-  u_int8_t n_threads_working_;
+  std::atomic_uint8_t n_threads_working_;
   Square n_children_;
   Square n_fathers_;
   Square n_empties_;
@@ -564,6 +555,7 @@ class TreeNode {
   Eval weak_upper_;
   Eval min_evaluation_;
   u_int8_t evaluator_;
+  mutable std::mutex mutex_;
 
   void UpdateLeafEvaluation(int i, bool to_be_solved) {
     assert(i >= weak_lower_ && i <= weak_upper_);
@@ -583,6 +575,7 @@ class TreeNode {
   }
 
   void AddFather(TreeNode* father) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     if (n_fathers_ == 0) {
       fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
     } else {
@@ -749,76 +742,7 @@ class TreeNode {
 //    lastEvalGoal.set(bestEval.evalGoal);
     return best_eval;
   }
-//
-//  static StoredBoard initialStoredBoard(Board b) {
-//    return initialStoredBoard(b.getPlayer(), b.getOpponent(), 0);
-//  }
-//
-//  public static StoredBoard initialStoredBoard(long player, long opponent, short eval) {
-//    StoredBoard result = new StoredBoard(player, opponent, (short) 0);
-//    result.updating = new AtomicBoolean(false);
-//    int stddev = (int) (ERRORS[result.nEmpties] * Constants.MULT_STDDEV);
-//    result.setWeakLowerUpper(roundEval(eval - 3 * stddev), roundEval(eval + 3 * stddev));
-//    result.setLeaf(eval, (short) 2);
-//    result.setLeaf((short) 0, (short) 1);
-//    return result;
-//  }
-//
-//  synchronized double stepsUntilEnd() {
-//    assert isLowerUpperOK();
-//    // Lower means "better".
-//    double maxDerivative = Double.NEGATIVE_INFINITY;
-//    double stepsUntilEndProof = Double.POSITIVE_INFINITY;
-//    double stepsUntilEndDisproof = Double.POSITIVE_INFINITY;
-//    for (int eval = weakLower; eval <= weakUpper; eval += 200) {
-//      StoredBoard.Evaluation curEval = getEvaluation(eval);
-//      if (curEval.getProb() >= 1 - Constants.ZERO_PERC_FOR_WEAK) {
-//        stepsUntilEndProof = Math.max(stepsUntilEndProof, curEval.proofNumber());
-//      } else if (curEval.getProb() < Constants.ZERO_PERC_FOR_WEAK) {
-//        stepsUntilEndDisproof = Math.max(stepsUntilEndDisproof, curEval.disproofNumber());
-//      } else {
-//        maxDerivative = Math.max(maxDerivative, curEval.maxLogDerivative);
-//      }
-//    }
-//    if (maxDerivative == Double.NEGATIVE_INFINITY) {
-//      return stepsUntilEndProof + stepsUntilEndDisproof;
-//    }
-//    return (-LOG_DERIVATIVE_MINUS_INF + maxDerivative) * 1E20;
-//  }
-//
-//  protected synchronized void setNewLowerUpper(StoredBoard board) {
-//    if (Constants.ASSERT_LOCKS) {
-//      assert Thread.holdsLock(board);
-//    }
-//    if (updating.get()) {
-//      return;
-//    }
-//    board.setWeakLowerUpper(
-//        (short) (board.depth % 2 == 0 ? weakLower : -weakUpper),
-//        (short) (board.depth % 2 == 0 ? weakUpper : -weakLower));
-//  }
-//
-//  public synchronized float getProb(int evalGoal) {
-//    if (evalGoal < weakLower) {
-//      if (getEvaluation(weakLower).getProb() > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
-//        return 1;
-//      } else {
-//        return -1;
-//      }
-//    }
-//    if (evalGoal > weakUpper) {
-//      if (getEvaluation(weakLower).getProb() < Constants.PROB_INCREASE_WEAK_EVAL) {
-//        return 0;
-//      } else {
-//        return -1;
-//      }
-//    }
-//    return getEvaluation(evalGoal).getProb();
-//  }
-//
-//
-//
-//
+
   void ExtendEval(Eval value) {
 //    synchronized (this) {
     if (value < weak_lower_) {
@@ -847,11 +771,8 @@ class TreeNode {
     for (int i = 0; i < n_children_; ++i) {
       children_[i]->ExtendEval(-value);
     }
-//    synchronized (this) {
     UpdateFather();
     assert(AllValidEvals());
-//      assert isLowerUpperOK();
-//    }
   }
 
   bool AllValidEvals() const {
@@ -862,196 +783,4 @@ class TreeNode {
     }
     return true;
   }
-//
-//
-//  synchronized void setWeakLowerUpper(short weakLower, short weakUpper) {
-//    this.weakLower = weakLower;
-//    this.weakUpper = weakUpper;
-//    for (short i = weakLower; i <= weakUpper; i += 200) {
-//      addEvaluation(i);
-//    }
-//  }
-//
-//
-//  private Evaluation addEvaluation(short evalGoal) {
-////    assert threadId == Thread.currentThread().getId();
-//    int index = toEvaluationIndex(evalGoal);
-//    if (evaluations[index] != null) {
-//      return null;
-//    }
-//    Evaluation eval = new Evaluation(evalGoal);
-//    evaluations[index] = eval;
-//    return eval;
-//  }
-//
-//  private static short roundProb(float prob) {
-//    if (prob <= Constants.MIN_PROB_LEAF) {
-//      return 0;
-//    } else if (prob >= 1 - Constants.MIN_PROB_LEAF) {
-//      return PROB_STEP;
-//    }
-//    return (short) Math.round(prob * PROB_STEP);
-//  }
-//
-//  public int childLogDerivative(StoredBoard child, int evalGoal) {
-//    return child.getEvaluation(-evalGoal).logDerivative(getEvaluation(-evalGoal));
-//  }
-//
-//  @NonNull
-//  @Override
-//  public String toString() {
-//    return new Board(player, opponent).toString() + "\n";
-//  }
-//
-//  public float maxFiniteChildrenProofNumber(int evalGoal) {
-//    float result = 0;
-//    for (StoredBoard child : getChildren()) {
-//      if (child.proofNumber(evalGoal) != Float.POSITIVE_INFINITY) {
-//        result = Math.max(result, child.proofNumber(evalGoal));
-//      }
-//    }
-//    return result;
-//  }
-//
-//  boolean areDescendantsOK() {
-//    if (fathers.isEmpty() || Constants.MAX_PARALLEL_TASKS > 1) {
-//      return true;
-//    }
-//    int maxDescendants = 0;
-//    String fatherDesc = "";
-//    for (StoredBoard father : fathers) {
-//      maxDescendants += father.getDescendants();
-//      fatherDesc += " " + father.getDescendants();
-//    }
-//    if (getDescendants() > maxDescendants) {
-//      throw new AssertionError(
-//          "Bad number of descendants " + getDescendants() + " > SUM_father descendants = "
-//              + maxDescendants + ". Father descendants: " + fatherDesc);
-//    }
-//    return true;
-//  }
-//
-//  boolean isLowerUpperOK() {
-//    assert lower <= upper;
-//    assert weakLower < weakUpper;
-//    for (int i = weakLower; i <= weakUpper; i += 200) {
-//      assert getEvaluation(i) != null;
-//    }
-//    if (!isLeaf() && Constants.ASSERT_LOWER_UPPER && Constants.MAX_PARALLEL_TASKS == 1) {
-//      for (StoredBoard child : getChildren()) {
-//        synchronized (child) {
-//          assert weakLower >= -child.weakUpper;
-//          if (weakUpper > -child.weakLower) {
-//            System.out.println(this + " " + weakUpper + " " + (-child.weakLower));
-//          }
-//          assert weakUpper <= -child.weakLower;
-//        }
-//      }
-//    }
-//    return true;
-//  }
-//
-//  boolean isChildOK(StoredBoard child) {
-//    if (Constants.MAX_PARALLEL_TASKS > 1) {
-//      return true;
-//    }
-//    boolean found = false;
-//    for (StoredBoard father : child.fathers) {
-//      if (father == this) {
-//        if (found) {
-//          throw new AssertionError("Found the same father twice. Father:\n" + this + "\nchild:\n" + child);
-//        }
-//        found = true;
-//      }
-//    }
-//    if (!found) {
-//      throw new AssertionError("Did not find father\n" + child + " for board\n" + this);
-//    }
-//    return
-//        child.depth == depth + 1
-//        && Utils.arrayContains(getChildren(), child);
-//  }
-//
-//  boolean areChildrenOK() {
-//    if (getChildren() == null) {
-//      return true;
-//    }
-//    for (StoredBoard child : getChildren()) {
-//      if (!isChildOK(child)) {
-//        throw new AssertionError("Child\n" + child + "\n of board\n" + this + "\nis not OK");
-//      }
-//    }
-//    if (getChildren().length != Long.bitCount(GetMoves.getMoves(player, opponent)) && !(
-//        Long.bitCount(GetMoves.getMoves(player, opponent)) == 0
-//        && Long.bitCount(GetMoves.getMoves(opponent, player)) != 0
-//        && getChildren().length == 1)) {
-//      throw new AssertionError(
-//          "Board " + this + " should have " + Long.bitCount(GetMoves.getMoves(player, opponent))
-//              + " children. Found " + getChildren().length);
-//    }
-//    return true;
-//  }
-//
-//  boolean isPrevNextOK() {
-//    return
-//        prev != this
-//        && next != this
-//        && (prev == null || prev.next == this)
-//        && (next == null || next.prev == this);
-//  }
-//
-//  boolean isEvalOK(int evalGoal) {
-//    if (Constants.MAX_PARALLEL_TASKS > 1) {
-//      return true;
-//    }
-//    if ((new GetMovesCache()).getNMoves(player, opponent) == 0
-//        && (new GetMovesCache()).getNMoves(opponent, player) == 0
-//        && (this.proofNumber(evalGoal) == 0 || this.proofNumber(evalGoal) == Float.POSITIVE_INFINITY)) {
-//      return true;
-//    }
-//    return true;
-//  }
-//
-//  synchronized boolean isNThreadsWorkingOK() {
-//    if (this.nThreadsWorking < 0) {
-//      throw new AssertionError("Got " + this.nThreadsWorking +
-//                                   " threads.");
-//    }
-//    if (this.nThreadsWorking > Constants.MAX_PARALLEL_TASKS) {
-//      throw new AssertionError("Got " + this.nThreadsWorking +
-//                                   " threads. Expected  at most "
-//                                   + Constants.MAX_PARALLEL_TASKS);
-//    }
-//    if (fathers.size() == 0) {
-//      return true;
-//    }
-//    int nThreadsWorkingFathers = 0;
-//    for (StoredBoard father : fathers) {
-//      nThreadsWorkingFathers += father.nThreadsWorking;
-//    }
-//    if (nThreadsWorkingFathers != this.nThreadsWorking && Constants.MAX_PARALLEL_TASKS == 1) {
-//      throw new AssertionError("Got " + this.nThreadsWorking +
-//                                   " threads. Expected " + nThreadsWorkingFathers);
-//    }
-//    return true;
-//  }
-//
-//  boolean isAllOK() {
-//    if (!isPrevNextOK()) {
-//      throw new AssertionError("Wrong isPrevNextOK");
-//    }
-//    if (!areChildrenOK()) {
-//      throw new AssertionError("Wrong areChildrenOK");
-//    }
-//    for (int goal = -6300; goal <= 6300; goal += 200) {
-//      assert isEvalOK(goal);
-//    }
-//    if (!areDescendantsOK()) {
-//      throw new AssertionError("Wrong areThisBoardEvalsOK or isEvalOK or areDescendantsOK.");
-//    }
-//    if (!isNThreadsWorkingOK()) {
-//      throw new AssertionError("Wrong isNThreadsWorking.");
-//    }
-//    return true;
-//  }
 };

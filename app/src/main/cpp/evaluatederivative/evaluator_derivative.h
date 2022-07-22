@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
+#include <atomic>
 #include <chrono>
 #include <functional>
+#include <future>
 #include <limits>
 #include <optional>
-#include <stdatomic.h>
 #include <thread>
 #include "tree_node.h"
 #include "../constants.h"
@@ -46,7 +47,7 @@ class TreeNodeSupplier {
  public:
   TreeNodeSupplier() : num_tree_nodes_(0) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
-    tree_node_index_ = new atomic_int[kHashMapSize];
+    tree_node_index_ = new std::atomic_int[kHashMapSize];
     for (int i = 0; i < kHashMapSize; ++i) {
       tree_node_index_[i] = kDerivativeEvaluatorSize;
     }
@@ -89,47 +90,146 @@ class TreeNodeSupplier {
     int node_id = num_tree_nodes_++;
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth, evaluator_index);
-//    if (old_index >= num_tree_nodes_) {
-      tree_node_index_[hash] = node_id;
-//    }
+    tree_node_index_[hash] = node_id;
     return &node;
   }
 
  private:
-  atomic_int num_tree_nodes_;
+  std::atomic_int num_tree_nodes_;
   TreeNode* tree_nodes_;
-  atomic_int* tree_node_index_;
+  std::atomic_int* tree_node_index_;
+  std::mutex mutex_;
+};
+
+class EvaluatorThread {
+ public:
+  EvaluatorThread(HashMap* hash_map, EvaluatorFactory evaluator_depth_one,
+                  std::atomic_uint64_t* visited_midgame,
+                  TreeNodeSupplier* tree_node_supplier,
+                  std::mutex* mutex,
+                  uint8_t index) :
+      evaluator_alpha_beta_(hash_map, evaluator_depth_one),
+      visited_midgame_(visited_midgame),
+      tree_node_supplier_(tree_node_supplier),
+      mutex_(mutex),
+      index_(index) {}
+
+  void Run(std::vector<LeafToUpdate>* leaves_, std::atomic_int* current_leaf_, int max_proof) {
+    visited_for_endgame_ = 0;
+    n_endgames_ = 0;
+    int n_visited;
+    for (int i = (*current_leaf_)++; i < leaves_->size(); i = (*current_leaf_)++) {
+      LeafToUpdate leaf = (*leaves_)[i];
+      TreeNode* node = leaf.leaf;
+      assert(node->IsLeaf());
+      if (node->ToBeSolved(leaf.alpha, leaf.beta, max_proof)) {
+        n_visited = SolvePosition(leaf);
+      } else {
+        n_visited = AddChildren(leaf);
+      }
+      for (TreeNode* parent : leaf.parents) {
+        parent->AddDescendants(n_visited);
+        parent->DecreaseNThreadsWorking();
+      }
+    }
+  }
+
+  int VisitedEndgames() const { return visited_for_endgame_; }
+  int NEndgames() const { return n_endgames_; }
+
+ private:
+  EvaluatorAlphaBeta evaluator_alpha_beta_;
+  int visited_for_endgame_;
+  int n_endgames_;
+  std::atomic_uint64_t* visited_midgame_;
+  TreeNodeSupplier* tree_node_supplier_;
+  u_int8_t index_;
+  std::mutex* mutex_;
+
+  NVisited AddChildren(const LeafToUpdate& leaf) {
+    TreeNode* node = leaf.leaf;
+    assert(node->IsLeaf());
+    assert(node->NThreadsWorking() == 1);
+    int depth = node->NEmpties() < 24 ? (node->NEmpties() < 22 ? 2 : 3) : 4;
+    NVisited n_visited = 0;
+    BitPattern player = node->Player();
+    BitPattern opponent = node->Opponent();
+
+    auto moves = GetAllMovesWithPass(player, opponent);
+
+    if (moves.empty()) {
+      int final_eval = GetEvaluationGameOver(player, opponent);
+      node->SetSolved(final_eval);
+      node->UpdateFathers();
+      (*visited_midgame_)++;
+      return 1;
+    }
+
+    std::vector<TreeNode*> children(moves.size());
+
+    for (int i = 0; i < moves.size(); ++i) {
+      BitPattern flip = moves[i];
+      BitPattern new_player = NewPlayer(flip, opponent);
+      BitPattern new_opponent = NewOpponent(flip, player);
+      TreeNode* child = tree_node_supplier_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, index_);
+      children[i] = child;
+      if (child->IsValid()) {
+        continue;
+      }
+      int eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+      auto cur_visited = evaluator_alpha_beta_.GetNVisited();
+      n_visited += cur_visited;
+      child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
+      child->SetLeaf(eval, depth, cur_visited);
+    }
+    node->SetChildren(children);
+    node->UpdateFathers();
+    *visited_midgame_ += n_visited;
+    return n_visited;
+  }
+
+  NVisited SolvePosition(const LeafToUpdate& leaf) {
+    TreeNode* node = leaf.leaf;
+    assert(node->IsLeaf());
+    EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
+    EvalLarge beta = EvalToEvalLarge(leaf.beta);
+    NVisited seen_positions;
+    EvalLarge eval = evaluator_alpha_beta_.Evaluate(
+        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 300000);
+    seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
+
+    visited_for_endgame_ += seen_positions;
+    n_endgames_++;
+
+    if (eval == kLessThenMinEvalLarge) {
+      return seen_positions + AddChildren(leaf);
+    }
+    assert(node->NThreadsWorking() == 1);
+    // No need to lock, because this is the only thread that can touch this node.
+    node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
+
+    if (eval < beta) {
+      node->SetUpper(eval);
+    }
+    if (eval > alpha) {
+      node->SetLower(eval);
+    }
+    node->UpdateFathers();
+    return seen_positions;
+  }
 };
 
 class EvaluatorDerivative {
  public:
   EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap* hash_map, EvaluatorFactory evaluator_depth_one, int n_threads, u_int8_t index = 0) :
       tree_node_supplier_(tree_node_supplier),
-      n_threads_(n_threads),
-      next_evaluators_(),
+      threads_(),
       index_(index),
       first_position_(nullptr) {
-    for (int i = 0; i < n_threads_; ++i) {
-      next_evaluators_.push_back(EvaluatorAlphaBeta(hash_map, evaluator_depth_one));
+    for (int i = 0; i < n_threads; ++i) {
+      threads_.push_back(EvaluatorThread(hash_map, evaluator_depth_one, &visited_midgame_, tree_node_supplier_, &mutex_, index_));
     }
   }
-//  EvaluatorDerivative(int max_size, int array_size, HashMap hashMap) {
-//    this(maxSize, arraySize, hashMap, () -> new EvaluatorAlphaBeta(hashMap));
-//  }
-//
-//  EvaluatorDerivative(int max_size, int array_size) {
-//    this(max_size, array_size, new HashMap());
-//  }
-//
-//  public EvaluatorMCTS(int maxSize, int arraySize, HashMap hashMap,
-//                       Supplier<EvaluatorInterface> evaluatorMidgameBuilder) {
-//    super(maxSize, arraySize);
-//    this.hashMap = hashMap;
-//    threads = new EvaluatorThread[Constants.MAX_PARALLEL_TASKS];
-//    for (int i = 0; i < threads.length; ++i) {
-//      threads[i] = new EvaluatorThread(evaluatorMidgameBuilder.get());
-//    }
-//  }
 
   double Progress(float gap) {
     if (GetStatus() == SOLVED) {
@@ -158,9 +258,9 @@ class EvaluatorDerivative {
     TreeNode* first_position = GetFirstPosition();
     approx_ = approx;
 
-    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
+//    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
-    first_position_->SetLeaf(eval, 4, next_evaluators_[0].GetNVisited());
+    first_position_->SetLeaf(0, 4, 1);
     last_update_weak_ = 0;
     visited_for_endgame_ = kVisitedEndgameStart;
     visited_midgame_ = 0;
@@ -188,9 +288,8 @@ class EvaluatorDerivative {
   float AverageBatchSize() { return sum_batch_sizes_ / num_batches_; }
 
  private:
-  int n_threads_;
-  int visited_for_endgame_;
-  NVisited visited_midgame_;
+  std::atomic_int visited_for_endgame_;
+  std::atomic_uint64_t visited_midgame_;
   NVisited max_n_visited_;
   double start_time_;
   double max_time_;
@@ -198,7 +297,7 @@ class EvaluatorDerivative {
   Eval lower_ = -63;
   Eval upper_ = 63;
   Status status_ = SOLVED;
-  std::vector<EvaluatorAlphaBeta> next_evaluators_;
+  std::vector<EvaluatorThread> threads_;
   ElapsedTime elapsed_time_;
   bool just_started_;
   bool approx_;
@@ -207,29 +306,31 @@ class EvaluatorDerivative {
   u_int8_t index_;
   float num_batches_;
   float sum_batch_sizes_;
+  std::mutex mutex_;
 
   void Run() {
     std::vector<LeafToUpdate> next_leaves;
-    NVisited n_visited;
-    TreeNode* first_position = GetFirstPosition();
+    std::atomic_int current_leaf;
     while (!CheckFinished()) {
       next_leaves = GetNextPosition();
+      current_leaf = 0;
       num_batches_++;
       sum_batch_sizes_ += next_leaves.size();
-      for (const auto& next_leaf : next_leaves) {
-        TreeNode* leaf = next_leaf.leaf;
-        assert(leaf->IsLeaf());
-        if (leaf != first_position && leaf->ToBeSolved(next_leaf.alpha, next_leaf.beta, visited_for_endgame_)) {
-          n_visited = SolvePosition(next_leaf);
-        } else {
-          n_visited = AddChildren(next_leaf);
-        }
-        for (TreeNode* parent : next_leaf.parents) {
-          parent->AddDescendants(n_visited);
-          parent->DecreaseNThreadsWorking();
-        }
+      std::vector<std::future<void>> futures;
+      futures.reserve(threads_.size());
+      for (int i = 0; i < threads_.size(); ++i) {
+        futures.push_back(std::async(std::launch::async, &EvaluatorThread::Run, &threads_[i], &next_leaves, &current_leaf, int(visited_for_endgame_)));
       }
-      assert (first_position->NThreadsWorking() == 0);
+      int total_visited_endgames = 0;
+      int total_endgames = 0;
+      for (int i = 0; i < threads_.size(); ++i) {
+        futures[i].get();
+        const EvaluatorThread& evaluator_thread = threads_[i];
+        total_visited_endgames += evaluator_thread.VisitedEndgames();
+        total_endgames += evaluator_thread.NEndgames();
+      }
+      visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) total_visited_endgames - kVisitedEndgameGoal * total_endgames) / 30));
+      assert (GetFirstPosition()->NThreadsWorking() == 0);
       just_started_ = false;
     }
   }
@@ -243,79 +344,6 @@ class EvaluatorDerivative {
     result = GetFirstPosition()->BestDescendants();
     assert (!result.empty());
     return result;
-  }
-
-  NVisited AddChildren(const LeafToUpdate& leaf) {
-    TreeNode* node = leaf.leaf;
-    assert(node->IsLeaf());
-    int depth = node->NEmpties() < 24 ? (node->NEmpties() < 22 ? 2 : 3) : 4;
-    NVisited n_visited = 0;
-    BitPattern player = node->Player();
-    BitPattern opponent = node->Opponent();
-
-    auto moves = GetAllMovesWithPass(player, opponent);
-
-    if (moves.empty()) {
-      int final_eval = GetEvaluationGameOver(player, opponent);
-      node->SetSolved(final_eval);
-      node->UpdateFathers();
-      visited_midgame_++;
-      return 1;
-    }
-
-    std::pair<EvalLarge, NVisited> children_eval[moves.size()];
-    std::vector<TreeNode*> children(moves.size());
-
-    for (int i = 0; i < moves.size(); ++i) {
-      BitPattern flip = moves[i];
-      BitPattern new_player = NewPlayer(flip, opponent);
-      BitPattern new_opponent = NewOpponent(flip, player);
-      TreeNode* child = tree_node_supplier_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, index_);
-      children[i] = child;
-      if (child->IsValid()) {
-        continue;
-      }
-      int eval = next_evaluators_[0].Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-      auto cur_visited = next_evaluators_[0].GetNVisited();
-      n_visited += cur_visited;
-      child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
-      child->SetLeaf(eval, depth, cur_visited);
-    }
-    node->SetChildren(children);
-    node->UpdateFathers();
-    visited_midgame_ += n_visited;
-    return n_visited;
-  }
-
-  NVisited SolvePosition(const LeafToUpdate& leaf) {
-    TreeNode* node = leaf.leaf;
-    assert(node->IsLeaf());
-    EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
-    EvalLarge beta = EvalToEvalLarge(leaf.beta);
-    EvalLarge eval = next_evaluators_[0].Evaluate(
-        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 300000);
-    NVisited seen_positions = next_evaluators_[0].GetNVisited() + 1;
-    visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) seen_positions - kVisitedEndgameGoal) / 30));
-//    if (rand() % 100 == 0) {
-//      std::cout << visited_for_endgame_ << "\n";
-//    }
-    if (eval == kLessThenMinEvalLarge) {
-      return seen_positions + AddChildren(leaf);
-    }
-    node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
-
-    node->DecreaseNThreadsWorking();
-    if (eval < beta) {
-      node->SetUpper(eval);
-    }
-    if (eval > alpha) {
-      node->SetLower(eval);
-    }
-    node->IncreaseNThreadsWorking();
-//    StoredBoard.proofNumberForAlphaBeta.addAndGet(
-//        (int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
-    node->UpdateFathers();
-    return seen_positions;
   }
 
   bool CheckFinished() {
@@ -368,219 +396,10 @@ class EvaluatorDerivative {
   }
 
   void UpdateWeakLowerUpper() {
-//     synchronized (firstPosition) {
     auto first_position = GetFirstPosition();
-//    if (NVisited() < this->last_update_weak_ * 1.3) {
-//      if (first_position->ProbGreaterEqual(first_position->WeakLower())
-//          > kProbIncreaseWeakEval &&
-//          first_position->ProbGreaterEqual(first_position->WeakUpper())
-//          < 1 - kProbIncreaseWeakEval) {
-//        return;
-//      }
-//    }
-//     }
     while (first_position->UpdateWeakLowerUpper()) {
       last_update_weak_ = NVisited();
     }
   }
 
-//   double bestStepsUntilEnd = 0;
-//   private final HashMap hashMap;
-//   bool justStarted = false;
-
-//   private final EvaluatorThread[] threads;
-//
-//   private class EvaluatorThread implements Runnable {
-//     private final EvaluatorInterface nextEvaluator;
-//
-//     private EvaluatorThread(EvaluatorInterface nextEvaluator) {
-//       this.nextEvaluator = nextEvaluator;
-//     }
-//
-//     class PartialEval {
-//       int eval;
-//       long nVisited;
-//       public PartialEval(int eval, long nVisited) {
-//         this.eval = eval;
-//         this.nVisited = nVisited;
-//       }
-//     }
-//     public long addChildren(StoredBoardBestDescendant position) {
-//       StoredBoard father = position.eval.getStoredBoard();
-//       int depth = father.nEmpties < 22 ? 2 : 4;
-//       int evalGoal = position.eval.evalGoal;
-//       long nVisited = 0;
-//       assert father.isLeaf();
-//
-//       long[] moves = GetMovesCache.getAllMoves(father.getPlayer(), father.getOpponent());
-//
-//       if (moves == null) {
-//         int finalEval = BitPattern.getEvaluationGameOver(father.getPlayer(), father.getOpponent());
-//         father.setSolved(finalEval);
-//         return 1;
-//       }
-//
-//       PartialEval[] childrenEval = new PartialEval[moves.length];
-//       StoredBoard[] children = new StoredBoard[moves.length];
-//       for (int i = 0; i < moves.length; ++i) {
-//         long flip = moves[i];
-//         long newPlayer = father.getOpponent() & ~flip;
-//         long newOpponent = father.getPlayer() | flip;
-//         StoredBoard child = getOrAdd(newPlayer, newOpponent, (short) (father.depth + 1));
-//         children[i] = child;
-//         if (child.leafEval == -6500) {
-//           int eval = nextEvaluator.evaluate(child.getPlayer(), child.getOpponent(), depth, -6400, 6400);
-//           childrenEval[i] = new PartialEval(Math.min(6400, Math.max(-6400, eval)), nextEvaluator.getNVisited());
-//         }
-//       }
-//       synchronized (father) {
-//         for (int i = 0; i < children.length; ++i) {
-//           StoredBoard child = children[i];
-//           synchronized (child) {
-//             PartialEval childEval = childrenEval[i];
-//             if (childEval != null) {
-//               nVisited += childEval.nVisited;
-//               if (child.leafEval == -6500) {
-//                 child.setWeakLowerUpper((short) Math.min(-father.weakUpper, -evalGoal), (short) Math.max(-father.weakLower, -evalGoal));
-//                 child.getEvaluation(-evalGoal).addDescendants(childEval.nVisited + 1);
-//                 child.setLeaf((short) childEval.eval, (short) 4);
-//               }
-//             }
-//             child.addFather(father);
-//           }
-//         }
-//         father.children = children;
-//         assert father.isLowerUpperOK();
-//       }
-//       father.updateFathers();
-//       return nVisited;
-//     }
-//
-//     public long solvePosition(StoredBoardBestDescendant position) {
-//       StoredBoard board = position.eval.getStoredBoard();
-//       assert board.isLeaf();
-//       int alpha = position.alpha;
-//       int beta = position.beta;
-//       int eval = nextEvaluator.evaluate(
-//           board.getPlayer(), board.getOpponent(), board.nEmpties, alpha, beta);
-//       if (eval < beta) {
-//         board.setUpper(eval);
-//       }
-//       if (eval > alpha) {
-//         board.setLower(eval);
-//       }
-//       long seenPositions = nextEvaluator.getNVisited() + 1;
-//       StoredBoard.proofNumberForAlphaBeta.addAndGet((int) (Constants.PROOF_NUMBER_GOAL_FOR_MIDGAME - seenPositions) / 20);
-//       board.updateFathers();
-//       return seenPositions;
-//     }
-//
-//     public long deepenPosition(StoredBoardBestDescendant position) {
-//       StoredBoard board = position.eval.getStoredBoard();
-//       int curEval = nextEvaluator.evaluate(
-//             board.getPlayer(), board.getOpponent(), 2, -6400, 6400);
-//       int d;
-//       long seenPositions = 0;
-//       for (d = 4; seenPositions < board.getDescendants() * 2; d += 2) {
-//         if (board.nEmpties - d < Constants.EMPTIES_FOR_FORCED_MIDGAME - 2) {
-//           seenPositions += solvePosition(position);
-//           return seenPositions;
-//         }
-//         curEval = nextEvaluator.evaluate(
-//             board.getPlayer(), board.getOpponent(), d, -6400, 6400);
-//         seenPositions += nextEvaluator.getNVisited();
-//       }
-//       board.setLeaf((short) curEval, (short) d);
-//       board.updateFathers();
-//       return seenPositions;
-//     }
-//
-
-//
-//
-//   private double stepsUntilEnd() {
-//     return firstPosition.stepsUntilEnd();
-//   }
-//
-//
-//   protected StoredBoardBestDescendant getNextPosition() {
-//     if (Constants.ASSERT_EXTENDED) {
-//       assertIsAllOKRecursive(firstPosition);
-//     }
-//
-//     StoredBoardBestDescendant result;
-//     while (true) {
-// //      System.out.println(weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
-//       updateWeakLowerUpper();
-//       if (checkFinished()) {
-//         return null;
-//       }
-// //      System.out.println("  " + weakLower + " " + weakUpper + " " + firstPosition.weakLower + " " + firstPosition.weakUpper);
-//       result = firstPosition.bestDescendant();
-//       if (result != null) {
-//         break;
-//       }
-//       try {
-//         Thread.sleep(0, 100);
-//       } catch (InterruptedException e) {
-//         e.printStackTrace();
-//       }
-//     }
-//     assert result.eval.getStoredBoard().isLeaf();
-//     return result;
-//   }
-//
-//   public synchronized Status getStatus() {
-//     return status;
-//   }
-//
-//   public boolean isSolved() {
-//     if (Constants.APPROX_ONLY) {
-//       if (firstPosition.isPartiallySolved()) {
-//         return true;
-//       }
-//     }
-//     return this.firstPosition.isSolved() || this.firstPosition.getUpper() <= lower || this.firstPosition.getLower() >= upper;
-//   }
-//
-//   public short evaluatePosition(Board board) {
-//     return evaluatePosition(board, -6300, 6300, Long.MAX_VALUE, Integer.MAX_VALUE);
-//   }
-//
-//   public short evaluatePosition(Board board, long maxNVisited, int maxTimeMillis) {
-//     return evaluatePosition(board, -6300, 6300, maxNVisited, maxTimeMillis);
-//   }
-//
-//   ExecutorService executor = Executors.newFixedThreadPool(Constants.MAX_PARALLEL_TASKS);
-//
-//
-//   public StoredBoard getFirstPosition() {
-//     return firstPosition;
-//   }
-//
-//   public void assertIsAllOKRecursive(StoredBoard board) {
-//     assertIsOK(board);
-//     if (board.isLeaf()) {
-//       return;
-//     }
-//     for (StoredBoard child : board.getChildren()) {
-//       assertIsAllOKRecursive(child);
-//     }
-//   }
-//   public void assertIsOK(StoredBoard board) {
-//     if (board.isLeaf()) {
-//       return;
-//     }
-//     assert board.areChildrenOK();
-//   }
-//
-//   public void addChildren(StoredBoardBestDescendant position) {
-// //    position.eval.getStoredBoard().setBusy(-6300, 6300);
-//     threads[0].addChildren(position);
-//     finalizePosition(position, 0);
-//   }
-//
-//   public void addChildren(StoredBoard board) {
-//     addChildren(board.bestDescendant());
-//   }
 };

@@ -16,6 +16,7 @@
 
 #include "../board/bitpattern.h"
 #include "../board/board.h"
+#include "../board/get_moves.h"
 #include "../board/stable.h"
 #include "../evaluatederivative/endgame_time_estimator.h"
 #include "../utils/misc.h"
@@ -91,6 +92,7 @@ BitPattern MoveIteratorVeryQuick::NextFlip() {
   while (flip == 0 && candidate_moves_ != 0) {
     int move = __builtin_ctzll(candidate_moves_);
     candidate_moves_ &= (~(1ULL << move));
+    assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
   }
   return flip;
@@ -123,6 +125,7 @@ BitPattern MoveIteratorQuick::NextFlip() {
     }
     int move = __builtin_ctzll(mask & candidate_moves_);
     candidate_moves_ &= (~(1ULL << move));
+    assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
   }
   return flip;
@@ -136,9 +139,9 @@ void MoveIteratorEval::Setup(
   BitPattern flip;
   remaining_moves_ = 0;
   if (entry != nullptr && entry->BestMove() != kNoSquare) {
-    if (GetFlip(entry->BestMove(), player, opponent) == 0) {
-      std::cout << "MISTAKE\n";
-    }
+    assert(player == entry->Player() && opponent == entry->Opponent());
+    assert(((1ULL << entry->BestMove()) & (player_ | opponent_)) == 0);
+    assert(GetFlip(entry->BestMove(), player, opponent) != 0);
 //    moves_[remaining_moves_].Set(entry->BestMove(), 999999);
 //    candidate_moves = candidate_moves & ~(1ULL << entry->BestMove());
 //    remaining_moves_++;
@@ -151,6 +154,7 @@ void MoveIteratorEval::Setup(
   depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
     Square square = __builtin_ctzll(square_pattern);
+    assert(((1ULL << square) & (player | opponent)) == 0);
     flip = GetFlip(square, player, opponent);
     if (flip == 0) {
       continue;
@@ -200,7 +204,7 @@ int MoveIteratorDisproofNumber::Eval(BitPattern player, BitPattern opponent, Bit
   return result;
 }
 
-EvaluatorAlphaBeta::EvaluateInternalFunction
+const EvaluatorAlphaBeta::EvaluateInternalFunction
     EvaluatorAlphaBeta::solvers_[kMaxDepth] =  {
     &EvaluatorAlphaBeta::EvaluateInternal<0, false, true>,
     &EvaluatorAlphaBeta::EvaluateInternal<1, false, true>,
@@ -267,7 +271,7 @@ EvaluatorAlphaBeta::EvaluateInternalFunction
     &EvaluatorAlphaBeta::EvaluateInternal<62, false, true>,
     &EvaluatorAlphaBeta::EvaluateInternal<63, false, true>
 };
-EvaluatorAlphaBeta::EvaluateInternalFunction
+const EvaluatorAlphaBeta::EvaluateInternalFunction
     EvaluatorAlphaBeta::evaluators_[kMaxDepth] = {
     &EvaluatorAlphaBeta::EvaluateInternal<0, false, false>,
     &EvaluatorAlphaBeta::EvaluateInternal<1, false, false>,
@@ -341,7 +345,7 @@ constexpr bool UpdateDepthOneEvaluator(int depth, bool solve) {
 
 constexpr bool UseHashMap(int depth, bool solve) {
   return (solve && depth >= kMinEmptiesForHashMap)
-         || (!solve && depth >= kMinDepthForHashMap);
+          || (!solve && depth >= kMinDepthForHashMap);
 }
 
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
@@ -355,8 +359,6 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
       for (bool unlikely : {true, false}) {
         int offset = MoveIteratorOffset(depth, solve, unlikely);
         if (unlikely) {
-          move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>();
-        } else if (solve && depth <= 3) {
           move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>();
         } else if ((solve && depth <= 9) || (!solve && depth <= 2)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();

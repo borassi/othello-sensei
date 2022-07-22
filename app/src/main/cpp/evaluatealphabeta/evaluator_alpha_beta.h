@@ -20,7 +20,6 @@
 #include <limits.h>
 
 #include "../board/bitpattern.h"
-#include "../board/get_moves.h"
 #include "../evaluatedepthone/evaluator_depth_one_base.h"
 #include "../hashmap/hash_map.h"
 
@@ -179,8 +178,8 @@ class EvaluatorAlphaBeta {
       const EvalLarge lower, const EvalLarge upper,
       const BitPattern last_flip, const BitPattern stable, int max_visited);
 
-  static EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
-  static EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
+  static const EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
+  static const EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
   HashMap* hash_map_;
   NVisited n_visited_;
   std::shared_ptr<MoveIteratorBase> move_iterators_[4 * kMaxDepth];

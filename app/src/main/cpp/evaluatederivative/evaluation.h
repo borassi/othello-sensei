@@ -103,14 +103,15 @@ class Evaluation {
     float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
     if (child.IsSolved()) {
       assert(child_prob_greater_equal == 0 || child_prob_greater_equal == 1);
-      if (child_prob_greater_equal > 0.5) {
-        return;
-      } else {
+      if (child_prob_greater_equal == 0) {
         prob_greater_equal_ = 0;
         proof_number_ = 0;
         disproof_number_ = -INFINITY;
         max_log_derivative_ = kLogDerivativeMinusInf;
       }
+      // If child_prob_greater_equal == 1 do nothing, it's as if the child did
+      // not exist.
+      return;
     }
     prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
 
@@ -120,7 +121,7 @@ class Evaluation {
       proof_number_ = cur_proof_number;
     }
 
-    assert(child.proof_number_ > 0);
+    assert(!child.IsSolved());
     disproof_number_ += child.proof_number_;
     if (child_prob_greater_equal > 0 && child_prob_greater_equal < 1) {
       int current_log_derivative =

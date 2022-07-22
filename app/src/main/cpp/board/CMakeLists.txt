@@ -70,18 +70,6 @@ IF (NOT ANDROID)
     )
 ENDIF ()
 
-add_library(
-        get_moves
-        get_moves.h
-        get_moves.cpp
-)
-
-target_link_libraries(
-        get_moves
-        LINK_PRIVATE
-        bitpattern
-)
-
 IF(NOT ANDROID)
     add_executable(
             get_moves_test
@@ -140,6 +128,27 @@ add_executable(
 
 target_link_libraries(
         get_flip_profile
+        LINK_PRIVATE
+        bitpattern
+        get_flip
+)
+
+add_library(
+        get_moves
+        get_moves.h
+        get_moves.cpp
+)
+
+IF(${PDEP_PEXT})
+    target_compile_options(
+            get_moves
+            PUBLIC
+            -mbmi2
+    )
+ENDIF()
+
+target_link_libraries(
+        get_moves
         LINK_PRIVATE
         bitpattern
         get_flip

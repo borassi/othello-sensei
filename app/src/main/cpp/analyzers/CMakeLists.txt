@@ -35,6 +35,7 @@ target_link_libraries(
         hash_map
         load_training_set
         misc
+        parse_flags
         pattern_evaluator
 )
 

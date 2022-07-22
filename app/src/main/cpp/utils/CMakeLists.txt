@@ -67,6 +67,27 @@ IF (NOT ANDROID)
 ENDIF ()
 
 add_library(
+        parse_flags
+        parse_flags.h
+        parse_flags.cpp
+)
+
+IF (NOT ANDROID)
+    add_executable(
+            parse_flags_test
+            parse_flags_test.cpp
+    )
+
+    target_link_libraries(
+            parse_flags_test
+            LINK_PUBLIC
+            parse_flags
+            GTest::gtest
+            GTest::gtest_main
+    )
+ENDIF ()
+
+add_library(
         load_training_set
         load_training_set.h
         load_training_set.cpp

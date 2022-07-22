@@ -19,7 +19,6 @@
 void HashMapEntry::Update(
     BitPattern player, BitPattern opponent, DepthValue depth, EvalLarge eval,
     EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move) {
-  const std::lock_guard<std::mutex> lock(mutex_);
   player_ = player;
   opponent_ = opponent;
   lower_ = eval > lower ? eval : kMinEvalLarge;
@@ -31,7 +30,6 @@ void HashMapEntry::Update(
 
 std::pair<EvalLarge, EvalLarge> HashMapEntry::GetLowerUpper(
     BitPattern player, BitPattern opponent, DepthValue min_depth) const {
-  const std::lock_guard<std::mutex> lock(mutex_);
   if (player != player_ || opponent != opponent_ || depth_ < min_depth) {
     return std::make_pair(kMinEvalLarge, kMaxEvalLarge);
   }

@@ -42,9 +42,8 @@ class JNIWrapper {
       last_opponent_(0),
       last_gap_(-1),
       num_active_evaluators_(0) {
-    evaluator_derivative_.reserve(kNumEvaluators);
     for (int i = 0; i < kNumEvaluators; ++i) {
-      evaluator_derivative_.emplace_back(
+      evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
           PatternEvaluator::Factory(evals_.data()), 1,
           static_cast<u_int8_t>(i));
@@ -55,7 +54,7 @@ class JNIWrapper {
     double best = -INFINITY;
     EvaluatorDerivative* best_evaluator = nullptr;
     for (int i = 0; i < num_active_evaluators_; ++i) {
-      EvaluatorDerivative* evaluator = &evaluator_derivative_[i];
+      EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       double value = evaluator->Progress(gap);
       if (value > best) {
         best = value;
@@ -69,7 +68,7 @@ class JNIWrapper {
     NVisited visited = 0;
     bool all_solved = true;
     for (int i = 0; i < this->num_active_evaluators_; ++i) {
-      EvaluatorDerivative* evaluator = &evaluator_derivative_[i];
+      EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       visited += evaluator->GetFirstPosition()->GetNVisited();
       switch (evaluator->GetStatus()) {
         case NONE:
@@ -96,13 +95,13 @@ class JNIWrapper {
       tree_node_supplier_.Reset();
       if (gap <= 0) {
         num_active_evaluators_ = 1;
-        evaluator_derivative_[0].Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
+        evaluator_derivative_[0]->Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
       } else {
         const auto flips = GetAllMovesWithPass(player, opponent);
         num_active_evaluators_ = static_cast<int>(flips.size());
         for (int i = 0; i < num_active_evaluators_; ++i) {
           auto flip = flips[i];
-          evaluator_derivative_[i].Evaluate(
+          evaluator_derivative_[i]->Evaluate(
               NewPlayer(flip, opponent),
               NewOpponent(flip, player), lower, upper, max_n_visited,
               max_time / num_active_evaluators_);
@@ -119,7 +118,7 @@ class JNIWrapper {
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
-    return TreeNodeToJava(evaluator_derivative_[0].GetFirstPosition(), env);
+    return TreeNodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
@@ -128,7 +127,7 @@ class JNIWrapper {
       return TreeNodeToJava(node, env);
     }
     for (int i = 0; i < kNumEvaluators; ++i) {
-      TreeNode* first_position = evaluator_derivative_[i].GetFirstPosition();
+      TreeNode* first_position = evaluator_derivative_[i]->GetFirstPosition();
       if (first_position == nullptr) {
         continue;
       }
@@ -164,12 +163,12 @@ class JNIWrapper {
 
   void Stop() {
     for (int i = 0; i < kNumEvaluators; ++i) {
-      evaluator_derivative_[i].Stop();
+      evaluator_derivative_[i]->Stop();
     }
   }
 
   jobject GetStatus(JNIEnv* env) {
-    Status status = evaluator_derivative_[0].GetStatus();
+    Status status = evaluator_derivative_[0]->GetStatus();
     jclass JavaStatus = env->FindClass("evaluateposition/Status");
     jfieldID status_id;
     switch (status) {
@@ -213,7 +212,7 @@ class JNIWrapper {
   EvalType evals_;
   HashMap hash_map_;
   TreeNode t;
-  std::vector<EvaluatorDerivative> evaluator_derivative_;
+  std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluator_derivative_;
   TreeNodeSupplier tree_node_supplier_;
   BitPattern last_player_;
   BitPattern last_opponent_;
@@ -229,7 +228,7 @@ extern "C" {
 JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
     JNIEnv* env, jobject obj, jlong player, jlong opponent, jint lower,
     jint upper, jlong maxNVisited, jint maxTimeMillis, jfloat gap) {
-  kJNIWrapper.EvalDerivative(player, opponent, lower / 100, upper / 100, maxNVisited, maxTimeMillis / 1000.0, gap);
+  kJNIWrapper.EvalDerivative(player, opponent, static_cast<Eval>(lower / 100), static_cast<Eval>(upper / 100), maxNVisited, maxTimeMillis / 1000.0, gap);
 }
 
 JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jobject) {

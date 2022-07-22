@@ -43,12 +43,9 @@ BitPattern GetMovesBasic(BitPattern player, BitPattern opponent) {
 
 std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent) {
   std::vector<BitPattern> result;
-
-  for (Square x = 0; x < 64; x++) {
-    if ((1ULL << x) & (player | opponent)) {
-      continue;
-    }
-    BitPattern flip = GetFlipBasic(x, player, opponent);
+  BitPattern empties = ~(player | opponent);
+  FOR_EACH_SET_BIT(empties, square) {
+    BitPattern flip = GetFlip(__builtin_ctzll(square), player, opponent);
     if (flip) {
       result.push_back(flip);
     }

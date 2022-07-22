@@ -52,31 +52,24 @@ class HashMapEntry {
     BitPattern player, BitPattern opponent, DepthValue min_depth) const;
 
   BitPattern Player() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return player_;
   }
   BitPattern Opponent() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return opponent_;
   }
   EvalLarge Lower() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return lower_;
   }
   EvalLarge Upper() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return upper_;
   }
   DepthValue Depth() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return depth_;
   }
   Square BestMove() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return best_move_;
   }
   Square SecondBestMove() const {
-    const std::lock_guard<std::mutex> lock(mutex_);
     return second_best_move_;
   }
 
@@ -88,7 +81,6 @@ class HashMapEntry {
   DepthValue depth_;
   Square best_move_;
   Square second_best_move_;
-  mutable std::mutex mutex_;
 };
 
 class HashMap {
@@ -101,9 +93,12 @@ class HashMap {
     BitPattern player, BitPattern opponent, DepthValue depth,
     EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
     Square second_best_move) {
-    hash_map_[Hash(player, opponent)].Update(
-      player, opponent, depth, eval, lower, upper, best_move,
-      second_best_move);
+    {
+      const std::lock_guard<std::mutex> guard(mutex_);
+      hash_map_[Hash(player, opponent)].Update(
+          player, opponent, depth, eval, lower, upper, best_move,
+          second_best_move);
+    }
   }
 
   void Reset() {
@@ -113,13 +108,17 @@ class HashMap {
   }
 
   std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) const {
-    HashMapEntry result = hash_map_[Hash(player, opponent)];
-    if (result.Player() == player && result.Opponent() == opponent) {
-      return std::make_unique<HashMapEntry>(result);
+    {
+      const std::lock_guard<std::mutex> guard(mutex_);
+      HashMapEntry result = hash_map_[Hash(player, opponent)];
+      if (result.Player() == player && result.Opponent() == opponent) {
+        return std::make_unique<HashMapEntry>(result);
+      }
     }
     return nullptr;
   }
  private:
   HashMapEntry* hash_map_ = new HashMapEntry[kHashMapSize]();
+  mutable std::mutex mutex_;
 };
 #endif  // HASH_MAP_H
