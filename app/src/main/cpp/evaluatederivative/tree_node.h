@@ -434,7 +434,7 @@ class TreeNode {
       for (TreeNode* parent : next_node.parents) {
         parent->IncreaseNThreadsWorking();
       }
-      next_node.leaf->BestDescendant(&next_node, proving, &alternatives);
+      next_node.leaf->BestDescendant(&next_node, proving, best_loss, &alternatives);
       if (next_node.leaf == nullptr || next_node.leaf->NThreadsWorking() > 1) {
         assert (!result.empty());
         for (TreeNode* parent : next_node.parents) {
@@ -635,7 +635,7 @@ class TreeNode {
   }
 
   void BestDescendant(
-      LeafToUpdate* result, bool proving, std::vector<LeafToUpdate>* next_nodes) {
+      LeafToUpdate* result, bool proving, int best_loss, std::vector<LeafToUpdate>* next_nodes, bool best_only = false) {
     assert(!IsSolved());
     assert(!result->leaf->GetEvaluation(result->eval_goal).IsSolved());
     if (result->loss > kLogDerivativeMinusInf) {
@@ -677,21 +677,24 @@ class TreeNode {
       }
     }
     float best_child_prob = best_child->GetEvaluation(result->eval_goal).ProbGreaterEqual();
+    best_only = best_only || (best_child_prob > 0.05 && best_child_prob < 0.95);
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
       Evaluation child_eval = child->GetEvaluation(result->eval_goal);
-      if (child == best_child || child_eval.IsSolved() || (proving
-           && best_child_prob < 0.98
-          )) {
-        continue;
-      }
-      double loss_delta =
+      double new_loss =
+          result->loss
          // kLogDerivativeMultiplier * log(1 - father_eval.ProbGreaterEqual())
             + child_eval.LogDerivative(father_eval) - father_eval.MaxLogDerivative();
-      assert(loss_delta <= 0);
+      assert(new_loss <= result->loss);
+      if (child == best_child ||
+          child_eval.IsSolved() ||
+          (proving && (best_only || best_child_prob < 0.98)) ||
+          (!proving && (new_loss < best_loss - 25000 || ProbGreaterEqual(-result->eval_goal) > 0.9))) {
+        continue;
+      }
       LeafToUpdate new_leaf(*result);
       new_leaf.leaf = child;
-      new_leaf.loss += loss_delta;
+      new_leaf.loss = new_loss;
       new_leaf.father = this;
 
       if (new_leaf.loss > kLogDerivativeMinusInf) {
@@ -702,12 +705,7 @@ class TreeNode {
     }
     assert(best_child != nullptr);
     result->leaf = best_child;
-    std::vector<LeafToUpdate> temp1;
-    auto temp = next_nodes;
-    if (proving && best_child_prob > 0.05 && best_child_prob < 0.95) {
-      temp = &temp1;
-    }
-    best_child->BestDescendant(result, proving, temp);
+    best_child->BestDescendant(result, proving, best_loss, next_nodes, best_only);
   }
 
   Eval NextPositionEvalGoal() {
