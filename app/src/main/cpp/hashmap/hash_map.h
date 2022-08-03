@@ -85,17 +85,21 @@ class HashMapEntry {
 
 class HashMap {
  public:
+  HashMap() {
+    hash_map_ = new std::pair<HashMapEntry, std::mutex>[kHashMapSize]();
+  }
   ~HashMap() {
     delete[] hash_map_;
   }
 
   void Update(
-    BitPattern player, BitPattern opponent, DepthValue depth,
-    EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
-    Square second_best_move) {
+      BitPattern player, BitPattern opponent, DepthValue depth,
+      EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
+      Square second_best_move) {
+    auto& element = hash_map_[Hash(player, opponent)];
     {
-      const std::lock_guard<std::mutex> guard(mutex_);
-      hash_map_[Hash(player, opponent)].Update(
+      const std::lock_guard<std::mutex> guard(element.second);
+      element.first.Update(
           player, opponent, depth, eval, lower, upper, best_move,
           second_best_move);
     }
@@ -103,14 +107,17 @@ class HashMap {
 
   void Reset() {
     for (int i = 0; i < kHashMapSize; ++i) {
-      hash_map_[i].Update(0, 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
+      auto& element = hash_map_[i];
+      const std::lock_guard<std::mutex> guard(element.second);
+      element.first.Update(0, 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
     }
   }
 
   std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) const {
+    auto& element = hash_map_[Hash(player, opponent)];
     {
-      const std::lock_guard<std::mutex> guard(mutex_);
-      HashMapEntry result = hash_map_[Hash(player, opponent)];
+      const std::lock_guard<std::mutex> guard(element.second);
+      const auto& result = element.first;
       if (result.Player() == player && result.Opponent() == opponent) {
         return std::make_unique<HashMapEntry>(result);
       }
@@ -118,7 +125,6 @@ class HashMap {
     return nullptr;
   }
  private:
-  HashMapEntry* hash_map_ = new HashMapEntry[kHashMapSize]();
-  mutable std::mutex mutex_;
+  std::pair<HashMapEntry, std::mutex>* hash_map_;
 };
 #endif  // HASH_MAP_H

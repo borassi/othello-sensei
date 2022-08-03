@@ -170,17 +170,17 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father) {
+  double GetValue(const Evaluation& father, bool proving) {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
     }
-    if (prob == 0) {
+    if (proving && prob < 0.1) {
       return ProofNumber()
          //* (1 + 5000 / n_visited)
          - 1000.0 * kLogDerivativeMinusInf;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
-    } else if (prob == 1) {
+    } else if (proving) {
       return -DisproofNumber();
     } else {
       return LogDerivative(father);// - (1 / std::min(prob, 0.5F));

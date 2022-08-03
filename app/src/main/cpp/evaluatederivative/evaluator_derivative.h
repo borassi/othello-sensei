@@ -98,7 +98,6 @@ class TreeNodeSupplier {
   std::atomic_int num_tree_nodes_;
   TreeNode* tree_nodes_;
   std::atomic_int* tree_node_index_;
-  std::mutex mutex_;
 };
 
 class EvaluatorThread {
@@ -106,12 +105,10 @@ class EvaluatorThread {
   EvaluatorThread(HashMap* hash_map, EvaluatorFactory evaluator_depth_one,
                   std::atomic_uint64_t* visited_midgame,
                   TreeNodeSupplier* tree_node_supplier,
-                  std::mutex* mutex,
                   uint8_t index) :
       evaluator_alpha_beta_(hash_map, evaluator_depth_one),
       visited_midgame_(visited_midgame),
       tree_node_supplier_(tree_node_supplier),
-      mutex_(mutex),
       index_(index) {}
 
   void Run(std::vector<LeafToUpdate>* leaves_, std::atomic_int* current_leaf_, int max_proof) {
@@ -131,6 +128,7 @@ class EvaluatorThread {
         parent->AddDescendants(n_visited);
         parent->DecreaseNThreadsWorking();
       }
+      node->UpdateFathers();
     }
   }
 
@@ -144,7 +142,6 @@ class EvaluatorThread {
   std::atomic_uint64_t* visited_midgame_;
   TreeNodeSupplier* tree_node_supplier_;
   u_int8_t index_;
-  std::mutex* mutex_;
 
   NVisited AddChildren(const LeafToUpdate& leaf) {
     TreeNode* node = leaf.leaf;
@@ -160,7 +157,6 @@ class EvaluatorThread {
     if (moves.empty()) {
       int final_eval = GetEvaluationGameOver(player, opponent);
       node->SetSolved(final_eval);
-      node->UpdateFathers();
       (*visited_midgame_)++;
       return 1;
     }
@@ -183,7 +179,7 @@ class EvaluatorThread {
       child->SetLeaf(eval, depth, cur_visited);
     }
     node->SetChildren(children);
-    node->UpdateFathers();
+    node->UpdateFather();
     *visited_midgame_ += n_visited;
     return n_visited;
   }
@@ -194,8 +190,11 @@ class EvaluatorThread {
     EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
     EvalLarge beta = EvalToEvalLarge(leaf.beta);
     NVisited seen_positions;
-    EvalLarge eval = evaluator_alpha_beta_.Evaluate(
-        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 300000);
+    EvalLarge eval;
+    // for (int i = 0; i < 10; ++i) {
+    eval = evaluator_alpha_beta_.Evaluate(
+        node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 100000);
+    // }
     seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
 
     visited_for_endgame_ += seen_positions;
@@ -214,7 +213,6 @@ class EvaluatorThread {
     if (eval > alpha) {
       node->SetLower(eval);
     }
-    node->UpdateFathers();
     return seen_positions;
   }
 };
@@ -225,9 +223,10 @@ class EvaluatorDerivative {
       tree_node_supplier_(tree_node_supplier),
       threads_(),
       index_(index),
-      first_position_(nullptr) {
+      first_position_(nullptr),
+      proving_(false) {
     for (int i = 0; i < n_threads; ++i) {
-      threads_.push_back(EvaluatorThread(hash_map, evaluator_depth_one, &visited_midgame_, tree_node_supplier_, &mutex_, index_));
+      threads_.push_back(EvaluatorThread(hash_map, evaluator_depth_one, &visited_midgame_, tree_node_supplier_, index_));
     }
   }
 
@@ -268,6 +267,7 @@ class EvaluatorDerivative {
     upper_ = upper;
     num_batches_ = 0;
     sum_batch_sizes_ = 0;
+    proving_ = false;
     ContinueEvaluate(max_n_visited, max_time);
   }
 
@@ -306,7 +306,7 @@ class EvaluatorDerivative {
   u_int8_t index_;
   float num_batches_;
   float sum_batch_sizes_;
-  std::mutex mutex_;
+  bool proving_;
 
   void Run() {
     std::vector<LeafToUpdate> next_leaves;
@@ -341,7 +341,14 @@ class EvaluatorDerivative {
     if (CheckFinished()) {
       return {};
     }
-    result = GetFirstPosition()->BestDescendants();
+    if (!proving_ && GetFirstPosition()->IsSolvedAtProb(0)) {
+      proving_ = true;
+      // std::cout << " PROVING " << GetFirstPosition()->GetNVisited() << " ";
+    } else if (proving_ && !GetFirstPosition()->IsSolvedAtProb(0.02)) {
+      // std::cout << " BACK " << GetFirstPosition()->GetNVisited() << " " << GetFirstPosition()->GetEval() << "\n";
+      proving_ = false;
+    }
+    result = GetFirstPosition()->BestDescendants(proving_);
     assert (!result.empty());
     return result;
   }

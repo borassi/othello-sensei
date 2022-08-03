@@ -122,7 +122,6 @@ int main(int argc, char* argv[]) {
         << setw(13) << std::setprecision(0) << n_visited
         << setw(14) << static_cast<double>(n_visited / time)
         << setw(10) << tree_node_supplier.NumTreeNodes()
-//        << setw(7) << evaluator.GetNVisitedMidgame() // Stats.getNVisitedLastMoves() / (double) Stats.getNLastMoves())
         << setw(8) << n_visited / tree_node_supplier.NumTreeNodes()
         << setw(8) << n_visited / evaluator.GetNVisitedMidgame()
         << setw(13) << std::setprecision(2) << evaluator.AverageBatchSize()

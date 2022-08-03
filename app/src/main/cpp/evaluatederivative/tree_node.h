@@ -35,8 +35,7 @@ constexpr float kErrors[] = {
       7.09, 6.80, 5.52, 4.74, 4.80, 4.48, 4.61, 3.97, 4.29, 3.80, 4.03, 3.62, 3.72, 3.28, 3.38, 3.00, 3.32, 3.03,
       3.11, 2.90, 3.00, 2.65, 2.67, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50,
       2.50, 2.50, 2.50, 2.50, 2.50};
-constexpr int kEmptiesForForcedMidgame = 14;
-constexpr int kNextPositionSize = 100;
+constexpr int kNextPositionSize = 100000;
 
 class ChildError: public std::exception {
  public:
@@ -56,10 +55,12 @@ struct LeafToUpdate {
       beta(kMaxEval),
       weak_lower(kMinEval),
       weak_upper(kMaxEval),
+      father(nullptr),
       loss(0) {}
 
   double TotalLoss() const;
 
+  TreeNode* father;
   TreeNode* leaf;
   std::vector<TreeNode*> parents;
   Eval eval_goal;
@@ -188,9 +189,6 @@ class TreeNode {
   void UpdateFatherWithThisChild(TreeNode* father) const {
     const std::lock_guard<std::mutex> guard(mutex_);
     assert(ContainsFather(father));
-//    if (Constants.ASSERT_LOCKS) {
-//      assert(Thread.holdsLock(father));
-//    }
     father->lower_ = MaxEval(father->lower_, (Eval) -upper_);
     father->upper_ = MaxEval(father->upper_, (Eval) -lower_);
     father->weak_lower_ = MaxEval(father->weak_lower_, (Eval) -weak_upper_);
@@ -207,14 +205,18 @@ class TreeNode {
   }
 
   void UpdateFathers() {
-    {
-      if (!IsLeaf()) {
-        UpdateFather();
-      }
+    if (NThreadsWorking() > 0) {
+      return;
     }
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
     for (int i = 0; i < n_fathers_; ++i) {
-      fathers_[i]->UpdateFathers();
+      TreeNode* father = fathers_[i];
+      assert(!father.IsLeaf());
+      if (father->NThreadsWorking() > 0) {
+        continue;
+      }
+      father->UpdateFather();
+      father->UpdateFathers();
     }
   }
 
@@ -360,7 +362,7 @@ class TreeNode {
     return evaluations_[index];
   }
 
-  TreeNode* BestChild(Eval eval_goal, bool proof) {
+  TreeNode* BestChild(Eval eval_goal, bool proof, int n_threads_weight = 0) {
     assert(!IsLeaf());
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     TreeNode* best_child = nullptr;
@@ -369,7 +371,7 @@ class TreeNode {
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
       Evaluation child_eval = child->GetEvaluation(-eval_goal);
-      double child_value = child_eval.GetValue(cur_evaluation);
+      double child_value = child_eval.GetValue(cur_evaluation, false) + child->NThreadsWorking() * n_threads_weight;
       if (child_value > best_child_value) {
         best_child = child;
         best_child_value = child_value;
@@ -386,8 +388,12 @@ class TreeNode {
     return lower_ == upper_;
   }
 
+  bool IsSolvedAtProb(float prob) {
+    return GetPercentileLower(prob) == GetPercentileUpper(prob);
+  }
+
   bool IsPartiallySolved() {
-    return GetPercentileLower(kZeroPercForWeak) == GetPercentileUpper(kZeroPercForWeak);
+    return IsSolvedAtProb(kZeroPercForWeak);
   }
 
   Eval GetPercentileUpper(float p) {
@@ -411,15 +417,40 @@ class TreeNode {
     return -64;
   }
 
-  std::vector<LeafToUpdate> BestDescendants() {  // TODO!!!
+  std::vector<LeafToUpdate> BestDescendants1() {  // TODO!!!
+    std::vector<LeafToUpdate> result;
+    int eval_goal = NextPositionEvalGoal();
+    LeafToUpdate node;
+    node.eval_goal = eval_goal;
+    node.alpha = std::min(eval_goal, GetPercentileLower(kProbForEndgameAlphaBeta) + 1);
+    node.beta = std::max(eval_goal, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1);
+    node.weak_lower = weak_lower_;
+    node.weak_upper = weak_upper_;
+    node.leaf = this;
+    node.loss = node.leaf->MaxLogDerivative(node.eval_goal);
+    for (int i = 0; i < kNextPositionSize; ++i) {
+      LeafToUpdate new_node = node;
+      BestDescendant(&new_node, eval_goal, -300000);
+      if (new_node.leaf->NThreadsWorking() > 1) {
+        for (auto* father : new_node.parents) {
+          father->DecreaseNThreadsWorking();
+        }
+        break;
+      } else {
+        result.push_back(new_node);
+      }
+    }
+    return result;
+  }
+
+  std::vector<LeafToUpdate> BestDescendants(bool proving) {  // TODO!!!
     std::priority_queue<LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)> next_nodes(&leaf_less);
     std::vector<LeafToUpdate> result;
-    bool proof = IsPartiallySolved();
 
-    int lower_eval_goal = NextPositionEvalGoal(0, 0.5);
-    int upper_eval_goal = NextPositionEvalGoal(0.5, 1);
+    int lower_eval_goal = NextPositionEvalGoal(0, 1);
+    // int upper_eval_goal = NextPositionEvalGoal(0.5, 1);
     double best_loss = kLogDerivativeMinusInf * 10000.0;
-    for (int eval_goal : {lower_eval_goal, upper_eval_goal}) {
+    for (int eval_goal : {lower_eval_goal}) {
       if (eval_goal == kLessThenMinEval) {
         continue;
       }
@@ -440,13 +471,14 @@ class TreeNode {
     }
     assert (!next_nodes.empty());
     while (result.size() < kNextPositionSize && !next_nodes.empty()) {
+      std::vector<LeafToUpdate> alternatives;
       LeafToUpdate next_node = next_nodes.top();
       next_nodes.pop();
       assert(!next_node.leaf->IsSolved());
       for (TreeNode* parent : next_node.parents) {
         parent->IncreaseNThreadsWorking();
       }
-      next_node.leaf->BestDescendant(&next_node, proof, best_loss, &next_nodes);
+      next_node.leaf->BestDescendant(&next_node, proving, &alternatives);
       if (next_node.leaf == nullptr || next_node.leaf->NThreadsWorking() > 1) {
         assert (!result.empty());
         for (TreeNode* parent : next_node.parents) {
@@ -454,6 +486,16 @@ class TreeNode {
         }
       } else {
         result.push_back(next_node);
+        for (auto alternative : alternatives) {
+          bool solve = alternative.leaf->ToBeSolved(alternative.alpha, alternative.beta, 200000);
+          if (!proving && !solve && alternative.loss >= best_loss - 30000) {
+            next_nodes.push(alternative);
+          } else if (!proving && solve && alternative.loss >= best_loss - 10000 && alternative.father->ProbGreaterEqual(-alternative.eval_goal) < 0.5) {
+            next_nodes.push(alternative);
+          } else if (proving) {
+            next_nodes.push(alternative);
+          }
+        }
       }
     }
     return result;
@@ -638,9 +680,38 @@ class TreeNode {
     return true;
   }
 
+  void BestDescendant(LeafToUpdate* result, bool proof, int n_threads_weight) {
+    assert(!IsSolved());
+    assert(!result->leaf->GetEvaluation(result->eval_goal).IsSolved());
+    if (result->loss > kLogDerivativeMinusInf) {
+      assert(ProbGreaterEqual(result->eval_goal) > 0 &&
+             ProbGreaterEqual(result->eval_goal) < 1);
+    }
+    IncreaseNThreadsWorking();
+    result->parents.push_back(this);
+    if (IsLeaf()) {
+      result->leaf = this;
+      return;
+    }
+    Eval lower_eval = GetPercentileLower(kProbForEndgameAlphaBeta) + 1;
+    Eval upper_eval = GetPercentileUpper(kProbForEndgameAlphaBeta) - 1;
+    result->alpha = MaxEval(result->alpha, MinEval(lower_eval, result->eval_goal));
+    result->beta = MinEval(result->beta, MaxEval(upper_eval, result->eval_goal));
+
+    TreeNode* best_child = BestChild(result->eval_goal, proof, n_threads_weight);
+    auto tmp = result->alpha;
+    result->alpha = -result->beta;
+    result->beta = -tmp;
+    result->eval_goal = -result->eval_goal;
+    tmp = result->weak_lower;
+    result->weak_lower = -result->weak_upper;
+    result->weak_upper = -tmp;
+
+    best_child->BestDescendant(result, proof, n_threads_weight);
+  }
+
   void BestDescendant(
-      LeafToUpdate* result, bool proof, double best_loss,
-      std::priority_queue<LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)>* next_nodes) {
+      LeafToUpdate* result, bool proving, std::vector<LeafToUpdate>* next_nodes) {
     assert(!IsSolved());
     assert(!result->leaf->GetEvaluation(result->eval_goal).IsSolved());
     if (result->loss > kLogDerivativeMinusInf) {
@@ -675,38 +746,44 @@ class TreeNode {
       if (child_eval.IsSolved()) {
         continue;
       }
-      double cur_loss = child_eval.GetValue(father_eval);
+      double cur_loss = child_eval.GetValue(father_eval, proving);
       if (cur_loss > best_child_loss) {
-        std::swap(child, best_child);
-        std::swap(best_child_loss, cur_loss);
-        if (child != nullptr) {
-          child_eval = child->GetEvaluation(result->eval_goal);
-        }
+        best_child = child;
+        best_child_loss = cur_loss;
       }
-
-//      std::cout << "  " << father_eval.ProbGreaterEqual() << " " << result->loss << " " << loss_delta << " " << best_loss << "\n";
-      if (child != nullptr && father_eval.ProbGreaterEqual() < 0.9  // TODO.
-      // && (result->loss < kLogDerivativeMinusInf || child_eval.ProbGreaterEqual() == 0)
-//          && result->loss + loss_delta > best_loss - 40000
-          ) {
-        double loss_delta =
-            kLogDerivativeMultiplier * log(1 - father_eval.ProbGreaterEqual())
-              + child_eval.LogDerivative(father_eval) - father_eval.MaxLogDerivative();
-        assert(loss_delta <= 0);
-        LeafToUpdate new_leaf(*result);
-        new_leaf.leaf = child;
-        new_leaf.loss += loss_delta;
-
-        if (new_leaf.loss > kLogDerivativeMinusInf) {
-          assert(child_eval.ProbGreaterEqual() > 0 &&
-                 child_eval.ProbGreaterEqual() < 1);
-        }
-        next_nodes->push(new_leaf);
+    }
+    float best_child_prob = best_child->GetEvaluation(result->eval_goal).ProbGreaterEqual();
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children_[i];
+      Evaluation child_eval = child->GetEvaluation(result->eval_goal);
+      if (child == best_child || child_eval.IsSolved() || (proving
+           && best_child_prob < 0.98
+          )) {
+        continue;
       }
+      double loss_delta =
+         // kLogDerivativeMultiplier * log(1 - father_eval.ProbGreaterEqual())
+            + child_eval.LogDerivative(father_eval) - father_eval.MaxLogDerivative();
+      assert(loss_delta <= 0);
+      LeafToUpdate new_leaf(*result);
+      new_leaf.leaf = child;
+      new_leaf.loss += loss_delta;
+      new_leaf.father = this;
+
+      if (new_leaf.loss > kLogDerivativeMinusInf) {
+        assert(child_eval.ProbGreaterEqual() > 0 &&
+               child_eval.ProbGreaterEqual() < 1);
+      }
+      next_nodes->push_back(std::move(new_leaf));
     }
     assert(best_child != nullptr);
     result->leaf = best_child;
-    best_child->BestDescendant(result, proof, best_loss, next_nodes);
+    std::vector<LeafToUpdate> temp1;
+    auto temp = next_nodes;
+    if (proving && best_child_prob > 0.05 && best_child_prob < 0.95) {
+      temp = &temp1;
+    }
+    best_child->BestDescendant(result, proving, temp);
   }
 
   Eval NextPositionEvalGoal() {
@@ -714,7 +791,8 @@ class TreeNode {
   }
 
   Eval NextPositionEvalGoal(float prob_min, float prob_max) {
-    static Eval last_eval_goal;
+    static Eval last_eval_goal = kLessThenMinEval;
+    static int num_last_eval_goal = 0;
     Eval best_eval = kLessThenMinEval;
     double best_value = -DBL_MAX;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
@@ -726,8 +804,8 @@ class TreeNode {
         continue;
       }
       double cur_value = 0;
-      cur_value += (eval.ProbGreaterEqual() > kMinProbEvalGoal && eval.ProbGreaterEqual() < 1 - kMinProbEvalGoal) ?
-                      0 : kLogDerivativeMinusInf * 1000.0;
+      // cur_value += (eval.ProbGreaterEqual() > kMinProbEvalGoal && eval.ProbGreaterEqual() < 1 - kMinProbEvalGoal) ?
+      //                0 : kLogDerivativeMinusInf * 1000.0;
       cur_value += eval.MaxLogDerivative() * 10;
       cur_value += i == last_eval_goal ? 0 : 1;
 
@@ -736,10 +814,7 @@ class TreeNode {
         best_eval = i;
       }
     }
-    // assert best_eval != kLessThenMinEval || Constants.MAX_PARALLEL_TASKS > 1;
-
     last_eval_goal = best_eval;
-//    lastEvalGoal.set(bestEval.evalGoal);
     return best_eval;
   }
 
