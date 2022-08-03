@@ -362,24 +362,6 @@ class TreeNode {
     return evaluations_[index];
   }
 
-  TreeNode* BestChild(Eval eval_goal, bool proof, int n_threads_weight = 0) {
-    assert(!IsLeaf());
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    TreeNode* best_child = nullptr;
-    double best_child_value = -DBL_MAX;
-    Evaluation cur_evaluation = GetEvaluation(eval_goal);
-    for (int i = 0; i < n_children_; ++i) {
-      TreeNode* child = children_[i];
-      Evaluation child_eval = child->GetEvaluation(-eval_goal);
-      double child_value = child_eval.GetValue(cur_evaluation, false) + child->NThreadsWorking() * n_threads_weight;
-      if (child_value > best_child_value) {
-        best_child = child;
-        best_child_value = child_value;
-      }
-    }
-    return best_child;
-  }
-
   NVisited GetNVisited() {
     return n_visited_;
   }
@@ -417,33 +399,7 @@ class TreeNode {
     return -64;
   }
 
-  std::vector<LeafToUpdate> BestDescendants1() {  // TODO!!!
-    std::vector<LeafToUpdate> result;
-    int eval_goal = NextPositionEvalGoal();
-    LeafToUpdate node;
-    node.eval_goal = eval_goal;
-    node.alpha = std::min(eval_goal, GetPercentileLower(kProbForEndgameAlphaBeta) + 1);
-    node.beta = std::max(eval_goal, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1);
-    node.weak_lower = weak_lower_;
-    node.weak_upper = weak_upper_;
-    node.leaf = this;
-    node.loss = node.leaf->MaxLogDerivative(node.eval_goal);
-    for (int i = 0; i < kNextPositionSize; ++i) {
-      LeafToUpdate new_node = node;
-      BestDescendant(&new_node, eval_goal, -300000);
-      if (new_node.leaf->NThreadsWorking() > 1) {
-        for (auto* father : new_node.parents) {
-          father->DecreaseNThreadsWorking();
-        }
-        break;
-      } else {
-        result.push_back(new_node);
-      }
-    }
-    return result;
-  }
-
-  std::vector<LeafToUpdate> BestDescendants(bool proving) {  // TODO!!!
+  std::vector<LeafToUpdate> BestDescendants(bool proving) {
     std::priority_queue<LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)> next_nodes(&leaf_less);
     std::vector<LeafToUpdate> result;
 
@@ -487,10 +443,8 @@ class TreeNode {
       } else {
         result.push_back(next_node);
         for (auto alternative : alternatives) {
-          bool solve = alternative.leaf->ToBeSolved(alternative.alpha, alternative.beta, 200000);
-          if (!proving && !solve && alternative.loss >= best_loss - 30000) {
-            next_nodes.push(alternative);
-          } else if (!proving && solve && alternative.loss >= best_loss - 10000 && alternative.father->ProbGreaterEqual(-alternative.eval_goal) < 0.5) {
+          if (!proving && alternative.loss >= best_loss - 25000 && alternative.father
+              ->ProbGreaterEqual(-alternative.eval_goal) < 0.9) {
             next_nodes.push(alternative);
           } else if (proving) {
             next_nodes.push(alternative);
@@ -678,36 +632,6 @@ class TreeNode {
       }
     }
     return true;
-  }
-
-  void BestDescendant(LeafToUpdate* result, bool proof, int n_threads_weight) {
-    assert(!IsSolved());
-    assert(!result->leaf->GetEvaluation(result->eval_goal).IsSolved());
-    if (result->loss > kLogDerivativeMinusInf) {
-      assert(ProbGreaterEqual(result->eval_goal) > 0 &&
-             ProbGreaterEqual(result->eval_goal) < 1);
-    }
-    IncreaseNThreadsWorking();
-    result->parents.push_back(this);
-    if (IsLeaf()) {
-      result->leaf = this;
-      return;
-    }
-    Eval lower_eval = GetPercentileLower(kProbForEndgameAlphaBeta) + 1;
-    Eval upper_eval = GetPercentileUpper(kProbForEndgameAlphaBeta) - 1;
-    result->alpha = MaxEval(result->alpha, MinEval(lower_eval, result->eval_goal));
-    result->beta = MinEval(result->beta, MaxEval(upper_eval, result->eval_goal));
-
-    TreeNode* best_child = BestChild(result->eval_goal, proof, n_threads_weight);
-    auto tmp = result->alpha;
-    result->alpha = -result->beta;
-    result->beta = -tmp;
-    result->eval_goal = -result->eval_goal;
-    tmp = result->weak_lower;
-    result->weak_lower = -result->weak_upper;
-    result->weak_upper = -tmp;
-
-    best_child->BestDescendant(result, proof, n_threads_weight);
   }
 
   void BestDescendant(
