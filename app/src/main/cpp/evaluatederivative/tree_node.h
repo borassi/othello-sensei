@@ -416,11 +416,10 @@ class TreeNode {
     std::vector<LeafToUpdate> result;
 
     int eval_goal = NextPositionEvalGoal(0, 1);
-    double best_loss = kLogDerivativeMinusInf * 10000.0;
     if (n_threads_working == 1) {
       BestDescendant(LeafToUpdate(this, eval_goal), proving, &result);
     } else {
-      BestDescendants(LeafToUpdate(this, eval_goal), proving, best_loss, &result);
+      BestDescendants(LeafToUpdate(this, eval_goal), proving, &result);
     }
     return result;
   }
@@ -642,7 +641,7 @@ class TreeNode {
   }
 
   void BestDescendants(
-      const LeafToUpdate& node, bool proving, int best_loss, std::vector<LeafToUpdate>* next_nodes) {
+      const LeafToUpdate& node, bool proving, std::vector<LeafToUpdate>* next_nodes) {
     assert(!IsSolved());
     assert(!node.Leaf()->GetEvaluation(node.EvalGoal()).IsSolved());
     assert(proving || node.Loss() > kLogDerivativeMinusInf);
@@ -674,7 +673,7 @@ class TreeNode {
       if (proving && (best_child_prob > 0.05 && best_child_prob < 0.95)) {
         child->BestDescendant(child_leaf, proving, next_nodes);
       } else {
-        child->BestDescendants(child_leaf, proving, best_loss, next_nodes);
+        child->BestDescendants(child_leaf, proving, next_nodes);
       }
       IncreaseNThreadsWorking(next_nodes->size() - old_descendants);
     }
