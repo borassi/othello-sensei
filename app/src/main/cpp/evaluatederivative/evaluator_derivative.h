@@ -117,14 +117,14 @@ class EvaluatorThread {
     int n_visited;
     for (int i = (*current_leaf_)++; i < leaves_->size(); i = (*current_leaf_)++) {
       LeafToUpdate leaf = (*leaves_)[i];
-      TreeNode* node = leaf.leaf;
+      TreeNode* node = leaf.Leaf();
       assert(node->IsLeaf());
-      if (node->ToBeSolved(leaf.alpha, leaf.beta, max_proof)) {
+      if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), max_proof)) {
         n_visited = SolvePosition(leaf);
       } else {
         n_visited = AddChildren(leaf);
       }
-      for (TreeNode* parent : leaf.parents) {
+      for (TreeNode* parent : leaf.Parents()) {
         parent->AddDescendants(n_visited);
         parent->DecreaseNThreadsWorking();
       }
@@ -144,7 +144,7 @@ class EvaluatorThread {
   u_int8_t index_;
 
   NVisited AddChildren(const LeafToUpdate& leaf) {
-    TreeNode* node = leaf.leaf;
+    TreeNode* node = leaf.Leaf();
     assert(node->IsLeaf());
     assert(node->NThreadsWorking() == 1);
     int depth = node->NEmpties() < 24 ? (node->NEmpties() < 22 ? 2 : 3) : 4;
@@ -175,7 +175,7 @@ class EvaluatorThread {
       int eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
       auto cur_visited = evaluator_alpha_beta_.GetNVisited();
       n_visited += cur_visited;
-      child->SetWeakLowerUpper(-leaf.weak_upper, -leaf.weak_lower);
+      child->SetWeakLowerUpper(-leaf.WeakUpper(), -leaf.WeakLower());
       child->SetLeaf(eval, depth, cur_visited);
     }
     node->SetChildren(children);
@@ -185,10 +185,10 @@ class EvaluatorThread {
   }
 
   NVisited SolvePosition(const LeafToUpdate& leaf) {
-    TreeNode* node = leaf.leaf;
+    TreeNode* node = leaf.Leaf();
     assert(node->IsLeaf());
-    EvalLarge alpha = EvalToEvalLarge(leaf.alpha);
-    EvalLarge beta = EvalToEvalLarge(leaf.beta);
+    EvalLarge alpha = EvalToEvalLarge(leaf.Alpha());
+    EvalLarge beta = EvalToEvalLarge(leaf.Beta());
     NVisited seen_positions;
     EvalLarge eval;
     // for (int i = 0; i < 10; ++i) {
@@ -205,7 +205,7 @@ class EvaluatorThread {
     }
     assert(node->NThreadsWorking() == 1);
     // No need to lock, because this is the only thread that can touch this node.
-    node->SetWeakLowerUpper(leaf.weak_lower, leaf.weak_upper);
+    node->SetWeakLowerUpper(leaf.WeakLower(), leaf.WeakUpper());
 
     if (eval < beta) {
       node->SetUpper(eval);
@@ -348,7 +348,7 @@ class EvaluatorDerivative {
       // std::cout << " BACK " << GetFirstPosition()->GetNVisited() << " " << GetFirstPosition()->GetEval() << "\n";
       proving_ = false;
     }
-    result = GetFirstPosition()->BestDescendants(proving_);
+    result = GetFirstPosition()->BestDescendants(proving_, threads_.size());
     assert (!result.empty());
     return result;
   }
