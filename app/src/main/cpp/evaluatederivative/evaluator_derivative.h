@@ -319,7 +319,10 @@ class EvaluatorDerivative {
       std::vector<std::future<void>> futures;
       futures.reserve(threads_.size());
       for (int i = 0; i < threads_.size(); ++i) {
-        futures.push_back(std::async(std::launch::async, &EvaluatorThread::Run, &threads_[i], &next_leaves, &current_leaf, int(visited_for_endgame_)));
+        futures.push_back(std::async(
+            i == 0 ? std::launch::deferred : std::launch::async,
+            &EvaluatorThread::Run, &threads_[i], &next_leaves, &current_leaf,
+            int(visited_for_endgame_)));
       }
       int total_visited_endgames = 0;
       int total_endgames = 0;
