@@ -378,6 +378,10 @@ class TreeNode {
   }
 
   bool IsSolvedAtProb(float prob) {
+    if (weak_upper_ == 63 && GetEvaluation(weak_upper_).ProbGreaterEqual() >= 1 - prob ||
+        weak_lower_ == -63 && GetEvaluation(weak_lower_).ProbGreaterEqual() <= prob) {
+      return true;
+    }
     for (int i = weak_lower_; i <= weak_upper_ - 2; i += 2) {
       if (GetEvaluation(i).ProbGreaterEqual() >= 1 - prob &&
           GetEvaluation(i + 2).ProbGreaterEqual() <= prob) {
