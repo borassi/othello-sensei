@@ -156,7 +156,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     resetHashMaps.addActionListener((ActionEvent e) -> main.resetHashMaps());
     copy.addActionListener((ActionEvent e) -> main.copy());
     depth = new JTextField();
-    depth.setText("1000000000");
+    depth.setText("10000000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
 

@@ -32,7 +32,7 @@ TEST(ConstexprMath, Exp) {
 }
 
 TEST(ConstexprMath, Pow) {
-  for (double x : {0.0, 0.1, 1.0, 2.3, 10.6}) {
+  for (double x : {0.01, 0.1, 1.0, 2.3, 10.6}) {
     for (double y : {-5.0, -2.0, -1.5, -1.0, -0.01, 0.0, 0.01, 1.0, 10.0}) {
       EXPECT_FLOAT_EQ(ConstexprPow(x, y), pow(x, y));
     }
@@ -60,4 +60,9 @@ TEST(Gaussian, Gaussian) {
 
   EXPECT_NEAR(1, GaussianCDF(1, 0, 0.00001), 1.E-5);
   EXPECT_NEAR((1-0.6827) / 2, GaussianCDF(4, 6, 2), 1.E-5);
+}
+
+TEST(Vector, VectorContains) {
+  EXPECT_TRUE(Contains<int>({1, 2, 3}, 2));
+  EXPECT_FALSE(Contains<int>({1, 2, 3}, 4));
 }

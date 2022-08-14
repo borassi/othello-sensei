@@ -19,25 +19,27 @@
 LeafToUpdate::LeafToUpdate(TreeNode* leaf, int eval_goal) :
     leaf_(leaf),
     eval_goal_(static_cast<Eval>(eval_goal)),
-    alpha_(static_cast<Eval>(std::min(eval_goal, std::max((int) leaf->WeakLower(), leaf->GetPercentileLower(kProbForEndgameAlphaBeta) + 1)))),
-    beta_(static_cast<Eval>(std::max(eval_goal, std::min((int) leaf->WeakUpper(), leaf->GetPercentileUpper(kProbForEndgameAlphaBeta) - 1)))),
     weak_lower_(leaf->WeakLower()),
     weak_upper_(leaf->WeakUpper()),
     loss_(0),
     parents_({leaf}) {
+  alpha_ = weak_lower_;
+  beta_ = weak_upper_;
+  UpdateAlphaBeta(leaf);
   assert(weak_lower_ <= alpha_ && alpha_ <= eval_goal_ && eval_goal_ <= beta_
          && beta_ <= weak_upper_);
 }
 
-LeafToUpdate LeafToUpdate::ToChild(TreeNode* child, double extra_loss) const {
-    LeafToUpdate leaf = LeafToUpdate(child, -eval_goal_);
-    leaf.weak_upper_ = static_cast<Eval>(-weak_lower_);
-    leaf.weak_lower_ = static_cast<Eval>(-weak_upper_);
-    leaf.alpha_ = MaxEval(static_cast<Eval>(-beta_), leaf.alpha_);
-    leaf.beta_ = MinEval(static_cast<Eval>(-alpha_), leaf.beta_);
-    leaf.loss_ = loss_ + extra_loss;
+void LeafToUpdate::UpdateAlphaBeta(TreeNode* node) {
+  alpha_ = MinEval(eval_goal_, MaxEval(alpha_, node->GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
+  beta_ = MaxEval(eval_goal_, MinEval(beta_, node->GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
+}
+
+LeafToUpdate LeafToUpdate::CopyToChild(TreeNode* node, double extra_loss) const {
+    LeafToUpdate leaf(node, -eval_goal_, -beta_, -alpha_, -weak_upper_, -weak_lower_, loss_ + extra_loss);
     leaf.parents_ = parents_;
-    leaf.parents_.push_back(child);
+    leaf.UpdateAlphaBeta(node);
+    leaf.parents_.push_back(node);
     assert(weak_lower_ <= alpha_ && alpha_ <= eval_goal_ && eval_goal_ <= beta_
            && beta_ <= weak_upper_);
     return leaf;

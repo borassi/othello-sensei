@@ -15,7 +15,7 @@
  */
  #include "parse_flags.h"
 
-ParseFlags::ParseFlags(int argc, char* argv[]) {
+ParseFlags::ParseFlags(int argc, const char* const argv[]) {
   std::string last_flag;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];

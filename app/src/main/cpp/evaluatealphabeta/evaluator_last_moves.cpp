@@ -284,17 +284,19 @@ Eval EvalFiveEmpties(
   Square space_3[3];
   int new_cont_x = 0;
   int cont_x = 0;
-  Square move;
   bool has_space_2 = false;
   bool has_space_3 = false;
+  BitPattern empties_in_space;
+  int space_size;
   for (BitPattern space : {kSpace0Pattern, kSpace1Pattern, kSpace2Pattern, kSpace3Pattern}) {
-    int space_size = __builtin_popcountll(space & empties);
-    if (space_size == 0) {
+    empties_in_space = space & empties;
+    if (empties_in_space == 0) {
       continue;
-    } else if (space_size == 1) {
-      move = __builtin_ctzll(space & empties);
-      x[cont_x++] = move;
-      empties = empties & ~(1L << move);
+    }
+    space_size = __builtin_popcountll(empties_in_space);
+    if (space_size == 1) {
+      x[cont_x++] = __builtin_ctzll(empties_in_space);
+      empties = empties & ~empties_in_space;
       continue;
     } else if (space_size == 2) {  // Can be 1:1:1:2, 1:2:2, 3:2.
       new_cont_x = cont_x;
@@ -304,12 +306,12 @@ Eval EvalFiveEmpties(
       has_space_3 = true;
       int j = 0;
       for (BitPattern mask : {kCornerPattern, kCentralPattern, kEdgePattern, kXCPattern}) {
-        mask = mask & space;
-        while ((mask & empties) != 0) {
-          move = __builtin_ctzll(mask & empties);
-          space_3[j++] = move;
-          empties = empties & (~(1ULL << move));
+        mask = mask & empties_in_space;
+        while (mask != 0) {
+          space_3[j++] = __builtin_ctzll(mask);
+          mask = mask & (mask - 1);
         }
+        empties = empties & ~empties_in_space;
       }
       continue;
     } else if (space_size == 4) {  // Must be 1:4.
@@ -317,12 +319,12 @@ Eval EvalFiveEmpties(
       cont_x = 1;
     }// else if (space_size == 5) do nothing.
     for (BitPattern mask : {kCornerPattern, kCentralPattern, kEdgePattern, kXCPattern}) {
-      mask = mask & space;
-      while ((mask & empties) != 0) {
-        move = __builtin_ctzll(mask & empties);
-        x[cont_x++] = move;
-        empties = empties & (~(1ULL << move));
+      mask = mask & empties_in_space;
+      while (mask != 0) {
+        x[cont_x++] = __builtin_ctzll(mask);
+        mask = mask & (mask - 1);
       }
+      empties = empties & ~empties_in_space;
     }
     cont_x = new_cont_x;
   }

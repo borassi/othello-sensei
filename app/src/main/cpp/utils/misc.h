@@ -17,10 +17,12 @@
 #ifndef UTILS_MISC_H
 #define UTILS_MISC_H
 
+#include <algorithm>
 #include <assert.h>
 #include <chrono>
 #include <limits>
 #include <math.h>
+#include <vector>
 
 class ElapsedTime {
  public:
@@ -99,4 +101,8 @@ double GaussianCDF(double value);
 
 double GaussianCDF(double x, double mean, double stddev);
 
+template<typename T>
+bool Contains(std::vector<T> v, T elem) {
+  return std::find(v.begin(), v.end(), elem) != v.end();
+}
 #endif  // UTILS_MISC_H

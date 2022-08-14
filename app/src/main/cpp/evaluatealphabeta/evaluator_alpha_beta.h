@@ -93,6 +93,7 @@ class MoveIteratorVeryQuick : public MoveIteratorBase {
   BitPattern candidate_moves_;
 };
 
+template<bool very_quick>
 class MoveIteratorQuick : public MoveIteratorBase {
  public:
   MoveIteratorQuick();
@@ -105,6 +106,7 @@ class MoveIteratorQuick : public MoveIteratorBase {
   BitPattern player_;
   BitPattern opponent_;
   BitPattern candidate_moves_;
+  // NOTE: could be 6 when very_quick = true, but probably not worth it.
   BitPattern masks_[9];
   int current_mask_;
 };

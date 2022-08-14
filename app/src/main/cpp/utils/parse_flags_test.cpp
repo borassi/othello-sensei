@@ -18,20 +18,20 @@
 #include "parse_flags.h"
 
 TEST(ParseFlags, NoFlag) {
-  char* flags[] = {"run_my_program"};
+  char const* flags[] = {"run_my_program"};
   ParseFlags parse_flags(0, flags);
   EXPECT_EQ(parse_flags.NumFlags(), 0);
   EXPECT_THROW(parse_flags.GetFlag("no_flag"), ParseFlagsException);
 }
 TEST(ParseFlags, SingleFlag) {
-  char* flags[] = {"run_my_program", "--approx"};
+  char const* flags[] = {"run_my_program", "--approx"};
   ParseFlags parse_flags(2, flags);
   EXPECT_THROW(parse_flags.GetFlag("no_flag"), ParseFlagsException);
   EXPECT_EQ(parse_flags.GetFlagOrDefault("no_flag", "default"), "default");
   EXPECT_EQ(parse_flags.GetFlag("approx"), "");
 }
 TEST(ParseFlags, ManyFlags) {
-  char* flags[] = {"run_my_program", "--approx", "--n_threads", "2", "--tasks=100", "--happy", "--glad=True", "--tired=FALSE"};
+  char const* flags[] = {"run_my_program", "--approx", "--n_threads", "2", "--tasks=100", "--happy", "--glad=True", "--tired=FALSE"};
   ParseFlags parse_flags(8, flags);
   EXPECT_THROW(parse_flags.GetFlag("no_flag"), ParseFlagsException);
   EXPECT_EQ(parse_flags.GetFlag("approx"), "");
@@ -46,8 +46,8 @@ TEST(ParseFlags, ManyFlags) {
   EXPECT_THROW(parse_flags.GetBoolFlag("n_threads"), ParseFlagsException);
 }
 TEST(ParseFlags, WrongFlags) {
-  char* flags[] = {"run_my_program", "--approx=2", "2"};
+  char const* flags[] = {"run_my_program", "--approx=2", "2"};
   EXPECT_THROW(ParseFlags(3, flags), ParseFlagsException);
-  char* flags1[] = {"run_my_program", "2"};
+  char const* flags1[] = {"run_my_program", "2"};
   EXPECT_THROW(ParseFlags(2, flags1), ParseFlagsException);
 }

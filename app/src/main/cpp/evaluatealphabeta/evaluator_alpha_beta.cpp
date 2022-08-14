@@ -71,13 +71,6 @@ constexpr int MoveIteratorOffset(int depth, bool solve, bool unlikely) {
   return depth + (solve ? EvaluatorAlphaBeta::kMaxDepth : 0) + (unlikely ? 2 * EvaluatorAlphaBeta::kMaxDepth : 0);
 }
 
-MoveIteratorQuick::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
-  masks_[3] = kCornerPattern;
-  masks_[6] = kCentralPattern;
-  masks_[7] = kEdgePattern;
-  masks_[8] = ~0ULL;
-}
-
 void MoveIteratorVeryQuick::Setup(
     BitPattern player, BitPattern opponent,
     BitPattern last_flip, int upper, HashMapEntry* entry,
@@ -98,7 +91,23 @@ BitPattern MoveIteratorVeryQuick::NextFlip() {
   return flip;
 }
 
-void MoveIteratorQuick::Setup(
+template<bool very_quick>
+MoveIteratorQuick<very_quick>::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
+  if (very_quick) {
+    masks_[1] = kCornerPattern;
+    masks_[3] = kCentralPattern;
+    masks_[4] = kEdgePattern;
+    masks_[5] = ~0ULL;
+  } else {
+    masks_[3] = kCornerPattern;
+    masks_[6] = kCentralPattern;
+    masks_[7] = kEdgePattern;
+    masks_[8] = ~0ULL;
+  }
+}
+
+template<bool very_quick>
+void MoveIteratorQuick<very_quick>::Setup(
     BitPattern player, BitPattern opponent,
     BitPattern last_flip, int upper, HashMapEntry* entry,
     EvaluatorDepthOneBase* evaluator_depth_one) {
@@ -108,14 +117,20 @@ void MoveIteratorQuick::Setup(
   candidate_moves_ = Neighbors(opponent) & empties;
   current_mask_ = 0;
   BitPattern neighbors_player = Neighbors(player);
-  masks_[0] = ~Neighbors(empties) & neighbors_player;
-  masks_[1] = UniqueInEdges(empties) & neighbors_player;
-  masks_[2] = Neighbors(last_flip) & kCornerPattern;
-  masks_[4] = FirstLastInEdges(empties);
-  masks_[5] = ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0;
+  if (very_quick) {
+    masks_[0] = ~Neighbors(empties) & neighbors_player;
+    masks_[2] = ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0;
+  } else {
+    masks_[0] = ~Neighbors(empties) & neighbors_player;
+    masks_[1] = UniqueInEdges(empties) & neighbors_player;
+    masks_[2] = Neighbors(last_flip) & kCornerPattern;
+    masks_[4] = FirstLastInEdges(empties);
+    masks_[5] = ((last_flip & kXPattern) != 0) ? Neighbors(last_flip) : 0;
+  }
 }
 
-BitPattern MoveIteratorQuick::NextFlip() {
+template<bool very_quick>
+BitPattern MoveIteratorQuick<very_quick>::NextFlip() {
   BitPattern mask = masks_[current_mask_];
   BitPattern flip = 0;
   while (flip == 0 && candidate_moves_ != 0) {
@@ -360,8 +375,10 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
         int offset = MoveIteratorOffset(depth, solve, unlikely);
         if (unlikely) {
           move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>();
+        } else if ((solve && depth <= 8) || (!solve && depth <= 2)) {
+          move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>();
         } else if ((solve && depth <= 9) || (!solve && depth <= 2)) {
-          move_iterators_[offset] = std::make_unique<MoveIteratorQuick>();
+          move_iterators_[offset] = std::make_unique<MoveIteratorQuick<false>>();
         } else if ((solve && depth <= 12) || (!solve)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>();
         } else {

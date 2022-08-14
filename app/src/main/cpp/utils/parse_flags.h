@@ -33,7 +33,7 @@ class ParseFlagsException : public std::exception {
 
 class ParseFlags {
  public:
-  ParseFlags(int argc, char* argv[]);
+  ParseFlags(int argc, const char* const argv[]);
 
   std::string GetFlag(const std::string& name) {
     auto flag = flags_.find(name);
@@ -67,7 +67,7 @@ class ParseFlags {
     }
     throw ParseFlagsException("Cannot convert flag value '" + flag + "' to boolean.");
   }
-  int GetBoolFlagOrDefault(const std::string& name, int default_value) {
+  bool GetBoolFlagOrDefault(const std::string& name, int default_value) {
     if (flags_.count(name)) {
       return GetBoolFlag(name);
     } else {
