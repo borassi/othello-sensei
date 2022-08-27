@@ -88,11 +88,14 @@ BitPattern MoveIteratorVeryQuick::NextFlip() {
     assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
   }
+  if (flip != 0) {
+    stats_->Add(1, VERY_QUICK);
+  }
   return flip;
 }
 
 template<bool very_quick>
-MoveIteratorQuick<very_quick>::MoveIteratorQuick() : masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
+MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) : MoveIteratorBase(stats), masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
   if (very_quick) {
     masks_[1] = kCornerPattern;
     masks_[3] = kCentralPattern;
@@ -143,6 +146,13 @@ BitPattern MoveIteratorQuick<very_quick>::NextFlip() {
     assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
   }
+  if (flip != 0) {
+    if (very_quick) {
+      stats_->Add(1, QUICK1);
+    } else {
+      stats_->Add(1, QUICK2);
+    }
+  }
   return flip;
 }
 
@@ -155,16 +165,8 @@ void MoveIteratorEval::Setup(
   remaining_moves_ = 0;
   if (entry != nullptr && entry->BestMove() != kNoSquare) {
     assert(player == entry->Player() && opponent == entry->Opponent());
-    assert(((1ULL << entry->BestMove()) & (player_ | opponent_)) == 0);
-    assert(GetFlip(entry->BestMove(), player, opponent) != 0);
-//    moves_[remaining_moves_].Set(entry->BestMove(), 999999);
-//    candidate_moves = candidate_moves & ~(1ULL << entry->BestMove());
-//    remaining_moves_++;
-////    if (entry->SecondBestMove() != kNoSquare) {
-////      moves_[remaining_moves_].Set(entry->SecondBestMove(), 99999998);
-////      candidate_moves = candidate_moves & ~(1ULL << entry->SecondBestMove());
-////      remaining_moves_++;
-////    }
+    assert(entry->BestMove() == kNoSquare || (((1ULL << entry->BestMove()) & (player | opponent)) == 0));
+    assert(entry->BestMove() == kNoSquare || GetFlip(entry->BestMove(), player, opponent) != 0);
   }
   depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
@@ -189,6 +191,7 @@ BitPattern MoveIteratorEval::NextFlip() {
   if (remaining_moves_ == 0) {
     return 0;
   }
+  stats_->Add(1, MOVES_OR_DISPROOF);
   Move* best_move = moves_;
   for (int i = 0; i < remaining_moves_; ++i) {
     if (moves_[i].GetValue() > best_move->GetValue()) {
@@ -366,7 +369,7 @@ constexpr bool UseHashMap(int depth, bool solve) {
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap* hash_map,
     const EvaluatorFactory& evaluator_depth_one_factory) :
-    n_visited_(0),
+    stats_(),
     hash_map_(hash_map),
     evaluator_depth_one_(evaluator_depth_one_factory()) {
   for (int depth = 0; depth < 64; ++depth) {
@@ -374,16 +377,20 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
       for (bool unlikely : {true, false}) {
         int offset = MoveIteratorOffset(depth, solve, unlikely);
         if (unlikely) {
-          move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>();
+          if (depth <= 9) {
+            move_iterators_[offset] = std::make_unique<MoveIteratorVeryQuick>(&stats_);
+          } else {
+            move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>(&stats_);
+          }
         } else if ((solve && depth <= 8) || (!solve && depth <= 2)) {
-          move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>();
+          move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>(&stats_);
         } else if ((solve && depth <= 9) || (!solve && depth <= 2)) {
-          move_iterators_[offset] = std::make_unique<MoveIteratorQuick<false>>();
+          move_iterators_[offset] = std::make_unique<MoveIteratorQuick<false>>(&stats_);
         } else if ((solve && depth <= 12) || (!solve)) {
-          move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>();
+          move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>(&stats_);
         } else {
           assert(UpdateDepthOneEvaluator(depth, solve));
-          move_iterators_[offset] = std::make_unique<MoveIteratorDisproofNumber>();
+          move_iterators_[offset] = std::make_unique<MoveIteratorDisproofNumber>(&stats_);
         }
       }
     }
@@ -400,7 +407,6 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     const BitPattern player, const BitPattern opponent,
     const EvalLarge lower, const EvalLarge upper,
     const BitPattern last_flip, const BitPattern stable, int max_visited) {
-  n_visited_++;
   assert(kMinEvalLarge <= lower && lower < kMaxEvalLarge);
   assert(kMinEvalLarge < upper && upper <= kMaxEvalLarge);
 
@@ -409,9 +415,10 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   EvalLarge second_best_eval = kLessThenMinEvalLarge;
   Square second_best_move = kNoSquare;
   BitPattern new_stable = stable;
+  EvalLarge stability_cutoff_upper = upper;
   if (UseStabilityCutoff(depth)) {
     new_stable = GetStableDisks(opponent, player, new_stable);
-    EvalLarge stability_cutoff_upper = EvalToEvalLarge(GetUpperBoundFromStable(new_stable, opponent));
+    stability_cutoff_upper = EvalToEvalLarge(GetUpperBoundFromStable(new_stable, opponent));
     if (stability_cutoff_upper <= lower) {
       return stability_cutoff_upper;
     }
@@ -436,7 +443,11 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   }
   BitPattern square;
   int cur_n_visited;
-  bool unlikely = depth_zero_eval < lower - 80;
+//  if (depth > 12)
+//  std::cout << stability_cutoff_upper << " " << lower << "\n";
+  bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
+//  if (depth > 12)
+//    std::cout << (unlikely ? "Unlikely!" : "NOT unlikely") << "\n";
   MoveIteratorBase* moves =
       move_iterators_[MoveIteratorOffset(depth, solve, unlikely)].get();
   moves->Setup(player, opponent, last_flip, upper, hash_entry.get(), evaluator_depth_one_.get());
@@ -453,28 +464,27 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
           EvalLargeToEvalLower(-upper),
           EvalLargeToEvalUpper(-std::max(lower, best_eval)),
           flip, new_stable, &cur_n_visited));
-      n_visited_ += cur_n_visited;
+      stats_.Add(cur_n_visited, LAST_5);
     } else if (!solve && depth == 1) {
       current_eval = (depth_zero_eval * kWeightDepthZero - evaluator_depth_one_->Evaluate() * kWeightDepthOne) / (kWeightDepthZero + kWeightDepthOne);
-      ++n_visited_;
     } else {
       int max_lower_eval = std::max(lower, best_eval);
-//      if (eval == kLessThenMinEvalLarge || upper - lower <= 8 || true) {
+//      if (best_eval == kLessThenMinEvalLarge || upper - lower <= 8) {
         current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
             NewPlayer(flip, opponent), NewOpponent(flip, player),
             -upper, -max_lower_eval, flip, new_stable, max_visited);
 //      } else {
 //        current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
 //            NewPlayer(flip, opponent), NewOpponent(flip, player),
-//            -max_lower_eval - 1, -max_lower_eval, flip, new_stable);
+//            -max_lower_eval - 1, -max_lower_eval, flip, new_stable, max_visited);
 //        if (current_eval > max_lower_eval) {
 //          current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
 //              NewPlayer(flip, opponent), NewOpponent(flip, player),
-//              -upper, -max_lower_eval, flip, new_stable);
+//              -upper, -max_lower_eval, flip, new_stable, max_visited);
 //        }
 //      }
     }
-    if (depth > 3 && n_visited_ > max_visited) {
+    if (depth > 3 && stats_.GetAll() > max_visited) {
       return kLessThenMinEvalLarge;
     }
     if (current_eval > best_eval) {
@@ -497,6 +507,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     if (passed) {
       best_eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
     } else {
+      stats_.Add(1, PASS);
       best_eval = -EvaluateInternal<depth, true, solve>(
           opponent, player, -upper, -lower, last_flip, new_stable, max_visited);
     }

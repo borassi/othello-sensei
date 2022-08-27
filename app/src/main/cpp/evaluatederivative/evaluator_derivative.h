@@ -110,12 +110,10 @@ class TreeNodeSupplier {
 class EvaluatorThread {
  public:
   EvaluatorThread(HashMap* hash_map, EvaluatorFactory evaluator_depth_one,
-                  std::atomic_uint64_t* visited_midgame,
                   TreeNodeSupplier* tree_node_supplier,
                   std::atomic_bool* thread_finished,
                   uint8_t index) :
       evaluator_alpha_beta_(hash_map, evaluator_depth_one),
-      visited_midgame_(visited_midgame),
       tree_node_supplier_(tree_node_supplier),
       index_(index),
       thread_finished_(thread_finished) {}
@@ -124,6 +122,7 @@ class EvaluatorThread {
     visited_for_endgame_ = 0;
     n_endgames_ = 0;
     int n_visited;
+    stats_.Reset();
     for (int i = (*current_leaf_)++; i < leaves_->size(); i = (*current_leaf_)++) {
       LeafToUpdate leaf = (*leaves_)[i];
       TreeNode* node = leaf.Leaf();
@@ -145,12 +144,13 @@ class EvaluatorThread {
 
   int VisitedEndgames() const { return visited_for_endgame_; }
   int NEndgames() const { return n_endgames_; }
+  const Stats& GetStats() const { return stats_; }
 
  private:
   EvaluatorAlphaBeta evaluator_alpha_beta_;
   int visited_for_endgame_;
   int n_endgames_;
-  std::atomic_uint64_t* visited_midgame_;
+  Stats stats_;
   TreeNodeSupplier* tree_node_supplier_;
   u_int8_t index_;
   std::atomic_bool* thread_finished_;
@@ -217,13 +217,15 @@ class EvaluatorThread {
     NVisited n_visited = 0;
     BitPattern player = node->Player();
     BitPattern opponent = node->Opponent();
+    Stats stats;
+    stats.Add(1, TREE_NODE);
 
     auto moves = GetAllMovesWithPass(player, opponent);
 
     if (moves.empty()) {
       int final_eval = GetEvaluationGameOver(player, opponent);
       node->SetSolved(final_eval);
-      (*visited_midgame_)++;
+      stats_.Add(1, TREE_NODE);
       return 1;
     }
 
@@ -242,15 +244,16 @@ class EvaluatorThread {
         continue;
       }
       int eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-      auto cur_visited = evaluator_alpha_beta_.GetNVisited();
-      n_visited += cur_visited;
+      const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
+      stats_.Merge(cur_stats);
+      NVisited cur_n_visited = cur_stats.GetAll();
+      n_visited += cur_n_visited;
       child->SetWeakLowerUpper(-leaf.WeakUpper(), -leaf.WeakLower());
-      child->SetLeaf(eval, depth, cur_visited);
+      child->SetLeaf(eval, depth, cur_n_visited);
     }
     assert(children.size() == moves.size());
     node->SetChildren(children);
     node->UpdateFather();
-    *visited_midgame_ += n_visited;
     assert((node->WeakLower() - kMinEval) % 2 == 1);
     return n_visited;
   }
@@ -265,6 +268,8 @@ class EvaluatorThread {
     eval = evaluator_alpha_beta_.Evaluate(
         node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, 100000);
     seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
+    stats_.Merge(evaluator_alpha_beta_.GetStats());
+    stats_.Add(1, TREE_NODE);
 
     visited_for_endgame_ += seen_positions;
     n_endgames_++;
@@ -295,7 +300,7 @@ class EvaluatorDerivative {
       first_position_(nullptr),
       proving_(false) {
     for (int i = 0; i < n_threads; ++i) {
-      threads_.push_back(EvaluatorThread(hash_map, evaluator_depth_one, &visited_midgame_, tree_node_supplier_, &thread_finished_, index_));
+      threads_.push_back(std::make_shared<EvaluatorThread>(hash_map, evaluator_depth_one, tree_node_supplier_, &thread_finished_, index_));
     }
   }
 
@@ -330,7 +335,7 @@ class EvaluatorDerivative {
     first_position_->SetLeaf(0, 4, 1);
     last_update_weak_ = 0;
     visited_for_endgame_ = kVisitedEndgameStart;
-    visited_midgame_ = 0;
+    stats_.Reset();
     lower_ = lower;
     upper_ = upper;
     num_batches_ = 0;
@@ -351,13 +356,13 @@ class EvaluatorDerivative {
 
   Status GetStatus() { return status_; }
 
-  NVisited GetNVisitedMidgame() { return visited_midgame_; }
+  const Stats& GetStats() const { return stats_; }
 
   float AverageBatchSize() { return sum_batch_sizes_ / num_batches_; }
 
  private:
   std::atomic_int visited_for_endgame_;
-  std::atomic_uint64_t visited_midgame_;
+  Stats stats_;
   NVisited max_n_visited_;
   double start_time_;
   double max_time_;
@@ -365,7 +370,7 @@ class EvaluatorDerivative {
   Eval lower_ = -63;
   Eval upper_ = 63;
   Status status_ = SOLVED;
-  std::vector<EvaluatorThread> threads_;
+  std::vector<std::shared_ptr<EvaluatorThread>> threads_;
   ElapsedTime elapsed_time_;
   bool just_started_;
   bool approx_;
@@ -380,9 +385,11 @@ class EvaluatorDerivative {
   void Run() {
     std::vector<LeafToUpdate> next_leaves;
     std::atomic_int current_leaf;
+//    std::cout << "\n          ";
     while (!CheckFinished()) {
       thread_finished_ = false;
       next_leaves = GetNextPosition();
+//      std::cout << next_leaves.size() << " ";
       current_leaf = 0;
       num_batches_++;
       sum_batch_sizes_ += next_leaves.size();
@@ -391,14 +398,16 @@ class EvaluatorDerivative {
       for (int i = 0; i < threads_.size(); ++i) {
         futures.push_back(std::async(
             i == 0 ? std::launch::deferred : std::launch::async,
-            &EvaluatorThread::Run, &threads_[i], &next_leaves, &current_leaf,
+            &EvaluatorThread::Run, threads_[i].get(), &next_leaves, &current_leaf,
             proving_, int(visited_for_endgame_)));
       }
       int total_visited_endgames = 0;
       int total_endgames = 0;
+      Stats stats;
       for (int i = 0; i < threads_.size(); ++i) {
         futures[i].get();
-        const EvaluatorThread& evaluator_thread = threads_[i];
+        const EvaluatorThread& evaluator_thread = *threads_[i];
+        stats_.Merge(evaluator_thread.GetStats());
         total_visited_endgames += evaluator_thread.VisitedEndgames();
         total_endgames += evaluator_thread.NEndgames();
       }
@@ -406,6 +415,7 @@ class EvaluatorDerivative {
       assert (GetFirstPosition()->NThreadsWorking() == 0);
       just_started_ = false;
     }
+//    std::cout << next_leaves.size() << "\n";
   }
 
   std::vector<LeafToUpdate> GetNextPosition() {

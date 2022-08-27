@@ -72,16 +72,64 @@ class Move {
   int value_;
 };
 
+enum StatsType {
+  LAST_5 = 0,
+  VERY_QUICK = 1,
+  QUICK1 = 2,
+  QUICK2 = 3,
+  MOVES_OR_DISPROOF = 4,
+  PASS = 5,
+  TREE_NODE = 6,
+  NO_TYPE = 7
+};
+
+class Stats {
+ public:
+  Stats() { Reset(); }
+  Stats(const Stats&) = delete;
+
+  void Reset() {
+    std::fill(std::begin(n_visited_), std::end(n_visited_), 0);
+  }
+
+  void Add(NVisited n, StatsType type) { n_visited_[type] += n; }
+
+  void Merge(const Stats& other) {
+    for (int i = 0; i < NO_TYPE; ++i) {
+      n_visited_[i] += other.Get(static_cast<StatsType>(i));
+    }
+  }
+
+  NVisited GetAll() const {
+    NVisited total = 0;
+    for (int i = 0; i < NO_TYPE; ++i) {
+      total += n_visited_[i];
+    }
+    return total;
+  }
+
+  NVisited Get(StatsType type) const {
+    return n_visited_[type];
+  }
+
+ private:
+  std::array<NVisited, NO_TYPE> n_visited_;
+};
+
 class MoveIteratorBase {
  public:
+  MoveIteratorBase(Stats* stats) : stats_(stats) {}
   virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper, HashMapEntry* entry,
                      EvaluatorDepthOneBase* evaluator_depth_one) = 0;
   virtual BitPattern NextFlip() = 0;
+
+ protected:
+  Stats* stats_;
 };
 
 class MoveIteratorVeryQuick : public MoveIteratorBase {
  public:
-  MoveIteratorVeryQuick() {}
+  MoveIteratorVeryQuick(Stats* stats) : MoveIteratorBase(stats) {}
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
              int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
@@ -96,7 +144,7 @@ class MoveIteratorVeryQuick : public MoveIteratorBase {
 template<bool very_quick>
 class MoveIteratorQuick : public MoveIteratorBase {
  public:
-  MoveIteratorQuick();
+  MoveIteratorQuick(Stats* stats);
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
              int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
@@ -113,7 +161,7 @@ class MoveIteratorQuick : public MoveIteratorBase {
 
 class MoveIteratorEval : public MoveIteratorBase {
  public:
-  MoveIteratorEval() : moves_() {};
+  MoveIteratorEval(Stats* stats) : MoveIteratorBase(stats), moves_() {};
 
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
              int upper, HashMapEntry* entry,
@@ -136,11 +184,13 @@ class MoveIteratorEval : public MoveIteratorBase {
 
 class MoveIteratorMinimizeOpponentMoves : public MoveIteratorEval {
  public:
+  MoveIteratorMinimizeOpponentMoves(Stats* stats) : MoveIteratorEval(stats) {};
   int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) final;
 };
 
 class MoveIteratorDisproofNumber : public MoveIteratorEval {
  public:
+  MoveIteratorDisproofNumber(Stats* stats) : MoveIteratorEval(stats) {};
   int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) final;
 };
 
@@ -149,17 +199,19 @@ class EvaluatorAlphaBeta {
   EvaluatorAlphaBeta(
       HashMap* hash_map,
       const EvaluatorFactory& evaluator_depth_one_factory);
+  EvaluatorAlphaBeta(const EvaluatorAlphaBeta&) = delete;
 
-  NVisited GetNVisited() const { return n_visited_; }
+  NVisited GetNVisited() const { return stats_.GetAll(); }
 
   EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth) {
     return Evaluate(player, opponent, depth, kMinEvalLarge, kMaxEvalLarge);
   }
   EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth, EvalLarge lower, EvalLarge upper, int max_visited = INT_MAX) {
-    n_visited_ = 0;
+    stats_.Reset();
     int n_empties = __builtin_popcountll(~(player | opponent));
     depth = std::min(depth, n_empties);
     evaluator_depth_one_->Setup(player, opponent);
+    stats_.Add(1, LAST_5);
     if (depth == n_empties) {
       return (this->*solvers_[depth])(player, opponent, lower, upper, 0, 0, max_visited);
     } else {
@@ -167,9 +219,10 @@ class EvaluatorAlphaBeta {
     }
   }
 
+  const Stats& GetStats() const { return stats_; }
   static constexpr int kMaxDepth = 64;
- private:
 
+ private:
   typedef EvalLarge(EvaluatorAlphaBeta::*EvaluateInternalFunction)(
       const BitPattern, const BitPattern, const EvalLarge, const EvalLarge,
       const BitPattern, const BitPattern, int);
@@ -183,9 +236,9 @@ class EvaluatorAlphaBeta {
   static const EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static const EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
   HashMap* hash_map_;
-  NVisited n_visited_;
   std::shared_ptr<MoveIteratorBase> move_iterators_[4 * kMaxDepth];
   std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
+  Stats stats_;
 };
 
 typedef std::function<EvaluatorAlphaBeta> EvaluatorAlphaBetaFactory;

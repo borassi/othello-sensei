@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), n_threads);
-  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval\n";
+  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval       last5  vquick  quick1  quick2   moves    pass   nodes \n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);
     std::cout << setw(4) << i << setw(8) << b.NEmpties();
@@ -115,7 +115,8 @@ int main(int argc, char* argv[]) {
     evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
-    auto n_visited = first_position->GetNVisited();
+    const Stats& stats = evaluator.GetStats();
+    auto n_visited = stats.GetAll();
     std::cout
         << std::fixed
         << setw(9) << std::setprecision(4) << time << " "
@@ -123,9 +124,14 @@ int main(int argc, char* argv[]) {
         << setw(14) << static_cast<double>(n_visited / time)
         << setw(10) << tree_node_supplier.NumTreeNodes()
         << setw(8) << n_visited / tree_node_supplier.NumTreeNodes()
-        << setw(8) << n_visited / evaluator.GetNVisitedMidgame()
+        << setw(8) << 0 // n_visited / evaluator.GetStats()
         << setw(13) << std::setprecision(2) << evaluator.AverageBatchSize()
         << setw(6) << std::setprecision(0) << first_position->GetEval()
-        << "\n";
+        << "    ";
+
+    for (int i = 0; i < NO_TYPE; ++i) {
+        std::cout << std::setw(7) << std::setprecision(2) << stats.Get((StatsType) i) / (double) n_visited * 100 << "%";
+    }
+    std::cout << "\n";
   }
 }

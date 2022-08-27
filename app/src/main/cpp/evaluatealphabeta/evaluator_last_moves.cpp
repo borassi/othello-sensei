@@ -222,7 +222,7 @@ Eval EvalFiveEmptiesOrMin(
   const Eval lower, const Eval upper, const bool swap,
   const BitPattern stable,
   int* const n_visited) {
-  (*n_visited)++;
+//  (*n_visited)++;
   Eval eval = kLessThenMinEval;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
@@ -276,6 +276,7 @@ Eval EvalFiveEmpties(
   if (GetUpperBoundFromStable(stable, opponent) - ((last_flip & kCornerPattern) == 0 ? 14 : 20) <= lower) {
     Eval stability_cutoff_upper = GetUpperBoundFromStable(GetStableDisks(opponent, player, stable), opponent);
     if (stability_cutoff_upper <= lower) {
+      (*n_visited)--;
       return stability_cutoff_upper;
     }
   }
@@ -340,6 +341,7 @@ Eval EvalFiveEmpties(
   if (eval > kLessThenMinEval) {
     return eval;
   }
+  (*n_visited)++;
   eval = EvalFiveEmptiesOrMin(x[0], x[1], x[2], x[3], x[4], opponent, player, -upper, -lower, has_space_2, stable, n_visited);
   if (eval > kLessThenMinEval) {
     return -eval;
