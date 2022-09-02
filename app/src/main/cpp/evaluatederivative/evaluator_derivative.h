@@ -165,22 +165,22 @@ class EvaluatorThread {
     bool transposition = false;
 
     float original_prob = root->ProbGreaterEqual(eval_goal);
+    float original_work = std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal));
     NVisited n_visited = AddChildren(leaf, &transposition);
     if (leaf.Leaf()->GetEvaluation(leaf.EvalGoal()).IsSolved()) {
       return n_visited;
     }
     NVisited cur_n_visited;
-    bool have_to_break = false;
     int i = 0;
     while (true) {
       ++i;
       if (root->GetEvaluation(eval_goal).IsSolved() ||
           (abs(root->ProbGreaterEqual(eval_goal) - original_prob) > 0.2) ||
+          (proving && std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal)) > original_work) ||
           (!proving && (leaf.Loss() + root->MaxLogDerivative(eval_goal) - initial_log_derivative < -25000)) ||
-          have_to_break ||
           *thread_finished_ ||
           transposition ||
-          i > 5) {
+          i > 10) {
         break;
       }
       descendants.clear();
@@ -329,7 +329,7 @@ class EvaluatorDerivative {
     assert((upper - kMinEval) % 2 == 1);
     assert(lower <= upper);
     approx_ = approx;
-
+    tree_node_supplier_->Reset();
 //    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
     first_position_->SetLeaf(0, 4, 1);
@@ -385,11 +385,16 @@ class EvaluatorDerivative {
   void Run() {
     std::vector<LeafToUpdate> next_leaves;
     std::atomic_int current_leaf;
-//    std::cout << "\n          ";
+//    std::cout << "          ";
     while (!CheckFinished()) {
       thread_finished_ = false;
       next_leaves = GetNextPosition();
-//      std::cout << next_leaves.size() << " ";
+//      std::cout << (int) next_leaves[0].EvalGoal() << " " << next_leaves.size() << " " << first_position_->GetNVisited() << "\n";
+//      if (next_leaves.size() == 1 && rand() % 100 == 0) {
+//        std::cout << next_leaves[0].Leaf()->ToBoard() << "\n\n\n\n\n\nHELLO!!!" << std::flush;
+//        status_ = SOLVED;
+//        break;
+//      }
       current_leaf = 0;
       num_batches_++;
       sum_batch_sizes_ += next_leaves.size();
@@ -415,7 +420,7 @@ class EvaluatorDerivative {
       assert (GetFirstPosition()->NThreadsWorking() == 0);
       just_started_ = false;
     }
-//    std::cout << next_leaves.size() << "\n";
+//    std::cout << "\n";
   }
 
   std::vector<LeafToUpdate> GetNextPosition() {
@@ -426,9 +431,7 @@ class EvaluatorDerivative {
     }
     if (!proving_ && GetFirstPosition()->IsSolvedAtProb(0)) {
       proving_ = true;
-      // std::cout << " PROVING " << GetFirstPosition()->GetNVisited() << " ";
     } else if (proving_ && !GetFirstPosition()->IsSolvedAtProb(0.02)) {
-      // std::cout << " BACK " << GetFirstPosition()->GetNVisited() << " " << GetFirstPosition()->GetEval() << "\n";
       proving_ = false;
     }
     result = GetFirstPosition()->BestDescendants(proving_, threads_.size());
@@ -440,43 +443,24 @@ class EvaluatorDerivative {
     auto first_position = GetFirstPosition();
     if (status_ == KILLING) {
       status_ = KILLED;
-//      std::cout << "KILLED\n";
       return true;
     }
     if (status_ == KILLED) {
-//      std::cout << "KILLED\n";
       return true;
     }
     if (first_position->IsSolved() || (first_position->IsPartiallySolved() && approx_)) {
       status_ = SOLVED;
-//      std::cout << "SOLVED\n";
       return true;
     }
     if ((first_position->GetNVisited() > max_n_visited_ && !just_started_)
         || tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 60) {
-//      std::cout << "NVISITED\n";
       status_ = STOPPED_POSITIONS;
       return true;
     }
-//    if (first_position->GetNVisited() > 0.8 * maxNVisited && !justStarted) {
-//      if (firstPosition.getDescendants() > maxNVisited
-//          || stepsUntilEnd == bestStepsUntilEnd) {
-//        status = Status.STOPPED_POSITIONS;
-//        return true;
-//      }
-//    }
     if (elapsed_time_.Get() > max_time_) {
-//      std::cout << "TIME\n";
       status_ = STOPPED_TIME;
       return true;
     }
-//    if (currentTime - startTimeMillis > maxTimeMillis * 0.8) {
-//      if (currentTime - startTimeMillis > maxTimeMillis
-//          || stepsUntilEnd == bestStepsUntilEnd) {
-//        status = Status.STOPPED_TIME;
-//        return true;
-//      }
-//    }
     return false;
   }
 

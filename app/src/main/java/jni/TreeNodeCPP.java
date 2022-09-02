@@ -59,6 +59,13 @@ public class TreeNodeCPP extends TreeNodeInterface {
   @Override
   public native int maxLogDerivative(int evalGoal);
 
+  @Override
+  public int childLogDerivative(TreeNodeInterface child, int evalGoal) {
+    return childLogDerivative((TreeNodeCPP) child, evalGoal);
+  }
+
+  public native int childLogDerivative(TreeNodeCPP child, int evalGoal);
+
   public native long getPlayer();
   public native long getOpponent();
 

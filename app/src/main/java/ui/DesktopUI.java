@@ -321,17 +321,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
     rows.append(" ").append(Utils.prettyPrintDouble(board.getDescendants()));
 
-
     for (int evalGoal = board.getWeakUpper(); evalGoal >= board.getWeakLower(); evalGoal -= 200) {
-      float prob = board.getProb(evalGoal);
-      rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (prob) * 100));
+      float prob = 1 - board.getProb(evalGoal);
+      rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (float) Math.round((0.0049 + (1-2*0.0049) * prob) * 100)));
 
-      if (board.maxLogDerivative(evalGoal) > StoredBoard.LOG_DERIVATIVE_MINUS_INF) {
-        rows.append(Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
-      } else if (prob == 0) {
+      if (prob == 1) {
         rows.append(Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
-      } else {
+      } else if (prob == 0) {
         rows.append(Utils.prettyPrintDouble(board.proofNumber(evalGoal)));
+      } else {
+        rows.append(Utils.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
       }
     }
 

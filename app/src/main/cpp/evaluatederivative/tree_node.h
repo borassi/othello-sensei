@@ -387,8 +387,8 @@ class TreeNode {
   }
 
   bool IsSolvedAtProb(float prob) {
-    if (weak_upper_ == 63 && GetEvaluation(weak_upper_).ProbGreaterEqual() >= 1 - prob ||
-        weak_lower_ == -63 && GetEvaluation(weak_lower_).ProbGreaterEqual() <= prob) {
+    if ((weak_upper_ == 63 && GetEvaluation(weak_upper_).ProbGreaterEqual() >= 1 - prob) ||
+        (weak_lower_ == -63 && GetEvaluation(weak_lower_).ProbGreaterEqual() <= prob)) {
       return true;
     }
     for (int i = weak_lower_; i <= weak_upper_ - 2; i += 2) {
@@ -477,9 +477,6 @@ class TreeNode {
   }
 
   bool UpdateWeakLowerUpper() {
-//    if (updating.getAndSet(true)) {
-//      return true;
-//    }
     bool extend_lower = false;
     bool extend_upper = false;
     bool reduced = false;
@@ -512,14 +509,6 @@ class TreeNode {
         ExtendEval(weak_upper_ + 2);
       }
     }
-//    assert isLowerUpperOK();
-//    updating.set(false);
-//    if (reduced || extend_lower || extend_upper) {
-//      std::cout << GetNVisited() << ": " << weak_lower_ << " " << weak_upper_ << "\n";
-//    }
-//    else {
-//      std::cout << "FALSE\n";
-//    }
     return reduced || extend_upper || extend_lower;
   }
 
@@ -530,6 +519,14 @@ class TreeNode {
     }
     return result;
   }
+
+  float ChildLogDerivative(TreeNode* child, int eval_goal) const {
+    assert(Contains(Fathers(), child));
+    Evaluation eval = GetEvaluation(eval_goal);
+    Evaluation child_eval = child->GetEvaluation(-eval_goal);
+    return child_eval.LogDerivative(eval);
+  }
+
   u_int8_t Evaluator() { return evaluator_; }
   EvalLarge leaf_eval_;
 

@@ -525,6 +525,11 @@ public class StoredBoard extends TreeNodeInterface {
     return getEvaluation(evalGoal).maxLogDerivative();
   }
 
+  @Override
+  public int childLogDerivative(TreeNodeInterface child, int evalGoal) {
+    return 0;
+  }
+
   public synchronized boolean isSolved() {
     return getLower() == getUpper();
   }

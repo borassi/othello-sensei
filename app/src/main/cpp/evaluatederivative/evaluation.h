@@ -115,7 +115,7 @@ class Evaluation {
     }
     prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
 
-    float cur_proof_number = std::max(1.0F, child.disproof_number_ / std::max(0.0001F, 1.0F - child_prob_greater_equal));
+    float cur_proof_number = std::max(1.0F, child.disproof_number_ / std::max(0.0001F, (1.0F - child_prob_greater_equal)));
     if (cur_proof_number < proof_number_) {
 //      assert(Utils.arrayContains(getChildren(), child.getStoredBoard()));
       proof_number_ = cur_proof_number;
@@ -175,15 +175,15 @@ class Evaluation {
     if (IsSolved()) {
       return -DBL_MAX;
     }
-    if (proving && prob < 0.1) {
+    if (prob == 0) {
       return ProofNumber()
          //* (1 + 5000 / n_visited)
          - 1000.0 * kLogDerivativeMinusInf;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
-    } else if (proving) {
+    } else if (prob == 1) {
       return -DisproofNumber();
     } else {
-      return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
+      return LogDerivative(father) / std::max(0.0001F, (1.0F - ProbGreaterEqual()));// - (1 / std::min(prob, 0.5F));
 //             * avoidNextPosFailCoeff.get()
 //             * child.getStoredBoard().getNThreadsWorking();
     }

@@ -279,18 +279,19 @@ public class Main implements Runnable {
     int bestMove = this.findBestMove();
     long nVisited = 0;
     boolean hasThor = thor.getNumGames(board) > 0;
+    TreeNodeInterface father = getStoredBoard(board);
     for (Board child : GetMovesCache.getAllDescendants(board)) {
       TreeNodeInterface childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
-        annotations = new CaseAnnotations(childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
+        annotations = new CaseAnnotations(father, childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
       } else {
         HashMap.BoardInHash childHash = this.HASH_MAP.getStoredBoardNoUpdate(child);
         if (childHash == null) {
           continue;
         }
-        annotations = new CaseAnnotations(childHash, move == bestMove);
+        annotations = new CaseAnnotations(father, childHash, move == bestMove);
       }
       nVisited += childStored.getDescendants();
       ui.setAnnotations(annotations, move);
@@ -298,7 +299,7 @@ public class Main implements Runnable {
     TreeNodeInterface boardStored = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;
     if (boardStored != null) {
-      positionAnnotations = new CaseAnnotations(boardStored, false);
+      positionAnnotations = new CaseAnnotations(father, boardStored, false);
     }
     ui.setExtras(
         nVisited, System.currentTimeMillis() - startTime,

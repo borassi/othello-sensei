@@ -49,12 +49,13 @@ class EvaluateInDepth : public Evaluator {
   EvaluateInDepth(const int8_t* const evals, int depth) :
       depth_(depth),
       evals_(evals),
-      test_evaluator_(EvaluatorAlphaBeta(&hash_map_, PatternEvaluator::Factory(evals))) {}
+      test_evaluator_(&hash_map_, PatternEvaluator::Factory(evals)) {}
 
   EvalLarge operator()(BitPattern player, BitPattern opponent) override {
     return test_evaluator_.Evaluate(player, opponent, depth_);
   }
   NVisited GetNVisited() const override { return test_evaluator_.GetNVisited(); }
+
  private:
   DepthValue depth_;
   EvaluatorAlphaBeta test_evaluator_;

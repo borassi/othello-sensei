@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <limits>
 #include "tree_node.h"
 
 LeafToUpdate::LeafToUpdate(TreeNode* leaf, int eval_goal) :
@@ -22,7 +23,8 @@ LeafToUpdate::LeafToUpdate(TreeNode* leaf, int eval_goal) :
     weak_lower_(leaf->WeakLower()),
     weak_upper_(leaf->WeakUpper()),
     loss_(0),
-    parents_({leaf}) {
+    parents_({leaf}),
+    proof_number_delta_(FLT_MAX) {
   alpha_ = weak_lower_;
   beta_ = weak_upper_;
   UpdateAlphaBeta(leaf);
@@ -36,7 +38,7 @@ void LeafToUpdate::UpdateAlphaBeta(TreeNode* node) {
 }
 
 LeafToUpdate LeafToUpdate::CopyToChild(TreeNode* node, double extra_loss) const {
-    LeafToUpdate leaf(node, -eval_goal_, -beta_, -alpha_, -weak_upper_, -weak_lower_, loss_ + extra_loss);
+    LeafToUpdate leaf(node, -eval_goal_, -beta_, -alpha_, -weak_upper_, -weak_lower_, loss_ + extra_loss, proof_number_delta_);
     leaf.parents_ = parents_;
     leaf.UpdateAlphaBeta(node);
     leaf.parents_.push_back(node);

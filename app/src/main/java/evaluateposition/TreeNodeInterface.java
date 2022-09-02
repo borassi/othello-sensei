@@ -28,6 +28,7 @@ public abstract class TreeNodeInterface {
   public abstract float disproofNumber(int evalGoal);
   public abstract float getProb(int evalGoal);
   public abstract int maxLogDerivative(int evalGoal);
+  public abstract int childLogDerivative(TreeNodeInterface child, int evalGoal);
   public abstract Board getBoard();
 
   public boolean isSolved() {

@@ -109,7 +109,6 @@ int main(int argc, char* argv[]) {
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval       last5  vquick  quick1  quick2   moves    pass   nodes \n";
   for (int i = 41; i <= 60; i++) {
     Board b = GetIthBoard(i);
-    std::cout << setw(4) << i << setw(8) << b.NEmpties();
     ElapsedTime t;
     tree_node_supplier.Reset();
     evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200, approx);
@@ -118,6 +117,7 @@ int main(int argc, char* argv[]) {
     const Stats& stats = evaluator.GetStats();
     auto n_visited = stats.GetAll();
     std::cout
+        << setw(4) << i << setw(8) << b.NEmpties()
         << std::fixed
         << setw(9) << std::setprecision(4) << time << " "
         << setw(13) << std::setprecision(0) << n_visited

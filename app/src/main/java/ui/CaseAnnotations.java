@@ -18,31 +18,33 @@ import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 
 public class CaseAnnotations {
+  public final TreeNodeInterface father;
   public final TreeNodeInterface treeNode;
   public final HashMap.BoardInHash boardInHash;
   public final boolean isBestMove;
   public final int thorGames;
 
-  public CaseAnnotations(TreeNodeInterface treeNode, boolean isBestMove) {
-    this(treeNode, null, isBestMove);
+  public CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, boolean isBestMove) {
+    this(father, treeNode, null, isBestMove);
   }
 
-  public CaseAnnotations(TreeNodeInterface treeNode, int thorGames, boolean isBestMove) {
-    this(treeNode, null, thorGames, isBestMove);
+  public CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, int thorGames, boolean isBestMove) {
+    this(father, treeNode, null, thorGames, isBestMove);
   }
 
-  public CaseAnnotations(HashMap.BoardInHash boardInHash, boolean isBestMove) {
-    this(null, boardInHash, isBestMove);
+  public CaseAnnotations(TreeNodeInterface father, HashMap.BoardInHash boardInHash, boolean isBestMove) {
+    this(father, null, boardInHash, isBestMove);
   }
 
-  private CaseAnnotations(TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, boolean isBestMove) {
-    this(treeNode, boardInHash, -1, isBestMove);
+  private CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, boolean isBestMove) {
+    this(father, treeNode, boardInHash, -1, isBestMove);
   }
 
-  private CaseAnnotations(TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, int thorGames, boolean isBestMove) {
+  private CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, int thorGames, boolean isBestMove) {
     this.treeNode = treeNode;
     this.boardInHash = boardInHash;
     this.isBestMove = isBestMove;
     this.thorGames = thorGames;
+    this.father = father;
   }
 }

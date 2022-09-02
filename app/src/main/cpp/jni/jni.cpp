@@ -325,6 +325,13 @@ JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_maxLogDerivative(JNIEnv* env, jobjec
   return IsEvalGoalInvalid(node, eval_goal) ? kLogDerivativeMinusInf : node->MaxLogDerivative(static_cast<Eval>(eval_goal / 100));
 }
 
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_childLogDerivative(JNIEnv* env, jobject father_node_java, jobject child_node_java, jint eval_goal) {
+  auto father = TreeNodeFromJava(env, father_node_java);
+  auto child = TreeNodeFromJava(env, child_node_java);
+  return IsEvalGoalInvalid(father, eval_goal) || IsEvalGoalInvalid(child, -eval_goal) ?
+      kLogDerivativeMinusInf : father->ChildLogDerivative(child, static_cast<Eval>(eval_goal / 100));
+}
+
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return node == nullptr ? 0 : static_cast<long long>(node->Player());
