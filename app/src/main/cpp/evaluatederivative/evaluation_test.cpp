@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#include <limits>
+#include <random>
 #include "evaluation.h"
+
+void ExpectProofNumberNear(double proof_number, double value) {
+  EXPECT_NEAR(proof_number, value, value * (kBaseLogProofNumber - 1) / 2);
+}
 
 TEST(EvaluationTest, Base) {
   Evaluation e;
   e.SetLeaf(0.3, 10000, 5000);
   EXPECT_NEAR(e.ProbGreaterEqual(), 0.3, 1.0 / 500.0);  // 1/255 precision.
-  EXPECT_FLOAT_EQ(e.ProofNumber(), 10000);
-  EXPECT_FLOAT_EQ(e.DisproofNumber(), 5000);
+  ExpectProofNumberNear(e.ProofNumber(), 10000);
+  ExpectProofNumberNear(e.DisproofNumber(), 5000);
   EXPECT_FALSE(e.IsSolved());
   EXPECT_NEAR(e.MaxLogDerivative(),
-              kLogDerivativeMultiplier * kLeafMultiplier * log(0.3 * 0.7),
+              kLogDerivativeMultiplier * log(0.3 * 0.7),
               40);
 
   e.SetProved();
@@ -43,8 +49,27 @@ TEST(EvaluationTest, Base) {
 
   e.SetLeaf(0, 10000, 5000);
   EXPECT_EQ(e.ProbGreaterEqual(), 0);
-  EXPECT_FLOAT_EQ(e.ProofNumber(), 10000);
-  EXPECT_FLOAT_EQ(e.DisproofNumber(), 5000);
+  ExpectProofNumberNear(e.ProofNumber(), 10000);
+  ExpectProofNumberNear(e.DisproofNumber(), 5000);
   EXPECT_FALSE(e.IsSolved());
   EXPECT_EQ(e.MaxLogDerivative(), kLogDerivativeMinusInf);
+}
+
+TEST(EvaluationTest, ProofNumberToByte) {
+  ASSERT_EQ(ProofNumberToByte(0), 0);
+  ASSERT_EQ(ProofNumberToByte(1), 1);
+  ASSERT_EQ(ProofNumberToByte(kMaxProofNumber), kProofNumberStep - 1);
+  ASSERT_EQ(ProofNumberToByte(INFINITY), kProofNumberStep);
+  for (int i = 0; i <= kProofNumberStep; ++i) {
+    ASSERT_EQ(ProofNumberToByte(ByteToProofNumber((PN) i)), i);
+  }
+  for (int i = 0; i < 1000; ++i) {
+    float x = (float) exp((double) rand() / RAND_MAX * log(kMaxProofNumber));
+    PN byte = ProofNumberToByte(x);
+    EXPECT_NE(byte, 0);
+    EXPECT_NE(byte, kProofNumberStep);
+    float converted_x = ByteToProofNumber(byte);
+    EXPECT_GT(converted_x, x / ((1.01 + kBaseLogProofNumber) / 2));
+    EXPECT_LT(converted_x, x * ((1.01 + kBaseLogProofNumber) / 2));
+  }
 }

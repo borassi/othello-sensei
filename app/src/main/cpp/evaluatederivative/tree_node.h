@@ -179,8 +179,8 @@ class TreeNode {
   }
 
   float GetEval() const {
-    int lower = std::max(lower_ - 1, (int) weak_lower_);
-    int upper = std::min(upper_ + 1, (int) weak_upper_);
+    int lower = std::max(lower_, weak_lower_);
+    int upper = std::min(upper_, weak_upper_);
     float eval = lower - 1;
     for (int i = lower; i <= upper; i += 2) {
       float prob = GetEvaluation(i).ProbGreaterEqual();
@@ -230,9 +230,6 @@ class TreeNode {
     for (int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
       assert(!father->IsLeaf());
-      if (father->NThreadsWorking() > 0) {
-        continue;
-      }
       father->UpdateFather();
       father->UpdateFathers();
     }
@@ -240,8 +237,8 @@ class TreeNode {
 
   void UpdateFather() {
     const std::lock_guard<std::mutex> guard(mutex_);
-    lower_ = kMinEval;
-    upper_ = kMinEval;
+    lower_ = kLessThenMinEval;
+    upper_ = kLessThenMinEval;
     assert(!IsLeaf());
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       MutableEvaluation(i)->Initialize();
@@ -251,6 +248,11 @@ class TreeNode {
     }
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       MutableEvaluation(i)->Finalize();
+      if (GetEvaluation(i).ProbGreaterEqual() == 0) {
+        for (int j = 0; j < n_children_; ++j) {
+          assert(children_[j]->ProbGreaterEqual(-i) == 1);
+        }
+      }
     }
   }
 
@@ -302,8 +304,8 @@ class TreeNode {
     opponent_ = opponent;
     depth_ = depth;
     n_empties_ = ::NEmpties(player, opponent);
-    lower_ = kMinEval;
-    upper_ = kMaxEval;
+    lower_ = kMinEval - 1;
+    upper_ = kMaxEval + 1;
     weak_lower_ = kMinEval + 1;
     weak_upper_ = kMaxEval - 1;
     min_evaluation_ = weak_lower_;
@@ -347,11 +349,11 @@ class TreeNode {
 
   void SetLower(EvalLarge eval) {
     const std::lock_guard<std::mutex> guard(mutex_);
-    assert(eval % 2 == 0);
+    assert(eval % 16 == 0);
     assert(IsLeaf());
     leaf_eval_ = std::max(leaf_eval_, eval);
     Eval eval_small = EvalLargeToEvalRound(eval);
-    lower_ = MaxEval(lower_, eval_small);
+    lower_ = MaxEval(lower_, eval_small - 1);
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, false);
     }
@@ -359,11 +361,11 @@ class TreeNode {
 
   void SetUpper(EvalLarge eval) {
     const std::lock_guard<std::mutex> guard(mutex_);
-    assert(eval % 2 == 0);
+    assert(eval % 16 == 0);
     assert(IsLeaf());
     leaf_eval_ = std::min(leaf_eval_, eval);
     Eval eval_small = EvalLargeToEvalRound(eval);
-    upper_ = MinEval(upper_, eval_small);
+    upper_ = MinEval(upper_, eval_small + 1);
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i, false);
     }
@@ -383,7 +385,7 @@ class TreeNode {
   }
 
   bool IsSolved() {
-    return lower_ == upper_;
+    return lower_ >= upper_ - 2;
   }
 
   bool IsSolvedAtProb(float prob) {
@@ -553,9 +555,9 @@ class TreeNode {
   void UpdateLeafEvaluation(int i, bool to_be_solved) {
     assert(i >= weak_lower_ && i <= weak_upper_);
     Evaluation* evaluation = MutableEvaluation(i);
-    if (i < lower_ || (n_threads_working_ > 0 && EvalLargeToEvalRound(leaf_eval_) >= i && to_be_solved)) {
+    if (i <= lower_) {
       evaluation->SetProved();
-    } else if (i > upper_ || (n_threads_working_ > 0 && EvalLargeToEvalRound(leaf_eval_) < i && to_be_solved)) {
+    } else if (i >= upper_) {
       evaluation->SetDisproved();
     } else {
       float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * 0.85);
