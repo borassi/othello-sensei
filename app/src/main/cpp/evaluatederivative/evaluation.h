@@ -228,9 +228,9 @@ class Evaluation {
     }
     if (prob == 0) {
       assert(prob_greater_equal_ == kProbStep);
-      return proof_number_
+      return 0.00000001 * ProofNumber();
          //* (1 + 5000 / n_visited)
-         - 1000.0 * kLogDerivativeMinusInf;
+//         - 1000.0 * kLogDerivativeMinusInf;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
     } else if (prob == 1) {
       return -kCombineProb.disproof_to_proof_number[disproof_number_][prob_greater_equal_];

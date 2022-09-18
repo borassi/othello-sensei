@@ -199,7 +199,7 @@ class EvaluatorThread {
           (!proving && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) - initial_log_derivative < -30000)) ||
           *thread_finished_ ||
           transposition ||
-          i > 5) {
+          i > 10) {
 //        std::cout << std::setprecision(4) << original_prob << " " << evaluation.ProbGreaterEqual() << " "
 //        << evaluation.MaxLogDerivative() << " " << ExpectedLoss(evaluation, original_prob) << "\n";
 //        if (i == 1) {

@@ -24,6 +24,7 @@
 #include <queue>
 #include <string.h>
 #include <unordered_set>
+#include <set>
 #include "endgame_time_estimator.h"
 #include "evaluation.h"
 #include "../board/bitpattern.h"
@@ -414,7 +415,18 @@ class TreeNode {
     if (n_threads_working == 1) {
       BestDescendant(LeafToUpdate(this, eval_goal), &result);
     } else {
-      BestDescendants(LeafToUpdate(this, eval_goal), &result);
+      BestDescendants2(this, &result, eval_goal);
+      if (ProbGreaterEqual(eval_goal) == 0) {
+        int secondary_eval_goal = NextPositionEvalGoal(0.5, 1);
+        if (secondary_eval_goal != kLessThenMinEval) {
+          BestDescendants2(this, &result, secondary_eval_goal);
+        }
+      } else if (ProbGreaterEqual(eval_goal) == 1) {
+        int secondary_eval_goal = NextPositionEvalGoal(0, 0.5);
+        if (secondary_eval_goal != kLessThenMinEval) {
+          BestDescendants2(this, &result, secondary_eval_goal);
+        }
+      }
     }
     return result;
   }
@@ -686,6 +698,71 @@ class TreeNode {
     return found;
   }
 
+  static void BestDescendants2(TreeNode* root, std::vector<LeafToUpdate>* result, int eval_goal) {
+    assert(!root->IsSolved());
+    assert(!root->GetEvaluation(eval_goal).IsSolved());
+    std::priority_queue<LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)> next_nodes(&leaf_less);
+    std::unordered_set<TreeNode*> visited_nodes;
+
+    next_nodes.push(LeafToUpdate(root, eval_goal));
+    TreeNode* best_child;
+
+    while (!next_nodes.empty() && result->size() < 200) {
+      LeafToUpdate current = next_nodes.top();
+      next_nodes.pop();
+      while (!current.Leaf()->IsLeaf()) {
+        TreeNode* father = current.Leaf();
+        // Two different grandfathers could have added father, before computing
+        // the children.
+        if (visited_nodes.find(father) != visited_nodes.end()) {
+          break;
+        }
+        visited_nodes.insert(father);
+        best_child = father->BestChild(current.EvalGoal());
+        const Evaluation& father_eval = father->GetEvaluation(current.EvalGoal());
+        const Evaluation& best_child_eval = best_child->GetEvaluation(-current.EvalGoal());
+        float best_child_prob = best_child_eval.ProbGreaterEqual();
+        double best_child_value = best_child_eval.GetValue(father_eval);
+        float prob = father_eval.ProbGreaterEqual();
+        bool proving = prob == 0 || prob == 1;
+
+        for (int i = 0; i < father->n_children_; ++i) {
+          TreeNode* child = father->children_[i];
+          Evaluation child_eval = child->GetEvaluation(-current.EvalGoal());
+          double extra_loss =
+              child_eval.GetValue(father_eval) - best_child_value
+              + (child == best_child ? 0 : log(best_child_prob) * kLogDerivativeMultiplier);
+          assert(extra_loss <= 0);
+          if (child->NThreadsWorking() == 0 &&
+              !child_eval.IsSolved() &&
+              child != best_child &&
+              visited_nodes.find(child) == visited_nodes.end() &&
+              prob < 1 &&
+              current.Loss() + extra_loss > -30000) {
+            LeafToUpdate child_leaf = current.CopyToChild(child, extra_loss);
+            next_nodes.push(child_leaf);
+          }
+        }
+        assert(!best_child_eval.IsSolved());
+        if (visited_nodes.find(best_child) != visited_nodes.end()) {
+          assert(!current.Leaf()->IsLeaf());
+          break;
+        }
+        current = current.CopyToChild(best_child, 0);
+      }
+      if (current.Leaf()->IsLeaf() &&
+          visited_nodes.find(current.Leaf()) == visited_nodes.end() &&
+          current.Leaf()->NThreadsWorking() == 0) {
+        visited_nodes.insert(current.Leaf());
+        for (TreeNode* parent : current.Parents()) {
+          parent->IncreaseNThreadsWorking();
+        }
+        result->push_back(current);
+        assert(current.Leaf()->NThreadsWorking() == 1);
+      }
+    }
+  }
+
   void BestDescendants(
       const LeafToUpdate& node, std::vector<LeafToUpdate>* next_nodes) {
     assert(!IsSolved());
@@ -697,17 +774,18 @@ class TreeNode {
       next_nodes->push_back(node);
       return;
     }
-
-    Evaluation father_eval = GetEvaluation(node.EvalGoal());
+    const Evaluation& father_eval = GetEvaluation(node.EvalGoal());
     TreeNode* best_child = BestChild(node.EvalGoal());
-    float best_child_prob = best_child->GetEvaluation(-node.EvalGoal()).ProbGreaterEqual();
+    const Evaluation& best_child_eval = best_child->GetEvaluation(-node.EvalGoal());
+    float best_child_prob = best_child_eval.ProbGreaterEqual();
+    double best_child_value = best_child_eval.GetValue(father_eval);
     float prob = father_eval.ProbGreaterEqual();
     bool proving = prob == 0 || prob == 1;
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
       Evaluation child_eval = child->GetEvaluation(-node.EvalGoal());
       double extra_loss =
-          child_eval.LogDerivative(father_eval) - father_eval.MaxLogDerivative()
+          child_eval.GetValue(father_eval) - best_child_value
           + (child == best_child ? 0 : log(best_child_prob) * kLogDerivativeMultiplier)
           ;
       assert(extra_loss <= 0);
