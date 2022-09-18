@@ -48,14 +48,13 @@ class TreeNodeSupplier {
  public:
   TreeNodeSupplier() : num_tree_nodes_(0) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
-    tree_node_index_ = new std::atomic_int[kHashMapSize];
+    tree_node_index_ = new int[kHashMapSize];
     for (int i = 0; i < kHashMapSize; ++i) {
       tree_node_index_[i] = kDerivativeEvaluatorSize;
     }
   }
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
-    delete[] tree_node_index_;
   }
 
   const TreeNode* const Get(const Board& b) {
@@ -63,30 +62,28 @@ class TreeNodeSupplier {
   }
 
   TreeNode* Get(BitPattern player, BitPattern opponent) {
-    int index = tree_node_index_[Hash(player, opponent)];
-    if (index >= num_tree_nodes_) {
-      return nullptr;
-    }
-    TreeNode& node = tree_nodes_[index];
-    if (node.Player() == player && node.Opponent() == opponent) {
-      return &node;
-    }
-    return nullptr;
+    const std::lock_guard<std::mutex> guard(mutex_);
+    return GetNoLock(player, opponent);
   }
 
   void Reset() {
+    const std::lock_guard<std::mutex> guard(mutex_);
     num_tree_nodes_ = 0;
   }
 
-  int NumTreeNodes() { return num_tree_nodes_; }
+  int NumTreeNodes() {
+    const std::lock_guard<std::mutex> guard(mutex_);
+    return num_tree_nodes_;
+  }
 
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) {
     bool newly_inserted;
     return AddTreeNode(player, opponent, depth, evaluator_index, &newly_inserted);
   }
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index, bool* newly_inserted) {
+    const std::lock_guard<std::mutex> guard(mutex_);
     if (kUseTranspositions) {
-      TreeNode* existing_node = Get(player, opponent);
+      TreeNode* existing_node = GetNoLock(player, opponent);
       if (existing_node != nullptr && existing_node->Evaluator() == evaluator_index) {
         *newly_inserted = false;
         return existing_node;
@@ -102,9 +99,22 @@ class TreeNodeSupplier {
   }
 
  private:
-  std::atomic_int num_tree_nodes_;
+  std::mutex mutex_;
+  int num_tree_nodes_;
   TreeNode* tree_nodes_;
-  std::atomic_int* tree_node_index_;
+  int* tree_node_index_;
+
+  TreeNode* GetNoLock(BitPattern player, BitPattern opponent) {
+    int index = tree_node_index_[Hash(player, opponent)];
+    if (index >= num_tree_nodes_) {
+      return nullptr;
+    }
+    TreeNode& node = tree_nodes_[index];
+    if (node.Player() == player && node.Opponent() == opponent) {
+      return &node;
+    }
+    return nullptr;
+  }
 };
 
 class EvaluatorThread {
@@ -118,7 +128,7 @@ class EvaluatorThread {
       index_(index),
       thread_finished_(thread_finished) {}
 
-  void Run(std::vector<LeafToUpdate>* leaves_, std::atomic_int* current_leaf_, bool proving, int max_proof) {
+  void Run(std::vector<LeafToUpdate>* leaves_, std::atomic_int* current_leaf_, int max_proof) {
     visited_for_endgame_ = 0;
     n_endgames_ = 0;
     int n_visited;
@@ -131,7 +141,7 @@ class EvaluatorThread {
         bool transposition = false;
         n_visited = SolvePosition(leaf, &transposition);
       } else {
-        n_visited = AddManyChildren(leaf, proving, max_proof);
+        n_visited = AddManyChildren(leaf, max_proof);
       }
       for (TreeNode* parent : leaf.Parents()) {
         parent->AddDescendants(n_visited);
@@ -155,37 +165,57 @@ class EvaluatorThread {
   u_int8_t index_;
   std::atomic_bool* thread_finished_;
 
-  NVisited AddManyChildren(const LeafToUpdate& leaf, bool proving, int max_proof) {
+  int ExpectedLoss(Evaluation root_eval, float original_prob) {
+    return root_eval.MaxLogDerivative()
+        - kCombineProb.log_derivative[(int) round(original_prob * 255)]
+        + kCombineProb.log_derivative[(int) round(root_eval.ProbGreaterEqual() * 255)]
+        - kCombineProb.log_derivative[(int) round((1 - original_prob) * 255)]
+        + kCombineProb.log_derivative[(int) round((1 - root_eval.ProbGreaterEqual()) * 255)];
+  }
+
+  NVisited AddManyChildren(const LeafToUpdate& leaf, int max_proof) {
     std::vector<LeafToUpdate> descendants;
     TreeNode* root = leaf.Leaf();
     int eval_goal = leaf.EvalGoal();
     int initial_log_derivative = root->MaxLogDerivative(eval_goal);
-    assert(proving || initial_log_derivative > kLogDerivativeMinusInf);
-    assert(proving || leaf.Loss() > kLogDerivativeMinusInf);
     bool transposition = false;
 
     float original_prob = root->ProbGreaterEqual(eval_goal);
+    float original_prob_distance = abs(original_prob - 0.5);
     float original_work = std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal));
     NVisited n_visited = AddChildren(leaf, &transposition);
-    if (leaf.Leaf()->GetEvaluation(leaf.EvalGoal()).IsSolved()) {
+    const Evaluation& evaluation = root->GetEvaluation(eval_goal);
+    if (evaluation.IsSolved()) {
       return n_visited;
     }
     NVisited cur_n_visited;
     int i = 0;
+    bool proving = original_prob == 0 || original_prob == 1;
     while (true) {
       ++i;
-      if (root->GetEvaluation(eval_goal).IsSolved() ||
-          (abs(root->ProbGreaterEqual(eval_goal) - original_prob) > 0.2) ||
+      if (evaluation.IsSolved() ||
+//          (abs(abs(root->ProbGreaterEqual(eval_goal) - 0.5) - original_prob) > 0.2) ||
           (proving && std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal)) > original_work) ||
-          (!proving && (leaf.Loss() + root->MaxLogDerivative(eval_goal) - initial_log_derivative < -25000)) ||
+          (!proving && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) - initial_log_derivative < -30000)) ||
           *thread_finished_ ||
           transposition ||
-          i > 10) {
+          i > 5) {
+//        std::cout << std::setprecision(4) << original_prob << " " << evaluation.ProbGreaterEqual() << " "
+//        << evaluation.MaxLogDerivative() << " " << ExpectedLoss(evaluation, original_prob) << "\n";
+//        if (i == 1) {
+//          std::cout <<
+//              leaf.Loss() << " " << root->MaxLogDerivative(eval_goal)
+//              << " " << initial_log_derivative << " " << original_prob_distance << " " << abs(root->ProbGreaterEqual(eval_goal) - 0.5) << "\n";
+//        }
+//        std::cout << i << " ";
+//        if (rand() % 50 == 0) {
+//          std::cout << "\n";
+//        }
         break;
       }
       descendants.clear();
       assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
-      leaf.Leaf()->BestSingleDescendant(leaf.Copy(), proving, &descendants);
+      leaf.Leaf()->BestSingleDescendant(leaf.Copy(), &descendants);
       if (descendants.empty()) {
         break;
       }
@@ -194,7 +224,6 @@ class EvaluatorThread {
       assert(new_leaf.Leaf()->NThreadsWorking() == 1);
       if (new_leaf.Leaf()->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(), max_proof)) {
         cur_n_visited = SolvePosition(new_leaf, &transposition);
-        leaf.Leaf()->UpdateFather();
       } else {
         cur_n_visited = AddChildren(new_leaf, &transposition);
       }
@@ -204,8 +233,8 @@ class EvaluatorThread {
       }
       new_leaf.Leaf()->UpdateFathers();
       n_visited += cur_n_visited;
+      leaf.Leaf()->UpdateFather();
     }
-    leaf.Leaf()->UpdateFather();
     return n_visited;
   }
 
@@ -224,7 +253,7 @@ class EvaluatorThread {
 
     if (moves.empty()) {
       int final_eval = GetEvaluationGameOver(player, opponent);
-      node->SetSolved(final_eval);
+      node->SetSolved(leaf.WeakLower(), leaf.WeakUpper(), final_eval, final_eval, 1);
       stats_.Add(1, TREE_NODE);
       return 1;
     }
@@ -240,7 +269,7 @@ class EvaluatorThread {
       TreeNode* child = tree_node_supplier_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, index_, &newly_inserted);
       *transposition = *transposition || !newly_inserted;
       children.push_back(child);
-      if (child->IsValid()) {
+      if (!newly_inserted) {
         continue;
       }
       int eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
@@ -248,12 +277,11 @@ class EvaluatorThread {
       stats_.Merge(cur_stats);
       NVisited cur_n_visited = cur_stats.GetAll();
       n_visited += cur_n_visited;
-      child->SetWeakLowerUpper(-leaf.WeakUpper(), -leaf.WeakLower());
-      child->SetLeaf(eval, depth, cur_n_visited);
+      child->SetLeaf(-leaf.WeakUpper(), -leaf.WeakLower(), eval, depth, cur_n_visited);
     }
     assert(children.size() == moves.size());
     node->SetChildren(children);
-    node->UpdateFather();
+    assert(!node->IsLeaf());
     assert((node->WeakLower() - kMinEval) % 2 == 1);
     return n_visited;
   }
@@ -279,14 +307,11 @@ class EvaluatorThread {
     }
     assert(node->NThreadsWorking() == 1);
     // No need to lock, because this is the only thread that can touch this node.
-    node->SetWeakLowerUpper(leaf.WeakLower(), leaf.WeakUpper());
+    assert(node->IsLeaf());
+    node->SetSolved(leaf.WeakLower(), leaf.WeakUpper(),
+            eval > alpha ? eval : kMinEvalLarge,
+                  eval < beta ? eval : kMaxEvalLarge, seen_positions);
 
-    if (eval < beta) {
-      node->SetUpper(eval);
-    }
-    if (eval > alpha) {
-      node->SetLower(eval);
-    }
     return seen_positions;
   }
 };
@@ -297,8 +322,7 @@ class EvaluatorDerivative {
       tree_node_supplier_(tree_node_supplier),
       threads_(),
       index_(index),
-      first_position_(nullptr),
-      proving_(false) {
+      first_position_(nullptr) {
     for (int i = 0; i < n_threads; ++i) {
       threads_.push_back(std::make_shared<EvaluatorThread>(hash_map, evaluator_depth_one, tree_node_supplier_, &thread_finished_, index_));
     }
@@ -329,10 +353,9 @@ class EvaluatorDerivative {
     assert((upper - kMinEval) % 2 == 1);
     assert(lower <= upper);
     approx_ = approx;
-    tree_node_supplier_->Reset();
 //    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
-    first_position_->SetLeaf(0, 4, 1);
+    first_position_->SetLeaf(-63, 63, 0, 4, 1);
     last_update_weak_ = 0;
     visited_for_endgame_ = kVisitedEndgameStart;
     stats_.Reset();
@@ -340,7 +363,6 @@ class EvaluatorDerivative {
     upper_ = upper;
     num_batches_ = 0;
     sum_batch_sizes_ = 0;
-    proving_ = false;
     ContinueEvaluate(max_n_visited, max_time);
   }
 
@@ -379,7 +401,6 @@ class EvaluatorDerivative {
   u_int8_t index_;
   float num_batches_;
   float sum_batch_sizes_;
-  bool proving_;
   std::atomic_bool thread_finished_;
 
   void Run() {
@@ -389,7 +410,10 @@ class EvaluatorDerivative {
     while (!CheckFinished()) {
       thread_finished_ = false;
       next_leaves = GetNextPosition();
-//      std::cout << (int) next_leaves[0].EvalGoal() << " " << next_leaves.size() << " " << first_position_->GetNVisited() << "\n";
+//      int eval_goal = (next_leaves[0].Leaf()->Depth() % 2 == 0 ? 1 : -1) * next_leaves[0].EvalGoal();
+//      std::cout << eval_goal << " " << next_leaves.size() << " "
+//          << first_position_->GetNVisited() << " "
+//          << first_position_->ProbGreaterEqual(eval_goal) << "\n" << std::flush;
 //      if (next_leaves.size() == 1 && rand() % 100 == 0) {
 //        std::cout << next_leaves[0].Leaf()->ToBoard() << "\n\n\n\n\n\nHELLO!!!" << std::flush;
 //        status_ = SOLVED;
@@ -400,16 +424,17 @@ class EvaluatorDerivative {
       sum_batch_sizes_ += next_leaves.size();
       std::vector<std::future<void>> futures;
       futures.reserve(threads_.size());
-      for (int i = 0; i < threads_.size(); ++i) {
+      int num_threads = std::min(threads_.size(), next_leaves.size());
+      for (int i = 0; i < num_threads; ++i) {
         futures.push_back(std::async(
             i == 0 ? std::launch::deferred : std::launch::async,
             &EvaluatorThread::Run, threads_[i].get(), &next_leaves, &current_leaf,
-            proving_, int(visited_for_endgame_)));
+            int(visited_for_endgame_)));
       }
       int total_visited_endgames = 0;
       int total_endgames = 0;
       Stats stats;
-      for (int i = 0; i < threads_.size(); ++i) {
+      for (int i = 0; i < num_threads; ++i) {
         futures[i].get();
         const EvaluatorThread& evaluator_thread = *threads_[i];
         stats_.Merge(evaluator_thread.GetStats());
@@ -429,12 +454,7 @@ class EvaluatorDerivative {
     if (CheckFinished()) {
       return {};
     }
-    if (!proving_ && GetFirstPosition()->IsSolvedAtProb(0)) {
-      proving_ = true;
-    } else if (proving_ && !GetFirstPosition()->IsSolvedAtProb(0.02)) {
-      proving_ = false;
-    }
-    result = GetFirstPosition()->BestDescendants(proving_, threads_.size());
+    result = GetFirstPosition()->BestDescendants(threads_.size());
     assert (!result.empty());
     return result;
   }

@@ -24,7 +24,7 @@
 typedef uint8_t Probability;
 typedef uint8_t PN;
 constexpr Probability kProbStep = 255;
-constexpr int kLogDerivativeMinusInf = -1000000000;
+constexpr int kLogDerivativeMinusInf = -100000000;
 constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
 constexpr int kLogDerivativeMultiplier = 10000;
 constexpr float kMaxProofNumber = 1E25;
@@ -63,17 +63,18 @@ struct CombineProb {
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<165>);
+    ProbCombiner combiner(ExpPolyLog<205>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       for (int j = 0; j <= kProofNumberStep; ++j) {
         if (i == kProofNumberStep || j == kProofNumberStep) {
           combine_disproof_number[i][j] = kProofNumberStep;
         } else {
           combine_disproof_number[i][j] = std::max(i, std::max(j, (int)
-              ProofNumberToByte(std::min(ByteToProofNumber(i) + ByteToProofNumber(j), kMaxProofNumber))));
+              ProofNumberToByte(std::min(ByteToProofNumber(i) + ByteToProofNumber(j), kMaxProofNumber - 1))));
         }
         assert(combine_disproof_number[i][j] >= i);
         assert(combine_disproof_number[i][j] >= j);
+        assert(i == kProofNumberStep || j == kProofNumberStep || combine_disproof_number[i][j] < kProofNumberStep);
       }
       for (int j = 0; j <= kProbStep; ++j) {
         disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
@@ -87,9 +88,9 @@ struct CombineProb {
       if (x1 < 1E-15 || x1 > 1 - 1E-15) {
         log_derivative[i] = kLogDerivativeMinusInf;
       } else {
-        log_derivative[i] = (int) (
-            -kLogDerivativeMultiplier
-            * log(combiner.derivative(x1) / combiner.f(x1)) + 0.5);
+        log_derivative[i] = round(
+            kLogDerivativeMultiplier
+            * log(combiner.f(x1) / combiner.derivative(x1)));
         assert(log_derivative[i] > kLogDerivativeMinusInf);
       }
       for (int j = i; j <= kProbStep; ++j) {
@@ -147,6 +148,8 @@ class Evaluation {
   void UpdateFatherWithThisChild(const Evaluation& child) {
     assert(IsValid());
     assert(child.IsValid());
+    assert(max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_] < 0);
+    assert(child.max_log_derivative_ < 0);
     float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
     if (child.IsSolved()) {
       assert(child_prob_greater_equal == 0 || child_prob_greater_equal == 1);
@@ -160,29 +163,28 @@ class Evaluation {
       // not exist.
       return;
     }
+    assert(child.proof_number_ != 0 && child.proof_number_ != kProofNumberStep);
     prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
-    if (ProbGreaterEqual() == 1) {
-      assert(child.ProbGreaterEqual() == 1);
-    }
+    assert(prob_greater_equal_ <= child.prob_greater_equal_);
 
     PN cur_proof_number = kCombineProb.disproof_to_proof_number[child.disproof_number_][child.prob_greater_equal_];
+    assert(cur_proof_number > 0);
+    assert(cur_proof_number < kProofNumberStep);
     if (cur_proof_number < proof_number_) {
-//      assert(Utils.arrayContains(getChildren(), child.getStoredBoard()));
       proof_number_ = cur_proof_number;
     }
-
-    assert(!child.IsSolved());
     disproof_number_ = kCombineProb.combine_disproof_number[disproof_number_][child.proof_number_];
     if (child_prob_greater_equal > 0 && child_prob_greater_equal < 1) {
+      assert(child.max_log_derivative_ < 0);
       int current_log_derivative =
           child.max_log_derivative_ - kCombineProb.log_derivative[child.prob_greater_equal_];
       if (current_log_derivative > max_log_derivative_) {
-//        assert(Utils.arrayContains(getChildren(), child.getStoredBoard()));
         max_log_derivative_ = current_log_derivative;
       }
+      assert(max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_] < 0);
     }
   }
-  // TODO: FIX!!
+
   void Finalize() {
     if (prob_greater_equal_ == kProbStep || prob_greater_equal_ == 0) {
       max_log_derivative_ = kLogDerivativeMinusInf;
@@ -195,14 +197,14 @@ class Evaluation {
   }
 
   void SetLeaf(float prob_greater_equal, float proof_number,
-               float disproof_number) {
-    SetLeaf(prob_greater_equal, proof_number, disproof_number, 0);
-  }
-  void SetLeaf(float prob_greater_equal, float proof_number,
-               float disproof_number, float log_derivative_add) {
+               float disproof_number, float log_derivative_add = 0) {
     prob_greater_equal_ = RoundProb(prob_greater_equal);
     proof_number_ = ProofNumberToByte(proof_number);
     disproof_number_ = ProofNumberToByte(disproof_number);
+    assert((proof_number_ == 0) == (disproof_number_ == kProofNumberStep));
+    assert((disproof_number_ == 0) == (proof_number_ == kProofNumberStep));
+    assert(proof_number_ != 0 || prob_greater_equal_ == kProbStep);
+    assert(disproof_number_ != 0 || prob_greater_equal_ == 0);
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
@@ -219,19 +221,19 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(Evaluation& father, bool proving) {
+  double GetValue(const Evaluation& father) const {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
     }
     if (prob == 0) {
       assert(prob_greater_equal_ == kProbStep);
-      return proof_number_ - ProbGreaterEqual()
+      return proof_number_
          //* (1 + 5000 / n_visited)
          - 1000.0 * kLogDerivativeMinusInf;
 //             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
     } else if (prob == 1) {
-      return -kCombineProb.disproof_to_proof_number[disproof_number_][prob_greater_equal_] - ProbGreaterEqual();
+      return -kCombineProb.disproof_to_proof_number[disproof_number_][prob_greater_equal_];
     } else {
       return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
 //             * avoidNextPosFailCoeff.get()

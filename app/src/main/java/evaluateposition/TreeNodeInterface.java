@@ -32,10 +32,10 @@ public abstract class TreeNodeInterface {
   public abstract Board getBoard();
 
   public boolean isSolved() {
-    return getLower() == getUpper();
+    return getLower() == getUpper() - 200;
   }
 
   public boolean isPartiallySolved() {
-    return getWeakLower() == getWeakUpper();
+    return getWeakLower() == getWeakUpper() - 200;
   }
 }

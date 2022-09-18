@@ -226,11 +226,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     lookupThor = new JButton("Lookup Thor");
     lookupThor.addMouseListener(new MouseAdapter() {
       public void mousePressed(MouseEvent me) {
-        Set<String> black = new HashSet<>();
-        black.addAll(Arrays.asList(thorBlackAll.getText().split("\n")));
+        HashSet<String> black = new HashSet<>(Arrays.asList(thorBlackAll.getText().split("\n")));
         black.remove("");
-        Set<String> white = new HashSet<>();
-        white.addAll(Arrays.asList(thorWhiteAll.getText().split("\n")));
+        HashSet<String> white = new HashSet<>(Arrays.asList(thorWhiteAll.getText().split("\n")));
         white.remove("");
         main.thorLookup(black, white, new HashSet<>());
         thorActive.setSelected(true);
@@ -269,9 +267,17 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
     int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
     String rows;
+    String evalFormatter;
+    if (treeNode.isSolved()) {
+      evalFormatter = "%+.0f";
+    } else if (treeNode.isPartiallySolved()) {
+      evalFormatter = "%+.1f";
+    } else {
+      evalFormatter = "%+.2f";
+    }
     if (!thorActive.isSelected() || annotations.thorGames < 0) {
       rows =
-          String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n" +
+          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
           Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
               lower == upper ?
                   Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
@@ -280,7 +286,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
           );
     } else {
       rows = (annotations.thorGames == 0 ? "" : annotations.thorGames) + "\n" +
-          String.format(treeNode.getLower() == treeNode.getUpper() ? "%+.0f" : "%+.2f", -treeNode.getEval() / 100.0) + "\n"
+          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
           + Utils.prettyPrintDouble(treeNode.getDescendants());
     }
 
@@ -426,9 +432,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     String text =
         "Positions: " + Utils.prettyPrintDouble(nVisited) + "\n" +
             "Positions/s: " + Utils.prettyPrintDouble(nVisited * 1000 / milliseconds) + "\n";
-    SwingUtilities.invokeLater(() -> {
-      extras.setText(text);
-    });
+    SwingUtilities.invokeLater(() -> extras.setText(text));
     if (annotations == null) {
       return;
     }
@@ -443,9 +447,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
 
     String tmp = firstPositionText.toString();
-    SwingUtilities.invokeLater(() -> {
-      extrasPosition.setText(tmp);
-    });
+    SwingUtilities.invokeLater(() -> extrasPosition.setText(tmp));
   }
 
   @Override
