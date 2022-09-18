@@ -63,7 +63,7 @@ struct CombineProb {
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<205>);
+    ProbCombiner combiner(ExpPolyLog<170>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       for (int j = 0; j <= kProofNumberStep; ++j) {
         if (i == kProofNumberStep || j == kProofNumberStep) {

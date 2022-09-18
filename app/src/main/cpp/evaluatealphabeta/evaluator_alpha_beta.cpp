@@ -436,18 +436,12 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   }
   EvalLarge depth_zero_eval = lower;
   if (UpdateDepthOneEvaluator(depth, solve)) {
-//    if (depth == 1) {
     depth_zero_eval = evaluator_depth_one_->Evaluate();
-//    }
     evaluator_depth_one_->Invert();
   }
   BitPattern square;
   int cur_n_visited;
-//  if (depth > 12)
-//  std::cout << stability_cutoff_upper << " " << lower << "\n";
   bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
-//  if (depth > 12)
-//    std::cout << (unlikely ? "Unlikely!" : "NOT unlikely") << "\n";
   MoveIteratorBase* moves =
       move_iterators_[MoveIteratorOffset(depth, solve, unlikely)].get();
   moves->Setup(player, opponent, last_flip, upper, hash_entry.get(), evaluator_depth_one_.get());
@@ -469,20 +463,9 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       current_eval = (depth_zero_eval * kWeightDepthZero - evaluator_depth_one_->Evaluate() * kWeightDepthOne) / (kWeightDepthZero + kWeightDepthOne);
     } else {
       int max_lower_eval = std::max(lower, best_eval);
-//      if (best_eval == kLessThenMinEvalLarge || upper - lower <= 8) {
-        current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
-            NewPlayer(flip, opponent), NewOpponent(flip, player),
-            -upper, -max_lower_eval, flip, new_stable, max_visited);
-//      } else {
-//        current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
-//            NewPlayer(flip, opponent), NewOpponent(flip, player),
-//            -max_lower_eval - 1, -max_lower_eval, flip, new_stable, max_visited);
-//        if (current_eval > max_lower_eval) {
-//          current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
-//              NewPlayer(flip, opponent), NewOpponent(flip, player),
-//              -upper, -max_lower_eval, flip, new_stable, max_visited);
-//        }
-//      }
+      current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
+          NewPlayer(flip, opponent), NewOpponent(flip, player),
+          -upper, -max_lower_eval, flip, new_stable, max_visited);
     }
     if (depth > 3 && stats_.GetAll() > max_visited) {
       return kLessThenMinEvalLarge;

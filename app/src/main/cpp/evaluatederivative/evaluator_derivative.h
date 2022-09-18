@@ -32,6 +32,7 @@
 constexpr bool kUseTranspositions = true;
 constexpr int kVisitedEndgameStart = 10000;
 constexpr int kVisitedEndgameGoal = 10000;
+constexpr int kMaxChildrenUpdates = 5;
 
 enum Status {
     NONE = 0,
@@ -42,6 +43,7 @@ enum Status {
     KILLING = 5,
     KILLED = 6,
     FAILED = 7,
+    STOPPED_TREE_POSITIONS = 8,
 };
 
 class TreeNodeSupplier {
@@ -91,6 +93,7 @@ class TreeNodeSupplier {
     }
     int hash = Hash(player, opponent);
     int node_id = num_tree_nodes_++;
+    assert(node_id < kDerivativeEvaluatorSize);
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth, evaluator_index);
     tree_node_index_[hash] = node_id;
@@ -123,6 +126,7 @@ class EvaluatorThread {
                   TreeNodeSupplier* tree_node_supplier,
                   std::atomic_bool* thread_finished,
                   uint8_t index) :
+      evaluator_depth_one_(evaluator_depth_one()),
       evaluator_alpha_beta_(hash_map, evaluator_depth_one),
       tree_node_supplier_(tree_node_supplier),
       index_(index),
@@ -158,6 +162,7 @@ class EvaluatorThread {
 
  private:
   EvaluatorAlphaBeta evaluator_alpha_beta_;
+  std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
   int visited_for_endgame_;
   int n_endgames_;
   Stats stats_;
@@ -199,7 +204,7 @@ class EvaluatorThread {
           (!proving && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) - initial_log_derivative < -30000)) ||
           *thread_finished_ ||
           transposition ||
-          i > 10) {
+          i > kMaxChildrenUpdates) {
 //        std::cout << std::setprecision(4) << original_prob << " " << evaluation.ProbGreaterEqual() << " "
 //        << evaluation.MaxLogDerivative() << " " << ExpectedLoss(evaluation, original_prob) << "\n";
 //        if (i == 1) {
@@ -261,8 +266,15 @@ class EvaluatorThread {
     std::vector<TreeNode*> children;
     children.reserve(moves.size());
 
+    evaluator_depth_one_->Setup(player, opponent);
+    EvalLarge father_eval = evaluator_depth_one_->Evaluate();
+    evaluator_depth_one_->Invert();
+    EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
+    int child_n_empties = node->NEmpties() - 1;
+
     for (int i = 0; i < moves.size(); ++i) {
       BitPattern flip = moves[i];
+      BitPattern square = flip & ~(opponent | player);
       BitPattern new_player = NewPlayer(flip, opponent);
       BitPattern new_opponent = NewOpponent(flip, player);
       bool newly_inserted = false;
@@ -272,12 +284,40 @@ class EvaluatorThread {
       if (!newly_inserted) {
         continue;
       }
-      int eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-      const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
-      stats_.Merge(cur_stats);
-      NVisited cur_n_visited = cur_stats.GetAll();
+      if (flip != 0) {
+        evaluator_depth_one_->Update(square, flip);
+      }
+      EvalLarge eval;
+      EvalLarge quick_eval = evaluator_depth_one_->Evaluate();
+//      int expected_error = 8 * kErrors[child_n_empties];
+      // Example:
+      //      +4
+      // -4   +0   +10
+      if (quick_eval < child_eval_goal + 4 * 8 && child_n_empties > 22) {
+        depth = 4;
+      } else if (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 20) {
+        depth = 3;
+      } else if (quick_eval < child_eval_goal + 26 * 8) {
+        depth = 2;
+      } else {
+        depth = 1;
+      }
+      NVisited cur_n_visited;
+      if (depth == 1) {
+        eval = quick_eval;
+        cur_n_visited = 1;
+        stats_.Add(1, TREE_NODE);
+      } else {
+        eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+        const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
+        stats_.Merge(cur_stats);
+        cur_n_visited = cur_stats.GetAll();
+      }
       n_visited += cur_n_visited;
       child->SetLeaf(-leaf.WeakUpper(), -leaf.WeakLower(), eval, depth, cur_n_visited);
+      if (flip != 0) {
+        evaluator_depth_one_->UndoUpdate(square, flip);
+      }
     }
     assert(children.size() == moves.size());
     node->SetChildren(children);
@@ -472,9 +512,12 @@ class EvaluatorDerivative {
       status_ = SOLVED;
       return true;
     }
-    if ((first_position->GetNVisited() > max_n_visited_ && !just_started_)
-        || tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 60) {
+    if (first_position->GetNVisited() > max_n_visited_ && !just_started_) {
       status_ = STOPPED_POSITIONS;
+      return true;
+    }
+    if (tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 60 * threads_.size() * kMaxChildrenUpdates) {
+      status_ = STOPPED_TREE_POSITIONS;
       return true;
     }
     if (elapsed_time_.Get() > max_time_) {

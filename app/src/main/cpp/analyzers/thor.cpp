@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <iostream>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
@@ -70,7 +71,12 @@ class EvaluateThor {
       sum_error_squared_(0),
       num_boards_(0),
       n_visited_(0),
-      elapsed_time_() {}
+      elapsed_time_() {
+    for (int i = 0; i < 60; ++i) {
+      positions_with_empties_[i] = 0;
+      sum_error_squared_for_empty_[i] = 0;
+    }
+  }
 
   void Run(Evaluator* evaluator, int min_error_print, int stop_after) {
     sum_error_squared_ = 0;
@@ -94,6 +100,8 @@ class EvaluateThor {
 //        std::cout << result << " " << board.GetEval() << "\n\n";
 //      }
       sum_error_squared_ += error * error;
+      positions_with_empties_[board.Empties()]++;
+      sum_error_squared_for_empty_[board.Empties()] += error * error;
       num_boards_++;
       n_visited_ += evaluator->GetNVisited();
       if (++i % 5000 == 0 && elapsed_time_.Get() > stop_after) {
@@ -113,6 +121,11 @@ class EvaluateThor {
     std::cout << "  Positions / test: " << n_visited_ / num_boards_ << "\n";
     std::cout << "  Positions / sec: " << std::fixed << n_visited_ / time << "\n";
     std::cout << "  Total time: " << time << "\n";
+    std::cout << "  Error at empties: {";
+    for (int i = 0; i < 60; ++i) {
+      std::cout << std::setprecision(2) << std::max(2.0, sqrt(sum_error_squared_for_empty_[i] / positions_with_empties_[i])) << ", ";
+    }
+    std::cout << "}\n";
   }
  private:
   double sum_error_squared_;
@@ -120,12 +133,14 @@ class EvaluateThor {
   std::vector<EvaluatedBoard> boards_;
   NVisited n_visited_;
   ElapsedTime elapsed_time_;
+  int positions_with_empties_[60];
+  double sum_error_squared_for_empty_[60];
 };
 
 int main() {
   const std::vector<int8_t> evals = LoadEvals();
   EvaluateDepth0 eval_depth_0(evals.data());
-  EvaluateInDepth eval_in_depth(evals.data(), 3);
+  EvaluateInDepth eval_in_depth(evals.data(), 4);
   EvaluateThor evaluate_thor;
   evaluate_thor.Run(&eval_in_depth, 10000, 20);
   evaluate_thor.Print();

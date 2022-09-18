@@ -22,4 +22,5 @@ public enum Status {
   KILLING,
   KILLED,
   FAILED,
+  STOPPED_TREE_POSITIONS,
 }

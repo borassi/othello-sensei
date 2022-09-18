@@ -87,7 +87,8 @@ constexpr char const* kPositions[] = {
       "-------------------XXOOO--XXXOOO--XXOXOO-OOOXXXO--OXOO-O-OOOOO-- X",
       "--XOOO----OOO----OOOXOO--OOOOXO--OXOXXX-OOXXXX----X-XX---------- X",
       "-----------------------O--OOOOO---OOOOOXOOOOXXXX--XXOOXX--XX-O-X X", // 60
-      "---XXXX---XXXO-OXXOXOO-OOOOOXOOO-OOOOXO----OOOX----------------- X"  // 61
+      "---XXXX---XXXO-OXXOXOO-OOOOOXOOO-OOOOXO----OOOX----------------- X", // 61
+      "---------------------------OX------XO--------------------------- X", // 62
 };
 
 Board GetIthBoard(int i) {

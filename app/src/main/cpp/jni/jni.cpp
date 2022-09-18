@@ -77,6 +77,7 @@ class JNIWrapper {
         case FAILED:
         case KILLING:
         case KILLED:
+        case STOPPED_TREE_POSITIONS:
           return true;
         case SOLVED:
           break;
@@ -195,6 +196,9 @@ class JNIWrapper {
         break;
       case FAILED:
         status_id = env->GetStaticFieldID(JavaStatus, "FAILED", "Levaluateposition/Status;");
+        break;
+      case STOPPED_TREE_POSITIONS:
+        status_id = env->GetStaticFieldID(JavaStatus, "STOPPED_TREE_POSITIONS", "Levaluateposition/Status;");
         break;
     }
     return env->GetStaticObjectField(JavaStatus, status_id);

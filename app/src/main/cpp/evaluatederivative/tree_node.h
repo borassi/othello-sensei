@@ -32,11 +32,36 @@
 #include "../board/get_moves.h"
 #include "../utils/misc.h"
 
-constexpr float kErrors[] = {
-      0, 0, 0, 0, 5.30, 5.85, 6.36, 6.96, 7.36, 7.80, 7.94, 8.28, 8.14, 8.21, 8.07, 7.97, 7.72, 7.68, 7.53, 7.32,
-      7.09, 6.80, 5.52, 4.74, 4.80, 4.48, 4.61, 3.97, 4.29, 3.80, 4.03, 3.62, 3.72, 3.28, 3.38, 3.00, 3.32, 3.03,
-      3.11, 2.90, 3.00, 2.65, 2.67, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50,
-      2.50, 2.50, 2.50, 2.50, 2.50};
+constexpr float kErrors[][60] = {
+    {},
+    {2.00, 2.00, 2.00, 2.00, 6.64, 6.87, 7.64, 7.77, 8.18, 8.30, 8.72, 8.73,
+     8.98, 8.71, 8.65, 8.35, 8.29, 8.05, 8.20, 7.64, 7.55, 7.05, 6.82, 6.00,
+     6.36, 5.61, 5.86, 5.19, 5.76, 5.13, 5.58, 4.91, 5.19, 4.39, 4.89, 4.14,
+     4.82, 4.03, 4.38, 3.83, 4.16, 3.52, 3.82, 3.20, 3.28, 2.79, 2.96, 2.41,
+     2.84, 2.57, 2.51, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00},
+    {2.00, 2.00, 2.00, 2.00, 5.57, 5.86, 6.40, 7.08, 7.23, 7.63, 7.77, 8.06,
+     8.03, 8.19, 7.91, 7.81, 7.57, 7.51, 7.41, 7.29, 6.92, 6.56, 6.18, 5.41,
+     5.67, 5.14, 5.13, 4.66, 4.98, 4.56, 4.78, 4.37, 4.21, 3.90, 4.03, 3.73,
+     3.97, 3.63, 3.54, 3.46, 3.51, 3.15, 3.17, 2.94, 2.67, 2.52, 2.56, 2.21,
+     2.10, 2.48, 2.09, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00},
+    {2.00, 2.00, 2.00, 2.00, 5.17, 4.96, 5.63, 5.93, 6.68, 6.74, 7.21, 7.25,
+     7.47, 7.38, 7.51, 7.21, 7.10, 6.97, 6.89, 6.66, 6.57, 6.03, 5.75, 5.01,
+     5.30, 4.71, 5.16, 4.30, 4.73, 4.09, 4.59, 3.88, 4.40, 3.50, 3.97, 3.29,
+     4.03, 3.17, 3.81, 3.09, 3.50, 2.74, 3.25, 2.59, 3.00, 2.28, 2.61, 2.05,
+     2.25, 2.00, 2.37, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00},
+    {2.00, 2.00, 2.00, 2.00, 2.00, 4.72, 4.71, 5.25, 5.53, 6.34, 6.37, 6.77,
+     6.71, 6.87, 6.81, 7.03, 6.56, 6.54, 6.37, 6.27, 6.05, 5.93, 5.32, 4.77,
+     4.93, 4.39, 4.64, 3.98, 4.05, 3.66, 3.96, 3.53, 3.67, 3.24, 3.15, 2.96,
+     3.34, 2.93, 3.06, 2.86, 2.80, 2.57, 2.72, 2.40, 2.50, 2.13, 2.13, 2.00,
+     2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00}
+
+//      0, 0, 0, 0, 5.30, 5.85, 6.36, 6.96, 7.36, 7.80, 7.94, 8.28, 8.14, 8.21, 8.07, 7.97, 7.72, 7.68, 7.53, 7.32,
+//      7.09, 6.80, 5.52, 4.74, 4.80, 4.48, 4.61, 3.97, 4.29, 3.80, 4.03, 3.62, 3.72, 3.28, 3.38, 3.00, 3.32, 3.03,
+//      3.11, 2.90, 3.00, 2.65, 2.67, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50,
+//      2.50, 2.50, 2.50, 2.50, 2.50};
+};
+
+
 constexpr int kNextPositionSize = 100000;
 
 class ChildError: public std::exception {
@@ -320,13 +345,15 @@ class TreeNode {
     weak_upper_ = kLessThenMinEval;
     min_evaluation_ = weak_lower_;
     leaf_eval_ = kLessThenMinEvalLarge;
+    eval_depth_ = 0;
     n_threads_working_ = 0;
     n_visited_ = 0;
   }
 
   void SetSolved(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper, NVisited n_visited) {
     assert(IsValid());
-    SetLeaf(weak_lower, weak_upper, lower, upper, leaf_eval_, 4, n_visited);
+    assert(eval_depth_ > 0);
+    SetLeaf(weak_lower, weak_upper, lower, upper, leaf_eval_, eval_depth_, n_visited);
   }
 
   void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited) {
@@ -457,8 +484,8 @@ class TreeNode {
     bool reduced = false;
     float prob_lower = ProbGreaterEqual(weak_lower_);
     float prob_upper = ProbGreaterEqual(weak_upper_);
-    float prob_lower_next = weak_lower_ == weak_upper_ ? 0 : ProbGreaterEqual(weak_lower_ + 2);
-    float prob_upper_prev = weak_lower_ == weak_upper_ ? 1 : ProbGreaterEqual(weak_upper_ - 2);
+    float prob_lower_next = ProbGreaterEqual(weak_lower_ + 4);
+    float prob_upper_prev = ProbGreaterEqual(weak_upper_ - 4);
     if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_ && weak_lower_ >= -61) {
       extend_lower = true;
       assert(upper_ > lower_ + 2);
@@ -466,12 +493,12 @@ class TreeNode {
     if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_ && weak_upper_ <= 61) {
       extend_upper = true;
     }
-    if (!extend_lower && !extend_upper && prob_lower_next > 1 - kProbReduceWeakEval) {
+    if (!extend_lower && !extend_upper && prob_lower_next >= 1) {
       weak_lower_ += 2;
       assert(weak_lower_ <= weak_upper_);
       reduced = true;
     }
-    if (!extend_lower && !extend_upper && prob_upper_prev < kProbReduceWeakEval) {
+    if (!extend_lower && !extend_upper && prob_upper_prev <= 0) {
       weak_upper_ -= 2;
       assert(weak_lower_ <= weak_upper_);
       reduced = true;
@@ -503,7 +530,6 @@ class TreeNode {
   }
 
   u_int8_t Evaluator() { return evaluator_; }
-  EvalLarge leaf_eval_;
 
  private:
   BitPattern player_;
@@ -513,10 +539,12 @@ class TreeNode {
   TreeNode** fathers_;
   Evaluation* evaluations_;
   std::atomic_uint8_t n_threads_working_;
+  EvalLarge leaf_eval_;
   Square n_children_;
   Square n_fathers_;
   Square n_empties_;
   Square depth_;
+  Square eval_depth_;
   Eval lower_;
   Eval upper_;
   Eval weak_lower_;
@@ -538,6 +566,7 @@ class TreeNode {
 
       SetWeakLowerUpper(weak_lower, weak_upper);
 
+      eval_depth_ = depth;
       leaf_eval_ = std::max(lower, std::min(upper, leaf_eval));
       Eval lower_small = EvalLargeToEvalRound(lower);
       Eval upper_small = EvalLargeToEvalRound(upper);
@@ -579,7 +608,9 @@ class TreeNode {
     } else if (i >= upper_) {
       evaluation->SetDisproved();
     } else {
-      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 8 * kErrors[n_empties_] * 0.8);
+      assert(eval_depth_ >= 1 && eval_depth_ <= 4);
+      assert(n_empties_ >= 4 && n_empties_ <= 60);
+      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 0.95 * 8 * kErrors[eval_depth_][n_empties_]);
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
       float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
