@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#if ANDROID
+#include <android/log.h>
+#endif
 #include <atomic>
 #include <chrono>
 #include <functional>

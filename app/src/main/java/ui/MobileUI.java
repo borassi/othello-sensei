@@ -17,6 +17,7 @@ package ui;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -31,9 +32,11 @@ import java.util.ArrayList;
 import board.Board;
 
 import constants.Constants;
+import evaluateposition.EvaluatorDerivativeInterface;
 import helpers.Utils;
 import main.Main;
 import thor.Game;
+import jni.JNI;
 
 public class MobileUI extends AppCompatActivity implements UI {
   private BoardView boardView;
@@ -84,6 +87,10 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public void setThorGames(Board b, ArrayList<Game> games) {}
+
+  public EvaluatorDerivativeInterface evaluator() {
+    return new JNI(context.getAssets());
+  }
 
   @Override
   public void setAnnotations(CaseAnnotations annotations, int move) {

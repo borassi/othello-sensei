@@ -14,10 +14,13 @@
 
 package ui;
 
+import android.content.res.AssetManager;
+
 import java.util.ArrayList;
 
 import bitpattern.PositionIJ;
 import board.Board;
+import evaluateposition.EvaluatorDerivativeInterface;
 import thor.Game;
 
 /**
@@ -37,4 +40,5 @@ public interface UI {
   void repaint();
   boolean wantThorGames();
   void setThorGames(Board b, ArrayList<Game> games);
+  EvaluatorDerivativeInterface evaluator();
 }

@@ -23,6 +23,19 @@ ELSE()
 ENDIF()
 
 add_library(
+        assets
+        assets.h
+        assets.cpp
+)
+IF(ANDROID)
+target_link_libraries(
+        assets
+        android
+        log
+)
+ENDIF()
+
+add_library(
         random
         random.h
 )

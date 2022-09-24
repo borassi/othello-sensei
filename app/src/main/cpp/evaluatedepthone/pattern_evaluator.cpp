@@ -15,6 +15,7 @@
  */
 
 #include "pattern_evaluator.h"
+#include "../utils/assets.h"
 
 void PatternEvaluator::Setup(BitPattern player, BitPattern opponent) {
   memset(patterns_, 0, sizeof(patterns_));
@@ -216,28 +217,26 @@ EvalLarge PatternEvaluator::Evaluate() const {
   return std::max(kMinEvalLarge, std::min(kMaxEvalLarge, eval));//getEvalAndSetupLastError(eval);
 }
 
-constexpr char kEvalFilepath[] = "/home/michele/AndroidStudioProjects/OthelloSensei/app/src/main/assets/coefficients/pattern_evaluator_cpp.dat";
 
-EvalType LoadEvals() {
-  std::ifstream file;
-  file.open(kEvalFilepath, std::ios_base::binary | std::ios_base::in);
-  assert (file.is_open());
+EvalType LoadEvals(std::string filepath) {
+  std::unique_ptr<Asset> evals_asset = GetAsset(filepath);
+  std::vector<char> file_content = evals_asset->ReadAll();
+  evals_asset->Seek(0);
   int num_splits;
-  file.read((char*) &num_splits, sizeof(num_splits));
+  evals_asset->Read((char*) &num_splits, sizeof(num_splits));
   assert (num_splits == kSplits);
   std::vector<int8_t> result;
   for (int i = 0; i < num_splits; ++i) {
     int num_features;
-    file.read((char*) &num_features, sizeof(num_features));
+    evals_asset->Read((char*) &num_features, sizeof(num_features));
+
     assert (num_features == kNumBaseRotations);
     for (int j = 0; j < num_features; ++j) {
       int feature_size;
-      file.read((char*) &feature_size, sizeof(feature_size));
-      auto tmp = new int8_t[feature_size];
-      file.read((char*) tmp, feature_size);
-      result.reserve(result.size() + feature_size);
-      std::copy(&tmp[0], &tmp[feature_size], std::back_inserter(result));
-      delete[] tmp;
+      evals_asset->Read((char*) &feature_size, sizeof(feature_size));
+      int old_size = result.size();
+      result.resize(result.size() + feature_size);
+      evals_asset->Read((char*) &result[old_size], feature_size);
     }
   }
   return result;

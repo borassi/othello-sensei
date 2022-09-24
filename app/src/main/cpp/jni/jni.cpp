@@ -16,11 +16,12 @@
 
 #include <cmath>
 #include <jni.h>
+#include <thread>
 #include "../hashmap/hash_map.h"
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
-#include <jni.h>
+#include "../utils/assets.h"
 
 constexpr int kNumEvaluators = 60;
 
@@ -45,7 +46,7 @@ class JNIWrapper {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
-          PatternEvaluator::Factory(evals_.data()), 12,
+          PatternEvaluator::Factory(evals_.data()), std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
   }
@@ -56,6 +57,9 @@ class JNIWrapper {
     for (int i = 0; i < num_active_evaluators_; ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       double value = evaluator->Progress(gap);
+      if (evaluator->GetStatus() != STOPPED_TIME) {
+        value += 1E12;
+      }
       if (value > best) {
         best = value;
         best_evaluator = evaluator;
@@ -65,16 +69,17 @@ class JNIWrapper {
   }
 
   bool Finished(NVisited max_n_visited) {
+    std::ostringstream stringStream;
     NVisited visited = 0;
     bool all_solved = true;
-    for (int i = 0; i < this->num_active_evaluators_; ++i) {
+    for (int i = 0; i < num_active_evaluators_; ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       visited += evaluator->GetFirstPosition()->GetNVisited();
       switch (evaluator->GetStatus()) {
         case NONE:
         case RUNNING:
-          assert(false);
         case FAILED:
+          assert(false);
         case KILLING:
         case KILLED:
         case STOPPED_TREE_POSITIONS:
@@ -91,6 +96,7 @@ class JNIWrapper {
 
   void EvalDerivative(
       BitPattern player, BitPattern opponent, Eval lower, Eval upper, NVisited max_n_visited, double max_time, float gap) {
+    stopping_ = false;
     bool reset = player != last_player_ || opponent != last_opponent_ || ((gap == 0) != (last_gap_ == 0));
     if (reset) {
       tree_node_supplier_.Reset();
@@ -109,8 +115,8 @@ class JNIWrapper {
         }
       }
     } else {
-      for (int step = 0; step < 5 && !Finished(max_n_visited); ++step) {
-        BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / 5);
+      for (int step = 0; step < num_active_evaluators_ && !stopping_; ++step) {
+        BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / num_active_evaluators_);
       }
     }
     last_player_ = player;
@@ -163,6 +169,7 @@ class JNIWrapper {
   }
 
   void Stop() {
+    stopping_ = true;
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i]->Stop();
     }
@@ -221,42 +228,60 @@ class JNIWrapper {
   BitPattern last_player_;
   BitPattern last_opponent_;
   float last_gap_;
+  bool stopping_;
 };
-
-JNIWrapper kJNIWrapper;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+JNIWrapper* JNIFromJava(JNIEnv* env, jobject obj) {
+  jclass cls = env->GetObjectClass(obj);
+  jmethodID mid = env->GetMethodID(cls, "getPointer", "()J");
+  return (JNIWrapper*) env->CallLongMethod(obj, mid);
+}
+
+JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jobject assetManager) {
+  jclass cls = env->FindClass("jni/JNI");
+  jmethodID mid = env->GetMethodID(cls, "setup", "(J)V");
+#if ANDROID
+  AndroidAsset::Setup(env, assetManager);
+#endif
+  env->CallVoidMethod(obj, mid, (jlong) new JNIWrapper());
+}
+
+JNIEXPORT void JNICALL Java_jni_JNI_finalize(JNIEnv* env, jobject obj) {
+  delete JNIFromJava(env, obj);
+}
+
 JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
     JNIEnv* env, jobject obj, jlong player, jlong opponent, jint lower,
     jint upper, jlong maxNVisited, jint maxTimeMillis, jfloat gap) {
-  kJNIWrapper.EvalDerivative(player, opponent, static_cast<Eval>(lower / 100), static_cast<Eval>(upper / 100), maxNVisited, maxTimeMillis / 1000.0, gap);
+  JNIFromJava(env, obj)->EvalDerivative(player, opponent, static_cast<Eval>(lower / 100), static_cast<Eval>(upper / 100), maxNVisited, maxTimeMillis / 1000.0, gap);
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jobject) {
-  kJNIWrapper.Empty();
+JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jobject obj) {
+  JNIFromJava(env, obj)->Empty();
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_resetHashMap(JNIEnv* env, jclass) {
-  kJNIWrapper.Empty();
+JNIEXPORT void JNICALL Java_jni_JNI_stop(JNIEnv* env, jobject obj) {
+  JNIFromJava(env, obj)->Stop();
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_stop(JNIEnv* env, jobject) {
-  kJNIWrapper.Stop();
+JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jobject obj) {
+  return JNIFromJava(env, obj)->GetStatus(env);
 }
 
-JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jobject thiz) {
-  return kJNIWrapper.GetStatus(env);
+JNIEXPORT jobject JNICALL Java_jni_JNI_getFirstPosition(JNIEnv* env, jobject obj) {
+  return JNIFromJava(env, obj)->GetFirstPosition(env);
 }
 
-JNIEXPORT jobject JNICALL Java_jni_JNI_getFirstPosition(JNIEnv* env, jobject) {
-  return kJNIWrapper.GetFirstPosition(env);
+JNIEXPORT jobject JNICALL Java_jni_JNI_get(JNIEnv* env, jobject obj, jlong player, jlong opponent) {
+  return JNIFromJava(env, obj)->Get(env, static_cast<BitPattern>(player), static_cast<BitPattern>(opponent));
 }
 
-JNIEXPORT jobject JNICALL Java_jni_JNI_get(JNIEnv* env, jobject, jlong player, jlong opponent) {
-  return kJNIWrapper.Get(env, static_cast<BitPattern>(player), static_cast<BitPattern>(opponent));
+JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong max_nvisited) {
+  return JNIFromJava(env, obj)->Finished(max_nvisited);
 }
 
 TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
@@ -346,10 +371,6 @@ JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tr
   return node == nullptr ? 0 : static_cast<long long>(node->Opponent());
 }
 
-JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject thiz, jlong max_nvisited) {
-  return kJNIWrapper.Finished(max_nvisited);
-}
-
 #ifdef __cplusplus
-}
+};
 #endif

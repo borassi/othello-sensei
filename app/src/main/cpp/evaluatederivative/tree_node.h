@@ -122,15 +122,15 @@ class TreeNode {
     Reset(0, 0, 0, 0);
   }
 
-  Square NEmpties() {
+  Square NEmpties() const {
     return n_empties_;
   }
 
-  Square Depth() {
+  Square Depth() const {
     return depth_;
   }
 
-  Board ToBoard() {
+  Board ToBoard() const {
     return Board(player_, opponent_);
   }
 
@@ -288,7 +288,7 @@ class TreeNode {
     return true;
   }
 
-  std::vector<TreeNode*> GetChildren() {
+  std::vector<TreeNode*> GetChildren() const {
     std::vector<TreeNode*> children;
     for (int i = 0; i < n_children_; ++i) {
       children.push_back(children_[i]);
@@ -523,7 +523,7 @@ class TreeNode {
   }
 
   int ChildLogDerivative(TreeNode* child, int eval_goal) const {
-    assert(Contains(Fathers(), child));
+    assert(Contains(GetChildren(), child));
     Evaluation eval = GetEvaluation(eval_goal);
     Evaluation child_eval = child->GetEvaluation(-eval_goal);
     return child_eval.LogDerivative(eval);

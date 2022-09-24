@@ -277,8 +277,10 @@ struct Features {
   }
 };
 
+constexpr char kEvalFilepath[] = "coefficients/pattern_evaluator_cpp.dat";
+
 typedef std::vector<int8_t> EvalType;
-EvalType LoadEvals();
+EvalType LoadEvals(std::string filepath = kEvalFilepath);
 constexpr Features kFeatures;
 
 class PatternEvaluator : public EvaluatorDepthOneBase {

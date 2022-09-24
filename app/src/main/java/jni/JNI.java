@@ -13,6 +13,10 @@
 // limitations under the License.
 package jni;
 
+import android.content.res.AssetManager;
+
+import java.util.ArrayList;
+
 import board.Board;
 import constants.Constants;
 import constants.Stats;
@@ -24,16 +28,30 @@ import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 
 public class JNI implements EvaluatorDerivativeInterface {
+  private long pointer;
+
+  public long getPointer() {
+    return pointer;
+  }
+
+  public JNI(AssetManager assetManager) {
+    pointer = 0;
+    create(assetManager);
+  }
+  public native void create(AssetManager assetManager);
+
+  @Override
+  public native void finalize();
+
+  private void setup(long pointer) {
+    this.pointer = pointer;
+  }
 
   static {
     if (Constants.MOBILE) {
       System.loadLibrary("jni");
     } else {
-      try {
-        System.load(System.getProperty("user.dir") + "/app/build/jni/libjni.so");
-      } catch (UnsatisfiedLinkError e) {
-        System.load(System.getProperty("user.dir") + "/build/jni/libjni.so");
-      }
+      System.load(System.getProperty("user.dir") + "/build/jni/libjni.so");
     }
   }
   @Override
@@ -46,8 +64,6 @@ public class JNI implements EvaluatorDerivativeInterface {
 
   @Override
   public native void empty();
-
-  public static native void resetHashMap();
 
   @Override
   public native void stop();

@@ -14,6 +14,8 @@
 
 package ui;
 
+import android.content.res.AssetManager;
+
 import bitpattern.BitPattern;
 
 import java.awt.BorderLayout;
@@ -45,6 +47,7 @@ import javax.swing.SpinnerModel;
 
 import board.Board;
 import constants.Constants;
+import evaluateposition.EvaluatorDerivativeInterface;
 import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 import helpers.Utils;
@@ -55,6 +58,8 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
+
+import jni.JNI;
 import main.Main;
 import thor.Game;
 
@@ -427,6 +432,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   public void setThorGames(Board b, ArrayList<Game> thorGames) {
     thorGamesWindow.setGames(b, thorGames);
   }
+
+  @Override
+  public EvaluatorDerivativeInterface evaluator() {
+    return new JNI(null);
+  }
+
   @Override
   public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
     String text =

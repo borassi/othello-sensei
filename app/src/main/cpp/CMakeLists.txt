@@ -45,8 +45,8 @@ IF(ANDROID)
 ELSE()
     find_package(GTest)
     find_package(JNI REQUIRED)
-    include_directories( ${JNI_INCLUDE_DIRS} )
 ENDIF()
+include_directories( ${JNI_INCLUDE_DIRS} )
 
 SET(PDEP_PEXT NOT ANDROID)
 
@@ -57,30 +57,20 @@ ELSE()
 ENDIF()
 
 SET(
-        RELEASE_FLAGS
-        -pedantic
-        -pipe
-        -D_GNU_SOURCE=1
-        -Ofast
-        -DNDEBUG
-        -DUSE_GAS_X64
-        -DPOPCOUNT
-        -DHAS_CPU_64
+        CMAKE_CXX_FLAGS_RELEASE
+        "-pedantic -pipe -D_GNU_SOURCE=1 -Ofast -DNDEBUG -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"
 )
 
 IF(NOT ANDROID)
     SET(
-          RELEASE_FLAGS
-          ${RELEASE_FLAGS}
-          -m64
-          -march=native
+          CMAKE_CXX_FLAGS_RELEASE
+          "${CMAKE_CXX_FLAGS_RELEASE} -m64 -march=native"
     )
 ENDIF()
 IF (PROFILE)
     SET(
-            RELEASE_FLAGS
-            ${RELEASE_FLAGS}
-            -g
+            CMAKE_CXX_FLAGS_RELEASE
+            "${CMAKE_CXX_FLAGS_RELEASE} -g"
     )
 ENDIF()
 

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Othello Sensei Dev</string>
+    <string name="app_name">Othello Sensei DD</string>
     <string name="new_game">New game</string>
     <string name="undo">Undo</string>
     <string-array name="depth">

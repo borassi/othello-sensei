@@ -22,6 +22,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.Arrays;
@@ -65,9 +66,11 @@ public class BoardView extends View {
       Arrays.fill(caseBorders[i], new RectF());
     }
     setOnTouchListener((v, event) -> {
+      if (event.getAction() != MotionEvent.ACTION_DOWN){
+        return false;
+      }
       int move = 8 * (7 - (int) (event.getX() / cellSize)) + (7-(int) (event.getY() / cellSize));
       main.getMove(move);
-      v.performClick();
       return true;
     });
     resetAnnotations();

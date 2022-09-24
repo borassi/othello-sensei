@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import evaluateposition.TreeNodeInterface;
 import jni.JNI;
@@ -62,7 +63,7 @@ public class Main implements Runnable {
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   private long startTime;
   private static UI ui;
-  private final AtomicBoolean waitingTasks = new AtomicBoolean(false);
+  private final AtomicInteger waitingTasks = new AtomicInteger(0);
   private Thor thor = new Thor();
 
   private static class EvaluatorWithBoard {
@@ -83,11 +84,7 @@ public class Main implements Runnable {
   public Main(UI ui) {
     Main.ui = ui;
     HASH_MAP = new HashMap(Constants.HASH_MAP_SIZE);
-    EVALUATOR = new JNI();
-//    for (int i = 0; i < EVALUATORS.length; ++i) {
-//      EVALUATOR = new JNI();
-////      EVALUATORS[i] = new EvaluatorMCTS(Constants.MCTS_SIZE / EVALUATORS.length, 2 * Constants.MCTS_SIZE / EVALUATORS.length, HASH_MAP);
-//    }
+    EVALUATOR = ui.evaluator();
   }
 
   public SortedSet<String> getThorTournaments() {
@@ -122,7 +119,6 @@ public class Main implements Runnable {
     Future finished = EXECUTOR.submit(() -> {
       EVALUATOR.empty();
       HASH_MAP.reset();
-      JNI.resetHashMap();
       EvaluatorAlphaBeta.resetConstant();
     });
     try {
@@ -183,8 +179,8 @@ public class Main implements Runnable {
 
   @Override
   public void run() {
+    waitingTasks.getAndAdd(-1);
     startTime = System.currentTimeMillis();
-    waitingTasks.set(false);
     setEvaluators();
     EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 50, (float) ui.delta());
     if (ui.wantThorGames()) {
@@ -194,7 +190,7 @@ public class Main implements Runnable {
       showMCTSEvaluations();
       EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
-    if (!waitingTasks.get()) {
+    if (waitingTasks.get() == 0) {
       showMCTSEvaluations();
     }
     if ((ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn)) {
@@ -262,7 +258,7 @@ public class Main implements Runnable {
     if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
-    if (waitingTasks.compareAndSet(false, true)) {
+    if (waitingTasks.compareAndSet(0, 1)) {
       EXECUTOR.submit(this);
     }
   }

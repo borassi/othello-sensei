@@ -29,6 +29,7 @@ add_library(
 target_link_libraries( # Specifies the target library.
         jni
         LINK_PUBLIC
+        assets
         tree_node
         pattern_evaluator
         evaluator_alpha_beta
