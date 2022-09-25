@@ -22,14 +22,6 @@ import java.util.ArrayList;
 import bitpattern.PositionIJ;
 import board.Board;
 import board.GetMovesCache;
-import constants.Constants;
-import endgametest.EndgameTest;
-import evaluateposition.EvaluatorAlphaBeta;
-import evaluateposition.EvaluatorDerivativeInterface;
-import evaluateposition.EvaluatorMCTS;
-import evaluateposition.HashMap;
-import evaluateposition.Status;
-import evaluateposition.StoredBoard;
 
 import java.util.Set;
 import java.util.SortedSet;
@@ -37,12 +29,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import evaluateposition.TreeNodeInterface;
 import jni.JNI;
-import thor.Game;
 import thor.Thor;
 import ui.CaseAnnotations;
 import ui.UI;
@@ -58,32 +48,18 @@ public class Main implements Runnable {
   boolean blackTurn = true;
   Board board;
   Board[] boardsToEvaluate = new Board[] {};
-  private final HashMap HASH_MAP;
-  private final EvaluatorDerivativeInterface EVALUATOR;
+  private final JNI EVALUATOR;
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   private long startTime;
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
   private Thor thor = new Thor();
 
-  private static class EvaluatorWithBoard {
-    EvaluatorDerivativeInterface evaluator;
-    StoredBoard board;
-    private EvaluatorWithBoard(EvaluatorDerivativeInterface evaluator, StoredBoard board) {
-      this.evaluator = evaluator;
-      this.board = board;
-    }
-    private int getEval() {
-      return board.getEval();
-    }
-  }
-
   /**
    * Creates a new UI and sets the initial position.
    */
   public Main(UI ui) {
     Main.ui = ui;
-    HASH_MAP = new HashMap(Constants.HASH_MAP_SIZE);
     EVALUATOR = ui.evaluator();
   }
 
@@ -118,8 +94,6 @@ public class Main implements Runnable {
     stop();
     Future finished = EXECUTOR.submit(() -> {
       EVALUATOR.empty();
-      HASH_MAP.reset();
-      EvaluatorAlphaBeta.resetConstant();
     });
     try {
       finished.get();
@@ -131,7 +105,7 @@ public class Main implements Runnable {
 
   public void setEndgameBoard(int n) {
     stop();
-    setBoard(EndgameTest.readIthBoard(n), true);
+    setBoard(JNI.getEndgameBoard(n), true);
   }
 
   /**
@@ -166,15 +140,6 @@ public class Main implements Runnable {
     } else {
       this.boardsToEvaluate = GetMovesCache.getAllDescendants(this.board);
     }
-  }
-
-  private double boardValue(EvaluatorDerivativeInterface evaluator) {
-    TreeNodeInterface board = evaluator.getFirstPosition();
-    if (evaluator.getStatus() == Status.SOLVED) {
-      return Double.NEGATIVE_INFINITY;
-    }
-    double evalEffect = -board.getEval() / Math.max(1, ui.delta() * 100);
-    return evalEffect - Math.log(board.getDescendants()) / Math.log(2);
   }
 
   @Override
@@ -282,15 +247,9 @@ public class Main implements Runnable {
       int move = moveFromBoard(board, child);
       if (childStored != null) {
         annotations = new CaseAnnotations(father, childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
-      } else {
-        HashMap.BoardInHash childHash = this.HASH_MAP.getStoredBoardNoUpdate(child);
-        if (childHash == null) {
-          continue;
-        }
-        annotations = new CaseAnnotations(father, childHash, move == bestMove);
+        ui.setAnnotations(annotations, move);
       }
       nVisited += childStored.getDescendants();
-      ui.setAnnotations(annotations, move);
     }
     TreeNodeInterface boardStored = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;

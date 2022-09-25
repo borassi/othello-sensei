@@ -610,7 +610,7 @@ class TreeNode {
     } else {
       assert(eval_depth_ >= 1 && eval_depth_ <= 4);
       assert(n_empties_ >= 4 && n_empties_ <= 60);
-      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 0.95 * 8 * kErrors[eval_depth_][n_empties_]);
+      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 0.95F * 8 * std::max(3.0F, kErrors[eval_depth_][n_empties_]));
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
       float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);

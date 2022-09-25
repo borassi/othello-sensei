@@ -15,19 +15,12 @@ package jni;
 
 import android.content.res.AssetManager;
 
-import java.util.ArrayList;
-
 import board.Board;
 import constants.Constants;
-import constants.Stats;
-import evaluateposition.EvalWithVisited;
-import evaluateposition.EvaluatorDerivativeInterface;
-import evaluateposition.EvaluatorMCTS;
 import evaluateposition.Status;
-import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 
-public class JNI implements EvaluatorDerivativeInterface {
+public class JNI {
   private long pointer;
 
   public long getPointer() {
@@ -54,7 +47,6 @@ public class JNI implements EvaluatorDerivativeInterface {
       System.load(System.getProperty("user.dir") + "/build/jni/libjni.so");
     }
   }
-  @Override
   public void evaluate(Board board, int lower, int upper, long maxNVisited, int maxTimeMillis, float gap) {
     evaluate(board.getPlayer(), board.getOpponent(), lower, upper, maxNVisited, maxTimeMillis, gap);
   }
@@ -62,33 +54,17 @@ public class JNI implements EvaluatorDerivativeInterface {
   public native void evaluate(long player, long opponent, int lower,
                               int upper, long maxNVisited, int maxTimeMillis, float gap);
 
-  @Override
   public native void empty();
 
-  @Override
   public native void stop();
 
-  @Override
   public native Status getStatus();
 
-  @Override
   public native TreeNodeInterface getFirstPosition();
 
-  @Override
   public native TreeNodeInterface get(long player, long opponent);
 
-  @Override
   public native boolean finished(long maxNVisited);
 
-  public static EvalWithVisited evaluateCPP(
-      long player, long opponent, int depth, int lower, int upper) {
-    EvalWithVisited eval = evaluateCPPInternal(player, opponent, depth, lower, upper);
-    Stats.addToNLastMoves(1);
-    Stats.addToNVisitedLastMoves(eval.nVisited);
-    return eval;
-  }
-
-  public static native EvalWithVisited evaluateCPPInternal(
-      long player, long opponent, int depth, int lower, int upper);
-
+  public static native Board getEndgameBoard(int i);
 }

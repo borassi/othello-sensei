@@ -13,15 +13,8 @@
 // limitations under the License.
 package helpers;
 
-import board.GetMovesCache;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Utils {
   public static String prettyPrintDouble(double d) {
@@ -55,31 +48,5 @@ public class Utils {
       return String.format("%.1f%s", rescaledL, suffix);
     }
     return String.format("%.0f%s", rescaledL, suffix);
-  }
-  
-  public static boolean arrayContains(Object[] array, Object elem) {
-    for (Object obj : array) {
-      if (elem == obj) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  
-  public static long testFunctionsInParallel(int nTasks, List<Runnable> functions) {
-    ExecutorService es = Executors.newFixedThreadPool(nTasks);
-    long t = -System.currentTimeMillis();
-    for (Runnable function : functions) {
-      es.submit(function);
-    }
-    es.shutdown();
-    try {
-      es.awaitTermination(1000, TimeUnit.HOURS);
-    } catch (InterruptedException ex) {
-      Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    t += System.currentTimeMillis();
-    return t;
   }
 }

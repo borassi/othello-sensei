@@ -14,8 +14,6 @@
 
 package ui;
 
-import android.content.res.AssetManager;
-
 import bitpattern.BitPattern;
 
 import java.awt.BorderLayout;
@@ -34,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -47,8 +44,6 @@ import javax.swing.SpinnerModel;
 
 import board.Board;
 import constants.Constants;
-import evaluateposition.EvaluatorDerivativeInterface;
-import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 import helpers.Utils;
 
@@ -434,8 +429,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public EvaluatorDerivativeInterface evaluator() {
+  public JNI evaluator() {
     return new JNI(null);
+  }
+
+  public static short roundEval(int eval) {
+    return (short) Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));
   }
 
   @Override
@@ -451,7 +450,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     StringBuilder firstPositionText = new StringBuilder(board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n");
 
     int eval = board.getEval();
-    for (int evalGoal = StoredBoard.roundEval(eval + 1200); evalGoal >= StoredBoard.roundEval(eval - 1200); evalGoal -= 200) {
+    for (int evalGoal = roundEval(eval + 1200); evalGoal >= roundEval(eval - 1200); evalGoal -= 200) {
       firstPositionText.append(String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
           Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
           Utils.prettyPrintDouble(board.proofNumber(evalGoal)), Utils.prettyPrintDouble(board.disproofNumber(evalGoal))));

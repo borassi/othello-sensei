@@ -17,6 +17,8 @@
 #include <cmath>
 #include <jni.h>
 #include <thread>
+
+#include "../analyzers/endgame_ffo.h"
 #include "../hashmap/hash_map.h"
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
@@ -24,6 +26,14 @@
 #include "../utils/assets.h"
 
 constexpr int kNumEvaluators = 60;
+
+jobject BoardToJava(const Board& board, JNIEnv* env) {
+    jclass BoardJava = env->FindClass("board/Board");
+    return env->NewObject(
+        BoardJava,
+        env->GetMethodID(BoardJava, "<init>", "(JJ)V"),
+        (jlong) board.GetPlayer(), (jlong) board.GetOpponent());
+}
 
 class JNIWrapper {
  public:
@@ -369,6 +379,11 @@ JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return node == nullptr ? 0 : static_cast<long long>(node->Opponent());
+}
+
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_getEndgameBoard(JNIEnv* env, jclass clazz, jint i) {
+  return BoardToJava(GetIthBoard(i), env);
 }
 
 #ifdef __cplusplus

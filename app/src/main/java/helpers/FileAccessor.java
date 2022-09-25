@@ -31,11 +31,7 @@ public class FileAccessor {
     if (Constants.MOBILE) {
       return MobileUI.context.getAssets().open(filepath);
     } else {
-      try {
-        return new FileInputStream("app/desktop_res/" + filepath);
-      } catch (FileNotFoundException e) {
-        return new FileInputStream("desktop_res/" + filepath);
-      }
+      return new FileInputStream("app/src/main/assets/" + filepath);
     }
   }
 
@@ -43,11 +39,7 @@ public class FileAccessor {
     if (Constants.MOBILE) {
       return null;
     } else {
-      try {
-        return new FileOutputStream("app/desktop_res/" + filepath);
-      } catch (FileNotFoundException e) {
-        return new FileOutputStream("desktop_res/" + filepath);
-      }
+      return new FileOutputStream("app/src/main/assets/" + filepath);
     }
   }
 

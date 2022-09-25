@@ -52,7 +52,7 @@ std::vector<EvaluatedBoard> load_set(int start_year, int end_year) {
   std::vector<std::string> files;
   for (int i = start_year; i <= end_year; ++i) {
     files.push_back(
-      "testdata/training_set/TrainingSet" + std::to_string(i) + ".tmp");
+      "app/testdata/training_set/TrainingSet" + std::to_string(i) + ".tmp");
   }
   return load_set(files);
 }
@@ -61,7 +61,7 @@ std::vector<EvaluatedBoard> load_hard_set(int last_file_number) {
   std::vector<std::string> files;
   for (int i = 0; i <= last_file_number; ++i) {
     files.push_back(
-      "testdata/training_set/weird_positions_result_" + std::to_string(i)
+      "app/testdata/training_set/weird_positions_result_" + std::to_string(i)
       + ".tmp");
   }
   return load_set(files);

@@ -17,14 +17,9 @@ package ui;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -32,7 +27,6 @@ import java.util.ArrayList;
 import board.Board;
 
 import constants.Constants;
-import evaluateposition.EvaluatorDerivativeInterface;
 import helpers.Utils;
 import main.Main;
 import thor.Game;
@@ -88,7 +82,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public void setThorGames(Board b, ArrayList<Game> games) {}
 
-  public EvaluatorDerivativeInterface evaluator() {
+  public JNI evaluator() {
     return new JNI(context.getAssets());
   }
 

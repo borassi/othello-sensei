@@ -263,29 +263,4 @@ public class BoardTest {
       assertEquals(b.getFullSquares(), fullSquares);
     }
   }
-  @Test
-  public void numberExistingBoardsInBitPatternTest() {
-    PossibleMovesFinderImproved finder = new PossibleMovesFinderImproved();
-    finder.initBitPatterns();
-    
-    for (long bitPattern : finder.bitPatterns) {
-      ArrayList<Board> boards = Board.existingBoardsInBitPattern(bitPattern);
-      assertEquals((int) Math.pow(3., Long.bitCount(bitPattern)), boards.size());
-    }
-  }
-
-  @Test
-  public void existingBoardsInBitPatternTest() {
-    PossibleMovesFinderImproved finder = new PossibleMovesFinderImproved();
-    finder.initBitPatterns();
-    
-    for (long bitPattern : finder.bitPatterns) {
-      ArrayList<Board> boards = Board.existingBoardsInBitPattern(bitPattern);
-      for (int i = 0; i < 1000; i++) {
-        Board b = Board.randomBoard();
-        assert(boards.contains(b.filter(bitPattern)));
-      }
-      assertEquals((int) Math.pow(3., Long.bitCount(bitPattern)), boards.size());
-    }
-  }
 }

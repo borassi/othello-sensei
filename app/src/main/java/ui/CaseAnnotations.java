@@ -13,36 +13,20 @@
 // limitations under the License.
 package ui;
 
-import evaluateposition.HashMap;
-import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 
 public class CaseAnnotations {
   public final TreeNodeInterface father;
   public final TreeNodeInterface treeNode;
-  public final HashMap.BoardInHash boardInHash;
   public final boolean isBestMove;
   public final int thorGames;
 
   public CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, boolean isBestMove) {
-    this(father, treeNode, null, isBestMove);
+    this(father, treeNode, -1, isBestMove);
   }
 
   public CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, int thorGames, boolean isBestMove) {
-    this(father, treeNode, null, thorGames, isBestMove);
-  }
-
-  public CaseAnnotations(TreeNodeInterface father, HashMap.BoardInHash boardInHash, boolean isBestMove) {
-    this(father, null, boardInHash, isBestMove);
-  }
-
-  private CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, boolean isBestMove) {
-    this(father, treeNode, boardInHash, -1, isBestMove);
-  }
-
-  private CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, HashMap.BoardInHash boardInHash, int thorGames, boolean isBestMove) {
     this.treeNode = treeNode;
-    this.boardInHash = boardInHash;
     this.isBestMove = isBestMove;
     this.thorGames = thorGames;
     this.father = father;

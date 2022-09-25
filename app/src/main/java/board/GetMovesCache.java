@@ -59,16 +59,6 @@ public class GetMovesCache implements Serializable {
   private static long[] flipDiagonalLast = new long[64 * 256];
   private static long[] flipReverseDiagonalLast = new long[64 * 256];
   
-  private static final long CORNERS = BitPattern.parsePattern(
-      "X------X" +
-      "--------" +
-      "--------" +
-      "--------" +
-      "--------" +
-      "--------" +
-      "--------" +
-      "X------X");
-  
   private static final long MASK = BitPattern.parsePattern(
       "-XXXXXX-" +
       "-XXXXXX-" +
@@ -220,36 +210,6 @@ public class GetMovesCache implements Serializable {
     }
   }
   
-  private static long getDisksRightOfCells1(long disks, long cells, int dir) {
-    return disks & (cells >>> dir);
-  }
-
-  private static long getDisksRightOfCells2(long disks, long cells, int dir) {
-    long result = disks & (cells >>> dir);
-    return disks & (result | (result >>> dir));
-  }
-
-  private static long getDisksRightOfCells3(long disks, long cells, int dir) {
-    long result = disks & (cells >>> dir);
-    result |= disks & (result >>> dir);
-    return result | (disks & (result >>> dir));
-  }
-
-  private static long getDisksRightOfCells4(long disks, long cells, int dir) {
-    long result = disks & (cells >>> dir);
-    result |= disks & (result >>> dir);
-    result |= disks & (result >>> dir);
-    return result | (disks & (result >>> dir));
-  }
-
-  private static long getDisksRightOfCells5(long disks, long cells, int dir) {
-    long result = disks & (cells >>> dir);
-    result |= disks & (result >>> dir);
-    result |= disks & (result >>> dir);
-    result |= disks & (result >>> dir);
-    return result | (disks & (result >>> dir));
-  }
-  
   private static long getDisksLeftOfCells6(long disks, long cells, int dir) {
     int dir2 = dir * 2;
     
@@ -276,10 +236,6 @@ public class GetMovesCache implements Serializable {
   private long opponentNearPlayer7;
   private long opponentNearPlayer8;
   private long opponentNearPlayer9;
-  private long opponentAfterPlayer1;
-  private long opponentAfterPlayer7;
-  private long opponentAfterPlayer8;
-  private long opponentAfterPlayer9;
   private long moves;
   
   public long getMoves(long player, long opponent) {
@@ -307,15 +263,6 @@ public class GetMovesCache implements Serializable {
 //    System.out.println(BitPattern.patternToString(moves));
     return moves;
   }
-  
-  public int getNMoves(long player, long opponent) {
-    return Long.bitCount(getMoves(player, opponent));
-  }
-  
-  public int getWeightedNMoves(long player, long opponent) {
-    long moves = getMoves(player, opponent);
-    return Long.bitCount(moves) + Long.bitCount(moves & CORNERS);
-  }
 
   public static Board moveIfPossible(Board b, int move) {
     GetMovesCache mover = new GetMovesCache();
@@ -334,10 +281,6 @@ public class GetMovesCache implements Serializable {
     long[] moves = getAllMoves(player, opponent);
     return moves != null && moves.length == 1 && moves[0] == 0;
   }
-
-  public static long[] getAllMoves(Board b) {
-    return getAllMoves(b.getPlayer(), b.getOpponent());
-  }  
 
   public static long[] getAllMoves(long player, long opponent) {
     GetMovesCache mover = new GetMovesCache();
@@ -380,283 +323,8 @@ public class GetMovesCache implements Serializable {
         flipReverseDiagonalLast[moveShifted + hashRevDiagonal(move, opponentNearPlayer7)];
   }
 
-
-  public static String getFlipCodeInterface() {
-    String result = "private static Flipper[] flipper = new Flipper[] {\n";
-    for (int i = 0; i < 64; ++i) {
-      result += String.format("  new Flipper%d(),\n", i);
-    }
-    result += "};\n";
-    return indent(result, 2) + "\n  public static long getFlip(int move) {\n    return flipper[move].run(player, opponent);\n  }";
-  }
-
-  public static String getFlipCode() {
-    String result = "switch (move) {\n";
-    for (int i = 0; i < 64; ++i) {
-      result += String.format("  case %d:\n    return getFlip%d();\n", i, i);
-    }
-    result += "  default:\n    assert(false);\n}\nreturn 0;";
-    return "  public static long getFlip(int move) {\n" + indent(result, 4) + "\n  }";
-  }
-  
-  public static int maxNFlips(int n, int dir) {
-    int dirHoriz = (dir + 16) % 8;
-    dirHoriz = dirHoriz == 7 ? -1 : dirHoriz;
-    for (int i = 0; ; ++i) {
-      if (n + i * dir < 0 || n + i * dir > 63 || n % 8 + i * dirHoriz < 0 || n % 8 + i * dirHoriz > 7) {
-        return i - 2;
-      }
-    }
-  }
-  
-  public static String getFlipNCode(int n) {
-    long moveBit = 1L << n;
-
-    ArrayList<String> conditions = new ArrayList<>();
-    conditions.add(String.format("0x%016XL", moveBit));
-    for (int dir : new int[] {1, 9, 8, 7, -1, -7, -8, -9}) {
-      int maxNFlips = maxNFlips(n, dir);
-      if (maxNFlips <= 0) {
-        continue;
-      }
-      long line = 0;
-      switch (Math.abs(dir)) {
-        case 1:
-          line = BitPattern.getRow(n);
-          break;
-        case 7:
-          line = BitPattern.getDiag7(n);
-          break;
-        case 8:          
-          line = BitPattern.getColumn(n);
-          break;
-        case 9:
-          line = BitPattern.getDiag9(n);
-          break;
-      }
-
-      if (dir == 1) {
-        conditions.add(String.format("((0x%016XL + opponentAfterPlayer1) ^ opponentAfterPlayer1)", moveBit));
-      } else if (dir > 0) {
-        String mask = String.format("/* dir = %d */ (opponentAfterPlayer%d | 0x%016XL)", dir, dir, ~line);
-        conditions.add(String.format("/* dir = %d */ (0x%016XL & ((0x%016XL + %s) ^ %s))", dir, line, moveBit, mask, mask));
-      } else {
-        conditions.add(String.format("/* dir = %d */ getDisksRightOfCells%d(opponentNearPlayer%d, 0x%016XL, %d)", dir, maxNFlips, -dir, moveBit, -dir));
-      }
-    }
-    
-    return "  private class Flipper" + n + " extends Flipper {\n" +
-           "    @Override\n" +
-           "    public long run() {\n" +
-           "      return \n" +
-           indent(String.join("\n| ", conditions), 10) + ";\n" +
-           "    }\n" +
-           "  }\n";
-//    return "  private static long getFlip" + n + "(long player, long opponent) {\n" + indent(result, 4) + "\n  }";
-  }
-  
-  public static String getFlipNCodeOld(int n) {
-    long firstCaseInEachDir = 0;
-    long moveBit = 1L << n;
-
-    ArrayList<String> conditions = new ArrayList<>();
-    conditions.add(String.format("0x%016XL", moveBit));
-    for (int dir : new int[] {1, 9, 8, 7, -1, -7, -8, -9}) {
-      int maxNFlips = maxNFlips(n, dir);
-      if (maxNFlips <= 0) {
-        continue;
-      }
-      long line = 0;
-      switch (Math.abs(dir)) {
-        case 1:
-          line = BitPattern.getRow(n);
-          break;
-        case 7:
-          line = BitPattern.getDiag7(n);
-          break;
-        case 8:          
-          line = BitPattern.getColumn(n);
-          break;
-        case 9:
-          line = BitPattern.getDiag9(n);
-          break;
-      }
-      long firstCaseInDir = 1L << (n + dir);
-      firstCaseInEachDir |= firstCaseInDir;
-
-      if (dir == 1) {
-        conditions.add(String.format("((0x%016XL + opponentAfterPlayer1) ^ opponentAfterPlayer1)", moveBit));
-      } else if (dir > 0) {
-        String mask = String.format("/* dir = %d */ (opponentAfterPlayer%d | 0x%016XL)", dir, dir, ~line);
-        conditions.add(String.format("/* dir = %d */ (0x%016XL & ((0x%016XL + %s) ^ %s))", dir, line, moveBit, mask, mask));
-      } else {
-        conditions.add(String.format("/* dir = %d */ getDisksRightOfCells%d(opponentNearPlayer%d, 0x%016XL, %d)", dir, maxNFlips, -dir, moveBit, -dir));
-      }
-    }
-    
-    return "  private class Flipper" + n + " extends Flipper {\n" +
-           "    @Override\n" +
-           "    public long run() {\n" +
-           "      return \n" +
-           indent(String.join("\n| ", conditions), 10) + ";\n" +
-           "    }\n" +
-           "  }\n";
-//    return "  private static long getFlip" + n + "(long player, long opponent) {\n" + indent(result, 4) + "\n  }";
-  }
-  
   public static String indent(String str, int n) {
     String indent = new String(new char[n]).replace("\0", " ");
     return indent + str.replace("\n", "\n" + indent);
   }
-  
-  public static long testGetFlipNoWriteLast(long n) {
-    TestCase test;
-    long tmp = 0;
-    
-    for (long i = n; i > 0; --i) {
-      test = tests.get((int) (i % tests.size()));
-      tmp = tmp ^ GetFlipNoWrite.getFlipLast(test.move, test.player, test.opponent);
-    }
-    return tmp;
-  }
-  
-  public static long testGetFlipNoWrite(long n) {
-    TestCase test;
-    long tmp = 0;
-    
-    for (long i = n; i > 0; --i) {
-      test = tests.get((int) (i % tests.size()));
-      tmp = tmp ^ GetFlipNoWrite.getFlip(test.move, test.player, test.opponent);
-    }
-    return tmp;
-  }
-  
-  public static long testGetMoves(long n) {
-    TestCase test;
-    long tmp = 0;
-    
-    for (long i = n; i > 0; --i) {
-      test = tests.get((int) (i % tests.size()));
-      tmp = tmp ^ GetMoves.getFlip(test.move, test.player, test.opponent);
-    }
-    return tmp;
-  }
-  
-  public static long testPureMath(long n) {
-    TestCase test;
-    long tmp = 0;
-    
-    for (long i = n; i > 0; --i) {
-      test = tests.get((int) (i % tests.size()));
-      long player = test.player;
-      long opponent = test.opponent;
-      int move = test.move;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-      tmp = ((tmp | player) & opponent) % 10000;
-      tmp = tmp * move * tmp;
-      tmp = tmp / 15023;
-    }
-    return tmp;
-  }
-  
-  public static long testGetFlipLast(long n) {
-    TestCase test;
-    long tmp = 0;
-    
-    for (long i = n; i > 0; --i) {
-      test = tests.get((int) (i % tests.size()));
-      tmp = tmp ^ GetFlip.getFlipLast(test.move, test.opponent);
-    }
-    return tmp;
-  }
-  public static long testGetFlip(long n) {
-    TestCase test;
-    long tmp = 0;
-    
-    for (long i = n; i > 0; --i) {
-      test = tests.get((int) (i % tests.size()));
-      tmp = tmp ^ GetFlip.getFlip(test.move, test.player, test.opponent);
-    }
-    return tmp;
-  }
-  static final long n = 20000000L;
-  
-  public static void testFunction(int nTasks, Runnable function) {
-    ExecutorService es = Executors.newFixedThreadPool(nTasks);
-    long t = -System.currentTimeMillis();
-    for (int i = 0; i < nTasks; ++i) {
-      es.submit(function);
-    }
-    es.shutdown();
-    try {
-      es.awaitTermination(1000, TimeUnit.HOURS);
-    } catch (InterruptedException ex) {
-      Logger.getLogger(GetMovesCache.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    t += System.currentTimeMillis();
-    System.out.print(" " + String.format("%12d", (int) (1000.0 * n * nTasks / t)));
-  }
-  
-  
-  public static void main(String args[]) throws InterruptedException {
-//    ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-    
-//    int nTasks = 1;
-    System.out.println("Tasks     getMoves      getFlip  getFlipLast   getFlipNoW getFlipNoWLast   pureMath");
-    for (int nTasks : new int[] {1, 2, 4, 6, 9, 12, 24}) {
-      System.out.print(String.format("%5d", nTasks));
-      testFunction(nTasks, () -> {testGetMoves(n);});
-      testFunction(nTasks, () -> {testGetFlip(n);});
-      testFunction(nTasks, () -> {testGetFlipLast(n);});
-      testFunction(nTasks, () -> {testGetFlipNoWrite(n);});
-      testFunction(nTasks, () -> {testGetFlipNoWriteLast(n);});
-      testFunction(nTasks, () -> {testPureMath(n);});
-      System.out.println();
-    }
-  }
-  
-  static class TestCase {
-    final int move;
-    final long player;
-    final long opponent;
-    public TestCase(int move, long player, long opponent) {
-      this.move = move;
-      this.player = player;
-      this.opponent = opponent;
-    }
-  }
-  static final ArrayList<TestCase> tests = new ArrayList<>();
-  
-//  static {
-//    try {
-//      File input = new File("coefficients/moves.txt");
-//      Scanner myReader = new Scanner(input);
-//      while (myReader.hasNextLine()) {
-//        String s = myReader.nextLine();
-//        String[] splitS = s.split(" ");
-//        tests.add(
-//            new TestCase(Integer.parseInt(splitS[0]),
-//                Long.parseLong(splitS[1]), Long.parseLong(splitS[2])));
-//      }
-//    } catch (FileNotFoundException ex) {
-//      Logger.getLogger(GetMovesCache.class.getName()).log(Level.SEVERE, null, ex);
-//    }
-//  }
 }

@@ -22,13 +22,27 @@ ELSE ()
     include_directories(${JNI_INCLUDE_DIRS})
 ENDIF ()
 
-add_executable(
+add_library(
         endgame_ffo
-        endgame_ffo.cpp
+        endgame_ffo.h
+)
+set_target_properties(
+        endgame_ffo PROPERTIES LINKER_LANGUAGE CXX
 )
 
 target_link_libraries(
         endgame_ffo
+        LINK_PUBLIC
+        board
+)
+
+add_executable(
+        endgame_ffo_main
+        endgame_ffo_main.cpp
+)
+
+target_link_libraries(
+        endgame_ffo_main
         LINK_PUBLIC
         evaluator_alpha_beta
         evaluator_derivative

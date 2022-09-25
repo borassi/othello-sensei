@@ -30,7 +30,6 @@ import java.util.Arrays;
 import bitpattern.BitPattern;
 import board.Board;
 import constants.Constants;
-import evaluateposition.StoredBoard;
 import evaluateposition.TreeNodeInterface;
 import helpers.Utils;
 
@@ -135,8 +134,8 @@ public class BoardView extends View {
       return;
     }
     TreeNodeInterface storedBoard = annotation.treeNode;
-    int lower = storedBoard.getPercentileLower(Constants.ZERO_PERC_FOR_WEAK);
-    int upper = storedBoard.getPercentileUpper(Constants.ZERO_PERC_FOR_WEAK);
+    int lower = storedBoard.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = storedBoard.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
     String[] rows = {
         String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0),
         Utils.prettyPrintDouble(storedBoard.getDescendants()),
