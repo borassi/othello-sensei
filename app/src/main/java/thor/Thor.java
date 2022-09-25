@@ -36,16 +36,16 @@ public class Thor {
   HashMap<Board, ArrayList<Game>> gamesForPosition = new HashMap<>();
 
   public Thor() {
-//    ArrayList<String> thorGames = new ArrayList<>();
-//    for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
-//      String filename = "games/WTH_" + i + ".wtb";
-//      // if (new File(filename).exists()) {
-//        thorGames.add(filename);
-//      // }
-//    }
-//    loadFiles(thorGames, "games/WTHOR.JOU", "games/WTHOR.TRN");
-//    loadFiles(Arrays.asList(new String[]{"games/PLAYOK.wtb"}), "games/PLAYOK.JOU", "games/PLAYOK.TRN");
-//    loadFiles(Arrays.asList(new String[]{"games/QUEST.wtb"}), "games/QUEST.JOU", "games/QUEST.TRN");
+    ArrayList<String> thorGames = new ArrayList<>();
+    for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
+      String filename = "thor/WTH_" + i + ".wtb";
+      if (new File(filename).exists()) {
+        thorGames.add(filename);
+      }
+    }
+    loadFiles(thorGames, "thor/WTHOR.JOU", "thor/WTHOR.TRN");
+    loadFiles(Arrays.asList(new String[]{"thor/PLAYOK.wtb"}), "thor/PLAYOK.JOU", "thor/PLAYOK.TRN");
+    loadFiles(Arrays.asList(new String[]{"thor/QUEST.wtb"}), "thor/QUEST.JOU", "thor/QUEST.TRN");
   }
 
   public SortedSet<String> getTournaments() {
