@@ -125,7 +125,7 @@ class JNIWrapper {
         }
       }
     } else {
-      for (int step = 0; step < num_active_evaluators_ && !stopping_; ++step) {
+      for (int step = 0; step < num_active_evaluators_ && !stopping_ && !Finished(max_n_visited); ++step) {
         BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / num_active_evaluators_);
       }
     }
@@ -222,17 +222,9 @@ class JNIWrapper {
   }
 
  private:
-  static EvalLarge EvalJavaToEvalLarge(jint eval) {
-    int tmp = ((eval + 100000) / 200) * 2 - 1000;
-    return 8 * (eval - (tmp * 100) > 0 ? tmp + 1 : tmp);
-  }
-  static jint EvalLargeToEvalJava(EvalLarge eval) {
-    return eval * 100 / 8;
-  }
   int num_active_evaluators_;
   EvalType evals_;
   HashMap hash_map_;
-  TreeNode t;
   std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluator_derivative_;
   TreeNodeSupplier tree_node_supplier_;
   BitPattern last_player_;

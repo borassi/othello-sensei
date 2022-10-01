@@ -2,150 +2,39 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Theme.AppCompat"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:launchMode="singleTop"
     tools:context="ui.MobileUI">
 
     <ui.BoardView
         android:id="@+id/board"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/buttons"
+        android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/board">
-
-        <Button
-            android:id="@+id/stop"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:onClick="stop"
-            android:text="Stop"
-            android:textSize="24sp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/newgame"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:onClick="newGame"
-            android:text="@string/new_game"
-            android:textSize="24sp"
-            app:layout_constraintLeft_toRightOf="@id/stop"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/undo"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:onClick="undo"
-            android:text="@string/undo"
-            android:textSize="24sp"
-            app:layout_constraintLeft_toRightOf="@id/newgame"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintRight_toRightOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/depth"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/buttons">
-
-        <TextView
-            android:id="@+id/depthLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Stop after visiting:"
-            android:textSize="24sp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent" />
-
-        <EditText
-            android:id="@+id/depthValue"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:allowUndo="true"
-            android:autoText="true"
-            android:editable="true"
-            android:enabled="true"
-            android:freezesText="false"
-            android:inputType="number"
-            android:numeric="integer"
-            android:text="1000000000"
-            android:textAlignment="textEnd"
-            android:textSize="24sp"
-            app:layout_constraintBaseline_toBaselineOf="@id/depthLabel"
-            app:layout_constraintLeft_toRightOf="@id/depthLabel"
-            app:layout_constraintRight_toRightOf="parent" />
-
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/delta"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/depth">
-
-        <TextView
-            android:id="@+id/deltaLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:height="48dp"
-            android:text="Delta moves:"
-            android:textSize="24sp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <EditText
-            android:id="@+id/deltaValue"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:editable="true"
-            android:enabled="true"
-            android:inputType="number"
-            android:text="4"
-            android:textAlignment="textEnd"
-            android:textSize="24sp"
-            app:layout_constraintBaseline_toBaselineOf="@id/deltaLabel"
-            app:layout_constraintLeft_toRightOf="@id/deltaLabel"
-            app:layout_constraintRight_toRightOf="parent" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/delta">
 
         <TextView
             android:id="@+id/empties"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:fontFamily="monospace"
+            android:textAlignment="center"
             android:textSize="24sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/posPerSec"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_span="2"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/empties"
-            app:layout_constraintRight_toRightOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

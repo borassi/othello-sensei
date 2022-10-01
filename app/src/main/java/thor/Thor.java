@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,13 +40,12 @@ public class Thor {
     ArrayList<String> thorGames = new ArrayList<>();
     for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
       String filename = "thor/WTH_" + i + ".wtb";
-      if (new File(filename).exists()) {
-        thorGames.add(filename);
-      }
+      thorGames.add(filename);
     }
     loadFiles(thorGames, "thor/WTHOR.JOU", "thor/WTHOR.TRN");
-    loadFiles(Arrays.asList(new String[]{"thor/PLAYOK.wtb"}), "thor/PLAYOK.JOU", "thor/PLAYOK.TRN");
-    loadFiles(Arrays.asList(new String[]{"thor/QUEST.wtb"}), "thor/QUEST.JOU", "thor/QUEST.TRN");
+    loadFiles(Arrays.asList("thor/PLAYOK.wtb"), "thor/PLAYOK.JOU", "thor/PLAYOK.TRN");
+    loadFiles(Arrays.asList("thor/QUEST.wtb"), "thor/QUEST.JOU", "thor/QUEST.TRN");
+    Collections.sort(games);
   }
 
   public SortedSet<String> getTournaments() {
@@ -68,9 +68,10 @@ public class Thor {
   }
 
   private void addGameToPosition(Board b, Game game) {
-    ArrayList<Game> gamesCurrentPosition = gamesForPosition.getOrDefault(b, new ArrayList<>());
-    gamesCurrentPosition.add(game);
-    gamesForPosition.put(b, gamesCurrentPosition);
+    if (!gamesForPosition.containsKey(b)) {
+      gamesForPosition.put(b, new ArrayList<>());
+    }
+    gamesForPosition.get(b).add(game);
   }
 
   public void lookupPositions(Set<String> black, Set<String> white, Set<String> tournaments) {

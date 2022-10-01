@@ -29,7 +29,6 @@ void AndroidAsset::Setup(JNIEnv *env, jobject assetManager) {
 }
 
 AndroidAsset::AndroidAsset(const std::string& filepath) {
-  __android_log_print(ANDROID_LOG_ERROR, "Tag", "Asset!");
   asset_ = AAssetManager_open(manager_, filepath.c_str(), AASSET_MODE_STREAMING);
   assert (asset_);
 }

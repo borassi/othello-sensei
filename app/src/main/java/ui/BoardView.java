@@ -44,6 +44,7 @@ public class BoardView extends View {
   private boolean blackTurn = false;
   private CaseAnnotations[][] annotations;
   private final RectF[][] caseBorders;
+  private boolean wantThor = false;
 
   public BoardView(Context context, AttributeSet attrs) {
     super(context, attrs);
@@ -70,6 +71,7 @@ public class BoardView extends View {
       }
       int move = 8 * (7 - (int) (event.getX() / cellSize)) + (7-(int) (event.getY() / cellSize));
       main.getMove(move);
+      v.performClick();
       return true;
     });
     resetAnnotations();
@@ -133,25 +135,41 @@ public class BoardView extends View {
     if (annotation == null || annotation.treeNode == null) {
       return;
     }
-    TreeNodeInterface storedBoard = annotation.treeNode;
-    int lower = storedBoard.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
-    int upper = storedBoard.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
-    String[] rows = {
-        String.format(storedBoard.getLower() == storedBoard.getUpper() ? "%+.0f" : "%+.2f", -storedBoard.getEval() / 100.0),
-        Utils.prettyPrintDouble(storedBoard.getDescendants()),
-        lower == upper ?
-            Utils.prettyPrintDouble(storedBoard.proofNumber(lower-100)) + " " +
-                Utils.prettyPrintDouble(storedBoard.disproofNumber(lower+100)) :
-            ("[" + (-lower/100) + ", " + (-upper/100) + "]")
-    };
+    TreeNodeInterface treeNode = annotation.treeNode;
+    String evalFormatter;
+    if (treeNode.isSolved()) {
+      evalFormatter = "%+.0f";
+    } else if (treeNode.isPartiallySolved()) {
+      evalFormatter = "%+.1f";
+    } else {
+      evalFormatter = "%+.2f";
+    }
+    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
+    String rows;
+    if (annotation.thorGames < 0 || !wantThor) {
+      rows =
+          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
+          Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
+              lower == upper ?
+                  Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
+                      Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
+                  ("[" + (-upper/100) + ", " + (-lower/100) + "]")
+          );
+    } else {
+      rows = (annotation.thorGames == 0 ? "" : annotation.thorGames) + "\n" +
+          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
+          + Utils.prettyPrintDouble(treeNode.getDescendants());
+    }
 
     Paint paint = new Paint();
     paint.setColor(annotation.isBestMove ? Color.RED : Color.BLACK);
     paint.setStyle(Paint.Style.FILL);
     paint.setTextSize(cellSize);
+    String[] rowArray = rows.split("\n");
 
-    for (int i = 0; i < rows.length; ++i) {
-      String row = rows[i];
+    for (int i = 0; i < rowArray.length; ++i) {
+      String row = rowArray[i];
       int textSize = (i == 0) ? (cellSize / 3) : (cellSize / 5);
       paint.setTextSize(textSize);
       Rect textBounds = new Rect();
@@ -165,9 +183,10 @@ public class BoardView extends View {
   public void invalidate() {
     main.runOnUiThread(BoardView.super::invalidate);
   }
-  public void setCases(Board board, boolean blackTurn) {
+  public void setCases(Board board, boolean blackTurn, boolean wantThor) {
     this.board = board.deepCopy();
     this.blackTurn = blackTurn;
+    this.wantThor = wantThor;
     this.invalidate();
   }
 }

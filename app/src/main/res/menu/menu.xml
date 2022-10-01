@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/thor"
+        android:icon="@drawable/baseline_archive_20"
+        android:title="Load Thor"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/newGame"
+        android:icon="@drawable/baseline_home_20"
+        android:title="@string/new_game"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/stop"
+        android:icon="@drawable/baseline_cancel_18"
+        android:title="Stop"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/undo"
+        android:icon="@drawable/baseline_arrow_back_20"
+        android:title="@string/undo"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_settings"
+        app:showAsAction="never"
+        android:title="Settings">
+    </item>
+</menu>

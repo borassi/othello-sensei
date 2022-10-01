@@ -13,14 +13,13 @@
 // limitations under the License.
 package thor;
 
-public class Game {
-  private byte moves[];
-  private short year;
-  private String black;
-  private String white;
-  private String tournament;
-  private int theoretical;
-  private int score;
+public class Game implements Comparable<Game> {
+  private final byte[] moves;
+  private final short year;
+  private final String black;
+  private final String white;
+  private final String tournament;
+  private final int score;
 
   public Game(String tournament, short year, String black, String white, byte theoretical, byte score, byte[] moves) {
     this.black = black;
@@ -50,6 +49,23 @@ public class Game {
       result += moveToString(move);
     }
     return result;
+  }
+
+  @Override
+  public int compareTo(Game other) {
+    if (year() < other.year()) {
+      return 1;
+    } else if (year() > other.year()) {
+      return -1;
+    }
+    for (int i = 0; i < 60; ++i) {
+      if (moves[i] < other.moves[i]) {
+        return 1;
+      } else if (moves[i] > other.moves[i]) {
+        return -1;
+      }
+    }
+    return 0;
   }
 
   @Override

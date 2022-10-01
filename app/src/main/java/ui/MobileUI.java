@@ -15,14 +15,22 @@
 package ui;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceManager;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.EditText;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.SortedSet;
 
 import board.Board;
 
@@ -34,29 +42,79 @@ import jni.JNI;
 
 public class MobileUI extends AppCompatActivity implements UI {
   private BoardView boardView;
-  private TextView empties;
-  private TextView posPerSec;
+  private TextView extraInfo;
   public Main main;
-  public static Context context;
+  private Board board;
+  private boolean blackTurn;
+  private boolean wantThor = false;
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+      getMenuInflater().inflate(R.menu.menu, menu);
+      return true;
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    // Handle item selection
+    switch (item.getItemId()) {
+      case R.id.newGame:
+        main.newGame();
+        return true;
+      case R.id.undo:
+        main.undo();
+        return true;
+      case R.id.stop:
+        main.stop();
+        return true;
+      case R.id.thor:
+        main.stop();
+        loadThor();
+        return true;
+      case R.id.action_settings:
+        main.stop();
+        startActivity(new Intent(this, SettingsActivity.class));
+        return true;
+      default:
+        return super.onOptionsItemSelected(item);
+    }
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    context = getBaseContext();
     Constants.MOBILE = true;
     main = new Main(this);
     setContentView(R.layout.activity_main);
     boardView = findViewById(R.id.board);
-    empties = findViewById(R.id.empties);
-    posPerSec = findViewById(R.id.posPerSec);
+    extraInfo = findViewById(R.id.empties);
     main.newGame();
   }
 
-  public void newGame(View view) {
-    main.newGame();
+  public void loadThor() {
+    Intent intent = new Intent(this, ThorGamesWindowMobile.class);
+    SortedSet<String> players = main.getThorPlayers();
+    intent.putExtra("Players", players.toArray(new String[0]));
+    startActivityForResult(intent, 1);
   }
 
-  public void undo(View view) { main.undo(); }
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    if (requestCode == 1) {
+      if (resultCode == Activity.RESULT_OK) {
+        String player = data.getStringExtra("player");
+        String color = data.getStringExtra("color");
+        if (color.equals("Black")) {
+          main.thorLookup(new HashSet<>(Arrays.asList(player)), new HashSet<>(), new HashSet<>());
+        } else {
+          main.thorLookup(new HashSet<>(), new HashSet<>(Arrays.asList(player)), new HashSet<>());
+        }
+        wantThor = true;
+      } else {
+        wantThor = false;
+      }
+    }
+  }
 
   public void getMove(int move) {
     main.play(move);
@@ -64,9 +122,10 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public void setCases(Board board, boolean blackTurn) {
-    boardView.setCases(board, blackTurn);
+    boardView.setCases(board, blackTurn, wantThor);
     boardView.resetAnnotations();
-    runOnUiThread(() -> empties.setText("Empties: " + board.getEmptySquares()));
+    this.board = board.deepCopy();
+    this.blackTurn = blackTurn;
   }
 
   @Override
@@ -76,14 +135,35 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public boolean wantThorGames() {
-    return false;
+    return wantThor;
+  }
+
+  public void setExtraInfoText(final String text, final int size) {
+    runOnUiThread(() -> {
+      extraInfo.setTextSize(size);
+      extraInfo.setText(text);
+      extraInfo.invalidate();
+    });
   }
 
   @Override
-  public void setThorGames(Board b, ArrayList<Game> games) {}
+  public void setThorGames(Board b, ArrayList<Game> games) {
+    String text = "Found " + games.size() + " games:\n";
+    int i = 0;
+    for (Game g : games) {
+      text += String.format(Locale.US, "%-20s %-20s %4d %-2s\n", g.black(), g.white(),
+          g.year(),
+          g.moves().substring((60 - board.getEmptySquares()) * 2,
+              (60 - board.getEmptySquares()) * 2 + 2));
+      if (i++ > 30) {
+        break;
+      }
+    }
+    setExtraInfoText(text, 14);
+  }
 
   public JNI evaluator() {
-    return new JNI(context.getAssets());
+    return new JNI(getBaseContext().getAssets());
   }
 
   @Override
@@ -94,7 +174,22 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
-    runOnUiThread(() -> posPerSec.setText("Positions: " + Utils.prettyPrintDouble(nVisited) + "\nPos/sec: " + Utils.prettyPrintDouble(nVisited * 1000.0 / milliseconds)));
+    if (wantThor) {
+      return;
+    }
+    String text = String.format(
+        Locale.US,
+        "Black:     %5d\n" +
+        "White:     %5d\n" +
+        "Empties:   %5d\n" +
+        "Positions: %5s\n" +
+        "Pos/sec:   %5s\n",
+        blackTurn ? board.getPlayerDisks() : board.getOpponentDisks(),
+        blackTurn ? board.getOpponentDisks() : board.getPlayerDisks(),
+        board.getEmptySquares(),
+        Utils.prettyPrintDouble(nVisited),
+        Utils.prettyPrintDouble(nVisited * 1000.0 / milliseconds));
+    setExtraInfoText(text, 26);
   }
 
   @Override
@@ -109,14 +204,14 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public long maxVisited() {
-    EditText depth = findViewById(R.id.depthValue);
-    return Long.parseLong(depth.getText().toString());
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return Long.parseLong(preferences.getString("stop_after", "0"));
   }
 
   @Override
   public double delta() {
-    TextView delta = findViewById(R.id.deltaValue);
-    return Double.parseDouble(delta.getText().toString());
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return Double.parseDouble(preferences.getString("delta_moves", "0"));
   }
 
   @Override
@@ -127,9 +222,5 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public int upper() {
     return 6300;
-  }
-
-  public void stop(View view) {
-    main.stop();
   }
 }

@@ -1,0 +1,16 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:title="@string/title_activity_preferences">
+
+    <EditTextPreference
+        app:defaultValue="@string/stop_after_default"
+        app:iconSpaceReserved="false"
+        app:key="stop_after"
+        app:title="@string/stop_after"
+        app:useSimpleSummaryProvider="false" />
+    <EditTextPreference
+        app:defaultValue="@string/delta_moves_default"
+        app:iconSpaceReserved="false"
+        app:key="delta_moves"
+        app:title="@string/delta_moves"
+        app:useSimpleSummaryProvider="false" />
+</PreferenceScreen>
