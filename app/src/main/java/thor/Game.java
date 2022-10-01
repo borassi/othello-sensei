@@ -13,7 +13,10 @@
 // limitations under the License.
 package thor;
 
-public class Game implements Comparable<Game> {
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class Game {
   private final byte[] moves;
   private final short year;
   private final String black;
@@ -21,7 +24,18 @@ public class Game implements Comparable<Game> {
   private final String tournament;
   private final int score;
 
-  public Game(String tournament, short year, String black, String white, byte theoretical, byte score, byte[] moves) {
+  public Game(byte[] buffer, int offset, short year, ArrayList<String> players, ArrayList<String> tournaments) {
+    this(
+        tournaments.get((buffer[offset] & 0xff) | ((buffer[offset + 1] & 0xff) << 8)),
+        year,
+        players.get((buffer[offset + 2] & 0xff) | ((buffer[offset + 3] & 0xff) << 8)),
+        players.get((buffer[offset + 4] & 0xff) | ((buffer[offset + 5] & 0xff) << 8)),
+        buffer[offset + 6],
+        Arrays.copyOfRange(buffer, offset + 8, offset + 68)
+    );
+    assert(offset % 68 == 0);
+  }
+  public Game(String tournament, short year, String black, String white, byte score, byte[] moves) {
     this.black = black;
     this.white = white;
     this.year = year;
@@ -49,23 +63,6 @@ public class Game implements Comparable<Game> {
       result += moveToString(move);
     }
     return result;
-  }
-
-  @Override
-  public int compareTo(Game other) {
-    if (year() < other.year()) {
-      return 1;
-    } else if (year() > other.year()) {
-      return -1;
-    }
-    for (int i = 0; i < 60; ++i) {
-      if (moves[i] < other.moves[i]) {
-        return 1;
-      } else if (moves[i] > other.moves[i]) {
-        return -1;
-      }
-    }
-    return 0;
   }
 
   @Override

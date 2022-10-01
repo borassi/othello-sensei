@@ -43,12 +43,14 @@ class Asset {
   virtual void Seek(FileSize position) = 0;
   virtual FileSize GetLength() = 0;
   virtual void Read(char* buffer, FileSize length) = 0;
-  std::vector<char> ReadAll() {
-    std::vector<char> result;
+
+  template<typename T>
+  std::vector<T> ReadAll() {
+    std::vector<T> result;
     FileSize length = GetLength();
     Seek(0);
-    result.resize(length);
-    Read(&result[0], length);
+    result.resize(length * sizeof(char) / sizeof(T));
+    Read((char*) &result[0], length);
     return result;
   }
 };

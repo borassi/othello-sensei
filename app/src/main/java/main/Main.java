@@ -21,7 +21,6 @@ import java.util.ArrayList;
 
 import bitpattern.PositionIJ;
 import board.Board;
-import board.GetMovesCache;
 
 import java.util.Set;
 import java.util.SortedSet;
@@ -47,19 +46,19 @@ public class Main implements Runnable {
   final ArrayList<Board> oldBoards = new ArrayList<>();
   boolean blackTurn = true;
   Board board;
-  Board[] boardsToEvaluate = new Board[] {};
   private final JNI EVALUATOR;
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   private long startTime;
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
-  private Thor thor = new Thor();
+  private Thor thor;
 
   /**
    * Creates a new UI and sets the initial position.
    */
   public Main(UI ui) {
     Main.ui = ui;
+    thor = new Thor(ui.fileAccessor());
     EVALUATOR = ui.evaluator();
   }
 
@@ -134,19 +133,10 @@ public class Main implements Runnable {
     ui.setCases(board, blackTurn);
   }
 
-  private void setEvaluators() {
-    if (ui.playWhiteMoves() || ui.playBlackMoves() || ui.delta() == 0) {
-      this.boardsToEvaluate = new Board[] {this.board};
-    } else {
-      this.boardsToEvaluate = GetMovesCache.getAllDescendants(this.board);
-    }
-  }
-
   @Override
   public void run() {
     waitingTasks.getAndAdd(-1);
     startTime = System.currentTimeMillis();
-    setEvaluators();
     EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 50, (float) ui.delta());
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
@@ -171,7 +161,10 @@ public class Main implements Runnable {
   private void playMoveIfPossible(int move) {
     Board oldBoard = board.deepCopy();
     try {
-      board = GetMovesCache.moveIfPossible(board, move);
+      board = JNI.move(board, move);
+      if (board.equals(oldBoard)) {
+        return;
+      }
     } catch (IllegalArgumentException ex) {
       return;
     }
@@ -179,7 +172,7 @@ public class Main implements Runnable {
     oldBlackTurns.add(blackTurn);
     blackTurn = !blackTurn;
 
-    if (GetMovesCache.haveToPass(board)) {
+    if (JNI.haveToPass(board)) {
       board = board.move(0);
       blackTurn = !blackTurn;
     }
@@ -196,7 +189,7 @@ public class Main implements Runnable {
     double best = Double.POSITIVE_INFINITY;
     int bestMove = -1;
 
-    for (Board child : GetMovesCache.getAllDescendants(board)) {
+    for (Board child : JNI.descendants(board)) {
       TreeNodeInterface b = getStoredBoard(child);
       if (b == null) {
         continue;
@@ -241,7 +234,7 @@ public class Main implements Runnable {
     long nVisited = 0;
     boolean hasThor = thor.getNumGames(board) > 0;
     TreeNodeInterface father = getStoredBoard(board);
-    for (Board child : GetMovesCache.getAllDescendants(board)) {
+    for (Board child : JNI.descendants(board)) {
       TreeNodeInterface childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);

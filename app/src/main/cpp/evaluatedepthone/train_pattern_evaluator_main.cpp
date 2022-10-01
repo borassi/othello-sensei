@@ -42,7 +42,8 @@ int main() {
   trainer.Train(train_board, 1, {0.001});
   trainer.Train(train_board, 0, {0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.0001});
   trainer.Round();
-  trainer.Save("src/main/assets/coefficients/pattern_evaluator_cpp_new.dat");
+  trainer.Save("app/src/main/assets/coefficients/pattern_evaluator_cpp_new"
+               ".dat");
 
   return 0;
 }

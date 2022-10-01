@@ -18,6 +18,8 @@ import java.io.Serializable;
 
 import bitpattern.BitPattern;
 import bitpattern.PositionIJ;
+import jni.JNI;
+
 import java.util.ArrayList;
 
 public class Board implements Serializable {
@@ -48,34 +50,6 @@ public class Board implements Serializable {
                                          + "--------\n"
                                          + "--------\n"
                                          + "--------\n";
-  /**
-   * Board where player has to pass
-   */
-  final static String PASS = "--------\n"
-                           + "--------\n" 
-                           + "--------\n"
-                           + "--------\n"
-                           + "------XX\n"
-                           + "------OO\n"
-                           + "---XOOOO\n"
-                           + "OOOOOOOO\n";
-  /**
-   * Board where both player and opponent have to pass
-   */
-  final static String BOTHPASS = "----XXXX\n"
-                               + "--------\n" 
-                               + "--------\n"
-                               + "--------\n"
-                               + "--------\n"
-                               + "------OO\n"
-                               + "---OOOOO\n"
-                               + "OOOOOOOO\n";
-  
-
-  public void setToOtherBoard(Board newBoard) {
-    this.player = newBoard.player;
-    this.opponent = newBoard.opponent;
-  }
 
   /**
    * @return The bitpattern corresponding to the player.
@@ -139,7 +113,7 @@ public class Board implements Serializable {
   /**
    * Returns a board after a sequence.
    * COMPUTATIONALLY EXPENSIVE; USE ONLY IN TESTS.
-   * 
+   *
    * @param sequence The sequence (e.g., "e6f4c3c4d3").
    */
   public Board(String sequence) {
@@ -173,19 +147,6 @@ public class Board implements Serializable {
     player = blackTurn ? black : white;
     opponent = blackTurn ? white : black;
   }
-  
-  public static Board start() {
-    return new Board(START_BOARD_STRING, true);
-  }
-  
-  public static Board pass() {
-    return new Board(PASS, true);
-  }
-
-  public static Board bothPass() {
-    return new Board(BOTHPASS, true);
-  }
-  
   
   public String toString(boolean blackTurn) {
     String boardString = "";
@@ -248,16 +209,7 @@ public class Board implements Serializable {
       opponent = BitPattern.transpose(opponent);
     }
   }
-  
-  public Board[] horizontalSymmetries() {
-    return new Board[]{this, new Board(
-      BitPattern.horizontalMirror(player), BitPattern.horizontalMirror(opponent))};
-  }
-  
-  public Board[] allRotations() {
-    return allRotations(this);
-  }
-  
+
   public final static Board[] allRotations(Board orig) {
     Board r2 = new Board(0, 0);
     Board r3 = new Board(0, 0);
@@ -305,32 +257,11 @@ public class Board implements Serializable {
 
    /**
    * Returns a board after a move.
-   * 
+   *
    * @param move The move (e.g., "e6").
    */
   public Board move(String move) {
-    return GetMovesCache.moveIfPossible(this, new PositionIJ(move).toMove());
-  }
-
-  /**
-   * Returns the board after a move.
-   * @param move a long whose bitwise expansion is '1' on the case where
-   * the player played and on each flipped disk.
-   */
-  public void moveInPlace(long move) {
-    long oldPlayer = player;
-    player = opponent & ~move;
-    opponent = oldPlayer | move;
-  }
-  
-  /**
-   * Returns a bitpattern having a '1' only where the move is played.
-   * @param move a long whose bitwise expansion is '1' on the case where
-   * the player played and on each flipped disk.
-   * @return the bitpattern.
-   */
-  public long moveToBit(long move) {
-    return move & ~opponent;
+    return JNI.move(this, new PositionIJ(move).toMove());
   }
 
   /**
@@ -411,16 +342,6 @@ public class Board implements Serializable {
     return Long.bitCount(player | opponent);
   }
   
-  /**
-   * Returns a board that is equal to this in the bits that correspond
-   * to '1' in the filter, and is 0 elsewhere.
-   * @param filter the filter
-   * @return the final board
-   */
-  public Board filter(long filter) {
-    return new Board(player & filter, opponent & filter);
-  }
-  
   public static String randomBoardString(double percBlack, double percWhite) {
     String boardString = "";
     for (int j = 0; j < 64; j++) {
@@ -447,48 +368,7 @@ public class Board implements Serializable {
     double percBlack = Math.random();
     double percWhite = Math.random();
     double tot = percBlack + percWhite + Math.random();
-    
-    
+
     return new Board(randomBoardString(percBlack / tot, percWhite / tot), Math.random() > 0.5);
-  }
-
-  /*
-   * Returns all the possible boards that are empty outside the bitPattern
-   * provided.
-   * @param bitPattern the bit pattern.
-   * @return an ArrayList with all the possible boards.
-   */
-  public static ArrayList<Board> existingBoardsInBitPattern(long bitPattern) {
-    return existingBoardsInBitPattern(bitPattern, new Board(0, 0), 0);
-  }
-  
-  /**
-   * Recursive version of existingBoardsInBitPattern(long bitPattern).
-   * @param bitPattern the bit pattern.
-   * @param startingBoard the cases already filled.
-   * @param currentCase the next case to be filled.
-   * @return an ArrayList with all the possible boards.
-   */
-  private static ArrayList<Board> existingBoardsInBitPattern(
-          long bitPattern, Board startingBoard, int currentCase) {
-    if (currentCase >= 64) {
-      ArrayList<Board> b = new ArrayList<>();
-      b.add(startingBoard);
-      return b;
-    }
-
-    if ((bitPattern & (1L << (63 - currentCase))) == 0) {
-      return existingBoardsInBitPattern(bitPattern, startingBoard, currentCase + 1);
-    }
-
-    ArrayList<Board> result = new ArrayList<>();
-    char possibleCaseValues[] = {'X', 'O', '-'};
-
-    for (char caseValue : possibleCaseValues) {
-      Board currentBoard = startingBoard.deepCopy();
-      currentBoard.setCase(currentCase / 8, currentCase % 8, caseValue, true);
-      result.addAll(existingBoardsInBitPattern(bitPattern, currentBoard, currentCase + 1));
-    }
-    return result;
   }
 }

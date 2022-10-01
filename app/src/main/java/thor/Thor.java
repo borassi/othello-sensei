@@ -14,38 +14,43 @@
 package thor;
 
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import board.Board;
-import board.GetMovesCache;
 import helpers.FileAccessor;
+import jni.JNI;
 
 public class Thor {
   ArrayList<Game> games = new ArrayList<>();
+  TreeMap<Short, ArrayList<Game>> gamesForYear = new TreeMap<>();
   HashMap<Board, ArrayList<Game>> gamesForPosition = new HashMap<>();
 
-  public Thor() {
+  public Thor(FileAccessor accessor) {
     ArrayList<String> thorGames = new ArrayList<>();
     for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
       String filename = "thor/WTH_" + i + ".wtb";
       thorGames.add(filename);
     }
-    loadFiles(thorGames, "thor/WTHOR.JOU", "thor/WTHOR.TRN");
-    loadFiles(Arrays.asList("thor/PLAYOK.wtb"), "thor/PLAYOK.JOU", "thor/PLAYOK.TRN");
-    loadFiles(Arrays.asList("thor/QUEST.wtb"), "thor/QUEST.JOU", "thor/QUEST.TRN");
-    Collections.sort(games);
+    loadFiles(Arrays.asList("thor/PLAYOK.wtb"), "thor/PLAYOK.JOU", "thor/PLAYOK.TRN", accessor);
+    loadFiles(Arrays.asList("thor/QUEST.wtb"), "thor/QUEST.JOU", "thor/QUEST.TRN", accessor);
+    loadFiles(thorGames, "thor/WTHOR.JOU", "thor/WTHOR.TRN", accessor);
+    for (Short year : gamesForYear.descendingKeySet()) {
+      ArrayList<Game> gamesCurYear = gamesForYear.get(year);
+      for (int i = gamesCurYear.size() - 1; i >= 0; --i) {
+        games.add(gamesCurYear.get(i));
+      }
+    }
   }
 
   public SortedSet<String> getTournaments() {
@@ -59,7 +64,6 @@ public class Thor {
 
   public SortedSet<String> getPlayers() {
     SortedSet<String> result = new TreeSet<>();
-    result.add("");
     for (Game game : games) {
       result.add(game.black());
       result.add(game.white());
@@ -87,7 +91,7 @@ public class Thor {
       addGameToPosition(b, game);
       for (int i = 0; i < moves.length(); i += 2) {
         b = b.move(moves.substring(i, i+2));
-        if (GetMovesCache.haveToPass(b)) {
+        if (JNI.haveToPass(b)) {
           b = b.move(0);
         }
         addGameToPosition(b, game);
@@ -112,62 +116,60 @@ public class Thor {
     return getGames(child).size();
   }
 
-  public void loadFiles(List<String> gamesFilepath, String playersFilepath, String tournamentsFilepath) {
+  public void loadFiles(List<String> gamesFilepath, String playersFilepath, String tournamentsFilepath, FileAccessor accessor) {
     ArrayList<String> players = new ArrayList<>();
     ArrayList<String> tournaments = new ArrayList<>();
-
     try {
-      byte[] playerName = new byte[20];
-      DataInputStream s = new DataInputStream(FileAccessor.fileInputStream(playersFilepath));
+      DataInputStream s = new DataInputStream(accessor.fileInputStream(playersFilepath));
       s.skip(16);
       while (s.available() > 0) {
-        s.read(playerName);
-        players.add(new String(playerName, StandardCharsets.ISO_8859_1).replaceAll("\0*", ""));
+        int nextSize = Math.min(s.available(), 2000);
+        byte[] buf = new byte[nextSize];
+        s.read(buf);
+        for (int i = 0; i < buf.length; i += 20) {
+          players.add(new String(Arrays.copyOfRange(buf, i, i + 20), StandardCharsets.ISO_8859_1).replaceAll("\0*", ""));
+        }
       }
     } catch (IOException e) {
       System.out.println("Cannot load Thor players!");
     }
     try {
-      byte[] tournamentName = new byte[26];
-      DataInputStream s = new DataInputStream(FileAccessor.fileInputStream(tournamentsFilepath));
+      DataInputStream s = new DataInputStream(accessor.fileInputStream(tournamentsFilepath));
       s.skip(16);
       while (s.available() > 0) {
-        s.read(tournamentName);
-        tournaments.add(new String(tournamentName, StandardCharsets.ISO_8859_1).replaceAll("\0*", ""));
+        int nextSize = Math.min(s.available(), 1300);
+        byte[] buf = new byte[nextSize];
+        s.read(buf);
+        for (int i = 0; i < buf.length; i += 26) {
+          tournaments.add(new String(Arrays.copyOfRange(buf, i, i + 26), StandardCharsets.ISO_8859_1).replaceAll("\0*", ""));
+        }
       }
     } catch (IOException e) {
       System.out.println("Cannot load Thor tournaments!");
     }
     for (String gameFilepath : gamesFilepath) {
-      loadGames(gameFilepath, players, tournaments);
+      loadGames(gameFilepath, players, tournaments, accessor);
     }
   }
 
-  public void loadGames(String filepath, ArrayList<String> players, ArrayList<String> tournaments) {
+  public void loadGames(String filepath, ArrayList<String> players, ArrayList<String> tournaments, FileAccessor accessor) {
     try {
-      DataInputStream s = new DataInputStream(FileAccessor.fileInputStream(filepath));
+      DataInputStream s = new DataInputStream(accessor.fileInputStream(filepath));
       s.skip(10);
       short year = Short.reverseBytes(s.readShort());
+      ArrayList<Game> games = gamesForYear.getOrDefault(year, new ArrayList<>());
       s.skip(4);
       while (s.available() > 0) {
-        String tournament = tournaments.get(Short.reverseBytes(s.readShort()));
-        String black = players.get(Short.reverseBytes(s.readShort()));
-        String white = players.get(Short.reverseBytes(s.readShort()));
-        byte blackScore = s.readByte();
-        byte blackScoreTheoretical = s.readByte();
-        byte[] moves = new byte[60];
-        s.readFully(moves);
-
-        games.add(new Game(tournament, year, black, white, blackScoreTheoretical, blackScore, moves));
+        int nextSize = Math.min(s.available(), 6800);
+        byte[] buf = new byte[nextSize];
+        s.read(buf);
+        for (int i = 0; i < buf.length; i += 68) {
+          games.add(new Game(buf, i, year, players, tournaments));
+        }
       }
+      gamesForYear.put(year, games);
     } catch (IOException e) {
       System.out.println("Cannot load Thor games " + filepath + ".");
     }
-  }
-
-  public static void main(String args[]) {
-    Thor t = new Thor();
-    t.lookupPositions(new HashSet<>(), new HashSet<>(), new HashSet<>());
-    System.out.println(t.getNumGames(new Board()));
   }
 }

@@ -462,7 +462,7 @@ class TreeNode {
     assert(alpha <= beta);
     assert(alpha >= weak_lower_ && beta <= weak_upper_);
     assert(IsLeaf());
-    assert(n_empties_ > 0 && n_empties_ <= 60);
+    assert(n_empties_ >= 0 && n_empties_ <= 60);
 
     for (Eval i = alpha; i <= beta; i += 2) {
       assert(i >= weak_lower_ && i <= weak_upper_);
@@ -484,11 +484,12 @@ class TreeNode {
     bool reduced = false;
     float prob_lower = ProbGreaterEqual(weak_lower_);
     float prob_upper = ProbGreaterEqual(weak_upper_);
-    float prob_lower_next = ProbGreaterEqual(weak_lower_ + 4);
-    float prob_upper_prev = ProbGreaterEqual(weak_upper_ - 4);
+    float prob_lower_next = weak_lower_ + 4 <= weak_upper_ ?
+        ProbGreaterEqual(weak_lower_ + 4) : 0;
+    float prob_upper_prev = weak_upper_ - 4 >= weak_lower_ ?
+        ProbGreaterEqual(weak_upper_ - 4) : 1;
     if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_ && weak_lower_ >= -61) {
       extend_lower = true;
-      assert(upper_ > lower_ + 2);
     }
     if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_ && weak_upper_ <= 61) {
       extend_upper = true;
@@ -608,8 +609,8 @@ class TreeNode {
     } else if (i >= upper_) {
       evaluation->SetDisproved();
     } else {
-      assert(eval_depth_ >= 1 && eval_depth_ <= 4);
-      assert(n_empties_ >= 4 && n_empties_ <= 60);
+      assert(eval_depth_ >= 0 && eval_depth_ <= 4);
+      assert(n_empties_ >= 0 && n_empties_ <= 60);
       float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 0.95F * 8 * std::max(3.0F, kErrors[eval_depth_][n_empties_]));
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
@@ -665,6 +666,7 @@ class TreeNode {
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
       if (child->depth_ != depth_ + 1) {
+        std::cout << "Wrong depth\n" << std::flush;
         throw ChildError("Wrong child depth");
       }
       bool found = false;
@@ -678,6 +680,7 @@ class TreeNode {
         }
       }
       if (!found) {
+        std::cout << "Missing child\n" << std::flush;
         throw ChildError("Missing child");
       }
     }

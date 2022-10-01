@@ -220,24 +220,6 @@ EvalLarge PatternEvaluator::Evaluate() const {
 
 EvalType LoadEvals(std::string filepath) {
   std::unique_ptr<Asset> evals_asset = GetAsset(filepath);
-  std::vector<char> file_content = evals_asset->ReadAll();
-  evals_asset->Seek(0);
-  int num_splits;
-  evals_asset->Read((char*) &num_splits, sizeof(num_splits));
-  assert (num_splits == kSplits);
-  std::vector<int8_t> result;
-  for (int i = 0; i < num_splits; ++i) {
-    int num_features;
-    evals_asset->Read((char*) &num_features, sizeof(num_features));
-
-    assert (num_features == kNumBaseRotations);
-    for (int j = 0; j < num_features; ++j) {
-      int feature_size;
-      evals_asset->Read((char*) &feature_size, sizeof(feature_size));
-      int old_size = result.size();
-      result.resize(result.size() + feature_size);
-      evals_asset->Read((char*) &result[old_size], feature_size);
-    }
-  }
-  return result;
+  std::vector<int8_t> file_content = evals_asset->ReadAll<int8_t>();
+  return file_content;
 }

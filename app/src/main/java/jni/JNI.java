@@ -15,6 +15,8 @@ package jni;
 
 import android.content.res.AssetManager;
 
+import java.util.ArrayList;
+
 import board.Board;
 import constants.Constants;
 import evaluateposition.Status;
@@ -67,4 +69,10 @@ public class JNI {
   public native boolean finished(long maxNVisited);
 
   public static native Board getEndgameBoard(int i);
+
+  public static native Board move(Board board, int move);
+
+  public static native boolean haveToPass(Board board);
+
+  public static native ArrayList<Board> descendants(Board board);
 }

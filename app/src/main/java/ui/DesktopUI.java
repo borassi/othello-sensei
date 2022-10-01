@@ -14,6 +14,8 @@
 
 package ui;
 
+import android.content.res.AssetManager;
+
 import bitpattern.BitPattern;
 
 import java.awt.BorderLayout;
@@ -45,6 +47,7 @@ import javax.swing.SpinnerModel;
 import board.Board;
 import constants.Constants;
 import evaluateposition.TreeNodeInterface;
+import helpers.FileAccessor;
 import helpers.Utils;
 
 import javax.swing.JLabel;
@@ -431,6 +434,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public JNI evaluator() {
     return new JNI(null);
+  }
+
+  @Override
+  public FileAccessor fileAccessor() {
+    return new FileAccessor();
   }
 
   public static short roundEval(int eval) {

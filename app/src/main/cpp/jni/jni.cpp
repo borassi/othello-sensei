@@ -27,12 +27,21 @@
 
 constexpr int kNumEvaluators = 60;
 
-jobject BoardToJava(const Board& board, JNIEnv* env) {
+jobject BoardToJava(JNIEnv* env, const Board& board) {
     jclass BoardJava = env->FindClass("board/Board");
     return env->NewObject(
         BoardJava,
         env->GetMethodID(BoardJava, "<init>", "(JJ)V"),
         (jlong) board.GetPlayer(), (jlong) board.GetOpponent());
+}
+
+Board BoardToCPP(JNIEnv* env, jobject board) {
+  jclass BoardJava = env->FindClass("board/Board");
+  auto get_player = env->GetMethodID(BoardJava, "getPlayer", "()J");
+  auto get_opponent = env->GetMethodID(BoardJava, "getOpponent", "()J");
+  return Board(
+      env->CallLongMethod(board, get_player),
+      env->CallLongMethod(board, get_opponent));
 }
 
 class JNIWrapper {
@@ -375,9 +384,47 @@ JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tr
 
 JNIEXPORT jobject JNICALL
 Java_jni_JNI_getEndgameBoard(JNIEnv* env, jclass clazz, jint i) {
-  return BoardToJava(GetIthBoard(i), env);
+  return BoardToJava(env, GetIthBoard(i));
 }
 
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_move(JNIEnv *env, jclass clazz, jobject board, jint move) {
+  Board next = BoardToCPP(env, board);
+  if ((1ULL << move) & (next.GetPlayer() | next.GetOpponent())) {
+    return board;
+  }
+  BitPattern flip = GetFlip(move, next.GetPlayer(), next.GetOpponent());
+  if (flip == 0) {
+    return board;
+  }
+  next.PlayMove(flip);
+  return BoardToJava(env, next);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_jni_JNI_haveToPass(JNIEnv *env, jclass clazz, jobject board) {
+  Board b = BoardToCPP(env, board);
+  return HaveToPass(b.GetPlayer(), b.GetOpponent());
+}
+
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_descendants(JNIEnv *env, jclass clazz, jobject board) {
+  Board b = BoardToCPP(env, board);
+  jclass java_util_ArrayList = static_cast<jclass>(env->NewGlobalRef(env->FindClass("java/util/ArrayList")));
+  jmethodID java_util_ArrayList_ = env->GetMethodID(java_util_ArrayList, "<init>", "(I)V");
+  jmethodID java_util_ArrayList_add = env->GetMethodID(java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
+  auto flips = GetAllMoves(b.GetPlayer(), b.GetOpponent());
+  jobject result = env->NewObject(java_util_ArrayList, java_util_ArrayList_,
+                                  (jint) flips.size());
+
+  for (BitPattern flip : flips) {
+    Board next = b;
+    next.PlayMove(flip);
+    env->CallBooleanMethod(result, java_util_ArrayList_add,
+                           BoardToJava(env, next));
+  }
+  return result;
+}
 #ifdef __cplusplus
 };
 #endif

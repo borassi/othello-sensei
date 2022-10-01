@@ -35,6 +35,8 @@ import java.util.SortedSet;
 import board.Board;
 
 import constants.Constants;
+import helpers.FileAccessor;
+import helpers.FileAccessorMobile;
 import helpers.Utils;
 import main.Main;
 import thor.Game;
@@ -164,6 +166,11 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   public JNI evaluator() {
     return new JNI(getBaseContext().getAssets());
+  }
+
+  @Override
+  public FileAccessor fileAccessor() {
+    return new FileAccessorMobile(getBaseContext().getAssets());
   }
 
   @Override

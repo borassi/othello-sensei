@@ -194,17 +194,11 @@ void CategoricalRegressions::Save(const std::string& filepath) const {
   std::ofstream file;
   file.open(filepath, std::ios_base::binary | std::ios::out);
   assert (file.is_open());
-  int size = (int) regressions_.size();
-  file.write((char*) &size, sizeof(size));
 
   for (const CategoricalRegression& r : regressions_) {
     const std::vector<std::vector<TrainingFeature>>& features = r.GetFeatures();
-    size = (int) features.size();
-    file.write((char*) &size, sizeof(size));
     for (int i = 0; i < features.size(); ++i) {
       const std::vector<TrainingFeature>& feature = features[i];
-      size = (int) feature.size();
-      file.write((char*) &size, sizeof(size));
       EvalType converted_feature;
       converted_feature.reserve(feature.size());
       for (int j = 0; j < feature.size(); ++j) {

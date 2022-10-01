@@ -54,12 +54,11 @@ class TreeNodeSupplier {
   TreeNodeSupplier() : num_tree_nodes_(0) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
     tree_node_index_ = new int[kHashMapSize];
-    for (int i = 0; i < kHashMapSize; ++i) {
-      tree_node_index_[i] = kDerivativeEvaluatorSize;
-    }
+    std::fill_n(tree_node_index_, kHashMapSize, kDerivativeEvaluatorSize);
   }
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
+    delete[] tree_node_index_;
   }
 
   const TreeNode* const Get(const Board& b) {
@@ -449,19 +448,10 @@ class EvaluatorDerivative {
   void Run() {
     std::vector<LeafToUpdate> next_leaves;
     std::atomic_int current_leaf;
-//    std::cout << "          ";
+    UpdateWeakLowerUpper();
     while (!CheckFinished()) {
       thread_finished_ = false;
       next_leaves = GetNextPosition();
-//      int eval_goal = (next_leaves[0].Leaf()->Depth() % 2 == 0 ? 1 : -1) * next_leaves[0].EvalGoal();
-//      std::cout << eval_goal << " " << next_leaves.size() << " "
-//          << first_position_->GetNVisited() << " "
-//          << first_position_->ProbGreaterEqual(eval_goal) << "\n" << std::flush;
-//      if (next_leaves.size() == 1 && rand() % 100 == 0) {
-//        std::cout << next_leaves[0].Leaf()->ToBoard() << "\n\n\n\n\n\nHELLO!!!" << std::flush;
-//        status_ = SOLVED;
-//        break;
-//      }
       current_leaf = 0;
       num_batches_++;
       sum_batch_sizes_ += next_leaves.size();
@@ -487,16 +477,12 @@ class EvaluatorDerivative {
       visited_for_endgame_ = std::min(50000, std::max(1000, visited_for_endgame_ - ((int) total_visited_endgames - kVisitedEndgameGoal * total_endgames) / 30));
       assert (GetFirstPosition()->NThreadsWorking() == 0);
       just_started_ = false;
+      UpdateWeakLowerUpper();
     }
-//    std::cout << "\n";
   }
 
   std::vector<LeafToUpdate> GetNextPosition() {
     std::vector<LeafToUpdate> result;
-    UpdateWeakLowerUpper();
-    if (CheckFinished()) {
-      return {};
-    }
     result = GetFirstPosition()->BestDescendants(threads_.size());
     assert (!result.empty());
     return result;

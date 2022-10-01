@@ -185,28 +185,6 @@ public class BitPattern {
           + "--------\n");
   final static long EDGE = ~CENTRAL;
 
-
-  public final static int getEvaluationGameOver(Board b) {
-    return getEvaluationGameOver(b.getPlayer(), b.getOpponent());
-  }
-  
-  public final static int getEvaluationBoardFull(long player) {
-    return 100 * (2 * Long.bitCount(player) - 64);
-  }
-  
-  public final static int getEvaluationBoardFull(Board b) {
-    return 100 * (2 * Long.bitCount(b.getPlayer()) - 64);
-  }
-  
-  
-  public final static int getEvaluationGameOver(long player, long opponent) {
-    int playerDisks = Long.bitCount(player);
-    int opponentDisks = Long.bitCount(opponent);
-
-    int diff = playerDisks - opponentDisks;
-    return 100 * (diff + (int) Math.signum(diff) * (64 - playerDisks - opponentDisks));
-  }
-  
   /**
    * Parses a string pattern into a 64-bit long, as follows: 
    * - it removes any newline. 
@@ -317,11 +295,7 @@ public class BitPattern {
     }
     return result;
   }
-  
-  public final static long moveToBit(PositionIJ ij) {
-    return moveToBit(ij.i, ij.j);
-  }
-  
+
   public final static long moveToBit(int i, int j) {
     return 1L << (63 - (i * 8 + j));
   }
@@ -444,16 +418,6 @@ public class BitPattern {
     return mainDiagShift > 0 ? 
       MAIN_DIAG7_BIT_PATTERN << mainDiagShift : 
       MAIN_DIAG7_BIT_PATTERN >>> -mainDiagShift;
-  }
-  
-  public final static boolean isEdge(int position) {
-    assert position >= 0;
-    assert position < 64;
-    return ((1L << position) & CENTRAL) != 0;
-  }
-  
-  public final static boolean hasEdge(long bitPattern) {
-    return (bitPattern & EDGE) != 0;
   }
 
   public final static int getX(int move) { return 7 - move / 8; }

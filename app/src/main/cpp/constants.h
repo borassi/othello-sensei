@@ -17,9 +17,9 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#ifdef MOBILE
-constexpr int kBitHashMap = 20;
-constexpr int kDerivativeEvaluatorSize = 700000;
+#ifdef ANDROID
+constexpr int kBitHashMap = 22;
+constexpr int kDerivativeEvaluatorSize = 7000000;
 #else
 constexpr int kBitHashMap = 22;
 constexpr int kDerivativeEvaluatorSize = 10000000;
