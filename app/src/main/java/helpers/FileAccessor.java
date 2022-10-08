@@ -22,11 +22,14 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import constants.Constants;
-import ui.MobileUI;
-
 public class FileAccessor {
+  public Object getAssetManager() { return null; }
+
   public InputStream fileInputStream(String filepath) throws IOException {
+//    InputStream result = Thread.currentThread().getContextClassLoader().getResourceAsStream(filepath);
+//    if (result != null) {
+//      return result;
+//    }
     return new FileInputStream("app/src/main/assets/" + filepath);
   }
 

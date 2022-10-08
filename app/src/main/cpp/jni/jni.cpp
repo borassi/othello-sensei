@@ -39,9 +39,10 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
   jclass BoardJava = env->FindClass("board/Board");
   auto get_player = env->GetMethodID(BoardJava, "getPlayer", "()J");
   auto get_opponent = env->GetMethodID(BoardJava, "getOpponent", "()J");
-  return Board(
+  return {
       env->CallLongMethod(board, get_player),
-      env->CallLongMethod(board, get_opponent));
+      env->CallLongMethod(board, get_opponent))
+  };
 }
 
 class JNIWrapper {
@@ -61,7 +62,8 @@ class JNIWrapper {
       last_player_(0),
       last_opponent_(0),
       last_gap_(-1),
-      num_active_evaluators_(0) {
+      num_active_evaluators_(0),
+      stopping_(false) {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
@@ -252,11 +254,17 @@ JNIWrapper* JNIFromJava(JNIEnv* env, jobject obj) {
   return (JNIWrapper*) env->CallLongMethod(obj, mid);
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jobject assetManager) {
+JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jobject
+fileAccessor) {
   jclass cls = env->FindClass("jni/JNI");
   jmethodID mid = env->GetMethodID(cls, "setup", "(J)V");
 #if ANDROID
-  AndroidAsset::Setup(env, assetManager);
+  jclass file_accessor = env->FindClass("ui_mobile/FileAccessorMobile");
+  jmethodID get_asset = env->GetMethodID(file_accessor,
+                                         "getAssetManager",
+                                         "()Landroid/content/res/AssetManager;");
+  AndroidAsset::Setup(env, env->CallObjectMethod(
+      fileAccessor, get_asset));
 #endif
   env->CallVoidMethod(obj, mid, (jlong) new JNIWrapper());
 }
@@ -410,7 +418,8 @@ Java_jni_JNI_haveToPass(JNIEnv *env, jclass clazz, jobject board) {
 JNIEXPORT jobject JNICALL
 Java_jni_JNI_descendants(JNIEnv *env, jclass clazz, jobject board) {
   Board b = BoardToCPP(env, board);
-  jclass java_util_ArrayList = static_cast<jclass>(env->NewGlobalRef(env->FindClass("java/util/ArrayList")));
+  auto java_util_ArrayList = static_cast<jclass>(env->NewGlobalRef
+      (env->FindClass("java/util/ArrayList")));
   jmethodID java_util_ArrayList_ = env->GetMethodID(java_util_ArrayList, "<init>", "(I)V");
   jmethodID java_util_ArrayList_add = env->GetMethodID(java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
   auto flips = GetAllMoves(b.GetPlayer(), b.GetOpponent());

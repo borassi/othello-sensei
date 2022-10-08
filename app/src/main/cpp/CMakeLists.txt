@@ -58,13 +58,13 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "-pedantic -pipe -D_GNU_SOURCE=1 -Ofast -DNDEBUG -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"
+        "-pedantic -pipe -D_GNU_SOURCE=1 -m64 -Ofast -DNDEBUG -march=native -funroll-loops -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"
 )
 
 IF(NOT ANDROID)
     SET(
           CMAKE_CXX_FLAGS_RELEASE
-          "${CMAKE_CXX_FLAGS_RELEASE} -m64 -march=native"
+          "${CMAKE_CXX_FLAGS_RELEASE}"
     )
 ENDIF()
 IF (PROFILE)

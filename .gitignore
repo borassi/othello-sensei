@@ -18,3 +18,4 @@ local.properties
 /app/src/main/assets/coefficients
 /app/libs/rt.jar
 /app/testdata
+/.idea/

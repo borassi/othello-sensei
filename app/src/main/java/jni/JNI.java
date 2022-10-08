@@ -13,14 +13,13 @@
 // limitations under the License.
 package jni;
 
-import android.content.res.AssetManager;
-
 import java.util.ArrayList;
 
 import board.Board;
 import constants.Constants;
 import evaluateposition.Status;
 import evaluateposition.TreeNodeInterface;
+import helpers.FileAccessor;
 
 public class JNI {
   private long pointer;
@@ -29,14 +28,14 @@ public class JNI {
     return pointer;
   }
 
-  public JNI(AssetManager assetManager) {
+  public JNI(FileAccessor fileAccessor) {
     pointer = 0;
-    create(assetManager);
+    create(fileAccessor);
   }
-  public native void create(AssetManager assetManager);
+  public native void create(FileAccessor fileAccessor);
 
   @Override
-  public native void finalize();
+  protected native void finalize();
 
   private void setup(long pointer) {
     this.pointer = pointer;

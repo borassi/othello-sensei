@@ -33,8 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import evaluateposition.TreeNodeInterface;
 import jni.JNI;
 import thor.Thor;
-import ui.CaseAnnotations;
-import ui.UI;
+import ui_desktop.CaseAnnotations;
 
 /**
  * @author michele
@@ -51,7 +50,7 @@ public class Main implements Runnable {
   private long startTime;
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
-  private Thor thor;
+  private final Thor thor;
 
   /**
    * Creates a new UI and sets the initial position.
@@ -59,7 +58,7 @@ public class Main implements Runnable {
   public Main(UI ui) {
     Main.ui = ui;
     thor = new Thor(ui.fileAccessor());
-    EVALUATOR = ui.evaluator();
+    EVALUATOR = new JNI(ui.fileAccessor());
   }
 
   public SortedSet<String> getThorTournaments() {
@@ -91,9 +90,7 @@ public class Main implements Runnable {
 
   public void resetHashMaps() {
     stop();
-    Future finished = EXECUTOR.submit(() -> {
-      EVALUATOR.empty();
-    });
+    Future finished = EXECUTOR.submit(() -> EVALUATOR.empty());
     try {
       finished.get();
     } catch (ExecutionException | InterruptedException e) {

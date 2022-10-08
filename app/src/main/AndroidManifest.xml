@@ -11,7 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OthelloSensei">
         <activity
-            android:name=".SettingsActivity"
+            android:name="ui_mobile.SettingsActivity"
             android:exported="false"
             android:label="@string/title_activity_settings">
             <meta-data
@@ -19,7 +19,7 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".MobileUI"
+            android:name="ui_mobile.MobileUI"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,13 +28,13 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ThorGamesWindowMobile"
-            android:parentActivityName=".MobileUI">
+            android:name="ui_mobile.ThorGamesWindowMobile"
+            android:parentActivityName="ui_mobile.MobileUI">
 
             <!-- The meta-data tag is required if you support API level 15 and lower -->
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="ui.MobileUI" />
+                android:value="ui_mobile.MobileUI" />
         </activity>
     </application>
 
