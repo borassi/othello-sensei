@@ -172,9 +172,6 @@ class MoveIteratorEval : public MoveIteratorBase {
   BitPattern NextFlip() override;
 
  private:
-  BitPattern player_;
-  BitPattern opponent_;
-  BitPattern candidate_moves_;
   Move moves_[64];
   int remaining_moves_;
 

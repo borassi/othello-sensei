@@ -53,7 +53,6 @@ int main() {
 
   int N = 1;
   long long n_positions = 0;
-  int n_visited = 0;
   NVisited tot_n_visited = 0;
   unsigned long long tmp = 12;
   auto start = std::chrono::high_resolution_clock::now();

@@ -179,15 +179,15 @@ constexpr MoveShift GetPositionInPattern(Square move, BitPattern pattern) {
 }
 
 struct MoveMetadata {
-  MoveShift position_in_row;
-  MoveShift position_in_column;
-  MoveShift position_in_diag7;
-  MoveShift position_in_diag9;
   BitPattern row;
   BitPattern column;
   BitPattern diag7;
   BitPattern diag9;
+  MoveShift position_in_row;
   BitPattern neighbors;
+  MoveShift position_in_column;
+  MoveShift position_in_diag7;
+  MoveShift position_in_diag9;
 
 #if !PDEP_PEXT
   MoveShift row_shift;

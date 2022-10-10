@@ -286,7 +286,7 @@ constexpr Features kFeatures;
 class PatternEvaluator : public EvaluatorDepthOneBase {
  public:
   PatternEvaluator (const PatternEvaluator&) = delete;
-  PatternEvaluator(const int8_t* const evals) : empties_(0), evals_(evals) {}
+  PatternEvaluator(const int8_t* const evals) : evals_(evals), empties_(0) {}
   static EvaluatorFactory Factory(const int8_t* const evals) {
     return [evals]() { return std::make_unique<PatternEvaluator>(evals); };
   }

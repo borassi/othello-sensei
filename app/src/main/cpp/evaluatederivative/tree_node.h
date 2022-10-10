@@ -116,7 +116,12 @@ bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
 
 class TreeNode {
  public:
-  TreeNode() : n_children_(0), n_fathers_(0), leaf_eval_(kLessThenMinEvalLarge), evaluator_(255), evaluations_(nullptr) {}
+  TreeNode() :
+      evaluations_(nullptr),
+      leaf_eval_(kLessThenMinEvalLarge),
+      n_children_(0),
+      n_fathers_(0),
+      evaluator_(255) {}
   TreeNode(const TreeNode&) = delete;
   ~TreeNode() {
     Reset(0, 0, 0, 0);
@@ -758,7 +763,6 @@ class TreeNode {
         float best_child_prob = best_child_eval.ProbGreaterEqual();
         double best_child_value = best_child_eval.GetValue(father_eval);
         float prob = father_eval.ProbGreaterEqual();
-        bool proving = prob == 0 || prob == 1;
 
         for (int i = 0; i < father->n_children_; ++i) {
           TreeNode* child = father->children_[i];

@@ -53,16 +53,6 @@ constexpr BitPattern kXPattern = ParsePattern(
     "-X----X-"
     "--------");
 
-constexpr BitPattern kXCPattern = ParsePattern(
-    "-X----X-"
-    "XX----XX"
-    "--------"
-    "--------"
-    "--------"
-    "--------"
-    "XX----XX"
-    "-X----X-");
-
 constexpr int NextNEmpties(int n_empties) {
   return std::min(64, std::max(0, n_empties - 1));
 }
@@ -95,7 +85,13 @@ BitPattern MoveIteratorVeryQuick::NextFlip() {
 }
 
 template<bool very_quick>
-MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) : MoveIteratorBase(stats), masks_(), player_(0), opponent_(0), candidate_moves_(0), current_mask_(0) {
+MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) :
+    MoveIteratorBase(stats),
+    player_(0),
+    opponent_(0),
+    masks_(),
+    candidate_moves_(0),
+    current_mask_(0) {
   if (very_quick) {
     masks_[1] = kCornerPattern;
     masks_[3] = kCentralPattern;
@@ -369,8 +365,8 @@ constexpr bool UseHashMap(int depth, bool solve) {
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap* hash_map,
     const EvaluatorFactory& evaluator_depth_one_factory) :
-    stats_(),
     hash_map_(hash_map),
+    stats_(),
     evaluator_depth_one_(evaluator_depth_one_factory()) {
   for (int depth = 0; depth < 64; ++depth) {
     for (bool solve : {true, false}) {

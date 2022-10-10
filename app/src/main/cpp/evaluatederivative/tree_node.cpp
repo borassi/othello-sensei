@@ -19,11 +19,11 @@
 
 LeafToUpdate::LeafToUpdate(TreeNode* leaf, int eval_goal) :
     leaf_(leaf),
+    parents_({leaf}),
     eval_goal_(static_cast<Eval>(eval_goal)),
     weak_lower_(leaf->WeakLower()),
     weak_upper_(leaf->WeakUpper()),
-    loss_(0),
-    parents_({leaf}) {
+    loss_(0) {
   alpha_ = weak_lower_;
   beta_ = weak_upper_;
   UpdateAlphaBeta(leaf);

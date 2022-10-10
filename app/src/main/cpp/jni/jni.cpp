@@ -40,8 +40,8 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
   auto get_player = env->GetMethodID(BoardJava, "getPlayer", "()J");
   auto get_opponent = env->GetMethodID(BoardJava, "getOpponent", "()J");
   return {
-      env->CallLongMethod(board, get_player),
-      env->CallLongMethod(board, get_opponent))
+      static_cast<BitPattern>(env->CallLongMethod(board, get_player)),
+      static_cast<BitPattern>(env->CallLongMethod(board, get_opponent))
   };
 }
 
@@ -56,13 +56,13 @@ class JNIWrapper {
   }
 
   JNIWrapper() :
+      num_active_evaluators_(0),
       evals_(LoadEvals()),
       hash_map_(),
       tree_node_supplier_(),
       last_player_(0),
       last_opponent_(0),
       last_gap_(-1),
-      num_active_evaluators_(0),
       stopping_(false) {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(

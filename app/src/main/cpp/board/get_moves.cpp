@@ -21,12 +21,6 @@
 #include "get_flip.h"
 #include "get_moves.h"
 
-namespace {
-Square IJToSquare(int i, int j) {
-  return 8 * i + j;
-}
-} // anonymous namespace
-
 BitPattern GetMovesBasic(BitPattern player, BitPattern opponent) {
   BitPattern result = 0;
 

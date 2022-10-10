@@ -128,8 +128,8 @@ class EvaluatorThread {
                   TreeNodeSupplier* tree_node_supplier,
                   std::atomic_bool* thread_finished,
                   uint8_t index) :
-      evaluator_depth_one_(evaluator_depth_one()),
       evaluator_alpha_beta_(hash_map, evaluator_depth_one),
+      evaluator_depth_one_(evaluator_depth_one()),
       tree_node_supplier_(tree_node_supplier),
       index_(index),
       thread_finished_(thread_finished) {}
@@ -188,7 +188,6 @@ class EvaluatorThread {
     bool transposition = false;
 
     float original_prob = root->ProbGreaterEqual(eval_goal);
-    float original_prob_distance = abs(original_prob - 0.5);
     float original_work = std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal));
     NVisited n_visited = AddChildren(leaf, &transposition);
     const Evaluation& evaluation = root->GetEvaluation(eval_goal);
@@ -269,7 +268,6 @@ class EvaluatorThread {
     children.reserve(moves.size());
 
     evaluator_depth_one_->Setup(player, opponent);
-    EvalLarge father_eval = evaluator_depth_one_->Evaluate();
     evaluator_depth_one_->Invert();
     EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
     int child_n_empties = node->NEmpties() - 1;
@@ -361,10 +359,10 @@ class EvaluatorThread {
 class EvaluatorDerivative {
  public:
   EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap* hash_map, EvaluatorFactory evaluator_depth_one, int n_threads, u_int8_t index = 0) :
-      tree_node_supplier_(tree_node_supplier),
       threads_(),
-      index_(index),
-      first_position_(nullptr) {
+      tree_node_supplier_(tree_node_supplier),
+      first_position_(nullptr),
+      index_(index) {
     for (int i = 0; i < n_threads; ++i) {
       threads_.push_back(std::make_shared<EvaluatorThread>(hash_map, evaluator_depth_one, tree_node_supplier_, &thread_finished_, index_));
     }
@@ -428,7 +426,6 @@ class EvaluatorDerivative {
   std::atomic_int visited_for_endgame_;
   Stats stats_;
   NVisited max_n_visited_;
-  double start_time_;
   double max_time_;
   NVisited last_update_weak_ = 0;
   Eval lower_ = -63;

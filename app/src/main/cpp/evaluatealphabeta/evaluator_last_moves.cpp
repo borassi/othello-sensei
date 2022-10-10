@@ -42,16 +42,6 @@ constexpr BitPattern kEdgePattern = ParsePattern(
     "--------"
     "--XXXX--");
 
-constexpr BitPattern kXPattern = ParsePattern(
-    "--------"
-    "-X----X-"
-    "--------"
-    "--------"
-    "--------"
-    "--------"
-    "-X----X-"
-    "--------");
-
 constexpr BitPattern kXCPattern = ParsePattern(
     "-X----X-"
     "XX----XX"
