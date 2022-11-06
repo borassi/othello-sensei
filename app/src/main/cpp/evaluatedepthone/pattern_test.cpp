@@ -38,10 +38,10 @@ TEST(PatternTest, FromToBitPattern) {
 }
 
 TEST(PatternTest, HorizMirrorPattern) {
-  EXPECT_EQ(Pattern(4, (Square[]) {7, 4, 21, 63}).HorizMirror(),
-            Pattern(4, (Square[]) {0, 3, 18, 56}));
-  EXPECT_EQ(Pattern(3, (Square[]) {56, 50, 0}).HorizMirror(),
-            Pattern(3, (Square[]) {63, 53, 7}));
+  EXPECT_EQ(Pattern({7, 4, 21, 63}).HorizMirror(),
+            Pattern({0, 3, 18, 56}));
+  EXPECT_EQ(Pattern({56, 50, 0}).HorizMirror(),
+            Pattern({63, 53, 7}));
 
   for (int i = 0; i < 10000; ++i) {
     Pattern f = Pattern(RandomBitPattern());
@@ -54,12 +54,9 @@ TEST(PatternTest, HorizMirrorPattern) {
 }
 
 TEST(PatternTest, RotatePattern) {
-  EXPECT_EQ(Pattern(4, (Square[]) {0, 7, 63, 56}).Rotate(),
-    Pattern(4, (Square[]) {7, 63, 56, 0}));
-  EXPECT_EQ(Pattern(3, (Square[]) {1, 6, 61}).Rotate(),
-    Pattern(3, (Square[]) {15, 55, 40}));
-  EXPECT_EQ(Pattern(2, (Square[]) {18, 19}).Rotate(),
-    Pattern(2, (Square[]) {21, 29}));
+  EXPECT_EQ(Pattern({0, 7, 63, 56}).Rotate(), Pattern({7, 63, 56, 0}));
+  EXPECT_EQ(Pattern({1, 6, 61}).Rotate(), Pattern({15, 55, 40}));
+  EXPECT_EQ(Pattern({18, 19}).Rotate(), Pattern({21, 29}));
 
   for (int i = 0; i < 10000; ++i) {
     Pattern f = Pattern(RandomBitPattern());
@@ -77,14 +74,14 @@ TEST(PatternTest, AllTranspositions) {
       Pattern(1ULL << 7), Pattern(1ULL << 63), Pattern(1ULL << 56), Pattern(1)));
 
   EXPECT_THAT(Pattern::AllTranspositions(3), testing::UnorderedElementsAre(
-      Pattern(2, (Square[]) {0, 1}),
-      Pattern(2, (Square[]) {7, 15}),
-      Pattern(2, (Square[]) {63, 62}),
-      Pattern(2, (Square[]) {56, 48}),
-      Pattern(2, (Square[]) {7, 6}),
-      Pattern(2, (Square[]) {63, 55}),
-      Pattern(2, (Square[]) {56, 57}),
-      Pattern(2, (Square[]) {0, 8})));
+      Pattern({0, 1}),
+      Pattern({7, 15}),
+      Pattern({63, 62}),
+      Pattern({56, 48}),
+      Pattern({7, 6}),
+      Pattern({63, 55}),
+      Pattern({56, 57}),
+      Pattern({0, 8})));
 
   BitPattern center = ParsePattern(
     "--------"
@@ -97,14 +94,14 @@ TEST(PatternTest, AllTranspositions) {
     "--------");
 
   EXPECT_THAT(Pattern::AllTranspositions(center), testing::UnorderedElementsAre(
-    Pattern(4, (Square[]) {27, 28, 35, 36}),
-      Pattern(4, (Square[]) {28, 27, 36, 35}),
-      Pattern(4, (Square[]) {35, 27, 36, 28}), // Rotate 90
-      Pattern(4, (Square[]) {27, 35, 28, 36}),
-      Pattern(4, (Square[]) {36, 35, 28, 27}), // Rotate 180
-      Pattern(4, (Square[]) {35, 36, 27, 28}),
-      Pattern(4, (Square[]) {28, 36, 27, 35}), // Rotate 270
-      Pattern(4, (Square[]) {36, 28, 35, 27})
+    Pattern({27, 28, 35, 36}),
+      Pattern({28, 27, 36, 35}),
+      Pattern({35, 27, 36, 28}), // Rotate 90
+      Pattern({27, 35, 28, 36}),
+      Pattern({36, 35, 28, 27}), // Rotate 180
+      Pattern({35, 36, 27, 28}),
+      Pattern({28, 36, 27, 35}), // Rotate 270
+      Pattern({36, 28, 35, 27})
   ));
 
   BitPattern diag = ParsePattern(
@@ -117,14 +114,14 @@ TEST(PatternTest, AllTranspositions) {
     "--------"
     "--------");
   EXPECT_THAT(Pattern::AllTranspositions(diag), testing::UnorderedElementsAre(
-      Pattern(2, (Square[]) {27, 36}),
-      Pattern(2, (Square[]) {36, 27}),
-      Pattern(2, (Square[]) {28, 35}),
-      Pattern(2, (Square[]) {35, 28}),
-      Pattern(2, (Square[]) {27, 36}),
-      Pattern(2, (Square[]) {36, 27}),
-      Pattern(2, (Square[]) {28, 35}),
-      Pattern(2, (Square[]) {35, 28})));
+      Pattern({27, 36}),
+      Pattern({36, 27}),
+      Pattern({28, 35}),
+      Pattern({35, 28}),
+      Pattern({27, 36}),
+      Pattern({36, 27}),
+      Pattern({28, 35}),
+      Pattern({35, 28})));
 }
 
 TEST(PatternTest, GetValue) {

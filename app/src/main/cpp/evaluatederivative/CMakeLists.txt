@@ -46,6 +46,7 @@ IF (NOT ANDROID)
             prob_combiners
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 
@@ -76,6 +77,7 @@ IF (NOT ANDROID)
             evaluation
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 
@@ -118,6 +120,7 @@ IF (NOT ANDROID)
             tree_node
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 
@@ -155,5 +158,6 @@ IF (NOT ANDROID)
             pattern_evaluator
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()

@@ -55,6 +55,7 @@ IF(NOT ANDROID)
             random
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()
 
@@ -76,6 +77,7 @@ IF (NOT ANDROID)
             misc
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 
@@ -97,6 +99,7 @@ IF (NOT ANDROID)
             parse_flags
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 

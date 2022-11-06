@@ -41,6 +41,13 @@ class Pattern {
       squares_[i] = squares[i];
     }
   }
+  constexpr Pattern(std::initializer_list<Square> squares) :
+      size_(squares.size()), squares_() {
+    int i = 0;
+    for (Square square : squares) {
+      squares_[i++] = square;
+    }
+  }
 
   constexpr Square Size() const { return size_; }
   constexpr const Square* const Squares() const { return squares_; }

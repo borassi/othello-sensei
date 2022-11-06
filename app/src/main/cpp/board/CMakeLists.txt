@@ -12,16 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-
-IF(ANDROID)
-    find_library(log-lib JNI_LIBRARIES)
-ELSE()
-    find_package(GTest)
-    find_package(JNI REQUIRED)
-    include_directories( ${JNI_INCLUDE_DIRS} )
-ENDIF()
-
 add_library(
         bitpattern
         bitpattern.h
@@ -40,6 +30,7 @@ IF(NOT ANDROID)
             bitpattern
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()
 
@@ -67,6 +58,7 @@ IF (NOT ANDROID)
             board
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 
@@ -86,6 +78,7 @@ IF(NOT ANDROID)
             GTest::gmock
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()
 
@@ -118,6 +111,7 @@ IF(NOT ANDROID)
             get_flip
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()
 
@@ -194,5 +188,6 @@ IF(NOT ANDROID)
             stable
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()

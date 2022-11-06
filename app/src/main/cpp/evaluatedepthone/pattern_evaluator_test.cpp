@@ -126,18 +126,18 @@ TEST(PatternEvaluatorTest, EquivalentTransposition) {
 
 TEST(PatternEvaluatorTest, EquivalentFeatures) {
   EXPECT_THAT(kFeatures.equivalent_features[4][0], testing::ElementsAre(
-      Pattern(12, (Square[]) {0, 1, 8, 9, 18, 27, 36, 45, 54, 55, 62, 63}),
-      Pattern(0, {}),
-      Pattern(0, {}),
-      Pattern(0, {}),
-      Pattern(0, {})
+      Pattern({0, 1, 8, 9, 18, 27, 36, 45, 54, 55, 62, 63}),
+      Pattern({}),
+      Pattern({}),
+      Pattern({}),
+      Pattern({})
   ));
   EXPECT_THAT(kFeatures.equivalent_features[4][1], testing::ElementsAre(
-      Pattern(12, (Square[]) {63, 62, 55, 54, 45, 36, 27, 18, 9, 8, 1, 0}),
-      Pattern(0, {}),
-      Pattern(0, {}),
-      Pattern(0, {}),
-      Pattern(0, {})
+      Pattern({63, 62, 55, 54, 45, 36, 27, 18, 9, 8, 1, 0}),
+      Pattern({}),
+      Pattern({}),
+      Pattern({}),
+      Pattern({})
   ));
   EXPECT_GT(kFeatures.equivalent_features[0][1][0].Size(), 0);
   EXPECT_EQ(kFeatures.equivalent_features[0][2][0].Size(), 0);

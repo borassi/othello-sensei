@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-
 add_library(
         evaluator_last_moves
         SHARED
@@ -45,6 +43,7 @@ IF(NOT ANDROID)
             evaluator_last_moves
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()
 
@@ -82,6 +81,7 @@ IF (NOT ANDROID)
             test_evaluator
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()
 
@@ -112,5 +112,6 @@ IF (NOT ANDROID)
             test_evaluator_depth_one
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF ()

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-
 IF(ANDROID)
     find_library(log-lib JNI_LIBRARIES)
 ELSE()
@@ -54,5 +52,6 @@ IF(NOT ANDROID)
             hash_map
             GTest::gtest
             GTest::gtest_main
+            -no-pie
     )
 ENDIF()
