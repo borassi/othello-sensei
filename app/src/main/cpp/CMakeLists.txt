@@ -58,7 +58,7 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "-pedantic -pipe -D_GNU_SOURCE=1 -m64 -Ofast -DNDEBUG -march=native -funroll-loops -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"
+        "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -D_GNU_SOURCE=1 -m64 -Ofast -DNDEBUG -march=native -funroll-loops -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"
 )
 
 IF (PROFILE)
