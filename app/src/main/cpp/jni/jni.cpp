@@ -63,7 +63,8 @@ class JNIWrapper {
       last_player_(0),
       last_opponent_(0),
       last_gap_(-1),
-      stopping_(false) {
+      stopping_(false),
+      reset_(true) {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
@@ -118,8 +119,11 @@ class JNIWrapper {
   void EvalDerivative(
       BitPattern player, BitPattern opponent, Eval lower, Eval upper, NVisited max_n_visited, double max_time, float gap) {
     stopping_ = false;
-    bool reset = player != last_player_ || opponent != last_opponent_ || ((gap == 0) != (last_gap_ == 0));
+    bool reset = player != last_player_ || opponent != last_opponent_ ||
+        reset_ ||
+        ((gap == 0) != (last_gap_ == 0));
     if (reset) {
+      reset_ = false;
       tree_node_supplier_.Reset();
       if (gap <= 0) {
         num_active_evaluators_ = 1;
@@ -187,6 +191,7 @@ class JNIWrapper {
     Stop();
     hash_map_.Reset();
     tree_node_supplier_.Reset();
+    reset_ = true;
   }
 
   void Stop() {
@@ -242,6 +247,7 @@ class JNIWrapper {
   BitPattern last_opponent_;
   float last_gap_;
   bool stopping_;
+  bool reset_;
 };
 
 #ifdef __cplusplus
