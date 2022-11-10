@@ -391,11 +391,13 @@ class EvaluatorDerivative {
       NVisited max_n_visited, double max_time, bool approx = false) {
     assert((lower - kMinEval) % 2 == 1);
     assert((upper - kMinEval) % 2 == 1);
+    assert(kMinEval <= lower && lower <= kMaxEval);
+    assert(kMinEval <= upper && upper <= kMaxEval);
     assert(lower <= upper);
     approx_ = approx;
 //    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
-    first_position_->SetLeaf(-63, 63, 0, 4, 1);
+    first_position_->SetLeaf(lower, upper, 0, 4, 1);
     last_update_weak_ = 0;
     visited_for_endgame_ = kVisitedEndgameStart;
     stats_.Reset();
@@ -494,7 +496,8 @@ class EvaluatorDerivative {
     if (status_ == KILLED) {
       return true;
     }
-    if (first_position->IsSolved() || (first_position->IsPartiallySolved() && approx_)) {
+    if (first_position->IsSolvedIn(lower_, upper_) ||
+        (first_position->IsPartiallySolved(lower_, upper_) && approx_)) {
       status_ = SOLVED;
       return true;
     }
@@ -515,7 +518,7 @@ class EvaluatorDerivative {
 
   void UpdateWeakLowerUpper() {
     auto first_position = GetFirstPosition();
-    while (first_position->UpdateWeakLowerUpper()) {
+    while (first_position->UpdateWeakLowerUpper(lower_, upper_)) {
       last_update_weak_ = NVisited();
     }
   }

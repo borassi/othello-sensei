@@ -326,37 +326,37 @@ JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getEval(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 0 : lround(node->GetEval() * 100);
+  return node == nullptr ? -6500 : lround(node->GetEval() * 100);
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLower(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6600 : node->Lower() * 100;
+  return node == nullptr ? -6500 : node->Lower() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getUpper(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 6600 : node->Upper() * 100;
+  return node == nullptr ? -6500 : node->Upper() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakLower(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6600 : node->WeakLower() * 100;
+  return node == nullptr ? -6500 : node->WeakLower() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakUpper(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 6600 : node->WeakUpper() * 100;
+  return node == nullptr ? -6500 : node->WeakUpper() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileLower(JNIEnv* env, jobject tree_node_java, jfloat p) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6600 : node->GetPercentileLower(p) * 100;
+  return node == nullptr ? -6500 : node->GetPercentileLower(p) * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobject tree_node_java, jfloat p) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 6600 : node->GetPercentileUpper(p) * 100;
+  return node == nullptr ? -6500 : node->GetPercentileUpper(p) * 100;
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {

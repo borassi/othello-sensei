@@ -378,13 +378,21 @@ class TreeNode {
     return n_visited_;
   }
 
+  bool IsSolvedIn(Eval lower, Eval upper) {
+    return upper_ <= lower || lower_ >= upper || IsSolved();
+  }
+
   bool IsSolved() {
     return lower_ >= upper_ - 2;
   }
 
-  bool IsSolvedAtProb(float prob) {
-    if ((weak_upper_ == 63 && GetEvaluation(weak_upper_).ProbGreaterEqual() >= 1 - prob) ||
-        (weak_lower_ == -63 && GetEvaluation(weak_lower_).ProbGreaterEqual() <= prob)) {
+  bool IsSolvedAtProb(float prob, Eval lower, Eval upper) {
+    if (weak_lower_ <= lower && lower <= weak_upper_ &&
+        GetEvaluation(lower).ProbGreaterEqual() <= prob) {
+      return true;
+    }
+    if (weak_lower_ <= upper && upper <= weak_upper_ &&
+        GetEvaluation(upper).ProbGreaterEqual() >= 1 - prob) {
       return true;
     }
     for (int i = weak_lower_; i <= weak_upper_ - 2; i += 2) {
@@ -396,8 +404,8 @@ class TreeNode {
     return false;
   }
 
-  bool IsPartiallySolved() {
-    return IsSolvedAtProb(kZeroPercForWeak);
+  bool IsPartiallySolved(Eval lower, Eval upper) {
+    return IsSolvedAtProb(kZeroPercForWeak, lower, upper);
   }
 
   Eval GetPercentileUpper(float p) {
@@ -447,17 +455,15 @@ class TreeNode {
     if (n_threads_working == 1) {
       BestDescendant(LeafToUpdate(this, eval_goal), &result);
     } else {
-      BestDescendants2(this, &result, eval_goal);
+      BestDescendants2(this, &result, eval_goal, n_visited_);
+      int secondary_eval_goal = kLessThenMinEval;
       if (ProbGreaterEqual(eval_goal) == 0) {
-        int secondary_eval_goal = NextPositionEvalGoal(0.5, 1);
-        if (secondary_eval_goal != kLessThenMinEval) {
-          BestDescendants2(this, &result, secondary_eval_goal);
-        }
+        secondary_eval_goal = NextPositionEvalGoal(0.5, 1);
       } else if (ProbGreaterEqual(eval_goal) == 1) {
-        int secondary_eval_goal = NextPositionEvalGoal(0, 0.5);
-        if (secondary_eval_goal != kLessThenMinEval) {
-          BestDescendants2(this, &result, secondary_eval_goal);
-        }
+        secondary_eval_goal = NextPositionEvalGoal(0, 0.5);
+      }
+      if (secondary_eval_goal != kLessThenMinEval) {
+        BestDescendants2(this, &result, secondary_eval_goal, n_visited_);
       }
     }
     return result;
@@ -483,7 +489,12 @@ class TreeNode {
     n_visited_ += n;
   }
 
-  bool UpdateWeakLowerUpper() {
+  bool UpdateWeakLowerUpper(Eval lower, Eval upper) {
+    assert((lower - kMinEval) % 2 == 1);
+    assert((upper - kMinEval) % 2 == 1);
+    assert(kMinEval <= lower && lower <= kMaxEval);
+    assert(kMinEval <= upper && upper <= kMaxEval);
+    assert(weak_lower_ >= lower && weak_upper_ <= upper);
     bool extend_lower = false;
     bool extend_upper = false;
     bool reduced = false;
@@ -493,10 +504,12 @@ class TreeNode {
         ProbGreaterEqual(weak_lower_ + 4) : 0;
     float prob_upper_prev = weak_upper_ - 4 >= weak_lower_ ?
         ProbGreaterEqual(weak_upper_ - 4) : 1;
-    if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_ && weak_lower_ >= -61) {
+    if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_
+        && weak_lower_ >= lower + 2) {
       extend_lower = true;
     }
-    if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_ && weak_upper_ <= 61) {
+    if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_
+        && weak_upper_ <= upper - 2) {
       extend_upper = true;
     }
     if (!extend_lower && !extend_upper && prob_lower_next >= 1) {
@@ -706,7 +719,7 @@ class TreeNode {
         continue;
       }
       assert(father_eval.ProbGreaterEqual() >= 1 - child_eval.ProbGreaterEqual() - 0.001);
-      double cur_loss = child_eval.GetValue(father_eval);
+      double cur_loss = child_eval.GetValue(father_eval, child->GetNVisited());
       if (cur_loss > best_child_value) {
         best_child = child;
         best_child_value = cur_loss;
@@ -737,7 +750,8 @@ class TreeNode {
     return found;
   }
 
-  static void BestDescendants2(TreeNode* root, std::vector<LeafToUpdate>* result, int eval_goal) {
+  static void BestDescendants2(TreeNode* root, std::vector<LeafToUpdate>*
+      result, int eval_goal, int n_visited) {
     assert(!root->IsSolved());
     assert(!root->GetEvaluation(eval_goal).IsSolved());
     std::priority_queue<LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)> next_nodes(&leaf_less);
@@ -761,14 +775,15 @@ class TreeNode {
         const Evaluation& father_eval = father->GetEvaluation(current.EvalGoal());
         const Evaluation& best_child_eval = best_child->GetEvaluation(-current.EvalGoal());
         float best_child_prob = best_child_eval.ProbGreaterEqual();
-        double best_child_value = best_child_eval.GetValue(father_eval);
+        double best_child_value = best_child_eval.GetValue(father_eval,
+                                                           best_child->GetNVisited());
         float prob = father_eval.ProbGreaterEqual();
 
         for (int i = 0; i < father->n_children_; ++i) {
           TreeNode* child = father->children_[i];
           Evaluation child_eval = child->GetEvaluation(-current.EvalGoal());
           double extra_loss =
-              child_eval.GetValue(father_eval) - best_child_value
+              child_eval.GetValue(father_eval, child->GetNVisited()) - best_child_value
               + (child == best_child ? 0 : log(best_child_prob) * kLogDerivativeMultiplier);
           assert(extra_loss <= 0);
           if (child->NThreadsWorking() == 0 &&
@@ -816,14 +831,15 @@ class TreeNode {
     TreeNode* best_child = BestChild(node.EvalGoal());
     const Evaluation& best_child_eval = best_child->GetEvaluation(-node.EvalGoal());
     float best_child_prob = best_child_eval.ProbGreaterEqual();
-    double best_child_value = best_child_eval.GetValue(father_eval);
+    double best_child_value = best_child_eval.GetValue(father_eval,
+                                                       best_child->GetNVisited());
     float prob = father_eval.ProbGreaterEqual();
     bool proving = prob == 0 || prob == 1;
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
       Evaluation child_eval = child->GetEvaluation(-node.EvalGoal());
       double extra_loss =
-          child_eval.GetValue(father_eval) - best_child_value
+          child_eval.GetValue(father_eval, child->GetNVisited()) - best_child_value
           + (child == best_child ? 0 : log(best_child_prob) * kLogDerivativeMultiplier)
           ;
       assert(extra_loss <= 0);

@@ -221,19 +221,18 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father) const {
+  double GetValue(const Evaluation& father, NVisited nVisited) const {
     float prob = father.ProbGreaterEqual();
     if (IsSolved()) {
       return -DBL_MAX;
     }
     if (prob == 0) {
       assert(prob_greater_equal_ == kProbStep);
-      return 0.00000001 * ProofNumber();
-         //* (1 + 5000 / n_visited)
-//         - 1000.0 * kLogDerivativeMinusInf;
-//             - child.getStoredBoard().getNThreadsWorking() * 1.0E15;
+      return 0.00000001 * (double) log(nVisited);
     } else if (prob == 1) {
-      return -kCombineProb.disproof_to_proof_number[disproof_number_][prob_greater_equal_];
+      return -kCombineProb.disproof_to_proof_number[disproof_number_][prob_greater_equal_]
+          - 0.000001 * log(nVisited)
+          ;
     } else {
       return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
 //             * avoidNextPosFailCoeff.get()
