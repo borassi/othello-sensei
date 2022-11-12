@@ -3,6 +3,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/active"
+        android:icon="@drawable/notifications_20px"
+        android:title="Enable evaluations"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/thor"
         android:icon="@drawable/baseline_archive_20"
         android:title="Load Thor"

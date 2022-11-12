@@ -18,7 +18,6 @@ import java.util.ArrayList;
 
 import board.Board;
 import helpers.FileAccessor;
-import jni.JNI;
 import thor.Game;
 import ui_desktop.CaseAnnotations;
 
@@ -40,4 +39,5 @@ public interface UI {
   boolean wantThorGames();
   void setThorGames(Board b, ArrayList<Game> games);
   FileAccessor fileAccessor();
+  boolean active();
 }

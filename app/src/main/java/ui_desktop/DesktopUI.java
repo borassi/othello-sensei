@@ -91,6 +91,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playBlackMoves = new JCheckBox("Play black moves");
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
+  private final JCheckBox active = new JCheckBox("Active", true);
   private final JTextField depth;
   private final JTextField delta;
   private final JSpinner ffoPositions;
@@ -145,6 +146,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
     commands.add(debugMode);
+    commands.add(active);
     commands.add(stop);
     commands.add(resetHashMaps);
     commands.add(copy);
@@ -433,6 +435,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public FileAccessor fileAccessor() {
     return new FileAccessor();
+  }
+
+  @Override
+  public boolean active() {
+    return active.isSelected();
   }
 
   public static short roundEval(int eval) {

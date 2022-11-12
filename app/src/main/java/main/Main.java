@@ -138,7 +138,7 @@ public class Main implements Runnable {
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
     }
-    while (!EVALUATOR.finished(ui.maxVisited())) {
+    while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
       showMCTSEvaluations();
       EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
@@ -202,6 +202,9 @@ public class Main implements Runnable {
   }
   
   private void evaluate() {
+    if (!ui.active()) {
+      return;
+    }
     if (ui.maxVisited() <= 0) {
       showMCTSEvaluations();
       return;
@@ -238,8 +241,8 @@ public class Main implements Runnable {
       if (childStored != null) {
         annotations = new CaseAnnotations(father, childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
         ui.setAnnotations(annotations, move);
+        nVisited += childStored.getDescendants();
       }
-      nVisited += childStored.getDescendants();
     }
     TreeNodeInterface boardStored = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;

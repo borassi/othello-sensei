@@ -51,10 +51,25 @@ public class MobileUI extends AppCompatActivity implements UI {
   private Board board;
   private boolean blackTurn;
   private boolean wantThor = false;
+  private boolean active = true;
+  private Menu menu;
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
-      getMenuInflater().inflate(R.menu.menu, menu);
-      return true;
+    getMenuInflater().inflate(R.menu.menu, menu);
+    this.menu = menu;
+    return true;
+  }
+
+  private void setActive(boolean newActive) {
+    active = newActive;
+    MenuItem item = menu.findItem(R.id.active);
+    if (active) {
+      item.setIcon(R.drawable.notifications_20px);
+      item.setTitle("Disable evaluations");
+    } else {
+      item.setIcon(R.drawable.notifications_off_20px);
+      item.setTitle("Enable evaluations");
+    }
   }
 
   @Override
@@ -69,6 +84,9 @@ public class MobileUI extends AppCompatActivity implements UI {
         return true;
       case R.id.stop:
         main.stop();
+        return true;
+      case R.id.active:
+        setActive(!active);
         return true;
       case R.id.thor:
         main.stop();
@@ -172,6 +190,11 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
+  public boolean active() {
+    return active;
+  }
+
+  @Override
   public void setAnnotations(CaseAnnotations annotations, int move) {
     BoardView boardView = findViewById(R.id.board);
     boardView.setAnnotations(annotations, move);
@@ -210,13 +233,13 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public long maxVisited() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-    return Long.parseLong(preferences.getString("stop_after", "0"));
+    return Long.parseLong(preferences.getString("stop_after", getResources().getString(R.string.stop_after_default)));
   }
 
   @Override
   public double delta() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-    return Double.parseDouble(preferences.getString("delta_moves", "0"));
+    return Double.parseDouble(preferences.getString("delta_moves", getResources().getString(R.string.delta_moves_default)));
   }
 
   @Override

@@ -48,6 +48,9 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 class JNIWrapper {
  public:
   static jobject TreeNodeToJava(const TreeNode* const n, JNIEnv* env) {
+    if (n == nullptr) {
+      return NULL;
+    }
     jclass TreeNodeCPP = env->FindClass("jni/TreeNodeCPP");
     return env->NewObject(
         TreeNodeCPP,
@@ -316,47 +319,47 @@ TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
 }
 
 bool IsEvalGoalInvalid(TreeNode* node, int eval_goal) {
-  return node == nullptr || node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
+  return node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
 }
 
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 0 : static_cast<long>(node->GetNVisited());
+  return static_cast<long>(node->GetNVisited());
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getEval(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : lround(node->GetEval() * 100);
+  return lround(node->GetEval() * 100);
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLower(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : node->Lower() * 100;
+  return node->Lower() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getUpper(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : node->Upper() * 100;
+  return node->Upper() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakLower(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : node->WeakLower() * 100;
+  return node->WeakLower() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakUpper(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : node->WeakUpper() * 100;
+  return node->WeakUpper() * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileLower(JNIEnv* env, jobject tree_node_java, jfloat p) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : node->GetPercentileLower(p) * 100;
+  return node->GetPercentileLower(p) * 100;
 }
 
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobject tree_node_java, jfloat p) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? -6500 : node->GetPercentileUpper(p) * 100;
+  return node->GetPercentileUpper(p) * 100;
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
@@ -388,12 +391,12 @@ JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_childLogDerivative(JNIEnv* env, jobj
 
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 0 : static_cast<long long>(node->Player());
+  return static_cast<long long>(node->Player());
 }
 
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node == nullptr ? 0 : static_cast<long long>(node->Opponent());
+  return static_cast<long long>(node->Opponent());
 }
 
 JNIEXPORT jobject JNICALL
