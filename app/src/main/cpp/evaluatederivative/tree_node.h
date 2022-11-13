@@ -54,15 +54,7 @@ constexpr float kErrors[][60] = {
      4.93, 4.39, 4.64, 3.98, 4.05, 3.66, 3.96, 3.53, 3.67, 3.24, 3.15, 2.96,
      3.34, 2.93, 3.06, 2.86, 2.80, 2.57, 2.72, 2.40, 2.50, 2.13, 2.13, 2.00,
      2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00}
-
-//      0, 0, 0, 0, 5.30, 5.85, 6.36, 6.96, 7.36, 7.80, 7.94, 8.28, 8.14, 8.21, 8.07, 7.97, 7.72, 7.68, 7.53, 7.32,
-//      7.09, 6.80, 5.52, 4.74, 4.80, 4.48, 4.61, 3.97, 4.29, 3.80, 4.03, 3.62, 3.72, 3.28, 3.38, 3.00, 3.32, 3.03,
-//      3.11, 2.90, 3.00, 2.65, 2.67, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50, 2.50,
-//      2.50, 2.50, 2.50, 2.50, 2.50};
 };
-
-
-constexpr int kNextPositionSize = 100000;
 
 class ChildError: public std::exception {
  public:
@@ -319,10 +311,6 @@ class TreeNode {
     }
     UpdateFather();
     assert(AreChildrenCorrect());
-  }
-
-  void Reset(const Board& b, int depth, u_int8_t evaluator) {
-    Reset(b.GetPlayer(), b.GetOpponent(), depth, evaluator);
   }
 
   void Reset(BitPattern player, BitPattern opponent, int depth, u_int8_t evaluator) {
@@ -855,10 +843,6 @@ class TreeNode {
       child->BestDescendants(child_leaf, next_nodes);
       IncreaseNThreadsWorking(next_nodes->size() - old_descendants);
     }
-  }
-
-  Eval NextPositionEvalGoal() {
-    return NextPositionEvalGoal(0, 1);
   }
 
   Eval NextPositionEvalGoal(float prob_min, float prob_max) {

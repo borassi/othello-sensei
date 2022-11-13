@@ -28,7 +28,7 @@ TEST(Stable, Simple) {
                   "--------"
                   "--------"
                   "-------X", true);
-  BitPattern stable = GetStableDisks(testBoard.GetPlayer(), testBoard.GetOpponent());
+  BitPattern stable = GetStableDisks(testBoard.Player(), testBoard.Opponent());
   BitPattern expected = ParsePattern(
           "--------"
           "--------"
@@ -50,7 +50,7 @@ TEST(Stable, Left) {
                   "X-------"
                   "X-------"
                   "X-------", true);
-  BitPattern stable = GetStableDisks(testBoard.GetPlayer(), testBoard.GetOpponent());
+  BitPattern stable = GetStableDisks(testBoard.Player(), testBoard.Opponent());
   EXPECT_EQ(testBoard.GetPlayer(), stable);
 }
 

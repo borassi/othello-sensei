@@ -32,7 +32,7 @@ jobject BoardToJava(JNIEnv* env, const Board& board) {
     return env->NewObject(
         BoardJava,
         env->GetMethodID(BoardJava, "<init>", "(JJ)V"),
-        (jlong) board.GetPlayer(), (jlong) board.GetOpponent());
+        (jlong) board.Player(), (jlong) board.Opponent());
 }
 
 Board BoardToCPP(JNIEnv* env, jobject board) {
@@ -407,10 +407,10 @@ Java_jni_JNI_getEndgameBoard(JNIEnv* env, jclass clazz, jint i) {
 JNIEXPORT jobject JNICALL
 Java_jni_JNI_move(JNIEnv *env, jclass clazz, jobject board, jint move) {
   Board next = BoardToCPP(env, board);
-  if ((1ULL << move) & (next.GetPlayer() | next.GetOpponent())) {
+  if ((1ULL << move) & (next.Player() | next.Opponent())) {
     return board;
   }
-  BitPattern flip = GetFlip(move, next.GetPlayer(), next.GetOpponent());
+  BitPattern flip = GetFlip(move, next.Player(), next.Opponent());
   if (flip == 0) {
     return board;
   }
@@ -421,7 +421,7 @@ Java_jni_JNI_move(JNIEnv *env, jclass clazz, jobject board, jint move) {
 JNIEXPORT jboolean JNICALL
 Java_jni_JNI_haveToPass(JNIEnv *env, jclass clazz, jobject board) {
   Board b = BoardToCPP(env, board);
-  return HaveToPass(b.GetPlayer(), b.GetOpponent());
+  return HaveToPass(b.Player(), b.Opponent());
 }
 
 JNIEXPORT jobject JNICALL
@@ -431,7 +431,7 @@ Java_jni_JNI_descendants(JNIEnv *env, jclass clazz, jobject board) {
       (env->FindClass("java/util/ArrayList")));
   jmethodID java_util_ArrayList_ = env->GetMethodID(java_util_ArrayList, "<init>", "(I)V");
   jmethodID java_util_ArrayList_add = env->GetMethodID(java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
-  auto flips = GetAllMoves(b.GetPlayer(), b.GetOpponent());
+  auto flips = GetAllMoves(b.Player(), b.Opponent());
   jobject result = env->NewObject(java_util_ArrayList, java_util_ArrayList_,
                                   (jint) flips.size());
 

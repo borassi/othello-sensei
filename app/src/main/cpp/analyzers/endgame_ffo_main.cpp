@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     Board b = GetIthBoard(i);
     ElapsedTime t;
     tree_node_supplier.Reset();
-    evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), -63, 63, 1000000000000L, 1200, approx);
+    evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 1200, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
     const Stats& stats = evaluator.GetStats();

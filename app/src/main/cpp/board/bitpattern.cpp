@@ -99,3 +99,15 @@ int Hash(BitPattern player, BitPattern opponent) {
       kHashValues.hash_opponent[6][(opponent >> 48) & kLastRowPattern] ^
       kHashValues.hash_opponent[7][(opponent >> 56)];
 }
+
+std::vector<BitPattern> AllBitPatternTranspositions(BitPattern p) {
+  std::vector<BitPattern> result;
+  result.reserve(8);
+  for (int i = 0; i < 4; ++i) {
+    result.push_back(p);
+    p = VerticalMirror(p);
+    result.push_back(p);
+    p = Diag9Mirror(p);
+  }
+  return result;
+}

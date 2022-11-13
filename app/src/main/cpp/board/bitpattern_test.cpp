@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 #include <math.h>
 #include <stdio.h>
+
 #include "bitpattern.h"
 
 TEST(BitPattern, EvalToEvalLarge) {
@@ -206,4 +208,133 @@ TEST(BitPattern, MoveToSquare) {
   EXPECT_EQ(MoveToSquare("h6"), 16);
   EXPECT_EQ(MoveToSquare("d4"), 36);
   EXPECT_EQ(MoveToSquare("a1"), 63);
+}
+
+TEST(BitPattern, VerticalMirror) {
+  BitPattern p = ParsePattern("XX------"
+                              "------XX"
+                              "--------"
+                              "--------"
+                              "--------"
+                              "--------"
+                              "--------"
+                              "--------");
+  BitPattern q = ParsePattern("--------"
+                              "--------"
+                              "--------"
+                              "--------"
+                              "--------"
+                              "--------"
+                              "------XX"
+                              "XX------");
+  EXPECT_EQ(VerticalMirror(p), q);
+  EXPECT_EQ(VerticalMirror(q), p);
+}
+
+TEST(BitPattern, Rotate) {
+  BitPattern r1 = ParsePattern("XX------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------");
+  BitPattern r2 = ParsePattern("-------X"
+                               "-------X"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------");
+  BitPattern r3 = ParsePattern("--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "------XX");
+  BitPattern r4 = ParsePattern("--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "X-------"
+                               "X-------");
+  EXPECT_EQ(Rotate(r1), r4);
+  EXPECT_EQ(Rotate(r4), r3);
+  EXPECT_EQ(Rotate(r3), r2);
+  EXPECT_EQ(Rotate(r2), r1);
+}
+
+TEST(BitPattern, AllBitPatternTranspositions) {
+  BitPattern r1 = ParsePattern("XX------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------");
+  BitPattern r2 = ParsePattern("-------X"
+                               "-------X"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------");
+  BitPattern r3 = ParsePattern("--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "------XX");
+  BitPattern r4 = ParsePattern("--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "X-------"
+                               "X-------");
+  BitPattern r5 = ParsePattern("X-------"
+                               "X-------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------");
+  BitPattern r6 = ParsePattern("------XX"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------");
+  BitPattern r7 = ParsePattern("--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "-------X"
+                               "-------X");
+  BitPattern r8 = ParsePattern("--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "--------"
+                               "XX------");
+  EXPECT_THAT(AllBitPatternTranspositions(r1),
+              testing::UnorderedElementsAre(r1, r2, r3, r4, r5, r6, r7, r8));
 }

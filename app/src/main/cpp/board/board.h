@@ -17,6 +17,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
+#include <array>
 #include "bitpattern.h"
 #include "get_flip.h"
 
@@ -28,17 +29,17 @@ public:
   Board(const std::string& sequence);
   Board();
 
-  BitPattern GetPlayer() const {
+  BitPattern Player() const {
     return player_;
   }
-  BitPattern GetOpponent() const {
+  BitPattern Opponent() const {
     return opponent_;
   }
-  BitPattern GetEmpties() const {
+  BitPattern Empties() const {
     return ~(player_ | opponent_);
   }
   int NEmpties() const {
-    return __builtin_popcountll(GetEmpties());
+    return __builtin_popcountll(Empties());
   }
   bool IsEmpty(Square move) const {
     return !IsFull(player_, move) && !IsFull(opponent_, move);
@@ -55,9 +56,36 @@ public:
     player_ = NewPlayer(flip, tmp);
   }
   bool operator==(const Board& rhs) const {
-    return GetPlayer() == rhs.GetPlayer()
-           && GetOpponent() == rhs.GetOpponent();
+    return Player() == rhs.Player()
+           && Opponent() == rhs.Opponent();
   }
+  std::vector<Board> AllTranspositions() {
+    auto players = AllBitPatternTranspositions(player_);
+    auto opponents = AllBitPatternTranspositions(opponent_);
+    assert(players.size() == opponents.size());
+    std::vector<Board> result;
+    result.reserve(players.size());
+
+    for (int i = 0; i < players.size(); ++i) {
+      result.push_back(Board(players[i], opponents[i]));
+    }
+    return result;
+  }
+
+  Board Unique() {
+    auto boards = AllTranspositions();
+    Board best_board = boards[0];
+
+    for (const Board& board : boards) {
+      if (board.Player() < best_board.Player() ||
+          (board.Player() == best_board.Player() &&
+           board.Opponent() < best_board.Opponent())) {
+        best_board = board;
+      }
+    }
+    return best_board;
+  }
+
 private:
   BitPattern player_;
   BitPattern opponent_;
@@ -67,5 +95,74 @@ private:
 std::ostream& operator<<(std::ostream& stream, const Board& b);
 Board RandomBoard(double percentage_player, double percentage_opponent);
 Board RandomBoard();
+
+class SerializedBoard {
+ public:
+  SerializedBoard(std::array<uint8_t, 13> serialized) :
+      serialized_(serialized) {}
+
+  SerializedBoard(Board b) {
+    BitPattern current_square = 1ULL << 63;
+    Board unique = b.Unique();
+    BitPattern player = unique.Player();
+    BitPattern opponent = unique.Opponent();
+    for (int i = 0; i < 13; ++i) {
+      uint8_t five_squares_serialized = 0;
+      int current_multiplier = 1;
+      for (int j = 0; j < 5; ++j) {
+        if (player & current_square) {
+          five_squares_serialized += current_multiplier;
+        } else if (opponent & current_square) {
+          five_squares_serialized += 2 * current_multiplier;
+        }
+        current_multiplier *= 3;
+        current_square = current_square >> 1;
+      }
+      serialized_[i] = five_squares_serialized;
+    }
+  }
+
+  Board ToBoard() {
+    BitPattern player = 0;
+    BitPattern opponent = 0;
+    BitPattern current_square = 1ULL << 63;
+
+    for (int i = 0; i < 13; ++i) {
+      uint8_t five_squares_serialized = serialized_[i];
+      for (int j = 0; j < 5; ++j) {
+        int current_value = five_squares_serialized % 3;
+        if (current_value == 1) {
+          player |= current_square;
+        } else if (current_value == 2) {
+          opponent |= current_square;
+        }
+        current_square = current_square >> 1;
+        five_squares_serialized /= 3;
+      }
+    }
+    return Board(player, opponent);
+  }
+
+  bool operator==(const SerializedBoard& rhs) const {
+    for (int i = 0; i < serialized_.size(); ++i) {
+      if (serialized_[i] != rhs.serialized_[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  uint8_t FirstDifference(SerializedBoard other) {
+    for (int i = 0; i < serialized_.size(); ++i) {
+      if (serialized_[i] != other.serialized_[i]) {
+        uint8_t difference = serialized_[i] ^ other.serialized_[i];
+        return 8 * i + __builtin_ctz(difference);
+      }
+    }
+    return 255;
+  }
+ private:
+  std::array<uint8_t, 13> serialized_;
+};
 #endif /* BOARD_H */
 

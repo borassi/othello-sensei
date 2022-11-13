@@ -62,7 +62,7 @@ class TreeNodeSupplier {
   }
 
   const TreeNode* const Get(const Board& b) {
-    return Get(b.GetPlayer(), b.GetOpponent());
+    return Get(b.Player(), b.Opponent());
   }
 
   TreeNode* Get(BitPattern player, BitPattern opponent) {

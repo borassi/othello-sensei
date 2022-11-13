@@ -174,17 +174,6 @@ int Hash(BitPattern player, BitPattern opponent);
 
 std::string PatternToString(BitPattern pattern);
 
-constexpr BitPattern Diag9Symmetry(BitPattern b) {
-  BitPattern t = (b ^ (b >> 7)) & 0x00aa00aa00aa00aaL;
-  b = b ^ t ^ (t << 7);
-  t = (b ^ (b >> 14)) & 0x0000cccc0000ccccL;
-  b = b ^ t ^ (t << 14);
-  t = (b ^ (b >> 28)) & 0x00000000f0f0f0f0L;
-  b = b ^ t ^ (t << 28);
-
-  return b;
-}
-
 constexpr BitPattern Neighbors(BitPattern b) {
     return (((b << 1) | (b << 9) | (b >> 7)) & ~kLastColumnPattern)
            | (((b >> 1) | (b >> 9) | (b << 7)) & ~kFirstColumnPattern)
@@ -257,6 +246,28 @@ BitPattern RandomPattern();
 inline Square MoveToSquare(std::string move) {
   return ('h' - move[0]) + ('8' - move[1]) * 8;
 }
+
+constexpr BitPattern VerticalMirror(BitPattern p) {
+	p = ((p >>  8) & 0x00FF00FF00FF00FFULL) | ((p <<  8) & 0xFF00FF00FF00FF00ULL);
+	p = ((p >> 16) & 0x0000FFFF0000FFFFULL) | ((p << 16) & 0xFFFF0000FFFF0000ULL);
+	return ((p >> 32) & 0x00000000FFFFFFFFULL) | ((p << 32) &
+  0xFFFFFFFF00000000ULL);
+}
+
+constexpr BitPattern Diag9Mirror(BitPattern b) {
+  BitPattern t = (b ^ (b >> 7)) & 0x00aa00aa00aa00aaL;
+  b = b ^ t ^ (t << 7);
+  t = (b ^ (b >> 14)) & 0x0000cccc0000ccccL;
+  b = b ^ t ^ (t << 14);
+  t = (b ^ (b >> 28)) & 0x00000000f0f0f0f0L;
+  return b ^ t ^ (t << 28);
+}
+
+constexpr BitPattern Rotate(BitPattern p) {
+  return VerticalMirror(Diag9Mirror(p));
+}
+
+std::vector<BitPattern> AllBitPatternTranspositions(BitPattern p);
 
 #endif /* BITPATTERN_H */
 

@@ -30,6 +30,7 @@ IF(NOT ANDROID)
             bitpattern
             GTest::gtest
             GTest::gtest_main
+            gmock
             -no-pie
     )
 ENDIF()

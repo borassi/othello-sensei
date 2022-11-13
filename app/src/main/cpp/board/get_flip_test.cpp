@@ -57,23 +57,23 @@ TEST(GetFlip, Basic) {
   
   if (GetFlipBasic(50, horiz.GetPlayer(), horiz.GetOpponent()) != flip1) {
     std::cout << PatternToString(flip1) << "\n";
-    std::cout << PatternToString(GetFlipBasic(50, horiz.GetPlayer(), horiz.GetOpponent()));
+    std::cout << PatternToString(GetFlipBasic(50, horiz.Player(), horiz.Opponent()));
   }
   if (GetFlipBasic(39, horiz.GetPlayer(), horiz.GetOpponent()) != flip2) {
     std::cout << PatternToString(flip2) << "\n";
-    std::cout << PatternToString(GetFlipBasic(39, horiz.GetPlayer(), horiz.GetOpponent()));
+    std::cout << PatternToString(GetFlipBasic(39, horiz.Player(), horiz.Opponent()));
   }
   if (GetFlipBasic(24, horiz.GetPlayer(), horiz.GetOpponent()) != flip3) {
     std::cout << PatternToString(flip2) << "\n";
-    std::cout << PatternToString(GetFlipBasic(24, horiz.GetPlayer(), horiz.GetOpponent()));
+    std::cout << PatternToString(GetFlipBasic(24, horiz.Player(), horiz.Opponent()));
   }
   if (GetFlipBasic(24, horiz.GetPlayer(), horiz.GetOpponent()) != flip3) {
     std::cout << PatternToString(flip2) << "\n";
-    std::cout << PatternToString(GetFlipBasic(24, horiz.GetPlayer(), horiz.GetOpponent()));
+    std::cout << PatternToString(GetFlipBasic(24, horiz.Player(), horiz.Opponent()));
   }
 
-  EXPECT_EQ(GetFlipBasic(8, horiz.GetPlayer(), horiz.GetOpponent()), 0);
-  EXPECT_EQ(GetFlipBasic(15, horiz.GetPlayer(), horiz.GetOpponent()), 0);
+  EXPECT_EQ(GetFlipBasic(8, horiz.Player(), horiz.Opponent()), 0);
+  EXPECT_EQ(GetFlipBasic(15, horiz.Player(), horiz.Opponent()), 0);
 }
 
 TEST(GetFlip, Outflank) {

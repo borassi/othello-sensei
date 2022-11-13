@@ -29,8 +29,8 @@ TEST(Board, Basic) {
                              "------OX";
   Board b(board_string.c_str(), true);
   EXPECT_EQ(b, Board(1, 2));
-  EXPECT_EQ(b.GetPlayer(), 1);
-  EXPECT_EQ(b.GetOpponent(), 2);
+  EXPECT_EQ(b.Player(), 1);
+  EXPECT_EQ(b.Opponent(), 2);
 
   EXPECT_FALSE(b.IsEmpty(0));
   EXPECT_FALSE(b.IsEmpty(1));
@@ -60,4 +60,33 @@ TEST(Board, Sequence) {
                "--------"
                "--------", false);
   EXPECT_EQ(b, b_copy);
+}
+
+TEST(Board, Unique) {
+  for (int i = 0; i < 1000; ++i) {
+    Board b = RandomBoard();
+    for (Board t : b.AllTranspositions()) {
+      EXPECT_EQ(b.Unique(), t.Unique());
+    }
+  }
+}
+
+TEST(SerializedBoard, Serialize) {
+  for (int i = 0; i < 1000; ++i) {
+    Board b = RandomBoard();
+    EXPECT_EQ(b.Unique(), SerializedBoard(b).ToBoard());
+    for (Board t : b.AllTranspositions()) {
+      EXPECT_EQ(SerializedBoard(b), SerializedBoard(t));
+    }
+  }
+}
+
+TEST(SerializedBoard, FirstDifference) {
+  SerializedBoard b1({1, 2, 3, 0b100, 5, 6, 7, 8, 9, 10, 11, 12});
+  SerializedBoard b2({0b100, 2, 3, 0b100, 5, 6, 7, 8, 9, 10, 11, 12});
+  SerializedBoard b3({1, 2, 3, 0b1100, 5, 6, 7, 8, 9, 10, 11, 12});
+
+  EXPECT_EQ(b1.FirstDifference(b1), 255);
+  EXPECT_EQ((int) b1.FirstDifference(b2), 0);
+  EXPECT_EQ((int) b1.FirstDifference(b3), 27);
 }
