@@ -101,11 +101,13 @@ class SerializedBoard {
   SerializedBoard(std::array<uint8_t, 13> serialized) :
       serialized_(serialized) {}
 
-  SerializedBoard(Board b) {
+  SerializedBoard(Board b) : SerializedBoard(b.Player(), b.Opponent()) {}
+
+  SerializedBoard(BitPattern player, BitPattern opponent) {
     BitPattern current_square = 1ULL << 63;
-    Board unique = b.Unique();
-    BitPattern player = unique.Player();
-    BitPattern opponent = unique.Opponent();
+    Board unique = Board(player, opponent).Unique();
+    player = unique.Player();
+    opponent = unique.Opponent();
     for (int i = 0; i < 13; ++i) {
       uint8_t five_squares_serialized = 0;
       int current_multiplier = 1;
@@ -152,11 +154,38 @@ class SerializedBoard {
     return true;
   }
 
+  bool operator<(const SerializedBoard& rhs) const {
+    for (int i = 0; i < serialized_.size(); ++i) {
+      if (serialized_[i] > rhs.serialized_[i]) {
+        return false;
+      } else if (serialized_[i] < rhs.serialized_[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool operator!=(const SerializedBoard& rhs) const {
+    return !(operator==(rhs));
+  }
+
+  bool operator>(const SerializedBoard& rhs) const {
+    return rhs.operator<(*this);
+  }
+
+  bool operator<=(const SerializedBoard& rhs) const {
+    return !(operator>(rhs));
+  }
+
+  bool operator>=(const SerializedBoard& rhs) const {
+    return !(operator<(rhs));
+  }
+
   uint8_t FirstDifference(SerializedBoard other) {
     for (int i = 0; i < serialized_.size(); ++i) {
       if (serialized_[i] != other.serialized_[i]) {
         uint8_t difference = serialized_[i] ^ other.serialized_[i];
-        return 8 * i + __builtin_ctz(difference);
+        return 8 * i + __builtin_clz((int) difference) + sizeof(uint8_t) * 8 - sizeof(int) * 8;
       }
     }
     return 255;

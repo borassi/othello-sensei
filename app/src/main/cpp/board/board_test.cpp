@@ -81,12 +81,29 @@ TEST(SerializedBoard, Serialize) {
   }
 }
 
+TEST(SerializedBoard, Comparison) {
+  SerializedBoard b1({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+  SerializedBoard b2({1, 2, 3, 5, 5, 6, 7, 8, 9, 10, 11, 12});
+  SerializedBoard b3({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13});
+
+  EXPECT_EQ(b1, b1);
+  EXPECT_LE(b1, b1);
+  EXPECT_GE(b1, b1);
+
+  for (const SerializedBoard& b : {b2, b3}) {
+    EXPECT_LT(b1, b);
+    EXPECT_LE(b1, b);
+    EXPECT_GT(b, b1);
+    EXPECT_GE(b, b1);
+  }
+}
+
 TEST(SerializedBoard, FirstDifference) {
   SerializedBoard b1({1, 2, 3, 0b100, 5, 6, 7, 8, 9, 10, 11, 12});
   SerializedBoard b2({0b100, 2, 3, 0b100, 5, 6, 7, 8, 9, 10, 11, 12});
   SerializedBoard b3({1, 2, 3, 0b1100, 5, 6, 7, 8, 9, 10, 11, 12});
 
   EXPECT_EQ(b1.FirstDifference(b1), 255);
-  EXPECT_EQ((int) b1.FirstDifference(b2), 0);
-  EXPECT_EQ((int) b1.FirstDifference(b3), 27);
+  EXPECT_EQ((int) b1.FirstDifference(b2), 5);
+  EXPECT_EQ((int) b1.FirstDifference(b3), 28);
 }

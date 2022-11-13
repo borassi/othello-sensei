@@ -36,6 +36,15 @@ target_link_libraries(
 ENDIF()
 
 add_library(
+        file
+        file.h
+        file.cpp
+)
+set_target_properties(
+        file PROPERTIES LINKER_LANGUAGE CXX
+)
+
+add_library(
         random
         random.h
 )

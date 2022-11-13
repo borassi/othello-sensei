@@ -70,6 +70,7 @@ ENDIF()
 
 add_subdirectory(analyzers)
 add_subdirectory(board)
+add_subdirectory(book)
 add_subdirectory(evaluatealphabeta)
 add_subdirectory(evaluatedepthone)
 add_subdirectory(evaluatederivative)
