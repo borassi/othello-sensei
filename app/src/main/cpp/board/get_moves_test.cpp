@@ -28,8 +28,8 @@ TEST(GetMoves, CompareWithBasic) {
   int n = 10000;
   for (int i = 0; i < n; i++) {
     Board b = RandomBoard();
-    BitPattern moves_basic = GetMovesBasic(b.GetPlayer(), b.GetOpponent());
-    BitPattern moves = GetMoves(b.GetPlayer(), b.GetOpponent());
+    BitPattern moves_basic = GetMovesBasic(b.Player(), b.Opponent());
+    BitPattern moves = GetMoves(b.Player(), b.Opponent());
     ASSERT_EQ(moves, moves_basic);
   }
 }
@@ -38,16 +38,16 @@ TEST(GetMoves, GetAllMoves) {
   int n = 10000;
   for (int i = 0; i < n; i++) {
     Board b = RandomBoard();
-    std::vector<BitPattern> moves = GetAllMoves(b.GetPlayer(), b.GetOpponent());
+    std::vector<BitPattern> moves = GetAllMoves(b.Player(), b.Opponent());
     std::set<BitPattern> moves_set(moves.begin(), moves.end());
     ASSERT_TRUE(moves.size() == moves_set.size());
     int n_moves = 0;
 
     for (Square x = 0; x < 64; ++x) {
-      if ((1ULL << x) & (b.GetPlayer() | b.GetOpponent())) {
+      if ((1ULL << x) & (b.Player() | b.Opponent())) {
         continue;
       }
-      long flip = GetFlipBasic(x, b.GetPlayer(), b.GetOpponent());
+      long flip = GetFlipBasic(x, b.Player(), b.Opponent());
       if (flip == 0) {
         continue;
       }
@@ -55,7 +55,7 @@ TEST(GetMoves, GetAllMoves) {
       n_moves++;
     }
     if (n_moves == 0) {
-      ASSERT_TRUE(HaveToPass(b.GetPlayer(), b.GetOpponent()));
+      ASSERT_TRUE(HaveToPass(b.Player(), b.Opponent()));
     }
     ASSERT_EQ(moves.size(), n_moves);
   }
@@ -64,7 +64,7 @@ TEST(GetMoves, GetAllMoves) {
 TEST(GetMoves, GetAllMovesWithPass) {
   Board b;
   ASSERT_THAT(
-      GetAllMovesWithPass(b.GetPlayer(), b.GetOpponent()),
+      GetAllMovesWithPass(b.Player(), b.Opponent()),
       ::testing::UnorderedElementsAre(
           ParsePattern(
               "--------"
@@ -110,12 +110,12 @@ TEST(GetMoves, SquareFromFlip) {
   for (int i = 0; i < n; i++) {
     Board b = RandomBoard();
     for (Square x = 0; x < 64; ++x) {
-      if ((1ULL << x) & (b.GetPlayer() | b.GetOpponent())) {
+      if ((1ULL << x) & (b.Player() | b.Opponent())) {
         continue;
       }
-      long flip = GetFlipBasic(x, b.GetPlayer(), b.GetOpponent());
+      long flip = GetFlipBasic(x, b.Player(), b.Opponent());
       if (flip != 0) {
-        ASSERT_EQ(SquareFromFlip(flip, b.GetPlayer(), b.GetOpponent()), x);
+        ASSERT_EQ(SquareFromFlip(flip, b.Player(), b.Opponent()), x);
       }
     }
   }

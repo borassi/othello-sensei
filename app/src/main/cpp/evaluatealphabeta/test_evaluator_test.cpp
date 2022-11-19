@@ -27,11 +27,11 @@ TEST(TestEvaluator, InitialBoard) {
   TestEvaluator eval(TestEvaluatorDepthOne::Factory());
   Board board;
 
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 1),
             8 * (/*depth 1*/(3-2) * kWeightDepthOne + /*depth 0*/ (0+2) * kWeightDepthZero)
             / (kWeightDepthOne + kWeightDepthZero));
   EXPECT_EQ(eval.GetNVisited(), 5);
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 2),
             8 * (/*depth 2*/(0+2) * kWeightDepthOne + /*depth 1*/ (3-2) * kWeightDepthZero)
             / (kWeightDepthOne + kWeightDepthZero));
   EXPECT_EQ(eval.GetNVisited(), 1 + 4 + 12);
@@ -50,12 +50,12 @@ TEST(TestEvaluator, Pass) {
       "------OX", true);
 
   EXPECT_EQ(
-      eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+      eval.Evaluate(board.Player(), board.Opponent(), 1),
       8 * (/*depth 1*/(4-2) * kWeightDepthOne + /*depth 0*/ (1+2) * kWeightDepthZero)
       / (kWeightDepthOne + kWeightDepthZero));
 
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 2),
       8 * (/*depth 1*/(7-2) * kWeightDepthOne + /*depth 0*/ (4+2) * kWeightDepthZero)
       / (kWeightDepthOne + kWeightDepthZero));
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 3), 8 * 60);
 }

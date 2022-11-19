@@ -59,11 +59,11 @@ TEST(EvaluatorAlphaBetaTest, InitialBoard) {
   EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
   Board board;
 
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 1),
             8 * (/*depth 1*/(3-2) * kWeightDepthOne + /*depth 0*/ (0+2) * kWeightDepthZero)
             / (kWeightDepthOne + kWeightDepthZero));
   EXPECT_EQ(eval.GetNVisited(), 5);
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 2),
             8 * (/*depth 2*/(0+2) * kWeightDepthOne + /*depth 1*/ (3-2) * kWeightDepthZero)
             / (kWeightDepthOne + kWeightDepthZero));
   EXPECT_EQ(eval.GetNVisited(), 1 + 4 + 6  /*3 for first move, 1 for other 3 */);
@@ -83,14 +83,14 @@ TEST(EvaluatorAlphaBetaTest, Pass) {
       "------OX", true);
 
   EXPECT_EQ(
-      eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 1),
+      eval.Evaluate(board.Player(), board.Opponent(), 1),
       8 * (/*depth 1*/(4-2) * kWeightDepthOne + /*depth 0*/ (1+2) * kWeightDepthZero)
       / (kWeightDepthOne + kWeightDepthZero));
 
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 2),
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 2),
       8 * (/*depth 1*/(7-2) * kWeightDepthOne + /*depth 0*/ (4+2) * kWeightDepthZero)
       / (kWeightDepthOne + kWeightDepthZero));
-  EXPECT_EQ(eval.Evaluate(board.GetPlayer(), board.GetOpponent(), 3), 8 * 60);
+  EXPECT_EQ(eval.Evaluate(board.Player(), board.Opponent(), 3), 8 * 60);
 }
 
 TEST(EvaluatorAlphaBetaTest, UsesHashMap) {
@@ -103,12 +103,12 @@ TEST(EvaluatorAlphaBetaTest, UsesHashMap) {
   }
 
   int n_visited = 0;
-  int actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), 64, kMinEvalLarge, kMaxEvalLarge);
+  int actual = evaluator.Evaluate(b.Player(), b.Opponent(), 64, kMinEvalLarge, kMaxEvalLarge);
   EXPECT_GT(n_visited, 1);
 
   if (b.NEmpties() > kMinEmptiesForHashMap) {
     n_visited = 0;
-    actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), 64, kMinEvalLarge, kMaxEvalLarge);
+    actual = evaluator.Evaluate(b.Player(), b.Opponent(), 64, kMinEvalLarge, kMaxEvalLarge);
     EXPECT_EQ(n_visited, 1);
   }
 }
@@ -125,8 +125,8 @@ TEST(EvaluatorAlphaBetaTest, CompareWithTest) {
         break;
       }
       ASSERT_EQ(
-          test_eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d),
-          eval.Evaluate(board.GetPlayer(), board.GetOpponent(), d)) << board << " " << d;
+          test_eval.Evaluate(board.Player(), board.Opponent(), d),
+          eval.Evaluate(board.Player(), board.Opponent(), d)) << board << " " << d;
     }
   }
 }
@@ -141,15 +141,15 @@ TEST_F(EvaluatorAlphaBetaEndgameTest, Endgame) {
 
     int n_visited = 0;
     int actual;
-    BitPattern empties = b.GetEmpties();
+    BitPattern empties = b.Empties();
     int nEmpties = b.NEmpties();
 
     if (nEmpties < 6 || nEmpties > 8) {
       i--;
       continue;
     }
-    actual = evaluator.Evaluate(b.GetPlayer(), b.GetOpponent(), 64);
-    int expected = SolveBasic(b.GetPlayer(), b.GetOpponent(), false) * 8;
+    actual = evaluator.Evaluate(b.Player(), b.Opponent(), 64);
+    int expected = SolveBasic(b.Player(), b.Opponent(), false) * 8;
 
     ASSERT_EQ(actual, expected) << b;
   }

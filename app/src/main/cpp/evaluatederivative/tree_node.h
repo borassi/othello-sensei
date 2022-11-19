@@ -313,6 +313,10 @@ class TreeNode {
     assert(AreChildrenCorrect());
   }
 
+  void Reset(Board b, int depth, u_int8_t evaluator) {
+    Reset(b.Player(), b.Opponent(), depth, evaluator);
+  }
+
   void Reset(BitPattern player, BitPattern opponent, int depth, u_int8_t evaluator) {
     std::lock_guard<std::mutex> guard(mutex_);
     evaluator_ = evaluator;

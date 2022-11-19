@@ -56,14 +56,14 @@ int SolveBasic(long player, long opponent, bool passed) {
 TEST(EvaluatorLastMoves, DoublePass) {
   int visited = 0;
   Board b("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXXX", true);
-  EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 0);
+  EXPECT_EQ(SolveBasic(b.Player(), b.Opponent(), false), 0);
   b = Board("--OOOOOOX-OOOOO-XOOOOOXXXOOXOXXOXOOOXXOOXOOOOOOOXOOOOO--XXXXXXOX", true);
-  EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), -4);
+  EXPECT_EQ(SolveBasic(b.Player(), b.Opponent(), false), -4);
 }
 
 TEST(EvaluatorLastMoves, ManyPass) {
   Board b("XXXXXXXXXXXX-XXXXXXXXXXXXXOXXXXX-XXXXXX-XXXX-XX-XX-XXXXXXXX-XXXX", true);
-  EXPECT_EQ(SolveBasic(b.GetPlayer(), b.GetOpponent(), false), 24);
+  EXPECT_EQ(SolveBasic(b.Player(), b.Opponent(), false), 24);
 }
 
 TEST(EvaluatorLastMoves, E2E) {
@@ -76,7 +76,7 @@ TEST(EvaluatorLastMoves, E2E) {
 
     int n_visited = 0;
     int actual;
-    BitPattern empties = b.GetEmpties();
+    BitPattern empties = b.Empties();
     int nEmpties = b.NEmpties();
     Square x[4];
     int xCounter = 0;
@@ -93,17 +93,17 @@ TEST(EvaluatorLastMoves, E2E) {
       }
     }
     if (nEmpties == 5) {
-      actual = EvalFiveEmpties(b.GetPlayer(), b.GetOpponent(), -64, 64, 0, 0, &n_visited);
+      actual = EvalFiveEmpties(b.Player(), b.Opponent(), -64, 64, 0, 0, &n_visited);
     } else if (nEmpties == 4) {
-      actual = EvalFourEmpties(x[0], x[1], x[2], x[3], b.GetPlayer(), b.GetOpponent(), -64, 64, rand() % 2, 0, 0, &n_visited);
+      actual = EvalFourEmpties(x[0], x[1], x[2], x[3], b.Player(), b.Opponent(), -64, 64, rand() % 2, 0, 0, &n_visited);
     } else if (nEmpties == 3) {
-      actual = EvalThreeEmpties(x[0], x[1], x[2], b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
+      actual = EvalThreeEmpties(x[0], x[1], x[2], b.Player(), b.Opponent(), -64, 64, &n_visited);
     } else if (nEmpties == 2) {
-      actual = EvalTwoEmpties(x[0], x[1], b.GetPlayer(), b.GetOpponent(), -64, 64, &n_visited);
+      actual = EvalTwoEmpties(x[0], x[1], b.Player(), b.Opponent(), -64, 64, &n_visited);
     } else if (nEmpties == 1) {
-      actual = EvalOneEmpty(x[0], b.GetPlayer(), b.GetOpponent());
+      actual = EvalOneEmpty(x[0], b.Player(), b.Opponent());
     }
-    int expected = SolveBasic(b.GetPlayer(), b.GetOpponent(), false);
+    int expected = SolveBasic(b.Player(), b.Opponent(), false);
 
     EXPECT_EQ(actual, expected);
   }

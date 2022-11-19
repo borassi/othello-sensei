@@ -51,7 +51,7 @@ TEST(Stable, Left) {
                   "X-------"
                   "X-------", true);
   BitPattern stable = GetStableDisks(testBoard.Player(), testBoard.Opponent());
-  EXPECT_EQ(testBoard.GetPlayer(), stable);
+  EXPECT_EQ(testBoard.Player(), stable);
 }
 
 TEST(Stable, Center) {
@@ -63,7 +63,7 @@ TEST(Stable, Center) {
           "XXXXXXXX"
           "---XXX--"
           "--X-X-X-", true);
-  BitPattern stable = GetStableDisks(b.GetPlayer(), b.GetOpponent());
+  BitPattern stable = GetStableDisks(b.Player(), b.Opponent());
   BitPattern expected = ParsePattern(
           "--------"
           "--------"
@@ -86,7 +86,7 @@ TEST(Stable, Update) {
           "-------O"
           "-----XXO"
           "---OOOOO", true);
-  BitPattern stable = GetStableDisks(b.GetPlayer(), b.GetOpponent());
+  BitPattern stable = GetStableDisks(b.Player(), b.Opponent());
   BitPattern expected = ParsePattern("XXXX----"
                                      "XXX-----" 
                                      "X-------"
@@ -119,17 +119,17 @@ TEST(Stable, FullRowsColumns) {
 //  std::cout << PatternToString(output);
   EXPECT_EQ(output, expected);
 //  std::cout << PatternToString(GetFullColumns(~Diag9Symmetry(p)));
-  EXPECT_EQ(GetFullColumns(~Diag9Symmetry(p)), Diag9Symmetry(expected));
+  EXPECT_EQ(GetFullColumns(~Diag9Mirror(p)), Diag9Mirror(expected));
 }
 
 TEST(Stable, All) {
   for (int i = 0; i < 100000; i++) {
     Board b = RandomBoard();
-    BitPattern stable = GetStableDisks(b.GetPlayer(), b.GetOpponent());
-    BitPattern stablePlayer = stable & b.GetPlayer();
-    BitPattern stableOpponent = stable & b.GetOpponent();
-    BitPattern player = b.GetPlayer();
-    BitPattern opponent = b.GetOpponent();
+    BitPattern stable = GetStableDisks(b.Player(), b.Opponent());
+    BitPattern stablePlayer = stable & b.Player();
+    BitPattern stableOpponent = stable & b.Opponent();
+    BitPattern player = b.Player();
+    BitPattern opponent = b.Opponent();
     for (int d = 0; d < 5; ++d) {
       BitPattern empties = ~(player | opponent);
       BitPattern flip = 0;

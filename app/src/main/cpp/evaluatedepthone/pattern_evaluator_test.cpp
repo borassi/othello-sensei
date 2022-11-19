@@ -179,28 +179,28 @@ TEST_F(PatternEvaluatorTest, UpdateAndUndo) {
   PatternEvaluator test(evals_.data());;
   for (int i = 0; i < 10000; ++i) {
     Board b = RandomBoard();
-    std::vector<BitPattern> moves = GetAllMoves(b.GetPlayer(), b.GetOpponent());
+    std::vector<BitPattern> moves = GetAllMoves(b.Player(), b.Opponent());
     if (moves.empty()) {
       continue;
     }
-    eval.Setup(b.GetPlayer(), b.GetOpponent());
+    eval.Setup(b.Player(), b.Opponent());
     eval.Invert();
     ASSERT_EQ(eval.Empties(), b.NEmpties());
     for (BitPattern flip : moves) {
-      BitPattern square = SquareFromFlip(flip, b.GetPlayer(), b.GetOpponent());
-      Board after(b.GetPlayer(), b.GetOpponent());
+      BitPattern square = SquareFromFlip(flip, b.Player(), b.Opponent());
+      Board after(b.Player(), b.Opponent());
       after.PlayMove(flip);
       if (flip != 0) {
         eval.Update(square, flip);
       }
-      test.Setup(after.GetPlayer(), after.GetOpponent());
+      test.Setup(after.Player(), after.Opponent());
       AssertEvalsEQ(eval, test);
       if (flip != 0) {
         eval.UndoUpdate(square, flip);
       }
     }
     eval.Invert();
-    test.Setup(b.GetPlayer(), b.GetOpponent());
+    test.Setup(b.Player(), b.Opponent());
     AssertEvalsEQ(eval, test);
   }
 }

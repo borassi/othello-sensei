@@ -55,19 +55,19 @@ TEST(GetFlip, Basic) {
                                   "--------"
                                   "--------");
   
-  if (GetFlipBasic(50, horiz.GetPlayer(), horiz.GetOpponent()) != flip1) {
+  if (GetFlipBasic(50, horiz.Player(), horiz.Opponent()) != flip1) {
     std::cout << PatternToString(flip1) << "\n";
     std::cout << PatternToString(GetFlipBasic(50, horiz.Player(), horiz.Opponent()));
   }
-  if (GetFlipBasic(39, horiz.GetPlayer(), horiz.GetOpponent()) != flip2) {
+  if (GetFlipBasic(39, horiz.Player(), horiz.Opponent()) != flip2) {
     std::cout << PatternToString(flip2) << "\n";
     std::cout << PatternToString(GetFlipBasic(39, horiz.Player(), horiz.Opponent()));
   }
-  if (GetFlipBasic(24, horiz.GetPlayer(), horiz.GetOpponent()) != flip3) {
+  if (GetFlipBasic(24, horiz.Player(), horiz.Opponent()) != flip3) {
     std::cout << PatternToString(flip2) << "\n";
     std::cout << PatternToString(GetFlipBasic(24, horiz.Player(), horiz.Opponent()));
   }
-  if (GetFlipBasic(24, horiz.GetPlayer(), horiz.GetOpponent()) != flip3) {
+  if (GetFlipBasic(24, horiz.Player(), horiz.Opponent()) != flip3) {
     std::cout << PatternToString(flip2) << "\n";
     std::cout << PatternToString(GetFlipBasic(24, horiz.Player(), horiz.Opponent()));
   }
@@ -108,8 +108,8 @@ TEST(GetFlip, Random) {
     Board b = RandomBoard();
     Square move = rand() % 64;
     if (b.IsEmpty(move)) {
-      BitPattern flip_basic = GetFlipBasic(move, b.GetPlayer(), b.GetOpponent());
-      BitPattern flip = GetFlip(move, b.GetPlayer(), b.GetOpponent());
+      BitPattern flip_basic = GetFlipBasic(move, b.Player(), b.Opponent());
+      BitPattern flip = GetFlip(move, b.Player(), b.Opponent());
       EXPECT_EQ(flip_basic, flip) << b << " " << move << "\n"  << PatternToString(flip_basic) << "\n" << PatternToString(flip) << "\n";
     }
   }
