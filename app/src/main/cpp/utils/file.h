@@ -21,5 +21,7 @@
 
 std::fstream OpenFile(const std::string& filename);
 int FileSize(std::fstream& file);
+bool FileExists(const std::string& filename);
+void CreateEmptyFile(const std::string& filename);
 
 #endif //OTHELLOSENSEI_FILE_H

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <gtest/gmock.h>
 #include <gtest/gtest.h>
 #include "prob_combiners.h"
 

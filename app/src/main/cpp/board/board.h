@@ -21,6 +21,8 @@
 #include "bitpattern.h"
 #include "get_flip.h"
 
+typedef std::array<u_int8_t, 13> SerializedBoard;
+
 class Board {
 
 public:
@@ -86,28 +88,12 @@ public:
     return best_board;
   }
 
-private:
-  BitPattern player_;
-  BitPattern opponent_;
-  
-};
-
-std::ostream& operator<<(std::ostream& stream, const Board& b);
-Board RandomBoard(double percentage_player, double percentage_opponent);
-Board RandomBoard();
-
-class SerializedBoard {
- public:
-  SerializedBoard(std::array<uint8_t, 13> serialized) :
-      serialized_(serialized) {}
-
-  SerializedBoard(Board b) : SerializedBoard(b.Player(), b.Opponent()) {}
-
-  SerializedBoard(BitPattern player, BitPattern opponent) {
+  SerializedBoard Serialize() {
+    SerializedBoard serialized;
     BitPattern current_square = 1ULL << 63;
-    Board unique = Board(player, opponent).Unique();
-    player = unique.Player();
-    opponent = unique.Opponent();
+    Board unique = Board(player_, opponent_).Unique();
+    BitPattern player = unique.Player();
+    BitPattern opponent = unique.Opponent();
     for (int i = 0; i < 13; ++i) {
       uint8_t five_squares_serialized = 0;
       int current_multiplier = 1;
@@ -120,17 +106,18 @@ class SerializedBoard {
         current_multiplier *= 3;
         current_square = current_square >> 1;
       }
-      serialized_[i] = five_squares_serialized;
+      serialized[i] = five_squares_serialized;
     }
+    return serialized;
   }
 
-  Board ToBoard() {
+  static Board Deserialize(SerializedBoard serialized) {
     BitPattern player = 0;
     BitPattern opponent = 0;
     BitPattern current_square = 1ULL << 63;
 
     for (int i = 0; i < 13; ++i) {
-      uint8_t five_squares_serialized = serialized_[i];
+      uint8_t five_squares_serialized = serialized[i];
       for (int j = 0; j < 5; ++j) {
         int current_value = five_squares_serialized % 3;
         if (current_value == 1) {
@@ -145,53 +132,24 @@ class SerializedBoard {
     return Board(player, opponent);
   }
 
-  bool operator==(const SerializedBoard& rhs) const {
-    for (int i = 0; i < serialized_.size(); ++i) {
-      if (serialized_[i] != rhs.serialized_[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool operator<(const SerializedBoard& rhs) const {
-    for (int i = 0; i < serialized_.size(); ++i) {
-      if (serialized_[i] > rhs.serialized_[i]) {
-        return false;
-      } else if (serialized_[i] < rhs.serialized_[i]) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool operator!=(const SerializedBoard& rhs) const {
-    return !(operator==(rhs));
-  }
-
-  bool operator>(const SerializedBoard& rhs) const {
-    return rhs.operator<(*this);
-  }
-
-  bool operator<=(const SerializedBoard& rhs) const {
-    return !(operator>(rhs));
-  }
-
-  bool operator>=(const SerializedBoard& rhs) const {
-    return !(operator<(rhs));
-  }
-
-  uint8_t FirstDifference(SerializedBoard other) {
-    for (int i = 0; i < serialized_.size(); ++i) {
-      if (serialized_[i] != other.serialized_[i]) {
-        uint8_t difference = serialized_[i] ^ other.serialized_[i];
-        return 8 * i + __builtin_clz((int) difference) + sizeof(uint8_t) * 8 - sizeof(int) * 8;
-      }
-    }
-    return 255;
-  }
- private:
-  std::array<uint8_t, 13> serialized_;
+private:
+  BitPattern player_;
+  BitPattern opponent_;
+  
 };
+
+namespace std {
+  template <>
+  struct hash<Board> {
+    std::size_t operator()(const Board& b) const {
+      return HashFull(b.Player(), b.Opponent());
+    }
+  };
+}
+
+std::ostream& operator<<(std::ostream& stream, const Board& b);
+Board RandomBoard(double percentage_player, double percentage_opponent);
+Board RandomBoard();
+
 #endif /* BOARD_H */
 

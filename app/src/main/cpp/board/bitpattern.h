@@ -154,19 +154,22 @@ constexpr BitPattern GetDiag9(Square move) {
 }
 
 struct HashValues {
-  u_int32_t hash_player[32][8][256];
-  u_int32_t hash_opponent[32][8][256];
+  u_int32_t hash_player[8][256];
+  u_int32_t hash_opponent[8][256];
+  u_int32_t full_hash_player[8][256];
+  u_int32_t full_hash_opponent[8][256];
 
-  constexpr HashValues() : hash_player(), hash_opponent() {
+  constexpr HashValues() : hash_player(), hash_opponent(), full_hash_player(),
+  full_hash_opponent() {
     Random random;
     for (int row = 0; row < 8; row++) {
       for (int i = 0; i < 256; i++) {
         auto player = random.next();
         auto opponent = random.next();
-        for (int bit = 0; bit < 32; ++bit) {
-          hash_player[bit][row][i] = player % (1ULL << bit);
-          hash_opponent[bit][row][i] = opponent % (1ULL << bit);
-        }
+        hash_player[row][i] = player % kHashMapSize;
+        hash_opponent[row][i] = opponent % kHashMapSize;
+        full_hash_player[row][i] = player;
+        full_hash_opponent[row][i] = opponent;
       }
     }
   }
@@ -174,28 +177,44 @@ struct HashValues {
 
 constexpr HashValues kHashValues;
 
-template<int bit>
-inline u_int32_t Hash(BitPattern player, BitPattern opponent) {
-  auto hash_player = kHashValues.hash_player[bit];
-  auto hash_opponent = kHashValues.hash_player[bit];
-
+inline u_int32_t HashFull(BitPattern player, BitPattern opponent) {
   return
-      hash_player[0][player & kLastRowPattern] ^
-      hash_player[1][(player >> 8) & kLastRowPattern] ^
-      hash_player[2][(player >> 16) & kLastRowPattern] ^
-      hash_player[3][(player >> 24) & kLastRowPattern] ^
-      hash_player[4][(player >> 32) & kLastRowPattern] ^
-      hash_player[5][(player >> 40) & kLastRowPattern] ^
-      hash_player[6][(player >> 48) & kLastRowPattern] ^
-      hash_player[7][(player >> 56)] ^
-      hash_opponent[0][opponent & kLastRowPattern] ^
-      hash_opponent[1][(opponent >> 8) & kLastRowPattern] ^
-      hash_opponent[2][(opponent >> 16) & kLastRowPattern] ^
-      hash_opponent[3][(opponent >> 24) & kLastRowPattern] ^
-      hash_opponent[4][(opponent >> 32) & kLastRowPattern] ^
-      hash_opponent[5][(opponent >> 40) & kLastRowPattern] ^
-      hash_opponent[6][(opponent >> 48) & kLastRowPattern] ^
-      hash_opponent[7][(opponent >> 56)];
+      kHashValues.full_hash_player[0][player & kLastRowPattern] ^
+      kHashValues.full_hash_player[1][(player >> 8) & kLastRowPattern] ^
+      kHashValues.full_hash_player[2][(player >> 16) & kLastRowPattern] ^
+      kHashValues.full_hash_player[3][(player >> 24) & kLastRowPattern] ^
+      kHashValues.full_hash_player[4][(player >> 32) & kLastRowPattern] ^
+      kHashValues.full_hash_player[5][(player >> 40) & kLastRowPattern] ^
+      kHashValues.full_hash_player[6][(player >> 48) & kLastRowPattern] ^
+      kHashValues.full_hash_player[7][(player >> 56)] ^
+      kHashValues.full_hash_opponent[0][opponent & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[1][(opponent >> 8) & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[2][(opponent >> 16) & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[3][(opponent >> 24) & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[4][(opponent >> 32) & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[5][(opponent >> 40) & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[6][(opponent >> 48) & kLastRowPattern] ^
+      kHashValues.full_hash_opponent[7][(opponent >> 56)];
+}
+
+inline u_int32_t Hash(BitPattern player, BitPattern opponent) {
+  return
+      kHashValues.hash_player[0][player & kLastRowPattern] ^
+      kHashValues.hash_player[1][(player >> 8) & kLastRowPattern] ^
+      kHashValues.hash_player[2][(player >> 16) & kLastRowPattern] ^
+      kHashValues.hash_player[3][(player >> 24) & kLastRowPattern] ^
+      kHashValues.hash_player[4][(player >> 32) & kLastRowPattern] ^
+      kHashValues.hash_player[5][(player >> 40) & kLastRowPattern] ^
+      kHashValues.hash_player[6][(player >> 48) & kLastRowPattern] ^
+      kHashValues.hash_player[7][(player >> 56)] ^
+      kHashValues.hash_opponent[0][opponent & kLastRowPattern] ^
+      kHashValues.hash_opponent[1][(opponent >> 8) & kLastRowPattern] ^
+      kHashValues.hash_opponent[2][(opponent >> 16) & kLastRowPattern] ^
+      kHashValues.hash_opponent[3][(opponent >> 24) & kLastRowPattern] ^
+      kHashValues.hash_opponent[4][(opponent >> 32) & kLastRowPattern] ^
+      kHashValues.hash_opponent[5][(opponent >> 40) & kLastRowPattern] ^
+      kHashValues.hash_opponent[6][(opponent >> 48) & kLastRowPattern] ^
+      kHashValues.hash_opponent[7][(opponent >> 56)];
 }
 
 std::string PatternToString(BitPattern pattern);

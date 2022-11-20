@@ -34,3 +34,11 @@ int FileSize(std::fstream& file) {
   file.seekg(position, std::ios::beg);
   return size;
 }
+
+bool FileExists(const std::string& filename) {
+  return std::ifstream(filename).good();
+}
+
+void CreateEmptyFile(const std::string& filename) {
+  std::ofstream(filename).close();
+}

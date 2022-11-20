@@ -49,6 +49,7 @@ target_link_libraries(
         position_to_data
         LINK_PRIVATE
         bitpattern
+        board
         value_file
 )
 
