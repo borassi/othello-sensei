@@ -21,8 +21,10 @@
 double LogProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   BitPattern empties = ~(player | opponent);
   int n_empties = __builtin_popcountll(empties);
-  return -3.29 + 0.5395 * n_empties + 2.4157 * log(1 + GetNMoves(opponent, player))
-      -0.0615 / 8 * (approx_eval - lower);
+  EvalLarge error = approx_eval - lower;
+  return -3.2519 + 0.5526 * n_empties + 2.3102 * log(1 + GetNMoves(opponent,
+                                                                player))
+      -0.0639 / 8 * error;
 }
 
 double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
@@ -32,8 +34,9 @@ double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, Eval
 double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   BitPattern empties = ~(player | opponent);
   int n_empties = __builtin_popcountll(empties);
-  return -3.6659 + 0.5501 * n_empties + 2.7047 * log(1 + GetNMoves(player, opponent))
-      -0.0590 / 8 * (lower - approx_eval);
+  EvalLarge error = approx_eval - lower;
+  return -3.7256 + 0.5757 * n_empties + 2.5578 * log(1 + GetNMoves(player,opponent))
+      + 0.0620 / 8 * error;
 }
 
 double DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {

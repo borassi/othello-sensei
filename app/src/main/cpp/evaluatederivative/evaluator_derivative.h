@@ -93,7 +93,7 @@ class TreeNodeSupplier {
         return existing_node;
       }
     }
-    int hash = Hash<kBitHashMap>(player, opponent);
+    int hash = Hash(player, opponent);
     int node_id = num_tree_nodes_++;
     assert(node_id < kDerivativeEvaluatorSize);
     TreeNode& node = tree_nodes_[node_id];
@@ -110,7 +110,7 @@ class TreeNodeSupplier {
   int* tree_node_index_;
 
   TreeNode* GetNoLock(BitPattern player, BitPattern opponent) {
-    int index = tree_node_index_[Hash<kBitHashMap>(player, opponent)];
+    int index = tree_node_index_[Hash(player, opponent)];
     if (index >= num_tree_nodes_) {
       return nullptr;
     }

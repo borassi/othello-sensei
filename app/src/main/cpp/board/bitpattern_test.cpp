@@ -150,7 +150,7 @@ TEST(BitPattern, Hash) {
       opponent = opponent ^ (1L << (rand() % 64));
       player = player & ~opponent;
     }
-    int hash = Hash<10>(player, opponent);
+    int hash = Hash(player, opponent);
     EXPECT_GE(hash, 0);
     EXPECT_LT(hash, 1L << 10);
     hashes[hash % n]++;

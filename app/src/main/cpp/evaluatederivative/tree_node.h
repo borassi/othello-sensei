@@ -542,6 +542,15 @@ class TreeNode {
 
   u_int8_t Evaluator() { return evaluator_; }
 
+  void ExtendToAllEvals() {
+    for (int i = weak_lower_ - 2; i >= kMinEval; i -= 2) {
+      ExtendEval(i);
+    }
+    for (int i = weak_upper_ + 2; i <= kMaxEval; i += 2) {
+      ExtendEval(i);
+    }
+  }
+
  private:
   BitPattern player_;
   BitPattern opponent_;

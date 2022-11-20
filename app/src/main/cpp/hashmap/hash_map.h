@@ -96,7 +96,7 @@ class HashMap {
       BitPattern player, BitPattern opponent, DepthValue depth,
       EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
       Square second_best_move) {
-    auto& element = hash_map_[Hash<kBitHashMap>(player, opponent)];
+    auto& element = hash_map_[Hash(player, opponent)];
     {
       const std::lock_guard<std::mutex> guard(element.second);
       element.first.Update(
@@ -114,7 +114,7 @@ class HashMap {
   }
 
   std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) const {
-    auto& element = hash_map_[Hash<kBitHashMap>(player, opponent)];
+    auto& element = hash_map_[Hash(player, opponent)];
     {
       const std::lock_guard<std::mutex> guard(element.second);
       const auto& result = element.first;

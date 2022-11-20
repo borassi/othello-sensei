@@ -73,7 +73,7 @@ struct std::hash<EvaluatedBoard>
 {
   std::size_t operator()(const EvaluatedBoard& f) const noexcept {
     return std::hash<EvalApprox>{}(f.GetEval()) ^
-        Hash<kBitHashMap>(f.GetPlayer(), f.GetOpponent());
+        Hash(f.GetPlayer(), f.GetOpponent());
   }
 };
 

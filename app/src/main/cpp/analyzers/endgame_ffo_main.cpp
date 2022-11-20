@@ -44,6 +44,13 @@ int main(int argc, char* argv[]) {
     evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 1200, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
+    if (parse_flags.GetBoolFlagOrDefault("show_evals", false)) {
+      first_position->ExtendToAllEvals();
+      for (int k = -63; k <= 63; k += 2) {
+        std::cout << std::setprecision(0) << k << " " << first_position->ProofNumber(k) << " " <<
+        first_position->DisproofNumber(k) << "\n";
+      }
+    }
     const Stats& stats = evaluator.GetStats();
     auto n_visited = stats.GetAll();
     std::cout
