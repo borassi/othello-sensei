@@ -17,15 +17,15 @@
 #include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 #include <unordered_map>
-#include "position_to_data.h"
+#include "book.h"
 #include "../board/board.h"
 
 const std::string kTempDir = "app/testdata/tmp/book_test";
 
 using ::testing::ElementsAreArray;
 
-TEST(PositionToData, Basic) {
-  PositionToData position_to_data(kTempDir);
+TEST(Book, Basic) {
+  Book position_to_data(kTempDir);
   position_to_data.Clean();
   position_to_data.Put(0, 1, std::vector<char>({1, 2, 3, 4}));
   position_to_data.Print();
@@ -40,14 +40,14 @@ TEST(PositionToData, Basic) {
   EXPECT_EQ(position_to_data.Get(0, 2), std::vector<char>({5, 6, 7, 8, 9}));
   position_to_data.Put(0, 3, std::vector<char>({1, 1, 1, 1}));
   position_to_data.Print();
-  PositionToData position_to_data1(kTempDir);
+  Book position_to_data1(kTempDir);
   EXPECT_EQ(position_to_data1.Get(0, 1), std::vector<char>({1, 2, 3, 4}));
 }
 
-TEST(PositionToData, LargeOne) {
+TEST(Book, LargeOne) {
   std::unordered_map<Board, std::vector<char>> expected;
   std::vector<Board> old_boards;
-  PositionToData actual(kTempDir);
+  Book actual(kTempDir);
   actual.Clean();
 
   for (int i = 0; i < 100000; ++i) {
@@ -78,13 +78,13 @@ TEST(PositionToData, LargeOne) {
       assert(actual.IsSizeOK());
     }
     if (rand() % 100 == 0) {
-      actual = PositionToData(kTempDir);
+      actual = Book(kTempDir);
     }
   }
 }
 
-TEST(PositionToData, Unique) {
-  PositionToData position_to_data(kTempDir);
+TEST(Book, Unique) {
+  Book position_to_data(kTempDir);
   position_to_data.Clean();
   position_to_data.Put(0, 1ULL << 7, std::vector<char>({1, 2, 3, 4}));
   EXPECT_EQ(position_to_data.Get(0, 1), std::vector<char>({1, 2, 3, 4}));

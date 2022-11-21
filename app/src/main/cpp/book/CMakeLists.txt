@@ -40,13 +40,13 @@ IF(NOT ANDROID)
     )
 ENDIF()
 add_library(
-        position_to_data
-        position_to_data.h
-        position_to_data.cpp
+        book
+        book.h
+        book.cpp
 )
 
 target_link_libraries(
-        position_to_data
+        book
         LINK_PRIVATE
         bitpattern
         board
@@ -55,15 +55,15 @@ target_link_libraries(
 
 IF(NOT ANDROID)
     add_executable(
-            position_to_data_test
-            position_to_data_test.cpp
+            book_test
+            book_test.cpp
     )
 
     target_link_libraries(
-            position_to_data_test
+            book_test
             LINK_PRIVATE
             board
-            position_to_data
+            book
             GTest::gtest
             GTest::gtest_main
             -no-pie
