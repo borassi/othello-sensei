@@ -18,27 +18,43 @@
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
 
-double LogProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+constexpr double kErrorWeight = 0.1;
+
+inline double Bound(double value) {
+  return std::max(1.0, std::min(1E30, value));
+}
+
+inline double ConvertProofNumber(double old, Eval old_goal, Eval new_goal) {
+  assert(new_goal < old_goal);
+  return Bound(exp(log(old) + kErrorWeight * (new_goal - old_goal)));
+}
+
+inline double ConvertDisproofNumber(double old, int old_goal, int new_goal) {
+  assert(new_goal > old_goal);
+  return Bound(exp(log(old) - kErrorWeight * (new_goal - old_goal)));
+}
+
+inline double LogProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   BitPattern empties = ~(player | opponent);
   int n_empties = __builtin_popcountll(empties);
   EvalLarge error = approx_eval - lower;
   return -3.2519 + 0.5526 * n_empties + 2.3102 * log(1 + GetNMoves(opponent,
                                                                 player))
-      -0.0639 / 8 * error;
+      -kErrorWeight / 8 * error;
 }
 
-double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  return std::max(1.0, std::min(1E30, exp(LogProofNumber(player, opponent, lower, approx_eval))));
+inline double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+  return Bound(exp(LogProofNumber(player, opponent, lower, approx_eval)));
 }
 
-double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+inline double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   BitPattern empties = ~(player | opponent);
   int n_empties = __builtin_popcountll(empties);
   EvalLarge error = approx_eval - lower;
   return -3.7256 + 0.5757 * n_empties + 2.5578 * log(1 + GetNMoves(player,opponent))
-      + 0.0620 / 8 * error;
+      +kErrorWeight / 8 * error;
 }
 
-double DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  return std::max(1.0, std::min(1E30, exp(LogDisproofNumber(player, opponent, lower, approx_eval))));
+inline double DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+  return Bound(exp(LogDisproofNumber(player, opponent, lower, approx_eval)));
 }

@@ -90,6 +90,23 @@ set_target_properties(
         endgame_time_estimator PROPERTIES LINKER_LANGUAGE CXX
 )
 
+IF (NOT ANDROID)
+    add_executable(
+            endgame_time_estimator_test
+            endgame_time_estimator_test.cpp
+    )
+
+    target_link_libraries(
+            endgame_time_estimator_test
+            LINK_PRIVATE
+            board
+            endgame_time_estimator
+            GTest::gtest
+            GTest::gtest_main
+            -no-pie
+    )
+ENDIF ()
+
 add_library(
         tree_node
         SHARED
