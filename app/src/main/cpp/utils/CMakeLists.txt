@@ -12,21 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-
-IF(ANDROID)
-    find_library(log-lib JNI_LIBRARIES)
-ELSE()
-    find_package(GTest)
-    find_package(JNI REQUIRED)
-    include_directories( ${JNI_INCLUDE_DIRS} )
-ENDIF()
-
 add_library(
         assets
         assets.h
         assets.cpp
 )
+
 IF(ANDROID)
 target_link_libraries(
         assets
@@ -52,21 +43,19 @@ set_target_properties(
         random PROPERTIES LINKER_LANGUAGE CXX
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            random_test
-            random_test.cpp
-    )
+add_executable(
+        random_test
+        random_test.cpp
+)
 
-    target_link_libraries(
-            random_test
-            LINK_PUBLIC
-            random
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        random_test
+        LINK_PUBLIC
+        random
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         misc
@@ -74,21 +63,19 @@ add_library(
         misc.cpp
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            misc_test
-            misc_test.cpp
-    )
+add_executable(
+        misc_test
+        misc_test.cpp
+)
 
-    target_link_libraries(
-            misc_test
-            LINK_PUBLIC
-            misc
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        misc_test
+        LINK_PUBLIC
+        misc
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         parse_flags
@@ -96,21 +83,19 @@ add_library(
         parse_flags.cpp
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            parse_flags_test
-            parse_flags_test.cpp
-    )
+add_executable(
+        parse_flags_test
+        parse_flags_test.cpp
+)
 
-    target_link_libraries(
-            parse_flags_test
-            LINK_PUBLIC
-            parse_flags
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        parse_flags_test
+        LINK_PUBLIC
+        parse_flags
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         load_training_set

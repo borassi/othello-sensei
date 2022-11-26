@@ -25,25 +25,22 @@ target_link_libraries(
         board
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            pattern_test
-            pattern_test.cpp
-    )
+add_executable(
+        pattern_test
+        pattern_test.cpp
+)
 
-    target_link_libraries(
-            pattern_test
-            LINK_PRIVATE
-            bitpattern
-            board
-            pattern
-            GTest::gtest
-            GTest::gtest_main
-            gmock
-            -no-pie
-    )
-ENDIF()
-
+target_link_libraries(
+        pattern_test
+        LINK_PRIVATE
+        bitpattern
+        board
+        pattern
+        GTest::gtest
+        GTest::gtest_main
+        gmock
+        -no-pie
+)
 
 add_library(
         pattern_evaluator
@@ -60,25 +57,23 @@ target_link_libraries(
         evaluator_depth_one_base
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            pattern_evaluator_test
-            pattern_evaluator_test.cpp
-    )
+add_executable(
+        pattern_evaluator_test
+        pattern_evaluator_test.cpp
+)
 
-    target_link_libraries(
-            pattern_evaluator_test
-            LINK_PUBLIC
-            board
-            get_moves
-            pattern
-            pattern_evaluator
-            GTest::gtest
-            GTest::gtest_main
-            gmock
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        pattern_evaluator_test
+        LINK_PUBLIC
+        board
+        get_moves
+        pattern
+        pattern_evaluator
+        GTest::gtest
+        GTest::gtest_main
+        gmock
+        -no-pie
+)
 
 add_library(
         evaluator_depth_one_base
@@ -101,23 +96,21 @@ target_link_libraries(
         evaluator_depth_one_base
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            test_evaluator_depth_one_test
-            test_evaluator_depth_one_test.cpp
-    )
+add_executable(
+        test_evaluator_depth_one_test
+        test_evaluator_depth_one_test.cpp
+)
 
-    target_link_libraries(
-            test_evaluator_depth_one_test
-            LINK_PRIVATE
-            board
-            get_moves
-            test_evaluator
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        test_evaluator_depth_one_test
+        LINK_PRIVATE
+        board
+        get_moves
+        test_evaluator
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         train_pattern_evaluator
@@ -133,21 +126,20 @@ target_link_libraries(
         pattern
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            train_pattern_evaluator_test
-            train_pattern_evaluator_test.cpp
-    )
+add_executable(
+        train_pattern_evaluator_test
+        train_pattern_evaluator_test.cpp
+)
 
-    target_link_libraries(
-            train_pattern_evaluator_test
-            LINK_PRIVATE
-            train_pattern_evaluator
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        train_pattern_evaluator_test
+        LINK_PRIVATE
+        train_pattern_evaluator
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_executable(
         train_pattern_evaluator_main

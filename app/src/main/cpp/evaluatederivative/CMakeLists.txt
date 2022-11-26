@@ -124,22 +124,20 @@ target_link_libraries( # Specifies the target library.
         misc
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            tree_node_test
-            tree_node_test.cpp
-    )
+add_executable(
+        tree_node_test
+        tree_node_test.cpp
+)
 
-    target_link_libraries(
-            tree_node_test
-            LINK_PRIVATE
-            board
-            tree_node
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        tree_node_test
+        LINK_PRIVATE
+        board
+        tree_node
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         evaluator_derivative
@@ -160,21 +158,19 @@ target_link_libraries( # Specifies the target library.
         evaluator_depth_one_base
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            evaluator_derivative_test
-            evaluator_derivative_test.cpp
-    )
+add_executable(
+        evaluator_derivative_test
+        evaluator_derivative_test.cpp
+)
 
-    target_link_libraries(
-            evaluator_derivative_test
-            LINK_PRIVATE
-            evaluator_alpha_beta
-            evaluator_derivative
-            hash_map
-            pattern_evaluator
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        evaluator_derivative_test
+        LINK_PRIVATE
+        evaluator_alpha_beta
+        evaluator_derivative
+        hash_map
+        pattern_evaluator
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)

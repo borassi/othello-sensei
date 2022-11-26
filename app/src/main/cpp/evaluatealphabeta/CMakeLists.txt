@@ -29,23 +29,21 @@ target_link_libraries( # Specifies the target library.
         ${JNI_LIBRARIES}
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            evaluator_last_moves_test
-            evaluator_last_moves_test.cpp
-    )
+add_executable(
+        evaluator_last_moves_test
+        evaluator_last_moves_test.cpp
+)
 
-    target_link_libraries(
-            evaluator_last_moves_test
-            LINK_PRIVATE
-            bitpattern
-            board
-            evaluator_last_moves
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        evaluator_last_moves_test
+        LINK_PRIVATE
+        bitpattern
+        board
+        evaluator_last_moves
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         evaluator_alpha_beta
@@ -65,25 +63,23 @@ target_link_libraries( # Specifies the target library.
         misc
         stable)
 
-IF (NOT ANDROID)
-    add_executable(
-            evaluator_alpha_beta_test
-            evaluator_alpha_beta_test.cpp
-    )
+add_executable(
+        evaluator_alpha_beta_test
+        evaluator_alpha_beta_test.cpp
+)
 
-    target_link_libraries(
-            evaluator_alpha_beta_test
-            LINK_PRIVATE
-            bitpattern
-            board
-            evaluator_alpha_beta
-            pattern_evaluator
-            test_evaluator
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        evaluator_alpha_beta_test
+        LINK_PRIVATE
+        bitpattern
+        board
+        evaluator_alpha_beta
+        pattern_evaluator
+        test_evaluator
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         test_evaluator
@@ -98,20 +94,18 @@ target_link_libraries(
         get_moves
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            test_evaluator_test
-            test_evaluator_test.cpp
-    )
+add_executable(
+        test_evaluator_test
+        test_evaluator_test.cpp
+)
 
-    target_link_libraries(
-            test_evaluator_test
-            LINK_PRIVATE
-            board
-            test_evaluator
-            test_evaluator_depth_one
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        test_evaluator_test
+        LINK_PRIVATE
+        board
+        test_evaluator
+        test_evaluator_depth_one
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)

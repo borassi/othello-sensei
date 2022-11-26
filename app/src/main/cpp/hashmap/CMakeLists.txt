@@ -32,18 +32,16 @@ IF(${PDEP_PEXT})
     )
 ENDIF()
 
-IF(NOT ANDROID)
-    add_executable(
-            hash_map_test
-            hash_map_test.cpp
-    )
+add_executable(
+        hash_map_test
+        hash_map_test.cpp
+)
 
-    target_link_libraries(
-            hash_map_test
-            LINK_PRIVATE
-            hash_map
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        hash_map_test
+        LINK_PRIVATE
+        hash_map
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)

@@ -43,9 +43,9 @@
 TEST(TreeNodeTest, OneThread) {
   TreeNode e6;
   e6.Reset(Board("e6"), 0, 1);
-  e6.SetLeaf(-5, 1, 1, 4, 40);
-  EXPECT_EQ(e6.Lower(), -64);
-  EXPECT_EQ(e6.Upper(), 64);
+  e6.SetLeaf(-5, 1, EvalToEvalLarge(1), 4, 40);
+  EXPECT_EQ(e6.Lower(), -65);
+  EXPECT_EQ(e6.Upper(), 65);
   EXPECT_EQ(e6.WeakLower(), -5);
   EXPECT_EQ(e6.WeakUpper(), 1);
   EXPECT_EQ(e6.GetNVisited(), 40);

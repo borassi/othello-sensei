@@ -36,16 +36,24 @@ IF(NOT DEFINED PROFILE)
     SET(PROFILE FALSE)
 ENDIF()
 
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pthread")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pthread -fPIC")
 
-enable_testing()
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    DOWNLOAD_EXTRACT_TIMESTAMP
+    # Specify the commit you depend on and update it regularly.
+    URL https://github.com/google/googletest/archive/refs/tags/release-1.12.0.zip #https://github.com/google/googletest/archive/e68764c147ea0dac1e8811925c531d937396878e.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 IF(ANDROID)
     find_library(log-lib JNI_LIBRARIES)
 ELSE()
     SET(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
     SET(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
-    find_package(GTest REQUIRED)
     find_package(JNI REQUIRED)
 ENDIF()
 include_directories( ${JNI_INCLUDE_DIRS} )

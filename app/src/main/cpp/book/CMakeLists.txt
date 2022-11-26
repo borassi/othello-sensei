@@ -24,21 +24,20 @@ target_link_libraries(
         file
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            value_file_test
-            value_file_test.cpp
-    )
+add_executable(
+        value_file_test
+        value_file_test.cpp
+)
 
-    target_link_libraries(
-            value_file_test
-            LINK_PRIVATE
-            value_file
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        value_file_test
+        LINK_PRIVATE
+        value_file
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
+
 add_library(
         book
         book.h
@@ -53,19 +52,18 @@ target_link_libraries(
         value_file
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            book_test
-            book_test.cpp
-    )
+add_executable(
+        book_test
+        book_test.cpp
+)
 
-    target_link_libraries(
-            book_test
-            LINK_PRIVATE
-            board
-            book
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        book_test
+        LINK_PRIVATE
+        board
+        book
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)

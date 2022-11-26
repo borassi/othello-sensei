@@ -87,11 +87,7 @@ BitPattern MoveIteratorVeryQuick::NextFlip() {
 template<bool very_quick>
 MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) :
     MoveIteratorBase(stats),
-    player_(0),
-    opponent_(0),
-    masks_(),
-    candidate_moves_(0),
-    current_mask_(0) {
+    masks_() {
   if (very_quick) {
     masks_[1] = kCornerPattern;
     masks_[3] = kCentralPattern;
@@ -380,7 +376,7 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
           }
         } else if ((solve && depth <= 8) || (!solve && depth <= 2)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>(&stats_);
-        } else if ((solve && depth <= 9) || (!solve && depth <= 2)) {
+        } else if ((solve && depth <= 9) || (!solve && depth <= 4)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick<false>>(&stats_);
         } else if ((solve && depth <= 12) || (!solve)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>(&stats_);

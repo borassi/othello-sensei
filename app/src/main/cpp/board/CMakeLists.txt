@@ -18,22 +18,20 @@ add_library(
         bitpattern.cpp
 )
 
-IF(NOT ANDROID)
-    add_executable(
-            bitpattern_test
-            bitpattern_test.cpp
-    )
+add_executable(
+        bitpattern_test
+        bitpattern_test.cpp
+)
 
-    target_link_libraries(
-            bitpattern_test
-            LINK_PUBLIC
-            bitpattern
-            GTest::gtest
-            GTest::gtest_main
-            gmock
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        bitpattern_test
+        LINK_PUBLIC
+        bitpattern
+        GTest::gtest
+        GTest::gtest_main
+        gmock
+        -no-pie
+)
 
 add_library(
         board
@@ -47,41 +45,37 @@ target_link_libraries(
         bitpattern
         get_flip)
 
-IF (NOT ANDROID)
-    add_executable(
-            board_test
-            board_test.cpp
-    )
+add_executable(
+        board_test
+        board_test.cpp
+)
 
-    target_link_libraries(
-            board_test
-            LINK_PUBLIC
-            board
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        board_test
+        LINK_PUBLIC
+        board
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
-IF(NOT ANDROID)
-    add_executable(
-            get_moves_test
-            get_moves_test.cpp
-    )
+add_executable(
+        get_moves_test
+        get_moves_test.cpp
+)
 
-    target_link_libraries(
-            get_moves_test
-            LINK_PRIVATE
-            bitpattern
-            board
-            get_flip
-            get_moves
-            GTest::gmock
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        get_moves_test
+        LINK_PRIVATE
+        bitpattern
+        board
+        get_flip
+        get_moves
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         get_flip
@@ -99,22 +93,20 @@ IF(${PDEP_PEXT})
     )
 ENDIF()
 
-IF(NOT ANDROID)
-    add_executable(
-            get_flip_test
-            get_flip_test.cpp
-    )
+add_executable(
+        get_flip_test
+        get_flip_test.cpp
+)
 
-    target_link_libraries(
-            get_flip_test
-            LINK_PRIVATE
-            board
-            get_flip
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        get_flip_test
+        LINK_PRIVATE
+        board
+        get_flip
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_executable(
         get_flip_profile
@@ -176,19 +168,17 @@ IF(${PDEP_PEXT})
     )
 ENDIF()
 
-IF(NOT ANDROID)
-    add_executable(
-            stable_test
-            stable_test.cpp
-    )
+add_executable(
+        stable_test
+        stable_test.cpp
+)
 
-    target_link_libraries(
-            stable_test
-            LINK_PRIVATE
-            board
-            stable
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF()
+target_link_libraries(
+        stable_test
+        LINK_PRIVATE
+        board
+        stable
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)

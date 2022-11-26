@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IF(ANDROID)
-    find_library(log-lib JNI_LIBRARIES)
-ELSE()
-    find_package(GTest)
-    find_package(JNI REQUIRED)
-    include_directories( ${JNI_INCLUDE_DIRS} )
-ENDIF()
-
 add_library(
         jni
         SHARED
@@ -35,4 +27,5 @@ target_link_libraries( # Specifies the target library.
         evaluator_alpha_beta
         hash_map
         ${JNI_LIBRARIES}
+        -fPIC
 )
