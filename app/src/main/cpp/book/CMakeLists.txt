@@ -49,6 +49,7 @@ target_link_libraries(
         LINK_PRIVATE
         bitpattern
         board
+        book_tree_node
         value_file
 )
 
@@ -62,6 +63,36 @@ target_link_libraries(
         LINK_PRIVATE
         board
         book
+        book_tree_node
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
+
+add_library(
+        book_tree_node
+        book_tree_node.h
+        book_tree_node.cpp
+)
+
+target_link_libraries(
+        book_tree_node
+        LINK_PRIVATE
+        endgame_time_estimator
+        tree_node
+)
+
+add_executable(
+        book_tree_node_test
+        book_tree_node_test.cpp
+)
+
+target_link_libraries(
+        book_tree_node_test
+        LINK_PRIVATE
+        board
+        book_tree_node
         GTest::gmock
         GTest::gtest
         GTest::gtest_main

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATOR_DERIVATIVE_H
+#define OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATOR_DERIVATIVE_H
+
 #if ANDROID
 #include <android/log.h>
 #endif
@@ -202,7 +205,8 @@ class EvaluatorThread {
       if (evaluation.IsSolved() ||
 //          (abs(abs(root->ProbGreaterEqual(eval_goal) - 0.5) - original_prob) > 0.2) ||
           (proving && std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal)) > original_work) ||
-          (!proving && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) - initial_log_derivative < -30000)) ||
+          (!proving && (leaf.Loss() + ExpectedLoss(evaluation, original_prob)
+          - initial_log_derivative < -kLogDerivativeMultiplier * 3)) ||
           *thread_finished_ ||
           transposition ||
           i > kMaxChildrenUpdates) {
@@ -524,3 +528,5 @@ class EvaluatorDerivative {
   }
 
 };
+
+#endif  // OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATOR_DERIVATIVE_H

@@ -18,6 +18,9 @@
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
 
+#ifndef OTHELLOSENSEI_ENDGAME_TIME_ESTIMATOR_H
+#define OTHELLOSENSEI_ENDGAME_TIME_ESTIMATOR_H
+
 constexpr double kErrorWeight = 0.1;
 
 inline double Bound(double value) {
@@ -58,3 +61,4 @@ inline double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarg
 inline double DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   return Bound(exp(LogDisproofNumber(player, opponent, lower, approx_eval)));
 }
+#endif  // OTHELLOSENSEI_ENDGAME_TIME_ESTIMATOR_H

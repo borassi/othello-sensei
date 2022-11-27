@@ -21,7 +21,7 @@
 #include "bitpattern.h"
 #include "get_flip.h"
 
-typedef std::array<u_int8_t, 13> SerializedBoard;
+typedef std::vector<char> SerializedBoard;
 
 class Board {
 
@@ -106,18 +106,18 @@ public:
         current_multiplier *= 3;
         current_square = current_square >> 1;
       }
-      serialized[i] = five_squares_serialized;
+      serialized.push_back(five_squares_serialized);
     }
     return serialized;
   }
 
-  static Board Deserialize(SerializedBoard serialized) {
+  static Board Deserialize(std::vector<char>::const_iterator serialized) {
     BitPattern player = 0;
     BitPattern opponent = 0;
     BitPattern current_square = 1ULL << 63;
 
     for (int i = 0; i < 13; ++i) {
-      uint8_t five_squares_serialized = serialized[i];
+      uint8_t five_squares_serialized = (uint8_t) (*serialized++);
       for (int j = 0; j < 5; ++j) {
         int current_value = five_squares_serialized % 3;
         if (current_value == 1) {

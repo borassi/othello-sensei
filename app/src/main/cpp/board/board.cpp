@@ -70,6 +70,9 @@ Board RandomBoard() {
   double tot = percentage_player + percentage_opponent + (double) std::rand() / RAND_MAX;
   percentage_player /= tot;
   percentage_opponent /= tot;
+  if (percentage_player < 0.01 && percentage_opponent < 0.01) {
+    return RandomBoard();
+  }
   return RandomBoard(percentage_player, percentage_opponent);
 }
 
@@ -84,6 +87,10 @@ Board RandomBoard(double percentage_player, double percentage_opponent) {
     } else {
       board_string += "-";
     }
+  }
+  Board b(board_string.c_str(), true);
+  if (b.Player() == 0 && b.Opponent() == 0) {
+    return RandomBoard(percentage_player, percentage_opponent);
   }
   return {board_string.c_str(), true};
 }

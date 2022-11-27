@@ -120,6 +120,7 @@ target_link_libraries( # Specifies the target library.
         bitpattern
         board
         endgame_time_estimator
+        evaluation
         get_moves
         misc
 )

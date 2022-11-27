@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATION_H
+#define OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATION_H
 
 #include <cassert>
 #include <cmath>
@@ -26,31 +28,14 @@ typedef uint8_t PN;
 constexpr Probability kProbStep = 255;
 constexpr int kLogDerivativeMinusInf = -100000000;
 constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
-constexpr int kLogDerivativeMultiplier = 10000;
+constexpr int kLogDerivativeMultiplier = 10;
 constexpr float kMaxProofNumber = 1E25;
 constexpr int kProofNumberStep = 255;
 constexpr float kBaseLogProofNumber = ConstexprPow(kMaxProofNumber, 1.0 / (kProofNumberStep - 1.99));  // kBaseLogProofNumber ^ (kProofNumberStep-1) = kMaxProofNumber.
 
-PN ProofNumberToByte(float proof_number) {
-  assert(proof_number == 0 || proof_number >= 1);
-  if (proof_number <= 1E-8) {
-    return 0;
-  } else if (proof_number > kMaxProofNumber) {
-    return kProofNumberStep;
-  }
-  float rescaled_proof_number = log(proof_number) / log(kBaseLogProofNumber) + 1;
-  assert(rescaled_proof_number >= 0.5 && rescaled_proof_number <= kProofNumberStep - 0.5);
-  return (PN) round(rescaled_proof_number);
-}
+PN ProofNumberToByte(float proof_number);
 
-float ByteToProofNumber(PN byte) {
-  if (byte == 0) {
-    return 0;
-  } else if (byte == kProofNumberStep) {
-    return INFINITY;
-  }
-  return pow(kBaseLogProofNumber, byte - 1);
-}
+float ByteToProofNumber(PN byte);
 
 inline int LeafLogDerivative(float prob) {
   return round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
@@ -110,6 +95,7 @@ const CombineProb kCombineProb;
 class Evaluation {
  public:
   Evaluation() { Reset(); }
+  bool operator==(const Evaluation& other) const = default;
   void Reset() {
     max_log_derivative_ = kNoLogDerivative;
   }
@@ -245,6 +231,33 @@ class Evaluation {
     return ProofNumber() * prob_greater_equal + DisproofNumber() * (1 - prob_greater_equal);
   }
 
+  void SetProving(float proof_number) {
+    prob_greater_equal_ = kProbStep;
+    proof_number_ = ProofNumberToByte(proof_number);
+    disproof_number_ = kProofNumberStep;
+    max_log_derivative_ = kLogDerivativeMinusInf;
+  }
+
+  void SetDisproving(float disproof_number) {
+    prob_greater_equal_ = 0;
+    proof_number_ = kProofNumberStep;
+    disproof_number_ = ProofNumberToByte(disproof_number);
+    max_log_derivative_ = kLogDerivativeMinusInf;
+  }
+
+  PN ProofNumberSmall() { return proof_number_; }
+  PN DisproofNumberSmall() { return disproof_number_; }
+  Probability ProbGreaterEqualSmall() { return prob_greater_equal_; }
+  int MaxLogDerivativeSmall() { return max_log_derivative_; }
+
+  void Set(Probability prob_greater_equal, PN proof_number,
+           PN disproof_number, int max_log_derivative) {
+    prob_greater_equal_ = prob_greater_equal;
+    proof_number_ = proof_number;
+    disproof_number_ = disproof_number;
+    max_log_derivative_ = max_log_derivative;
+  }
+
  private:
   Probability prob_greater_equal_;
   PN proof_number_;
@@ -259,3 +272,5 @@ class Evaluation {
     return ((float) prob_greater_equal_) / kProbStep;
   }
 };
+
+#endif  // OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATION_H

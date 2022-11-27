@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string>
 
+#include "book_tree_node.h"
 #include "value_file.h"
 #include "../board/bitpattern.h"
 #include "../board/board.h"
@@ -54,9 +55,9 @@ class Book {
  public:
   Book(std::string folder);
 
-  std::vector<char> Get(BitPattern player, BitPattern opponent);
+  std::optional<BookTreeNode> Get(BitPattern player, BitPattern opponent);
 
-  void Put(BitPattern player, BitPattern opponent, std::vector<char> value);
+  void Put(BookTreeNode node);
 
   bool IsSizeOK();
 
@@ -81,8 +82,7 @@ class Book {
   }
   std::string IndexFilename() { return folder_ + "/index.sen"; }
 
-
-  std::pair<SerializedBoard, std::vector<char>> GetBoardAndValue(HashMapNode node);
+  BookTreeNode GetBookTreeNode(HashMapNode node);
 
   HashMapIndex PowerAfterHashMapSize() {
     return 1ULL << (sizeof(HashMapIndex) * 8 - __builtin_clzll(hash_map_size_ - 1));
@@ -94,7 +94,7 @@ class Book {
 
   HashMapIndex RepositionHash(HashMapIndex board_hash);
 
-  std::pair<std::fstream, std::vector<char>>
+  std::pair<std::fstream, std::optional<BookTreeNode>>
       Find(BitPattern player, BitPattern opponent);
 
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);

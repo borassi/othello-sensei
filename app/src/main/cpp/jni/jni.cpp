@@ -47,7 +47,7 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 
 class JNIWrapper {
  public:
-  static jobject TreeNodeToJava(const TreeNode* const n, JNIEnv* env) {
+  static jobject TreeNodeToJava(const BaseTreeNode* const n, JNIEnv* env) {
     if (n == nullptr) {
       return NULL;
     }
@@ -157,31 +157,31 @@ class JNIWrapper {
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    TreeNode* node = tree_node_supplier_.Get(player, opponent);
+    BaseTreeNode* node = tree_node_supplier_.Get(player, opponent);
     if (node != nullptr) {
       return TreeNodeToJava(node, env);
     }
     for (int i = 0; i < kNumEvaluators; ++i) {
-      TreeNode* first_position = evaluator_derivative_[i]->GetFirstPosition();
+      BaseTreeNode* first_position = evaluator_derivative_[i]->GetFirstPosition();
       if (first_position == nullptr) {
         continue;
       }
       if (first_position->Player() == player && first_position->Opponent() == opponent) {
         return TreeNodeToJava(first_position, env);
       }
-      for (TreeNode* const child : first_position->GetChildren()) {
+      for (BaseTreeNode* const child : first_position->GetChildren()) {
         if (child->Player() == player && child->Opponent() == opponent) {
           return TreeNodeToJava(child, env);
         }
       }
     }
     for (BitPattern flip : GetAllMovesWithPass(player, opponent)) {
-      TreeNode* child = tree_node_supplier_.Get(NewPlayer(flip, opponent),
+      BaseTreeNode* child = tree_node_supplier_.Get(NewPlayer(flip, opponent),
                                                 NewOpponent(flip, player));
       if (child == nullptr) {
         continue;
       }
-      for (TreeNode* father : child->Fathers()) {
+      for (BaseTreeNode* father : child->Fathers()) {
         if (father->Player() == player && father->Opponent() == opponent) {
           return TreeNodeToJava(father, env);
         }
@@ -312,13 +312,13 @@ JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong
   return JNIFromJava(env, obj)->Finished(max_nvisited);
 }
 
-TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
+BaseTreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
   jclass cls = env->GetObjectClass(tree_node_java);
   jmethodID mid = env->GetMethodID(cls, "getNodeAddress", "()J");
-  return (TreeNode*) env->CallLongMethod(tree_node_java, mid);
+  return (BaseTreeNode*) env->CallLongMethod(tree_node_java, mid);
 }
 
-bool IsEvalGoalInvalid(TreeNode* node, int eval_goal) {
+bool IsEvalGoalInvalid(BaseTreeNode* node, int eval_goal) {
   return node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
 }
 

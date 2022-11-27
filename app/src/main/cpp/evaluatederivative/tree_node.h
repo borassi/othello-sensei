@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef OTHELLOSENSEI_EVALUATEDERIVATIVE_TREE_NODE_H
+#define OTHELLOSENSEI_EVALUATEDERIVATIVE_TREE_NODE_H
+
 #include <algorithm>
 #include <atomic>
 #include <float.h>
@@ -102,16 +105,196 @@ class LeafToUpdate {
     : leaf_(leaf), eval_goal_(eval_goal), alpha_(alpha), beta_(beta), weak_lower_(weak_lower), weak_upper_(weak_upper), loss_(loss) {}
 };
 
-bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
-  return left.Loss() < right.Loss();
+bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right);
+
+class BaseTreeNode {
+ public:
+  BaseTreeNode() : evaluations_(nullptr) {}
+  ~BaseTreeNode() {
+    Reset(0, 0);
+  }
+
+  virtual Eval WeakLower() const = 0;
+  virtual Eval WeakUpper() const = 0;
+  virtual Eval MinEvaluation() const = 0;
+  virtual NVisited GetNVisited() const = 0;
+  virtual std::vector<BaseTreeNode*> GetChildren() const = 0;
+  virtual std::vector<BaseTreeNode*> Fathers() const = 0;
+
+  Square NEmpties() const { return n_empties_; }
+  BitPattern Player() const { return player_; }
+  BitPattern Opponent() const { return opponent_; }
+  Eval Lower() const { return lower_; }
+  Eval Upper() const { return upper_; }
+
+  Board ToBoard() const {
+    return Board(player_, opponent_);
+  }
+
+
+  float ProofNumber(Eval eval_goal) const {
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    return GetEvaluation(eval_goal).ProofNumber();
+  }
+
+  float DisproofNumber(Eval eval_goal) const {
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    return GetEvaluation(eval_goal).DisproofNumber();
+  }
+
+  float ProbGreaterEqual(Eval eval_goal) const {
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    return GetEvaluation(eval_goal).ProbGreaterEqual();
+  }
+
+  int MaxLogDerivative(Eval eval_goal) const {
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    return GetEvaluation(eval_goal).MaxLogDerivative();
+  }
+
+  float GetEval() const {
+    int lower = std::max(lower_, WeakLower());
+    int upper = std::min(upper_, WeakUpper());
+    float eval = lower - 1;
+    for (int i = lower; i <= upper; i += 2) {
+      float prob = GetEvaluation(i).ProbGreaterEqual();
+      if (prob >= 1 - kProbIncreaseWeakEval) {
+        prob = 1;
+      } else if (prob <= kProbIncreaseWeakEval) {
+        prob = 0;
+      }
+      eval += 2 * prob;
+    }
+    return eval;
+  }
+
+  virtual void Reset(Board b) {
+    Reset(b.Player(), b.Opponent());
+  }
+
+  virtual void Reset(BitPattern player, BitPattern opponent) {
+    if (evaluations_ != nullptr) {
+      free(evaluations_);
+      evaluations_ = nullptr;
+    }
+    player_ = player;
+    opponent_ = opponent;
+    n_empties_ = ::NEmpties(player, opponent);
+    lower_ = kMinEval - 1;
+    upper_ = kMaxEval + 1;
+  }
+
+  virtual const Evaluation& GetEvaluation(int eval_goal) const final {
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert(MinEvaluation() <= WeakLower());
+    int index = ToEvaluationIndex(eval_goal);
+    assert(index >= 0 && index <= (WeakUpper() - MinEvaluation()) / 2);
+    assert(evaluations_ != nullptr);
+    return evaluations_[index];
+  }
+
+  bool IsSolvedIn(Eval lower, Eval upper) {
+    return upper_ <= lower || lower_ >= upper || IsSolved();
+  }
+
+  bool IsSolved() {
+    return lower_ >= upper_ - 2;
+  }
+
+  bool IsSolvedAtProb(float prob, Eval lower, Eval upper) {
+    if (WeakLower() <= lower && lower <= WeakUpper() &&
+        GetEvaluation(lower).ProbGreaterEqual() <= prob) {
+      return true;
+    }
+    if (WeakLower() <= upper && upper <= WeakUpper() &&
+        GetEvaluation(upper).ProbGreaterEqual() >= 1 - prob) {
+      return true;
+    }
+    for (int i = WeakLower(); i <= WeakUpper() - 2; i += 2) {
+      if (GetEvaluation(i).ProbGreaterEqual() >= 1 - prob &&
+          GetEvaluation(i + 2).ProbGreaterEqual() <= prob) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool IsPartiallySolved(Eval lower, Eval upper) {
+    return IsSolvedAtProb(kZeroPercForWeak, lower, upper);
+  }
+
+  Eval GetPercentileUpper(float p) {
+//    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      const Evaluation& eval = GetEvaluation(i);
+      if (eval.IsValid() && eval.ProbGreaterEqual() <= p) {
+        return i - 1;
+      }
+    }
+    return 64;
+  }
+
+  Eval GetPercentileLower(float p) {
+//    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
+    for (int i = WeakUpper(); i >= WeakLower(); i -= 2) {
+      const Evaluation& eval = GetEvaluation(i);
+      if (eval.IsValid() && eval.ProbGreaterEqual() >= 1 - p) {
+        return i + 1;
+      }
+    }
+    return -64;
+  }
+
+  int ChildLogDerivative(BaseTreeNode* child, int eval_goal) const {
+    assert(Contains(GetChildren(), child));
+    Evaluation eval = GetEvaluation(eval_goal);
+    Evaluation child_eval = child->GetEvaluation(-eval_goal);
+    return child_eval.LogDerivative(eval);
+  }
+
+  virtual int ToEvaluationIndex(Eval eval) const final {
+    assert((eval - kMinEval) % 2 == 1);
+    assert(eval >= kMinEval);
+    assert(eval <= kMaxEval);
+    return (eval - MinEvaluation()) >> 1;
+  }
+
+  virtual void EnlargeEvaluations() final {
+    int desired_size = ToEvaluationIndex(WeakUpper()) + 1;
+    if (evaluations_ != nullptr) {
+      evaluations_ = (Evaluation*) realloc(evaluations_, desired_size * sizeof(Evaluation));
+    } else {
+      evaluations_ = (Evaluation*) malloc(desired_size * sizeof(Evaluation));
+    }
+  }
+
+ protected:
+  BitPattern player_;
+  BitPattern opponent_;
+  Evaluation* evaluations_;
+  Square n_empties_;
+  Eval lower_;
+  Eval upper_;
+
+  virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert(MinEvaluation() <= WeakLower());
+    int index = ToEvaluationIndex(eval_goal);
+    assert(index >= 0 && index <= (WeakUpper() - MinEvaluation()) / 2);
+    return &evaluations_[index];
+  }
 };
 
-class TreeNode {
+class TreeNode : public BaseTreeNode {
  public:
   TreeNode() :
-      evaluations_(nullptr),
+      BaseTreeNode(),
       leaf_eval_(kLessThenMinEvalLarge),
+      children_(nullptr),
       n_children_(0),
+      fathers_(nullptr),
       n_fathers_(0),
       evaluator_(255) {}
   TreeNode(const TreeNode&) = delete;
@@ -119,61 +302,11 @@ class TreeNode {
     Reset(0, 0, 0, 0);
   }
 
-  Square NEmpties() const {
-    return n_empties_;
-  }
+  Eval WeakLower() const override { return weak_lower_; }
+  Eval WeakUpper() const override { return weak_upper_; }
+  NVisited GetNVisited() const override { return n_visited_; }
 
-  Square Depth() const {
-    return depth_;
-  }
-
-  Board ToBoard() const {
-    return Board(player_, opponent_);
-  }
-
-  BitPattern Player() const {
-    return player_;
-  }
-
-  BitPattern Opponent() const {
-    return opponent_;
-  }
-
-  Eval Lower() const {
-    return lower_;
-  }
-
-  Eval Upper() const {
-    return upper_;
-  }
-
-  Eval WeakLower() const {
-    return weak_lower_;
-  }
-
-  Eval WeakUpper() const {
-    return weak_upper_;
-  }
-
-  float ProofNumber(Eval eval_goal) const {
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    return GetEvaluation(eval_goal).ProofNumber();
-  }
-
-  float DisproofNumber(Eval eval_goal) const {
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    return GetEvaluation(eval_goal).DisproofNumber();
-  }
-
-  float ProbGreaterEqual(Eval eval_goal) const {
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    return GetEvaluation(eval_goal).ProbGreaterEqual();
-  }
-
-  int MaxLogDerivative(Eval eval_goal) const {
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    return GetEvaluation(eval_goal).MaxLogDerivative();
-  }
+  Square Depth() const { return depth_; }
 
   void IncreaseNThreadsWorking(int amount) {
     n_threads_working_ += amount;
@@ -193,22 +326,6 @@ class TreeNode {
 
   inline bool IsValid() const {
     return leaf_eval_ != kLessThenMinEvalLarge;
-  }
-
-  float GetEval() const {
-    int lower = std::max(lower_, weak_lower_);
-    int upper = std::min(upper_, weak_upper_);
-    float eval = lower - 1;
-    for (int i = lower; i <= upper; i += 2) {
-      float prob = GetEvaluation(i).ProbGreaterEqual();
-      if (prob >= 1 - kProbIncreaseWeakEval) {
-        prob = 1;
-      } else if (prob <= kProbIncreaseWeakEval) {
-        prob = 0;
-      }
-      eval += 2 * prob;
-    }
-    return eval;
   }
 
   bool ContainsFather(TreeNode* father) const {
@@ -231,7 +348,7 @@ class TreeNode {
     father->lower_ = MaxEval(father->lower_, (Eval) -upper_);
     father->upper_ = MaxEval(father->upper_, (Eval) -lower_);
     father->weak_lower_ = MaxEval(father->weak_lower_, (Eval) -weak_upper_);
-    assert(father->min_evaluation_ <= father->weak_lower_);
+    assert(father->MinEvaluation() <= father->WeakLower());
     father->weak_upper_ = MinEval(father->weak_upper_, (Eval) -weak_lower_);
     assert(AllValidEvals());
     for (int i = father->weak_lower_; i <= father->weak_upper_; i += 2) {
@@ -264,7 +381,7 @@ class TreeNode {
     lower_ = kLessThenMinEval;
     upper_ = kLessThenMinEval;
     assert(!IsLeaf());
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Initialize();
     }
     for (int i = 0; i < n_children_; ++i) {
@@ -273,20 +390,15 @@ class TreeNode {
         return false;
       }
     }
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Finalize();
-//      if (GetEvaluation(i).ProbGreaterEqual() == 0) {
-//        for (int j = 0; j < n_children_; ++j) {
-//          assert(children_[j]->ProbGreaterEqual(-i) == 1);
-//        }
-//      }
     }
     leaf_eval_ = 0;
     return true;
   }
 
-  std::vector<TreeNode*> GetChildren() const {
-    std::vector<TreeNode*> children;
+  std::vector<BaseTreeNode*> GetChildren() const override {
+    std::vector<BaseTreeNode*> children;
     for (int i = 0; i < n_children_; ++i) {
       children.push_back(children_[i]);
     }
@@ -319,6 +431,7 @@ class TreeNode {
 
   void Reset(BitPattern player, BitPattern opponent, int depth, u_int8_t evaluator) {
     std::lock_guard<std::mutex> guard(mutex_);
+    BaseTreeNode::Reset(player, opponent);
     evaluator_ = evaluator;
     if (n_fathers_ != 0) {
       free(fathers_);
@@ -328,16 +441,7 @@ class TreeNode {
       delete[] children_;
       n_children_ = 0;
     }
-    if (evaluations_ != nullptr) {
-      free(evaluations_);
-      evaluations_ = nullptr;
-    }
-    player_ = player;
-    opponent_ = opponent;
     depth_ = depth;
-    n_empties_ = ::NEmpties(player, opponent);
-    lower_ = kMinEval - 1;
-    upper_ = kMaxEval + 1;
     weak_lower_ = kLessThenMinEval;
     weak_upper_ = kLessThenMinEval;
     min_evaluation_ = weak_lower_;
@@ -355,15 +459,6 @@ class TreeNode {
 
   void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited) {
     SetLeaf(weak_lower, weak_upper, kMinEvalLarge, kMaxEvalLarge, leaf_eval, depth, n_visited);
-  }
-
-  const Evaluation& GetEvaluation(int eval_goal) const {
-    assert((eval_goal - kMinEval) % 2 == 1);
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    assert(min_evaluation_ <= weak_lower_);
-    int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (weak_upper_ - min_evaluation_) / 2);
-    return evaluations_[index];
   }
 
   NVisited GetNVisited() {
@@ -410,6 +505,7 @@ class TreeNode {
     }
     return 64;
   }
+
   Eval GetPercentileLower(float p) {
     assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
     for (int i = weak_upper_; i >= weak_lower_; i -= 2) {
@@ -525,19 +621,12 @@ class TreeNode {
     return reduced || extend_upper || extend_lower;
   }
 
-  std::vector<TreeNode*> Fathers() const {
-    std::vector<TreeNode*> result;
+  std::vector<BaseTreeNode*> Fathers() const override {
+    std::vector<BaseTreeNode*> result;
     for (int i = 0; i < n_fathers_; ++i) {
       result.push_back(fathers_[i]);
     }
     return result;
-  }
-
-  int ChildLogDerivative(TreeNode* child, int eval_goal) const {
-    assert(Contains(GetChildren(), child));
-    Evaluation eval = GetEvaluation(eval_goal);
-    Evaluation child_eval = child->GetEvaluation(-eval_goal);
-    return child_eval.LogDerivative(eval);
   }
 
   u_int8_t Evaluator() { return evaluator_; }
@@ -551,27 +640,43 @@ class TreeNode {
     }
   }
 
+//  std::vector<char> Serialize() {
+//    std::vector<char> result;
+//    SerializedBoard serialized_board = ToBoard().Serialize();
+//    result.insert(result.end(), serialized_board.begin(), serialized_board.end());
+//    result.insert(result.end(), {(char) lower_, (char) upper_, (char) weak_lower_, (char) weak_upper_});
+//    return result;
+//  }
+//
+//  static TreeNode Deserialize(std::vector<char> serialized) {
+//    assert(serialized.size() == 17);
+//    return TreeNode(
+//        serialized[0],
+//        serialized[1],
+//        serialized[2],
+//        serialized[3],
+//        serialized.end() - 13,
+//        serialized.end()
+//    );
+//  }
+
  private:
-  BitPattern player_;
-  BitPattern opponent_;
   std::atomic_uint64_t n_visited_;
   TreeNode** children_;
   TreeNode** fathers_;
-  Evaluation* evaluations_;
-  std::atomic_uint8_t n_threads_working_;
   EvalLarge leaf_eval_;
+  mutable std::mutex mutex_;
+  std::atomic_uint8_t n_threads_working_;
   Square n_children_;
   Square n_fathers_;
-  Square n_empties_;
   Square depth_;
   Square eval_depth_;
-  Eval lower_;
-  Eval upper_;
   Eval weak_lower_;
   Eval weak_upper_;
   Eval min_evaluation_;
   u_int8_t evaluator_;
-  mutable std::mutex mutex_;
+
+  Eval MinEvaluation() const override { return min_evaluation_; }
 
   void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper,
                EvalLarge leaf_eval, Square depth, NVisited n_visited) {
@@ -597,7 +702,7 @@ class TreeNode {
         UpdateLeafEvaluation(i);
       }
       AddDescendants(n_visited);
-      assert(min_evaluation_ <= weak_lower_);
+      assert(MinEvaluation() <= WeakLower());
       assert(AllValidEvals());
       update_fathers = n_fathers_ > 0;
     }
@@ -623,13 +728,14 @@ class TreeNode {
   void UpdateLeafEvaluation(int i) {
     assert(i >= weak_lower_ && i <= weak_upper_);
     Evaluation* evaluation = MutableEvaluation(i);
+    assert(evaluation != nullptr);
     if (i <= lower_) {
       evaluation->SetProved();
     } else if (i >= upper_) {
       evaluation->SetDisproved();
     } else {
       assert(eval_depth_ >= 0 && eval_depth_ <= 4);
-      assert(n_empties_ >= 0 && n_empties_ <= 60);
+      assert(n_empties_ >= 0 && n_empties_ <= 63);
       float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 0.95F * 8 * std::max(3.0F, kErrors[eval_depth_][n_empties_]));
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
@@ -649,31 +755,6 @@ class TreeNode {
     fathers_[n_fathers_] = father;
     depth_ = father->depth_ + 1;
     n_fathers_++;
-  }
-
-  Evaluation* MutableEvaluation(Eval eval_goal) {
-    assert((eval_goal - kMinEval) % 2 == 1);
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    assert(min_evaluation_ <= weak_lower_);
-    int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (weak_upper_ - min_evaluation_) / 2);
-    return &evaluations_[index];
-  }
-
-  void EnlargeEvaluations() {
-    int desired_size = ToEvaluationIndex(weak_upper_) + 1;
-    if (evaluations_ != nullptr) {
-      evaluations_ = (Evaluation*) realloc(evaluations_, desired_size * sizeof(Evaluation));
-    } else {
-      evaluations_ = (Evaluation*) malloc(desired_size * sizeof(Evaluation));
-    }
-  }
-
-  int ToEvaluationIndex(Eval eval) const {
-    assert((eval - kMinEval) % 2 == 1);
-    assert(eval >= kMinEval);
-    assert(eval <= kMaxEval);
-    return (eval - min_evaluation_) >> 1;
   }
 
   bool AreChildrenCorrect() {
@@ -792,7 +873,7 @@ class TreeNode {
               child != best_child &&
               visited_nodes.find(child) == visited_nodes.end() &&
               prob < 1 &&
-              current.Loss() + extra_loss > -30000) {
+              current.Loss() + extra_loss > -3 * kLogDerivativeMultiplier) {
             LeafToUpdate child_leaf = current.CopyToChild(child, extra_loss);
             next_nodes.push(child_leaf);
           }
@@ -847,7 +928,7 @@ class TreeNode {
       if (child->NThreadsWorking() > 0 ||
           child_eval.IsSolved() ||
           (proving && child != best_child && best_child_prob < 0.98) ||
-          (!proving && child != best_child && node.Loss() + extra_loss < -30000)) {
+          (!proving && child != best_child && node.Loss() + extra_loss < -3 * kLogDerivativeMultiplier)) {
         assert(child != best_child || (child->NThreadsWorking() > 0 && !next_nodes->empty()));
         continue;
       }
@@ -923,3 +1004,5 @@ class TreeNode {
     return true;
   }
 };
+
+#endif  // OTHELLOSENSEI_EVALUATEDERIVATIVE_TREE_NODE_H

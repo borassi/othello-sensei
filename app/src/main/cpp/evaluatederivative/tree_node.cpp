@@ -44,4 +44,8 @@ LeafToUpdate LeafToUpdate::CopyToChild(TreeNode* node, double extra_loss) const 
     assert(weak_lower_ <= alpha_ && alpha_ <= eval_goal_ && eval_goal_ <= beta_
            && beta_ <= weak_upper_);
     return leaf;
-  }
+}
+
+bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
+  return left.Loss() < right.Loss();
+};

@@ -33,19 +33,17 @@ Book::Book(std::string folder) : folder_(folder), value_files_() {
   }
 }
 
-std::vector<char> Book::Get(BitPattern player, BitPattern opponent) {
+std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
   return Find(player, opponent).second;
 }
 
-void Book::Put(BitPattern player, BitPattern opponent, std::vector<char> value) {
-  SerializedBoard board = Board(player, opponent).Serialize();
-  std::vector<char> to_store(board.begin(), board.end());
-  to_store.insert(to_store.end(), value.begin(), value.end());
+void Book::Put(BookTreeNode node) {
+  std::vector<char> to_store = node.Serialize();
   auto size = to_store.size();
   auto offset = GetValueFile(size).Add(to_store);
-  auto file_value = Find(player, opponent);
+  auto file_value = Find(node.Player(), node.Opponent());
   auto file = std::move(file_value.first);
-  if (file_value.second.empty()) {
+  if (!file_value.second.has_value()) {
     ++book_size_;
   }
   file.seekp(file.tellg());
@@ -97,14 +95,8 @@ void Book::Print(int start, int end) {
     if (node.IsEmpty()) {
       continue;
     }
-    std::cout << "  " << hash << ": size=" << (int) node.Size() << " off=" << node.Offset() << " -> ";
-    auto board_and_value = GetBoardAndValue(node);
-    Board board = Board::Deserialize(board_and_value.first);
-    std::cout << board.Player() << " " << board.Opponent() << ":";
-    for (char c : board_and_value.second) {
-      std::cout << " " << (int) c;
-    }
-    std::cout << "\n";
+    std::cout << "  " << hash << ": size=" << (int) node.Size() << " off="
+              << node.Offset() << " -> " << GetBookTreeNode(node) << "\n";
   }
 }
 
@@ -140,11 +132,9 @@ void Book::UpdateSizes(std::fstream* file) {
   file->write((char*) &book_size_, sizeof(book_size_));
 }
 
-std::pair<SerializedBoard, std::vector<char>> Book::GetBoardAndValue(HashMapNode node) {
+BookTreeNode Book::GetBookTreeNode(HashMapNode node) {
   std::vector<char> v = GetValueFile(node.Size()).Get(node.Offset());
-  SerializedBoard board;
-  std::copy_n(v.begin(), 13, board.begin());
-  return std::make_pair(board, std::vector<char>(v.begin() + 13, v.end()));
+  return BookTreeNode(v);
 }
 
 HashMapIndex Book::RepositionHash(HashMapIndex board_hash) {
@@ -155,7 +145,7 @@ HashMapIndex Book::RepositionHash(HashMapIndex board_hash) {
   return hash;
 }
 
-std::pair<std::fstream, std::vector<char>>
+std::pair<std::fstream, std::optional<BookTreeNode>>
     Book::Find(BitPattern player, BitPattern opponent) {
   Board unique = Board(player, opponent).Unique();
   player = unique.Player();
@@ -164,22 +154,22 @@ std::pair<std::fstream, std::vector<char>>
   std::fstream file = OpenFile(IndexFilename());
   file.seekg(OffsetToFilePosition(hash));
   HashMapNode node;
-  SerializedBoard board = Board(player, opponent).Serialize();
 
   while (true) {
     file.read((char*) &node, sizeof(HashMapNode));
     if (node.IsEmpty()) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
-        return std::make_pair(std::move(file), std::vector<char>());
+        return std::make_pair(std::move(file), std::nullopt);
     }
-    auto board_and_value = GetBoardAndValue(node);
-    if (board_and_value.first == board) {
+    auto book_tree_node = GetBookTreeNode(node);
+    Board b = book_tree_node.ToBoard();
+    if (b.Player() == player && b.Opponent() == opponent) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
-      return std::make_pair(std::move(file), board_and_value.second);
+      return std::make_pair(std::move(file), book_tree_node);
     }
 
     if (file.tellg() == OffsetToFilePosition(hash_map_size_)) {
-      return std::make_pair(std::move(file), std::vector<char>());
+      return std::make_pair(std::move(file), std::nullopt);
     }
   }
 }
@@ -210,7 +200,8 @@ void Book::Resize(std::fstream* file, std::vector<HashMapNode> add_elements) {
   }
 
   for (const HashMapNode& node_to_move : add_elements) {
-    Board board = Board::Deserialize(GetBoardAndValue(node_to_move).first);
+    BookTreeNode node = GetBookTreeNode(node_to_move);
+    Board board = node.ToBoard();
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
     HashMapNode board_in_position;
     file->seekg(OffsetToFilePosition(hash));

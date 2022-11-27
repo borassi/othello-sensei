@@ -74,7 +74,8 @@ TEST(Board, Unique) {
 TEST(SerializedBoard, Serialize) {
   for (int i = 0; i < 1000; ++i) {
     Board b = RandomBoard();
-    EXPECT_EQ(b.Unique(), Board::Deserialize(b.Serialize()));
+    const auto serialized = b.Serialize();
+    EXPECT_EQ(b.Unique(), Board::Deserialize(serialized.begin()));
     for (Board t : b.AllTranspositions()) {
       EXPECT_EQ(b.Serialize(), t.Serialize());
     }
