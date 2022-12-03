@@ -35,19 +35,19 @@
 
 constexpr char kAssetFilepath[] = "app/src/main/assets/";
 
-typedef long FileSize;
+typedef long FileOffset;
 
 class Asset {
  public:
   virtual ~Asset() {};
-  virtual void Seek(FileSize position) = 0;
-  virtual FileSize GetLength() = 0;
-  virtual void Read(char* buffer, FileSize length) = 0;
+  virtual void Seek(FileOffset position) = 0;
+  virtual FileOffset GetLength() = 0;
+  virtual void Read(char* buffer, FileOffset length) = 0;
 
   template<typename T>
   std::vector<T> ReadAll() {
     std::vector<T> result;
-    FileSize length = GetLength();
+    FileOffset length = GetLength();
     Seek(0);
     result.resize(length * sizeof(char) / sizeof(T));
     Read((char*) &result[0], length);
@@ -66,16 +66,16 @@ class PCAsset : public Asset {
     file_.close();
   }
 
-  FileSize GetLength() override {
+  FileOffset GetLength() override {
     file_.seekg(0, std::ios_base::end);
     return file_.tellg();
   }
 
-  void Seek(FileSize position) override {
+  void Seek(FileOffset position) override {
     file_.seekg(position, std::ios_base::beg);
   }
 
-  void Read(char* buffer, FileSize length) override {
+  void Read(char* buffer, FileOffset length) override {
     file_.read(buffer, length);
   }
 
@@ -94,15 +94,15 @@ class AndroidAsset : public Asset {
     AAsset_close(asset_);
   }
 
-  FileSize GetLength() final {
+  FileOffset GetLength() final {
     return AAsset_getLength(asset_);
   }
 
-  void Seek(FileSize position) final {
+  void Seek(FileOffset position) final {
     AAsset_seek64(asset_, position, std::ios_base::beg);
   }
 
-  void Read(char* buffer, FileSize length) final {
+  void Read(char* buffer, FileOffset length) final {
     AAsset_read(asset_, buffer, length);
   }
 

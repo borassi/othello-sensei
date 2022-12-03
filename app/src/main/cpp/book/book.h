@@ -30,6 +30,7 @@
 
 constexpr int kMinFileSize = kMinValueFileSize;
 constexpr int kMaxFileSize = 300;
+constexpr char kBookFilepath[] = "book";
 typedef u_int64_t HashMapIndex;
 
 constexpr HashMapIndex kInitialHashMapSize = 8;
@@ -39,14 +40,14 @@ constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 class HashMapNode {
  public:
   HashMapNode() : size_(0), offset_(0) {}
-  HashMapNode(u_int8_t size, FileOffset offset) : size_(size), offset_(offset) {}
+  HashMapNode(u_int8_t size, BookFileOffset offset) : size_(size), offset_(offset) {}
 
-  FileOffset Offset() const { return offset_; }
+  BookFileOffset Offset() const { return offset_; }
   u_int8_t Size() const { return size_; }
   bool IsEmpty() const { return size_ == 0; }
 
  private:
-  FileOffset offset_;
+  BookFileOffset offset_;
   u_int8_t size_;
 } __attribute__((packed));
 

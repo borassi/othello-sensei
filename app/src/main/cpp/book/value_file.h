@@ -26,10 +26,10 @@
 
 #include "../utils/file.h"
 
-typedef u_int32_t FileOffset;
+typedef u_int32_t BookFileOffset;
 typedef int ValueFileSize;
 
-constexpr ValueFileSize kMinValueFileSize = sizeof(FileOffset);
+constexpr ValueFileSize kMinValueFileSize = sizeof(BookFileOffset);
 
 // A file that can store vector<char> with the same size (at least kMinSize=4).
 // Supports the following operations:
@@ -44,11 +44,11 @@ class ValueFile {
 
   ValueFileSize Size() { return size_; }
 
-  FileOffset Add(const std::vector<char>& value);
+  BookFileOffset Add(const std::vector<char>& value);
 
-  void Remove(FileOffset offset);
+  void Remove(BookFileOffset offset);
 
-  std::vector<char> Get(FileOffset offset);
+  std::vector<char> Get(BookFileOffset offset);
 
   void Clean() {
     std::ofstream(Filename(), std::ios::out).close();
@@ -56,7 +56,7 @@ class ValueFile {
     SetAsEmpty(0, 0, &file);
   }
 
-  FileOffset Elements() {
+  BookFileOffset Elements() {
     auto file = OpenFile(Filename());
     return FileSize(file) / size_;
   }
@@ -71,8 +71,8 @@ class ValueFile {
     return folder_ + "/value_" + std::to_string(size_) + ".val";
   }
 
-  void Seek(FileOffset offset, std::fstream* file);
-  void SetAsEmpty(FileOffset offset, FileOffset next_empty, std::fstream* file);
+  void Seek(BookFileOffset offset, std::fstream* file);
+  void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream* file);
 };
 
 #endif //OTHELLOSENSEI_VALUEFILE_H

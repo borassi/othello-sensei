@@ -18,16 +18,16 @@
 
 #include "../utils/file.h"
 
-FileOffset ValueFile::Add(const std::vector<char>& value) {
+BookFileOffset ValueFile::Add(const std::vector<char>& value) {
   assert(value.size() == size_);
   std::fstream file = OpenFile(Filename());
-  FileOffset offset;
+  BookFileOffset offset;
   file.read((char*) &offset, sizeof(offset));
   if (offset == 0) {
     offset = Elements();
   } else {
     Seek(offset, &file);
-    FileOffset new_offset;
+    BookFileOffset new_offset;
     file.read((char*) &new_offset, sizeof(new_offset));
     SetAsEmpty(0, new_offset, &file);
   }
@@ -36,16 +36,16 @@ FileOffset ValueFile::Add(const std::vector<char>& value) {
   return offset;
 }
 
-void ValueFile::Remove(FileOffset offset) {
+void ValueFile::Remove(BookFileOffset offset) {
   std::fstream file = OpenFile(Filename());
   Seek(0, &file);
-  FileOffset next_free;
+  BookFileOffset next_free;
   file.read((char*) &next_free, sizeof(next_free));
   SetAsEmpty(offset, next_free, &file);
   SetAsEmpty(0, offset, &file);
 }
 
-std::vector<char> ValueFile::Get(FileOffset offset) {
+std::vector<char> ValueFile::Get(BookFileOffset offset) {
   std::vector<char> result(size_);
   std::fstream file = OpenFile(Filename());
   Seek(offset, &file);
@@ -68,14 +68,14 @@ void ValueFile::Print() {
   std::cout << "\n";
 }
 
-void ValueFile::Seek(FileOffset offset, std::fstream* file) {
+void ValueFile::Seek(BookFileOffset offset, std::fstream* file) {
   file->seekg(offset * size_);
   file->seekp(file->tellg(), std::ios::beg);
 }
 
-void ValueFile::SetAsEmpty(FileOffset offset, FileOffset next_empty, std::fstream* file) {
+void ValueFile::SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream* file) {
   Seek(offset, file);
-  std::vector<char> to_write(size_ - sizeof(FileOffset) / sizeof(char), 0);
-  file->write((char*) &next_empty, sizeof(FileOffset));
+  std::vector<char> to_write(size_ - sizeof(BookFileOffset) / sizeof(char), 0);
+  file->write((char*) &next_empty, sizeof(BookFileOffset));
   file->write(&to_write[0], to_write.size() * sizeof(char));
 }

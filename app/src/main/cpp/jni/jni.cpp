@@ -19,6 +19,7 @@
 #include <thread>
 
 #include "../analyzers/endgame_ffo.h"
+#include "../book/book.h"
 #include "../hashmap/hash_map.h"
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
@@ -67,7 +68,8 @@ class JNIWrapper {
       last_opponent_(0),
       last_gap_(-1),
       stopping_(false),
-      reset_(true) {
+      reset_(true),
+      book_(kBookFilepath) {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
@@ -242,6 +244,7 @@ class JNIWrapper {
   }
 
  private:
+  Book book_;
   int num_active_evaluators_;
   EvalType evals_;
   HashMap hash_map_;
