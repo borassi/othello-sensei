@@ -54,11 +54,11 @@ class HashMapNode {
 class Book {
 
  public:
-  Book(std::string folder);
+  Book(const std::string& folder);
 
   std::optional<BookTreeNode> Get(BitPattern player, BitPattern opponent);
 
-  void Put(BookTreeNode node);
+  void Put(const BaseTreeNode& node);
 
   bool IsSizeOK();
 

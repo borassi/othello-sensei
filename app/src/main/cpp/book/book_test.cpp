@@ -51,8 +51,16 @@ TEST(Book, Overwrite) {
   Book book(kTempDir);
   book.Clean();
   book.Put(TestBookTreeNode(0, 2, 0, -1, 9, 10));
-  book.Put(TestBookTreeNode(0, 2, 0, 1, 9, 10));
-  EXPECT_EQ(book.Get(0, 2), TestBookTreeNode(0, 2, 0, 1, 9, 10));
+  book.Put(TestBookTreeNode(0, 2, 0, 1, 9, 11));
+  EXPECT_EQ(book.Get(0, 2), TestBookTreeNode(0, 2, 0, 1, 9, 21));
+}
+
+TEST(Book, DoNotOverwrite) {
+  Book book(kTempDir);
+  book.Clean();
+  book.Put(TestBookTreeNode(0, 2, 0, -1, 9, 10));
+  book.Put(TestBookTreeNode(0, 2, 0, 1, 9, 9));
+  EXPECT_EQ(book.Get(0, 2), TestBookTreeNode(0, 2, 0, -1, 9, 19));
 }
 
 TEST(Book, ReloadBook) {
@@ -86,13 +94,18 @@ TEST(Book, LargeOne) {
       std::cout << i << "\n";
     }
     Board b = RandomBoard();
+    Board unique = b.Unique();
     Eval lower = (i % 64) * 2 - 63;
     Eval upper = std::min(lower + (i % 32) * 2, 63);
     EvalLarge eval = ((i + 24) % 511) - 255;
     NVisited n_visited = rand();
     BookTreeNode node = TestBookTreeNode(b.Player(), b.Opponent(), eval, lower, upper, n_visited);
     old_boards.push_back(b);
-    expected[b.Unique()] = node;
+    if (expected[unique]) {
+      expected[unique]->Merge(node);
+    } else {
+      expected[unique] = node;
+    }
     actual.Put(node);
 
     int test_i = rand() % (i+1);

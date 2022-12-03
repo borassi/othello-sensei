@@ -31,32 +31,6 @@ class BookTreeNode : public BaseTreeNode {
   BookTreeNode(BookTreeNode&& other) { Copy(other); }
   BookTreeNode(const BookTreeNode& other) { Copy(other); }
 
-  BookTreeNode& operator=(BookTreeNode&& other) {
-    Copy(other);
-    return *this;
-  }
-
-  void Copy(const BaseTreeNode& other) {
-    Reset(other.Player(), other.Opponent());
-    n_empties_ = other.NEmpties();
-    lower_ = other.Lower();
-    upper_ = other.Upper();
-    descendants_ = other.GetNVisited();
-    EnlargeEvaluations();
-
-    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
-    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
-    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
-      if (i < other.WeakLower()) {
-        MutableEvaluation(i)->SetProving(ConvertProofNumber(other_proof_number, other.WeakLower(), i));
-      } else if (i > other.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i));
-      } else {
-        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
-      }
-    }
-  }
-
   BookTreeNode(const std::vector<char>& serialized) {
     Board board = Board::Deserialize(serialized.begin());
     player_ = board.Player();
@@ -83,6 +57,32 @@ class BookTreeNode : public BaseTreeNode {
         int tmp = *((int*) &serialized[i]);
         i += 4;
         MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, tmp);
+      }
+    }
+  }
+
+  BookTreeNode& operator=(BookTreeNode&& other) {
+    Copy(other);
+    return *this;
+  }
+
+  void Copy(const BaseTreeNode& other) {
+    Reset(other.Player(), other.Opponent());
+    n_empties_ = other.NEmpties();
+    lower_ = other.Lower();
+    upper_ = other.Upper();
+    descendants_ = other.GetNVisited();
+    EnlargeEvaluations();
+
+    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
+    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
+    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
+      if (i < other.WeakLower()) {
+        MutableEvaluation(i)->SetProving(ConvertProofNumber(other_proof_number, other.WeakLower(), i));
+      } else if (i > other.WeakUpper()) {
+        MutableEvaluation(i)->SetDisproving(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i));
+      } else {
+        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
       }
     }
   }
@@ -122,7 +122,6 @@ class BookTreeNode : public BaseTreeNode {
           result.push_back(*(((char*) &tmp) + k));
         }
       }
-//      result.insert(result.end(), (char*) &evaluation, (char*) &evaluation + sizeof(Evaluation));
     }
     return result;
   }
@@ -149,11 +148,19 @@ class BookTreeNode : public BaseTreeNode {
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       if (GetEvaluation(i) != other.GetEvaluation(i)) {
-        std::cout << i << " " << GetEvaluation(i) << " " << other.GetEvaluation(i) << "\n";
         return false;
       }
     }
     return true;
+  }
+
+  void Merge(const BookTreeNode& other) {
+    assert(ToBoard().Unique() == other.ToBoard().Unique());
+    float total_descendants = descendants_ + other.descendants_;
+    if (other.descendants_ > descendants_) {
+      Copy(other);
+    }
+    descendants_ = total_descendants;
   }
 
  private:

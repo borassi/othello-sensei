@@ -52,20 +52,19 @@ class JNIWrapper {
     if (n == nullptr) {
       return NULL;
     }
+    BookTreeNode* node = new BookTreeNode(*n);
     jclass TreeNodeCPP = env->FindClass("jni/TreeNodeCPP");
     return env->NewObject(
         TreeNodeCPP,
         env->GetMethodID(TreeNodeCPP, "<init>", "(J)V"),
-        (jlong) n);
+        (jlong) node);
   }
 
   JNIWrapper() :
-      num_active_evaluators_(0),
       evals_(LoadEvals()),
       hash_map_(),
       tree_node_supplier_(),
-      last_player_(0),
-      last_opponent_(0),
+      last_boards_(),
       last_gap_(-1),
       stopping_(false),
       reset_(true),
@@ -82,7 +81,7 @@ class JNIWrapper {
   EvaluatorDerivative* BestEvaluator(float gap) {
     double best = -DBL_MAX;
     EvaluatorDerivative* best_evaluator = nullptr;
-    for (int i = 0; i < num_active_evaluators_; ++i) {
+    for (int i = 0; i < last_boards_.size(); ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       double value = evaluator->Progress(gap);
       if (evaluator->GetStatus() != STOPPED_TIME) {
@@ -100,7 +99,7 @@ class JNIWrapper {
     std::ostringstream stringStream;
     NVisited visited = 0;
     bool all_solved = true;
-    for (int i = 0; i < num_active_evaluators_; ++i) {
+    for (int i = 0; i < last_boards_.size(); ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       visited += evaluator->GetFirstPosition()->GetNVisited();
       switch (evaluator->GetStatus()) {
@@ -122,41 +121,39 @@ class JNIWrapper {
     return visited > max_n_visited || all_solved;
   }
 
-  void EvalDerivative(
-      BitPattern player, BitPattern opponent, Eval lower, Eval upper, NVisited max_n_visited, double max_time, float gap) {
+  void Evaluate(
+      std::vector<Board> boards, Eval lower, Eval upper, NVisited max_n_visited,
+      double max_time, float gap) {
     stopping_ = false;
-    bool reset = player != last_player_ || opponent != last_opponent_ ||
-        reset_ ||
-        ((gap == 0) != (last_gap_ == 0));
+    bool reset = reset_ || ((gap == 0) != (last_gap_ == 0)) || boards !=
+        last_boards_;
+
+    last_boards_ = boards;
+    last_gap_ = gap;
     if (reset) {
       reset_ = false;
       tree_node_supplier_.Reset();
-      if (gap <= 0) {
-        num_active_evaluators_ = 1;
-        evaluator_derivative_[0]->Evaluate(player, opponent, lower, upper, max_n_visited, max_time);
-      } else {
-        const auto flips = GetAllMovesWithPass(player, opponent);
-        num_active_evaluators_ = static_cast<int>(flips.size());
-        for (int i = 0; i < num_active_evaluators_; ++i) {
-          auto flip = flips[i];
-          evaluator_derivative_[i]->Evaluate(
-              NewPlayer(flip, opponent),
-              NewOpponent(flip, player), lower, upper, max_n_visited,
-              max_time / num_active_evaluators_);
-        }
+      for (int i = 0; i < boards.size(); ++i) {
+        Board b = boards[i];
+        evaluator_derivative_[i]->Evaluate(
+            b.Player(), b.Opponent(), lower, upper, max_n_visited,
+            max_time / boards.size());
       }
     } else {
-      for (int step = 0; step < num_active_evaluators_ && !stopping_ && !Finished(max_n_visited); ++step) {
-        BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / num_active_evaluators_);
+      for (int step = 0; step < boards.size() && !stopping_ && !Finished(max_n_visited); ++step) {
+        BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / boards.size());
       }
     }
-    last_player_ = player;
-    last_opponent_ = opponent;
-    last_gap_ = gap;
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
     return TreeNodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
+  }
+
+  jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
+    auto book_node = book_.Get(player, opponent);
+    return TreeNodeToJava(
+        book_node.has_value() ? &book_node.value() : nullptr, env);
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
@@ -243,15 +240,19 @@ class JNIWrapper {
     return env->GetStaticObjectField(JavaStatus, status_id);
   }
 
+  void AddToBook() {
+    for (int i = 0; i < last_boards_.size(); ++i) {
+      book_.Put(*evaluator_derivative_[i]->GetFirstPosition());
+    }
+  }
+
  private:
   Book book_;
-  int num_active_evaluators_;
   EvalType evals_;
   HashMap hash_map_;
   std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluator_derivative_;
   TreeNodeSupplier tree_node_supplier_;
-  BitPattern last_player_;
-  BitPattern last_opponent_;
+  std::vector<Board> last_boards_;
   float last_gap_;
   bool stopping_;
   bool reset_;
@@ -282,14 +283,37 @@ fileAccessor) {
   env->CallVoidMethod(obj, mid, (jlong) new JNIWrapper());
 }
 
+BookTreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
+  jclass cls = env->GetObjectClass(tree_node_java);
+  jmethodID mid = env->GetMethodID(cls, "getNodeAddress", "()J");
+  return (BookTreeNode*) env->CallLongMethod(tree_node_java, mid);
+}
+
 JNIEXPORT void JNICALL Java_jni_JNI_finalize(JNIEnv* env, jobject obj) {
   delete JNIFromJava(env, obj);
 }
 
 JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
-    JNIEnv* env, jobject obj, jlong player, jlong opponent, jint lower,
+    JNIEnv* env, jobject obj, jobject boards, jint lower,
     jint upper, jlong maxNVisited, jint maxTimeMillis, jfloat gap) {
-  JNIFromJava(env, obj)->EvalDerivative(player, opponent, static_cast<Eval>(lower / 100), static_cast<Eval>(upper / 100), maxNVisited, maxTimeMillis / 1000.0, gap);
+  jclass arraylist = env->FindClass("java/util/ArrayList");
+  jmethodID sizeId = env->GetMethodID(arraylist, "size", "()I");
+  jmethodID getId = env->GetMethodID(arraylist, "get", "(I)Ljava/lang/Object;");
+  jclass boardClass = env->FindClass("board/Board");
+  jmethodID playerId = env->GetMethodID(boardClass, "getPlayer", "()J");
+  jmethodID opponentId = env->GetMethodID(boardClass, "getOpponent", "()J");
+  int size = env->CallIntMethod(boards, sizeId);
+  std::vector<Board> boards_vector;
+  for (int i = 0; i < size; ++i) {
+    jobject board = env->CallObjectMethod(boards, getId, i);
+    BitPattern player = (BitPattern) env->CallLongMethod(board, playerId);
+    BitPattern opponent = (BitPattern) env->CallLongMethod(board, opponentId);
+    boards_vector.push_back(Board(player, opponent));
+  }
+  JNIFromJava(env, obj)->Evaluate(
+      boards_vector, static_cast<Eval>(lower / 100),
+      static_cast<Eval>(upper / 100), maxNVisited,
+      maxTimeMillis / 1000.0, gap);
 }
 
 JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jobject obj) {
@@ -300,6 +324,10 @@ JNIEXPORT void JNICALL Java_jni_JNI_stop(JNIEnv* env, jobject obj) {
   JNIFromJava(env, obj)->Stop();
 }
 
+JNIEXPORT void JNICALL Java_jni_JNI_addToBook(JNIEnv* env, jobject obj) {
+  JNIFromJava(env, obj)->AddToBook();
+}
+
 JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jobject obj) {
   return JNIFromJava(env, obj)->GetStatus(env);
 }
@@ -308,22 +336,29 @@ JNIEXPORT jobject JNICALL Java_jni_JNI_getFirstPosition(JNIEnv* env, jobject obj
   return JNIFromJava(env, obj)->GetFirstPosition(env);
 }
 
-JNIEXPORT jobject JNICALL Java_jni_JNI_get(JNIEnv* env, jobject obj, jlong player, jlong opponent) {
+JNIEXPORT jobject JNICALL Java_jni_JNI_get(
+    JNIEnv* env, jobject obj, jlong player, jlong opponent) {
   return JNIFromJava(env, obj)->Get(env, static_cast<BitPattern>(player), static_cast<BitPattern>(opponent));
+}
+
+JNIEXPORT jobject JNICALL Java_jni_JNI_getFromBook(
+    JNIEnv* env, jobject obj, jlong player, jlong opponent) {
+  return JNIFromJava(env, obj)->GetFromBook(
+      env, static_cast<BitPattern>(player),
+      static_cast<BitPattern>(opponent));
 }
 
 JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong max_nvisited) {
   return JNIFromJava(env, obj)->Finished(max_nvisited);
 }
 
-BaseTreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
-  jclass cls = env->GetObjectClass(tree_node_java);
-  jmethodID mid = env->GetMethodID(cls, "getNodeAddress", "()J");
-  return (BaseTreeNode*) env->CallLongMethod(tree_node_java, mid);
-}
-
 bool IsEvalGoalInvalid(BaseTreeNode* node, int eval_goal) {
   return node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
+}
+
+JNIEXPORT void JNICALL Java_jni_TreeNodeCPP_close(JNIEnv *env, jobject thiz) {
+  auto node = TreeNodeFromJava(env, thiz);
+  delete(node);
 }
 
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java) {

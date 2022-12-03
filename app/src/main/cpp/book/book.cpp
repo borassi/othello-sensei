@@ -16,7 +16,7 @@
  #include "book.h"
 
 
-Book::Book(std::string folder) : folder_(folder), value_files_() {
+Book::Book(const std::string& folder) : folder_(folder), value_files_() {
   for (int i = kMinFileSize; i <= kMaxFileSize; ++i) {
     value_files_.push_back(ValueFile(folder, i));
   }
@@ -37,29 +37,31 @@ std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
   return std::get<2>(Find(player, opponent));
 }
 
-void Book::Put(BookTreeNode node) {
-  std::vector<char> to_store = node.Serialize();
-  auto size = to_store.size();
-  auto offset = GetValueFile(size).Add(to_store);
+void Book::Put(const BaseTreeNode& node) {
   auto triple = Find(node.Player(), node.Opponent());
   auto file = std::move(std::get<0>(triple));
   auto hash_map_node = std::move(std::get<1>(triple));
   auto tree_node = std::move(std::get<2>(triple));
+  BookTreeNode node_to_store(node);
   if (hash_map_node.IsEmpty()) {
+    assert(!tree_node.has_value());
     ++book_size_;
+  } else {
+    assert(tree_node.has_value());
+    node_to_store.Merge(*tree_node);
+    GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
   }
+  std::vector<char> to_store = node_to_store.Serialize();
+  auto size = to_store.size();
+  auto offset = GetValueFile(size).Add(to_store);
   HashMapNode to_be_stored(size, offset);
   if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
-    if (!hash_map_node.IsEmpty()) {
-      GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
-    }
     file.write((char*) &to_be_stored, sizeof(HashMapNode));
     Resize(&file, {});
   } else {
     Resize(&file, {to_be_stored});
   }
   UpdateSizes(&file);
-  file.close();
 }
 
 bool Book::IsSizeOK() {

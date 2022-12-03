@@ -16,7 +16,7 @@ package jni;
 import board.Board;
 import evaluateposition.TreeNodeInterface;
 
-public class TreeNodeCPP extends TreeNodeInterface {
+public class TreeNodeCPP extends TreeNodeInterface implements AutoCloseable {
   private final long nodeAddress;
   public TreeNodeCPP(long nodeAddress) {
     this.nodeAddress = nodeAddress;
@@ -73,4 +73,7 @@ public class TreeNodeCPP extends TreeNodeInterface {
   public Board getBoard() {
     return new Board(getPlayer(), getOpponent());
   }
+
+  @Override
+  public native void close();
 }

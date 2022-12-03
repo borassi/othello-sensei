@@ -130,18 +130,40 @@ public class Main implements Runnable {
     ui.setCases(board, blackTurn);
   }
 
+  public ArrayList<Board> getBoards() {
+    ArrayList<Board> boards = new ArrayList<>();
+    if (ui.delta() == 0) {
+      if (EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
+        boards.add(board);
+      }
+    } else {
+      for (Board child : JNI.descendants(board)) {
+        if (EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
+          boards.add(child);
+        }
+      }
+    }
+    return boards;
+  }
+
   @Override
   public void run() {
     waitingTasks.getAndAdd(-1);
+    ArrayList<Board> boards = getBoards();
+    if (boards.isEmpty()) {
+      showMCTSEvaluations();
+      return;
+    }
     startTime = System.currentTimeMillis();
-    EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 50, (float) ui.delta());
+    EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 50, (float) ui.delta());
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
     }
     while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
       showMCTSEvaluations();
-      EVALUATOR.evaluate(board, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
+      EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
+    EVALUATOR.addToBook();
     if (waitingTasks.get() == 0) {
       showMCTSEvaluations();
     }
@@ -226,9 +248,13 @@ public class Main implements Runnable {
   }
 
   private TreeNodeInterface getStoredBoard(long player, long opponent) {
-    return EVALUATOR.get(player, opponent);
+    TreeNodeInterface board = EVALUATOR.get(player, opponent);
+    if (board != null) {
+      return board;
+    }
+    return EVALUATOR.getFromBook(player, opponent);
   }
-  
+
   private void showMCTSEvaluations() {
     int bestMove = this.findBestMove();
     long nVisited = 0;
@@ -244,10 +270,9 @@ public class Main implements Runnable {
         nVisited += childStored.getDescendants();
       }
     }
-    TreeNodeInterface boardStored = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;
-    if (boardStored != null) {
-      positionAnnotations = new CaseAnnotations(father, boardStored, false);
+    if (father != null) {
+      positionAnnotations = new CaseAnnotations(father, father, false);
     }
     ui.setExtras(
         nVisited, System.currentTimeMillis() - startTime,

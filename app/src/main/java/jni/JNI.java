@@ -48,11 +48,8 @@ public class JNI {
       System.load(System.getProperty("user.dir") + "/build/jni/libjni.so");
     }
   }
-  public void evaluate(Board board, int lower, int upper, long maxNVisited, int maxTimeMillis, float gap) {
-    evaluate(board.getPlayer(), board.getOpponent(), lower, upper, maxNVisited, maxTimeMillis, gap);
-  }
 
-  public native void evaluate(long player, long opponent, int lower,
+  public native void evaluate(ArrayList<Board> boards, int lower,
                               int upper, long maxNVisited, int maxTimeMillis, float gap);
 
   public native void empty();
@@ -65,6 +62,8 @@ public class JNI {
 
   public native TreeNodeInterface get(long player, long opponent);
 
+  public native TreeNodeInterface getFromBook(long player, long opponent);
+
   public native boolean finished(long maxNVisited);
 
   public static native Board getEndgameBoard(int i);
@@ -74,4 +73,6 @@ public class JNI {
   public static native boolean haveToPass(Board board);
 
   public static native ArrayList<Board> descendants(Board board);
+
+  public native void addToBook();
 }
