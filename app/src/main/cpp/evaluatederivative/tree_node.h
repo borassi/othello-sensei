@@ -120,6 +120,7 @@ class BaseTreeNode {
   virtual NVisited GetNVisited() const = 0;
   virtual std::vector<BaseTreeNode*> GetChildren() const = 0;
   virtual std::vector<BaseTreeNode*> Fathers() const = 0;
+  virtual void AddDescendants(NVisited n) = 0;
 
   Square NEmpties() const { return n_empties_; }
   BitPattern Player() const { return player_; }
@@ -573,7 +574,7 @@ class TreeNode : public BaseTreeNode {
     return true;
   }
 
-  void AddDescendants(NVisited n) {
+  void AddDescendants(NVisited n) override {
     n_visited_ += n;
   }
 
@@ -639,26 +640,6 @@ class TreeNode : public BaseTreeNode {
       ExtendEval(i);
     }
   }
-
-//  std::vector<char> Serialize() {
-//    std::vector<char> result;
-//    SerializedBoard serialized_board = ToBoard().Serialize();
-//    result.insert(result.end(), serialized_board.begin(), serialized_board.end());
-//    result.insert(result.end(), {(char) lower_, (char) upper_, (char) weak_lower_, (char) weak_upper_});
-//    return result;
-//  }
-//
-//  static TreeNode Deserialize(std::vector<char> serialized) {
-//    assert(serialized.size() == 17);
-//    return TreeNode(
-//        serialized[0],
-//        serialized[1],
-//        serialized[2],
-//        serialized[3],
-//        serialized.end() - 13,
-//        serialized.end()
-//    );
-//  }
 
  private:
   std::atomic_uint64_t n_visited_;

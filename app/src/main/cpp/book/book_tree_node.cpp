@@ -26,5 +26,6 @@ std::ostream& operator<<(std::ostream& stream, const BookTreeNode& b) {
       stream << std::setprecision(2) << " " << i << ":" << p;
     }
   }
+  stream << " (vis: " << b.GetNVisited() << ")";
   return stream;
 }

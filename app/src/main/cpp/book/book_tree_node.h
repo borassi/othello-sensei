@@ -41,6 +41,7 @@ class BookTreeNode : public BaseTreeNode {
     n_empties_ = other.NEmpties();
     lower_ = other.Lower();
     upper_ = other.Upper();
+    descendants_ = other.GetNVisited();
     EnlargeEvaluations();
 
     auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
@@ -62,6 +63,8 @@ class BookTreeNode : public BaseTreeNode {
     opponent_ = board.Opponent();
     n_empties_ = board.NEmpties();
     int i = 13;
+    descendants_ = *((float*) &(serialized[i]));
+    i += sizeof(float);
     lower_ = (Eval) serialized[i++];
     upper_ = (Eval) serialized[i++];
     Eval last_1 = (Eval) serialized[i++];
@@ -100,6 +103,8 @@ class BookTreeNode : public BaseTreeNode {
       }
     }
     result.insert(result.end(), board.begin(), board.end());
+    char* tmp = (char*) &descendants_;
+    result.insert(result.end(), tmp, tmp + sizeof(float));
     result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0});
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
@@ -125,12 +130,20 @@ class BookTreeNode : public BaseTreeNode {
   Eval WeakLower() const override { return -63; }
   Eval WeakUpper() const override { return 63; }
   Eval MinEvaluation() const override { return -63; }
-  NVisited GetNVisited() const override { return 0; }
+
+  NVisited GetNVisited() const override {
+    return (NVisited) round(descendants_);
+  }
+
+  void AddDescendants(NVisited descendants) override {
+    descendants_ += descendants;
+  }
 
   bool operator==(const BookTreeNode& other) const {
     if (Board(player_, opponent_).Unique() != Board(other.player_, other.opponent_).Unique() ||
         lower_ != other.lower_ ||
-        upper_ != other.upper_) {
+        upper_ != other.upper_ ||
+        GetNVisited() != other.GetNVisited()) {
       return false;
     }
 
@@ -144,6 +157,8 @@ class BookTreeNode : public BaseTreeNode {
   }
 
  private:
+  float descendants_;
+
   std::vector<BaseTreeNode*> GetChildren() const override {
     return std::vector<BaseTreeNode*>();
   }

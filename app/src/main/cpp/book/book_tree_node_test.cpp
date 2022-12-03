@@ -19,21 +19,21 @@
 #include "../evaluatederivative/tree_node.h"
 
 
-TEST(BookTreeNodeTest, Serialize) {
+TEST(BookTreeNodeTest, Basic) {
   TreeNode tree_node;
   tree_node.Reset(Board("e6"), 0, 1);
   tree_node.SetLeaf(-5, 1, EvalToEvalLarge(1), 4, 40);
 
-  BookTreeNode original(tree_node);
-  std::vector<char> serialized = original.Serialize();
-  BookTreeNode deserialized = BookTreeNode(serialized);
-  EXPECT_EQ(original, deserialized);
+  BookTreeNode node(tree_node);
+  EXPECT_EQ(node.GetNVisited(), 40);
+  EXPECT_EQ(node.Lower(), -65);
+  EXPECT_EQ(node.Upper(), 65);
 }
 
-TEST(BookTreeNodeTest, Serialize2) {
+TEST(BookTreeNodeTest, Serialize) {
   TreeNode tree_node;
-  tree_node.Reset(0, 2, 4, 0);
-  tree_node.SetLeaf(-1, 9, 0, 4, 100);
+  tree_node.Reset(Board("e6"), 0, 1);
+  tree_node.SetLeaf(-5, 1, EvalToEvalLarge(1), 4, 1000000000000);
 
   BookTreeNode original(tree_node);
   std::vector<char> serialized = original.Serialize();
