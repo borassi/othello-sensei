@@ -68,12 +68,11 @@ class BookTreeNode : public BaseTreeNode {
     Eval first_0 = (Eval) serialized[i++];
     EnlargeEvaluations();
 
-    std::cout << (int) first_0 << " " << (int) last_1 << "\n";
     for (int eval = WeakLower(); eval <= WeakUpper(); eval += 2) {
       if (eval <= last_1) {
-        MutableEvaluation(eval)->SetProving(ByteToProofNumber(serialized[i++]));
+        MutableEvaluation(eval)->SetProving(serialized[i++]);
       } else if (eval >= first_0) {
-        MutableEvaluation(eval)->SetDisproving(ByteToProofNumber(serialized[i++]));
+        MutableEvaluation(eval)->SetDisproving(serialized[i++]);
       } else {
         Probability prob = serialized[i++];
         PN proof_number = serialized[i++];
@@ -82,7 +81,6 @@ class BookTreeNode : public BaseTreeNode {
         i += 4;
         MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, tmp);
       }
-
     }
   }
 
@@ -138,6 +136,7 @@ class BookTreeNode : public BaseTreeNode {
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       if (GetEvaluation(i) != other.GetEvaluation(i)) {
+        std::cout << i << " " << GetEvaluation(i) << " " << other.GetEvaluation(i) << "\n";
         return false;
       }
     }

@@ -34,21 +34,25 @@ Book::Book(std::string folder) : folder_(folder), value_files_() {
 }
 
 std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
-  return Find(player, opponent).second;
+  return std::get<2>(Find(player, opponent));
 }
 
 void Book::Put(BookTreeNode node) {
   std::vector<char> to_store = node.Serialize();
   auto size = to_store.size();
   auto offset = GetValueFile(size).Add(to_store);
-  auto file_value = Find(node.Player(), node.Opponent());
-  auto file = std::move(file_value.first);
-  if (!file_value.second.has_value()) {
+  auto triple = Find(node.Player(), node.Opponent());
+  auto file = std::move(std::get<0>(triple));
+  auto hash_map_node = std::move(std::get<1>(triple));
+  auto tree_node = std::move(std::get<2>(triple));
+  if (hash_map_node.IsEmpty()) {
     ++book_size_;
   }
-  file.seekp(file.tellg());
   HashMapNode to_be_stored(size, offset);
   if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
+    if (!hash_map_node.IsEmpty()) {
+      GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
+    }
     file.write((char*) &to_be_stored, sizeof(HashMapNode));
     Resize(&file, {});
   } else {
@@ -145,7 +149,7 @@ HashMapIndex Book::RepositionHash(HashMapIndex board_hash) {
   return hash;
 }
 
-std::pair<std::fstream, std::optional<BookTreeNode>>
+std::tuple<std::fstream, HashMapNode, std::optional<BookTreeNode>>
     Book::Find(BitPattern player, BitPattern opponent) {
   Board unique = Board(player, opponent).Unique();
   player = unique.Player();
@@ -159,17 +163,20 @@ std::pair<std::fstream, std::optional<BookTreeNode>>
     file.read((char*) &node, sizeof(HashMapNode));
     if (node.IsEmpty()) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
-        return std::make_pair(std::move(file), std::nullopt);
+      file.seekp(file.tellg());
+      return std::make_tuple(std::move(file), node, std::nullopt);
     }
     auto book_tree_node = GetBookTreeNode(node);
     Board b = book_tree_node.ToBoard();
     if (b.Player() == player && b.Opponent() == opponent) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
-      return std::make_pair(std::move(file), book_tree_node);
+      file.seekp(file.tellg());
+      return std::make_tuple(std::move(file), node, book_tree_node);
     }
 
     if (file.tellg() == OffsetToFilePosition(hash_map_size_)) {
-      return std::make_pair(std::move(file), std::nullopt);
+      file.seekp(file.tellg());
+      return std::make_tuple(std::move(file), HashMapNode(), std::nullopt);
     }
   }
 }

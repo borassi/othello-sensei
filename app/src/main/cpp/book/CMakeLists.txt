@@ -80,6 +80,7 @@ target_link_libraries(
         book_tree_node
         LINK_PRIVATE
         endgame_time_estimator
+        evaluation
         tree_node
 )
 

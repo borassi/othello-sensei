@@ -19,6 +19,7 @@
 #include <cassert>
 #include <cmath>
 #include <float.h>
+#include <iomanip>
 #include "prob_combiners.h"
 #include "../board/bitpattern.h"
 #include "../utils/misc.h"
@@ -62,9 +63,14 @@ struct CombineProb {
         assert(i == kProofNumberStep || j == kProofNumberStep || combine_disproof_number[i][j] < kProofNumberStep);
       }
       for (int j = 0; j <= kProbStep; ++j) {
-        disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
-        1.0F,
-        std::min(kMaxProofNumber, ByteToProofNumber(i) / std::max(0.0001F, (1.0F - j / (float) kProofNumberStep)))));
+        if (j == kProbStep) {
+          disproof_to_proof_number[i][j] = kProofNumberStep;
+        } else {
+          disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
+              1.0F,
+              std::min(kMaxProofNumber, ByteToProofNumber(i) / (1.0F - j /
+              (float) kProbStep))));
+        }
         assert(i == 0 || disproof_to_proof_number[i][j] > 0);
       }
     }
@@ -86,6 +92,12 @@ struct CombineProb {
         assert(combine_prob[i][j] <= i);
         assert(combine_prob[i][j] <= j);
       }
+    }
+    for (int i = 0; i <= kProbStep; ++i) {
+      assert(combine_prob[i][0] == 0);
+      assert(combine_prob[0][i] == 0);
+      assert(combine_prob[i][kProbStep] == i);
+      assert(combine_prob[kProbStep][i] == i);
     }
   }
 };
@@ -149,13 +161,14 @@ class Evaluation {
       // not exist.
       return;
     }
-    assert(child.proof_number_ != 0 && child.proof_number_ != kProofNumberStep);
     prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
     assert(prob_greater_equal_ <= child.prob_greater_equal_);
 
     PN cur_proof_number = kCombineProb.disproof_to_proof_number[child.disproof_number_][child.prob_greater_equal_];
     assert(cur_proof_number > 0);
-    assert(cur_proof_number < kProofNumberStep);
+    child.Check();
+    assert((child.prob_greater_equal_ == kProbStep) ==
+               (cur_proof_number == kProofNumberStep));
     if (cur_proof_number < proof_number_) {
       proof_number_ = cur_proof_number;
     }
@@ -180,23 +193,25 @@ class Evaluation {
       assert(max_log_derivative_ > kLogDerivativeMinusInf);
     }
     prob_greater_equal_ = (kProbStep - prob_greater_equal_);
+    if (prob_greater_equal_ == kProbStep) {
+      disproof_number_ = kProofNumberStep;
+    }
+    Check();
   }
 
   void SetLeaf(float prob_greater_equal, float proof_number,
                float disproof_number, float log_derivative_add = 0) {
     prob_greater_equal_ = RoundProb(prob_greater_equal);
-    proof_number_ = ProofNumberToByte(proof_number);
-    disproof_number_ = ProofNumberToByte(disproof_number);
-    assert((proof_number_ == 0) == (disproof_number_ == kProofNumberStep));
-    assert((disproof_number_ == 0) == (proof_number_ == kProofNumberStep));
-    assert(proof_number_ != 0 || prob_greater_equal_ == kProbStep);
-    assert(disproof_number_ != 0 || prob_greater_equal_ == 0);
+    proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep :
+        ProofNumberToByte(proof_number);
+    disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep :
+        ProofNumberToByte(disproof_number);
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
       max_log_derivative_ = LeafLogDerivative(ProbGreaterEqualUnsafe()) + log_derivative_add;
     }
-    assert(max_log_derivative_ < 0);
+    Check();
   }
 
   void SetDisproved() {
@@ -220,28 +235,33 @@ class Evaluation {
           - 0.000001 * log(nVisited)
           ;
     } else {
-      return LogDerivative(father);// - (1 / std::min(prob, 0.5F));
-//             * avoidNextPosFailCoeff.get()
-//             * child.getStoredBoard().getNThreadsWorking();
+      return LogDerivative(father);
     }
   }
 
   float RemainingWork() const {
+    Check();
+    // Needed to avoid 0 * infinity.
+    if (prob_greater_equal_ == 0) {
+      return DisproofNumber();
+    } else if (prob_greater_equal_ == kProbStep) {
+      return ProofNumber();
+    }
     float prob_greater_equal = ProbGreaterEqual();
     return ProofNumber() * prob_greater_equal + DisproofNumber() * (1 - prob_greater_equal);
   }
 
-  void SetProving(float proof_number) {
+  void SetProving(PN proof_number) {
     prob_greater_equal_ = kProbStep;
-    proof_number_ = ProofNumberToByte(proof_number);
+    proof_number_ = proof_number;
     disproof_number_ = kProofNumberStep;
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
-  void SetDisproving(float disproof_number) {
+  void SetDisproving(PN disproof_number) {
     prob_greater_equal_ = 0;
     proof_number_ = kProofNumberStep;
-    disproof_number_ = ProofNumberToByte(disproof_number);
+    disproof_number_ = disproof_number;
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
@@ -271,6 +291,18 @@ class Evaluation {
   float ProbGreaterEqualUnsafe() const {
     return ((float) prob_greater_equal_) / kProbStep;
   }
+
+  void Check() const {
+    assert((prob_greater_equal_ == 0) == (proof_number_ == kProofNumberStep));
+    assert((prob_greater_equal_ == kProbStep) ==
+           (disproof_number_ == kProofNumberStep));
+    assert(proof_number_ != 0 || prob_greater_equal_ == kProbStep);
+    assert(disproof_number_ != 0 || prob_greater_equal_ == 0);
+    assert((prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) ==
+           (max_log_derivative_ == kLogDerivativeMinusInf));
+    assert(max_log_derivative_ < 0);
+  }
 };
 
+std::ostream& operator<<(std::ostream& stream, const Evaluation& e);
 #endif  // OTHELLOSENSEI_EVALUATEDERIVATIVE_EVALUATION_H

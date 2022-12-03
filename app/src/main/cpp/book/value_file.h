@@ -51,7 +51,8 @@ class ValueFile {
   std::vector<char> Get(FileOffset offset);
 
   void Clean() {
-    std::fstream file(Filename(), std::ios::out);
+    std::ofstream(Filename(), std::ios::out).close();
+    std::fstream file = OpenFile(Filename());
     SetAsEmpty(0, 0, &file);
   }
 

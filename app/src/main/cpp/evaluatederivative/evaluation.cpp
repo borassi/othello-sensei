@@ -36,3 +36,9 @@ float ByteToProofNumber(PN byte) {
   }
   return pow(kBaseLogProofNumber, byte - 1);
 }
+
+std::ostream& operator<<(std::ostream& stream, const Evaluation& e) {
+  stream << e.ProbGreaterEqual() << " " << e.MaxLogDerivative() << " ["
+         << e.ProofNumber() << " " << e.DisproofNumber() << "]";
+  return stream;
+}

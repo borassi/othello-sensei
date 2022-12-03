@@ -29,7 +29,7 @@
 #include "../utils/file.h"
 
 constexpr int kMinFileSize = kMinValueFileSize;
-constexpr int kMaxFileSize = 100;
+constexpr int kMaxFileSize = 300;
 typedef u_int64_t HashMapIndex;
 
 constexpr HashMapIndex kInitialHashMapSize = 8;
@@ -65,6 +65,8 @@ class Book {
 
   void Clean();
 
+  HashMapIndex Size() { return book_size_; }
+
  private:
   std::string folder_;
   std::vector<ValueFile> value_files_;
@@ -94,7 +96,7 @@ class Book {
 
   HashMapIndex RepositionHash(HashMapIndex board_hash);
 
-  std::pair<std::fstream, std::optional<BookTreeNode>>
+  std::tuple<std::fstream, HashMapNode, std::optional<BookTreeNode>>
       Find(BitPattern player, BitPattern opponent);
 
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);

@@ -29,33 +29,53 @@ const std::string kTempDir = "app/testdata/tmp/book_test";
 
 using ::testing::ElementsAreArray;
 
-BookTreeNode TestBookTreeNode(BitPattern player, BitPattern opponent, Eval weak_lower, Eval weak_upper) {
+BookTreeNode TestBookTreeNode(BitPattern player, BitPattern opponent, Eval leaf_eval, Eval weak_lower, Eval weak_upper) {
   TreeNode t;
   t.Reset(player, opponent, 4, 0);
 //  Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited)
-  t.SetLeaf(weak_lower, weak_upper, 0, 4, 100);
+  t.SetLeaf(weak_lower, weak_upper, leaf_eval, 4, 100);
   return BookTreeNode(t);
 }
 
-TEST(Book, Basic) {
-  Book position_to_data(kTempDir);
-  position_to_data.Clean();
-  position_to_data.Put(TestBookTreeNode(0, 1, -5, 5));
-//  position_to_data.Print();
-  EXPECT_EQ(position_to_data.Get(0, 1), TestBookTreeNode(0, 1, -5, 5));
-  EXPECT_EQ(position_to_data.Get(0, 2), std::nullopt);
+//TEST(Book, Basic) {
+//  Book position_to_data(kTempDir);
+//  position_to_data.Clean();
+//  position_to_data.Put(TestBookTreeNode(0, 1, 0, -5, 5));
+////  position_to_data.Print();
+//  EXPECT_EQ(position_to_data.Get(0, 1), TestBookTreeNode(0, 1, 0, -5, 5));
+//  EXPECT_EQ(position_to_data.Get(0, 2), std::nullopt);
+//  EXPECT_EQ(position_to_data.Size(), 1);
+//}
 
-  position_to_data.Put(TestBookTreeNode(0, 2, -1, 9));
-  EXPECT_EQ(position_to_data.Get(0, 2), TestBookTreeNode(0, 2, -1, 9));
-
-  position_to_data.Put(TestBookTreeNode(0, 2, 1, 9));
-  EXPECT_EQ(position_to_data.Get(0, 1), TestBookTreeNode(0, 1, -5, 5));
-  EXPECT_EQ(position_to_data.Get(0, 2), TestBookTreeNode(0, 2, 1, 9));
-
-  Book position_to_data1(kTempDir);
-  EXPECT_EQ(position_to_data1.Get(0, 1), TestBookTreeNode(0, 1, -5, 5));
-  EXPECT_EQ(position_to_data1.Get(0, 2), TestBookTreeNode(0, 2, 1, 9));
+TEST(Book, Overwrite) {
+  Book book(kTempDir);
+  book.Clean();
+  book.Put(TestBookTreeNode(0, 2, 0, -1, 9));
+  book.Put(TestBookTreeNode(0, 2, 0, 1, 9));
+  book.Print();
+  std::cout << TestBookTreeNode(0, 2, 0, 1, 9).GetEvaluation(9) << "\n\n";
+  EXPECT_EQ(book.Get(0, 2), TestBookTreeNode(0, 2, 0, 1, 9));
 }
+
+//TEST(Book, ReloadBook) {
+//  Book position_to_data(kTempDir);
+//  position_to_data.Clean();
+//  position_to_data.Put(TestBookTreeNode(0, 1, 0, -5, 5));
+//  position_to_data.Put(TestBookTreeNode(0, 2, 2, 1, 9));
+//
+//  Book position_to_data1(kTempDir);
+//  EXPECT_EQ(position_to_data1.Get(0, 1), TestBookTreeNode(0, 1, 0, -5, 5));
+//  EXPECT_EQ(position_to_data1.Get(0, 2), TestBookTreeNode(0, 2, 2, 1, 9));
+//}
+//
+//TEST(Book, Unique) {
+//  Book position_to_data(kTempDir);
+//  position_to_data.Clean();
+//  position_to_data.Put(TestBookTreeNode(0, 1ULL << 7, 1, 1, 3));
+//  EXPECT_EQ(position_to_data.Get(0, 1), TestBookTreeNode(0, 1ULL << 7, 1, 1, 3));
+//  EXPECT_EQ(position_to_data.Get(0, 1ULL << 56), TestBookTreeNode(0, 1ULL << 7, 1, 1, 3));
+//  EXPECT_EQ(position_to_data.Get(0, 1ULL << 63), TestBookTreeNode(0, 1ULL << 7, 1, 1, 3));
+//}
 
 TEST(Book, LargeOne) {
   std::unordered_map<Board, std::optional<BookTreeNode>> expected;
@@ -70,7 +90,8 @@ TEST(Book, LargeOne) {
     Board b = RandomBoard();
     Eval lower = (i % 64) * 2 - 63;
     Eval upper = std::min(lower + (i % 32) * 2, 63);
-    BookTreeNode node = TestBookTreeNode(b.Player(), b.Opponent(), lower, upper);
+    EvalLarge eval = ((i + 24) % 511) - 255;
+    BookTreeNode node = TestBookTreeNode(b.Player(), b.Opponent(), eval, lower, upper);
     old_boards.push_back(b);
     expected[b.Unique()] = node;
     actual.Put(node);
@@ -94,13 +115,4 @@ TEST(Book, LargeOne) {
       actual = Book(kTempDir);
     }
   }
-}
-
-TEST(Book, Unique) {
-  Book position_to_data(kTempDir);
-  position_to_data.Clean();
-  position_to_data.Put(TestBookTreeNode(0, 1ULL << 7, 1, 3));
-  EXPECT_EQ(position_to_data.Get(0, 1), TestBookTreeNode(0, 1ULL << 7, 1, 3));
-  EXPECT_EQ(position_to_data.Get(0, 1ULL << 56), TestBookTreeNode(0, 1ULL << 7, 1, 3));
-  EXPECT_EQ(position_to_data.Get(0, 1ULL << 63), TestBookTreeNode(0, 1ULL << 7, 1, 3));
 }

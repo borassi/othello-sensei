@@ -16,12 +16,24 @@
 
 #include <gtest/gtest.h>
 #include "book_tree_node.h"
+#include "../evaluatederivative/tree_node.h"
 
 
 TEST(BookTreeNodeTest, Serialize) {
   TreeNode tree_node;
   tree_node.Reset(Board("e6"), 0, 1);
   tree_node.SetLeaf(-5, 1, EvalToEvalLarge(1), 4, 40);
+
+  BookTreeNode original(tree_node);
+  std::vector<char> serialized = original.Serialize();
+  BookTreeNode deserialized = BookTreeNode(serialized);
+  EXPECT_EQ(original, deserialized);
+}
+
+TEST(BookTreeNodeTest, Serialize2) {
+  TreeNode tree_node;
+  tree_node.Reset(0, 2, 4, 0);
+  tree_node.SetLeaf(-1, 9, 0, 4, 100);
 
   BookTreeNode original(tree_node);
   std::vector<char> serialized = original.Serialize();
