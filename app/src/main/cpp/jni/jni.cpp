@@ -157,34 +157,18 @@ class JNIWrapper {
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    BaseTreeNode* node = tree_node_supplier_.Get(player, opponent);
-    if (node != nullptr) {
-      return TreeNodeToJava(node, env);
-    }
-    for (int i = 0; i < kNumEvaluators; ++i) {
-      BaseTreeNode* first_position = evaluator_derivative_[i]->GetFirstPosition();
-      if (first_position == nullptr) {
-        continue;
+    BaseTreeNode* node = nullptr;
+    for (int i = 0; i < last_boards_.size(); ++i) {
+      const auto& evaluator = evaluator_derivative_[i];
+      BaseTreeNode* first_position = evaluator->GetFirstPosition();
+      if (first_position != nullptr &&
+          first_position->Player() == player &&
+          first_position->Opponent() == opponent) {
+        node = first_position;
+        break;
       }
-      if (first_position->Player() == player && first_position->Opponent() == opponent) {
-        return TreeNodeToJava(first_position, env);
-      }
-      for (BaseTreeNode* const child : first_position->GetChildren()) {
-        if (child->Player() == player && child->Opponent() == opponent) {
-          return TreeNodeToJava(child, env);
-        }
-      }
-    }
-    for (BitPattern flip : GetAllMovesWithPass(player, opponent)) {
-      BaseTreeNode* child = tree_node_supplier_.Get(NewPlayer(flip, opponent),
-                                                NewOpponent(flip, player));
-      if (child == nullptr) {
-        continue;
-      }
-      for (BaseTreeNode* father : child->Fathers()) {
-        if (father->Player() == player && father->Opponent() == opponent) {
-          return TreeNodeToJava(father, env);
-        }
+      if (node == nullptr) {
+        node = tree_node_supplier_.Get(player, opponent, evaluator->Index());
       }
     }
     return TreeNodeToJava(node, env);

@@ -27,6 +27,7 @@
 #include <limits>
 #include <optional>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 #include "tree_node.h"
 #include "../constants.h"
@@ -52,35 +53,45 @@ enum Status {
     STOPPED_TREE_POSITIONS = 8,
 };
 
+typedef std::tuple<BitPattern, BitPattern, u_int8_t> NodeKey;
+
+struct TupleEqual
+{
+  std::size_t operator()(const NodeKey& node1, const NodeKey& node2) const {
+    return
+        std::get<0>(node1) == std::get<0>(node2) &&
+        std::get<1>(node1) == std::get<1>(node2) &&
+        std::get<2>(node1) == std::get<2>(node2);
+  }
+};
+
+struct TupleHasher
+{
+  std::size_t operator()(const NodeKey& node) const {
+    return HashFull(std::get<0>(node), std::get<1>(node) + std::get<2>(node));
+  }
+};
+
 class TreeNodeSupplier {
  public:
-  TreeNodeSupplier() : num_tree_nodes_(0) {
-    tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
-    tree_node_index_ = new int[kHashMapSize];
-    std::fill_n(tree_node_index_, kHashMapSize, kDerivativeEvaluatorSize);
-  }
-  ~TreeNodeSupplier() {
-    delete[] tree_nodes_;
-    delete[] tree_node_index_;
+
+  const TreeNode* const Get(const Board& b, u_int8_t evaluator_index) {
+    return Get(b.Player(), b.Opponent(), evaluator_index);
   }
 
-  const TreeNode* const Get(const Board& b) {
-    return Get(b.Player(), b.Opponent());
-  }
-
-  TreeNode* Get(BitPattern player, BitPattern opponent) {
+  TreeNode* Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) {
     const std::lock_guard<std::mutex> guard(mutex_);
-    return GetNoLock(player, opponent);
+    return GetNoLock(player, opponent, evaluator_index);
   }
 
   void Reset() {
     const std::lock_guard<std::mutex> guard(mutex_);
-    num_tree_nodes_ = 0;
+    tree_nodes_.clear();
   }
 
   int NumTreeNodes() {
     const std::lock_guard<std::mutex> guard(mutex_);
-    return num_tree_nodes_;
+    return tree_nodes_.size();
   }
 
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) {
@@ -88,40 +99,34 @@ class TreeNodeSupplier {
     return AddTreeNode(player, opponent, depth, evaluator_index, &newly_inserted);
   }
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index, bool* newly_inserted) {
+    assert(tree_nodes_.size() < kDerivativeEvaluatorSize);
     const std::lock_guard<std::mutex> guard(mutex_);
     if (kUseTranspositions) {
-      TreeNode* existing_node = GetNoLock(player, opponent);
-      if (existing_node != nullptr && existing_node->Evaluator() == evaluator_index) {
+      TreeNode* node = GetNoLock(player, opponent, evaluator_index);
+      if (node != nullptr) {
         *newly_inserted = false;
-        return existing_node;
+        return node;
       }
     }
-    int hash = Hash(player, opponent);
-    int node_id = num_tree_nodes_++;
-    assert(node_id < kDerivativeEvaluatorSize);
-    TreeNode& node = tree_nodes_[node_id];
-    node.Reset(player, opponent, depth, evaluator_index);
-    tree_node_index_[hash] = node_id;
     *newly_inserted = true;
+    TreeNode& node = tree_nodes_[std::make_tuple(player, opponent,
+                                 evaluator_index)];
+    node.Reset(player, opponent, depth, evaluator_index);
     return &node;
   }
 
  private:
   std::mutex mutex_;
-  int num_tree_nodes_;
-  TreeNode* tree_nodes_;
-  int* tree_node_index_;
+  std::unordered_map<std::tuple<BitPattern, BitPattern, u_int8_t>,
+                     TreeNode, TupleHasher, TupleEqual> tree_nodes_;
 
-  TreeNode* GetNoLock(BitPattern player, BitPattern opponent) {
-    int index = tree_node_index_[Hash(player, opponent)];
-    if (index >= num_tree_nodes_) {
+  TreeNode* GetNoLock(BitPattern player, BitPattern opponent, u_int8_t
+                      evaluator) {
+    auto it = tree_nodes_.find(std::make_tuple(player, opponent, evaluator));
+    if (it == tree_nodes_.end()) {
       return nullptr;
     }
-    TreeNode& node = tree_nodes_[index];
-    if (node.Player() == player && node.Opponent() == opponent) {
-      return &node;
-    }
-    return nullptr;
+    return &it->second;
   }
 };
 
@@ -427,6 +432,8 @@ class EvaluatorDerivative {
   const Stats& GetStats() const { return stats_; }
 
   float AverageBatchSize() { return sum_batch_sizes_ / num_batches_; }
+
+  u_int8_t Index() const { return index_; }
 
  private:
   std::atomic_int visited_for_endgame_;

@@ -43,8 +43,7 @@ include(FetchContent)
 FetchContent_Declare(
     googletest
     DOWNLOAD_EXTRACT_TIMESTAMP
-    # Specify the commit you depend on and update it regularly.
-    URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip #https://github.com/google/googletest/archive/e68764c147ea0dac1e8811925c531d937396878e.zip
+    URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
 )
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
