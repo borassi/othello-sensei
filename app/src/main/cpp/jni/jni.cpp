@@ -48,8 +48,8 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 
 class JNIWrapper {
  public:
-  static jobject TreeNodeToJava(const BaseTreeNode* const n, JNIEnv* env) {
-    if (n == nullptr) {
+  static jobject TreeNodeToJava(const std::optional<BookTreeNode>& n, JNIEnv* env) {
+    if (!n) {
       return NULL;
     }
     BookTreeNode* node = new BookTreeNode(*n);
@@ -147,31 +147,38 @@ class JNIWrapper {
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
-    return TreeNodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
+    TreeNode* node = evaluator_derivative_[0]->GetFirstPosition();
+    if (node == nullptr) {
+      return NULL;
+    }
+    std::cout << "Firstpos\n" << std::flush;
+    return TreeNodeToJava(*node, env);
   }
 
   jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    auto book_node = book_.Get(player, opponent);
-    return TreeNodeToJava(
-        book_node.has_value() ? &book_node.value() : nullptr, env);
+    std::cout << "Book\n" << std::flush;
+    return TreeNodeToJava(book_.Get(player, opponent), env);
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    BaseTreeNode* node = nullptr;
+    TreeNode* node = nullptr;
     for (int i = 0; i < last_boards_.size(); ++i) {
       const auto& evaluator = evaluator_derivative_[i];
-      BaseTreeNode* first_position = evaluator->GetFirstPosition();
+      TreeNode* first_position = evaluator->GetFirstPosition();
       if (first_position != nullptr &&
           first_position->Player() == player &&
           first_position->Opponent() == opponent) {
         node = first_position;
         break;
       }
-      if (node == nullptr) {
+      if (!node) {
         node = tree_node_supplier_.Get(player, opponent, evaluator->Index());
       }
     }
-    return TreeNodeToJava(node, env);
+    if (node == nullptr) {
+      return NULL;
+    }
+    return TreeNodeToJava(BookTreeNode(*node), env);
   }
 
   void Empty() {
@@ -336,7 +343,7 @@ JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong
   return JNIFromJava(env, obj)->Finished(max_nvisited);
 }
 
-bool IsEvalGoalInvalid(BaseTreeNode* node, int eval_goal) {
+bool IsEvalGoalInvalid(BookTreeNode* node, int eval_goal) {
   return node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
 }
 

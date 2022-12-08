@@ -37,7 +37,7 @@ std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
   return std::get<2>(Find(player, opponent));
 }
 
-void Book::Put(const BaseTreeNode& node) {
+void Book::Put(const BookTreeNode& node) {
   auto triple = Find(node.Player(), node.Opponent());
   auto file = std::move(std::get<0>(triple));
   auto hash_map_node = std::move(std::get<1>(triple));

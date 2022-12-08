@@ -18,18 +18,19 @@
 #define OTHELLOSENSEI_BOOK_BOOK_TREE_NODE_H
 
 #include <iterator>
+#include <optional>
 #include <vector>
 
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
 #include "../evaluatederivative/endgame_time_estimator.h"
 
-class BookTreeNode : public BaseTreeNode {
+class BookTreeNode : public BaseTreeNode<BookTreeNode> {
  public:
   BookTreeNode() = delete;
-  BookTreeNode(const BaseTreeNode& other) { Copy(other); }
-  BookTreeNode(BookTreeNode&& other) { Copy(other); }
-  BookTreeNode(const BookTreeNode& other) { Copy(other); }
+  BookTreeNode(const TreeNode& other) { Copy<TreeNode>(other); }
+  BookTreeNode(BookTreeNode&& other) { Copy<BookTreeNode>(other); }
+  BookTreeNode(const BookTreeNode& other) { Copy<BookTreeNode>(other); }
 
   BookTreeNode(const std::vector<char>& serialized) {
     Board board = Board::Deserialize(serialized.begin());
@@ -66,7 +67,8 @@ class BookTreeNode : public BaseTreeNode {
     return *this;
   }
 
-  void Copy(const BaseTreeNode& other) {
+  template<class T>
+  void Copy(const BaseTreeNode<T>& other) {
     Reset(other.Player(), other.Opponent());
     n_empties_ = other.NEmpties();
     lower_ = other.Lower();
@@ -166,12 +168,17 @@ class BookTreeNode : public BaseTreeNode {
  private:
   float descendants_;
 
-  std::vector<BaseTreeNode*> GetChildren() const override {
-    return std::vector<BaseTreeNode*>();
+  const std::optional<std::lock_guard<std::mutex>>& Lock() const override {
+    static std::optional<std::lock_guard<std::mutex>> opt = std::nullopt;
+    return opt;
+  };
+
+  std::vector<BookTreeNode*> GetChildren() const override {
+    return std::vector<BookTreeNode*>();
   }
 
-  std::vector<BaseTreeNode*> Fathers() const override {
-    return std::vector<BaseTreeNode*>();
+  std::vector<BookTreeNode*> Fathers() const override {
+    return std::vector<BookTreeNode*>();
   }
 };
 

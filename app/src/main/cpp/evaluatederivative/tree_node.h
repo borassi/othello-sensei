@@ -23,7 +23,9 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <string.h>
 #include <unordered_set>
@@ -107,6 +109,7 @@ class LeafToUpdate {
 
 bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right);
 
+template<class T>
 class BaseTreeNode {
  public:
   BaseTreeNode() : evaluations_(nullptr) {}
@@ -118,8 +121,8 @@ class BaseTreeNode {
   virtual Eval WeakUpper() const = 0;
   virtual Eval MinEvaluation() const = 0;
   virtual NVisited GetNVisited() const = 0;
-  virtual std::vector<BaseTreeNode*> GetChildren() const = 0;
-  virtual std::vector<BaseTreeNode*> Fathers() const = 0;
+  virtual std::vector<T*> GetChildren() const = 0;
+  virtual std::vector<T*> Fathers() const = 0;
   virtual void AddDescendants(NVisited n) = 0;
 
   Square NEmpties() const { return n_empties_; }
@@ -277,6 +280,10 @@ class BaseTreeNode {
   Square n_empties_;
   Eval lower_;
   Eval upper_;
+  Eval weak_lower_;
+  Eval weak_upper_;
+
+  virtual const std::optional<std::lock_guard<std::mutex>>& Lock() const = 0;
 
   virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
     assert((eval_goal - kMinEval) % 2 == 1);
@@ -286,9 +293,27 @@ class BaseTreeNode {
     assert(index >= 0 && index <= (WeakUpper() - MinEvaluation()) / 2);
     return &evaluations_[index];
   }
+
+  virtual bool UpdateWithChild(const T& child) {
+    assert(child.ContainsFather(this));
+    lower_ = MaxEval(lower_, (Eval) -child.Upper());
+    upper_ = MaxEval(upper_, (Eval) -child.Lower());
+    assert(AllValidEvals());
+    weak_lower_ = MaxEval(weak_lower_, (Eval) -child.weak_upper_);
+    weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      assert(-i >= child->WeakLower() && -i <= child->WeakUpper());
+      const Evaluation& eval = child.GetEvaluation(-i);
+      assert(eval.IsValid());
+      Evaluation* father_eval = MutableEvaluation(i);
+      assert(father_eval->IsValid());
+      father_eval->UpdateFatherWithThisChild(eval);
+    }
+    return true;
+  }
 };
 
-class TreeNode : public BaseTreeNode {
+class TreeNode : public BaseTreeNode<TreeNode> {
  public:
   TreeNode() :
       BaseTreeNode(),
@@ -338,29 +363,8 @@ class TreeNode : public BaseTreeNode {
     return false;
   }
 
-  bool UpdateFatherWithThisChild(TreeNode* father) const {
-    const std::lock_guard<std::mutex> guard(mutex_);
-    if (!IsValid()) {
-      // Another thread is still working on this node or a child. This father
-      // will be updated by this other thread.
-      return false;
-    }
-    assert(ContainsFather(father));
-    father->lower_ = MaxEval(father->lower_, (Eval) -upper_);
-    father->upper_ = MaxEval(father->upper_, (Eval) -lower_);
-    father->weak_lower_ = MaxEval(father->weak_lower_, (Eval) -weak_upper_);
-    assert(father->MinEvaluation() <= father->WeakLower());
-    father->weak_upper_ = MinEval(father->weak_upper_, (Eval) -weak_lower_);
-    assert(AllValidEvals());
-    for (int i = father->weak_lower_; i <= father->weak_upper_; i += 2) {
-      assert(-i >= weak_lower_ && -i <= weak_upper_);
-      const Evaluation& eval = GetEvaluation(-i);
-      assert(eval.IsValid());
-      Evaluation* father_eval = father->MutableEvaluation(i);
-      assert(father_eval->IsValid());
-      father_eval->UpdateFatherWithThisChild(eval);
-    }
-    return true;
+  const std::optional<std::lock_guard<std::mutex>>& Lock() const override {
+    return std::move(std::optional<std::lock_guard<std::mutex>>(mutex_));
   }
 
   void UpdateFathers() {
@@ -377,8 +381,21 @@ class TreeNode : public BaseTreeNode {
     }
   }
 
+  virtual bool UpdateWithChild(const TreeNode& child) override {
+    auto& child_guard = child.Lock();
+    if (!child.IsValid()) {
+      // Another thread is still working on this node or a child. This father
+      // will be updated by this other thread.
+      leaf_eval_ = kLessThenMinEvalLarge;
+      return false;
+    }
+    assert(MinEvaluation() <= WeakLower());
+    BaseTreeNode::UpdateWithChild(child);
+    return true;
+  }
+
   bool UpdateFather() {
-    const std::lock_guard<std::mutex> guard(mutex_);
+    auto& guard = Lock();
     lower_ = kLessThenMinEval;
     upper_ = kLessThenMinEval;
     assert(!IsLeaf());
@@ -386,8 +403,8 @@ class TreeNode : public BaseTreeNode {
       MutableEvaluation(i)->Initialize();
     }
     for (int i = 0; i < n_children_; ++i) {
-      if (!children_[i]->UpdateFatherWithThisChild(this)) {
-        leaf_eval_ = kLessThenMinEvalLarge;
+      const TreeNode& child = *children_[i];
+      if (!UpdateWithChild(child)) {
         return false;
       }
     }
@@ -398,8 +415,8 @@ class TreeNode : public BaseTreeNode {
     return true;
   }
 
-  std::vector<BaseTreeNode*> GetChildren() const override {
-    std::vector<BaseTreeNode*> children;
+  std::vector<TreeNode*> GetChildren() const override {
+    std::vector<TreeNode*> children;
     for (int i = 0; i < n_children_; ++i) {
       children.push_back(children_[i]);
     }
@@ -622,8 +639,8 @@ class TreeNode : public BaseTreeNode {
     return reduced || extend_upper || extend_lower;
   }
 
-  std::vector<BaseTreeNode*> Fathers() const override {
-    std::vector<BaseTreeNode*> result;
+  std::vector<TreeNode*> Fathers() const override {
+    std::vector<TreeNode*> result;
     for (int i = 0; i < n_fathers_; ++i) {
       result.push_back(fathers_[i]);
     }
@@ -652,8 +669,6 @@ class TreeNode : public BaseTreeNode {
   Square n_fathers_;
   Square depth_;
   Square eval_depth_;
-  Eval weak_lower_;
-  Eval weak_upper_;
   Eval min_evaluation_;
   u_int8_t evaluator_;
 

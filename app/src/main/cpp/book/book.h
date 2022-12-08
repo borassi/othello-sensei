@@ -58,7 +58,7 @@ class Book {
 
   std::optional<BookTreeNode> Get(BitPattern player, BitPattern opponent);
 
-  void Put(const BaseTreeNode& node);
+  void Put(const BookTreeNode& node);
 
   bool IsSizeOK();
 
