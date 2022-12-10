@@ -80,9 +80,9 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
     for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
       if (i < other.WeakLower()) {
-        MutableEvaluation(i)->SetProving(ConvertProofNumber(other_proof_number, other.WeakLower(), i));
+        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(other_proof_number, other.WeakLower(), i)));
       } else if (i > other.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i));
+        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i)));
       } else {
         *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
       }
@@ -168,9 +168,8 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
  private:
   float descendants_;
 
-  const std::optional<std::lock_guard<std::mutex>>& Lock() const override {
-    static std::optional<std::lock_guard<std::mutex>> opt = std::nullopt;
-    return opt;
+  const std::optional<std::lock_guard<std::mutex>> Lock() const override {
+    return std::nullopt;
   };
 
   std::vector<BookTreeNode*> GetChildren() const override {

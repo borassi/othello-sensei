@@ -224,6 +224,7 @@ class Evaluation {
 
   double GetValue(const Evaluation& father, NVisited nVisited) const {
     float prob = father.ProbGreaterEqual();
+    assert(nVisited > 0);
     if (IsSolved()) {
       return -DBL_MAX;
     }

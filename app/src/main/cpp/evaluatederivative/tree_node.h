@@ -250,8 +250,8 @@ class BaseTreeNode {
     return -64;
   }
 
-  int ChildLogDerivative(BaseTreeNode* child, int eval_goal) const {
-    assert(Contains(GetChildren(), child));
+  int ChildLogDerivative(BaseTreeNode<T>* child, int eval_goal) const {
+//    assert(Contains(GetChildren(), (T*) child));
     Evaluation eval = GetEvaluation(eval_goal);
     Evaluation child_eval = child->GetEvaluation(-eval_goal);
     return child_eval.LogDerivative(eval);
@@ -283,7 +283,7 @@ class BaseTreeNode {
   Eval weak_lower_;
   Eval weak_upper_;
 
-  virtual const std::optional<std::lock_guard<std::mutex>>& Lock() const = 0;
+  virtual const std::optional<std::lock_guard<std::mutex>> Lock() const = 0;
 
   virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
     assert((eval_goal - kMinEval) % 2 == 1);
@@ -302,7 +302,7 @@ class BaseTreeNode {
     weak_lower_ = MaxEval(weak_lower_, (Eval) -child.weak_upper_);
     weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      assert(-i >= child->WeakLower() && -i <= child->WeakUpper());
+//      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
       const Evaluation& eval = child.GetEvaluation(-i);
       assert(eval.IsValid());
       Evaluation* father_eval = MutableEvaluation(i);
@@ -310,6 +310,25 @@ class BaseTreeNode {
       father_eval->UpdateFatherWithThisChild(eval);
     }
     return true;
+  }
+
+  bool AllValidEvals() const {
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      const Evaluation& eval = GetEvaluation(i);
+      if (!eval.IsValid()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool ContainsFather(BaseTreeNode<T>* father) const {
+    for (T* possible_father : Fathers()) {
+      if (possible_father == father) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -354,17 +373,8 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
-  bool ContainsFather(TreeNode* father) const {
-    for (int i = 0; i < n_fathers_; ++i) {
-      if (fathers_[i] == father) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  const std::optional<std::lock_guard<std::mutex>>& Lock() const override {
-    return std::move(std::optional<std::lock_guard<std::mutex>>(mutex_));
+  const std::optional<std::lock_guard<std::mutex>> Lock() const override {
+    return std::optional<std::lock_guard<std::mutex>>{mutex_};
   }
 
   void UpdateFathers() {
@@ -395,7 +405,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
   }
 
   bool UpdateFather() {
-    auto& guard = Lock();
+    auto guard = Lock();
     lower_ = kLessThenMinEval;
     upper_ = kLessThenMinEval;
     assert(!IsLeaf());
@@ -853,6 +863,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         const Evaluation& father_eval = father->GetEvaluation(current.EvalGoal());
         const Evaluation& best_child_eval = best_child->GetEvaluation(-current.EvalGoal());
         float best_child_prob = best_child_eval.ProbGreaterEqual();
+        assert(best_child->GetNVisited() > 0);
         double best_child_value = best_child_eval.GetValue(father_eval,
                                                            best_child->GetNVisited());
         float prob = father_eval.ProbGreaterEqual();
@@ -860,6 +871,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         for (int i = 0; i < father->n_children_; ++i) {
           TreeNode* child = father->children_[i];
           Evaluation child_eval = child->GetEvaluation(-current.EvalGoal());
+          assert(child->GetNVisited() > 0);
           double extra_loss =
               child_eval.GetValue(father_eval, child->GetNVisited()) - best_child_value
               + (child == best_child ? 0 : log(best_child_prob) * kLogDerivativeMultiplier);
@@ -891,47 +903,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         result->push_back(current);
         assert(current.Leaf()->NThreadsWorking() == 1);
       }
-    }
-  }
-
-  void BestDescendants(
-      const LeafToUpdate& node, std::vector<LeafToUpdate>* next_nodes) {
-    assert(!IsSolved());
-    assert(!node.Leaf()->GetEvaluation(node.EvalGoal()).IsSolved());
-    assert(node.Leaf() == this);
-    assert(NThreadsWorking() == 0);
-    if (IsLeaf()) {
-      IncreaseNThreadsWorking();
-      next_nodes->push_back(node);
-      return;
-    }
-    const Evaluation& father_eval = GetEvaluation(node.EvalGoal());
-    TreeNode* best_child = BestChild(node.EvalGoal());
-    const Evaluation& best_child_eval = best_child->GetEvaluation(-node.EvalGoal());
-    float best_child_prob = best_child_eval.ProbGreaterEqual();
-    double best_child_value = best_child_eval.GetValue(father_eval,
-                                                       best_child->GetNVisited());
-    float prob = father_eval.ProbGreaterEqual();
-    bool proving = prob == 0 || prob == 1;
-    for (int i = 0; i < n_children_; ++i) {
-      TreeNode* child = children_[i];
-      Evaluation child_eval = child->GetEvaluation(-node.EvalGoal());
-      double extra_loss =
-          child_eval.GetValue(father_eval, child->GetNVisited()) - best_child_value
-          + (child == best_child ? 0 : log(best_child_prob) * kLogDerivativeMultiplier)
-          ;
-      assert(extra_loss <= 0);
-      if (child->NThreadsWorking() > 0 ||
-          child_eval.IsSolved() ||
-          (proving && child != best_child && best_child_prob < 0.98) ||
-          (!proving && child != best_child && node.Loss() + extra_loss < -3 * kLogDerivativeMultiplier)) {
-        assert(child != best_child || (child->NThreadsWorking() > 0 && !next_nodes->empty()));
-        continue;
-      }
-      LeafToUpdate child_leaf = node.CopyToChild(child, extra_loss);
-      auto old_descendants = next_nodes->size();
-      child->BestDescendants(child_leaf, next_nodes);
-      IncreaseNThreadsWorking(next_nodes->size() - old_descendants);
     }
   }
 
@@ -988,16 +959,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     }
     UpdateFather();
     assert(AllValidEvals());
-  }
-
-  bool AllValidEvals() const {
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      const Evaluation& eval = GetEvaluation(i);
-      if (!eval.IsValid()) {
-        return false;
-      }
-    }
-    return true;
   }
 };
 

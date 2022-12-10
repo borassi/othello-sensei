@@ -151,12 +151,10 @@ class JNIWrapper {
     if (node == nullptr) {
       return NULL;
     }
-    std::cout << "Firstpos\n" << std::flush;
     return TreeNodeToJava(*node, env);
   }
 
   jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    std::cout << "Book\n" << std::flush;
     return TreeNodeToJava(book_.Get(player, opponent), env);
   }
 
