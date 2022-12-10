@@ -195,6 +195,9 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
+  public boolean useBook() { return false; }
+
+  @Override
   public void setAnnotations(CaseAnnotations annotations, int move) {
     BoardView boardView = findViewById(R.id.board);
     boardView.setAnnotations(annotations, move);

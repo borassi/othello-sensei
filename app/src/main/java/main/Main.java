@@ -133,12 +133,12 @@ public class Main implements Runnable {
   public ArrayList<Board> getBoards() {
     ArrayList<Board> boards = new ArrayList<>();
     if (ui.delta() == 0) {
-      if (EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
+      if (!ui.useBook() || EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
         boards.add(board);
       }
     } else {
       for (Board child : JNI.descendants(board)) {
-        if (EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
+        if (!ui.useBook() || EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
           boards.add(child);
         }
       }
@@ -163,7 +163,9 @@ public class Main implements Runnable {
       showMCTSEvaluations();
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
-    EVALUATOR.addToBook();
+    if (ui.useBook()) {
+      EVALUATOR.addToBook();
+    }
     if (waitingTasks.get() == 0) {
       showMCTSEvaluations();
     }
@@ -249,10 +251,10 @@ public class Main implements Runnable {
 
   private TreeNodeInterface getStoredBoard(long player, long opponent) {
     TreeNodeInterface board = EVALUATOR.get(player, opponent);
-    if (board != null) {
-      return board;
+    if (ui.useBook() && board == null) {
+      return EVALUATOR.getFromBook(player, opponent);
     }
-    return EVALUATOR.getFromBook(player, opponent);
+    return board;
   }
 
   private void showMCTSEvaluations() {

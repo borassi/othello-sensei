@@ -40,4 +40,5 @@ public interface UI {
   void setThorGames(Board b, ArrayList<Game> games);
   FileAccessor fileAccessor();
   boolean active();
+  boolean useBook();
 }
