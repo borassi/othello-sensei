@@ -62,3 +62,18 @@ std::vector<BitPattern> GetAllMovesWithPass(BitPattern player, BitPattern oppone
 bool HaveToPass(BitPattern player, BitPattern opponent) {
   return GetMoves(player, opponent) == 0;
 }
+
+std::vector<Board> GetNextBoardsWithPass(BitPattern player,
+                                         BitPattern opponent) {
+  std::vector<Board> result;
+  std::vector<BitPattern> flips = GetAllMovesWithPass(player, opponent);
+  for (BitPattern flip : flips) {
+    result.push_back(Board(NewPlayer(flip, opponent),
+                           NewOpponent(flip, player)));
+  }
+  return result;
+}
+
+std::vector<Board> GetNextBoardsWithPass(Board b) {
+  return GetNextBoardsWithPass(b.Player(), b.Opponent());
+}

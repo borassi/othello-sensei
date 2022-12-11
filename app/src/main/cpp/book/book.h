@@ -37,26 +37,31 @@ constexpr HashMapIndex kInitialHashMapSize = 8;
 constexpr HashMapIndex kNumElementsOffset = sizeof(HashMapIndex) / sizeof(char);
 constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 
-class HashMapNode {
- public:
-  HashMapNode() : size_(0), offset_(0) {}
-  HashMapNode(u_int8_t size, BookFileOffset offset) : size_(size), offset_(offset) {}
-
-  BookFileOffset Offset() const { return offset_; }
-  u_int8_t Size() const { return size_; }
-  bool IsEmpty() const { return size_ == 0; }
-
- private:
-  BookFileOffset offset_;
-  u_int8_t size_;
-} __attribute__((packed));
-
 class Book {
 
  public:
   Book(const std::string& folder);
 
   std::optional<BookTreeNode> Get(BitPattern player, BitPattern opponent);
+  std::optional<BookTreeNode> Get(Board b) {
+    return Get(b.Player(), b.Opponent());
+  }
+
+  void AddChildren(const Board& b, const std::vector<const BookTreeNode*>& children) {
+    BookTreeNode father = Get(b).value();
+    assert(father.IsLeaf());
+
+    father.SetChildren(children);
+    HashMapNode father_position = Put(father, false);
+
+    for (const BookTreeNode* child : children) {
+      BookTreeNode child_copy = *child;
+      child_copy.AddFather(father_position);
+      Put(child_copy);
+    }
+  }
+
+  BookTreeNode GetBookTreeNode(HashMapNode node);
 
   void Put(const BookTreeNode& node);
 
@@ -85,8 +90,6 @@ class Book {
   }
   std::string IndexFilename() { return folder_ + "/index.sen"; }
 
-  BookTreeNode GetBookTreeNode(HashMapNode node);
-
   HashMapIndex PowerAfterHashMapSize() {
     return 1ULL << (sizeof(HashMapIndex) * 8 - __builtin_clzll(hash_map_size_ - 1));
   }
@@ -103,6 +106,8 @@ class Book {
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);
 
   bool IsEmpty(std::fstream& file, HashMapIndex hash);
+
+  HashMapNode Put(const BookTreeNode& node, bool merge);
 };
 
 

@@ -37,7 +37,7 @@ std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
   return std::get<2>(Find(player, opponent));
 }
 
-void Book::Put(const BookTreeNode& node) {
+HashMapNode Book::Put(const BookTreeNode& node, bool merge) {
   auto triple = Find(node.Player(), node.Opponent());
   auto file = std::move(std::get<0>(triple));
   auto hash_map_node = std::move(std::get<1>(triple));
@@ -48,7 +48,9 @@ void Book::Put(const BookTreeNode& node) {
     ++book_size_;
   } else {
     assert(tree_node.has_value());
-    node_to_store.Merge(*tree_node);
+    if (merge) {
+      node_to_store.Merge(*tree_node);
+    }
     GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
   }
   std::vector<char> to_store = node_to_store.Serialize();
@@ -62,6 +64,11 @@ void Book::Put(const BookTreeNode& node) {
     Resize(&file, {to_be_stored});
   }
   UpdateSizes(&file);
+  return to_be_stored;
+}
+
+void Book::Put(const BookTreeNode& node) {
+  Put(node, true);
 }
 
 bool Book::IsSizeOK() {

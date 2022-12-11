@@ -91,16 +91,13 @@ public:
   SerializedBoard Serialize() {
     SerializedBoard serialized;
     BitPattern current_square = 1ULL << 63;
-    Board unique = Board(player_, opponent_).Unique();
-    BitPattern player = unique.Player();
-    BitPattern opponent = unique.Opponent();
     for (int i = 0; i < 13; ++i) {
       uint8_t five_squares_serialized = 0;
       int current_multiplier = 1;
       for (int j = 0; j < 5; ++j) {
-        if (player & current_square) {
+        if (Player() & current_square) {
           five_squares_serialized += current_multiplier;
-        } else if (opponent & current_square) {
+        } else if (Opponent() & current_square) {
           five_squares_serialized += 2 * current_multiplier;
         }
         current_multiplier *= 3;

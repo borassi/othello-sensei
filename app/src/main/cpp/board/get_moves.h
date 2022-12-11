@@ -17,6 +17,7 @@
 #ifndef BOARD_GET_MOVES_H
 #define BOARD_GET_MOVES_H
 
+#include "board.h"
 #include "get_flip.h"
 
 constexpr BitPattern kNonVerticalFlipMask = ParsePattern(
@@ -91,6 +92,10 @@ BitPattern GetMovesBasic(BitPattern player, BitPattern opponent);
 std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent);
 
 std::vector<BitPattern> GetAllMovesWithPass(BitPattern player, BitPattern opponent);
+
+std::vector<Board> GetNextBoardsWithPass(BitPattern player, BitPattern opponent);
+
+std::vector<Board> GetNextBoardsWithPass(Board b);
 
 inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept {

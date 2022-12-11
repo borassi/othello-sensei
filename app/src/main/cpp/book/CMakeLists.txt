@@ -82,6 +82,7 @@ target_link_libraries(
         endgame_time_estimator
         evaluation
         tree_node
+        value_file
 )
 
 add_executable(

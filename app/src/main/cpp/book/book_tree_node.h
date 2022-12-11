@@ -24,13 +24,40 @@
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
 #include "../evaluatederivative/endgame_time_estimator.h"
+#include "value_file.h"
+
+class HashMapNode {
+ public:
+  HashMapNode() : size_(0), offset_(0) {}
+  HashMapNode(u_int8_t size, BookFileOffset offset) : size_(size), offset_(offset) {}
+
+  BookFileOffset Offset() const { return offset_; }
+  u_int8_t Size() const { return size_; }
+  bool IsEmpty() const { return size_ == 0; }
+  bool operator==(const HashMapNode& other) const = default;
+
+ private:
+  BookFileOffset offset_;
+  u_int8_t size_;
+} __attribute__((packed));
+
+std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
 
 class BookTreeNode : public BaseTreeNode<BookTreeNode> {
  public:
   BookTreeNode() = delete;
-  BookTreeNode(const TreeNode& other) { Copy<TreeNode>(other); }
-  BookTreeNode(BookTreeNode&& other) { Copy<BookTreeNode>(other); }
-  BookTreeNode(const BookTreeNode& other) { Copy<BookTreeNode>(other); }
+  BookTreeNode(const TreeNode& other) {
+    SetupFromOther(other);
+    is_leaf_ = true;
+  }
+  BookTreeNode(BookTreeNode&& other) {
+    fathers_ = other.fathers_;
+    SetupFromOther(other);
+  }
+  BookTreeNode(const BookTreeNode& other) {
+    fathers_ = other.fathers_;
+    SetupFromOther(other);
+  }
 
   BookTreeNode(const std::vector<char>& serialized) {
     Board board = Board::Deserialize(serialized.begin());
@@ -38,12 +65,23 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     opponent_ = board.Opponent();
     n_empties_ = board.NEmpties();
     int i = 13;
-    descendants_ = *((float*) &(serialized[i]));
+    descendants_ = (u_int64_t) *((float*) &(serialized[i]));
     i += sizeof(float);
     lower_ = (Eval) serialized[i++];
     upper_ = (Eval) serialized[i++];
+    weak_lower_ = -63;
+    weak_upper_ = 63;
+    min_evaluation_ = -63;
     Eval last_1 = (Eval) serialized[i++];
     Eval first_0 = (Eval) serialized[i++];
+    is_leaf_ = (bool) serialized[i++];
+    int n_fathers = serialized[i++];
+
+    for (int j = 0; j < n_fathers; ++j) {
+      HashMapNode* node = (HashMapNode*) &serialized[i];
+      fathers_.push_back(*node);
+      i += sizeof(HashMapNode);
+    }
     EnlargeEvaluations();
 
     for (int eval = WeakLower(); eval <= WeakUpper(); eval += 2) {
@@ -62,31 +100,21 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     }
   }
 
-  BookTreeNode& operator=(BookTreeNode&& other) {
+  template<class T>
+  void SetupFromOther(const T& other) {
+    min_evaluation_ = -63;
+    weak_lower_ = -63;
+    weak_upper_ = 63;
+    is_leaf_ = other.IsLeaf();
     Copy(other);
-    return *this;
+    Board unique = other.ToBoard().Unique();
+    player_ = unique.Player();
+    opponent_ = unique.Opponent();
   }
 
-  template<class T>
-  void Copy(const BaseTreeNode<T>& other) {
-    Reset(other.Player(), other.Opponent());
-    n_empties_ = other.NEmpties();
-    lower_ = other.Lower();
-    upper_ = other.Upper();
-    descendants_ = other.GetNVisited();
-    EnlargeEvaluations();
-
-    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
-    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
-    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
-      if (i < other.WeakLower()) {
-        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(other_proof_number, other.WeakLower(), i)));
-      } else if (i > other.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i)));
-      } else {
-        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
-      }
-    }
+  BookTreeNode& operator=(BookTreeNode&& other) {
+    SetupFromOther(other);
+    return *this;
   }
 
   std::vector<char> Serialize() {
@@ -105,9 +133,15 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
       }
     }
     result.insert(result.end(), board.begin(), board.end());
-    char* tmp = (char*) &descendants_;
-    result.insert(result.end(), tmp, tmp + sizeof(float));
+    float descendants = (float) descendants_;
+    result.insert(result.end(), (char*) &descendants, (char*) &descendants + sizeof(float));
     result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0});
+    result.insert(result.end(), {is_leaf_, (char) fathers_.size()});
+
+    for (int i = 0; i < fathers_.size(); ++i) {
+      char* tmp = (char*) &fathers_[i];
+      result.insert(result.end(), (char*) &fathers_[i], ((char*) &fathers_[i]) + sizeof(HashMapNode));
+    }
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       Evaluation evaluation = GetEvaluation(i);
@@ -128,23 +162,12 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     return result;
   }
 
-  Eval WeakLower() const override { return -63; }
-  Eval WeakUpper() const override { return 63; }
-  Eval MinEvaluation() const override { return -63; }
+  bool IsLeaf() const override { return is_leaf_; }
 
-  NVisited GetNVisited() const override {
-    return (NVisited) round(descendants_);
-  }
-
-  void AddDescendants(NVisited descendants) override {
-    descendants_ += descendants;
-  }
-
-  bool operator==(const BookTreeNode& other) const {
+  bool EqualsExceptDescendants(const BookTreeNode& other) const {
     if (Board(player_, opponent_).Unique() != Board(other.player_, other.opponent_).Unique() ||
         lower_ != other.lower_ ||
-        upper_ != other.upper_ ||
-        GetNVisited() != other.GetNVisited()) {
+        upper_ != other.upper_) {
       return false;
     }
 
@@ -156,28 +179,104 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     return true;
   }
 
+  bool Equals(const BookTreeNode& other, bool approx, bool fathers) const {
+    if (Board(player_, opponent_).Unique() != Board(other.player_, other.opponent_).Unique() ||
+        lower_ != other.lower_ ||
+        upper_ != other.upper_) {
+      return false;
+    }
+
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      if (GetEvaluation(i) != other.GetEvaluation(i)) {
+        return false;
+      }
+    }
+    if (approx) {
+      if (abs((double) GetNVisited() / other.GetNVisited() - 1) > 1E-6) {
+        return false;
+      }
+    } else {
+      if (GetNVisited() != other.GetNVisited()) {
+        return false;
+      }
+    }
+    if (fathers) {
+      if (fathers_.size() != other.fathers_.size() || is_leaf_ != other.is_leaf_) {
+        return false;
+      }
+      for (int i = 0; i < fathers_.size(); ++i) {
+        if (fathers_[i] != other.fathers_[i]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  bool operator==(const BookTreeNode& other) const = default;
+
   void Merge(const BookTreeNode& other) {
-    assert(ToBoard().Unique() == other.ToBoard().Unique());
+    assert(ToBoard() == other.ToBoard());
     float total_descendants = descendants_ + other.descendants_;
-    if (other.descendants_ > descendants_) {
-      Copy(other);
+    std::vector<HashMapNode> fathers(fathers_);
+    fathers.insert(fathers.end(), other.fathers_.begin(), other.fathers_.end());
+    if (other.descendants_ > descendants_ ||
+        (other.descendants_ == descendants_ && this < &other)) {
+      SetupFromOther(other);
     }
     descendants_ = total_descendants;
+    fathers_ = fathers;
   }
 
+  bool UpdateFather(const std::vector<const BookTreeNode*>& children) {
+    return BaseTreeNode<BookTreeNode>::UpdateFather(
+        children.begin(), children.end());
+  }
+
+  void AddFather(const HashMapNode& father) {
+    assert(!father.IsEmpty());
+    fathers_.push_back(father);
+  }
+
+  void SetChildren(const std::vector<const BookTreeNode*>& children) {
+    assert(AreChildrenCorrect(children));
+    is_leaf_ = false;
+    UpdateFather(children);
+  }
+
+  std::vector<HashMapNode> Fathers() const {
+    return fathers_;
+  }
  private:
-  float descendants_;
+  bool is_leaf_;
+  std::vector<HashMapNode> fathers_;
 
-  const std::optional<std::lock_guard<std::mutex>> Lock() const override {
-    return std::nullopt;
-  };
-
-  std::vector<BookTreeNode*> GetChildren() const override {
-    return std::vector<BookTreeNode*>();
-  }
-
-  std::vector<BookTreeNode*> Fathers() const override {
-    return std::vector<BookTreeNode*>();
+  bool AreChildrenCorrect(const std::vector<const BookTreeNode*> children) {
+    std::vector<Board> expected_children = GetNextBoardsWithPass(ToBoard());
+    if (children.size() != expected_children.size()) {
+      std::cout << "Wrong children size " << children.size()
+          << "(should be " << expected_children.size() << ").\nBoard:\n"
+          << ToBoard();
+      return false;
+    }
+    for (auto expected_child : expected_children) {
+      Board unique = expected_child.Unique();
+      bool found = false;
+      for (auto child : children) {
+        if (child->ToBoard() == unique) {
+          assert(!found);
+          found = true;
+        }
+      }
+      if (!found) {
+        std::cout << "Missing child\n" << unique << "Available children\n";
+        for (auto child : children) {
+          std::cout << child->ToBoard() << "\n";
+        }
+        return false;
+      }
+    }
+    return true;
   }
 };
 

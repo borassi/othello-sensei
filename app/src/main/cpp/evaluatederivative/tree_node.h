@@ -113,28 +113,41 @@ template<class T>
 class BaseTreeNode {
  public:
   BaseTreeNode() : evaluations_(nullptr) {}
-  ~BaseTreeNode() {
-    Reset(0, 0);
-  }
+  ~BaseTreeNode() { Reset(0, 0); }
 
-  virtual Eval WeakLower() const = 0;
-  virtual Eval WeakUpper() const = 0;
-  virtual Eval MinEvaluation() const = 0;
-  virtual NVisited GetNVisited() const = 0;
-  virtual std::vector<T*> GetChildren() const = 0;
-  virtual std::vector<T*> Fathers() const = 0;
-  virtual void AddDescendants(NVisited n) = 0;
+  virtual bool IsLeaf() const = 0;
 
   Square NEmpties() const { return n_empties_; }
   BitPattern Player() const { return player_; }
   BitPattern Opponent() const { return opponent_; }
   Eval Lower() const { return lower_; }
   Eval Upper() const { return upper_; }
+  Eval WeakLower() const { return weak_lower_; };
+  Eval WeakUpper() const { return weak_upper_; };
+  NVisited GetNVisited() const { return descendants_; }
+
+  bool operator==(const BaseTreeNode<T>& other) const {
+    if (player_ != other.player_ ||
+        opponent_ != other.opponent_ ||
+        descendants_ != other.descendants_ ||
+        n_empties_ != other.n_empties_ ||
+        lower_ != other.lower_ ||
+        upper_ != other.upper_ ||
+        weak_lower_ != other.weak_lower_ ||
+        weak_upper_ != other.weak_upper_) {
+      return false;
+    }
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      if (GetEvaluation(i) != other.GetEvaluation(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   Board ToBoard() const {
     return Board(player_, opponent_);
   }
-
 
   float ProofNumber(Eval eval_goal) const {
     assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
@@ -191,9 +204,9 @@ class BaseTreeNode {
   virtual const Evaluation& GetEvaluation(int eval_goal) const final {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
-    assert(MinEvaluation() <= WeakLower());
+    assert(min_evaluation_ <= WeakLower());
     int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (WeakUpper() - MinEvaluation()) / 2);
+    assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
     assert(evaluations_ != nullptr);
     return evaluations_[index];
   }
@@ -261,7 +274,7 @@ class BaseTreeNode {
     assert((eval - kMinEval) % 2 == 1);
     assert(eval >= kMinEval);
     assert(eval <= kMaxEval);
-    return (eval - MinEvaluation()) >> 1;
+    return (eval - min_evaluation_) >> 1;
   }
 
   virtual void EnlargeEvaluations() final {
@@ -273,29 +286,58 @@ class BaseTreeNode {
     }
   }
 
+  void AddDescendants(NVisited n) {
+    descendants_ += n;
+  }
+
  protected:
   BitPattern player_;
   BitPattern opponent_;
+  std::atomic_uint64_t descendants_;
   Evaluation* evaluations_;
   Square n_empties_;
   Eval lower_;
   Eval upper_;
   Eval weak_lower_;
   Eval weak_upper_;
+  Eval min_evaluation_;
 
-  virtual const std::optional<std::lock_guard<std::mutex>> Lock() const = 0;
+  virtual const std::optional<std::lock_guard<std::mutex>> Lock() const {
+    return std::nullopt;
+  };
+
+  template<class U>
+  void Copy(const U& other) {
+    Reset(other.Player(), other.Opponent());
+    n_empties_ = other.NEmpties();
+    lower_ = other.Lower();
+    upper_ = other.Upper();
+    descendants_ = other.GetNVisited();
+    EnlargeEvaluations();
+
+    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
+    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
+    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
+      if (i < other.WeakLower()) {
+        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(other_proof_number, other.WeakLower(), i)));
+      } else if (i > other.WeakUpper()) {
+        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i)));
+      } else {
+        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
+      }
+    }
+  }
 
   virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
-    assert(MinEvaluation() <= WeakLower());
+    assert(min_evaluation_ <= WeakLower());
     int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (WeakUpper() - MinEvaluation()) / 2);
+    assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
     return &evaluations_[index];
   }
 
   virtual bool UpdateWithChild(const T& child) {
-    assert(child.ContainsFather(this));
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
     assert(AllValidEvals());
@@ -312,6 +354,26 @@ class BaseTreeNode {
     return true;
   }
 
+  template<class Iterator>
+  bool UpdateFather(Iterator children_start, Iterator children_end) {
+    auto guard = Lock();
+    lower_ = kLessThenMinEval;
+    upper_ = kLessThenMinEval;
+    assert(!IsLeaf());
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      MutableEvaluation(i)->Initialize();
+    }
+    for (auto child = children_start; child != children_end; ++child) {
+      if (!UpdateWithChild(**child)) {
+        return false;
+      }
+    }
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      MutableEvaluation(i)->Finalize();
+    }
+    return true;
+  }
+
   bool AllValidEvals() const {
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       const Evaluation& eval = GetEvaluation(i);
@@ -320,15 +382,6 @@ class BaseTreeNode {
       }
     }
     return true;
-  }
-
-  bool ContainsFather(BaseTreeNode<T>* father) const {
-    for (T* possible_father : Fathers()) {
-      if (possible_father == father) {
-        return true;
-      }
-    }
-    return false;
   }
 };
 
@@ -347,11 +400,12 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     Reset(0, 0, 0, 0);
   }
 
-  Eval WeakLower() const override { return weak_lower_; }
-  Eval WeakUpper() const override { return weak_upper_; }
-  NVisited GetNVisited() const override { return n_visited_; }
-
+  bool IsLeaf() const override { return n_children_ == 0; }
   Square Depth() const { return depth_; }
+
+  const std::optional<std::lock_guard<std::mutex>> Lock() const override {
+    return std::optional<std::lock_guard<std::mutex>>{mutex_};
+  }
 
   void IncreaseNThreadsWorking(int amount) {
     n_threads_working_ += amount;
@@ -371,10 +425,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
 
   inline bool IsValid() const {
     return leaf_eval_ != kLessThenMinEvalLarge;
-  }
-
-  const std::optional<std::lock_guard<std::mutex>> Lock() const override {
-    return std::optional<std::lock_guard<std::mutex>>{mutex_};
   }
 
   void UpdateFathers() {
@@ -399,42 +449,26 @@ class TreeNode : public BaseTreeNode<TreeNode> {
       leaf_eval_ = kLessThenMinEvalLarge;
       return false;
     }
-    assert(MinEvaluation() <= WeakLower());
+    assert(min_evaluation_ <= WeakLower());
     BaseTreeNode::UpdateWithChild(child);
     return true;
   }
 
   bool UpdateFather() {
-    auto guard = Lock();
-    lower_ = kLessThenMinEval;
-    upper_ = kLessThenMinEval;
-    assert(!IsLeaf());
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      MutableEvaluation(i)->Initialize();
+    bool result = BaseTreeNode<TreeNode>::UpdateFather<TreeNode**>(
+        children_, children_ + n_children_);
+    if (result) {
+      leaf_eval_ = 0;
     }
-    for (int i = 0; i < n_children_; ++i) {
-      const TreeNode& child = *children_[i];
-      if (!UpdateWithChild(child)) {
-        return false;
-      }
-    }
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      MutableEvaluation(i)->Finalize();
-    }
-    leaf_eval_ = 0;
-    return true;
+    return result;
   }
 
-  std::vector<TreeNode*> GetChildren() const override {
+  std::vector<TreeNode*> GetChildren() const {
     std::vector<TreeNode*> children;
     for (int i = 0; i < n_children_; ++i) {
       children.push_back(children_[i]);
     }
     return children;
-  }
-
-  bool IsLeaf() const {
-    return n_children_ == 0;
   }
 
   void SetChildren(std::vector<TreeNode*> children) {
@@ -476,7 +510,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     leaf_eval_ = kLessThenMinEvalLarge;
     eval_depth_ = 0;
     n_threads_working_ = 0;
-    n_visited_ = 0;
+    descendants_ = 0;
   }
 
   void SetSolved(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper, NVisited n_visited) {
@@ -487,62 +521,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
 
   void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited) {
     SetLeaf(weak_lower, weak_upper, kMinEvalLarge, kMaxEvalLarge, leaf_eval, depth, n_visited);
-  }
-
-  NVisited GetNVisited() {
-    return n_visited_;
-  }
-
-  bool IsSolvedIn(Eval lower, Eval upper) {
-    return upper_ <= lower || lower_ >= upper || IsSolved();
-  }
-
-  bool IsSolved() {
-    return lower_ >= upper_ - 2;
-  }
-
-  bool IsSolvedAtProb(float prob, Eval lower, Eval upper) {
-    if (weak_lower_ <= lower && lower <= weak_upper_ &&
-        GetEvaluation(lower).ProbGreaterEqual() <= prob) {
-      return true;
-    }
-    if (weak_lower_ <= upper && upper <= weak_upper_ &&
-        GetEvaluation(upper).ProbGreaterEqual() >= 1 - prob) {
-      return true;
-    }
-    for (int i = weak_lower_; i <= weak_upper_ - 2; i += 2) {
-      if (GetEvaluation(i).ProbGreaterEqual() >= 1 - prob &&
-          GetEvaluation(i + 2).ProbGreaterEqual() <= prob) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool IsPartiallySolved(Eval lower, Eval upper) {
-    return IsSolvedAtProb(kZeroPercForWeak, lower, upper);
-  }
-
-  Eval GetPercentileUpper(float p) {
-    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      const Evaluation& eval = GetEvaluation(i);
-      if (eval.IsValid() && eval.ProbGreaterEqual() <= p) {
-        return i - 1;
-      }
-    }
-    return 64;
-  }
-
-  Eval GetPercentileLower(float p) {
-    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
-    for (int i = weak_upper_; i >= weak_lower_; i -= 2) {
-      const Evaluation& eval = GetEvaluation(i);
-      if (eval.IsValid() && eval.ProbGreaterEqual() >= 1 - p) {
-        return i + 1;
-      }
-    }
-    return -64;
   }
 
   bool BestSingleDescendant(const LeafToUpdate& node, std::vector<LeafToUpdate>* descendants) {
@@ -571,7 +549,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     if (n_threads_working == 1) {
       BestDescendant(LeafToUpdate(this, eval_goal), &result);
     } else {
-      BestDescendants2(this, &result, eval_goal, n_visited_);
+      BestDescendants2(this, &result, eval_goal, descendants_);
       int secondary_eval_goal = kLessThenMinEval;
       if (ProbGreaterEqual(eval_goal) == 0) {
         secondary_eval_goal = NextPositionEvalGoal(0.5, 1);
@@ -579,7 +557,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         secondary_eval_goal = NextPositionEvalGoal(0, 0.5);
       }
       if (secondary_eval_goal != kLessThenMinEval) {
-        BestDescendants2(this, &result, secondary_eval_goal, n_visited_);
+        BestDescendants2(this, &result, secondary_eval_goal, descendants_);
       }
     }
     return result;
@@ -599,10 +577,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
       }
     }
     return true;
-  }
-
-  void AddDescendants(NVisited n) override {
-    n_visited_ += n;
   }
 
   bool UpdateWeakLowerUpper(Eval lower, Eval upper) {
@@ -649,7 +623,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return reduced || extend_upper || extend_lower;
   }
 
-  std::vector<TreeNode*> Fathers() const override {
+  std::vector<TreeNode*> Fathers() const {
     std::vector<TreeNode*> result;
     for (int i = 0; i < n_fathers_; ++i) {
       result.push_back(fathers_[i]);
@@ -668,8 +642,15 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     }
   }
 
+  bool ContainsFather(TreeNode* father) const {
+    for (auto possible_father : Fathers()) {
+      if (possible_father == father) {
+        return true;
+      }
+    }
+    return false;
+  }
  private:
-  std::atomic_uint64_t n_visited_;
   TreeNode** children_;
   TreeNode** fathers_;
   EvalLarge leaf_eval_;
@@ -679,10 +660,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
   Square n_fathers_;
   Square depth_;
   Square eval_depth_;
-  Eval min_evaluation_;
   u_int8_t evaluator_;
-
-  Eval MinEvaluation() const override { return min_evaluation_; }
 
   void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper,
                EvalLarge leaf_eval, Square depth, NVisited n_visited) {
@@ -708,7 +686,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         UpdateLeafEvaluation(i);
       }
       AddDescendants(n_visited);
-      assert(MinEvaluation() <= WeakLower());
+      assert(min_evaluation_ <= WeakLower());
       assert(AllValidEvals());
       update_fathers = n_fathers_ > 0;
     }

@@ -105,6 +105,50 @@ TEST(GetMoves, GetAllMovesWithPass) {
   );
 }
 
+TEST(GetMoves, GetNextBoardsWithPass) {
+  Board b;
+  ASSERT_THAT(
+      GetNextBoardsWithPass(b),
+      ::testing::UnorderedElementsAre(
+          Board(
+              "--------"
+              "--------"
+              "--------"
+              "---XO---"
+              "---OO---"
+              "----O---"
+              "--------"
+              "--------", true),
+          Board(
+              "--------"
+              "--------"
+              "--------"
+              "---XO---"
+              "---OOO--"
+              "--------"
+              "--------"
+              "--------", true),
+          Board(
+              "--------"
+              "--------"
+              "--------"
+              "--OOO---"
+              "---OX---"
+              "--------"
+              "--------"
+              "--------", true),
+          Board(
+              "--------"
+              "--------"
+              "---O----"
+              "---OO---"
+              "---OX---"
+              "--------"
+              "--------"
+              "--------", true))
+  );
+}
+
 TEST(GetMoves, SquareFromFlip) {
   int n = 10000;
   for (int i = 0; i < n; i++) {
@@ -115,7 +159,8 @@ TEST(GetMoves, SquareFromFlip) {
       }
       long flip = GetFlipBasic(x, b.Player(), b.Opponent());
       if (flip != 0) {
-        ASSERT_EQ(SquareFromFlip(flip, b.Player(), b.Opponent()), x);
+        ASSERT_EQ(SquareFromFlip(flip, b.Player(), b.Opponent()), 1ULL << x)
+        << b;
       }
     }
   }

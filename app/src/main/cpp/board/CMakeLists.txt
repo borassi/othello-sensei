@@ -59,24 +59,6 @@ target_link_libraries(
         -no-pie
 )
 
-add_executable(
-        get_moves_test
-        get_moves_test.cpp
-)
-
-target_link_libraries(
-        get_moves_test
-        LINK_PRIVATE
-        bitpattern
-        board
-        get_flip
-        get_moves
-        GTest::gmock
-        GTest::gtest
-        GTest::gtest_main
-        -no-pie
-)
-
 add_library(
         get_flip
         get_flip.h
@@ -138,7 +120,26 @@ target_link_libraries(
         get_moves
         LINK_PRIVATE
         bitpattern
+        board
         get_flip
+)
+
+add_executable(
+        get_moves_test
+        get_moves_test.cpp
+)
+
+target_link_libraries(
+        get_moves_test
+        LINK_PRIVATE
+        bitpattern
+        board
+        get_flip
+        get_moves
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
 )
 
 add_library(
