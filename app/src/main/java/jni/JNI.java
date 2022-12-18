@@ -72,7 +72,9 @@ public class JNI {
 
   public static native boolean haveToPass(Board board);
 
-  public static native ArrayList<Board> descendants(Board board);
+  public static native ArrayList<Board> children(Board board);
+
+  public static native ArrayList<Board> uniqueChildren(Board board);
 
   public native void addToBook();
 }

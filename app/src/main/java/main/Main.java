@@ -137,7 +137,7 @@ public class Main implements Runnable {
         boards.add(board);
       }
     } else {
-      for (Board child : JNI.descendants(board)) {
+      for (Board child : JNI.uniqueChildren(board)) {
         if (!ui.useBook() || EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
           boards.add(child);
         }
@@ -155,7 +155,7 @@ public class Main implements Runnable {
       return;
     }
     startTime = System.currentTimeMillis();
-    EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 50, (float) ui.delta());
+    EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 100, (float) ui.delta());
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
     }
@@ -210,7 +210,7 @@ public class Main implements Runnable {
     double best = Double.POSITIVE_INFINITY;
     int bestMove = -1;
 
-    for (Board child : JNI.descendants(board)) {
+    for (Board child : JNI.children(board)) {
       TreeNodeInterface b = getStoredBoard(child);
       if (b == null) {
         continue;
@@ -257,19 +257,28 @@ public class Main implements Runnable {
     return board;
   }
 
+  private long getNVisited() {
+    long result = 0;
+    for (Board child : JNI.uniqueChildren(board)) {
+      TreeNodeInterface childStored = getStoredBoard(child);
+      if (childStored != null) {
+        result += childStored.getDescendants();
+      }
+    }
+    return result;
+  }
+
   private void showMCTSEvaluations() {
     int bestMove = this.findBestMove();
-    long nVisited = 0;
     boolean hasThor = thor.getNumGames(board) > 0;
     TreeNodeInterface father = getStoredBoard(board);
-    for (Board child : JNI.descendants(board)) {
+    for (Board child : JNI.children(board)) {
       TreeNodeInterface childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
         annotations = new CaseAnnotations(father, childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
         ui.setAnnotations(annotations, move);
-        nVisited += childStored.getDescendants();
       }
     }
     CaseAnnotations positionAnnotations = null;
@@ -277,7 +286,7 @@ public class Main implements Runnable {
       positionAnnotations = new CaseAnnotations(father, father, false);
     }
     ui.setExtras(
-        nVisited, System.currentTimeMillis() - startTime,
+        getNVisited(), System.currentTimeMillis() - startTime,
         positionAnnotations);
     ui.repaint();
   }

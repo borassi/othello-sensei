@@ -92,7 +92,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
   private final JCheckBox active = new JCheckBox("Active", true);
-  private final JCheckBox useBook = new JCheckBox("Use book", true);
+  private final JCheckBox useBook = new JCheckBox("Use book", false);
   private final JTextField depth;
   private final JTextField delta;
   private final JSpinner ffoPositions;
@@ -333,7 +333,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
     rows.append(" ").append(Utils.prettyPrintDouble(board.getDescendants()));
 
-    for (int evalGoal = board.getWeakUpper(); evalGoal >= board.getWeakLower(); evalGoal -= 200) {
+    int roundEval = roundEval(board.getEval());
+    for (int evalGoal = Math.min(board.getWeakUpper(), roundEval + 400);
+         evalGoal >= Math.max(board.getWeakLower(), roundEval - 400);
+         evalGoal -= 200) {
       float prob = 1 - board.getProb(evalGoal);
       rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (float) Math.round((0.0049 + (1-2*0.0049) * prob) * 100)));
 
@@ -342,7 +345,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       } else if (prob == 0) {
         rows.append(Utils.prettyPrintDouble(board.proofNumber(evalGoal)));
       } else {
-        rows.append(Utils.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
+        if (annotations.father != null) {
+          rows.append(Utils.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
+        } else {
+          rows.append(Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
+        }
       }
     }
 

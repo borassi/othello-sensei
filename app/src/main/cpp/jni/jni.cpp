@@ -160,17 +160,21 @@ class JNIWrapper {
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
     TreeNode* node = nullptr;
+    Board unique = Board(player, opponent).Unique();
     for (int i = 0; i < last_boards_.size(); ++i) {
       const auto& evaluator = evaluator_derivative_[i];
       TreeNode* first_position = evaluator->GetFirstPosition();
-      if (first_position != nullptr &&
-          first_position->Player() == player &&
-          first_position->Opponent() == opponent) {
+      if (first_position != nullptr && first_position->ToBoard().Unique() == unique) {
         node = first_position;
         break;
       }
       if (!node) {
-        node = tree_node_supplier_.Get(player, opponent, evaluator->Index());
+        for (Board b : unique.AllTranspositions()) {
+          node = tree_node_supplier_.Get(b.Player(), b.Opponent(), evaluator->Index());
+          if (node) {
+            break;
+          }
+        }
       }
     }
     if (node == nullptr) {
@@ -453,24 +457,41 @@ Java_jni_JNI_haveToPass(JNIEnv *env, jclass clazz, jobject board) {
 }
 
 JNIEXPORT jobject JNICALL
-Java_jni_JNI_descendants(JNIEnv *env, jclass clazz, jobject board) {
+Java_jni_JNI_children(JNIEnv *env, jclass clazz, jobject board) {
   Board b = BoardToCPP(env, board);
   auto java_util_ArrayList = static_cast<jclass>(env->NewGlobalRef
       (env->FindClass("java/util/ArrayList")));
   jmethodID java_util_ArrayList_ = env->GetMethodID(java_util_ArrayList, "<init>", "(I)V");
   jmethodID java_util_ArrayList_add = env->GetMethodID(java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
-  auto flips = GetAllMoves(b.Player(), b.Opponent());
+  std::vector<Board> children = GetNextBoardsWithPass(b);
   jobject result = env->NewObject(java_util_ArrayList, java_util_ArrayList_,
-                                  (jint) flips.size());
+                                  (jint) children.size());
 
-  for (BitPattern flip : flips) {
-    Board next = b;
-    next.PlayMove(flip);
+  for (Board child : children) {
     env->CallBooleanMethod(result, java_util_ArrayList_add,
-                           BoardToJava(env, next));
+                           BoardToJava(env, child));
   }
   return result;
 }
+
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_uniqueChildren(JNIEnv *env, jclass clazz, jobject board) {
+  Board b = BoardToCPP(env, board);
+  auto java_util_ArrayList = static_cast<jclass>(env->NewGlobalRef
+      (env->FindClass("java/util/ArrayList")));
+  jmethodID java_util_ArrayList_ = env->GetMethodID(java_util_ArrayList, "<init>", "(I)V");
+  jmethodID java_util_ArrayList_add = env->GetMethodID(java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
+  auto children = GetUniqueNextBoardsWithPass(b);
+  jobject result = env->NewObject(java_util_ArrayList, java_util_ArrayList_,
+                                  (jint) children.size());
+
+  for (auto child : children) {
+    env->CallBooleanMethod(result, java_util_ArrayList_add,
+                           BoardToJava(env, child.first));
+  }
+  return result;
+}
+
 #ifdef __cplusplus
 };
 #endif
