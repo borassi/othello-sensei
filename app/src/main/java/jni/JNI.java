@@ -76,5 +76,5 @@ public class JNI {
 
   public static native ArrayList<Board> uniqueChildren(Board board);
 
-  public native void addToBook();
+  public native void addToBook(Board father);
 }

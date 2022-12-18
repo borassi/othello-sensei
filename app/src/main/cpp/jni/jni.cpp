@@ -76,6 +76,12 @@ class JNIWrapper {
           std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
+    if (book_.Get(Board()).has_value()) {
+      std::shared_ptr<TreeNode> t(new TreeNode());
+      t->Reset(Board().Player(), Board().Opponent(), 4, 0);
+      t->SetLeaf(-63, 63, 0, 1, 1);
+      book_.Put(BookTreeNode(*t));
+    }
   }
 
   EvaluatorDerivative* BestEvaluator(float gap) {
@@ -233,10 +239,24 @@ class JNIWrapper {
     return env->GetStaticObjectField(JavaStatus, status_id);
   }
 
-  void AddToBook() {
-    for (int i = 0; i < last_boards_.size(); ++i) {
-      book_.Put(*evaluator_derivative_[i]->GetFirstPosition());
+  void AddToBook(Board father) {
+    auto expected_children = GetUniqueNextBoardsWithPass(father);
+    if (!book_.Get(father).has_value()) {
+      return;
     }
+    std::vector<BookTreeNode> children;
+    std::vector<BookTreeNode*> children_pointers;
+    children.reserve(last_boards_.size());
+    children_pointers.reserve(last_boards_.size());
+    for (int i = 0; i < last_boards_.size(); ++i) {
+      TreeNode* child = evaluator_derivative_[i]->GetFirstPosition();
+      if (expected_children.find(child->ToBoard()) == expected_children.end()) {
+        return;
+      }
+      children.push_back(BookTreeNode(*child));
+      children_pointers.push_back(&children[children.size() - 1]);
+    }
+    book_.AddChildren(father, children_pointers);
   }
 
  private:
@@ -317,8 +337,9 @@ JNIEXPORT void JNICALL Java_jni_JNI_stop(JNIEnv* env, jobject obj) {
   JNIFromJava(env, obj)->Stop();
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_addToBook(JNIEnv* env, jobject obj) {
-  JNIFromJava(env, obj)->AddToBook();
+JNIEXPORT void JNICALL Java_jni_JNI_addToBook(JNIEnv* env, jobject obj,
+                                              jobject board) {
+  JNIFromJava(env, obj)->AddToBook(BoardToCPP(env, board));
 }
 
 JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jobject obj) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- #include "book.h"
+#include "book.h"
 
 
 Book::Book(const std::string& folder) : folder_(folder), value_files_() {

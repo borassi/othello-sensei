@@ -149,6 +149,7 @@ public class Main implements Runnable {
   @Override
   public void run() {
     waitingTasks.getAndAdd(-1);
+    Board board = new Board(this.board.getPlayer(), this.board.getOpponent());
     ArrayList<Board> boards = getBoards();
     if (boards.isEmpty()) {
       showMCTSEvaluations();
@@ -163,8 +164,8 @@ public class Main implements Runnable {
       showMCTSEvaluations();
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
-    if (ui.useBook()) {
-      EVALUATOR.addToBook();
+    if (ui.useBook() && ui.delta() > 0) {
+      EVALUATOR.addToBook(board);
     }
     if (waitingTasks.get() == 0) {
       showMCTSEvaluations();
