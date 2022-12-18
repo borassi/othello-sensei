@@ -55,14 +55,26 @@ std::pair<std::fstream, std::optional<BookTreeNode>> Book::Remove(
 }
 
 void Book::Put(const BookTreeNode& node) {
-  auto file_and_node = Remove(node.Player(), node.Opponent());
-  auto file = std::move(file_and_node.first);
-  std::optional<BookTreeNode> stored_node = std::move(file_and_node.second);
+  Put(node, false, true);
+}
+
+void Book::Put(const BookTreeNode& node, bool overwrite, bool update_fathers) {
+  auto triple = Find(node.Player(), node.Opponent());
+  auto file = std::move(std::get<0>(triple));
+  auto hash_map_node = std::move(std::get<1>(triple));
+  auto stored_node = std::move(std::get<2>(triple));
   BookTreeNode node_to_store(node);
 
   if (stored_node) {
-    node_to_store.Merge(*stored_node);
+    GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
+    if (!overwrite) {
+      node_to_store.Merge(*stored_node);
+    }
+  } else {
+    assert(!overwrite);
+    ++book_size_;
   }
+
   std::vector<char> to_store = node_to_store.Serialize();
   auto size = to_store.size();
   auto offset = GetValueFile(size).Add(to_store);
@@ -73,8 +85,10 @@ void Book::Put(const BookTreeNode& node) {
   } else {
     Resize(&file, {to_be_stored});
   }
-  ++book_size_;
   UpdateSizes(&file);
+  if (update_fathers) {
+    UpdateFathers(node_to_store);
+  }
 }
 
 bool Book::IsSizeOK() {

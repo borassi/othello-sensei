@@ -48,13 +48,13 @@ class Book {
   }
 
   void AddChildren(const Board& b, const std::vector<BookTreeNode*>& children) {
-    BookTreeNode father = Remove(b.Player(), b.Opponent()).second.value();
+    BookTreeNode father = Get(b.Player(), b.Opponent()).value();
     assert(father.IsLeaf());
     father.SetChildren(children);
     for (const auto& child : children) {
-      Put(*child);
+      Put(*child, false, false);
     }
-    Put(father);
+    Put(father, true, true);
   }
 
   BookTreeNode GetBookTreeNode(HashMapNode node);
@@ -66,6 +66,27 @@ class Book {
   void Print(int start = 0, int end = -1);
 
   void Clean();
+
+  void UpdateFathers(const BookTreeNode& b) {
+    for (Board father_board : b.Fathers()) {
+      auto father = Get(father_board.Player(), father_board.Opponent()).value();
+
+      auto children_board = GetUniqueNextBoardsWithPass(father_board);
+      std::vector<BookTreeNode> children_memory;
+      std::vector<BookTreeNode*> children_pointer;
+      children_memory.reserve(children_board.size());
+      children_pointer.reserve(children_board.size());
+
+      for (auto child_board : children_board) {
+        children_memory.push_back(Get(child_board.first).value());
+        children_pointer.push_back(&children_memory[children_memory.size() - 1]);
+      }
+
+      assert(!father.IsLeaf());
+      father.UpdateFather(children_pointer);
+      Put(father, true, true);
+    }
+  }
 
   HashMapIndex Size() { return book_size_; }
 
@@ -80,6 +101,8 @@ class Book {
   ValueFile& GetValueFile(int size);
 
   void UpdateSizes(std::fstream* file);
+
+  void Put(const BookTreeNode& node, bool overwrite, bool update_fathers);
 
   u_int64_t OffsetToFilePosition(HashMapIndex offset) {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);

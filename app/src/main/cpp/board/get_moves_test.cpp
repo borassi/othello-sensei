@@ -176,7 +176,7 @@ TEST(GetMoves, SerializedRow) {
       for (int i = start; i <= end; ++i) {
         flip |= 1 << i;
       }
-      for (Square square = start; square <= end; ++square) {
+      for (int square = start; square <= end; ++square) {
         // If I flip the first / last element in the row, then it must be where
         // I play.
         if ((end == 7 && square != 7) || (start == 0 && square != 0)) {

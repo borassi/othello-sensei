@@ -147,7 +147,6 @@ TEST(Book, AddChildren) {
   auto e6d6_node = TestTreeNode(Board("e6d6"), -10, -63, 63, 10);
   BookTreeNode e6d6(*e6d6_node);
 
-  EXPECT_EQ(BookTreeNode(e6d6.Serialize()), e6d6);
   book.Put(e6);
   book.AddChildren(e6.ToBoard(), {&e6f4, &e6f6, &e6d6});
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
@@ -211,4 +210,39 @@ TEST(Book, AddChildrenStartingPosition) {
 
   auto fathers = book.Get(Board("e6"))->Fathers();
   EXPECT_THAT(fathers, UnorderedElementsAre(Board()));
+}
+
+TEST(Book, UpdateFathers) {
+  Book book(kTempDir);
+  book.Clean();
+
+  std::vector<BookTreeNode> memory;
+  memory.reserve(40);
+
+  BookTreeNode e6f4(*TestTreeNode(Board("e6f4"), -10, -63, 63, 10));
+  book.Put(e6f4);
+
+  for (auto moves : {"e6f4", "e6f4c3", "e6f4c3c4", "e6f4d3", "e6f4d3c4"}) {
+    std::vector<BookTreeNode*> successors;
+    for (Board b : GetNextBoardsWithPass(Board(moves))) {
+      int eval = (b == Board("e6f4c3c4d3")) ? 0 : 41;
+      memory.push_back(*TestTreeNode(b, eval, -63, 63, 10));
+      successors.push_back(&memory[memory.size() - 1]);
+    }
+    book.AddChildren(Board(moves), successors);
+  }
+  // Has two "descendants" with evaluation 0.
+  EXPECT_NEAR(book.Get(Board("e6f4"))->GetEval(), 1, 1);
+
+  // Overwrite: more nodes.
+  BookTreeNode e6f4c3c4d3(*TestTreeNode(Board("e6f4c3c4d3"), 20, -63, 63, 100));
+  book.Put(e6f4c3c4d3);
+
+  EXPECT_NEAR(book.Get(Board("e6f4c3c4d3"))->GetEval(), 20, 1E-4);
+  EXPECT_NEAR(book.Get(Board("e6f4c3c4"))->GetEval(), -20, 1E-4);
+  EXPECT_NEAR(book.Get(Board("e6f4d3c4"))->GetEval(), -20, 1E-4);
+  EXPECT_NEAR(book.Get(Board("e6f4c3"))->GetEval(), 20, 1E-4);
+  EXPECT_NEAR(book.Get(Board("e6f4d3"))->GetEval(), 20, 1E-4);
+  // Has two "descendants" with evaluation 0.
+  EXPECT_NEAR(book.Get(Board("e6f4"))->GetEval(), -19, 1);
 }
