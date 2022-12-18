@@ -37,21 +37,31 @@ std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
   return std::get<2>(Find(player, opponent));
 }
 
-HashMapNode Book::Put(const BookTreeNode& node, bool merge) {
-  auto triple = Find(node.Player(), node.Opponent());
+std::pair<std::fstream, std::optional<BookTreeNode>> Book::Remove(
+    BitPattern player, BitPattern opponent) {
+  auto triple = Find(player, opponent);
   auto file = std::move(std::get<0>(triple));
   auto hash_map_node = std::move(std::get<1>(triple));
   auto tree_node = std::move(std::get<2>(triple));
-  BookTreeNode node_to_store(node);
-  if (hash_map_node.IsEmpty()) {
-    assert(!tree_node.has_value());
-    ++book_size_;
-  } else {
-    assert(tree_node.has_value());
-    if (merge) {
-      node_to_store.Merge(*tree_node);
-    }
+  if (tree_node) {
+    HashMapNode empty;
     GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
+    file.write((char*) &empty, sizeof(HashMapNode));
+    file.seekp((int64_t) file.tellp() - sizeof(HashMapNode));
+    file.seekg(file.tellp());
+    --book_size_;
+  }
+  return std::make_pair(std::move(file), tree_node);
+}
+
+void Book::Put(const BookTreeNode& node) {
+  auto file_and_node = Remove(node.Player(), node.Opponent());
+  auto file = std::move(file_and_node.first);
+  std::optional<BookTreeNode> stored_node = std::move(file_and_node.second);
+  BookTreeNode node_to_store(node);
+
+  if (stored_node) {
+    node_to_store.Merge(*stored_node);
   }
   std::vector<char> to_store = node_to_store.Serialize();
   auto size = to_store.size();
@@ -63,12 +73,8 @@ HashMapNode Book::Put(const BookTreeNode& node, bool merge) {
   } else {
     Resize(&file, {to_be_stored});
   }
+  ++book_size_;
   UpdateSizes(&file);
-  return to_be_stored;
-}
-
-void Book::Put(const BookTreeNode& node) {
-  Put(node, true);
 }
 
 bool Book::IsSizeOK() {

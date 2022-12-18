@@ -57,6 +57,11 @@ public:
     opponent_ = NewOpponent(flip, player_);
     player_ = NewPlayer(flip, tmp);
   }
+  Board Next(BitPattern flip) {
+    Board next(*this);
+    next.PlayMove(flip);
+    return next;
+  }
   bool operator==(const Board& rhs) const {
     return Player() == rhs.Player()
            && Opponent() == rhs.Opponent();

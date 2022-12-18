@@ -19,19 +19,24 @@
 #include <gmock/gmock.h>
 #include "book_tree_node.h"
 #include "../board/board.h"
+#include "../board/get_moves.h"
 #include "../evaluatederivative/tree_node.h"
 
 using testing::ElementsAre;
 
+std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval weak_lower, Eval weak_upper, Eval eval, NVisited n_visited) {
+  std::shared_ptr<TreeNode> node(new TreeNode());
+  node->Reset(b, 0, 1);
+  node->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(eval), 4, n_visited);
+  return node;
+}
+
 BookTreeNode RandomBookTreeNode(Board b) {
-  TreeNode node;
-  node.Reset(b, 0, 1);
-  int lower = -(int) ((rand() % 32) * 2 + 1);
-  int upper = lower + ((rand() % 32) * 2);
-  int eval = (rand() % 512);
+  int weak_lower = -(int) ((rand() % 32) * 2 + 1);
+  int weak_upper = weak_lower + ((rand() % 32) * 2);
+  int eval = 2 * (rand() % 60) - 60;
   int n_visited = rand() % 2000 + 1;
-  node.SetLeaf(lower, upper, eval, 4, n_visited);
-  return BookTreeNode(node);
+  return BookTreeNode(*TestTreeNode(b, weak_lower, weak_upper, eval, n_visited));
 }
 
 class BookTreeNodeTestFixture : public ::testing::TestWithParam<bool> {
@@ -55,26 +60,23 @@ TEST(BookTreeNodeTestFixture, Serialize) {
   for (int i = 0; i < 10000; ++i) {
     BookTreeNode n = RandomBookTreeNode(RandomBoard());
     for (int j = 0; j < rand() % 4; ++j) {
-      n.AddFather(HashMapNode(rand() % 10 + 1, rand() % 10 + 1));
+      n.AddFather(rand() % (1 << 22));
     }
-    ASSERT_TRUE(n.Equals(BookTreeNode(n.Serialize()), true, true));
+    ASSERT_TRUE(n.Equals(BookTreeNode(n.Serialize()), true, true)) << "Got: " << BookTreeNode(n.Serialize()) << "\nExpected: " << n;
   }
 }
 
 TEST(BookTreeNodeTestFixture, Merge) {
-  TreeNode tree_node1;
-  tree_node1.Reset(Board("e6"), 0, 1);
-  tree_node1.SetLeaf(-5, 1, EvalToEvalLarge(1), 4, 10);
-  BookTreeNode book_tree_node1(tree_node1);
+  auto book_tree_node1 = BookTreeNode(*TestTreeNode(Board("e6f4c3c4d3"), -5, 1, 1, 10));
+  book_tree_node1.AddFather(12);
 
-  TreeNode tree_node2;
-  tree_node2.Reset(Board("e6"), 0, 1);
-  tree_node2.SetLeaf(-7, 3, EvalToEvalLarge(3), 2, 12);
-  BookTreeNode book_tree_node2(tree_node2);
+  BookTreeNode book_tree_node2(*TestTreeNode(Board("e6f4d3c4c3"), -7, 3, 3, 12));
+  book_tree_node2.AddFather(13);
 
   book_tree_node1.Merge(book_tree_node2);
   EXPECT_EQ(book_tree_node1.GetNVisited(), 22);
   EXPECT_NEAR(book_tree_node1.GetEvaluation(3).ProbGreaterEqual(), 0.5, 0.01);
+  EXPECT_EQ(book_tree_node1.Fathers().size(), 2);
 }
 
 TEST(BookTreeNodeTestFixture, MergeCommutative) {
@@ -99,11 +101,11 @@ TEST(BookTreeNodeTestFixture, CopyAndMove) {
   tree_node.Reset(Board("e6"), 0, 1);
   tree_node.SetLeaf(-5, 1, EvalToEvalLarge(1), 4, 40);
   BookTreeNode expected(tree_node);
-  expected.AddFather(HashMapNode(1, 2));
+  expected.AddFather(123);
 
   // Copy from TreeNode.
   BookTreeNode n1 = tree_node;
-  n1.AddFather(HashMapNode(1, 2));
+  n1.AddFather(123);
 
   // Copy from BookTreeNode.
   BookTreeNode n2 = expected;
@@ -141,9 +143,6 @@ TEST_P(BookTreeNodeTestFixture, UpdateChildren) {
   BookTreeNode e6d6(e6d6_tree);
 
   e6.SetChildren({&e6f4, &e6f6, &e6d6});
-  e6f4.AddFather(HashMapNode(1, 2));
-  e6f6.AddFather(HashMapNode(1, 2));
-  e6d6.AddFather(HashMapNode(1, 2));
 
   if (GetParam()) {
     e6 = BookTreeNode(e6.Serialize());
@@ -152,9 +151,9 @@ TEST_P(BookTreeNodeTestFixture, UpdateChildren) {
     e6d6 = BookTreeNode(e6d6.Serialize());
   }
 
-  EXPECT_THAT(e6f4.Fathers(), ElementsAre(HashMapNode(1, 2)));
-  EXPECT_THAT(e6f6.Fathers(), ElementsAre(HashMapNode(1, 2)));
-  EXPECT_THAT(e6d6.Fathers(), ElementsAre(HashMapNode(1, 2)));
+  EXPECT_THAT(e6f4.Fathers(), ElementsAre(Board("e6").Unique()));
+  EXPECT_THAT(e6f6.Fathers(), ElementsAre(Board("e6").Unique()));
+  EXPECT_THAT(e6d6.Fathers(), ElementsAre(Board("e6").Unique()));
   EXPECT_TRUE(e6f4.IsLeaf());
   EXPECT_TRUE(e6f6.IsLeaf());
   EXPECT_TRUE(e6d6.IsLeaf());

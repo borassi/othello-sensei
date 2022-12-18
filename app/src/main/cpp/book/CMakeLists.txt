@@ -95,6 +95,7 @@ target_link_libraries(
         LINK_PRIVATE
         board
         book_tree_node
+        get_moves
         GTest::gmock
         GTest::gtest
         GTest::gtest_main

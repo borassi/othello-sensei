@@ -75,12 +75,18 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     Eval last_1 = (Eval) serialized[i++];
     Eval first_0 = (Eval) serialized[i++];
     is_leaf_ = (bool) serialized[i++];
-    int n_fathers = serialized[i++];
 
-    for (int j = 0; j < n_fathers; ++j) {
-      HashMapNode* node = (HashMapNode*) &serialized[i];
-      fathers_.push_back(*node);
-      i += sizeof(HashMapNode);
+    while (true) {
+      CompressedFlip father = (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
+      i += 3;
+      if (father == 0) {
+        assert(fathers_.empty());
+        break;
+      }
+      fathers_.insert(father >> 2);
+      if ((father & 1) == 0) {
+        break;
+      }
     }
     EnlargeEvaluations();
 
@@ -135,12 +141,16 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     result.insert(result.end(), board.begin(), board.end());
     float descendants = (float) descendants_;
     result.insert(result.end(), (char*) &descendants, (char*) &descendants + sizeof(float));
-    result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0});
-    result.insert(result.end(), {is_leaf_, (char) fathers_.size()});
+    result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
-    for (int i = 0; i < fathers_.size(); ++i) {
-      char* tmp = (char*) &fathers_[i];
-      result.insert(result.end(), (char*) &fathers_[i], ((char*) &fathers_[i]) + sizeof(HashMapNode));
+    if (fathers_.size() == 0) {
+      result.insert(result.end(), {0, 0, 0});
+    }
+    int i = 0;
+    for (CompressedFlip father : fathers_) {
+      assert(father < (1 << 22));  // Max 22 bits
+      father = father << 2 | (++i == fathers_.size() ? 0 : 1);
+      result.insert(result.end(), {(char) (father % 256), (char) ((father >> 8) % 256), (char) ((father >> 16) % 256)});
     }
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
@@ -201,13 +211,8 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
       }
     }
     if (fathers) {
-      if (fathers_.size() != other.fathers_.size() || is_leaf_ != other.is_leaf_) {
+      if (fathers_ != other.fathers_ || is_leaf_ != other.is_leaf_) {
         return false;
-      }
-      for (int i = 0; i < fathers_.size(); ++i) {
-        if (fathers_[i] != other.fathers_[i]) {
-          return false;
-        }
       }
     }
     return true;
@@ -218,8 +223,8 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
   void Merge(const BookTreeNode& other) {
     assert(ToBoard() == other.ToBoard());
     float total_descendants = descendants_ + other.descendants_;
-    std::vector<HashMapNode> fathers(fathers_);
-    fathers.insert(fathers.end(), other.fathers_.begin(), other.fathers_.end());
+    std::set<CompressedFlip> fathers = fathers_;
+    fathers.insert(other.fathers_.begin(), other.fathers_.end());
     if (other.descendants_ > descendants_ ||
         (other.descendants_ == descendants_ && this < &other)) {
       SetupFromOther(other);
@@ -228,43 +233,53 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     fathers_ = fathers;
   }
 
-  bool UpdateFather(const std::vector<const BookTreeNode*>& children) {
+  bool UpdateFather(const std::vector<BookTreeNode*>& children) {
     return BaseTreeNode<BookTreeNode>::UpdateFather(
         children.begin(), children.end());
   }
 
-  void AddFather(const HashMapNode& father) {
-    assert(!father.IsEmpty());
-    fathers_.push_back(father);
+  void AddFather(CompressedFlip father) {
+    fathers_.insert(father);
   }
 
-  void SetChildren(const std::vector<const BookTreeNode*>& children) {
+  void SetChildren(const std::vector<BookTreeNode*>& children) {
     assert(AreChildrenCorrect(children));
     is_leaf_ = false;
+    auto child_to_move = GetUniqueNextBoardsWithPass(ToBoard());
+    for (BookTreeNode* child : children) {
+      std::pair<Square, BitPattern> move = child_to_move.at(child->ToBoard());
+      child->AddFather(SerializeFlip(move.first, move.second));
+    }
     UpdateFather(children);
   }
 
-  std::vector<HashMapNode> Fathers() const {
-    return fathers_;
+  std::vector<Board> Fathers() const {
+    std::vector<Board> result;
+    for (CompressedFlip compressed_flip : fathers_) {
+      std::pair move_and_flip = DeserializeFlip(compressed_flip);
+      Square move = move_and_flip.first;
+      BitPattern flip = move_and_flip.second;
+      result.push_back(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)).Unique());
+    }
+    return result;
   }
  private:
   bool is_leaf_;
-  std::vector<HashMapNode> fathers_;
+  std::set<CompressedFlip> fathers_;
 
-  bool AreChildrenCorrect(const std::vector<const BookTreeNode*> children) {
-    std::vector<Board> expected_children = GetNextBoardsWithPass(ToBoard());
-    if (children.size() != expected_children.size()) {
+  bool AreChildrenCorrect(const std::vector<BookTreeNode*> children) {
+    auto expected_children = GetUniqueNextBoardsWithPass(ToBoard());
+    if (children.size() < expected_children.size()) {
       std::cout << "Wrong children size " << children.size()
-          << "(should be " << expected_children.size() << ").\nBoard:\n"
+          << "(should be at least " << expected_children.size() << ").\nBoard:\n"
           << ToBoard();
       return false;
     }
     for (auto expected_child : expected_children) {
-      Board unique = expected_child.Unique();
+      Board unique = expected_child.first;
       bool found = false;
       for (auto child : children) {
         if (child->ToBoard() == unique) {
-          assert(!found);
           found = true;
         }
       }

@@ -27,6 +27,7 @@
 
 const std::string kTempDir = "app/testdata/tmp/book_test";
 
+using ::testing::UnorderedElementsAre;
 using ::testing::ElementsAreArray;
 
 std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
@@ -151,15 +152,16 @@ TEST(Book, AddChildren) {
   book.AddChildren(e6.ToBoard(), {&e6f4, &e6f6, &e6d6});
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
-  EXPECT_TRUE(book.Get(e6f4.ToBoard())->Equals(e6f4, true, false));
-  EXPECT_TRUE(book.Get(e6f6.ToBoard())->Equals(e6f6, true, false));
-  EXPECT_TRUE(book.Get(e6d6.ToBoard())->Equals(e6d6, true, false));
-  EXPECT_TRUE(book.Get(e6.ToBoard())->Equals(BookTreeNode(*e6_node), true, false));
-  EXPECT_FALSE(book.Get(e6.ToBoard())->IsLeaf());
-  auto fathers = book.Get(e6f4.ToBoard())->Fathers();
+  EXPECT_EQ(book.Get(Board("e6f4")), e6f4);
+  EXPECT_EQ(book.Get(Board("e6f6")), e6f6);
+  EXPECT_EQ(book.Get(Board("e6d6")), e6d6);
+
+  EXPECT_TRUE(book.Get(Board("e6"))->Equals(BookTreeNode(*e6_node), true, false));
+  EXPECT_FALSE(book.Get(Board("e6"))->IsLeaf());
+  auto fathers = book.Get(Board("e6f4"))->Fathers();
   EXPECT_EQ(fathers.size(), 1);
-  auto father = book.GetBookTreeNode(fathers[0]);
-  EXPECT_TRUE(father.Equals(BookTreeNode(*e6_node), true, false));
+  auto father = book.Get(*fathers.begin());
+  EXPECT_TRUE(father->Equals(BookTreeNode(*e6_node), true, false));
 }
 
 TEST(Book, AddChildrenTransposition) {
@@ -170,7 +172,7 @@ TEST(Book, AddChildrenTransposition) {
   book.Put(e6f4c3c4);
   std::vector<BookTreeNode> memory;
   memory.reserve(15);
-  std::vector<const BookTreeNode*> e6f4c3c4_successors;
+  std::vector<BookTreeNode*> e6f4c3c4_successors;
   for (Board b : GetNextBoardsWithPass(e6f4c3c4.ToBoard())) {
     memory.push_back(*TestTreeNode(b, 0, -63, 63, 10));
     e6f4c3c4_successors.push_back(&memory[memory.size() - 1]);
@@ -178,7 +180,7 @@ TEST(Book, AddChildrenTransposition) {
 
   BookTreeNode e6f4d3c4(*TestTreeNode(Board("e6f4d3c4"), 0, -63, 63, 10));
   book.Put(e6f4d3c4);
-  std::vector<const BookTreeNode*> e6f4d3c4_successors;
+  std::vector<BookTreeNode*> e6f4d3c4_successors;
   for (Board b : GetNextBoardsWithPass(e6f4d3c4.ToBoard())) {
     memory.push_back(*TestTreeNode(b, 0, -63, 63, 10));
     e6f4d3c4_successors.push_back(&memory[memory.size() - 1]);
@@ -188,5 +190,25 @@ TEST(Book, AddChildrenTransposition) {
   book.AddChildren(Board("e6f4d3c4"), e6f4d3c4_successors);
 
   auto fathers = book.Get(Board("e6f4c3c4d3"))->Fathers();
-  EXPECT_EQ(fathers.size(), 2);
+  EXPECT_THAT(fathers, UnorderedElementsAre(Board("e6f4c3c4").Unique(), Board("e6f4d3c4").Unique()));
+}
+
+TEST(Book, AddChildrenStartingPosition) {
+  Book book(kTempDir);
+  book.Clean();
+
+  BookTreeNode start(*TestTreeNode(Board(), 0, -63, 63, 10));
+  book.Put(start);
+  std::vector<BookTreeNode> memory;
+  memory.reserve(4);
+  std::vector<BookTreeNode*> successors;
+  for (Board b : GetNextBoardsWithPass(Board())) {
+    memory.push_back(*TestTreeNode(b, 0, -63, 63, 10));
+    successors.push_back(&memory[memory.size() - 1]);
+  }
+
+  book.AddChildren(Board(), successors);
+
+  auto fathers = book.Get(Board("e6"))->Fathers();
+  EXPECT_THAT(fathers, UnorderedElementsAre(Board()));
 }

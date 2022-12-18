@@ -47,18 +47,14 @@ class Book {
     return Get(b.Player(), b.Opponent());
   }
 
-  void AddChildren(const Board& b, const std::vector<const BookTreeNode*>& children) {
-    BookTreeNode father = Get(b).value();
+  void AddChildren(const Board& b, const std::vector<BookTreeNode*>& children) {
+    BookTreeNode father = Remove(b.Player(), b.Opponent()).second.value();
     assert(father.IsLeaf());
-
     father.SetChildren(children);
-    HashMapNode father_position = Put(father, false);
-
-    for (const BookTreeNode* child : children) {
-      BookTreeNode child_copy = *child;
-      child_copy.AddFather(father_position);
-      Put(child_copy);
+    for (const auto& child : children) {
+      Put(*child);
     }
+    Put(father);
   }
 
   BookTreeNode GetBookTreeNode(HashMapNode node);
@@ -100,14 +96,14 @@ class Book {
 
   HashMapIndex RepositionHash(HashMapIndex board_hash);
 
+  std::pair<std::fstream, std::optional<BookTreeNode>> Remove(BitPattern player, BitPattern opponent);
+
   std::tuple<std::fstream, HashMapNode, std::optional<BookTreeNode>>
       Find(BitPattern player, BitPattern opponent);
 
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);
 
   bool IsEmpty(std::fstream& file, HashMapIndex hash);
-
-  HashMapNode Put(const BookTreeNode& node, bool merge);
 };
 
 

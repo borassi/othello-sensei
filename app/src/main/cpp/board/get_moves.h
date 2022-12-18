@@ -17,8 +17,13 @@
 #ifndef BOARD_GET_MOVES_H
 #define BOARD_GET_MOVES_H
 
+#include <unordered_map>
+
+#include "bitpattern.h"
 #include "board.h"
 #include "get_flip.h"
+
+typedef u_int32_t CompressedFlip;
 
 constexpr BitPattern kNonVerticalFlipMask = ParsePattern(
   "-XXXXXX-"
@@ -97,9 +102,21 @@ std::vector<Board> GetNextBoardsWithPass(BitPattern player, BitPattern opponent)
 
 std::vector<Board> GetNextBoardsWithPass(Board b);
 
+std::vector<Board> GetNextBoardsWithPass(BitPattern player, BitPattern opponent);
+
+std::unordered_map<Board, std::pair<Square, BitPattern>> GetUniqueNextBoardsWithPass(Board b);
+
 inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
 inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept {
   return flip & ~(player | opponent);
 }
+
+u_int8_t SerializeRow(u_int8_t square, u_int8_t row);
+
+u_int8_t DeserializeRow(u_int8_t square, u_int8_t serialized);
+
+CompressedFlip SerializeFlip(Square square, BitPattern flip);
+
+std::pair<Square, BitPattern> DeserializeFlip(CompressedFlip flip);
 
 #endif  // BOARD_GET_MOVES_H
