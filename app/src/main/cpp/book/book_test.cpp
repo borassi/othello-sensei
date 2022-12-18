@@ -88,51 +88,51 @@ TEST(Book, Unique) {
   EXPECT_EQ(book.Get(0, 1ULL << 63), TestBookTreeNode(0, 1ULL << 7, 1, 1, 3, 10));
 }
 
-//TEST(Book, LargeOne) {
-//  std::unordered_map<Board, std::optional<BookTreeNode>> expected;
-//  std::vector<Board> old_boards;
-//  Book actual(kTempDir);
-//  actual.Clean();
-//
-//  for (int i = 0; i < 10000; ++i) {
-//    if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
-//      std::cout << i << "\n";
-//    }
-//    Board b = RandomBoard();
-//    Board unique = b.Unique();
-//    Eval lower = (i % 64) * 2 - 63;
-//    Eval upper = std::min(lower + (i % 32) * 2, 63);
-//    EvalLarge eval = ((i + 24) % 126) - 63;
-//    NVisited n_visited = rand();
-//    BookTreeNode node = TestBookTreeNode(b.Player(), b.Opponent(), eval, lower, upper, n_visited);
-//    old_boards.push_back(b);
-//    if (expected[unique]) {
-//      expected[unique]->Merge(node);
-//    } else {
-//      expected[unique] = node;
-//    }
-//    actual.Put(node);
-//
-//    int test_i = rand() % (i+1);
-//    Board test_board = old_boards[test_i];
-//    ASSERT_TRUE(actual.Get(test_board.Player(), test_board.Opponent())->Equals(
-//                *expected[test_board.Unique()], true, true));
-//
-//    if (i < 100) {
-//      for (int test_i = 0 ; test_i < i; ++test_i) {
-//        Board test_board = old_boards[test_i];
-//        ASSERT_TRUE(actual.Get(test_board.Player(), test_board.Opponent())->Equals(
-//                    *expected[test_board.Unique()], true, true));
-//      }
-//    }
-//    if (i < 2000) {
-//      assert(actual.IsSizeOK());
-//    }
-//    if (rand() % 100 == 0) {
-//      actual = Book(kTempDir);
-//    }
-//  }
-//}
+TEST(Book, LargeOne) {
+  std::unordered_map<Board, std::optional<BookTreeNode>> expected;
+  std::vector<Board> old_boards;
+  Book actual(kTempDir);
+  actual.Clean();
+
+  for (int i = 0; i < 10000; ++i) {
+    if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
+      std::cout << i << "\n";
+    }
+    Board b = RandomBoard();
+    Board unique = b.Unique();
+    Eval lower = (i % 64) * 2 - 63;
+    Eval upper = std::min(lower + (i % 32) * 2, 63);
+    EvalLarge eval = ((i + 24) % 126) - 63;
+    NVisited n_visited = rand();
+    BookTreeNode node = TestBookTreeNode(b.Player(), b.Opponent(), eval, lower, upper, n_visited);
+    old_boards.push_back(b);
+    if (expected[unique]) {
+      expected[unique]->Merge(node);
+    } else {
+      expected[unique] = node;
+    }
+    actual.Put(node);
+
+    int test_i = rand() % (i+1);
+    Board test_board = old_boards[test_i];
+    ASSERT_TRUE(actual.Get(test_board.Player(), test_board.Opponent())->Equals(
+                *expected[test_board.Unique()], true, true));
+
+    if (i < 100) {
+      for (int test_i = 0 ; test_i < i; ++test_i) {
+        Board test_board = old_boards[test_i];
+        ASSERT_TRUE(actual.Get(test_board.Player(), test_board.Opponent())->Equals(
+                    *expected[test_board.Unique()], true, true));
+      }
+    }
+    if (i < 2000) {
+      assert(actual.IsSizeOK());
+    }
+    if (rand() % 100 == 0) {
+      actual = Book(kTempDir);
+    }
+  }
+}
 
 TEST(Book, AddChildren) {
   Book book(kTempDir);
