@@ -54,8 +54,10 @@ std::pair<std::fstream, std::optional<BookTreeNode>> Book::Remove(
   return std::make_pair(std::move(file), tree_node);
 }
 
-void Book::Put(const BookTreeNode& node) {
+void Book::Put(const BookTreeNode& node, const std::vector<Board> ancestors) {
   Put(node, false, true);
+  assert(Get(node.ToBoard()));
+  UpdateVisited(Get(node.ToBoard()).value(), ancestors, node.GetNVisited());
 }
 
 void Book::Put(const BookTreeNode& node, bool overwrite, bool update_fathers) {
@@ -68,6 +70,7 @@ void Book::Put(const BookTreeNode& node, bool overwrite, bool update_fathers) {
   if (stored_node) {
     GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
     if (!overwrite) {
+      assert(stored_node->IsLeaf());
       node_to_store.Merge(*stored_node);
     }
   } else {

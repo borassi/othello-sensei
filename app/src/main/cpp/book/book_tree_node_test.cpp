@@ -115,10 +115,18 @@ TEST(BookTreeNodeTestFixture, CopyAndMove) {
   BookTreeNode tmp = expected;
   BookTreeNode n4 = std::move(tmp);
 
+  // Copy from BookTreeNode.
+  TreeNode tree_node1;
+  tree_node1.Reset(Board("e6f4"), 0, 2);
+  tree_node1.SetLeaf(-7, 3, EvalToEvalLarge(-5), 4, 40);
+  BookTreeNode n5(tree_node1);
+  n5 = expected;
+
   EXPECT_EQ(expected, n1);
   EXPECT_EQ(expected, n2);
   EXPECT_EQ(expected, n3);
   EXPECT_EQ(expected, n4);
+  EXPECT_EQ(expected, n5);
 }
 
 TEST_P(BookTreeNodeTestFixture, UpdateChildren) {

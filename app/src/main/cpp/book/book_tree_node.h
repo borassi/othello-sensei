@@ -19,6 +19,7 @@
 
 #include <iterator>
 #include <optional>
+#include <unordered_set>
 #include <vector>
 
 #include "../board/board.h"
@@ -50,13 +51,19 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     SetupFromOther(other);
     is_leaf_ = true;
   }
-  BookTreeNode(BookTreeNode&& other) {
-    fathers_ = other.fathers_;
+  BookTreeNode(BookTreeNode&& other) :
+      fathers_(other.fathers_.begin(), other.fathers_.end()) {
     SetupFromOther(other);
   }
-  BookTreeNode(const BookTreeNode& other) {
-    fathers_ = other.fathers_;
+  BookTreeNode(const BookTreeNode& other) :
+      fathers_(other.fathers_.begin(), other.fathers_.end()) {
     SetupFromOther(other);
+  }
+
+  BookTreeNode& operator=(BookTreeNode other) {
+    fathers_ = std::unordered_set(other.fathers_.begin(), other.fathers_.end());
+    SetupFromOther(other);
+    return *this;
   }
 
   BookTreeNode(const std::vector<char>& serialized) {
@@ -116,11 +123,6 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     Board unique = other.ToBoard().Unique();
     player_ = unique.Player();
     opponent_ = unique.Opponent();
-  }
-
-  BookTreeNode& operator=(BookTreeNode&& other) {
-    SetupFromOther(other);
-    return *this;
   }
 
   std::vector<char> Serialize() {
@@ -223,14 +225,14 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
   void Merge(const BookTreeNode& other) {
     assert(ToBoard() == other.ToBoard());
     float total_descendants = descendants_ + other.descendants_;
-    std::set<CompressedFlip> fathers = fathers_;
+    std::unordered_set<CompressedFlip> fathers(fathers_.begin(), fathers_.end());
     fathers.insert(other.fathers_.begin(), other.fathers_.end());
     if (other.descendants_ > descendants_ ||
         (other.descendants_ == descendants_ && this < &other)) {
       SetupFromOther(other);
     }
     descendants_ = total_descendants;
-    fathers_ = fathers;
+    fathers_ = std::move(fathers);
   }
 
   bool UpdateFather(const std::vector<BookTreeNode*>& children) {
@@ -265,7 +267,7 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
   }
  private:
   bool is_leaf_;
-  std::set<CompressedFlip> fathers_;
+  std::unordered_set<CompressedFlip> fathers_;
 
   bool AreChildrenCorrect(const std::vector<BookTreeNode*> children) {
     auto expected_children = GetUniqueNextBoardsWithPass(ToBoard());

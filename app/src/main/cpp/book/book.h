@@ -27,6 +27,7 @@
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../utils/file.h"
+#include "../utils/misc.h"
 
 constexpr int kMinFileSize = kMinValueFileSize;
 constexpr int kMaxFileSize = 300;
@@ -47,19 +48,23 @@ class Book {
     return Get(b.Player(), b.Opponent());
   }
 
-  void AddChildren(const Board& b, const std::vector<BookTreeNode*>& children) {
+  void AddChildren(const Board& b, const std::vector<BookTreeNode*>& children, const std::vector<Board> ancestors) {
     BookTreeNode father = Get(b.Player(), b.Opponent()).value();
     assert(father.IsLeaf());
     father.SetChildren(children);
+    NVisited visited = 0;
     for (const auto& child : children) {
       Put(*child, false, false);
+      visited += child->GetNVisited();
     }
+    father.AddDescendants(visited);
     Put(father, true, true);
+    UpdateVisited(father, ancestors, visited);
   }
 
   BookTreeNode GetBookTreeNode(HashMapNode node);
 
-  void Put(const BookTreeNode& node);
+  void Put(const BookTreeNode& node, const std::vector<Board> ancestors = {});
 
   bool IsSizeOK();
 
@@ -103,6 +108,19 @@ class Book {
   void UpdateSizes(std::fstream* file);
 
   void Put(const BookTreeNode& node, bool overwrite, bool update_fathers);
+
+  void UpdateVisited(const BookTreeNode& leaf,
+                     const std::vector<Board>& ancestors,
+                     NVisited visited) {
+    BookTreeNode ancestor = leaf;
+    for (auto it = ancestors.rbegin(); it != ancestors.rend(); ++it) {
+      Board ancestor_board = *it;
+      assert(Contains(ancestor.Fathers(), ancestor_board.Unique()));
+      ancestor = Get(ancestor_board).value();
+      ancestor.AddDescendants(visited);
+      Put(ancestor, true, false);
+    }
+  }
 
   u_int64_t OffsetToFilePosition(HashMapIndex offset) {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);
