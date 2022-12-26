@@ -54,7 +54,7 @@ std::pair<std::fstream, std::optional<BookTreeNode>> Book::Remove(
   return std::make_pair(std::move(file), tree_node);
 }
 
-void Book::Put(const BookTreeNode& node, const std::vector<Board> ancestors) {
+void Book::Put(const BookTreeNode& node, const std::vector<Board>& ancestors) {
   Put(node, false, true);
   assert(Get(node.ToBoard()));
   UpdateVisited(Get(node.ToBoard()).value(), ancestors, node.GetNVisited());

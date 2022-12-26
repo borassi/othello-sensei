@@ -76,7 +76,7 @@ class JNIWrapper {
           std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
-    if (book_.Get(Board()).has_value()) {
+    if (!book_.Get(Board()).has_value()) {
       std::shared_ptr<TreeNode> t(new TreeNode());
       t->Reset(Board().Player(), Board().Opponent(), 4, 0);
       t->SetLeaf(-63, 63, 0, 1, 1);
@@ -239,7 +239,7 @@ class JNIWrapper {
     return env->GetStaticObjectField(JavaStatus, status_id);
   }
 
-  void AddToBook(Board father) {
+  void AddToBook(const Board& father, const std::vector<Board>& parents) {
     auto expected_children = GetUniqueNextBoardsWithPass(father);
     if (!book_.Get(father).has_value()) {
       return;
@@ -256,7 +256,7 @@ class JNIWrapper {
       children.push_back(BookTreeNode(*child));
       children_pointers.push_back(&children[children.size() - 1]);
     }
-    book_.AddChildren(father, children_pointers);
+    book_.AddChildren(father, children_pointers, parents);
   }
 
  private:
@@ -337,9 +337,20 @@ JNIEXPORT void JNICALL Java_jni_JNI_stop(JNIEnv* env, jobject obj) {
   JNIFromJava(env, obj)->Stop();
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_addToBook(JNIEnv* env, jobject obj,
-                                              jobject board) {
-  JNIFromJava(env, obj)->AddToBook(BoardToCPP(env, board));
+JNIEXPORT void JNICALL Java_jni_JNI_addToBook(
+    JNIEnv* env, jobject obj, jobject board, jobject parents) {
+  std::vector<Board> parents_cpp;
+
+  jclass arraylist = env->FindClass("java/util/ArrayList");
+  jmethodID sizeId = env->GetMethodID(arraylist, "size", "()I");
+  jmethodID getId = env->GetMethodID(arraylist, "get", "(I)Ljava/lang/Object;");
+  int size = env->CallIntMethod(parents, sizeId);
+  parents_cpp.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    jobject parent = env->CallObjectMethod(parents, getId, i);
+    parents_cpp.push_back(BoardToCPP(env, parent));
+  }
+  JNIFromJava(env, obj)->AddToBook(BoardToCPP(env, board), parents_cpp);
 }
 
 JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jobject obj) {

@@ -42,6 +42,11 @@ BookTreeNode TestBookTreeNode(BitPattern player, BitPattern opponent, Eval leaf_
   return BookTreeNode(*node);
 }
 
+class BookParameterizedFixture : public ::testing::TestWithParam<bool> {
+ protected:
+  bool only_new;
+};
+
 TEST(Book, Basic) {
   Book position_to_data(kTempDir);
   position_to_data.Clean();
@@ -203,7 +208,7 @@ TEST(Book, AddChildrenStartingPosition) {
   std::vector<BookTreeNode> memory;
   memory.reserve(4);
   std::vector<BookTreeNode*> successors;
-  for (Board b : GetNextBoardsWithPass(Board())) {
+  for (const auto& [b, unused_move] : GetUniqueNextBoardsWithPass(Board())) {
     memory.push_back(*TestTreeNode(b, 0, -63, 63, 10));
     successors.push_back(&memory[memory.size() - 1]);
   }
@@ -214,7 +219,7 @@ TEST(Book, AddChildrenStartingPosition) {
   EXPECT_THAT(fathers, UnorderedElementsAre(Board()));
 }
 
-TEST(Book, UpdateFathers) {
+TEST_P(BookParameterizedFixture, UpdateFathers) {
   Book book(kTempDir);
   book.Clean();
 
@@ -224,6 +229,7 @@ TEST(Book, UpdateFathers) {
   BookTreeNode e6f4(*TestTreeNode(Board("e6f4"), -10, -63, 63, 1));
   book.Put(e6f4);
 
+  bool add_only_once = GetParam();
   for (std::string moves : {"e6f4", "e6f4c3", "e6f4c3c4", "e6f4d3", "e6f4d3c4"}) {
     std::vector<Board> parents;
     for (int i = 4; i < moves.length(); i += 2) {
@@ -231,7 +237,13 @@ TEST(Book, UpdateFathers) {
     }
     std::vector<BookTreeNode*> successors;
     for (Board b : GetNextBoardsWithPass(Board(moves))) {
-      int eval = (b == Board("e6f4c3c4d3")) ? 0 : 41;
+      int eval = 41;
+      if (b == Board("e6f4d3c4c3")) {
+        eval = 0;
+        if (add_only_once && moves == "e6f4d3c4") {
+          continue;
+        }
+      }
       memory.push_back(*TestTreeNode(b, eval, -63, 63, 1));
       successors.push_back(&memory[memory.size() - 1]);
     }
@@ -240,17 +252,17 @@ TEST(Book, UpdateFathers) {
   // Has two "descendants" with evaluation 0.
   EXPECT_NEAR(book.Get(Board("e6f4"))->GetEval(), 1, 1);
 
-  EXPECT_EQ(book.Get(Board("e6f4c3c4d3"))->GetNVisited(), 2);
+  EXPECT_EQ(book.Get(Board("e6f4c3c4d3"))->GetNVisited(), add_only_once ? 1 : 2);
   // 6 moves + 1 for itself
   EXPECT_EQ(book.Get(Board("e6f4c3c4"))->GetNVisited(), 7);
   // 7 moves + 1 for itself
-  EXPECT_EQ(book.Get(Board("e6f4d3c4"))->GetNVisited(), 8);
+  EXPECT_EQ(book.Get(Board("e6f4d3c4"))->GetNVisited(), add_only_once ? 7 : 8);
   // 7 from c4 + 3 other moves + 1 from itself
   EXPECT_EQ(book.Get(Board("e6f4c3"))->GetNVisited(), 11);
   // 8 from c4 + 4 other moves + 1 from itself
-  EXPECT_EQ(book.Get(Board("e6f4d3"))->GetNVisited(), 13);
+  EXPECT_EQ(book.Get(Board("e6f4d3"))->GetNVisited(), add_only_once ? 12 : 13);
   // 11 from c3 + 13 from d3 + 3 other moves + 1 from itself
-  EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), 28);
+  EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), add_only_once ? 27 : 28);
 
   // Overwrite: more nodes.
   BookTreeNode e6f4c3c4d3(*TestTreeNode(Board("e6f4c3c4d3"), 20, -63, 63, 100));
@@ -265,15 +277,20 @@ TEST(Book, UpdateFathers) {
   // Has two "descendants" with evaluation 0.
   EXPECT_NEAR(book.Get(Board("e6f4"))->GetEval(), -19, 1);
 
-  EXPECT_EQ(book.Get(Board("e6f4c3c4d3"))->GetNVisited(), 102);
+  EXPECT_EQ(book.Get(Board("e6f4c3c4d3"))->GetNVisited(), add_only_once ? 101 : 102);
   // 6 moves + 1 for itself
   EXPECT_EQ(book.Get(Board("e6f4c3c4"))->GetNVisited(), 107);
   // 7 moves + 1 for itself
-  EXPECT_EQ(book.Get(Board("e6f4d3c4"))->GetNVisited(), 8);
+  EXPECT_EQ(book.Get(Board("e6f4d3c4"))->GetNVisited(), add_only_once ? 7 : 8);
   // 7 from c4 + 3 other moves + 1 from itself
   EXPECT_EQ(book.Get(Board("e6f4c3"))->GetNVisited(), 111);
   // 8 from c4 + 4 other moves + 1 from itself
-  EXPECT_EQ(book.Get(Board("e6f4d3"))->GetNVisited(), 13);
+  EXPECT_EQ(book.Get(Board("e6f4d3"))->GetNVisited(), add_only_once ? 12 : 13);
   // 11 from c3 + 13 from d3 + 3 other moves + 1 from itself
-  EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), 128);
+  EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), add_only_once ? 127 : 128);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    BookParameterized,
+    BookParameterizedFixture,
+    ::testing::Values(false, true));

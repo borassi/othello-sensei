@@ -165,7 +165,8 @@ public class Main implements Runnable {
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
     if (ui.useBook() && ui.delta() > 0) {
-      EVALUATOR.addToBook(board);
+      System.out.println("Adding to book" + board);
+      EVALUATOR.addToBook(board, oldBoards);
     }
     if (waitingTasks.get() == 0) {
       showMCTSEvaluations();
