@@ -269,6 +269,19 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
   bool is_leaf_;
   std::unordered_set<CompressedFlip> fathers_;
 
+  bool BestDescendant(const LeafToUpdate<BaseTreeNode<BookTreeNode>>& node,
+                      std::vector<LeafToUpdate<BaseTreeNode<BookTreeNode>>>*
+                          descendants) override {
+    return true;
+  }
+
+  BaseTreeNode<BookTreeNode>* NextChildren(
+      const LeafToUpdate<BaseTreeNode<BookTreeNode>>& current,
+      const std::unordered_set<BookTreeNode*>& visited_nodes,
+      BaseTreeNode<BookTreeNode>::NextNodesPriorityQueue* next_nodes) override {
+    return nullptr;
+  }
+
   bool AreChildrenCorrect(const std::vector<BookTreeNode*> children) {
     auto expected_children = GetUniqueNextBoardsWithPass(ToBoard());
     if (children.size() < expected_children.size()) {
