@@ -142,14 +142,15 @@ class EvaluatorThread {
       index_(index),
       thread_finished_(thread_finished) {}
 
-  void Run(std::vector<LeafToUpdate>* leaves_, std::atomic_int* current_leaf_, int max_proof) {
+  void Run(std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>* leaves_,
+           std::atomic_int* current_leaf_, int max_proof) {
     visited_for_endgame_ = 0;
     n_endgames_ = 0;
     int n_visited;
     stats_.Reset();
     for (int i = (*current_leaf_)++; i < leaves_->size(); i = (*current_leaf_)++) {
       LeafToUpdate leaf = (*leaves_)[i];
-      TreeNode* node = leaf.Leaf();
+      TreeNode* node = (TreeNode*) leaf.Leaf();
       assert(node->IsLeaf());
       if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), max_proof)) {
         bool transposition = false;
@@ -157,9 +158,9 @@ class EvaluatorThread {
       } else {
         n_visited = AddManyChildren(leaf, max_proof);
       }
-      for (TreeNode* parent : leaf.Parents()) {
+      for (auto parent : leaf.Parents()) {
         parent->AddDescendants(n_visited);
-        parent->DecreaseNThreadsWorking();
+        ((TreeNode*) parent)->DecreaseNThreadsWorking();
       }
       node->UpdateFathers();
     }
@@ -188,9 +189,11 @@ class EvaluatorThread {
         + kCombineProb.log_derivative[(int) round((1 - root_eval.ProbGreaterEqual()) * 255)];
   }
 
-  NVisited AddManyChildren(const LeafToUpdate& leaf, int max_proof) {
-    std::vector<LeafToUpdate> descendants;
-    TreeNode* root = leaf.Leaf();
+  NVisited AddManyChildren(const LeafToUpdate<BaseTreeNode<TreeNode>>& leaf,
+                           int max_proof) {
+    std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> descendants;
+    auto root = leaf.Leaf();
+    TreeNode* root_node = (TreeNode*) root;
     int eval_goal = leaf.EvalGoal();
     int initial_log_derivative = root->MaxLogDerivative(eval_goal);
     bool transposition = false;
@@ -208,53 +211,43 @@ class EvaluatorThread {
     while (true) {
       ++i;
       if (evaluation.IsSolved() ||
-//          (abs(abs(root->ProbGreaterEqual(eval_goal) - 0.5) - original_prob) > 0.2) ||
           (proving && std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal)) > original_work) ||
           (!proving && (leaf.Loss() + ExpectedLoss(evaluation, original_prob)
           - initial_log_derivative < -kLogDerivativeMultiplier * 3)) ||
           *thread_finished_ ||
           transposition ||
           i > kMaxChildrenUpdates) {
-//        std::cout << std::setprecision(4) << original_prob << " " << evaluation.ProbGreaterEqual() << " "
-//        << evaluation.MaxLogDerivative() << " " << ExpectedLoss(evaluation, original_prob) << "\n";
-//        if (i == 1) {
-//          std::cout <<
-//              leaf.Loss() << " " << root->MaxLogDerivative(eval_goal)
-//              << " " << initial_log_derivative << " " << original_prob_distance << " " << abs(root->ProbGreaterEqual(eval_goal) - 0.5) << "\n";
-//        }
-//        std::cout << i << " ";
-//        if (rand() % 50 == 0) {
-//          std::cout << "\n";
-//        }
         break;
       }
       descendants.clear();
       assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
-      leaf.Leaf()->BestSingleDescendant(leaf.Copy(), &descendants);
+      root_node->BestSingleDescendant(leaf.Copy(), &descendants);
       if (descendants.empty()) {
         break;
       }
-      const LeafToUpdate& new_leaf = descendants[0];
-      assert(new_leaf.Leaf()->IsLeaf());
-      assert(new_leaf.Leaf()->NThreadsWorking() == 1);
-      if (new_leaf.Leaf()->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(), max_proof)) {
+      const auto& new_leaf = descendants[0];
+      TreeNode* new_leaf_node = (TreeNode*) new_leaf.Leaf();
+      assert(new_leaf_node->IsLeaf());
+      assert(new_leaf_node->NThreadsWorking() == 1);
+      if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(), max_proof)) {
         cur_n_visited = SolvePosition(new_leaf, &transposition);
       } else {
         cur_n_visited = AddChildren(new_leaf, &transposition);
       }
-      for (TreeNode* parent : new_leaf.Parents()) {
+      for (auto parent : new_leaf.Parents()) {
         parent->AddDescendants(cur_n_visited);
-        parent->DecreaseNThreadsWorking();
+        ((TreeNode*) parent)->DecreaseNThreadsWorking();
       }
-      new_leaf.Leaf()->UpdateFathers();
+      ((TreeNode*) new_leaf.Leaf())->UpdateFathers();
       n_visited += cur_n_visited;
-      leaf.Leaf()->UpdateFather();
+      root_node->UpdateFather();
     }
     return n_visited;
   }
 
-  NVisited AddChildren(const LeafToUpdate& leaf, bool* transposition) {
-    TreeNode* node = leaf.Leaf();
+  NVisited AddChildren(const LeafToUpdate<BaseTreeNode<TreeNode>>& leaf,
+                       bool* transposition) {
+    TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
     assert(node->NThreadsWorking() == 1);
     int depth = node->NEmpties() < 24 ? (node->NEmpties() < 22 ? 2 : 3) : 4;
@@ -335,8 +328,9 @@ class EvaluatorThread {
     return n_visited;
   }
 
-  NVisited SolvePosition(const LeafToUpdate& leaf, bool* transposition) {
-    TreeNode* node = leaf.Leaf();
+  NVisited SolvePosition(const LeafToUpdate<BaseTreeNode<TreeNode>>& leaf,
+                         bool* transposition) {
+    TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
     EvalLarge alpha = EvalToEvalLarge(leaf.Alpha());
     EvalLarge beta = EvalToEvalLarge(leaf.Beta());
@@ -456,7 +450,7 @@ class EvaluatorDerivative {
   std::atomic_bool thread_finished_;
 
   void Run() {
-    std::vector<LeafToUpdate> next_leaves;
+    std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> next_leaves;
     std::atomic_int current_leaf;
     UpdateWeakLowerUpper();
     while (!CheckFinished()) {
@@ -491,9 +485,8 @@ class EvaluatorDerivative {
     }
   }
 
-  std::vector<LeafToUpdate> GetNextPosition() {
-    std::vector<LeafToUpdate> result;
-    result = GetFirstPosition()->BestDescendants(threads_.size());
+  std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> GetNextPosition() {
+    auto result = GetFirstPosition()->BestDescendants(threads_.size());
     assert (!result.empty());
     return result;
   }

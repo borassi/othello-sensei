@@ -69,18 +69,17 @@ class ChildError: public std::exception {
   std::string msg_;
 };
 
-class TreeNode;
-
+template<class T>
 class LeafToUpdate {
  public:
-  LeafToUpdate(TreeNode* node, int eval_goal);
+  LeafToUpdate(T* node, int eval_goal);
 
   LeafToUpdate Copy() const {
     LeafToUpdate result = LeafToUpdate(leaf_, eval_goal_, alpha_, beta_, weak_lower_, weak_upper_, loss_);
     result.parents_ = {leaf_};
     return result;
   }
-  LeafToUpdate CopyToChild(TreeNode* node, double extra_loss) const;
+  LeafToUpdate CopyToChild(T* node, double extra_loss) const;
 
   Eval EvalGoal() const { return eval_goal_; }
   Eval Alpha() const { return alpha_; }
@@ -88,12 +87,12 @@ class LeafToUpdate {
   Eval WeakLower() const { return weak_lower_; }
   Eval WeakUpper() const { return weak_upper_; }
   double Loss() const { return loss_; }
-  const std::vector<TreeNode*>& Parents() const { return parents_; }
-  TreeNode* Leaf() const { return leaf_; }
+  const std::vector<T*>& Parents() const { return parents_; }
+  T* Leaf() const { return leaf_; }
 
  private:
-  TreeNode* leaf_;
-  std::vector<TreeNode*> parents_;
+  T* leaf_;
+  std::vector<T*> parents_;
   Eval eval_goal_;
   Eval alpha_;
   Eval beta_;
@@ -101,13 +100,15 @@ class LeafToUpdate {
   Eval weak_upper_;
   double loss_;
 
-  void UpdateAlphaBeta(TreeNode* leaf);
+  void UpdateAlphaBeta(T* leaf);
 
-  LeafToUpdate(TreeNode* leaf, Eval eval_goal, Eval alpha, Eval beta, Eval weak_lower, Eval weak_upper, double loss)
+  LeafToUpdate(T* leaf, Eval eval_goal, Eval alpha, Eval beta, Eval
+               weak_lower, Eval weak_upper, double loss)
     : leaf_(leaf), eval_goal_(eval_goal), alpha_(alpha), beta_(beta), weak_lower_(weak_lower), weak_upper_(weak_upper), loss_(loss) {}
 };
 
-bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right);
+template<class T>
+bool leaf_less(const LeafToUpdate<T>& left, const LeafToUpdate<T>& right);
 
 template<class T>
 class BaseTreeNode {
@@ -383,6 +384,31 @@ class BaseTreeNode {
     }
     return true;
   }
+
+  template<class Iterator>
+  T* BestChild(int eval_goal, Iterator children_start,
+                      Iterator children_end) {
+    assert(!IsLeaf());
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
+    const Evaluation& father_eval = GetEvaluation(eval_goal);
+    assert(!father_eval.IsSolved());
+    double best_child_value = -INFINITY;
+    T* best_child = nullptr;
+    for (auto child = children_start; child != children_end; ++child) {
+      const Evaluation& child_eval = (*child)->GetEvaluation(-eval_goal);
+      if (child_eval.IsSolved()) {
+        continue;
+      }
+      assert(father_eval.ProbGreaterEqual() >= 1 - child_eval.ProbGreaterEqual() - 0.001);
+      double cur_loss = child_eval.GetValue(father_eval, (*child)->GetNVisited
+          ());
+      if (cur_loss > best_child_value) {
+        best_child = *child;
+        best_child_value = cur_loss;
+      }
+    }
+    return best_child;
+  }
 };
 
 class TreeNode : public BaseTreeNode<TreeNode> {
@@ -523,14 +549,16 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     SetLeaf(weak_lower, weak_upper, kMinEvalLarge, kMaxEvalLarge, leaf_eval, depth, n_visited);
   }
 
-  bool BestSingleDescendant(const LeafToUpdate& node, std::vector<LeafToUpdate>* descendants) {
+  bool BestSingleDescendant(const LeafToUpdate<BaseTreeNode<TreeNode>>& node,
+                            std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>* descendants) {
     if (IsLeaf()) {
       IncreaseNThreadsWorking();
       descendants->push_back(node);
       return true;
     }
     assert(!GetEvaluation(node.EvalGoal()).IsSolved());
-    TreeNode* child = BestChild(node.EvalGoal());
+    TreeNode* child = BestChild(node.EvalGoal(),
+                                children_, children_ + n_children_);
     if (child == nullptr) {
       return false;
     }
@@ -542,14 +570,15 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return found;
   }
 
-  std::vector<LeafToUpdate> BestDescendants(int n_threads_working) {
-    std::vector<LeafToUpdate> result;
+  std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> BestDescendants(int n_threads_working) {
+    std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> result;
 
     int eval_goal = NextPositionEvalGoal(0, 1);
     if (n_threads_working == 1) {
-      BestDescendant(LeafToUpdate(this, eval_goal), &result);
+      BestDescendant(LeafToUpdate((BaseTreeNode<TreeNode>*) this, eval_goal),
+                     &result);
     } else {
-      BestDescendants2(this, &result, eval_goal, descendants_);
+      BestDescendants(this, &result, eval_goal, descendants_);
       int secondary_eval_goal = kLessThenMinEval;
       if (ProbGreaterEqual(eval_goal) == 0) {
         secondary_eval_goal = NextPositionEvalGoal(0.5, 1);
@@ -557,7 +586,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         secondary_eval_goal = NextPositionEvalGoal(0, 0.5);
       }
       if (secondary_eval_goal != kLessThenMinEval) {
-        BestDescendants2(this, &result, secondary_eval_goal, descendants_);
+        BestDescendants(this, &result, secondary_eval_goal, descendants_);
       }
     }
     return result;
@@ -771,30 +800,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return true;
   }
 
-  TreeNode* BestChild(int eval_goal) {
-    assert(!IsLeaf());
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    const Evaluation& father_eval = GetEvaluation(eval_goal);
-    assert(!father_eval.IsSolved());
-    double best_child_value = -INFINITY;
-    TreeNode* best_child = nullptr;
-    for (int i = 0; i < n_children_; ++i) {
-      TreeNode* child = children_[i];
-      const Evaluation& child_eval = child->GetEvaluation(-eval_goal);
-      if (child_eval.IsSolved()) {
-        continue;
-      }
-      assert(father_eval.ProbGreaterEqual() >= 1 - child_eval.ProbGreaterEqual() - 0.001);
-      double cur_loss = child_eval.GetValue(father_eval, child->GetNVisited());
-      if (cur_loss > best_child_value) {
-        best_child = child;
-        best_child_value = cur_loss;
-      }
-    }
-    return best_child;
-  }
-
-  bool BestDescendant(const LeafToUpdate& node, std::vector<LeafToUpdate>* descendants) {
+  bool BestDescendant(const LeafToUpdate<BaseTreeNode<TreeNode>>& node, std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>* descendants) {
     if (NThreadsWorking() > 0) {
       assert(!descendants->empty());
       return false;
@@ -805,7 +811,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
       return true;
     }
     assert(!GetEvaluation(node.EvalGoal()).IsSolved());
-    TreeNode* child = BestChild(node.EvalGoal());
+    TreeNode* child = BestChild(node.EvalGoal(), children_, children_ + n_children_);
     if (child == nullptr) {
       return false;
     }
@@ -816,28 +822,33 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return found;
   }
 
-  static void BestDescendants2(TreeNode* root, std::vector<LeafToUpdate>*
-      result, int eval_goal, int n_visited) {
+  static void BestDescendants(
+      BaseTreeNode<TreeNode>* root, std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>* result, int eval_goal,
+      int n_visited) {
     assert(!root->IsSolved());
     assert(!root->GetEvaluation(eval_goal).IsSolved());
-    std::priority_queue<LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)> next_nodes(&leaf_less);
+    std::priority_queue<
+        LeafToUpdate<BaseTreeNode<TreeNode>>,
+        std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>,
+        decltype(&leaf_less<BaseTreeNode<TreeNode>>)> next_nodes(&leaf_less<BaseTreeNode<TreeNode>>);
     std::unordered_set<TreeNode*> visited_nodes;
 
     next_nodes.push(LeafToUpdate(root, eval_goal));
     TreeNode* best_child;
 
     while (!next_nodes.empty() && result->size() < 200) {
-      LeafToUpdate current = next_nodes.top();
+      LeafToUpdate<BaseTreeNode<TreeNode>> current = next_nodes.top();
       next_nodes.pop();
       while (!current.Leaf()->IsLeaf()) {
-        TreeNode* father = current.Leaf();
+        TreeNode* father = (TreeNode*) current.Leaf();
         // Two different grandfathers could have added father, before computing
         // the children.
         if (visited_nodes.find(father) != visited_nodes.end()) {
           break;
         }
         visited_nodes.insert(father);
-        best_child = father->BestChild(current.EvalGoal());
+        best_child = father->BestChild(current.EvalGoal(), father->children_,
+                                       father->children_ + father->n_children_);
         const Evaluation& father_eval = father->GetEvaluation(current.EvalGoal());
         const Evaluation& best_child_eval = best_child->GetEvaluation(-current.EvalGoal());
         float best_child_prob = best_child_eval.ProbGreaterEqual();
@@ -871,15 +882,16 @@ class TreeNode : public BaseTreeNode<TreeNode> {
         }
         current = current.CopyToChild(best_child, 0);
       }
+      auto current_node = (TreeNode*) current.Leaf();
       if (current.Leaf()->IsLeaf() &&
-          visited_nodes.find(current.Leaf()) == visited_nodes.end() &&
-          current.Leaf()->NThreadsWorking() == 0) {
-        visited_nodes.insert(current.Leaf());
-        for (TreeNode* parent : current.Parents()) {
-          parent->IncreaseNThreadsWorking();
+          visited_nodes.find(current_node) == visited_nodes.end() &&
+          current_node->NThreadsWorking() == 0) {
+        visited_nodes.insert(current_node);
+        for (auto parent : current.Parents()) {
+          ((TreeNode*) parent)->IncreaseNThreadsWorking();
         }
         result->push_back(current);
-        assert(current.Leaf()->NThreadsWorking() == 1);
+        assert(current_node->NThreadsWorking() == 1);
       }
     }
   }

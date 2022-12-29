@@ -17,7 +17,10 @@
 #include <limits>
 #include "tree_node.h"
 
-LeafToUpdate::LeafToUpdate(TreeNode* leaf, int eval_goal) :
+class BookTreeNode;
+
+template<class T>
+LeafToUpdate<T>::LeafToUpdate(T* leaf, int eval_goal) :
     leaf_(leaf),
     parents_({leaf}),
     eval_goal_(static_cast<Eval>(eval_goal)),
@@ -30,13 +33,23 @@ LeafToUpdate::LeafToUpdate(TreeNode* leaf, int eval_goal) :
   assert(weak_lower_ <= alpha_ && alpha_ <= eval_goal_ && eval_goal_ <= beta_
          && beta_ <= weak_upper_);
 }
+template LeafToUpdate<BaseTreeNode<TreeNode>>::LeafToUpdate(
+    BaseTreeNode<TreeNode>* leaf, int eval_goal);
+template LeafToUpdate<BaseTreeNode<BookTreeNode>>::LeafToUpdate
+    (BaseTreeNode<BookTreeNode>* leaf, int eval_goal);
 
-void LeafToUpdate::UpdateAlphaBeta(TreeNode* node) {
+template<class T>
+void LeafToUpdate<T>::UpdateAlphaBeta(T* node) {
   alpha_ = MinEval(eval_goal_, MaxEval(alpha_, node->GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
   beta_ = MaxEval(eval_goal_, MinEval(beta_, node->GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
 }
+template void LeafToUpdate<BaseTreeNode<TreeNode>>::UpdateAlphaBeta(
+    BaseTreeNode<TreeNode>* node);
+template void LeafToUpdate<BaseTreeNode<BookTreeNode>>::UpdateAlphaBeta(
+    BaseTreeNode<BookTreeNode>* node);
 
-LeafToUpdate LeafToUpdate::CopyToChild(TreeNode* node, double extra_loss) const {
+template<class T>
+LeafToUpdate<T> LeafToUpdate<T>::CopyToChild(T* node, double extra_loss) const {
     LeafToUpdate leaf(node, -eval_goal_, -beta_, -alpha_, -weak_upper_, -weak_lower_, loss_ + extra_loss);
     leaf.parents_ = parents_;
     leaf.UpdateAlphaBeta(node);
@@ -45,7 +58,20 @@ LeafToUpdate LeafToUpdate::CopyToChild(TreeNode* node, double extra_loss) const 
            && beta_ <= weak_upper_);
     return leaf;
 }
+template LeafToUpdate<BaseTreeNode<TreeNode>>
+    LeafToUpdate<BaseTreeNode<TreeNode>>::CopyToChild(
+        BaseTreeNode<TreeNode>* node, double extra_loss) const;
+template LeafToUpdate<BaseTreeNode<BookTreeNode>>
+    LeafToUpdate<BaseTreeNode<BookTreeNode>>::CopyToChild(
+        BaseTreeNode<BookTreeNode>* node, double extra_loss) const;
 
-bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
+template<class T>
+bool leaf_less(const LeafToUpdate<T>& left, const LeafToUpdate<T>& right) {
   return left.Loss() < right.Loss();
 };
+template bool leaf_less<BaseTreeNode<TreeNode>>(
+    const LeafToUpdate<BaseTreeNode<TreeNode>>& left,
+    const LeafToUpdate<BaseTreeNode<TreeNode>>& right);
+template bool leaf_less<BaseTreeNode<BookTreeNode>>(
+    const LeafToUpdate<BaseTreeNode<BookTreeNode>>& left,
+    const LeafToUpdate<BaseTreeNode<BookTreeNode>>& right);
