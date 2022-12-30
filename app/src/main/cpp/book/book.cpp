@@ -156,6 +156,68 @@ int Book::GetValueFileOffset(int size) {
   return size - kMinFileSize;
 }
 
+void Book::AddChildren(const Board& b, const std::vector<BookTreeNode*>& new_children, const std::vector<Board> ancestors) {
+  BookTreeNode father = Get(b.Player(), b.Opponent()).value();
+  assert(father.IsLeaf());
+  std::vector<BookTreeNode> old_children = MissingChildren(b, new_children);
+  std::vector<BookTreeNode*> all_children = new_children;
+  for (auto& child : old_children) {
+    all_children.push_back(&child);
+  }
+  // This updates old_children by adding the father.
+  father.SetChildren(all_children);
+  NVisited visited = 0;
+  for (const auto& child : new_children) {
+    Put(*child, false, false);
+    visited += child->GetNVisited();
+  }
+  for (const auto& child : old_children) {
+    Put(child, true, false);
+  }
+  father.AddDescendants(visited);
+  Put(father, true, true);
+  UpdateVisited(father, ancestors, visited);
+}
+
+std::vector<BookTreeNode> Book::MissingChildren(const Board& b, const std::vector<BookTreeNode*>& children) {
+  std::vector<BookTreeNode> result;
+  const auto expected_children = GetUniqueNextBoardsWithPass(b);
+  for (const auto& [child_board, unused_move] : expected_children) {
+    bool found = false;
+    for (const auto& child : children) {
+      if (child->ToBoard() == child_board) {
+        assert(!found);
+        found = true;
+      }
+    }
+    if (!found) {
+      result.push_back(Get(child_board).value());
+    }
+  }
+  return result;
+}
+
+void Book::UpdateFathers(const BookTreeNode& b) {
+  for (Board father_board : b.Fathers()) {
+    auto father = Get(father_board.Player(), father_board.Opponent()).value();
+
+    auto children_board = GetUniqueNextBoardsWithPass(father_board);
+    std::vector<BookTreeNode> children_memory;
+    std::vector<BookTreeNode*> children_pointer;
+    children_memory.reserve(children_board.size());
+    children_pointer.reserve(children_board.size());
+
+    for (auto child_board : children_board) {
+      children_memory.push_back(Get(child_board.first).value());
+      children_pointer.push_back(&children_memory[children_memory.size() - 1]);
+    }
+
+    assert(!father.IsLeaf());
+    father.UpdateFather(children_pointer);
+    Put(father, true, true);
+  }
+}
+
 ValueFile& Book::GetValueFile(int size) {
   ValueFile& file = value_files_[GetValueFileOffset(size)];
   assert(file.Size() == size);

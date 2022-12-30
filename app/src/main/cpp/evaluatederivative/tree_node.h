@@ -519,7 +519,7 @@ class BaseTreeNode {
           ((T*) parent)->IncreaseNThreadsWorking();
         }
         result->push_back(current);
-        assert(current_node->NThreadsWorking() == 1);
+        assert(father->NThreadsWorking() == 1);
       }
     }
   }
