@@ -18,12 +18,14 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <unordered_map>
+#include <utility>
 
 #include "book.h"
 #include "book_tree_node.h"
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
+#include "../utils/misc.h"
 
 const std::string kTempDir = "app/testdata/tmp/book_test";
 
@@ -40,6 +42,42 @@ std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower,
 BookTreeNode TestBookTreeNode(BitPattern player, BitPattern opponent, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   auto node = TestTreeNode(Board(player, opponent), leaf_eval, weak_lower, weak_upper, n_visited);
   return BookTreeNode(*node);
+}
+
+Book BookWithPositions(
+    const std::vector<std::string>& lines,
+    const std::unordered_map<Board, int>& evals,
+    const std::unordered_set<std::pair<Board, Board>, PairHash>& skip,
+    const std::unordered_map<Board, int>& visited) {
+  Book book(kTempDir);
+  book.Clean();
+
+  std::vector<BookTreeNode> memory;
+  memory.reserve(60 * (lines.size() + 1));
+
+  std::string first_line = lines[0];
+  BookTreeNode start_node(*TestTreeNode(Board(first_line), 0, -63, 63, 1));
+  book.Put(start_node);
+
+  for (const auto& line : lines) {
+    std::vector<Board> parents;
+    for (int i = first_line.length(); i < line.length(); i += 2) {
+      parents.push_back(Board(line.substr(0, i)));
+    }
+    std::vector<BookTreeNode*> children;
+    Board father = Board(line);
+    for (Board child : GetNextBoardsWithPass(father)) {
+      if (skip.contains(std::make_pair(father, child))) {
+        continue;
+      }
+      int eval = GetOrDefault<Board, int>(evals, child, 41);
+      int n_visited = GetOrDefault<Board, int>(visited, child, 1);
+      memory.push_back(*TestTreeNode(child, eval, -63, 63, n_visited));
+      children.push_back(&memory[memory.size() - 1]);
+    }
+    book.AddChildren(father, children, parents);
+  }
+  return book;
 }
 
 class BookParameterizedFixture : public ::testing::TestWithParam<bool> {
@@ -220,35 +258,15 @@ TEST(Book, AddChildrenStartingPosition) {
 }
 
 TEST_P(BookParameterizedFixture, UpdateFathers) {
-  Book book(kTempDir);
-  book.Clean();
-
-  std::vector<BookTreeNode> memory;
-  memory.reserve(40);
-
-  BookTreeNode e6f4(*TestTreeNode(Board("e6f4"), -10, -63, 63, 1));
-  book.Put(e6f4);
-
+  std::vector<std::string> lines = {"e6f4", "e6f4c3", "e6f4c3c4", "e6f4d3", "e6f4d3c4"};
+  std::unordered_map<Board, int> evals = {{Board("e6f4d3c4c3"), 0}};
+  std::unordered_set<std::pair<Board, Board>, PairHash> skip = {};
   bool add_only_once = GetParam();
-  for (std::string moves : {"e6f4", "e6f4c3", "e6f4c3c4", "e6f4d3", "e6f4d3c4"}) {
-    std::vector<Board> parents;
-    for (int i = 4; i < moves.length(); i += 2) {
-      parents.push_back(Board(moves.substr(0, i)));
-    }
-    std::vector<BookTreeNode*> successors;
-    for (Board b : GetNextBoardsWithPass(Board(moves))) {
-      int eval = 41;
-      if (b == Board("e6f4d3c4c3")) {
-        eval = 0;
-        if (add_only_once && moves == "e6f4d3c4") {
-          continue;
-        }
-      }
-      memory.push_back(*TestTreeNode(b, eval, -63, 63, 1));
-      successors.push_back(&memory[memory.size() - 1]);
-    }
-    book.AddChildren(Board(moves), successors, parents);
+  if (add_only_once) {
+    skip = {{Board("e6f4d3c4"), Board("e6f4d3c4c3")}};
   }
+  Book book = BookWithPositions(lines, evals, skip, /*visited=*/{});
+
   // Has two "descendants" with evaluation 0.
   EXPECT_NEAR(book.Get(Board("e6f4"))->GetEval(), 1, 1);
 

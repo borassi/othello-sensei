@@ -64,6 +64,7 @@ target_link_libraries(
         board
         book
         book_tree_node
+        misc
         GTest::gmock
         GTest::gtest
         GTest::gtest_main

@@ -22,6 +22,7 @@
 #include <chrono>
 #include <limits>
 #include <math.h>
+#include <unordered_map>
 #include <vector>
 
 class ElapsedTime {
@@ -105,4 +106,19 @@ template<typename T>
 bool Contains(std::vector<T> v, T elem) {
   return std::find(v.begin(), v.end(), elem) != v.end();
 }
+
+template<typename K, typename V>
+V GetOrDefault(const std::unordered_map<K, V>& map, K key, V default_value) {
+  if (auto iter = map.find(key); iter != map.end()) {
+    return iter->second;
+  }
+  return default_value;
+}
+
+struct PairHash {
+  template<class T1, class T2>
+  std::size_t operator() (const std::pair<T1, T2>& pair) const {
+      return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
+  }
+};
 #endif  // UTILS_MISC_H

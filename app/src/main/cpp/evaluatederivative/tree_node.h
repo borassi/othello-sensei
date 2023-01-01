@@ -972,7 +972,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return found;
   }
 
- protected:
   BaseTreeNode<TreeNode>* NextChildren(
       const LeafToUpdate<BaseTreeNode<TreeNode>>& current,
       const std::unordered_set<TreeNode*>& visited_nodes,

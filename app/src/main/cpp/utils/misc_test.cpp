@@ -66,3 +66,12 @@ TEST(Vector, VectorContains) {
   EXPECT_TRUE(Contains<int>({1, 2, 3}, 2));
   EXPECT_FALSE(Contains<int>({1, 2, 3}, 4));
 }
+
+TEST(Misc, GetOrDefault) {
+  std::unordered_map<std::string, int> map;
+  map["luke"] = 1;
+  map["vader"] = 2;
+  EXPECT_EQ(1, (GetOrDefault<std::string, int>(map, "luke", 10)));
+  EXPECT_EQ(2, (GetOrDefault<std::string, int>(map, "vader", 10)));
+  EXPECT_EQ(10, (GetOrDefault<std::string, int>(map, "leila", 10)));
+}
