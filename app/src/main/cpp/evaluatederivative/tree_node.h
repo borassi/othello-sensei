@@ -766,7 +766,7 @@ class LeafToUpdate {
   static std::optional<LeafToUpdate> BestDescendant(LeafToUpdate& result) {
     while (!result.leaf_->IsLeaf()) {
       Node* best_child = result.BestChild(result.eval_goal_);
-      if (best_child == nullptr || best_child->NThreadsWorking() > 0) {
+      if (best_child == nullptr) {
         return std::nullopt;
       }
       result.ToChild(best_child, 0);
@@ -779,11 +779,12 @@ class LeafToUpdate {
   }
 
   static std::vector<LeafToUpdate> BestDescendants(Node* node) {
+    std::unordered_set<Board> visited;
     std::vector<LeafToUpdate> result;
 
     int eval_goal = node->NextPositionEvalGoal(0, 1);
     LeafToUpdate best_descendant(node, eval_goal);
-    BestDescendants(node, eval_goal, &result);
+    BestDescendants(node, eval_goal, &result, &visited);
     int secondary_eval_goal = kLessThenMinEval;
     if (node->ProbGreaterEqual(eval_goal) == 0) {
       secondary_eval_goal = node->NextPositionEvalGoal(0.5, 1);
@@ -791,7 +792,7 @@ class LeafToUpdate {
       secondary_eval_goal = node->NextPositionEvalGoal(0, 0.5);
     }
     if (secondary_eval_goal != kLessThenMinEval) {
-      BestDescendants(node, secondary_eval_goal, &result);
+      BestDescendants(node, secondary_eval_goal, &result, &visited);
     }
     return result;
   }
@@ -876,7 +877,7 @@ class LeafToUpdate {
   }
 
   Node* NextChildren(
-      const std::unordered_set<Node*>& visited_nodes,
+      const std::unordered_set<Board>& visited_nodes,
       NextNodesPriorityQueue* next_nodes) {
     Node* best_child = BestChild(EvalGoal());
     const Evaluation& father_eval = leaf_->GetEvaluation(EvalGoal());
@@ -896,12 +897,12 @@ class LeafToUpdate {
           + ((*child) == best_child ? 0 : log(best_child_prob) *
           kLogDerivativeMultiplier);
       assert(extra_loss <= 0);
-      if ((*child)->NThreadsWorking() == 0 &&
-          !child_eval.IsSolved() &&
+      if (!child_eval.IsSolved() &&
           *child != best_child &&
-          !visited_nodes.contains(*child) &&
+          !visited_nodes.contains((*child)->ToBoard()) &&
           prob < 1 &&
           Loss() + extra_loss > -3 * kLogDerivativeMultiplier) {
+        assert((*child)->NThreadsWorking() == 0);
         LeafToUpdate child_leaf = CopyToChild((*child), extra_loss);
         next_nodes->push(child_leaf);
       }
@@ -911,38 +912,45 @@ class LeafToUpdate {
   };
 
   static void BestDescendants(
-      Node* root, int eval_goal, std::vector<LeafToUpdate>* result) {
+      Node* root, int eval_goal, std::vector<LeafToUpdate>* result,
+      std::unordered_set<Board>* visited) {
     assert(!root->IsSolved());
     assert(!root->GetEvaluation(eval_goal).IsSolved());
     NextNodesPriorityQueue next_nodes(&leaf_less);
-    std::unordered_set<Node*> visited_nodes;
 
     next_nodes.push(LeafToUpdate(root, eval_goal));
 
+    TreeNode* current_leaf;
     while (!next_nodes.empty() && result->size() < 200) {
       LeafToUpdate current = next_nodes.top();
+      current_leaf = current.Leaf();
       next_nodes.pop();
-      auto father = current.Leaf();
-      while (!father->IsLeaf()) {
+      while (!current.Leaf()->IsLeaf()) {
+        Board current_board = current_leaf->ToBoard();
         // Two different grandfathers could have added father, before computing
         // the children.
-        if (visited_nodes.find(father) != visited_nodes.end()) {
+        // We cannot just keep the first because the second might have a higher
+        // value. However, when we popped the father, we know that no other
+        // "path" can have a higher value, so we should ignore "father" from now
+        // on.
+        if (visited->find(current_board) != visited->end()) {
           break;
         }
-        visited_nodes.insert(father);
-        auto best_child = current.NextChildren(visited_nodes, &next_nodes);
+        visited->insert(current_board);
+        auto best_child = current.NextChildren(*visited, &next_nodes);
         current = current.CopyToChild(best_child, 0);
-        father = (Node*) current.Leaf();
+        current_leaf = current.Leaf();
       }
-      if (father->IsLeaf() &&
-          visited_nodes.find(father) == visited_nodes.end() &&
-          father->NThreadsWorking() == 0) {
-        visited_nodes.insert(father);
+      if (current_leaf->IsLeaf() &&
+          visited->find(current_leaf->ToBoard()) == visited->end()) {
+        assert(current_leaf->NThreadsWorking() == 0);
+        visited->insert(current_leaf->ToBoard());
         for (auto parent : current.Parents()) {
+          assert(visited->find(parent->ToBoard()) != visited->end());
           ((Node*) parent)->IncreaseNThreadsWorking();
         }
         result->push_back(current);
-        assert(father->NThreadsWorking() == 1);
+        assert(current_leaf->NThreadsWorking() == 1);
       }
     }
   }
