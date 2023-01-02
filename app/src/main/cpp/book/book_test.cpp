@@ -39,9 +39,14 @@ std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower,
   t->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(leaf_eval), 4, n_visited);
   return t;
 }
-BookTreeNode TestBookTreeNode(BitPattern player, BitPattern opponent, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
-  auto node = TestTreeNode(Board(player, opponent), leaf_eval, weak_lower, weak_upper, n_visited);
+
+BookTreeNode TestBookTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+  auto node = TestTreeNode(b, leaf_eval, weak_lower, weak_upper, n_visited);
   return BookTreeNode(*node);
+}
+
+BookTreeNode TestBookTreeNode(BitPattern player, BitPattern opponent, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+  return TestBookTreeNode(Board(player, opponent), leaf_eval, weak_lower, weak_upper, n_visited);
 }
 
 Book BookWithPositions(
@@ -308,6 +313,12 @@ TEST_P(BookParameterizedFixture, UpdateFathers) {
   EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), add_only_once ? 127 : 128);
 }
 
+TEST_P(BookParameterizedFixture, BestChild) {
+  std::vector<std::string> lines = {"e6f4", "e6f4c3", "e6f4c3c4", "e6f4d3", "e6f4d3c4"};
+  std::unordered_map<Board, int> evals = {{Board("e6f4d3c4c3"), 0}};
+  Book book = BookWithPositions(lines, evals, /*skip=*/{}, /*visited=*/{});
+
+}
 INSTANTIATE_TEST_SUITE_P(
     BookParameterized,
     BookParameterizedFixture,

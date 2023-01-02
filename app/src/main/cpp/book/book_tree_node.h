@@ -82,6 +82,7 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     Eval last_1 = (Eval) serialized[i++];
     Eval first_0 = (Eval) serialized[i++];
     is_leaf_ = (bool) serialized[i++];
+    n_threads_working_ = 0;
 
     while (true) {
       CompressedFlip father = (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
@@ -115,6 +116,7 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
 
   template<class T>
   void SetupFromOther(const T& other) {
+    assert(other.NThreadsWorking() == 0);
     min_evaluation_ = -63;
     weak_lower_ = -63;
     weak_upper_ = 63;
@@ -123,9 +125,11 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     Board unique = other.ToBoard().Unique();
     player_ = unique.Player();
     opponent_ = unique.Opponent();
+    n_threads_working_ = 0;
   }
 
   std::vector<char> Serialize() {
+    assert(NThreadsWorking() == 0);
     std::vector<char> result;
     SerializedBoard board = ToBoard().Serialize();
     int last_1 = kMinEval - 1;
@@ -265,14 +269,13 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     }
     return result;
   }
+
  private:
   bool is_leaf_;
   std::unordered_set<CompressedFlip> fathers_;
 
-  bool BestDescendant(const LeafToUpdate<BaseTreeNode<BookTreeNode>>& node,
-                      std::vector<LeafToUpdate<BaseTreeNode<BookTreeNode>>>*
-                          descendants) override {
-    return true;
+  BookTreeNode* BestChild(int eval_goal) const override {
+    return nullptr;
   }
 
   BaseTreeNode<BookTreeNode>* NextChildren(

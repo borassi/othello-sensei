@@ -24,11 +24,16 @@
 
 using testing::ElementsAre;
 
-std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval weak_lower, Eval weak_upper, Eval eval, NVisited n_visited) {
-  std::shared_ptr<TreeNode> node(new TreeNode());
-  node->Reset(b, 0, 1);
-  node->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(eval), 4, n_visited);
-  return node;
+std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+  std::shared_ptr<TreeNode> t(new TreeNode());
+  t->Reset(b.Player(), b.Opponent(), 4, 0);
+//  Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited)
+  t->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(leaf_eval), 4, n_visited);
+  return t;
+}
+BookTreeNode TestBookTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+  auto node = TestTreeNode(b, leaf_eval, weak_lower, weak_upper, n_visited);
+  return BookTreeNode(*node);
 }
 
 BookTreeNode RandomBookTreeNode(Board b) {
@@ -36,7 +41,7 @@ BookTreeNode RandomBookTreeNode(Board b) {
   int weak_upper = weak_lower + ((rand() % 32) * 2);
   int eval = 2 * (rand() % 60) - 60;
   int n_visited = rand() % 2000 + 1;
-  return BookTreeNode(*TestTreeNode(b, weak_lower, weak_upper, eval, n_visited));
+  return TestBookTreeNode(b, eval, weak_lower, weak_upper, n_visited);
 }
 
 class BookTreeNodeTestFixture : public ::testing::TestWithParam<bool> {
@@ -67,10 +72,10 @@ TEST(BookTreeNodeTestFixture, Serialize) {
 }
 
 TEST(BookTreeNodeTestFixture, Merge) {
-  auto book_tree_node1 = BookTreeNode(*TestTreeNode(Board("e6f4c3c4d3"), -5, 1, 1, 10));
+  auto book_tree_node1 = BookTreeNode(*TestTreeNode(Board("e6f4c3c4d3"), 1, -5, 1, 10));
   book_tree_node1.AddFather(12);
 
-  BookTreeNode book_tree_node2(*TestTreeNode(Board("e6f4d3c4c3"), -7, 3, 3, 12));
+  BookTreeNode book_tree_node2(*TestTreeNode(Board("e6f4d3c4c3"), 3, -7, 3, 12));
   book_tree_node2.AddFather(13);
 
   book_tree_node1.Merge(book_tree_node2);
@@ -130,25 +135,10 @@ TEST(BookTreeNodeTestFixture, CopyAndMove) {
 }
 
 TEST_P(BookTreeNodeTestFixture, UpdateChildren) {
-  TreeNode e6_tree;
-  e6_tree.Reset(Board("e6"), 0, 1);
-  e6_tree.SetLeaf(-63, 63, EvalToEvalLarge(1), 4, 40);
-  BookTreeNode e6(e6_tree);
-
-  TreeNode e6f4_tree;
-  e6f4_tree.Reset(Board("e6f4"), 0, 1);
-  e6f4_tree.SetLeaf(-63, 63, EvalToEvalLarge(10), 4, 40);
-  BookTreeNode e6f4(e6f4_tree);
-
-  TreeNode e6f6_tree;
-  e6f6_tree.Reset(Board("e6f6"), 0, 1);
-  e6f6_tree.SetLeaf(-63, 63, EvalToEvalLarge(30), 4, 40);
-  BookTreeNode e6f6(e6f6_tree);
-
-  TreeNode e6d6_tree;
-  e6d6_tree.Reset(Board("e6d6"), 0, 1);
-  e6d6_tree.SetLeaf(-63, 63, EvalToEvalLarge(30), 4, 40);
-  BookTreeNode e6d6(e6d6_tree);
+  BookTreeNode e6 = TestBookTreeNode(Board("e6"), 0, -63, 63, 40);
+  BookTreeNode e6f4 = TestBookTreeNode(Board("e6f4"), 10, -63, 63, 40);
+  BookTreeNode e6f6 = TestBookTreeNode(Board("e6f6"), 30, -63, 63, 40);
+  BookTreeNode e6d6 = TestBookTreeNode(Board("e6d6"), 30, -63, 63, 40);
 
   e6.SetChildren({&e6f4, &e6f6, &e6d6});
 
@@ -167,6 +157,18 @@ TEST_P(BookTreeNodeTestFixture, UpdateChildren) {
   EXPECT_TRUE(e6d6.IsLeaf());
   EXPECT_FALSE(e6.IsLeaf());
   EXPECT_EQ(e6.GetEval(), -10);
+}
+
+TEST(BookTreeNode, BestDescendants) {
+  BookTreeNode e6 = TestBookTreeNode(Board("e6"), 0, -63, 63, 40);
+  BookTreeNode e6f4 = TestBookTreeNode(Board("e6f4"), 10, -63, 63, 40);
+  BookTreeNode e6f6 = TestBookTreeNode(Board("e6f6"), 11, -63, 63, 40);
+  BookTreeNode e6d6 = TestBookTreeNode(Board("e6d6"), 30, -63, 63, 40);
+
+  e6.SetChildren({&e6f4, &e6f6, &e6d6});
+
+  EXPECT_THAT(e6.BestDescendants(1), ElementsAre(
+      LeafToUpdate<BaseTreeNode<BookTreeNode>>(&e6f4, -9, -19, 1, -63, 63, 0)));
 }
 
 INSTANTIATE_TEST_SUITE_P(

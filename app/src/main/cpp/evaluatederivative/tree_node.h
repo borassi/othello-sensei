@@ -90,6 +90,12 @@ class LeafToUpdate {
   const std::vector<T*>& Parents() const { return parents_; }
   T* Leaf() const { return leaf_; }
 
+  LeafToUpdate(T* leaf, Eval eval_goal, Eval alpha, Eval beta, Eval
+               weak_lower, Eval weak_upper, double loss)
+    : leaf_(leaf), eval_goal_(eval_goal), alpha_(alpha), beta_(beta), weak_lower_(weak_lower), weak_upper_(weak_upper), loss_(loss) {}
+
+  bool operator==(const LeafToUpdate<T>& other) const = default;
+
  private:
   T* leaf_;
   std::vector<T*> parents_;
@@ -101,10 +107,6 @@ class LeafToUpdate {
   double loss_;
 
   void UpdateAlphaBeta(T* leaf);
-
-  LeafToUpdate(T* leaf, Eval eval_goal, Eval alpha, Eval beta, Eval
-               weak_lower, Eval weak_upper, double loss)
-    : leaf_(leaf), eval_goal_(eval_goal), alpha_(alpha), beta_(beta), weak_lower_(weak_lower), weak_upper_(weak_upper), loss_(loss) {}
 };
 
 template<class T>
@@ -292,9 +294,29 @@ class BaseTreeNode {
     descendants_ += n;
   }
 
-  virtual bool BestDescendant(
+  bool BestDescendant(
       const LeafToUpdate<BaseTreeNode<T>>& node,
-      std::vector<LeafToUpdate<BaseTreeNode<T>>>* descendants) = 0;
+      std::vector<LeafToUpdate<BaseTreeNode<T>>>* descendants) {
+    if (NThreadsWorking() > 0) {
+      assert(!descendants->empty());
+      return false;
+    }
+    if (IsLeaf()) {
+      IncreaseNThreadsWorking();
+      descendants->push_back(node);
+      return true;
+    }
+    assert(!GetEvaluation(node.EvalGoal()).IsSolved());
+    T* child = BestChild(node.EvalGoal());
+    if (child == nullptr) {
+      return false;
+    }
+    bool found = child->BestDescendant(node.CopyToChild(child, 0), descendants);
+    if (found) {
+      IncreaseNThreadsWorking();
+    }
+    return found;
+  }
 
   std::vector<LeafToUpdate<BaseTreeNode<T>>> BestDescendants(int n_threads_working) {
     std::vector<LeafToUpdate<BaseTreeNode<T>>> result;
@@ -318,6 +340,22 @@ class BaseTreeNode {
     return result;
   }
 
+  void IncreaseNThreadsWorking(int amount) {
+    n_threads_working_ += amount;
+  }
+
+  void IncreaseNThreadsWorking() {
+    n_threads_working_++;
+  }
+
+  void DecreaseNThreadsWorking() {
+    n_threads_working_--;
+  }
+
+  int NThreadsWorking() const {
+    return n_threads_working_;
+  }
+
  protected:
   BitPattern player_;
   BitPattern opponent_;
@@ -329,6 +367,7 @@ class BaseTreeNode {
   Eval weak_lower_;
   Eval weak_upper_;
   Eval min_evaluation_;
+  std::atomic_uint8_t n_threads_working_;
 
   virtual const std::optional<std::lock_guard<std::mutex>> Lock() const {
     return std::nullopt;
@@ -412,9 +451,10 @@ class BaseTreeNode {
     return true;
   }
 
+  virtual T* BestChild(int eval_goal) const = 0;
+
   template<class Iterator>
-  T* BestChild(int eval_goal, Iterator children_start,
-                      Iterator children_end) {
+  T* BestChild(int eval_goal, Iterator children_start, Iterator children_end) const {
     assert(!IsLeaf());
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     const Evaluation& father_eval = GetEvaluation(eval_goal);
@@ -574,22 +614,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     return std::optional<std::lock_guard<std::mutex>>{mutex_};
   }
 
-  void IncreaseNThreadsWorking(int amount) {
-    n_threads_working_ += amount;
-  }
-
-  void IncreaseNThreadsWorking() {
-    n_threads_working_++;
-  }
-
-  void DecreaseNThreadsWorking() {
-    n_threads_working_--;
-  }
-
-  int NThreadsWorking() const {
-    return n_threads_working_;
-  }
-
   inline bool IsValid() const {
     return leaf_eval_ != kLessThenMinEvalLarge;
   }
@@ -698,8 +722,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
       return true;
     }
     assert(!GetEvaluation(node.EvalGoal()).IsSolved());
-    TreeNode* child = BestChild(node.EvalGoal(),
-                                children_, children_ + n_children_);
+    TreeNode* child = BestChild(node.EvalGoal());
     if (child == nullptr) {
       return false;
     }
@@ -804,7 +827,6 @@ class TreeNode : public BaseTreeNode<TreeNode> {
   TreeNode** fathers_;
   EvalLarge leaf_eval_;
   mutable std::mutex mutex_;
-  std::atomic_uint8_t n_threads_working_;
   Square n_children_;
   Square n_fathers_;
   Square depth_;
@@ -948,28 +970,9 @@ class TreeNode : public BaseTreeNode<TreeNode> {
     assert(AllValidEvals());
   }
 
-  bool BestDescendant(const LeafToUpdate<BaseTreeNode<TreeNode>>& node,
-                      std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>*
-                          descendants) override {
-    if (NThreadsWorking() > 0) {
-      assert(!descendants->empty());
-      return false;
-    }
-    if (IsLeaf()) {
-      IncreaseNThreadsWorking();
-      descendants->push_back(node);
-      return true;
-    }
-    assert(!GetEvaluation(node.EvalGoal()).IsSolved());
-    TreeNode* child = BestChild(node.EvalGoal(), children_, children_ + n_children_);
-    if (child == nullptr) {
-      return false;
-    }
-    bool found = child->BestDescendant(node.CopyToChild(child, 0), descendants);
-    if (found) {
-      IncreaseNThreadsWorking();
-    }
-    return found;
+  TreeNode* BestChild(int eval_goal) const override {
+    return BaseTreeNode<TreeNode>::BestChild(
+        eval_goal, children_, children_ + n_children_);
   }
 
   BaseTreeNode<TreeNode>* NextChildren(
@@ -979,8 +982,7 @@ class TreeNode : public BaseTreeNode<TreeNode> {
       override {
     return BaseTreeNode::NextChildren(
         current, children_, (children_ + n_children_),
-        visited_nodes,
-        next_nodes);
+        visited_nodes, next_nodes);
   }
 };
 
