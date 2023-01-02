@@ -142,14 +142,14 @@ class EvaluatorThread {
       index_(index),
       thread_finished_(thread_finished) {}
 
-  void Run(std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>>* leaves_,
+  void Run(std::vector<TreeNodeLeafToUpdate>* leaves_,
            std::atomic_int* current_leaf_, int max_proof) {
     visited_for_endgame_ = 0;
     n_endgames_ = 0;
     int n_visited;
     stats_.Reset();
     for (int i = (*current_leaf_)++; i < leaves_->size(); i = (*current_leaf_)++) {
-      LeafToUpdate leaf = (*leaves_)[i];
+      TreeNodeLeafToUpdate leaf = (*leaves_)[i];
       TreeNode* node = (TreeNode*) leaf.Leaf();
       assert(node->IsLeaf());
       if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), max_proof)) {
@@ -189,9 +189,7 @@ class EvaluatorThread {
         + kCombineProb.log_derivative[(int) round((1 - root_eval.ProbGreaterEqual()) * 255)];
   }
 
-  NVisited AddManyChildren(const LeafToUpdate<BaseTreeNode<TreeNode>>& leaf,
-                           int max_proof) {
-    std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> descendants;
+  NVisited AddManyChildren(const TreeNodeLeafToUpdate& leaf, int max_proof) {
     auto root = leaf.Leaf();
     TreeNode* root_node = (TreeNode*) root;
     int eval_goal = leaf.EvalGoal();
@@ -219,17 +217,18 @@ class EvaluatorThread {
           i > kMaxChildrenUpdates) {
         break;
       }
-      descendants.clear();
       assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
-      root_node->BestSingleDescendant(leaf.Copy(), &descendants);
-      if (descendants.empty()) {
+      TreeNodeLeafToUpdate new_leaf_start = leaf.Copy();
+      auto new_leaf_opt = TreeNodeLeafToUpdate::BestDescendant(new_leaf_start);
+      if (!new_leaf_opt) {
         break;
       }
-      const auto& new_leaf = descendants[0];
-      TreeNode* new_leaf_node = (TreeNode*) new_leaf.Leaf();
+      const auto& new_leaf = *new_leaf_opt;
+      TreeNode* new_leaf_node = new_leaf.Leaf();
       assert(new_leaf_node->IsLeaf());
       assert(new_leaf_node->NThreadsWorking() == 1);
-      if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(), max_proof)) {
+      if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(),
+                                    max_proof)) {
         cur_n_visited = SolvePosition(new_leaf, &transposition);
       } else {
         cur_n_visited = AddChildren(new_leaf, &transposition);
@@ -245,7 +244,7 @@ class EvaluatorThread {
     return n_visited;
   }
 
-  NVisited AddChildren(const LeafToUpdate<BaseTreeNode<TreeNode>>& leaf,
+  NVisited AddChildren(const TreeNodeLeafToUpdate& leaf,
                        bool* transposition) {
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
@@ -328,7 +327,7 @@ class EvaluatorThread {
     return n_visited;
   }
 
-  NVisited SolvePosition(const LeafToUpdate<BaseTreeNode<TreeNode>>& leaf,
+  NVisited SolvePosition(const TreeNodeLeafToUpdate& leaf,
                          bool* transposition) {
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
@@ -450,7 +449,7 @@ class EvaluatorDerivative {
   std::atomic_bool thread_finished_;
 
   void Run() {
-    std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> next_leaves;
+    std::vector<TreeNodeLeafToUpdate> next_leaves;
     std::atomic_int current_leaf;
     UpdateWeakLowerUpper();
     while (!CheckFinished()) {
@@ -485,8 +484,18 @@ class EvaluatorDerivative {
     }
   }
 
-  std::vector<LeafToUpdate<BaseTreeNode<TreeNode>>> GetNextPosition() {
-    auto result = GetFirstPosition()->BestDescendants(threads_.size());
+  std::vector<TreeNodeLeafToUpdate> GetNextPosition() {
+    auto first_position = GetFirstPosition();
+    std::vector<TreeNodeLeafToUpdate> result;
+    if (threads_.size() > 1) {
+      result = TreeNodeLeafToUpdate::BestDescendants(first_position);
+    } else {
+      auto best_descendant =
+          TreeNodeLeafToUpdate::BestDescendant(first_position);
+      assert(best_descendant);
+      result = {*best_descendant};
+    }
+
     assert (!result.empty());
     return result;
   }
