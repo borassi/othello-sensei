@@ -35,7 +35,6 @@ import board.Board;
 
 import constants.Constants;
 import helpers.FileAccessor;
-import helpers.Utils;
 import main.Main;
 import thor.Game;
 import jni.JNI;
@@ -218,8 +217,8 @@ public class MobileUI extends AppCompatActivity implements UI {
         blackTurn ? board.getPlayerDisks() : board.getOpponentDisks(),
         blackTurn ? board.getOpponentDisks() : board.getPlayerDisks(),
         board.getEmptySquares(),
-        Utils.prettyPrintDouble(nVisited),
-        Utils.prettyPrintDouble(nVisited * 1000.0 / milliseconds));
+        JNI.prettyPrintDouble(nVisited),
+        JNI.prettyPrintDouble(nVisited * 1000.0 / milliseconds));
     setExtraInfoText(text, 26);
   }
 

@@ -31,7 +31,7 @@ import bitpattern.BitPattern;
 import board.Board;
 import constants.Constants;
 import evaluateposition.TreeNodeInterface;
-import helpers.Utils;
+import jni.JNI;
 import ui_desktop.CaseAnnotations;
 
 public class BoardView extends View {
@@ -151,16 +151,16 @@ public class BoardView extends View {
     if (annotation.thorGames < 0 || !wantThor) {
       rows =
           String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
-          Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
+          JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
               lower == upper ?
-                  Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
-                      Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
+                  JNI.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
+                      JNI.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
                   ("[" + (-upper/100) + ", " + (-lower/100) + "]")
           );
     } else {
       rows = (annotation.thorGames == 0 ? "" : annotation.thorGames) + "\n" +
           String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
-          + Utils.prettyPrintDouble(treeNode.getDescendants());
+          + JNI.prettyPrintDouble(treeNode.getDescendants());
     }
 
     Paint paint = new Paint();

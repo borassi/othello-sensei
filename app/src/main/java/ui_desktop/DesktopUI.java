@@ -46,7 +46,6 @@ import board.Board;
 import constants.Constants;
 import evaluateposition.TreeNodeInterface;
 import helpers.FileAccessor;
-import helpers.Utils;
 
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
@@ -284,16 +283,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (!thorActive.isSelected() || annotations.thorGames < 0) {
       rows =
           String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
-          Utils.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
+          JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
               lower == upper ?
-                  Utils.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
-                      Utils.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
+                  JNI.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
+                      JNI.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
                   ("[" + (-upper/100) + ", " + (-lower/100) + "]")
           );
     } else {
       rows = (annotations.thorGames == 0 ? "" : annotations.thorGames) + "\n" +
           String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
-          + Utils.prettyPrintDouble(treeNode.getDescendants());
+          + JNI.prettyPrintDouble(treeNode.getDescendants());
     }
 
     int x = BitPattern.getX(move);
@@ -331,7 +330,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         rows = new StringBuilder("?");
       }
     }
-    rows.append(" ").append(Utils.prettyPrintDouble(board.getDescendants()));
+    rows.append(" ").append(JNI.prettyPrintDouble(board.getDescendants()));
 
     int roundEval = roundEval(board.getEval());
     for (int evalGoal = Math.min(board.getWeakUpper(), roundEval + 400);
@@ -341,14 +340,14 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (float) Math.round((0.0049 + (1-2*0.0049) * prob) * 100)));
 
       if (prob == 1) {
-        rows.append(Utils.prettyPrintDouble(board.disproofNumber(evalGoal)));
+        rows.append(JNI.prettyPrintDouble(board.disproofNumber(evalGoal)));
       } else if (prob == 0) {
-        rows.append(Utils.prettyPrintDouble(board.proofNumber(evalGoal)));
+        rows.append(JNI.prettyPrintDouble(board.proofNumber(evalGoal)));
       } else {
         if (annotations.father != null) {
-          rows.append(Utils.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
+          rows.append(JNI.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
         } else {
-          rows.append(Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
+          rows.append(JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
         }
       }
     }
@@ -461,8 +460,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
     String text =
-        "Positions: " + Utils.prettyPrintDouble(nVisited) + "\n" +
-            "Positions/s: " + Utils.prettyPrintDouble(nVisited * 1000 / milliseconds) + "\n";
+        "Positions: " + JNI.prettyPrintDouble(nVisited) + "\n" +
+            "Positions/s: " + JNI.prettyPrintDouble(nVisited * 1000 / milliseconds) + "\n";
     SwingUtilities.invokeLater(() -> extras.setText(text));
     if (annotations == null) {
       return;
@@ -476,8 +475,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
         continue;
       }
       firstPositionText.append(String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
-          Utils.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
-          Utils.prettyPrintDouble(board.proofNumber(evalGoal)), Utils.prettyPrintDouble(board.disproofNumber(evalGoal))));
+          JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
+          JNI.prettyPrintDouble(board.proofNumber(evalGoal)), JNI.prettyPrintDouble(board.disproofNumber(evalGoal))));
     }
 
     String tmp = firstPositionText.toString();

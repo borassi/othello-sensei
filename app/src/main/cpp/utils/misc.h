@@ -22,6 +22,8 @@
 #include <chrono>
 #include <limits>
 #include <math.h>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -121,4 +123,6 @@ struct PairHash {
       return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
   }
 };
+
+std::string PrettyPrintDouble(double d);
 #endif  // UTILS_MISC_H

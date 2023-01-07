@@ -75,3 +75,22 @@ TEST(Misc, GetOrDefault) {
   EXPECT_EQ(2, (GetOrDefault<std::string, int>(map, "vader", 10)));
   EXPECT_EQ(10, (GetOrDefault<std::string, int>(map, "leila", 10)));
 }
+
+TEST(Misc, PrettyPrintDouble) {
+  EXPECT_EQ("1.0E-16", PrettyPrintDouble(1E-16));
+  EXPECT_EQ("1.0E+30", PrettyPrintDouble(1E30));
+  EXPECT_EQ("1.0", PrettyPrintDouble(1));
+  EXPECT_EQ("1.0", PrettyPrintDouble(1));
+  EXPECT_EQ("9.9", PrettyPrintDouble(9.949));
+  EXPECT_EQ("10", PrettyPrintDouble(9.951));
+  EXPECT_EQ("10", PrettyPrintDouble(10.49));
+  EXPECT_EQ("11", PrettyPrintDouble(10.51));
+  EXPECT_EQ("99", PrettyPrintDouble(99));
+  EXPECT_EQ("100", PrettyPrintDouble(99.5));
+  EXPECT_EQ("999", PrettyPrintDouble(999.49));
+  EXPECT_EQ("1.0k", PrettyPrintDouble(999.51));
+  EXPECT_EQ("1.1k", PrettyPrintDouble(1051));
+  EXPECT_EQ("999k", PrettyPrintDouble(999499));
+  EXPECT_EQ("1.0M", PrettyPrintDouble(999501));
+  EXPECT_EQ("1.0G", PrettyPrintDouble(999500001));
+}

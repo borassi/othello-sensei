@@ -77,4 +77,6 @@ public class JNI {
   public static native ArrayList<Board> uniqueChildren(Board board);
 
   public native void addToBook(Board father, ArrayList<Board> parents);
+
+  public native static String prettyPrintDouble(double d);
 }

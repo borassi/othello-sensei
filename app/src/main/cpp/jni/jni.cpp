@@ -25,6 +25,8 @@
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../utils/assets.h"
+#include <jni.h>
+#include <jni.h>
 
 constexpr int kNumEvaluators = 60;
 
@@ -522,6 +524,11 @@ Java_jni_JNI_uniqueChildren(JNIEnv *env, jclass clazz, jobject board) {
                            BoardToJava(env, child.first));
   }
   return result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_jni_JNI_prettyPrintDouble(JNIEnv *env, jclass clazz, jdouble d) {
+  return env->NewStringUTF(PrettyPrintDouble(d).c_str());
 }
 
 #ifdef __cplusplus

@@ -16,6 +16,8 @@
 
 #include <chrono>
 #include <ctime>
+#include <iostream>
+#include <locale>
 #include "misc.h"
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
@@ -32,4 +34,45 @@ double GaussianCDF(double value) {
 
 double GaussianCDF(double x, double mean, double stddev) {
   return GaussianCDF((x - mean) / stddev);
+}
+
+std::string PrettyPrintDouble(double d) {
+  std::locale::global(std::locale("en_US.UTF8"));
+  if (d == INFINITY) {
+    return "+Inf";
+  } else if (d == -INFINITY) {
+    return "-Inf";
+  } else if (isnan(d)) {
+    return "NaN";
+  } else if (abs(d) < 1.E-20) {
+    return "0";
+  }
+  if (d < 0) {
+    return "-" + PrettyPrintDouble(-d);
+  }
+  int kSuffixLength = 13;
+  std::string suffixes[] = {
+      "p", "n", "μ", "m", "", "k", "M", "G",
+      "T", "P", "E", "Z", "Y"};
+  int orderOfMagnitude = (((int) floor(log10(d)) + 300) / 3) - 100;
+  // Between 1 and 999.999999
+  double rescaledL = d / pow(10, 3 * orderOfMagnitude);
+  if (rescaledL > 999.5) {
+    orderOfMagnitude++;
+    rescaledL = 1;
+  }
+  int suffixesPosition = orderOfMagnitude + 4;
+  char buffer[32];
+  if (suffixesPosition >= kSuffixLength || suffixesPosition < 0) {
+    snprintf(buffer, sizeof(buffer), "%.1E", d);
+    return std::string(buffer);
+  }
+  std::string suffix = suffixes[suffixesPosition];
+
+  if (rescaledL < 9.95) {
+    snprintf(buffer, sizeof(buffer), "%.1f%s", rescaledL, suffix.c_str());
+    return std::string(buffer);
+  }
+  snprintf(buffer, sizeof(buffer), "%.0f%s", rescaledL, suffix.c_str());
+  return std::string(buffer);
 }
