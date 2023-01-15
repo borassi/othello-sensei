@@ -15,37 +15,3 @@
  */
 
  #include "book_tree_node.h"
-
-std::ostream& operator<<(std::ostream& stream, const HashMapNode& n) {
-  stream << "[" << (int) n.Size() << " " << n.Offset() << "]";
-  return stream;
-}
-
-std::ostream& operator<<(std::ostream& stream, const BookTreeNode& b) {
-  Board board = b.ToBoard();
-  stream << b.Player() << " " << b.Opponent() << ": ["
-         << (int) b.Lower() << " " << (int) b.Upper() << "]";
-  for (int i = b.WeakLower(); i < b.WeakUpper(); i += 2) {
-    Evaluation eval = b.GetEvaluation(i);
-    float p = eval.ProbGreaterEqual();
-    if (p == 0) {
-      stream << std::setprecision(0) << " " << eval.DisproofNumber();
-    } else if (p == 1) {
-      stream << std::setprecision(0) << " " << eval.ProofNumber();
-    } else {
-      stream << std::setprecision(2) << " " << p;
-    }
-  }
-  stream << (b.IsLeaf() ? " (leaf)" : " (internal)");
-  if (b.Fathers().empty()) {
-    stream << " (no fathers)";
-  } else {
-    stream << " (fathers: ";
-    for (const auto& father : b.Fathers()) {
-      stream << father;
-    }
-    stream << ")";
-  }
-  stream << " (vis: " << b.GetNVisited() << ")";
-  return stream;
-}

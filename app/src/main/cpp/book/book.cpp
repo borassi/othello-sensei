@@ -15,6 +15,10 @@
  */
 #include "book.h"
 
+std::ostream& operator<<(std::ostream& stream, const HashMapNode& n) {
+  stream << "[" << (int) n.Size() << " " << n.Offset() << "]";
+  return stream;
+}
 
 Book::Book(const std::string& folder) : folder_(folder), value_files_() {
   for (int i = kMinFileSize; i <= kMaxFileSize; ++i) {
@@ -33,52 +37,46 @@ Book::Book(const std::string& folder) : folder_(folder), value_files_() {
   }
 }
 
-std::optional<BookTreeNode> Book::Get(BitPattern player, BitPattern opponent) {
-  return std::get<2>(Find(player, opponent));
-}
-
-std::pair<std::fstream, std::optional<BookTreeNode>> Book::Remove(
-    BitPattern player, BitPattern opponent) {
-  auto triple = Find(player, opponent);
-  auto file = std::move(std::get<0>(triple));
-  auto hash_map_node = std::move(std::get<1>(triple));
-  auto tree_node = std::move(std::get<2>(triple));
-  if (tree_node) {
-    HashMapNode empty;
-    GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
-    file.write((char*) &empty, sizeof(HashMapNode));
-    file.seekp((int64_t) file.tellp() - sizeof(HashMapNode));
-    file.seekg(file.tellp());
-    --book_size_;
+BookNode* Book::Get(const Board& b) {
+  Board unique = b.Unique();
+  auto iterator = modified_nodes_.find(unique);
+  if (iterator != modified_nodes_.end()) {
+    return &(iterator->second);
   }
-  return std::make_pair(std::move(file), tree_node);
+  HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
+  if (!node.IsEmpty()) {
+    std::vector<char> serialized = GetValueFile(node.Size()).Get(node.Offset());
+    iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
+    return &iterator->second;
+  }
+  iterator = modified_nodes_.try_emplace(unique, this, unique).first;
+  return &iterator->second;
 }
 
-void Book::Put(const BookTreeNode& node, const std::vector<Board>& ancestors) {
-  Put(node, false, true);
-  assert(Get(node.ToBoard()));
-  UpdateVisited(Get(node.ToBoard()).value(), ancestors, node.GetNVisited());
+void Book::Commit() {
+  for (const auto& [unused_board, node] : modified_nodes_) {
+    Commit(node);
+  }
+  auto file = OpenFile(IndexFilename());
+  UpdateSizes(&file);
+  modified_nodes_.clear();
 }
 
-void Book::Put(const BookTreeNode& node, bool overwrite, bool update_fathers) {
-  auto triple = Find(node.Player(), node.Opponent());
-  auto file = std::move(std::get<0>(triple));
-  auto hash_map_node = std::move(std::get<1>(triple));
-  auto stored_node = std::move(std::get<2>(triple));
-  BookTreeNode node_to_store(node);
+void Book::Commit(const BookNode& node) {
+  if (!node.IsValid()) {
+    return;
+  }
+  auto pair = Find(node.Player(), node.Opponent());
+  auto file = std::move(pair.first);
+  auto hash_map_node = std::move(pair.second);
 
-  if (stored_node) {
+  if (!hash_map_node.IsEmpty()) {
     GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
-    if (!overwrite) {
-      assert(stored_node->IsLeaf());
-      node_to_store.Merge(*stored_node);
-    }
   } else {
-    assert(!overwrite);
     ++book_size_;
   }
 
-  std::vector<char> to_store = node_to_store.Serialize();
+  std::vector<char> to_store = node.Serialize();
   auto size = to_store.size();
   auto offset = GetValueFile(size).Add(to_store);
   HashMapNode to_be_stored(size, offset);
@@ -88,16 +86,17 @@ void Book::Put(const BookTreeNode& node, bool overwrite, bool update_fathers) {
   } else {
     Resize(&file, {to_be_stored});
   }
-  UpdateSizes(&file);
-  if (update_fathers) {
-    UpdateFathers(node_to_store);
-  }
+  // So that the asserts below work.
+  file.close();
+  assert(Get(node.ToBoard()));
+  assert(Get(node.ToBoard())->IsValid());
+  assert(IsSizeOK());
 }
 
 bool Book::IsSizeOK() {
   std::fstream index_file = OpenFile(IndexFilename());
   if (OffsetToFilePosition(hash_map_size_) != FileSize(index_file)) {
-    std::cout << "Wrong hash map size " << hash_map_size_ << ". Should be " << FileSize(index_file) << "\n";
+    std::cout << "Wrong hash map size " << OffsetToFilePosition(hash_map_size_) << ". Should be " << FileSize(index_file) << "\n";
     return false;
   }
   HashMapNode node;
@@ -132,7 +131,7 @@ void Book::Print(int start, int end) {
       continue;
     }
     std::cout << "  " << hash << ": size=" << (int) node.Size() << " off="
-              << node.Offset() << " -> " << GetBookTreeNode(node) << "\n";
+              << node.Offset() << " -> " << node << "\n";
   }
 }
 
@@ -148,74 +147,13 @@ void Book::Clean() {
   UpdateSizes(&file);
   std::vector<HashMapNode> nodes(kInitialHashMapSize);
   file.write((char*) &nodes[0], kInitialHashMapSize * sizeof(HashMapNode));
+  modified_nodes_.clear();
 }
 
 int Book::GetValueFileOffset(int size) {
   assert(size >= kMinFileSize);
   assert(size <= kMaxFileSize);
   return size - kMinFileSize;
-}
-
-void Book::AddChildren(const Board& b, const std::vector<BookTreeNode*>& new_children, const std::vector<Board> ancestors) {
-  BookTreeNode father = Get(b.Player(), b.Opponent()).value();
-  assert(father.IsLeaf());
-  std::vector<BookTreeNode> old_children = MissingChildren(b, new_children);
-  std::vector<BookTreeNode*> all_children = new_children;
-  for (auto& child : old_children) {
-    all_children.push_back(&child);
-  }
-  // This updates old_children by adding the father.
-  father.SetChildren(all_children);
-  NVisited visited = 0;
-  for (const auto& child : new_children) {
-    Put(*child, false, false);
-    visited += child->GetNVisited();
-  }
-  for (const auto& child : old_children) {
-    Put(child, true, false);
-  }
-  father.AddDescendants(visited);
-  Put(father, true, true);
-  UpdateVisited(father, ancestors, visited);
-}
-
-std::vector<BookTreeNode> Book::MissingChildren(const Board& b, const std::vector<BookTreeNode*>& children) {
-  std::vector<BookTreeNode> result;
-  const auto expected_children = GetUniqueNextBoardsWithPass(b);
-  for (const auto& [child_board, unused_move] : expected_children) {
-    bool found = false;
-    for (const auto& child : children) {
-      if (child->ToBoard() == child_board) {
-        assert(!found);
-        found = true;
-      }
-    }
-    if (!found) {
-      result.push_back(Get(child_board).value());
-    }
-  }
-  return result;
-}
-
-void Book::UpdateFathers(const BookTreeNode& b) {
-  for (Board father_board : b.Fathers()) {
-    auto father = Get(father_board.Player(), father_board.Opponent()).value();
-
-    auto children_board = GetUniqueNextBoardsWithPass(father_board);
-    std::vector<BookTreeNode> children_memory;
-    std::vector<BookTreeNode*> children_pointer;
-    children_memory.reserve(children_board.size());
-    children_pointer.reserve(children_board.size());
-
-    for (auto child_board : children_board) {
-      children_memory.push_back(Get(child_board.first).value());
-      children_pointer.push_back(&children_memory[children_memory.size() - 1]);
-    }
-
-    assert(!father.IsLeaf());
-    father.UpdateFather(children_pointer);
-    Put(father, true, true);
-  }
 }
 
 ValueFile& Book::GetValueFile(int size) {
@@ -230,11 +168,6 @@ void Book::UpdateSizes(std::fstream* file) {
   file->write((char*) &book_size_, sizeof(book_size_));
 }
 
-BookTreeNode Book::GetBookTreeNode(HashMapNode node) {
-  std::vector<char> v = GetValueFile(node.Size()).Get(node.Offset());
-  return BookTreeNode(v);
-}
-
 HashMapIndex Book::RepositionHash(HashMapIndex board_hash) {
   HashMapIndex hash = board_hash % PowerAfterHashMapSize();
   if (hash >= hash_map_size_) {
@@ -243,13 +176,13 @@ HashMapIndex Book::RepositionHash(HashMapIndex board_hash) {
   return hash;
 }
 
-std::tuple<std::fstream, HashMapNode, std::optional<BookTreeNode>>
-    Book::Find(BitPattern player, BitPattern opponent) {
+std::pair<std::fstream, HashMapNode> Book::Find(BitPattern player, BitPattern opponent) {
   Board unique = Board(player, opponent).Unique();
   player = unique.Player();
   opponent = unique.Opponent();
   auto hash = RepositionHash(HashFull(player, opponent));
   std::fstream file = OpenFile(IndexFilename());
+  assert(file);
   file.seekg(OffsetToFilePosition(hash));
   HashMapNode node;
 
@@ -258,19 +191,20 @@ std::tuple<std::fstream, HashMapNode, std::optional<BookTreeNode>>
     if (node.IsEmpty()) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
       file.seekp(file.tellg());
-      return std::make_tuple(std::move(file), node, std::nullopt);
+      return std::make_pair(std::move(file), node);
     }
-    auto book_tree_node = GetBookTreeNode(node);
+    std::vector<char> v = GetValueFile(node.Size()).Get(node.Offset());
+    BookNode book_tree_node(this, v, false);
     Board b = book_tree_node.ToBoard();
     if (b.Player() == player && b.Opponent() == opponent) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
       file.seekp(file.tellg());
-      return std::make_tuple(std::move(file), node, book_tree_node);
+      return std::make_pair(std::move(file), node);
     }
 
     if (file.tellg() == OffsetToFilePosition(hash_map_size_)) {
       file.seekp(file.tellg());
-      return std::make_tuple(std::move(file), HashMapNode(), std::nullopt);
+      return std::make_pair(std::move(file), HashMapNode());
     }
   }
 }
@@ -301,7 +235,8 @@ void Book::Resize(std::fstream* file, std::vector<HashMapNode> add_elements) {
   }
 
   for (const HashMapNode& node_to_move : add_elements) {
-    BookTreeNode node = GetBookTreeNode(node_to_move);
+    std::vector<char> v = GetValueFile(node_to_move.Size()).Get(node_to_move.Offset());
+    BookNode node(this, v, false);
     Board board = node.ToBoard();
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
     HashMapNode board_in_position;
@@ -315,11 +250,3 @@ void Book::Resize(std::fstream* file, std::vector<HashMapNode> add_elements) {
   }
 }
 
-bool Book::IsEmpty(std::fstream& file, HashMapIndex hash) {
-  auto old_position = file.tellg();
-  file.seekg(OffsetToFilePosition(hash));
-  HashMapNode node;
-  file.read((char*) &node, sizeof(node));
-  file.seekg(old_position);
-  return node.IsEmpty();
-}

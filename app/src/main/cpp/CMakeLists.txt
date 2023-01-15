@@ -23,9 +23,12 @@
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.22.1)
 
 # Declares and names the project.
+
+SET(CMAKE_C_COMPILER clang)
+SET(CMAKE_CPP_COMPILER /usr/bin/clang++-13)
 
 project("othellosensei" CXX)
 
@@ -37,7 +40,7 @@ IF(NOT DEFINED PROFILE)
 ENDIF()
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pthread -fPIC")
-set(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD 20)
 
 include(FetchContent)
 FetchContent_Declare(

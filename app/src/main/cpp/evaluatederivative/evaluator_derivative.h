@@ -117,6 +117,8 @@ class TreeNodeSupplier {
 
  private:
   std::mutex mutex_;
+  // References are not invalidated:
+  // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
   std::unordered_map<std::tuple<BitPattern, BitPattern, u_int8_t>,
                      TreeNode, TupleHasher, TupleEqual> tree_nodes_;
 
@@ -224,7 +226,7 @@ class EvaluatorThread {
         break;
       }
       const auto& new_leaf = *new_leaf_opt;
-      TreeNode* new_leaf_node = new_leaf.Leaf();
+      const TreeNode* new_leaf_node = new_leaf.Leaf();
       assert(new_leaf_node->IsLeaf());
       assert(new_leaf_node->NThreadsWorking() == 1);
       if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(),

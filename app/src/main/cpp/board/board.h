@@ -66,7 +66,7 @@ public:
     return Player() == rhs.Player()
            && Opponent() == rhs.Opponent();
   }
-  std::vector<Board> AllTranspositions() {
+  std::vector<Board> AllTranspositions() const {
     auto players = AllBitPatternTranspositions(player_);
     auto opponents = AllBitPatternTranspositions(opponent_);
     assert(players.size() == opponents.size());
@@ -79,7 +79,7 @@ public:
     return result;
   }
 
-  Board Unique() {
+  Board Unique() const {
     auto boards = AllTranspositions();
     Board best_board = boards[0];
 

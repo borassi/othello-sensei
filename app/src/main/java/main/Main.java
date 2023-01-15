@@ -110,8 +110,10 @@ public class Main implements Runnable {
   public void undo() {
     stop();
     if (oldBoards.size() > 0) {
-      board = oldBoards.remove(oldBoards.size() - 1);
-      blackTurn = oldBlackTurns.remove(oldBlackTurns.size() - 1);
+      oldBoards.remove(oldBoards.size() - 1);
+      board = oldBoards.get(oldBoards.size() - 1);
+      oldBlackTurns.remove(oldBlackTurns.size() - 1);
+      blackTurn = oldBlackTurns.get(oldBlackTurns.size() - 1);
       ui.setCases(board, blackTurn);
     }
   }
@@ -123,10 +125,12 @@ public class Main implements Runnable {
   
   public void setBoard(Board b, boolean blackTurn) {
     stop();
-    this.board = b;
-    this.blackTurn = blackTurn;
-    this.oldBoards.clear();
-    this.oldBlackTurns.clear();
+    board = b;
+    blackTurn = blackTurn;
+    oldBoards.clear();
+    oldBoards.add(board);
+    oldBlackTurns.clear();
+    oldBlackTurns.add(blackTurn);
     ui.setCases(board, blackTurn);
   }
 
@@ -149,7 +153,13 @@ public class Main implements Runnable {
   @Override
   public void run() {
     waitingTasks.getAndAdd(-1);
-    Board board = new Board(this.board.getPlayer(), this.board.getOpponent());
+    Board board = this.board.deepCopy();
+
+    ArrayList<Board> oldBoards = new ArrayList<>();
+    for(Board oldBoard : this.oldBoards) {
+      oldBoards.add(oldBoard.deepCopy());
+    }
+
     ArrayList<Board> boards = getBoards();
     if (boards.isEmpty()) {
       showMCTSEvaluations();
@@ -165,7 +175,6 @@ public class Main implements Runnable {
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
     if (ui.useBook() && ui.delta() > 0) {
-      System.out.println("Adding to book" + board);
       EVALUATOR.addToBook(board, oldBoards);
     }
     if (waitingTasks.get() == 0) {
@@ -191,9 +200,9 @@ public class Main implements Runnable {
     } catch (IllegalArgumentException ex) {
       return;
     }
-    oldBoards.add(oldBoard);
-    oldBlackTurns.add(blackTurn);
     blackTurn = !blackTurn;
+    oldBoards.add(board);
+    oldBlackTurns.add(blackTurn);
 
     if (JNI.haveToPass(board)) {
       board = board.move(0);
@@ -300,7 +309,6 @@ public class Main implements Runnable {
       int move = moveFromBoard(oldBoards.get(i-1), oldBoards.get(i));
       game += new PositionIJ(move).toString();
     }
-    game += new PositionIJ(moveFromBoard(oldBoards.get(oldBoards.size() - 1), board));
     clipboard.setContents(new StringSelection(game), null);
   }
 }

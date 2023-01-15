@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <memory>
 #include <optional>
 #include <stdio.h>
 #include <string>
@@ -38,21 +39,38 @@ constexpr HashMapIndex kInitialHashMapSize = 8;
 constexpr HashMapIndex kNumElementsOffset = sizeof(HashMapIndex) / sizeof(char);
 constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 
-class Book {
+class HashMapNode {
+ public:
+  HashMapNode() : size_(0), offset_(0) {}
+  HashMapNode(u_int8_t size, BookFileOffset offset) : size_(size), offset_(offset) {}
 
+  BookFileOffset Offset() const { return offset_; }
+  u_int8_t Size() const { return size_; }
+  bool IsEmpty() const { return size_ == 0; }
+  bool operator==(const HashMapNode& other) const = default;
+
+ private:
+  BookFileOffset offset_;
+  u_int8_t size_;
+} __attribute__((packed));
+
+std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
+
+class Book;
+
+typedef BookTreeNode<Book> BookNode;
+
+class Book {
  public:
   Book(const std::string& folder);
 
-  std::optional<BookTreeNode> Get(BitPattern player, BitPattern opponent);
-  std::optional<BookTreeNode> Get(Board b) {
-    return Get(b.Player(), b.Opponent());
+  BookNode* Get(const Board& b);
+
+  BookNode* Get(BitPattern player, BitPattern opponent) {
+    return Get(Board(player, opponent));
   }
 
-  void AddChildren(const Board& b, const std::vector<BookTreeNode*>& new_children, const std::vector<Board> ancestors);
-
-  BookTreeNode GetBookTreeNode(HashMapNode node);
-
-  void Put(const BookTreeNode& node, const std::vector<Board>& ancestors = {});
+  void Commit();
 
   bool IsSizeOK();
 
@@ -67,6 +85,13 @@ class Book {
   std::vector<ValueFile> value_files_;
   HashMapIndex hash_map_size_;
   HashMapIndex book_size_;
+  // References are not invalidated:
+  // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
+  std::unordered_map<Board, BookNode> modified_nodes_;
+
+  void Commit(const BookNode& node);
+
+  BookNode GetBookNode(HashMapNode node);
 
   int GetValueFileOffset(int size);
 
@@ -74,24 +99,11 @@ class Book {
 
   void UpdateSizes(std::fstream* file);
 
-  void Put(const BookTreeNode& node, bool overwrite, bool update_fathers);
+  void Put(const BookNode& node, bool overwrite, bool update_fathers);
 
-  std::vector<BookTreeNode> MissingChildren(const Board& b, const std::vector<BookTreeNode*>& children);
+  std::vector<BookNode> MissingChildren(const Board& b, const std::vector<BookNode*>& children);
 
-  void UpdateFathers(const BookTreeNode& b);
-
-  void UpdateVisited(const BookTreeNode& leaf,
-                     const std::vector<Board>& ancestors,
-                     NVisited visited) {
-    BookTreeNode ancestor = leaf;
-    for (auto it = ancestors.rbegin(); it != ancestors.rend(); ++it) {
-      Board ancestor_board = *it;
-      assert(Contains(ancestor.Fathers(), ancestor_board.Unique()));
-      ancestor = Get(ancestor_board).value();
-      ancestor.AddDescendants(visited);
-      Put(ancestor, true, false);
-    }
-  }
+  void UpdateFathers(const BookNode& b);
 
   u_int64_t OffsetToFilePosition(HashMapIndex offset) {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);
@@ -108,14 +120,9 @@ class Book {
 
   HashMapIndex RepositionHash(HashMapIndex board_hash);
 
-  std::pair<std::fstream, std::optional<BookTreeNode>> Remove(BitPattern player, BitPattern opponent);
-
-  std::tuple<std::fstream, HashMapNode, std::optional<BookTreeNode>>
-      Find(BitPattern player, BitPattern opponent);
+  std::pair<std::fstream, HashMapNode> Find(BitPattern player, BitPattern opponent);
 
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);
-
-  bool IsEmpty(std::fstream& file, HashMapIndex hash);
 };
 
 

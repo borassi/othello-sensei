@@ -72,6 +72,56 @@ target_link_libraries(
 )
 
 add_library(
+        test_utils
+        test_utils.h
+)
+
+set_target_properties(
+        test_utils PROPERTIES LINKER_LANGUAGE CXX
+)
+
+target_link_libraries(
+        test_utils
+        LINK_PRIVATE
+        book
+        book_tree_node
+        get_moves
+        tree_node
+)
+
+
+add_library(
+        book_leaf_to_update
+        leaf_to_update_book.h
+        leaf_to_update_book.cpp
+)
+
+target_link_libraries(
+        book_leaf_to_update
+        LINK_PRIVATE
+        book
+        book_tree_node
+        get_moves
+        tree_node
+)
+
+add_executable(
+        book_leaf_to_update_test
+        leaf_to_update_book_test.cpp
+)
+
+target_link_libraries(
+        book_leaf_to_update_test
+        LINK_PRIVATE
+        book_leaf_to_update
+        test_utils
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
+
+add_library(
         book_tree_node
         book_tree_node.h
         book_tree_node.cpp
@@ -97,8 +147,26 @@ target_link_libraries(
         board
         book_tree_node
         get_moves
+        test_utils
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
         -no-pie
+)
+
+add_executable(
+        expand_book_main
+        expand_book_main.cpp
+)
+
+target_link_libraries(
+        expand_book_main
+        LINK_PRIVATE
+        book
+        book_leaf_to_update
+        evaluator_alpha_beta
+        evaluator_derivative
+        hash_map
+        parse_flags
+        pattern_evaluator
 )

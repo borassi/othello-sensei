@@ -50,16 +50,15 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 
 class JNIWrapper {
  public:
-  static jobject TreeNodeToJava(const std::optional<BookTreeNode>& n, JNIEnv* env) {
-    if (!n) {
+  static jobject TreeNodeToJava(TreeNode* n, JNIEnv* env) {
+    if (n == nullptr || !n->IsValid()) {
       return NULL;
     }
-    BookTreeNode* node = new BookTreeNode(*n);
     jclass TreeNodeCPP = env->FindClass("jni/TreeNodeCPP");
     return env->NewObject(
         TreeNodeCPP,
         env->GetMethodID(TreeNodeCPP, "<init>", "(J)V"),
-        (jlong) node);
+        (jlong) n);
   }
 
   JNIWrapper() :
@@ -78,11 +77,12 @@ class JNIWrapper {
           std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
-    if (!book_.Get(Board()).has_value()) {
+    if (!book_.Get(Board())->IsValid()) {
       std::shared_ptr<TreeNode> t(new TreeNode());
       t->Reset(Board().Player(), Board().Opponent(), 4, 0);
       t->SetLeaf(-63, 63, 0, 1, 1);
-      book_.Put(BookTreeNode(*t));
+      book_.Get(Board())->Update(*t, {});
+      book_.Commit();
     }
   }
 
@@ -155,11 +155,7 @@ class JNIWrapper {
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
-    TreeNode* node = evaluator_derivative_[0]->GetFirstPosition();
-    if (node == nullptr) {
-      return NULL;
-    }
-    return TreeNodeToJava(*node, env);
+    return TreeNodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
   }
 
   jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
@@ -185,10 +181,7 @@ class JNIWrapper {
         }
       }
     }
-    if (node == nullptr) {
-      return NULL;
-    }
-    return TreeNodeToJava(BookTreeNode(*node), env);
+    return TreeNodeToJava(node, env);
   }
 
   void Empty() {
@@ -242,23 +235,19 @@ class JNIWrapper {
   }
 
   void AddToBook(const Board& father, const std::vector<Board>& parents) {
-    auto expected_children = GetUniqueNextBoardsWithPass(father);
-    if (!book_.Get(father).has_value()) {
+    if (!book_.Get(father)->IsValid()) {
       return;
     }
-    std::vector<BookTreeNode> children;
-    std::vector<BookTreeNode*> children_pointers;
+    std::vector<TreeNode*> children;
     children.reserve(last_boards_.size());
-    children_pointers.reserve(last_boards_.size());
+    NVisited n_visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
       TreeNode* child = evaluator_derivative_[i]->GetFirstPosition();
-      if (expected_children.find(child->ToBoard()) == expected_children.end()) {
-        return;
-      }
-      children.push_back(BookTreeNode(*child));
-      children_pointers.push_back(&children[children.size() - 1]);
+      children.push_back(child);
+      n_visited += child->GetNVisited();
     }
-    book_.AddChildren(father, children_pointers, parents);
+    book_.Get(father)->AddChildrenToBook(children, parents, n_visited);
+    book_.Commit();
   }
 
  private:
@@ -298,10 +287,10 @@ fileAccessor) {
   env->CallVoidMethod(obj, mid, (jlong) new JNIWrapper());
 }
 
-BookTreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
+TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
   jclass cls = env->GetObjectClass(tree_node_java);
   jmethodID mid = env->GetMethodID(cls, "getNodeAddress", "()J");
-  return (BookTreeNode*) env->CallLongMethod(tree_node_java, mid);
+  return (TreeNode*) env->CallLongMethod(tree_node_java, mid);
 }
 
 JNIEXPORT void JNICALL Java_jni_JNI_finalize(JNIEnv* env, jobject obj) {
@@ -379,7 +368,7 @@ JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong
   return JNIFromJava(env, obj)->Finished(max_nvisited);
 }
 
-bool IsEvalGoalInvalid(BookTreeNode* node, int eval_goal) {
+bool IsEvalGoalInvalid(TreeNode* node, int eval_goal) {
   return node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
 }
 

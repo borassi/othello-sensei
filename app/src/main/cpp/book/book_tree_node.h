@@ -27,46 +27,14 @@
 #include "../evaluatederivative/endgame_time_estimator.h"
 #include "value_file.h"
 
-class HashMapNode {
+template<class Book>
+class BookTreeNode : public TreeNode {
  public:
-  HashMapNode() : size_(0), offset_(0) {}
-  HashMapNode(u_int8_t size, BookFileOffset offset) : size_(size), offset_(offset) {}
-
-  BookFileOffset Offset() const { return offset_; }
-  u_int8_t Size() const { return size_; }
-  bool IsEmpty() const { return size_ == 0; }
-  bool operator==(const HashMapNode& other) const = default;
-
- private:
-  BookFileOffset offset_;
-  u_int8_t size_;
-} __attribute__((packed));
-
-std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
-
-class BookTreeNode : public BaseTreeNode<BookTreeNode> {
- public:
-  BookTreeNode() = delete;
-  BookTreeNode(const TreeNode& other) {
-    SetupFromOther(other);
-    is_leaf_ = true;
-  }
-  BookTreeNode(BookTreeNode&& other) :
-      fathers_(other.fathers_.begin(), other.fathers_.end()) {
-    SetupFromOther(other);
-  }
-  BookTreeNode(const BookTreeNode& other) :
-      fathers_(other.fathers_.begin(), other.fathers_.end()) {
-    SetupFromOther(other);
+  BookTreeNode(Book* book, const Board& b) : TreeNode(), book_(book), is_leaf_(true) {
+    TreeNode::Reset(b.Unique(), 60, 0);
   }
 
-  BookTreeNode& operator=(BookTreeNode other) {
-    fathers_ = std::unordered_set(other.fathers_.begin(), other.fathers_.end());
-    SetupFromOther(other);
-    return *this;
-  }
-
-  BookTreeNode(const std::vector<char>& serialized) {
+  BookTreeNode(Book* book, const std::vector<char>& serialized, bool fathers = true) : book_(book) {
     Board board = Board::Deserialize(serialized.begin());
     player_ = board.Player();
     opponent_ = board.Opponent();
@@ -82,17 +50,19 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     Eval last_1 = (Eval) serialized[i++];
     Eval first_0 = (Eval) serialized[i++];
     is_leaf_ = (bool) serialized[i++];
+    // Mark as valid.
+    leaf_eval_ = 0;
     n_threads_working_ = 0;
 
     while (true) {
-      CompressedFlip father = (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
+      CompressedFlip compressed_flip = 0;
+      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
       i += 3;
-      if (father == 0) {
-        assert(fathers_.empty());
+      if (compressed_flip == 0) {
         break;
       }
-      fathers_.insert(father >> 2);
-      if ((father & 1) == 0) {
+      father_flips_.push_back(compressed_flip >> 2);
+      if ((compressed_flip & 1) == 0) {
         break;
       }
     }
@@ -114,21 +84,7 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     }
   }
 
-  template<class T>
-  void SetupFromOther(const T& other) {
-    assert(other.NThreadsWorking() == 0);
-    min_evaluation_ = -63;
-    weak_lower_ = -63;
-    weak_upper_ = 63;
-    is_leaf_ = other.IsLeaf();
-    Copy(other);
-    Board unique = other.ToBoard().Unique();
-    player_ = unique.Player();
-    opponent_ = unique.Opponent();
-    n_threads_working_ = 0;
-  }
-
-  std::vector<char> Serialize() {
+  std::vector<char> Serialize() const {
     assert(NThreadsWorking() == 0);
     std::vector<char> result;
     SerializedBoard board = ToBoard().Serialize();
@@ -149,14 +105,26 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
     result.insert(result.end(), (char*) &descendants, (char*) &descendants + sizeof(float));
     result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
-    if (fathers_.size() == 0) {
-      result.insert(result.end(), {0, 0, 0});
-    }
-    int i = 0;
-    for (CompressedFlip father : fathers_) {
-      assert(father < (1 << 22));  // Max 22 bits
-      father = father << 2 | (++i == fathers_.size() ? 0 : 1);
-      result.insert(result.end(), {(char) (father % 256), (char) ((father >> 8) % 256), (char) ((father >> 16) % 256)});
+    if (n_fathers_ == 0) {
+      if (father_flips_.empty()) {
+        result.insert(result.end(), {0, 0, 0});
+      } else {
+        for (int i = 0; i < father_flips_.size(); ++i) {
+          auto father_flip = father_flips_[i];
+          father_flip = father_flip << 2 | (i == father_flips_.size() - 1 ? 0 : 1);
+          result.insert(result.end(), {(char) (father_flip % 256), (char) ((father_flip >> 8) % 256), (char) ((father_flip >> 16) % 256)});
+        }
+      }
+    } else {
+      for (int i = 0; i < n_fathers_; ++i) {
+        TreeNode* father = fathers_[i];
+        auto child_to_move = GetUniqueNextBoardsWithPass(father->ToBoard());
+        std::pair<Square, BitPattern> move = child_to_move.at(ToBoard());
+        auto flip_serialized = SerializeFlip(move.first, move.second);
+        assert(flip_serialized < (1 << 22));  // Max 22 bits
+        flip_serialized = flip_serialized << 2 | (i == n_fathers_ - 1 ? 0 : 1);
+        result.insert(result.end(), {(char) (flip_serialized % 256), (char) ((flip_serialized >> 8) % 256), (char) ((flip_serialized >> 16) % 256)});
+      }
     }
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
@@ -180,129 +148,140 @@ class BookTreeNode : public BaseTreeNode<BookTreeNode> {
 
   bool IsLeaf() const override { return is_leaf_; }
 
-  bool EqualsExceptDescendants(const BookTreeNode& other) const {
-    if (Board(player_, opponent_).Unique() != Board(other.player_, other.opponent_).Unique() ||
-        lower_ != other.lower_ ||
-        upper_ != other.upper_) {
-      return false;
-    }
-
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      if (GetEvaluation(i) != other.GetEvaluation(i)) {
-        return false;
-      }
-    }
-    return true;
+  template<class T>
+  bool Equals(const BookTreeNode<T>& other, bool approx) const {
+    return TreeNode::Equals((const TreeNode&) other, approx);
   }
 
-  bool Equals(const BookTreeNode& other, bool approx, bool fathers) const {
-    if (Board(player_, opponent_).Unique() != Board(other.player_, other.opponent_).Unique() ||
-        lower_ != other.lower_ ||
-        upper_ != other.upper_) {
-      return false;
-    }
-
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      if (GetEvaluation(i) != other.GetEvaluation(i)) {
-        return false;
-      }
-    }
-    if (approx) {
-      if (abs((double) GetNVisited() / other.GetNVisited() - 1) > 1E-6) {
-        return false;
-      }
-    } else {
-      if (GetNVisited() != other.GetNVisited()) {
-        return false;
-      }
-    }
-    if (fathers) {
-      if (fathers_ != other.fathers_ || is_leaf_ != other.is_leaf_) {
-        return false;
-      }
-    }
-    return true;
+  void Update(const TreeNode& node,
+              const std::vector<Board>& parents) {
+    Merge(node);
+    Finalize(parents, node.GetNVisited());
   }
 
-  bool operator==(const BookTreeNode& other) const = default;
-
-  void Merge(const BookTreeNode& other) {
-    assert(ToBoard() == other.ToBoard());
-    float total_descendants = descendants_ + other.descendants_;
-    std::unordered_set<CompressedFlip> fathers(fathers_.begin(), fathers_.end());
-    fathers.insert(other.fathers_.begin(), other.fathers_.end());
-    if (other.descendants_ > descendants_ ||
-        (other.descendants_ == descendants_ && this < &other)) {
-      SetupFromOther(other);
-    }
-    descendants_ = total_descendants;
-    fathers_ = std::move(fathers);
-  }
-
-  bool UpdateFather(const std::vector<BookTreeNode*>& children) {
-    return BaseTreeNode<BookTreeNode>::UpdateFather(
-        children.begin(), children.end());
-  }
-
-  void AddFather(CompressedFlip father) {
-    fathers_.insert(father);
-  }
-
-  void SetChildren(const std::vector<BookTreeNode*>& children) {
-    assert(AreChildrenCorrect(children));
+  template<class ChildPointer>
+  void AddChildrenToBook(const std::vector<ChildPointer>& children,
+                         const std::vector<Board>& parents,
+                         NVisited n_visited) {
+    assert(IsLeaf());
     is_leaf_ = false;
-    auto child_to_move = GetUniqueNextBoardsWithPass(ToBoard());
-    for (BookTreeNode* child : children) {
-      std::pair<Square, BitPattern> move = child_to_move.at(child->ToBoard());
-      child->AddFather(SerializeFlip(move.first, move.second));
+    std::vector<TreeNode*> children_in_book;
+
+    for (const auto& [board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
+      BookTreeNode* child_in_book = book_->Get(board);
+      for (ChildPointer child : children) {
+        if (child->ToBoard().Unique() == board) {
+          if (child_in_book->IsLeaf()) {
+            child_in_book->Merge(*child);
+          } else {
+            child_in_book->AddDescendants(child->GetNVisited());
+          }
+        }
+      }
+      assert(child_in_book->IsValid());
+      children_in_book.push_back(child_in_book);
     }
-    UpdateFather(children);
+    SetChildren(children_in_book);
+    assert(AreChildrenCorrect());
+    Finalize(parents, n_visited);
   }
 
-  std::vector<Board> Fathers() const {
-    std::vector<Board> result;
-    for (CompressedFlip compressed_flip : fathers_) {
-      std::pair move_and_flip = DeserializeFlip(compressed_flip);
-      Square move = move_and_flip.first;
-      BitPattern flip = move_and_flip.second;
-      result.push_back(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)).Unique());
-    }
-    return result;
+  std::vector<TreeNode*> Fathers() {
+    GetFathersFromBook();
+    return TreeNode::Fathers();
   }
 
  private:
   bool is_leaf_;
-  std::unordered_set<CompressedFlip> fathers_;
+  Book* book_;
+  std::vector<CompressedFlip> father_flips_;
 
-  bool AreChildrenCorrect(const std::vector<BookTreeNode*> children) {
-    auto expected_children = GetUniqueNextBoardsWithPass(ToBoard());
-    if (children.size() < expected_children.size()) {
-      std::cout << "Wrong children size " << children.size()
-          << "(should be at least " << expected_children.size() << ").\nBoard:\n"
-          << ToBoard();
-      return false;
+  void GetFathersFromBook() override {
+    if (n_fathers_ > 0) {
+      return;
     }
-    for (auto expected_child : expected_children) {
-      Board unique = expected_child.first;
+    for (CompressedFlip father_flip : father_flips_) {
+      auto move_and_flip = DeserializeFlip(father_flip);
+      Square move = move_and_flip.first;
+      BitPattern flip = move_and_flip.second;
+
+      BookTreeNode* father = book_->Get(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
+      father->GetChildrenFromBook();
+    }
+  }
+
+  void GetChildrenFromBook() override {
+    assert(!IsLeaf());
+    if (n_children_ > 0) {
+      return;
+    }
+    std::vector<TreeNode*> children;
+    for (const auto& [child_board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
+      children.push_back((TreeNode*) book_->Get(child_board));
+      assert(children[children.size() - 1]->IsValid());
+    }
+    SetChildren(children);
+  }
+
+  void Merge(const TreeNode& other) {
+    assert(ToBoard() == other.ToBoard().Unique());
+    assert(other.NThreadsWorking() == 0);
+    assert(IsLeaf());
+
+    min_evaluation_ = -63;
+    weak_lower_ = -63;
+    weak_upper_ = 63;
+    lower_ = other.Lower();
+    upper_ = other.Upper();
+    descendants_ += other.GetNVisited();
+    leaf_eval_ = 0;
+    EnlargeEvaluations();
+
+    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
+    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
+    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
+      if (i < other.WeakLower()) {
+        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(other_proof_number, other.WeakLower(), i)));
+      } else if (i > other.WeakUpper()) {
+        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i)));
+      } else {
+        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
+      }
+    }
+  }
+
+  bool AreChildrenCorrect() override {
+    GetChildrenFromBook();
+    auto next_boards = GetUniqueNextBoardsWithPass(ToBoard());
+    if (n_children_ != next_boards.size()) {
+      throw ChildError("Wrong children size");
+    }
+
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children_[i];
       bool found = false;
-      for (auto child : children) {
-        if (child->ToBoard() == unique) {
+      for (auto& [next_board, unused_move] : next_boards) {
+        if (child->ToBoard() == next_board) {
+          assert(!found);  // If it's true, there is a duplicate in the flips.
           found = true;
         }
       }
       if (!found) {
-        std::cout << "Missing child\n" << unique << "Available children\n";
-        for (auto child : children) {
-          std::cout << child->ToBoard() << "\n";
-        }
-        return false;
+        throw ChildError("Missing child");
       }
     }
     return true;
   }
+
+  void Finalize(const std::vector<Board>& parents, NVisited n_visited) {
+    for (const Board& parent : parents) {
+      book_->Get(parent)->AddDescendants(n_visited);
+    }
+    if (!IsLeaf()) {
+      UpdateFather();
+    }
+    UpdateFathers();
+  }
 };
-
-std::ostream& operator<<(std::ostream& stream, const BookTreeNode& b);
-
 
 #endif  // OTHELLOSENSEI_BOOK_BOOK_TREE_NODE_H
