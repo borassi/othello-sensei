@@ -35,7 +35,7 @@ TEST(BookTreeNodeTestFixture, Basic) {
   auto tree_node = TestTreeNode(Board("e6"), 0, -5, 1, 40);
 
   TestBookTreeNode* node = book.Get(Board("e6"));
-  node->Merge(*tree_node);
+  node->Update(*tree_node, {});
 
   EXPECT_EQ(node->GetNVisited(), 40);
   EXPECT_EQ(node->GetEvaluation(-1), tree_node->GetEvaluation(-1));
@@ -57,7 +57,7 @@ TEST(BookTreeNodeTestFixture, Merge) {
   auto book_tree_node1 = GetTestBookTreeNode(&book, Board("e6f4c3c4d3"), 1, -5, 1, 10);
   auto tree_node2 = TestTreeNode(Board("e6f4d3c4c3"), 3, -7, 3, 12);
 
-  book_tree_node1->Merge(*tree_node2);
+  book_tree_node1->Update(*tree_node2, {});
   EXPECT_EQ(book_tree_node1->GetNVisited(), 22);
   EXPECT_EQ(book_tree_node1->GetEvaluation(3), tree_node2->GetEvaluation(3));
 }
@@ -72,7 +72,7 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenDepth1) {
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
   TestBookTreeNode* e6 = book.Get(Board("e6"));
-  e6->Merge(*e6_node);
+  e6->Update(*e6_node, {});
   e6->AddChildrenToBook(e6_node->GetChildren(), {Board("e6")}, 120);
 
   EXPECT_FALSE(book.Get(Board("e6"))->IsLeaf());
@@ -97,7 +97,7 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenDepth2) {
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
   TestBookTreeNode* e6 = book.Get(Board("e6"));
-  e6->Merge(*e6_node);
+  e6->Update(*e6_node, {});
   e6->AddChildrenToBook(e6_node->GetChildren(), {Board("e6")}, 120);
   book.Get(Board("e6f4"))->AddChildrenToBook<TreeNode*>(
       {e6f4c3_node.get(), e6f4d3_node.get(), e6f4e3_node.get(), e6f4f3_node.get(), e6f4g3_node.get()},

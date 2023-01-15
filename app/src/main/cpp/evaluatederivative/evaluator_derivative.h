@@ -216,7 +216,7 @@ class EvaluatorThread {
           - initial_log_derivative < -kLogDerivativeMultiplier * 3)) ||
           *thread_finished_ ||
           transposition ||
-          i > kMaxChildrenUpdates) {
+          i > 10) {
         break;
       }
       assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
@@ -251,7 +251,6 @@ class EvaluatorThread {
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
     assert(node->NThreadsWorking() == 1);
-    int depth = node->NEmpties() < 24 ? (node->NEmpties() < 22 ? 2 : 3) : 4;
     NVisited n_visited = 0;
     BitPattern player = node->Player();
     BitPattern opponent = node->Opponent();
@@ -274,6 +273,7 @@ class EvaluatorThread {
     evaluator_depth_one_->Invert();
     EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
     int child_n_empties = node->NEmpties() - 1;
+    int depth;
 
     for (int i = 0; i < moves.size(); ++i) {
       BitPattern flip = moves[i];
