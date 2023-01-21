@@ -160,11 +160,7 @@ class EvaluatorThread {
       } else {
         n_visited = AddManyChildren(leaf, max_proof);
       }
-      for (auto parent : leaf.Parents()) {
-        parent->AddDescendants(n_visited);
-        ((TreeNode*) parent)->DecreaseNThreadsWorking();
-      }
-      node->UpdateFathers();
+      leaf.Finalize(n_visited);
     }
     *thread_finished_ = true;
   }

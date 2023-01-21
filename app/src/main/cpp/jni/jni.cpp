@@ -81,7 +81,7 @@ class JNIWrapper {
       std::shared_ptr<TreeNode> t(new TreeNode());
       t->Reset(Board().Player(), Board().Opponent(), 4, 0);
       t->SetLeaf(-63, 63, 0, 1, 1);
-      book_.Get(Board())->Update(*t, {});
+      book_.Get(Board())->Update(*t);
       book_.Commit();
     }
   }
@@ -246,7 +246,13 @@ class JNIWrapper {
       children.push_back(child);
       n_visited += child->GetNVisited();
     }
-    book_.Get(father)->AddChildrenToBook(children, parents, n_visited);
+    std::vector<BookNode*> parents_node;
+
+    for (auto parent : parents) {
+      parents_node.push_back(book_.Get(parent));
+    }
+    book_.Get(father)->AddChildrenToBook(children);
+    LeafToUpdate<BookNode>::Leaf(parents_node).Finalize(n_visited);
     book_.Commit();
   }
 

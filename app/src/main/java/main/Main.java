@@ -109,7 +109,7 @@ public class Main implements Runnable {
    */
   public void undo() {
     stop();
-    if (oldBoards.size() > 0) {
+    if (oldBoards.size() > 1) {
       oldBoards.remove(oldBoards.size() - 1);
       board = oldBoards.get(oldBoards.size() - 1);
       oldBlackTurns.remove(oldBlackTurns.size() - 1);

@@ -315,8 +315,6 @@ class TreeNode {
     return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
-  virtual void GetChildrenFromBook() { assert(n_children_ > 0); }
-
   virtual void GetFathersFromBook() {}
 
   void UpdateFathers() {
@@ -336,16 +334,16 @@ class TreeNode {
 
   bool UpdateFather() {
     auto guard = Lock();
-    GetChildrenFromBook();
     lower_ = kLessThenMinEval;
     upper_ = kLessThenMinEval;
     assert(!IsLeaf());
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Initialize();
     }
-    for (int i = n_children_ - 1; i >= 0; --i) {
-      auto child = children_[i];
-      if (!UpdateWithChild(*child)) {
+    auto start = ChildrenStart();
+    auto end = ChildrenEnd();
+    for (auto child = start; child != end; ++child) {
+      if (!UpdateWithChild(**child)) {
         leaf_eval_ = kLessThenMinEvalLarge;
         return false;
       }
@@ -359,10 +357,11 @@ class TreeNode {
   }
 
   std::vector<TreeNode*> GetChildren() {
-    GetChildrenFromBook();
     std::vector<TreeNode*> children;
-    for (int i = 0; i < n_children_; ++i) {
-      children.push_back(children_[i]);
+    auto start = ChildrenStart();
+    auto end = ChildrenEnd();
+    for (auto child = start; child != end; ++child) {
+      children.push_back(*child);
     }
     return children;
   }
@@ -499,11 +498,11 @@ class TreeNode {
     return true;
   }
 
-  TreeNode** ChildrenStart() {
+  virtual TreeNode** ChildrenStart() {
     return children_;
   }
 
-  TreeNode** ChildrenEnd() {
+  virtual TreeNode** ChildrenEnd() {
     return children_ + n_children_;
   }
 
@@ -597,7 +596,6 @@ class TreeNode {
   }
   void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper,
                EvalLarge leaf_eval, Square depth, NVisited n_visited) {
-    bool update_fathers;
     {
       auto guard = Lock();
       assert(lower % 16 == 0);
@@ -622,11 +620,8 @@ class TreeNode {
       assert(min_evaluation_ <= WeakLower());
       assert(AllValidEvals());
       GetFathersFromBook();
-      update_fathers = n_fathers_ > 0;
     }
-    if (update_fathers) {
-      UpdateFathers();
-    }
+    UpdateFathers();
   }
 
   void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
@@ -757,6 +752,17 @@ class LeafToUpdate {
     return BestDescendant(result);
   }
 
+  static LeafToUpdate Leaf(std::vector<Node*> sequence) {
+    LeafToUpdate leaf(sequence[0], 1);
+    sequence[0]->IncreaseNThreadsWorking();
+    for (int i = 1; i < sequence.size(); ++i) {
+      Node* descendant = sequence[i];
+      leaf.ToChild(descendant, 0);
+      descendant->IncreaseNThreadsWorking();
+    }
+    return leaf;
+  }
+
   static std::optional<LeafToUpdate> BestDescendant(LeafToUpdate& result) {
     while (!result.leaf_->IsLeaf()) {
       Node* best_child = result.BestChild(result.eval_goal_);
@@ -803,9 +809,17 @@ class LeafToUpdate {
   Eval WeakUpper() const { return weak_upper_; }
   double Loss() const { return loss_; }
   const std::vector<Node*>& Parents() const { return parents_; }
-  virtual const Node* const Leaf() const { return leaf_; }
+  Node* Leaf() const { return leaf_; }
 
   bool operator==(const LeafToUpdate& other) const = default;
+
+  void Finalize(NVisited n_visited) {
+    for (auto parent : Parents()) {
+      parent->AddDescendants(n_visited);
+      parent->DecreaseNThreadsWorking();
+    }
+    leaf_->UpdateFathers();
+  }
 
  protected:
   Node* leaf_;
@@ -856,7 +870,7 @@ class LeafToUpdate {
       assert(father_eval.ProbGreaterEqual() >= 1 - child_eval.ProbGreaterEqual() - 0.001);
       double cur_loss = child_eval.GetValue(father_eval, (*child)->GetNVisited());
       if (cur_loss > best_child_value) {
-        best_child = *child;
+        best_child = (Node*) *child;
         best_child_value = cur_loss;
       }
     }
@@ -875,21 +889,22 @@ class LeafToUpdate {
 
     auto start = leaf_->ChildrenStart();
     auto end = leaf_->ChildrenEnd();
-    for (auto child = start; child != end; ++child) {
-      Evaluation child_eval = (*child)->GetEvaluation(-EvalGoal());
-      assert((*child)->GetNVisited() > 0);
+    for (auto child_base = start; child_base != end; ++child_base) {
+      Node* child = (Node*) *child_base;
+      Evaluation child_eval = child->GetEvaluation(-EvalGoal());
+      assert(child->GetNVisited() > 0);
       double extra_loss =
-          child_eval.GetValue(father_eval, (*child)->GetNVisited()) -
+          child_eval.GetValue(father_eval, child->GetNVisited()) -
           best_child_value
-          + ((*child) == best_child ? 0 : log(best_child_prob) *
+          + (child == best_child ? 0 : log(best_child_prob) *
           kLogDerivativeMultiplier);
       assert(extra_loss <= 0);
       if (!child_eval.IsSolved() &&
-          *child != best_child &&
-          (*child)->NThreadsWorking() == 0 &&
+          child != best_child &&
+          child->NThreadsWorking() == 0 &&
           prob < 1 &&
           Loss() + extra_loss > -3 * kLogDerivativeMultiplier) {
-        LeafToUpdate child_leaf = CopyToChild((*child), extra_loss);
+        LeafToUpdate child_leaf = CopyToChild(child, extra_loss);
         next_nodes->push(child_leaf);
       }
     }
@@ -927,7 +942,7 @@ class LeafToUpdate {
     }
   }
 
-  virtual void ToChild(Node* child, double extra_loss) {
+  void ToChild(Node* child, double extra_loss) {
     int tmp;
 
     leaf_ = child;

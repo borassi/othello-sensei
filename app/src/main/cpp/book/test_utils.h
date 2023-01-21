@@ -66,7 +66,8 @@ BookTreeNode<Book>* GetTestBookTreeNode(Book* book, Board b, Eval leaf_eval, Eva
   auto node = TestTreeNode(b, leaf_eval, weak_lower, weak_upper, n_visited);
   auto result = book->Get(b);
   result->Reset(b.Unique(), 60, 0);
-  result->Update(*node, {});
+  result->Update(*node);
+  result->AddDescendants(node->GetNVisited());
   return result;
 }
 
@@ -93,13 +94,15 @@ Book BookWithPositions(
   book.Clean();
 
   auto first_line = lines[0];
-  book.Get(Board(first_line))->Update(*TestTreeNode(Board(first_line), 0, -63, 63, 1), {});
+  auto start = book.Get(Board(first_line));
+  start->Update(*TestTreeNode(Board(first_line), 0, -63, 63, 1));
+  LeafToUpdate<BookNode>::Leaf({start}).Finalize(GetOrDefault(visited, Board(first_line), 1));
 
   for (const auto& line : lines) {
     NVisited total_visited = 0;
-    std::vector<Board> parents;
+    std::vector<BookNode*> parents;
     for (int i = first_line.length(); i <= line.length(); i += 2) {
-      parents.push_back(Board(line.substr(0, i)));
+      parents.push_back(book.Get(line.substr(0, i)));
     }
     std::vector<std::shared_ptr<TreeNode>> children;
     Board father = Board(line);
@@ -112,7 +115,8 @@ Book BookWithPositions(
       children.push_back(TestTreeNode(child, eval, -63, 63, n_visited));
       total_visited += n_visited;
     }
-    book.Get(father)->AddChildrenToBook(children, parents, total_visited);
+    book.Get(father)->AddChildrenToBook(children);
+    LeafToUpdate<BookNode>::Leaf(parents).Finalize(total_visited);
   }
   return book;
 }

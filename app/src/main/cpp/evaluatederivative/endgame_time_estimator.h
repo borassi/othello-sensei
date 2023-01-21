@@ -15,6 +15,7 @@
  */
 
 #include <math.h>
+#include "evaluation.h"
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
 
@@ -24,7 +25,7 @@
 constexpr double kErrorWeight = 0.1;
 
 inline double Bound(double value) {
-  return std::max(1.0, std::min(1E30, value));
+  return std::max(1.0, std::min(kMaxProofNumber * 0.99, value));
 }
 
 inline double ConvertProofNumber(double old, Eval old_goal, Eval new_goal) {

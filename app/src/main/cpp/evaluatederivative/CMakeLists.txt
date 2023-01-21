@@ -34,21 +34,19 @@ target_compile_options(
         -fconstexpr-steps=100000000
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            prob_combiners_test
-            prob_combiners_test.cpp
-    )
+add_executable(
+        prob_combiners_test
+        prob_combiners_test.cpp
+)
 
-    target_link_libraries(
-            prob_combiners_test
-            LINK_PRIVATE
-            prob_combiners
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        prob_combiners_test
+        LINK_PRIVATE
+        prob_combiners
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         evaluation
@@ -65,47 +63,51 @@ target_link_libraries( # Specifies the target library.
         prob_combiners
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            evaluation_test
-            evaluation_test.cpp
-    )
+add_executable(
+        evaluation_test
+        evaluation_test.cpp
+)
 
-    target_link_libraries(
-            evaluation_test
-            LINK_PRIVATE
-            evaluation
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        evaluation_test
+        LINK_PRIVATE
+        evaluation
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         endgame_time_estimator
         endgame_time_estimator.h
 )
 
+target_link_libraries( # Specifies the target library.
+        endgame_time_estimator
+        LINK_PUBLIC
+        bitpattern
+        evaluation
+        get_moves
+)
+
 set_target_properties(
         endgame_time_estimator PROPERTIES LINKER_LANGUAGE CXX
 )
 
-IF (NOT ANDROID)
-    add_executable(
-            endgame_time_estimator_test
-            endgame_time_estimator_test.cpp
-    )
+add_executable(
+        endgame_time_estimator_test
+        endgame_time_estimator_test.cpp
+)
 
-    target_link_libraries(
-            endgame_time_estimator_test
-            LINK_PRIVATE
-            board
-            endgame_time_estimator
-            GTest::gtest
-            GTest::gtest_main
-            -no-pie
-    )
-ENDIF ()
+target_link_libraries(
+        endgame_time_estimator_test
+        LINK_PRIVATE
+        board
+        endgame_time_estimator
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
 
 add_library(
         tree_node

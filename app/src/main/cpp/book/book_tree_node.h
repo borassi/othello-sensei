@@ -153,16 +153,12 @@ class BookTreeNode : public TreeNode {
     return TreeNode::Equals((const TreeNode&) other, approx);
   }
 
-  void Update(const TreeNode& node,
-              const std::vector<Board>& parents) {
+  void Update(const TreeNode& node) {
     Merge(node);
-    Finalize(parents, node.GetNVisited());
   }
 
   template<class ChildPointer>
-  void AddChildrenToBook(const std::vector<ChildPointer>& children,
-                         const std::vector<Board>& parents,
-                         NVisited n_visited) {
+  void AddChildrenToBook(const std::vector<ChildPointer>& children) {
     assert(IsLeaf());
     is_leaf_ = false;
     std::vector<TreeNode*> children_in_book;
@@ -173,9 +169,8 @@ class BookTreeNode : public TreeNode {
         if (child->ToBoard().Unique() == board) {
           if (child_in_book->IsLeaf()) {
             child_in_book->Merge(*child);
-          } else {
-            child_in_book->AddDescendants(child->GetNVisited());
           }
+          child_in_book->AddDescendants(child->GetNVisited());
         }
       }
       assert(child_in_book->IsValid());
@@ -183,12 +178,21 @@ class BookTreeNode : public TreeNode {
     }
     SetChildren(children_in_book);
     assert(AreChildrenCorrect());
-    Finalize(parents, n_visited);
   }
 
   std::vector<TreeNode*> Fathers() {
     GetFathersFromBook();
     return TreeNode::Fathers();
+  }
+
+  TreeNode** ChildrenStart() override {
+    GetChildrenFromBook();
+    return children_;
+  }
+
+  TreeNode** ChildrenEnd() override {
+    GetChildrenFromBook();
+    return children_ + n_children_;
   }
 
  private:
@@ -210,7 +214,7 @@ class BookTreeNode : public TreeNode {
     }
   }
 
-  void GetChildrenFromBook() override {
+  void GetChildrenFromBook() {
     assert(!IsLeaf());
     if (n_children_ > 0) {
       return;
@@ -233,7 +237,6 @@ class BookTreeNode : public TreeNode {
     weak_upper_ = 63;
     lower_ = other.Lower();
     upper_ = other.Upper();
-    descendants_ += other.GetNVisited();
     leaf_eval_ = 0;
     EnlargeEvaluations();
 
@@ -271,16 +274,6 @@ class BookTreeNode : public TreeNode {
       }
     }
     return true;
-  }
-
-  void Finalize(const std::vector<Board>& parents, NVisited n_visited) {
-    for (const Board& parent : parents) {
-      book_->Get(parent)->AddDescendants(n_visited);
-    }
-    if (!IsLeaf()) {
-      UpdateFather();
-    }
-    UpdateFathers();
   }
 };
 
