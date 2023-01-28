@@ -485,6 +485,9 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       stats_.Add(1, PASS);
       best_eval = -EvaluateInternal<depth, true, solve>(
           opponent, player, -upper, -lower, last_flip, new_stable, max_visited);
+      if (depth > 3 && stats_.GetAll() > max_visited) {
+        return kLessThenMinEvalLarge;
+      }
     }
   } else if (UseHashMap(depth, solve)) {
     hash_map_

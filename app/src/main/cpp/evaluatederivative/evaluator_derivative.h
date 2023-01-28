@@ -221,8 +221,8 @@ class EvaluatorThread {
       if (!new_leaf_opt) {
         break;
       }
-      const auto& new_leaf = *new_leaf_opt;
-      const TreeNode* new_leaf_node = new_leaf.Leaf();
+      auto& new_leaf = *new_leaf_opt;
+      TreeNode* new_leaf_node = new_leaf.Leaf();
       assert(new_leaf_node->IsLeaf());
       assert(new_leaf_node->NThreadsWorking() == 1);
       if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(),
@@ -231,11 +231,7 @@ class EvaluatorThread {
       } else {
         cur_n_visited = AddChildren(new_leaf, &transposition);
       }
-      for (auto parent : new_leaf.Parents()) {
-        parent->AddDescendants(cur_n_visited);
-        parent->DecreaseNThreadsWorking();
-      }
-      new_leaf.Leaf()->UpdateFathers();
+      new_leaf.Finalize(cur_n_visited);
       n_visited += cur_n_visited;
       root_node->UpdateFather();
     }
@@ -314,6 +310,9 @@ class EvaluatorThread {
       }
       n_visited += cur_n_visited;
       child->SetLeaf(-leaf.WeakUpper(), -leaf.WeakLower(), eval, depth);
+      // Usually a no-op, but another thread might have added a father before
+      // the node was valid. We need to update that father.
+      child->UpdateFathers();
       child->AddDescendants(n_visited);
       if (flip != 0) {
         evaluator_depth_one_->UndoUpdate(square, flip);
@@ -349,6 +348,7 @@ class EvaluatorThread {
     assert(node->NThreadsWorking() == 1);
     // No need to lock, because this is the only thread that can touch this node.
     assert(node->IsLeaf());
+    assert(eval >= kMinEvalLarge && eval <= kMaxEvalLarge);
     node->SetSolved(
         eval > alpha ? eval : kMinEvalLarge,
         eval < beta ? eval : kMaxEvalLarge);

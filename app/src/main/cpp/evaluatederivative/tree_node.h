@@ -384,7 +384,6 @@ class TreeNode {
   void SetSolved(EvalLarge lower, EvalLarge upper) {
     auto guard = Lock();
     assert(IsValid());
-    assert(eval_depth_ > 0);
     assert(lower % 16 == 0);
     assert(upper % 16 == 0);
     assert(IsLeaf());
@@ -394,38 +393,32 @@ class TreeNode {
     Eval upper_small = EvalLargeToEvalRound(upper);
     lower_ = MaxEval(lower_, lower_small - 1);
     upper_ = MinEval(upper_, upper_small + 1);
+    assert(lower_ < 65);
   }
 
 
   virtual void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval,
                        Square depth) {
     auto guard = Lock();
-    assert(IsLeaf());
-    assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
-
-    SetWeakLowerUpper(weak_lower, weak_upper);
-
-    eval_depth_ = depth;
-    leaf_eval_ = leaf_eval;
-
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      UpdateLeafEvaluation(i);
-    }
-    assert(min_evaluation_ <= WeakLower());
-    assert(AllValidEvals());
+    SetLeafNoLock(weak_lower, weak_upper, leaf_eval, depth);
   }
 
   virtual void UpdateLeafEval() {
+    auto guard = Lock();
+    assert(IsValid());
     assert(IsLeaf());
     auto lower_large = EvalToEvalLarge(lower_);
     auto upper_large = EvalToEvalLarge(upper_);
     if (leaf_eval_ < lower_large) {
       leaf_eval_ = lower_large + 8;
-      SetLeaf(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
+      assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
+      SetLeafNoLock(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
     } else if (leaf_eval_ > upper_large) {
       leaf_eval_ = upper_large - 8;
-      SetLeaf(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
+      assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
+      SetLeafNoLock(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
     }
+    assert(IsValid());
   }
 
   bool ToBeSolved(Eval alpha, Eval beta, NVisited max_proof) const {
@@ -625,6 +618,23 @@ class TreeNode {
       } // Else do nothing (child eval is solved).
     }
     return true;
+  }
+
+  virtual void SetLeafNoLock(
+      Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth) {
+    assert(IsLeaf());
+    assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
+
+    SetWeakLowerUpper(weak_lower, weak_upper);
+
+    eval_depth_ = depth;
+    leaf_eval_ = leaf_eval;
+
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      UpdateLeafEvaluation(i);
+    }
+    assert(min_evaluation_ <= WeakLower());
+    assert(AllValidEvals());
   }
 
   bool AllValidEvals() const {
