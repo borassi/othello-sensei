@@ -233,9 +233,9 @@ class EvaluatorThread {
       }
       for (auto parent : new_leaf.Parents()) {
         parent->AddDescendants(cur_n_visited);
-        ((TreeNode*) parent)->DecreaseNThreadsWorking();
+        parent->DecreaseNThreadsWorking();
       }
-      ((TreeNode*) new_leaf.Leaf())->UpdateFathers();
+      new_leaf.Leaf()->UpdateFathers();
       n_visited += cur_n_visited;
       root_node->UpdateFather();
     }
@@ -257,7 +257,7 @@ class EvaluatorThread {
 
     if (moves.empty()) {
       int final_eval = GetEvaluationGameOver(player, opponent);
-      node->SetSolved(leaf.WeakLower(), leaf.WeakUpper(), final_eval, final_eval, 1);
+      node->SetSolved(final_eval, final_eval);
       stats_.Add(1, TREE_NODE);
       return 1;
     }
@@ -313,7 +313,8 @@ class EvaluatorThread {
         cur_n_visited = cur_stats.GetAll();
       }
       n_visited += cur_n_visited;
-      child->SetLeaf(-leaf.WeakUpper(), -leaf.WeakLower(), eval, depth, cur_n_visited);
+      child->SetLeaf(-leaf.WeakUpper(), -leaf.WeakLower(), eval, depth);
+      child->AddDescendants(n_visited);
       if (flip != 0) {
         evaluator_depth_one_->UndoUpdate(square, flip);
       }
@@ -348,10 +349,10 @@ class EvaluatorThread {
     assert(node->NThreadsWorking() == 1);
     // No need to lock, because this is the only thread that can touch this node.
     assert(node->IsLeaf());
-    node->SetSolved(leaf.WeakLower(), leaf.WeakUpper(),
-            eval > alpha ? eval : kMinEvalLarge,
-                  eval < beta ? eval : kMaxEvalLarge, seen_positions);
-
+    node->SetSolved(
+        eval > alpha ? eval : kMinEvalLarge,
+        eval < beta ? eval : kMaxEvalLarge);
+    node->UpdateLeafEval();
     return seen_positions;
   }
 };
@@ -397,7 +398,7 @@ class EvaluatorDerivative {
     approx_ = approx;
 //    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
-    first_position_->SetLeaf(lower, upper, 0, 4, 1);
+    first_position_->SetLeaf(lower, upper, 0, 4);
     last_update_weak_ = 0;
     visited_for_endgame_ = kVisitedEndgameStart;
     stats_.Reset();

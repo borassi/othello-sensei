@@ -43,7 +43,8 @@ std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower,
   std::shared_ptr<TreeNode> t(new TreeNode());
   t->Reset(b.Player(), b.Opponent(), 4, 0);
 //  Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited)
-  t->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(leaf_eval), 4, n_visited);
+  t->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(leaf_eval), 4);
+  t->AddDescendants(n_visited);
   return t;
 }
 

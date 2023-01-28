@@ -134,6 +134,7 @@ target_link_libraries(
         evaluator_alpha_beta
         evaluator_derivative
         hash_map
+        misc
         parse_flags
         pattern_evaluator
 )

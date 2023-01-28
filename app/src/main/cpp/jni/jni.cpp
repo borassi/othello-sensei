@@ -80,7 +80,7 @@ class JNIWrapper {
     if (!book_.Get(Board())->IsValid()) {
       std::shared_ptr<TreeNode> t(new TreeNode());
       t->Reset(Board().Player(), Board().Opponent(), 4, 0);
-      t->SetLeaf(-63, 63, 0, 1, 1);
+      t->SetLeaf(-63, 63, 0, 1);
       book_.Get(Board())->Update(*t);
       book_.Commit();
     }

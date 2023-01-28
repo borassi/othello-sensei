@@ -195,6 +195,12 @@ class BookTreeNode : public TreeNode {
     return children_ + n_children_;
   }
 
+  void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth) override {
+    throw std::logic_error("Cannot set leaf in book node.");
+  }
+  void UpdateLeafEval() override {
+    throw std::logic_error("Cannot update leaf eval in book node.");
+  }
  private:
   bool is_leaf_;
   Book* book_;

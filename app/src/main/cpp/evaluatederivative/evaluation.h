@@ -143,24 +143,22 @@ class Evaluation {
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
+  // TODO: Find a better way (setting prob_greater_equal_ = 0 so that later it's
+  // set to 1-prob_greater_equal_ is brittle).
+  void SetSolved() {
+    prob_greater_equal_ = 0;
+    proof_number_ = 0;
+    disproof_number_ = kProofNumberStep;
+    max_log_derivative_ = kLogDerivativeMinusInf;
+  }
+
   void UpdateFatherWithThisChild(const Evaluation& child) {
     assert(IsValid());
     assert(child.IsValid());
     assert(max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_] < 0);
     assert(child.max_log_derivative_ < 0);
     float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
-    if (child.IsSolved()) {
-      assert(child_prob_greater_equal == 0 || child_prob_greater_equal == 1);
-      if (child_prob_greater_equal == 0) {
-        prob_greater_equal_ = 0;
-        proof_number_ = 0;
-        disproof_number_ = kProofNumberStep;
-        max_log_derivative_ = kLogDerivativeMinusInf;
-      }
-      // If child_prob_greater_equal == 1 do nothing, it's as if the child did
-      // not exist.
-      return;
-    }
+    assert(!child.IsSolved());
     prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
     assert(prob_greater_equal_ <= child.prob_greater_equal_);
 
@@ -222,18 +220,31 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father, NVisited nVisited) const {
+  double GetValue(const Evaluation& father, NVisited n_visited) const {
     float prob = father.ProbGreaterEqual();
-    assert(nVisited > 0);
+    assert(n_visited > 0);
     if (IsSolved()) {
       return -DBL_MAX;
     }
     if (prob == 0) {
       assert(prob_greater_equal_ == kProbStep);
-      return 0.00000001 * (double) log(nVisited);
+      auto proof_number = ProofNumber();
+      return 0.00000001 * (
+          n_visited / (n_visited + proof_number) > 0.01 ?
+          log(n_visited) :
+          -log(n_visited / (n_visited + proof_number)));
     } else if (prob == 1) {
-      return -kCombineProb.disproof_to_proof_number[disproof_number_][prob_greater_equal_]
-          - 0.000001 * log(nVisited)
+      auto proof_number_using_this = ByteToProofNumber(
+          kCombineProb.disproof_to_proof_number[disproof_number_
+          ][prob_greater_equal_]);
+      auto proof_number_father = father.ProofNumber();
+//      return -0.0001 * log(proof_number_using_this);
+//          // log(A6) / log($B$1 / 1000)
+      return
+          -0.0001 * log(
+              proof_number_using_this *
+              std::max(0.01, std::min(1.0,
+                  log(n_visited) / log(proof_number_father / 1000.0))))
           ;
     } else {
       return LogDerivative(father);

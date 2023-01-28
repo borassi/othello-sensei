@@ -89,9 +89,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   private final JCheckBox playBlackMoves = new JCheckBox("Play black moves");
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
-  private final JCheckBox debugMode = new JCheckBox("Debug mode", true);
+  private final JCheckBox debugMode = new JCheckBox("Debug mode", false);
   private final JCheckBox active = new JCheckBox("Active", true);
-  private final JCheckBox useBook = new JCheckBox("Use book", false);
+  private final JCheckBox useBook = new JCheckBox("Use book", true);
   private final JTextField depth;
   private final JTextField delta;
   private final JSpinner ffoPositions;

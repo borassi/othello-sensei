@@ -168,7 +168,7 @@ class TreeNode {
     descendants_ = 0;
   }
 
-  virtual const Evaluation& GetEvaluation(int eval_goal) const final {
+  const Evaluation& GetEvaluation(int eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
     assert(min_evaluation_ <= WeakLower());
@@ -344,7 +344,6 @@ class TreeNode {
     auto end = ChildrenEnd();
     for (auto child = start; child != end; ++child) {
       if (!UpdateWithChild(**child)) {
-        leaf_eval_ = kLessThenMinEvalLarge;
         return false;
       }
     }
@@ -382,14 +381,51 @@ class TreeNode {
     assert(AreChildrenCorrect());
   }
 
-  void SetSolved(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper, NVisited n_visited) {
+  void SetSolved(EvalLarge lower, EvalLarge upper) {
+    auto guard = Lock();
     assert(IsValid());
     assert(eval_depth_ > 0);
-    SetLeaf(weak_lower, weak_upper, lower, upper, leaf_eval_, eval_depth_, n_visited);
+    assert(lower % 16 == 0);
+    assert(upper % 16 == 0);
+    assert(IsLeaf());
+    assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
+
+    Eval lower_small = EvalLargeToEvalRound(lower);
+    Eval upper_small = EvalLargeToEvalRound(upper);
+    lower_ = MaxEval(lower_, lower_small - 1);
+    upper_ = MinEval(upper_, upper_small + 1);
   }
 
-  void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited) {
-    SetLeaf(weak_lower, weak_upper, kMinEvalLarge, kMaxEvalLarge, leaf_eval, depth, n_visited);
+
+  virtual void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval,
+                       Square depth) {
+    auto guard = Lock();
+    assert(IsLeaf());
+    assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
+
+    SetWeakLowerUpper(weak_lower, weak_upper);
+
+    eval_depth_ = depth;
+    leaf_eval_ = leaf_eval;
+
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      UpdateLeafEvaluation(i);
+    }
+    assert(min_evaluation_ <= WeakLower());
+    assert(AllValidEvals());
+  }
+
+  virtual void UpdateLeafEval() {
+    assert(IsLeaf());
+    auto lower_large = EvalToEvalLarge(lower_);
+    auto upper_large = EvalToEvalLarge(upper_);
+    if (leaf_eval_ < lower_large) {
+      leaf_eval_ = lower_large + 8;
+      SetLeaf(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
+    } else if (leaf_eval_ > upper_large) {
+      leaf_eval_ = upper_large - 8;
+      SetLeaf(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
+    }
   }
 
   bool ToBeSolved(Eval alpha, Eval beta, NVisited max_proof) const {
@@ -572,15 +608,21 @@ class TreeNode {
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
     assert(AllValidEvals());
+    // TODO: Make weak_lower_ >= lower_ to avoid extra computations.
     weak_lower_ = MaxEval(weak_lower_, (Eval) -child.weak_upper_);
     weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-//      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
-      const Evaluation& eval = child.GetEvaluation(-i);
-      assert(eval.IsValid());
       Evaluation* father_eval = MutableEvaluation(i);
-      assert(father_eval->IsValid());
-      father_eval->UpdateFatherWithThisChild(eval);
+//      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
+      if (child.Upper() <= -i) {
+        father_eval->SetSolved();
+      } else if (-i > child.Lower()) {
+        assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
+        const Evaluation& eval = child.GetEvaluation(-i);
+        assert(eval.IsValid());
+        assert(!eval.IsSolved());
+        father_eval->UpdateFatherWithThisChild(eval);
+      } // Else do nothing (child eval is solved).
     }
     return true;
   }
@@ -593,35 +635,6 @@ class TreeNode {
       }
     }
     return true;
-  }
-  void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge lower, EvalLarge upper,
-               EvalLarge leaf_eval, Square depth, NVisited n_visited) {
-    {
-      auto guard = Lock();
-      assert(lower % 16 == 0);
-      assert(upper % 16 == 0);
-      assert(IsLeaf());
-      assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
-      assert(n_visited > 0);
-
-      SetWeakLowerUpper(weak_lower, weak_upper);
-
-      eval_depth_ = depth;
-      leaf_eval_ = std::max(lower, std::min(upper, leaf_eval));
-      Eval lower_small = EvalLargeToEvalRound(lower);
-      Eval upper_small = EvalLargeToEvalRound(upper);
-      lower_ = MaxEval(lower_, lower_small - 1);
-      upper_ = MinEval(upper_, upper_small + 1);
-
-      for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-        UpdateLeafEvaluation(i);
-      }
-      AddDescendants(n_visited);
-      assert(min_evaluation_ <= WeakLower());
-      assert(AllValidEvals());
-      GetFathersFromBook();
-    }
-    UpdateFathers();
   }
 
   void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
@@ -748,7 +761,10 @@ template<class Node>
 class LeafToUpdate {
  public:
   static std::optional<LeafToUpdate> BestDescendant(Node* node) {
-    LeafToUpdate result(node, node->NextPositionEvalGoal(0, 1));
+    return BestDescendant(node, node->NextPositionEvalGoal(0, 1));
+  }
+  static std::optional<LeafToUpdate> BestDescendant(Node* node, Eval goal) {
+    LeafToUpdate result(node, goal);
     return BestDescendant(result);
   }
 
@@ -814,6 +830,7 @@ class LeafToUpdate {
   bool operator==(const LeafToUpdate& other) const = default;
 
   void Finalize(NVisited n_visited) {
+    assert(leaf_ == parents_[parents_.size() - 1]);
     for (auto parent : Parents()) {
       parent->AddDescendants(n_visited);
       parent->DecreaseNThreadsWorking();
@@ -862,11 +879,14 @@ class LeafToUpdate {
     Node* best_child = nullptr;
     auto start = leaf_->ChildrenStart();
     auto end = leaf_->ChildrenEnd();
+    int child_eval_goal = -eval_goal;
     for (auto child = start; child != end; ++child) {
-      const Evaluation& child_eval = (*child)->GetEvaluation(-eval_goal);
-      if (child_eval.IsSolved()) {
+      if (child_eval_goal <= (*child)->Lower() ||
+          child_eval_goal >= (*child)->Upper()) {
         continue;
       }
+      const Evaluation& child_eval = (*child)->GetEvaluation(child_eval_goal);
+      assert(!child_eval.IsSolved());
       assert(father_eval.ProbGreaterEqual() >= 1 - child_eval.ProbGreaterEqual() - 0.001);
       double cur_loss = child_eval.GetValue(father_eval, (*child)->GetNVisited());
       if (cur_loss > best_child_value) {
@@ -889,9 +909,14 @@ class LeafToUpdate {
 
     auto start = leaf_->ChildrenStart();
     auto end = leaf_->ChildrenEnd();
-    for (auto child_base = start; child_base != end; ++child_base) {
-      Node* child = (Node*) *child_base;
-      Evaluation child_eval = child->GetEvaluation(-EvalGoal());
+    auto child_eval_goal = -EvalGoal();
+    for (auto iter = start; iter != end; ++iter) {
+      Node* child = (Node*) *iter;
+      if (child_eval_goal <= child->Lower() ||
+          child_eval_goal >= child->Upper()) {
+        continue;
+      }
+      Evaluation child_eval = child->GetEvaluation(child_eval_goal);
       assert(child->GetNVisited() > 0);
       double extra_loss =
           child_eval.GetValue(father_eval, child->GetNVisited()) -
@@ -920,7 +945,7 @@ class LeafToUpdate {
 
     next_nodes.push(LeafToUpdate(root, eval_goal));
 
-    const Node* current_leaf;
+    Node* current_leaf;
     while (!next_nodes.empty() && result->size() < 200) {
       LeafToUpdate current = next_nodes.top();
       next_nodes.pop();
