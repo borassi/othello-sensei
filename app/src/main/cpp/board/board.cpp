@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <sstream>
 #include "board.h"
 #include "get_flip.h"
 
@@ -93,4 +94,10 @@ Board RandomBoard(double percentage_player, double percentage_opponent) {
     return RandomBoard(percentage_player, percentage_opponent);
   }
   return {board_string.c_str(), true};
+}
+
+std::string Board::ToString() {
+  std::stringstream stream;
+  stream << *this;
+  return stream.str();
 }

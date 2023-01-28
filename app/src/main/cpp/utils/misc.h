@@ -125,4 +125,7 @@ struct PairHash {
 };
 
 std::string PrettyPrintDouble(double d);
+
+std::string Indent(const std::string& s, const std::string& characters);
+
 #endif  // UTILS_MISC_H

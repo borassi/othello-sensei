@@ -134,6 +134,7 @@ public:
     return Board(player, opponent);
   }
 
+  std::string ToString();
 private:
   BitPattern player_;
   BitPattern opponent_;

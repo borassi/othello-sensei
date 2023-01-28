@@ -18,6 +18,7 @@
 #include <ctime>
 #include <iostream>
 #include <locale>
+#include <regex>
 #include "misc.h"
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
@@ -75,4 +76,11 @@ std::string PrettyPrintDouble(double d) {
   }
   snprintf(buffer, sizeof(buffer), "%.0f%s", rescaledL, suffix.c_str());
   return std::string(buffer);
+}
+
+std::string Indent(const std::string& s, const std::string& characters) {
+  auto except_last = s.substr(0, s.size() - 1);
+  return characters + std::regex_replace(
+      except_last, std::regex("\n"), "\n" + characters)
+      + s.substr(s.size() - 1, s.size());
 }

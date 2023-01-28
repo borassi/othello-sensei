@@ -94,3 +94,7 @@ TEST(Misc, PrettyPrintDouble) {
   EXPECT_EQ("1.0M", PrettyPrintDouble(999501));
   EXPECT_EQ("1.0G", PrettyPrintDouble(999500001));
 }
+
+TEST(Misc, Indent) {
+  EXPECT_EQ(Indent("abc\ndef\n", "  "), "  abc\n  def\n");
+}
