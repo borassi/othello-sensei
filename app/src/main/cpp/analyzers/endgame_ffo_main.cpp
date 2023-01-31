@@ -31,13 +31,15 @@ int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   bool approx = parse_flags.GetBoolFlagOrDefault("approx", false);
   int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", 1);
+  int start = parse_flags.GetIntFlagOrDefault("start", 41);
+  int end = parse_flags.GetIntFlagOrDefault("end", 60);
   using std::setw;
   HashMap hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), n_threads);
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval       last5  vquick  quick1  quick2   moves    pass   nodes \n";
-  for (int i = 41; i <= 60; i++) {
+  for (int i = start; i <= end; i++) {
     Board b = GetIthBoard(i);
     ElapsedTime t;
     tree_node_supplier.Reset();

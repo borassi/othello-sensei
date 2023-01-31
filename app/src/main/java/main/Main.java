@@ -126,7 +126,7 @@ public class Main implements Runnable {
   public void setBoard(Board b, boolean blackTurn) {
     stop();
     board = b;
-    blackTurn = blackTurn;
+    this.blackTurn = blackTurn;
     oldBoards.clear();
     oldBoards.add(board);
     oldBlackTurns.clear();

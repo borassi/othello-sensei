@@ -421,6 +421,19 @@ class TreeNode {
     assert(IsValid());
   }
 
+  float RemainingWork() const {
+    assert(alpha <= beta);
+    assert(alpha >= weak_lower_ && beta <= weak_upper_);
+    assert(IsLeaf());
+    assert(n_empties_ >= 0 && n_empties_ <= 60);
+    float result = std::numeric_limits<float>::infinity();
+
+    for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
+      result = std::min(result, GetEvaluation(i-2).ProofNumber() + GetEvaluation(i).DisproofNumber());
+    }
+    return result;
+  }
+
   bool ToBeSolved(Eval alpha, Eval beta, NVisited max_proof) const {
     assert(alpha <= beta);
     assert(alpha >= weak_lower_ && beta <= weak_upper_);

@@ -42,7 +42,7 @@ inline double LogProofNumber(BitPattern player, BitPattern opponent, EvalLarge l
   BitPattern empties = ~(player | opponent);
   int n_empties = __builtin_popcountll(empties);
   EvalLarge error = approx_eval - lower;
-  return -3.2519 + 0.5526 * n_empties + 2.3102 * log(1 + GetNMoves(opponent,
+  return -4 + 0.65 * n_empties + 2.3102 * log(1 + GetNMoves(opponent,
                                                                 player))
       -kErrorWeight / 8 * error;
 }
@@ -55,7 +55,7 @@ inline double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarg
   BitPattern empties = ~(player | opponent);
   int n_empties = __builtin_popcountll(empties);
   EvalLarge error = approx_eval - lower;
-  return -3.7256 + 0.5757 * n_empties + 2.5578 * log(1 + GetNMoves(player,opponent))
+  return -4 + 0.65 * n_empties + 2.5578 * log(1 + GetNMoves(player,opponent))
       +kErrorWeight / 8 * error;
 }
 
