@@ -28,7 +28,7 @@ PN ProofNumberToByte(float proof_number) {
   return (PN) round(rescaled_proof_number);
 }
 
-float ByteToProofNumber(PN byte) {
+float ByteToProofNumberExplicit(PN byte) {
   if (byte == 0) {
     return 0;
   } else if (byte == kProofNumberStep) {
@@ -37,6 +37,9 @@ float ByteToProofNumber(PN byte) {
   return pow(kBaseLogProofNumber, byte - 1);
 }
 
+float ByteToProofNumber(PN byte) {
+  return kCombineProb.byte_to_proof_number[byte];
+}
 std::ostream& operator<<(std::ostream& stream, const Evaluation& e) {
   stream << e.ProbGreaterEqual() << " " << e.MaxLogDerivative() << " ["
          << e.ProofNumber() << " " << e.DisproofNumber() << "]";

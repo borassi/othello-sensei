@@ -13,13 +13,13 @@
 # limitations under the License.
 
 # Usage:
-# cd .../AndroidStudioProjects/OthelloSensei/app
-# cmake -S src/main/cpp -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
+# cd .../AndroidStudioProjects/OthelloSensei
+# cmake -S app/src/main/cpp -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
 
 # Profile:
-# cmake -S src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
-# cmake --build build && \
-# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/endgame_ffo && \
+# cmake -S app/src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
+# cmake --build build --parallel=12 && \
+# valgrind --tool=callgrind --callgrind-out-file=/tmp/callgrind.out ./build/analyzers/endgame_ffo_main && \
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.

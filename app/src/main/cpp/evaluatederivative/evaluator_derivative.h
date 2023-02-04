@@ -148,15 +148,15 @@ class EvaluatorThread {
            std::atomic_int* current_leaf_, int max_proof) {
     int n_visited;
     stats_.Reset();
+    bool transposition = false;
     for (int i = (*current_leaf_)++; i < leaves_->size(); i = (*current_leaf_)++) {
       TreeNodeLeafToUpdate leaf = (*leaves_)[i];
       TreeNode* node = (TreeNode*) leaf.Leaf();
       assert(node->IsLeaf());
       if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), max_proof)) {
-        bool transposition = false;
         n_visited = SolvePosition(leaf, &transposition, max_proof);
       } else {
-        n_visited = AddManyChildren(leaf, max_proof);
+        n_visited = AddChildren(leaf, &transposition);
       }
       leaf.Finalize(n_visited);
     }
@@ -174,11 +174,11 @@ class EvaluatorThread {
   std::atomic_bool* thread_finished_;
 
   int ExpectedLoss(Evaluation root_eval, float original_prob) {
-    return root_eval.MaxLogDerivative();
-//        - kCombineProb.log_derivative[(int) round(original_prob * 255)]
-//        + kCombineProb.log_derivative[(int) round(root_eval.ProbGreaterEqual() * 255)]
-//        - kCombineProb.log_derivative[(int) round((1 - original_prob) * 255)]
-//        + kCombineProb.log_derivative[(int) round((1 - root_eval.ProbGreaterEqual()) * 255)];
+    return root_eval.MaxLogDerivative()
+        - kCombineProb.log_derivative[(int) round(original_prob * 255)]
+        + kCombineProb.log_derivative[(int) round(root_eval.ProbGreaterEqual() * 255)]
+        - kCombineProb.log_derivative[(int) round((1 - original_prob) * 255)]
+        + kCombineProb.log_derivative[(int) round((1 - root_eval.ProbGreaterEqual()) * 255)];
   }
 
   NVisited AddManyChildren(const TreeNodeLeafToUpdate& leaf, int max_proof) {
@@ -191,60 +191,57 @@ class EvaluatorThread {
     float original_prob = root->ProbGreaterEqual(eval_goal);
     float original_work = std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal));
     NVisited n_visited = AddChildren(leaf, &transposition);
-//    const Evaluation& evaluation = root->GetEvaluation(eval_goal);
-//    if (evaluation.IsSolved()) {
-//      return n_visited;
-//    }
-//    NVisited cur_n_visited;
-//    int i = 0;
-//    bool proving = original_prob < 0.02 || original_prob > 0.98;
-//    while (true) {
-//      ++i;
-//      if (evaluation.IsSolved() ||
-//          (// proving
-//          //&&
-//          std::min(root->ProofNumber(eval_goal), root->DisproofNumber
-//          (eval_goal)) > 1.2 * original_work + 40000
-//          ) ||
-//          (!proving
-//           && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) -
-//           initial_log_derivative < -2 * kLogDerivativeMultiplier)
-//          ) ||
-//          (!proving
-//           && i > 2
-//          ) ||
-//          *thread_finished_ ||
-//          transposition ||
-//          i > 30) {
-////        std::cout << i << " " << proving << " " << original_prob << " " << leaf
-////        .Loss() << " + " << ExpectedLoss(evaluation, original_prob) -
-////        initial_log_derivative << " < " <<
-////        -kLogDerivativeMultiplier * 1.5 << "\n";
-////        std::cout << std::min(root->ProofNumber(eval_goal),
-////                              root->DisproofNumber(eval_goal)) << " " <<
-////                              original_work << "\n";
-//        break;
-//      }
-//      assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
-//      TreeNodeLeafToUpdate new_leaf_start = leaf.Copy();
-//      auto new_leaf_opt = TreeNodeLeafToUpdate::BestDescendant(new_leaf_start);
-//      if (!new_leaf_opt) {
-//        break;
-//      }
-//      auto& new_leaf = *new_leaf_opt;
-//      TreeNode* new_leaf_node = new_leaf.Leaf();
-//      assert(new_leaf_node->IsLeaf());
-//      assert(new_leaf_node->NThreadsWorking() == 1);
-//      if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(),
-//                                    max_proof)) {
-//        cur_n_visited = SolvePosition(new_leaf, &transposition);
-//      } else {
-//        cur_n_visited = AddChildren(new_leaf, &transposition);
-//      }
-//      new_leaf.Finalize(cur_n_visited);
-//      n_visited += cur_n_visited;
-//      root_node->UpdateFather();
-//    }
+    const Evaluation& evaluation = root->GetEvaluation(eval_goal);
+    if (evaluation.IsSolved()) {
+      return n_visited;
+    }
+    NVisited cur_n_visited;
+    int i = 0;
+    bool proving = original_prob < 0.02 || original_prob > 0.98;
+    while (true) {
+      ++i;
+      if (evaluation.IsSolved() ||
+          (proving
+           &&
+           std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal)) > 1.2 * original_work + 40000
+          ) ||
+          (!proving
+           && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) -
+           initial_log_derivative < -3 * kLogDerivativeMultiplier)
+           && i > 2
+          ) ||
+          *thread_finished_ ||
+          transposition ||
+          i > 10) {
+//        std::cout << i << " " << proving << " " << original_prob << " " << leaf
+//        .Loss() << " + " << ExpectedLoss(evaluation, original_prob) -
+//        initial_log_derivative << " < " <<
+//        -kLogDerivativeMultiplier * 1.5 << "\n";
+//        std::cout << std::min(root->ProofNumber(eval_goal),
+//                              root->DisproofNumber(eval_goal)) << " " <<
+//                              original_work << "\n";
+        break;
+      }
+      assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
+      TreeNodeLeafToUpdate new_leaf_start = leaf.Copy();
+      auto new_leaf_opt = TreeNodeLeafToUpdate::BestDescendant(new_leaf_start);
+      if (!new_leaf_opt) {
+        break;
+      }
+      auto& new_leaf = *new_leaf_opt;
+      TreeNode* new_leaf_node = new_leaf.Leaf();
+      assert(new_leaf_node->IsLeaf());
+      assert(new_leaf_node->NThreadsWorking() == 1);
+      if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(),
+                                    max_proof)) {
+        cur_n_visited = SolvePosition(new_leaf, &transposition, max_proof);
+      } else {
+        cur_n_visited = AddChildren(new_leaf, &transposition);
+      }
+      new_leaf.Finalize(cur_n_visited);
+      n_visited += cur_n_visited;
+      root_node->UpdateFather();
+    }
     return n_visited;
   }
 
@@ -457,9 +454,9 @@ class EvaluatorDerivative {
     auto remaining_work = first_position_->RemainingWork();
     auto visited = first_position_->GetNVisited();
     float position = (float) visited / (visited + remaining_work);
-    float remaining_nodes = (visited + remaining_work) / 2000.0F;
+    float remaining_nodes = (visited + remaining_work) / 1500.0F;
     float current_nodes = tree_node_supplier_->NumTreeNodes();
-    return std::max(5000, std::min(100000, 20000 +
+    return std::max(2000, std::min(100000, 20000 +
         (int) ((current_nodes - pow(position, 0.7) * remaining_nodes) * 10)));
   }
 

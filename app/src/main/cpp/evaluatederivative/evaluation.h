@@ -36,6 +36,7 @@ constexpr float kBaseLogProofNumber = ConstexprPow(kMaxProofNumber, 1.0 / (kProo
 
 PN ProofNumberToByte(float proof_number);
 
+float ByteToProofNumberExplicit(PN byte);
 float ByteToProofNumber(PN byte);
 
 inline int LeafLogDerivative(float prob) {
@@ -47,10 +48,12 @@ struct CombineProb {
   int log_derivative[kProbStep + 1];
   PN combine_disproof_number[kProofNumberStep + 1][kProofNumberStep + 1];
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
+  float byte_to_proof_number[kProofNumberStep];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
     ProbCombiner combiner(ExpPolyLog<170>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
+      byte_to_proof_number[i] = ByteToProofNumberExplicit(i);
       for (int j = 0; j <= kProofNumberStep; ++j) {
         if (i == kProofNumberStep || j == kProofNumberStep) {
           combine_disproof_number[i][j] = kProofNumberStep;
@@ -220,37 +223,6 @@ class Evaluation {
     SetLeaf(1, 0, INFINITY);
   }
 
-  double GetValue(const Evaluation& father, NVisited n_visited) const {
-    float prob = father.ProbGreaterEqual();
-    assert(n_visited > 0);
-    if (IsSolved()) {
-      return -DBL_MAX;
-    }
-    if (prob == 0) {
-      assert(prob_greater_equal_ == kProbStep);
-      auto proof_number = ProofNumber();
-      return 0.00000001 * (
-          n_visited / (n_visited + proof_number) > 0.01 ?
-          log(n_visited) :
-          -log(n_visited / (n_visited + proof_number)));
-    } else if (prob == 1) {
-      auto proof_number_using_this = ByteToProofNumber(
-          kCombineProb.disproof_to_proof_number[disproof_number_
-          ][prob_greater_equal_]);
-      auto proof_number_father = father.ProofNumber();
-//      return -0.0001 * log(proof_number_using_this);
-//          // log(A6) / log($B$1 / 1000)
-      return
-          -0.0001 * log(
-              proof_number_using_this *
-              std::max(0.01, std::min(1.0,
-                  log(n_visited) / log(proof_number_father / 1000.0))))
-          ;
-    } else {
-      return LogDerivative(father);
-    }
-  }
-
   float RemainingWork() const {
     Check();
     // Needed to avoid 0 * infinity.
@@ -277,10 +249,10 @@ class Evaluation {
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
-  PN ProofNumberSmall() { return proof_number_; }
-  PN DisproofNumberSmall() { return disproof_number_; }
-  Probability ProbGreaterEqualSmall() { return prob_greater_equal_; }
-  int MaxLogDerivativeSmall() { return max_log_derivative_; }
+  PN ProofNumberSmall() const { return proof_number_; }
+  PN DisproofNumberSmall() const { return disproof_number_; }
+  Probability ProbGreaterEqualSmall() const { return prob_greater_equal_; }
+  int MaxLogDerivativeSmall() const { return max_log_derivative_; }
 
   void Set(Probability prob_greater_equal, PN proof_number,
            PN disproof_number, int max_log_derivative) {
