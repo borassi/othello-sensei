@@ -43,16 +43,6 @@ constexpr BitPattern kEdgePattern = ParsePattern(
     "--------"
     "--XXXX--");
 
-constexpr BitPattern kXPattern = ParsePattern(
-    "--------"
-    "-X----X-"
-    "--------"
-    "--------"
-    "--------"
-    "--------"
-    "-X----X-"
-    "--------");
-
 constexpr int NextNEmpties(int n_empties) {
   return std::min(64, std::max(0, n_empties - 1));
 }

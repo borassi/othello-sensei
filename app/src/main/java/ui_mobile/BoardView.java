@@ -54,7 +54,7 @@ public class BoardView extends View {
     fillGreen.setColor(Color.GREEN);
     fillGreen.setStyle(Paint.Style.FILL);
     drawBlack = new Paint();
-    drawBlack.setColor(Color.BLACK);
+    drawBlack.setColor(Color.GRAY);
     drawBlack.setStyle(Paint.Style.STROKE);
     fillBlack = new Paint();
     fillBlack.setColor(Color.BLACK);

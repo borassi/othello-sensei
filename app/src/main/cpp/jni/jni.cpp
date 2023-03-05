@@ -26,7 +26,6 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../utils/assets.h"
 #include <jni.h>
-#include <jni.h>
 
 constexpr int kNumEvaluators = 60;
 
@@ -68,8 +67,9 @@ class JNIWrapper {
       last_boards_(),
       last_gap_(-1),
       stopping_(false),
-      reset_(true),
-      book_(kBookFilepath) {
+      reset_(true)
+//      ,book_(kBookFilepath)
+      {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
@@ -77,13 +77,13 @@ class JNIWrapper {
           std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
-    if (!book_.Get(Board())->IsValid()) {
-      std::shared_ptr<TreeNode> t(new TreeNode());
-      t->Reset(Board().Player(), Board().Opponent(), 4, 0);
-      t->SetLeaf(-63, 63, 0, 1);
-      book_.Get(Board())->Update(*t);
-      book_.Commit();
-    }
+//    if (!book_.Get(Board())->IsValid()) {
+//      std::shared_ptr<TreeNode> t(new TreeNode());
+//      t->Reset(Board().Player(), Board().Opponent(), 4, 0);
+//      t->SetLeaf(-63, 63, 0, 1);
+//      book_.Get(Board())->Update(*t);
+//      book_.Commit();
+//    }
   }
 
   EvaluatorDerivative* BestEvaluator(float gap) {
@@ -158,9 +158,9 @@ class JNIWrapper {
     return TreeNodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
   }
 
-  jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    return TreeNodeToJava(book_.Get(player, opponent), env);
-  }
+//  jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
+//    return TreeNodeToJava(book_.Get(player, opponent), env);
+//  }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
     TreeNode* node = nullptr;
@@ -234,30 +234,30 @@ class JNIWrapper {
     return env->GetStaticObjectField(JavaStatus, status_id);
   }
 
-  void AddToBook(const Board& father, const std::vector<Board>& parents) {
-    if (!book_.Get(father)->IsValid()) {
-      return;
-    }
-    std::vector<TreeNode*> children;
-    children.reserve(last_boards_.size());
-    NVisited n_visited = 0;
-    for (int i = 0; i < last_boards_.size(); ++i) {
-      TreeNode* child = evaluator_derivative_[i]->GetFirstPosition();
-      children.push_back(child);
-      n_visited += child->GetNVisited();
-    }
-    std::vector<BookNode*> parents_node;
-
-    for (auto parent : parents) {
-      parents_node.push_back(book_.Get(parent));
-    }
-    book_.Get(father)->AddChildrenToBook(children);
-    LeafToUpdate<BookNode>::Leaf(parents_node).Finalize(n_visited);
-    book_.Commit();
-  }
+//  void AddToBook(const Board& father, const std::vector<Board>& parents) {
+//    if (!book_.Get(father)->IsValid()) {
+//      return;
+//    }
+//    std::vector<TreeNode*> children;
+//    children.reserve(last_boards_.size());
+//    NVisited n_visited = 0;
+//    for (int i = 0; i < last_boards_.size(); ++i) {
+//      TreeNode* child = evaluator_derivative_[i]->GetFirstPosition();
+//      children.push_back(child);
+//      n_visited += child->GetNVisited();
+//    }
+//    std::vector<BookNode*> parents_node;
+//
+//    for (auto parent : parents) {
+//      parents_node.push_back(book_.Get(parent));
+//    }
+//    book_.Get(father)->AddChildrenToBook(children);
+//    LeafToUpdate<BookNode>::Leaf(parents_node).Finalize(n_visited);
+//    book_.Commit();
+//  }
 
  private:
-  Book book_;
+//  Book book_;
   EvalType evals_;
   HashMap hash_map_;
   std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluator_derivative_;
@@ -347,7 +347,7 @@ JNIEXPORT void JNICALL Java_jni_JNI_addToBook(
     jobject parent = env->CallObjectMethod(parents, getId, i);
     parents_cpp.push_back(BoardToCPP(env, parent));
   }
-  JNIFromJava(env, obj)->AddToBook(BoardToCPP(env, board), parents_cpp);
+//  JNIFromJava(env, obj)->AddToBook(BoardToCPP(env, board), parents_cpp);
 }
 
 JNIEXPORT jobject JNICALL Java_jni_JNI_getStatus(JNIEnv* env, jobject obj) {
@@ -365,9 +365,10 @@ JNIEXPORT jobject JNICALL Java_jni_JNI_get(
 
 JNIEXPORT jobject JNICALL Java_jni_JNI_getFromBook(
     JNIEnv* env, jobject obj, jlong player, jlong opponent) {
-  return JNIFromJava(env, obj)->GetFromBook(
-      env, static_cast<BitPattern>(player),
-      static_cast<BitPattern>(opponent));
+  return NULL;
+//  JNIFromJava(env, obj)->GetFromBook(
+//      env, static_cast<BitPattern>(player),
+//      static_cast<BitPattern>(opponent));
 }
 
 JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong max_nvisited) {

@@ -38,7 +38,7 @@ double GaussianCDF(double x, double mean, double stddev) {
 }
 
 std::string PrettyPrintDouble(double d) {
-  std::locale::global(std::locale("en_US.UTF8"));
+//  std::locale::global(std::locale("en_US.UTF8"));
   if (d == INFINITY) {
     return "+Inf";
   } else if (d == -INFINITY) {

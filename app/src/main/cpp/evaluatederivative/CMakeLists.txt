@@ -158,6 +158,7 @@ target_link_libraries( # Specifies the target library.
         get_moves
         misc
         tree_node
+        evaluator_alpha_beta
         evaluator_depth_one_base
 )
 

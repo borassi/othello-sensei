@@ -120,6 +120,7 @@ public class Main implements Runnable {
   
   public void newGame() {
     stop();
+//    setBoard(new Board("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
     setBoard(new Board(), true);
   }
   

@@ -105,11 +105,21 @@ class TreeNode {
 
   float ProofNumber(Eval eval_goal) const {
     assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    if (eval_goal < lower_) {
+      return 0;
+    } else if (eval_goal > upper_) {
+      return std::numeric_limits<float>::infinity();
+    }
     return GetEvaluation(eval_goal).ProofNumber();
   }
 
   float DisproofNumber(Eval eval_goal) const {
     assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    if (eval_goal < lower_) {
+      return std::numeric_limits<float>::infinity();
+    } else if (eval_goal > upper_) {
+      return 0;
+    }
     return GetEvaluation(eval_goal).DisproofNumber();
   }
 
@@ -124,8 +134,8 @@ class TreeNode {
   }
 
   float GetEval() const {
-    int lower = std::max(lower_, WeakLower());
-    int upper = std::min(upper_, WeakUpper());
+    int lower = std::max(lower_ + 1, (int) WeakLower());
+    int upper = std::min(upper_ - 1, (int) WeakUpper());
     float eval = lower - 1;
     for (int i = lower; i <= upper; i += 2) {
       float prob = GetEvaluation(i).ProbGreaterEqual();
@@ -153,8 +163,8 @@ class TreeNode {
     player_ = player;
     opponent_ = opponent;
     n_empties_ = ::NEmpties(player, opponent);
-    lower_ = kMinEval - 1;
-    upper_ = kMaxEval + 1;
+    lower_ = kMinEval;
+    upper_ = kMaxEval;
     evaluator_ = evaluator;
     if (n_fathers_ != 0) {
       free(fathers_);
@@ -185,11 +195,12 @@ class TreeNode {
   }
 
   inline bool IsSolvedIn(Eval lower, Eval upper) const {
+    assert((lower - kMinEval) % 2 == 1);
     return upper_ <= lower || lower_ >= upper || IsSolved();
   }
 
   inline bool IsSolved() const {
-    return lower_ >= upper_ - 2;
+    return lower_ == upper_;
   }
 
   bool IsSolvedAtProb(float prob, Eval lower, Eval upper) {
@@ -216,24 +227,28 @@ class TreeNode {
 
   Eval GetPercentileUpper(float p) {
 //    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+    int lower = std::max(lower_ + 1, (int) WeakLower());
+    int upper = std::min(upper_ - 1, (int) WeakUpper());
+    for (int i = lower; i <= upper; i += 2) {
       const Evaluation& eval = GetEvaluation(i);
       if (eval.IsValid() && eval.ProbGreaterEqual() <= p) {
         return i - 1;
       }
     }
-    return 64;
+    return upper_;
   }
 
   Eval GetPercentileLower(float p) {
 //    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
-    for (int i = WeakUpper(); i >= WeakLower(); i -= 2) {
+    int lower = std::max(lower_ + 1, (int) WeakLower());
+    int upper = std::min(upper_ - 1, (int) WeakUpper());
+    for (int i = upper; i >= lower; i -= 2) {
       const Evaluation& eval = GetEvaluation(i);
       if (eval.IsValid() && eval.ProbGreaterEqual() >= 1 - p) {
         return i + 1;
       }
     }
-    return -64;
+    return lower_;
   }
 
   int ChildLogDerivative(TreeNode* child, int eval_goal) const {
@@ -340,9 +355,13 @@ class TreeNode {
 
   bool UpdateFather() {
     auto guard = Lock();
+    assert((WeakLower() - kMinEval) % 2 == 1);
+    assert((WeakUpper() - kMinEval) % 2 == 1);
+    assert((lower_ - kMinEval) % 2 == 0);
+    assert((upper_ - kMinEval) % 2 == 0);
+    assert(!IsLeaf());
     lower_ = kLessThenMinEval;
     upper_ = kLessThenMinEval;
-    assert(!IsLeaf());
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Initialize();
     }
@@ -397,9 +416,10 @@ class TreeNode {
 
     Eval lower_small = EvalLargeToEvalRound(lower);
     Eval upper_small = EvalLargeToEvalRound(upper);
-    lower_ = MaxEval(lower_, lower_small - 1);
-    upper_ = MinEval(upper_, upper_small + 1);
-    assert(lower_ < 65);
+    lower_ = MaxEval(lower_, lower_small);
+    upper_ = MinEval(upper_, upper_small);
+    assert(lower_ <= 64);
+    assert(upper_ >= -64);
   }
 
 
@@ -416,11 +436,11 @@ class TreeNode {
     auto lower_large = EvalToEvalLarge(lower_);
     auto upper_large = EvalToEvalLarge(upper_);
     if (leaf_eval_ < lower_large) {
-      leaf_eval_ = lower_large + 8;
+      leaf_eval_ = lower_large;
       assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
       SetLeafNoLock(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
     } else if (leaf_eval_ > upper_large) {
-      leaf_eval_ = upper_large - 8;
+      leaf_eval_ = upper_large;
       assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
       SetLeafNoLock(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
     }
@@ -470,11 +490,11 @@ class TreeNode {
     float prob_upper_prev = weak_upper_ - 4 >= weak_lower_ ?
         ProbGreaterEqual(weak_upper_ - 4) : 1;
     if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_
-        && weak_lower_ >= lower + 2) {
+        && weak_lower_ - 2 >= lower) {
       extend_lower = true;
     }
     if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_
-        && weak_upper_ <= upper - 2) {
+        && weak_upper_ + 2 <= upper) {
       extend_upper = true;
     }
     if (!extend_lower && !extend_upper && prob_lower_next >= 1) {
@@ -559,10 +579,12 @@ class TreeNode {
 //    return 0.0000000000001 * n_visited;
 //    auto proof_number = child_eval.ProofNumber();
 //    auto stage = n_visited / (n_visited + proof_number);
-    auto proof_number_father = father.ProofNumber();
-    return
-        GetNVisited() < proof_number_father / 100 ?
-        1E-12 * log(n_visited) : -1E12 * log(n_visited / proof_number_father);
+//    auto proof_number_father = father.ProofNumber();
+    auto result =
+//        GetNVisited() < proof_number_father * 100 ?
+        1E-16 * n_visited;// :
+//        -1E12 * (n_visited / child_eval.ProofNumber());
+    return result;
 //    return 1E-12 * (stage > 0.01 ? log(n_visited) : -stage);
   }
 
@@ -574,10 +596,10 @@ class TreeNode {
     const Evaluation& child_eval = GetEvaluation(eval_goal);
     auto proof_number_using_this =
         kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()];
-    auto proof_number_father = father.ProofNumber();
+//    auto proof_number_father = father.ProofNumber();
     return
-        GetNVisited() < sqrt(proof_number_father / 100) ?
-        -proof_number_using_this + 10 :
+//        GetNVisited() < sqrt(proof_number_father / 100) ?
+//        -proof_number_using_this + 10 :
         -proof_number_using_this;
   }
 
@@ -876,10 +898,6 @@ class LeafToUpdate {
     if (secondary_eval_goal != kLessThenMinEval) {
       BestDescendants(node, secondary_eval_goal, &result);
     }
-//    std::cout << "\nGot " << result.size() << " elements.\n  ";
-//    for (const auto& tmp : result) {
-//      std::cout << tmp.Loss() << " ";
-//    }
     return result;
   }
 

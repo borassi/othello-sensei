@@ -121,6 +121,16 @@ constexpr BitPattern kCornerPattern = ParsePattern(
         "--------"
         "--------"
         "X------X");
+
+constexpr BitPattern kXPattern = ParsePattern(
+    "--------"
+    "-X----X-"
+    "--------"
+    "--------"
+    "--------"
+    "--------"
+    "-X----X-"
+    "--------");
 Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent);
 
 #define FOR_EACH_SET_BIT(pattern, name) \

@@ -90,14 +90,20 @@ class Stats {
 
   void Reset() {
     std::fill(std::begin(n_visited_), std::end(n_visited_), 0);
+    time_deepen_ = 0;
+    time_next_position_ = 0;
   }
 
   void Add(NVisited n, StatsType type) { n_visited_[type] += n; }
+  void AddTimeDeepen(double t) { time_deepen_ += t; }
+  void AddTimeNextPosition(double t) { time_next_position_ += t; }
 
   void Merge(const Stats& other) {
     for (int i = 0; i < NO_TYPE; ++i) {
       n_visited_[i] += other.Get(static_cast<StatsType>(i));
     }
+    time_deepen_ += other.TimeDeepen();
+    time_next_position_ += other.TimeNextPosition();
   }
 
   NVisited GetAll() const {
@@ -112,8 +118,13 @@ class Stats {
     return n_visited_[type];
   }
 
+  double TimeDeepen() const { return time_deepen_; }
+  double TimeNextPosition() const { return time_next_position_; }
+
  private:
   std::array<NVisited, NO_TYPE> n_visited_;
+  double time_deepen_;
+  double time_next_position_;
 };
 
 class MoveIteratorBase {

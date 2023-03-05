@@ -74,24 +74,29 @@ struct TupleHasher
 
 class TreeNodeSupplier {
  public:
-
+  TreeNodeSupplier() : num_tree_nodes_(0) {
+    tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
+    tree_node_index_ = new int[kHashMapSize];
+    std::fill_n(tree_node_index_, kHashMapSize, kDerivativeEvaluatorSize);
+  }
+  ~TreeNodeSupplier() {
+    delete[] tree_nodes_;
+    delete[] tree_node_index_;
+  }
   const TreeNode* const Get(const Board& b, u_int8_t evaluator_index) {
     return Get(b.Player(), b.Opponent(), evaluator_index);
   }
 
   TreeNode* Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) {
-    const std::lock_guard<std::mutex> guard(mutex_);
     return GetNoLock(player, opponent, evaluator_index);
   }
 
   void Reset() {
-    const std::lock_guard<std::mutex> guard(mutex_);
-    tree_nodes_.clear();
+    num_tree_nodes_ = 0;
   }
 
   int NumTreeNodes() {
-    const std::lock_guard<std::mutex> guard(mutex_);
-    return tree_nodes_.size();
+    return num_tree_nodes_;
   }
 
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) {
@@ -100,7 +105,6 @@ class TreeNodeSupplier {
   }
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index, bool* newly_inserted) {
     assert(tree_nodes_.size() < kDerivativeEvaluatorSize);
-    const std::lock_guard<std::mutex> guard(mutex_);
     if (kUseTranspositions) {
       TreeNode* node = GetNoLock(player, opponent, evaluator_index);
       if (node != nullptr) {
@@ -108,27 +112,37 @@ class TreeNodeSupplier {
         return node;
       }
     }
-    *newly_inserted = true;
-    TreeNode& node = tree_nodes_[std::make_tuple(player, opponent,
-                                 evaluator_index)];
+
+    int hash = HashNoLock(player, opponent, evaluator_index);
+    int node_id = num_tree_nodes_++;
+    assert(node_id < kDerivativeEvaluatorSize);
+    TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth, evaluator_index);
+    tree_node_index_[hash] = node_id;
+    *newly_inserted = true;
     return &node;
   }
 
  private:
-  std::mutex mutex_;
-  // References are not invalidated:
-  // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
-  std::unordered_map<std::tuple<BitPattern, BitPattern, u_int8_t>,
-                     TreeNode, TupleHasher, TupleEqual> tree_nodes_;
+  TreeNode* tree_nodes_;
+  int* tree_node_index_;
+  std::atomic_int num_tree_nodes_;
+
+  int HashNoLock(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
+    return Hash(player, opponent) ^ std::hash<u_int8_t>{}(evaluator);
+  }
 
   TreeNode* GetNoLock(BitPattern player, BitPattern opponent, u_int8_t
                       evaluator) {
-    auto it = tree_nodes_.find(std::make_tuple(player, opponent, evaluator));
-    if (it == tree_nodes_.end()) {
+    int index = tree_node_index_[HashNoLock(player, opponent, evaluator)];
+    if (index >= num_tree_nodes_) {
       return nullptr;
     }
-    return &it->second;
+    TreeNode& node = tree_nodes_[index];
+    if (node.Player() == player && node.Opponent() == opponent && node.Evaluator() == evaluator) {
+      return &node;
+    }
+    return nullptr;
   }
 };
 
@@ -208,11 +222,11 @@ class EvaluatorThread {
           (!proving
            && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) -
            initial_log_derivative < -3 * kLogDerivativeMultiplier)
-           && i > 2
+           && i > 5
           ) ||
           *thread_finished_ ||
           transposition ||
-          i > 10) {
+          i > 30) {
 //        std::cout << i << " " << proving << " " << original_prob << " " << leaf
 //        .Loss() << " + " << ExpectedLoss(evaluation, original_prob) -
 //        initial_log_derivative << " < " <<
@@ -295,26 +309,18 @@ class EvaluatorThread {
       // Example:
       //      +4
       // -4   +0   +10
-      if (quick_eval < child_eval_goal + 4 * 8 && child_n_empties > 22) {
+      if (child_n_empties > 28 || (quick_eval < child_eval_goal + 4 * 8 && child_n_empties > 22)) {
         depth = 4;
-      } else if (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 20) {
+      } else if (child_n_empties > 24 || (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 20)) {
         depth = 3;
-      } else if (quick_eval < child_eval_goal + 26 * 8) {
-        depth = 2;
       } else {
-        depth = 1;
+        depth = 2;
       }
       NVisited cur_n_visited;
-      if (depth == 1) {
-        eval = quick_eval;
-        cur_n_visited = 1;
-        stats_.Add(1, TREE_NODE);
-      } else {
-        eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-        const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
-        stats_.Merge(cur_stats);
-        cur_n_visited = cur_stats.GetAll();
-      }
+      eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+      const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
+      stats_.Merge(cur_stats);
+      cur_n_visited = cur_stats.GetAll();
       n_visited += cur_n_visited;
       child->SetLeaf(-leaf.WeakUpper(), -leaf.WeakLower(), eval, depth);
       // Usually a no-op, but another thread might have added a father before
@@ -401,7 +407,6 @@ class EvaluatorDerivative {
     assert(kMinEval <= upper && upper <= kMaxEval);
     assert(lower <= upper);
     approx_ = approx;
-//    EvalLarge eval = next_evaluators_[0].Evaluate(player, opponent, 4, kMinEvalLarge, kMaxEvalLarge);
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
     first_position_->SetLeaf(lower, upper, 0, 4);
     last_update_weak_ = 0;
@@ -466,7 +471,9 @@ class EvaluatorDerivative {
     UpdateWeakLowerUpper();
     while (!CheckFinished()) {
       thread_finished_ = false;
+      ElapsedTime time_next;
       next_leaves = GetNextPosition();
+      stats_.AddTimeNextPosition(time_next.Get());
       current_leaf = 0;
       num_batches_++;
       sum_batch_sizes_ += next_leaves.size();
@@ -474,6 +481,7 @@ class EvaluatorDerivative {
       futures.reserve(threads_.size());
       int num_threads = std::min(threads_.size(), next_leaves.size());
       int visited_for_endgame = VisitedForEndgame();
+      ElapsedTime time_deepen;
       for (int i = 0; i < num_threads; ++i) {
         futures.push_back(std::async(
             i == 0 ? std::launch::deferred : std::launch::async,
@@ -486,6 +494,7 @@ class EvaluatorDerivative {
         futures[i].get();
         stats_.Merge(threads_[i]->GetStats());
       }
+      stats_.AddTimeDeepen(time_deepen.Get());
       assert (GetFirstPosition()->NThreadsWorking() == 0);
       just_started_ = false;
       UpdateWeakLowerUpper();
