@@ -160,6 +160,7 @@ target_link_libraries( # Specifies the target library.
         tree_node
         evaluator_alpha_beta
         evaluator_depth_one_base
+        tbb
 )
 
 add_executable(

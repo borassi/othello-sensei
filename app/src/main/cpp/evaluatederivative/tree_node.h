@@ -579,12 +579,13 @@ class TreeNode {
 //    return 0.0000000000001 * n_visited;
 //    auto proof_number = child_eval.ProofNumber();
 //    auto stage = n_visited / (n_visited + proof_number);
-//    auto proof_number_father = father.ProofNumber();
+    auto proof_number_father = father.ProofNumber();
     auto result =
-//        GetNVisited() < proof_number_father * 100 ?
-        1E-16 * n_visited;// :
-//        -1E12 * (n_visited / child_eval.ProofNumber());
+        GetNVisited() + 10000 < proof_number_father / 100 ?
+        1E-16 * n_visited :
+        -1E16 * (n_visited / child_eval.ProofNumber());
     return result;
+//    return -1E16 * (n_visited / child_eval.ProofNumber());
 //    return 1E-12 * (stage > 0.01 ? log(n_visited) : -stage);
   }
 
@@ -595,12 +596,19 @@ class TreeNode {
   double GetValueWinning(const Evaluation& father, int eval_goal) const {
     const Evaluation& child_eval = GetEvaluation(eval_goal);
     auto proof_number_using_this =
-        kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()];
-//    auto proof_number_father = father.ProofNumber();
-    return
-//        GetNVisited() < sqrt(proof_number_father / 100) ?
-//        -proof_number_using_this + 10 :
-        -proof_number_using_this;
+        ByteToProofNumber(kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()]);
+    auto ratio = GetNVisited() / father.ProofNumber();
+    float multiplier = -1;
+    if (ratio < 1E-5) {
+      multiplier = -0.3;
+    } else if (ratio < 1E-4) {
+      multiplier = -0.6;
+    } else if (ratio < 1E-3) {
+      multiplier = -0.8;
+    } else if (ratio < 1E-2) {
+      multiplier = -0.9;
+    }
+    return proof_number_using_this * multiplier;
   }
 
   template<ChildValueType type>

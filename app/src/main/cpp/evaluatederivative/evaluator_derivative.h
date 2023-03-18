@@ -74,25 +74,36 @@ struct TupleHasher
 
 class TreeNodeSupplier {
  public:
-  TreeNodeSupplier() : num_tree_nodes_(0) {
+  TreeNodeSupplier() : num_tree_nodes_(0), tree_node_index_(kHashMapSize) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
-    tree_node_index_ = new int[kHashMapSize];
-    std::fill_n(tree_node_index_, kHashMapSize, kDerivativeEvaluatorSize);
   }
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
-    delete[] tree_node_index_;
   }
   const TreeNode* const Get(const Board& b, u_int8_t evaluator_index) {
     return Get(b.Player(), b.Opponent(), evaluator_index);
   }
 
   TreeNode* Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) {
-    return GetNoLock(player, opponent, evaluator_index);
+    for (int hash = HashNode(player, opponent, evaluator_index);
+         true;
+         hash = (hash + 1) % tree_node_index_.size()) {
+      int index = tree_node_index_[hash];
+      if (index >= num_tree_nodes_) {
+        return nullptr;
+      }
+      TreeNode& node = tree_nodes_[index];
+      if (node.Player() == player && node.Opponent() == opponent && node.Evaluator() == evaluator_index) {
+        return &node;
+      }
+    }
   }
 
   void Reset() {
     num_tree_nodes_ = 0;
+    for (int i = 0; i < tree_node_index_.size(); ++i) {
+      tree_node_index_[i] = kDerivativeEvaluatorSize;
+    }
   }
 
   int NumTreeNodes() {
@@ -106,43 +117,38 @@ class TreeNodeSupplier {
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index, bool* newly_inserted) {
     assert(tree_nodes_.size() < kDerivativeEvaluatorSize);
     if (kUseTranspositions) {
-      TreeNode* node = GetNoLock(player, opponent, evaluator_index);
+      TreeNode* node = Get(player, opponent, evaluator_index);
       if (node != nullptr) {
         *newly_inserted = false;
         return node;
       }
     }
 
-    int hash = HashNoLock(player, opponent, evaluator_index);
     int node_id = num_tree_nodes_++;
     assert(node_id < kDerivativeEvaluatorSize);
     TreeNode& node = tree_nodes_[node_id];
     node.Reset(player, opponent, depth, evaluator_index);
-    tree_node_index_[hash] = node_id;
+    AddToHashMap(player, opponent, evaluator_index, node_id);
     *newly_inserted = true;
     return &node;
   }
 
  private:
   TreeNode* tree_nodes_;
-  int* tree_node_index_;
+  std::vector<std::atomic_int> tree_node_index_;
   std::atomic_int num_tree_nodes_;
 
-  int HashNoLock(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
-    return Hash(player, opponent) ^ std::hash<u_int8_t>{}(evaluator);
+  void AddToHashMap(BitPattern player, BitPattern opponent, u_int8_t evaluator_index, int node_id) {
+    int hash = HashNode(player, opponent, evaluator_index);
+    int expected = kDerivativeEvaluatorSize;
+    while (!tree_node_index_[hash].compare_exchange_strong(expected, node_id)) {
+      hash = (hash + 1) % tree_node_index_.size();
+      expected = kDerivativeEvaluatorSize;
+    }
   }
 
-  TreeNode* GetNoLock(BitPattern player, BitPattern opponent, u_int8_t
-                      evaluator) {
-    int index = tree_node_index_[HashNoLock(player, opponent, evaluator)];
-    if (index >= num_tree_nodes_) {
-      return nullptr;
-    }
-    TreeNode& node = tree_nodes_[index];
-    if (node.Player() == player && node.Opponent() == opponent && node.Evaluator() == evaluator) {
-      return &node;
-    }
-    return nullptr;
+  int HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
+    return Hash(player, opponent) ^ std::hash<u_int8_t>{}(evaluator);
   }
 };
 
@@ -459,7 +465,7 @@ class EvaluatorDerivative {
     auto remaining_work = first_position_->RemainingWork();
     auto visited = first_position_->GetNVisited();
     float position = (float) visited / (visited + remaining_work);
-    float remaining_nodes = (visited + remaining_work) / 1500.0F;
+    float remaining_nodes = (visited + remaining_work) / 1200.0F;
     float current_nodes = tree_node_supplier_->NumTreeNodes();
     return std::max(2000, std::min(100000, 20000 +
         (int) ((current_nodes - pow(position, 0.7) * remaining_nodes) * 10)));
