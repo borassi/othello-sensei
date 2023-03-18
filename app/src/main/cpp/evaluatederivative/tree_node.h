@@ -622,6 +622,33 @@ class TreeNode {
     }
   }
 
+
+  template<ChildValueType type>
+  TreeNode* BestChild(int eval_goal) {
+    assert(!leaf_->IsLeaf());
+    assert(eval_goal_ >= weak_lower_ && eval_goal_ <= weak_upper_);
+    const Evaluation& father_eval = GetEvaluation(eval_goal);
+    assert(!father_eval.IsSolved());
+    double best_child_value = -INFINITY;
+    TreeNode* best_child = nullptr;
+    auto start = ChildrenStart();
+    auto end = ChildrenEnd();
+    int child_eval_goal = -eval_goal;
+    for (auto child = start; child != end; ++child) {
+      if (child_eval_goal <= (*child)->Lower() || child_eval_goal >= (*child)->Upper()) {
+        continue;
+      }
+      assert(!(*child)->GetEvaluation(child_eval_goal).IsSolved());
+      assert(father_eval.ProbGreaterEqual() >= 1 - (*child)->GetEvaluation(child_eval_goal).ProbGreaterEqual() - 0.001);
+      double cur_loss = (*child)->template GetValue<type>(father_eval, child_eval_goal);
+      if (cur_loss > best_child_value) {
+        best_child = *child;
+        best_child_value = cur_loss;
+      }
+    }
+    return best_child;
+  }
+
  protected:
   mutable std::mutex mutex_;
   BitPattern player_;
@@ -970,38 +997,12 @@ class LeafToUpdate {
   Node* BestChild() const {
     auto prob = leaf_->GetEvaluation(eval_goal_).ProbGreaterEqualSmall();
     if (prob == 0) {
-      return BestChild<LOSING>();
+      return leaf_->template BestChild<LOSING>(eval_goal_);
     } else if (prob == kProbStep) {
-      return BestChild<WINNING>();
+      return leaf_->template BestChild<WINNING>(eval_goal_);
     } else {
-      return BestChild<DEFAULT>();
+      return leaf_->template BestChild<DEFAULT>(eval_goal_);
     }
-  }
-
-  template<ChildValueType type>
-  Node* BestChild() const {
-    assert(!leaf_->IsLeaf());
-    assert(eval_goal_ >= weak_lower_ && eval_goal_ <= weak_upper_);
-    const Evaluation& father_eval = leaf_->GetEvaluation(eval_goal_);
-    assert(!father_eval.IsSolved());
-    double best_child_value = -INFINITY;
-    Node* best_child = nullptr;
-    auto start = leaf_->ChildrenStart();
-    auto end = leaf_->ChildrenEnd();
-    int child_eval_goal = -eval_goal_;
-    for (auto child = start; child != end; ++child) {
-      if (child_eval_goal <= (*child)->Lower() || child_eval_goal >= (*child)->Upper()) {
-        continue;
-      }
-      assert(!(*child)->GetEvaluation(child_eval_goal).IsSolved());
-      assert(father_eval.ProbGreaterEqual() >= 1 - (*child)->GetEvaluation(child_eval_goal).ProbGreaterEqual() - 0.001);
-      double cur_loss = (*child)->template GetValue<type>(father_eval, child_eval_goal);
-      if (cur_loss > best_child_value) {
-        best_child = (Node*) *child;
-        best_child_value = cur_loss;
-      }
-    }
-    return best_child;
   }
 
   Node* NextChildren(NextNodesPriorityQueue* next_nodes) const {
@@ -1016,7 +1017,7 @@ class LeafToUpdate {
   }
   template<ChildValueType type>
   Node* NextChildren(NextNodesPriorityQueue* next_nodes) const {
-    Node* best_child = this->template BestChild<type>();
+    Node* best_child = leaf_->template BestChild<type>(EvalGoal());
     const Evaluation& father_eval = leaf_->GetEvaluation(EvalGoal());
     const Evaluation& best_child_eval = best_child->GetEvaluation(-EvalGoal());
     float best_child_prob = best_child_eval.ProbGreaterEqual();
