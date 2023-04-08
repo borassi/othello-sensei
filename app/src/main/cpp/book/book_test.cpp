@@ -343,7 +343,7 @@ TEST(Book, BestDescendant) {
   std::unordered_map<Board, int> evals = {{Board("e6f4d3c4c3"), 0}, {Board("e6f4e3"), 2}};
   Book book = BookWithPositions(lines, evals, /*skip=*/{}, /*visited=*/{});
   BookNode* start = book.Get(Board("e6f4"));
-  auto result = LeafToUpdate<BookNode>::BestDescendant(start);
+  auto result = LeafToUpdate<BookNode>::BestDescendant(start, 0);
   EXPECT_TRUE(result);
   EXPECT_EQ(result->Leaf()->ToBoard().Unique(), Board("e6f4d3c4c3").Unique());
 }

@@ -75,6 +75,34 @@ enum ChildValueType {
   LOSING = 2
 };
 
+template<class Node>
+class LeafToUpdate;
+
+struct TreeNodeSummarized {
+  Eval weak_lower;
+  Eval weak_upper;
+  Eval lower;
+  Eval upper;
+  float prob_weak_lower;
+  float prob_weak_lower_next;
+  float prob_weak_upper;
+  float prob_weak_upper_prev;
+
+  TreeNodeSummarized(
+      Eval weak_lower, Eval weak_upper, Eval lower, Eval upper,
+      float prob_weak_lower, float prob_weak_lower_next,
+      float prob_weak_upper, float prob_weak_upper_prev) :
+      weak_lower(weak_lower),
+      weak_upper(weak_upper),
+      lower(lower),
+      upper(upper),
+      prob_weak_lower(prob_weak_lower),
+      prob_weak_lower_next(prob_weak_lower_next),
+      prob_weak_upper(prob_weak_upper),
+      prob_weak_upper_prev(prob_weak_upper_prev)
+      {}
+};
+
 class TreeNode {
  public:
   TreeNode() :
@@ -87,7 +115,7 @@ class TreeNode {
       evaluator_(255) {}
   TreeNode(const TreeNode&) = delete;
   ~TreeNode() {
-    Reset(0, 0, 0, 0);
+    Reset(0, 0, 0, 0, kLessThenMinEval, kLessThenMinEval);
   }
 
   Square NEmpties() const { return n_empties_; }
@@ -149,13 +177,13 @@ class TreeNode {
     return eval;
   }
 
-  virtual void Reset(Board b, int depth, u_int8_t evaluator) {
-    Reset(b.Player(), b.Opponent(), depth, evaluator);
+  virtual void Reset(Board b, int depth, Eval weak_lower, Eval weak_upper, u_int8_t evaluator) {
+    Reset(b.Player(), b.Opponent(), weak_lower, weak_upper, depth, evaluator);
   }
 
   virtual void Reset(BitPattern player, BitPattern opponent, int depth,
-                     u_int8_t evaluator) {
-    auto guard = Lock();
+                     Eval weak_lower, Eval weak_upper, u_int8_t evaluator) {
+    auto guard = WriteLock();
     if (evaluations_ != nullptr) {
       free(evaluations_);
       evaluations_ = nullptr;
@@ -175,9 +203,11 @@ class TreeNode {
       n_children_ = 0;
     }
     depth_ = depth;
-    weak_lower_ = kLessThenMinEval;
-    weak_upper_ = kLessThenMinEval;
+    weak_lower_ = weak_lower;
+    weak_upper_ = weak_upper;
     min_evaluation_ = weak_lower_;
+    EnlargeEvaluations();
+
     leaf_eval_ = kLessThenMinEvalLarge;
     eval_depth_ = 0;
     n_threads_working_ = 0;
@@ -278,10 +308,6 @@ class TreeNode {
     descendants_ += n;
   }
 
-  void IncreaseNThreadsWorking(int amount) {
-    n_threads_working_ += amount;
-  }
-
   void IncreaseNThreadsWorking() {
     n_threads_working_++;
   }
@@ -328,33 +354,42 @@ class TreeNode {
   virtual bool IsLeaf() const { return n_children_ == 0; }
   Square Depth() const { return depth_; }
 
-  std::lock_guard<std::mutex> Lock() const {
+  std::lock_guard<std::mutex> ReadLock() const {
+    return std::lock_guard<std::mutex>{mutex_};
+  }
+
+  std::lock_guard<std::mutex> WriteLock() const {
     return std::lock_guard<std::mutex>{mutex_};
   }
 
   inline bool IsValid() const {
+    ReadLock();
+    return IsValidNoLock();
+  }
+
+  inline bool IsValidNoLock() const {
     return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
   virtual void GetFathersFromBook() {}
 
   void UpdateFathers() {
-    if (NThreadsWorking() > 0) {
-      return;
-    }
     GetFathersFromBook();
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
     for (int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
       assert(!father->IsLeaf());
-      if (father->UpdateFather()) {
-        father->UpdateFathers();
-      }
+      father->UpdateFather();
+      father->UpdateFathers();
     }
   }
 
-  bool UpdateFather() {
-    auto guard = Lock();
+  void UpdateFather() {
+    auto guard = WriteLock();
+    UpdateFatherNoLock();
+  }
+
+  void UpdateFatherNoLock() {
     assert((WeakLower() - kMinEval) % 2 == 1);
     assert((WeakUpper() - kMinEval) % 2 == 1);
     assert((lower_ - kMinEval) % 2 == 0);
@@ -368,16 +403,16 @@ class TreeNode {
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
     for (auto child = start; child != end; ++child) {
-      if (!UpdateWithChild(**child)) {
-        return false;
-      }
+      UpdateWithChild(**child);
     }
     // Mark as valid.
     leaf_eval_ = 0;
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Finalize();
+      auto eval = GetEvaluation(i);
+      assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
     }
-    return true;
+    assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
   }
 
   std::vector<TreeNode*> GetChildren() {
@@ -391,24 +426,22 @@ class TreeNode {
   }
 
   void SetChildren(std::vector<TreeNode*> children) {
-    {
-      auto guard = Lock();
-      n_children_ = (Square) children.size();
-      children_ = new TreeNode*[n_children_];
-      for (int i = 0; i < n_children_; ++i) {
-        TreeNode* child = children[i];
-        assert(!child->IsValid() || (child->WeakLower() - kMinEval) % 2 == 1);
-        child->AddFather(this);
-        children_[i] = child;
-      }
+    auto guard = WriteLock();
+    n_children_ = (Square) children.size();
+    children_ = new TreeNode*[n_children_];
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children[i];
+      assert(!child->IsValidNoLock() || (child->WeakLower() - kMinEval) % 2 == 1);
+      child->AddFather(this);
+      children_[i] = child;
     }
-    UpdateFather();
+    UpdateFatherNoLock();
     assert(AreChildrenCorrect());
   }
 
   void SetSolved(EvalLarge lower, EvalLarge upper) {
-    auto guard = Lock();
-    assert(IsValid());
+    auto guard = WriteLock();
+    assert(IsValidNoLock());
     assert(lower % 16 == 0);
     assert(upper % 16 == 0);
     assert(IsLeaf());
@@ -420,31 +453,38 @@ class TreeNode {
     upper_ = MinEval(upper_, upper_small);
     assert(lower_ <= 64);
     assert(upper_ >= -64);
+    UpdateLeafEvalNoLock();
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
+    }
   }
 
-
-  virtual void SetLeaf(Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval,
-                       Square depth) {
-    auto guard = Lock();
-    SetLeafNoLock(weak_lower, weak_upper, leaf_eval, depth);
+  virtual void SetLeafIfInvalid(EvalLarge leaf_eval, Square depth) {
+    auto guard = WriteLock();
+    if (!IsValidNoLock()) {
+      SetLeafNoLock(leaf_eval, depth);
+    }
   }
 
-  virtual void UpdateLeafEval() {
-    auto guard = Lock();
-    assert(IsValid());
+  virtual void SetLeaf(EvalLarge leaf_eval, Square depth) {
+    auto guard = WriteLock();
+    SetLeafNoLock(leaf_eval, depth);
+  }
+
+  virtual void UpdateLeafEvalNoLock() {
+    assert(IsValidNoLock());
     assert(IsLeaf());
     auto lower_large = EvalToEvalLarge(lower_);
     auto upper_large = EvalToEvalLarge(upper_);
     if (leaf_eval_ < lower_large) {
       leaf_eval_ = lower_large;
       assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
-      SetLeafNoLock(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
     } else if (leaf_eval_ > upper_large) {
       leaf_eval_ = upper_large;
       assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
-      SetLeafNoLock(weak_lower_, weak_upper_, leaf_eval_, eval_depth_);
     }
-    assert(IsValid());
+    SetLeafNoLock(leaf_eval_, eval_depth_);
+    assert(IsValidNoLock());
   }
 
   float RemainingWork() const {
@@ -463,6 +503,9 @@ class TreeNode {
     assert(IsLeaf());
     assert(n_empties_ >= 0 && n_empties_ <= 60);
 
+    assert ((alpha - kMinEval) % 2 == 1);
+    assert ((beta - kMinEval) % 2 == 1);
+
     for (Eval i = alpha; i <= beta; i += 2) {
       assert(i >= weak_lower_ && i <= weak_upper_);
       Evaluation eval = GetEvaluation(i);
@@ -474,48 +517,18 @@ class TreeNode {
     return true;
   }
 
-  bool UpdateWeakLowerUpper(Eval lower, Eval upper) {
-    assert((lower - kMinEval) % 2 == 1);
-    assert((upper - kMinEval) % 2 == 1);
-    assert(kMinEval <= lower && lower <= kMaxEval);
-    assert(kMinEval <= upper && upper <= kMaxEval);
-    assert(weak_lower_ >= lower && weak_upper_ <= upper);
-    bool extend_lower = false;
-    bool extend_upper = false;
-    bool reduced = false;
-    float prob_lower = ProbGreaterEqual(weak_lower_);
-    float prob_upper = ProbGreaterEqual(weak_upper_);
-    float prob_lower_next = weak_lower_ + 4 <= weak_upper_ ?
-        ProbGreaterEqual(weak_lower_ + 4) : 0;
-    float prob_upper_prev = weak_upper_ - 4 >= weak_lower_ ?
-        ProbGreaterEqual(weak_upper_ - 4) : 1;
-    if (prob_lower < 1 - kProbIncreaseWeakEval && weak_lower_ - 2 >= lower_
-        && weak_lower_ - 2 >= lower) {
-      extend_lower = true;
-    }
-    if (prob_upper > kProbIncreaseWeakEval && weak_upper_ + 2 <= upper_
-        && weak_upper_ + 2 <= upper) {
-      extend_upper = true;
-    }
-    if (!extend_lower && !extend_upper && prob_lower_next >= 1) {
-      weak_lower_ += 2;
-      assert(weak_lower_ <= weak_upper_);
-      reduced = true;
-    }
-    if (!extend_lower && !extend_upper && prob_upper_prev <= 0) {
-      weak_upper_ -= 2;
-      assert(weak_lower_ <= weak_upper_);
-      reduced = true;
-    }
-    {
-      if (extend_lower) {
-        ExtendEval(weak_lower_ - 2);
-      }
-      if (extend_upper) {
-        ExtendEval(weak_upper_ + 2);
-      }
-    }
-    return reduced || extend_upper || extend_lower;
+  TreeNodeSummarized ToTreeNodeSummarized(Eval new_weak_lower, Eval new_weak_upper) {
+    assert(weak_lower_ <= new_weak_lower && new_weak_lower <= new_weak_upper && new_weak_upper <= weak_upper_);
+    ReadLock();
+    return TreeNodeSummarized(
+        weak_lower_,
+        weak_upper_,
+        lower_,
+        upper_,
+        ProbGreaterEqual(new_weak_lower),
+        new_weak_lower + 4 <= weak_upper_ ? ProbGreaterEqual(new_weak_lower + 4) : 0,
+        ProbGreaterEqual(new_weak_upper),
+        new_weak_upper - 4 >= weak_lower_ ? ProbGreaterEqual(new_weak_upper - 4) : 1);
   }
 
   std::vector<TreeNode*> Fathers() const {
@@ -547,8 +560,8 @@ class TreeNode {
   }
 
   bool Equals(const TreeNode& other, bool approx) const {
-    assert(IsValid());
-    assert(other.IsValid());
+    assert(IsValidNoLock());
+    assert(other.IsValidNoLock());
     if (!EqualsExceptDescendants(other)) {
       return false;
     }
@@ -572,81 +585,162 @@ class TreeNode {
     return children_ + n_children_;
   }
 
-  double GetValueLosing(const Evaluation& father, int eval_goal) const {
-    const Evaluation& child_eval = GetEvaluation(eval_goal);
-    NVisited n_visited = GetNVisited();
-    assert(child_eval.ProbGreaterEqual() == 1);
-//    return 0.0000000000001 * n_visited;
-//    auto proof_number = child_eval.ProofNumber();
-//    auto stage = n_visited / (n_visited + proof_number);
-    auto proof_number_father = father.ProofNumber();
-    auto result =
-        GetNVisited() + 10000 < proof_number_father / 100 ?
-        1E-16 * n_visited :
-        -1E16 * (n_visited / child_eval.ProofNumber());
-    return result;
-//    return -1E16 * (n_visited / child_eval.ProofNumber());
-//    return 1E-12 * (stage > 0.01 ? log(n_visited) : -stage);
-  }
-
-  double GetValueDefault(const Evaluation& father, int eval_goal) const {
-    return GetEvaluation(eval_goal).LogDerivative(father);
-  }
-
-  double GetValueWinning(const Evaluation& father, int eval_goal) const {
-    const Evaluation& child_eval = GetEvaluation(eval_goal);
-    auto proof_number_using_this =
-        ByteToProofNumber(kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()]);
-    auto ratio = GetNVisited() / father.ProofNumber();
-    float multiplier = -1;
-    if (ratio < 1E-5) {
-      multiplier = -0.3;
-    } else if (ratio < 1E-4) {
-      multiplier = -0.6;
-    } else if (ratio < 1E-3) {
-      multiplier = -0.8;
-    } else if (ratio < 1E-2) {
-      multiplier = -0.9;
-    }
-    return proof_number_using_this * multiplier;
-  }
-
   template<ChildValueType type>
-  double GetValue(const Evaluation& father, int eval_goal) const {
-    if (type == LOSING) {
-      return GetValueLosing(father, eval_goal);
-    } else if (type == WINNING) {
-      return GetValueWinning(father, eval_goal);
-    } else {
-      return GetValueDefault(father, eval_goal);
-    }
-  }
-
-
-  template<ChildValueType type>
-  TreeNode* BestChild(int eval_goal) {
-    assert(!leaf_->IsLeaf());
-    assert(eval_goal_ >= weak_lower_ && eval_goal_ <= weak_upper_);
+  TreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
+    assert(!IsLeaf());
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     const Evaluation& father_eval = GetEvaluation(eval_goal);
-    assert(!father_eval.IsSolved());
+//    assert(!father_eval.IsSolved());
     double best_child_value = -INFINITY;
     TreeNode* best_child = nullptr;
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
     int child_eval_goal = -eval_goal;
-    for (auto child = start; child != end; ++child) {
-      if (child_eval_goal <= (*child)->Lower() || child_eval_goal >= (*child)->Upper()) {
+    for (auto iter = start; iter != end; ++iter) {
+      TreeNode* child = *iter;
+      auto guard = child->ReadLock();
+      if (child_eval_goal <= child->Lower() || child_eval_goal >= child->Upper() ||
+          child_eval_goal < child->WeakLower() || child_eval_goal > child->WeakUpper()) {
         continue;
       }
-      assert(!(*child)->GetEvaluation(child_eval_goal).IsSolved());
-      assert(father_eval.ProbGreaterEqual() >= 1 - (*child)->GetEvaluation(child_eval_goal).ProbGreaterEqual() - 0.001);
-      double cur_loss = (*child)->template GetValue<type>(father_eval, child_eval_goal);
+      assert(!child->GetEvaluation(child_eval_goal).IsSolved());
+//      assert(father_eval.ProbGreaterEqual() >= 1 - child->GetEvaluation(child_eval_goal).ProbGreaterEqual() - 0.001);
+      double cur_loss = child->template GetValue<type>(father_eval, child_eval_goal, n_thread_multiplier);
       if (cur_loss > best_child_value) {
-        best_child = *child;
+        best_child = child;
         best_child_value = cur_loss;
       }
     }
+    if (best_child != nullptr && !best_child->IsLeaf()) {
+      best_child->IncreaseNThreadsWorking();
+    }
     return best_child;
+  }
+
+  bool TryLockLeaf() {
+    auto guard = ReadLock();
+    // Some other thread has added this node's children when I was not looking.
+    if (!IsLeaf()) {
+      return false;
+    }
+    uint8_t expected = 0;
+    bool locked = n_threads_working_.compare_exchange_strong(expected, (uint8_t) 1);
+    assert((locked && expected == 0) || (!locked && expected == 1));
+    return locked;
+  }
+
+  bool IsSolved(Eval lower, Eval upper, bool approx) {
+    auto guard = ReadLock();
+    return IsSolvedIn(lower, upper) || (IsPartiallySolved(lower, upper) && approx);
+  }
+
+  template<class T>
+  std::optional<LeafToUpdate<T>> AsLeaf() {
+    auto guard = ReadLock();
+    auto eval_goal = NextPositionEvalGoal(0, 1);
+    if (eval_goal == kLessThenMinEval) {
+      return std::nullopt;
+    }
+    return AsLeafNoLock<T>(eval_goal);
+  }
+
+  template<class T>
+  LeafToUpdate<T> AsLeafNoLock(Eval eval_goal) {
+    LeafToUpdate<T> leaf;
+    leaf.leaf_ = (T*) this;
+    leaf.parents_ = {(T*) this};
+    leaf.eval_goal_ = eval_goal;
+    leaf.weak_lower_ = weak_lower_;
+    leaf.weak_upper_ = weak_upper_;
+
+    leaf.alpha_ = MinEval(eval_goal, MaxEval(
+        leaf.weak_lower_, GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
+    leaf.beta_ = MaxEval(eval_goal, MinEval(
+        leaf.weak_upper_, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
+
+    assert(leaf.weak_lower_ <= leaf.alpha_ && leaf.alpha_ <= leaf.eval_goal_ && leaf.eval_goal_ <= leaf.beta_
+           && leaf.beta_ <= leaf.weak_upper_);
+    return leaf;
+  }
+
+  template<class T>
+  void UpdateAlphaBeta(LeafToUpdate<T>* leaf) {
+    auto guard = ReadLock();
+    leaf->alpha_ = MinEval(leaf->eval_goal_, MaxEval(
+        leaf->alpha_, GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
+    leaf->beta_ = MaxEval(leaf->eval_goal_, MinEval(
+        leaf->beta_, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
+  }
+
+  LeafToUpdate<TreeNode> AsLeaf(Eval eval_goal);
+  std::optional<LeafToUpdate<TreeNode>> AsLeaf();
+
+  void ExtendEval(Eval value) {
+    auto guard = WriteLock();
+    if (value < weak_lower_) {
+      assert(value == weak_lower_ - 2);
+      assert((value - kMinEval) % 2 == 1);
+      if (value < min_evaluation_) {
+        int shift = (min_evaluation_ - value) / 2;
+        int old_size = ToEvaluationIndex(weak_upper_) + 1;
+        min_evaluation_ = value;
+        EnlargeEvaluations();
+        memmove(evaluations_ + shift, evaluations_, sizeof(Evaluation) * old_size);
+      }
+      weak_lower_ = value;
+    } else if (value > weak_upper_) {
+      assert(value == weak_upper_ + 2);
+      weak_upper_ = value;
+      EnlargeEvaluations();
+    }
+    if (IsLeaf()) {
+      UpdateLeafEvaluation(value);
+      return;
+    }
+    for (int i = 0; i < n_children_; ++i) {
+      children_[i]->ExtendEval(-value);
+    }
+    UpdateFatherNoLock();
+    assert(AllValidEvals());
+  }
+
+  void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
+    auto guard = WriteLock();
+    assert(IsLeaf());
+    assert(weak_lower >= kMinEval && weak_lower <= kMaxEval && (weak_lower - kMinEval) % 2 == 1);
+    assert(weak_upper >= kMinEval && weak_upper <= kMaxEval && (weak_upper - kMinEval) % 2 == 1);
+    assert(weak_lower <= weak_upper);
+    assert(weak_lower_ == kLessThenMinEval || weak_lower >= weak_lower_);
+    assert(weak_upper_ == kLessThenMinEval || weak_upper <= weak_upper_);
+    assert((weak_lower_ == kLessThenMinEval) == (weak_upper_ == kLessThenMinEval));
+    weak_lower_ = MaxEval(weak_lower, weak_lower_);
+    weak_upper_ = MinEval(weak_upper, weak_upper_);
+  }
+
+  template<ChildValueType type>
+  double GetValue(const Evaluation& father, int eval_goal, float n_thread_multiplier) const {
+    if (type == LOSING) {
+      return GetValueLosing(father, eval_goal);
+    } else if (type == WINNING) {
+      return GetValueWinning(father, eval_goal);
+    } else {
+      return GetValueDefault(father, eval_goal, n_thread_multiplier);
+    }
+  }
+
+  TreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
+    auto guard = ReadLock();
+    if (eval_goal < weak_lower_ || eval_goal > weak_upper_) {
+      return nullptr;
+    }
+    auto prob = GetEvaluation(eval_goal).ProbGreaterEqualSmall();
+    if (prob == 0) {
+      return this->template BestChild<LOSING>(eval_goal, n_thread_multiplier);
+    } else if (prob == kProbStep) {
+      return this->template BestChild<WINNING>(eval_goal, n_thread_multiplier);
+    } else {
+      return this->template BestChild<DEFAULT>(eval_goal, n_thread_multiplier);
+    }
   }
 
  protected:
@@ -703,14 +797,56 @@ class TreeNode {
   }
 
 
-  virtual bool UpdateWithChild(const TreeNode& child) {
-    auto child_guard = child.Lock();
-    if (!child.IsValid()) {
-      // Another thread is still working on this node or a child. This father
-      // will be updated by this other thread.
-      leaf_eval_ = kLessThenMinEvalLarge;
-      return false;
+  double GetValueLosing(const Evaluation& father, int eval_goal) const {
+    const Evaluation& child_eval = GetEvaluation(eval_goal);
+    NVisited n_visited = GetNVisited();
+//    assert(child_eval.ProbGreaterEqual() == 1);
+//    return 0.0000000000001 * n_visited;
+//    auto proof_number = child_eval.ProofNumber();
+//    auto stage = n_visited / (n_visited + proof_number);
+    auto disproof_number_father = father.DisproofNumber();
+    auto result =
+        n_visited + 100000 > disproof_number_father / 500 ?
+        -2 + 1E-8 * log(n_visited) :
+        -(n_visited / (n_visited + child_eval.ProofNumber()));
+    return result - 10 * NThreadsWorking();
+//    return -1E16 * (n_visited / child_eval.ProofNumber());
+//    return 1E-12 * (stage > 0.01 ? log(n_visited) : -stage);
+  }
+
+  double GetValueDefault(const Evaluation& father, int eval_goal, float n_thread_multiplier) const {
+//    if (father.ProbGreaterEqual() < 0.8) {
+//      n_thread_multiplier *= 10000;
+//    }
+    return GetEvaluation(eval_goal).LogDerivative(father) - n_thread_multiplier * NThreadsWorking() * pow(1 - father.ProbGreaterEqual(), 3);
+  }
+
+  double GetValueWinning(const Evaluation& father, int eval_goal) const {
+    const Evaluation& child_eval = GetEvaluation(eval_goal);
+    auto proof_number_using_this =
+        ByteToProofNumber(kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()]);
+    auto ratio = GetNVisited() / father.ProofNumber();
+    float multiplier = -1;
+    if (ratio < 1E-5) {
+      multiplier = -0.3;
+    } else if (ratio < 1E-4) {
+      multiplier = -0.6;
+    } else if (ratio < 1E-3) {
+      multiplier = -0.8;
+    } else if (ratio < 1E-2) {
+      multiplier = -0.9;
     }
+    return proof_number_using_this * multiplier;
+  }
+
+  virtual void UpdateWithChild(const TreeNode& child) {
+    auto child_guard = child.ReadLock();
+//    if (!child.IsValid()) {
+//      // Another thread is still working on this node or a child. This father
+//      // will be updated by this other thread.
+//      leaf_eval_ = kLessThenMinEvalLarge;
+//      return false;
+//    }
     assert(min_evaluation_ <= WeakLower());
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
@@ -718,10 +854,10 @@ class TreeNode {
     // TODO: Make weak_lower_ >= lower_ to avoid extra computations.
     weak_lower_ = MaxEval(weak_lower_, (Eval) -child.weak_upper_);
     weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       Evaluation* father_eval = MutableEvaluation(i);
 //      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
-      if (child.Upper() <= -i) {
+      if (-i > child.Upper()) {
         father_eval->SetSolved();
       } else if (-i > child.Lower()) {
         assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
@@ -731,21 +867,18 @@ class TreeNode {
         father_eval->UpdateFatherWithThisChild(eval);
       } // Else do nothing (child eval is solved).
     }
-    return true;
   }
 
-  virtual void SetLeafNoLock(
-      Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth) {
+  virtual void SetLeafNoLock(EvalLarge leaf_eval, Square depth) {
     assert(IsLeaf());
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
-
-    SetWeakLowerUpper(weak_lower, weak_upper);
 
     eval_depth_ = depth;
     leaf_eval_ = leaf_eval;
 
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i);
+      assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
     }
     assert(min_evaluation_ <= WeakLower());
     assert(AllValidEvals());
@@ -759,20 +892,6 @@ class TreeNode {
       }
     }
     return true;
-  }
-
-  void SetWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
-    assert(IsLeaf());
-    assert(weak_lower >= kMinEval && weak_lower <= kMaxEval && (weak_lower - kMinEval) % 2 == 1);
-    assert(weak_upper >= kMinEval && weak_upper <= kMaxEval && (weak_upper - kMinEval) % 2 == 1);
-    assert(weak_lower <= weak_upper);
-    assert(weak_lower_ == kLessThenMinEval || weak_lower >= weak_lower_);
-    assert(weak_upper_ == kLessThenMinEval || weak_upper <= weak_upper_);
-    assert((weak_lower_ == kLessThenMinEval) == (weak_upper_ == kLessThenMinEval));
-    min_evaluation_ = weak_lower;
-    weak_lower_ = weak_lower;
-    weak_upper_ = weak_upper;
-    EnlargeEvaluations();
   }
 
   void UpdateLeafEvaluation(int i) {
@@ -793,10 +912,11 @@ class TreeNode {
       assert(isfinite(disproof_number) && disproof_number > 0);
       evaluation->SetLeaf(prob, proof_number, disproof_number);
     }
+    assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
   }
 
   void AddFather(TreeNode* father) {
-    auto guard = Lock();
+    auto guard = WriteLock();
     if (n_fathers_ == 0) {
       fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
     } else {
@@ -833,34 +953,6 @@ class TreeNode {
     return true;
   }
 
-  void ExtendEval(Eval value) {
-    if (value < weak_lower_) {
-      assert(value == weak_lower_ - 2);
-      assert((value - kMinEval) % 2 == 1);
-      if (value < min_evaluation_) {
-        int shift = (min_evaluation_ - value) / 2;
-        int old_size = ToEvaluationIndex(weak_upper_) + 1;
-        min_evaluation_ = value;
-        EnlargeEvaluations();
-        memmove(evaluations_ + shift, evaluations_, sizeof(Evaluation) * old_size);
-      }
-      weak_lower_ = value;
-    } else if (value > weak_upper_) {
-      assert(value == weak_upper_ + 2);
-      weak_upper_ = value;
-      EnlargeEvaluations();
-    }
-    if (IsLeaf()) {
-      UpdateLeafEvaluation(value);
-      return;
-    }
-    for (int i = 0; i < n_children_; ++i) {
-      children_[i]->ExtendEval(-value);
-    }
-    UpdateFather();
-    assert(AllValidEvals());
-  }
-
   bool EqualsExceptDescendants(const TreeNode& other) const {
     if (ToBoard() != other.ToBoard() ||
         lower_ != other.lower_ ||
@@ -884,16 +976,16 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b);
 template<class Node>
 class LeafToUpdate {
  public:
-  static std::optional<LeafToUpdate> BestDescendant(Node* node) {
-    return BestDescendant(node, node->NextPositionEvalGoal(0, 1));
-  }
-  static std::optional<LeafToUpdate> BestDescendant(Node* node, Eval goal) {
-    LeafToUpdate result(node, goal);
-    return BestDescendant(result);
+  static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier) {
+    auto leaf = node->AsLeaf();
+    if (leaf == std::nullopt) {
+      return std::nullopt;
+    }
+    return BestDescendant(*leaf, n_thread_multiplier);
   }
 
   static LeafToUpdate Leaf(std::vector<Node*> sequence) {
-    LeafToUpdate leaf(sequence[0], 1);
+    LeafToUpdate leaf = sequence[0]->AsLeaf(1);
     sequence[0]->IncreaseNThreadsWorking();
     for (int i = 1; i < sequence.size(); ++i) {
       Node* descendant = sequence[i];
@@ -903,26 +995,36 @@ class LeafToUpdate {
     return leaf;
   }
 
-  static std::optional<LeafToUpdate> BestDescendant(LeafToUpdate& result) {
+  static std::optional<LeafToUpdate> BestDescendant(LeafToUpdate& result, float n_thread_multiplier) {
+    if (!result.leaf_->IsLeaf()) {
+      result.leaf_->IncreaseNThreadsWorking();
+    }
     while (!result.leaf_->IsLeaf()) {
-      Node* best_child = result.BestChild();
+      Node* best_child = result.leaf_->BestChild(result.eval_goal_, n_thread_multiplier);
       if (best_child == nullptr) {
+        for (Node* node : result.parents_) {
+          node->DecreaseNThreadsWorking();
+        }
         return std::nullopt;
       }
       result.ToChild(best_child, 0);
     }
-    for (Node* node : result.parents_) {
-      node->IncreaseNThreadsWorking();
+    if (result.Leaf()->TryLockLeaf()) {
+      return result;
     }
-    assert(result.Leaf()->NThreadsWorking() == 1);
-    return result;
+    for (Node* node : result.parents_) {
+      if (!node->IsLeaf()) {
+        node->DecreaseNThreadsWorking();
+      }
+    }
+    return std::nullopt;
   }
 
   static std::vector<LeafToUpdate> BestDescendants(Node* node) {
     std::vector<LeafToUpdate> result;
 
     int eval_goal = node->NextPositionEvalGoal(0, 1);
-    LeafToUpdate best_descendant(node, eval_goal);
+    LeafToUpdate best_descendant = node->AsLeaf(eval_goal);
     BestDescendants(node, eval_goal, &result);
     int secondary_eval_goal = kLessThenMinEval;
     if (node->ProbGreaterEqual(eval_goal) == 0) {
@@ -963,6 +1065,7 @@ class LeafToUpdate {
   }
 
  protected:
+  friend class TreeNode;
   Node* leaf_;
   std::vector<Node*> parents_;
   Eval eval_goal_;
@@ -972,20 +1075,6 @@ class LeafToUpdate {
   Eval weak_upper_;
   double loss_;
 
-  LeafToUpdate(Node* leaf, int eval_goal) :
-      leaf_(leaf),
-      parents_({leaf}),
-      eval_goal_(static_cast<Eval>(eval_goal)),
-      weak_lower_(leaf->WeakLower()),
-      weak_upper_(leaf->WeakUpper()),
-      loss_(0) {
-    alpha_ = weak_lower_;
-    beta_ = weak_upper_;
-    UpdateAlphaBeta();
-    assert(weak_lower_ <= alpha_ && alpha_ <= eval_goal_ && eval_goal_ <= beta_
-           && beta_ <= weak_upper_);
-  }
-
   static bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
     return left.Loss() < right.Loss();
   };
@@ -993,17 +1082,6 @@ class LeafToUpdate {
   typedef std::priority_queue<
       LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)>
       NextNodesPriorityQueue;
-
-  Node* BestChild() const {
-    auto prob = leaf_->GetEvaluation(eval_goal_).ProbGreaterEqualSmall();
-    if (prob == 0) {
-      return leaf_->template BestChild<LOSING>(eval_goal_);
-    } else if (prob == kProbStep) {
-      return leaf_->template BestChild<WINNING>(eval_goal_);
-    } else {
-      return leaf_->template BestChild<DEFAULT>(eval_goal_);
-    }
-  }
 
   Node* NextChildren(NextNodesPriorityQueue* next_nodes) const {
     auto prob = leaf_->GetEvaluation(eval_goal_).ProbGreaterEqualSmall();
@@ -1017,7 +1095,7 @@ class LeafToUpdate {
   }
   template<ChildValueType type>
   Node* NextChildren(NextNodesPriorityQueue* next_nodes) const {
-    Node* best_child = leaf_->template BestChild<type>(EvalGoal());
+    Node* best_child = leaf_->template BestChild<type>(EvalGoal(), 0);
     const Evaluation& father_eval = leaf_->GetEvaluation(EvalGoal());
     const Evaluation& best_child_eval = best_child->GetEvaluation(-EvalGoal());
     float best_child_prob = best_child_eval.ProbGreaterEqual();
@@ -1028,7 +1106,7 @@ class LeafToUpdate {
     auto end = leaf_->ChildrenEnd();
     auto child_eval_goal = -EvalGoal();
 
-    double best_child_value = best_child->template GetValue<type>(father_eval, child_eval_goal);
+    double best_child_value = best_child->template GetValue<type>(father_eval, child_eval_goal, 0);
     for (auto iter = start; iter != end; ++iter) {
       Node* child = (Node*) *iter;
       if (child_eval_goal <= child->Lower() ||
@@ -1038,7 +1116,7 @@ class LeafToUpdate {
       Evaluation child_eval = child->GetEvaluation(child_eval_goal);
       assert(child->GetNVisited() > 0);
       double extra_loss =
-          child->template GetValue<type>(father_eval, child_eval_goal) -
+          child->template GetValue<type>(father_eval, child_eval_goal, 0) -
           best_child_value
           + log(best_child_prob) * kLogDerivativeMultiplier;
       assert(extra_loss <= 0);
@@ -1061,7 +1139,7 @@ class LeafToUpdate {
     assert(!root->GetEvaluation(eval_goal).IsSolved());
     NextNodesPriorityQueue next_nodes(&leaf_less);
 
-    next_nodes.push(LeafToUpdate(root, eval_goal));
+    next_nodes.push(root->AsLeaf(eval_goal));
 
     Node* current_leaf;
     while (!next_nodes.empty() && result->size() < 200) {
@@ -1097,7 +1175,7 @@ class LeafToUpdate {
     weak_lower_ = -weak_upper_;
     weak_upper_ = -tmp;
     loss_ += extra_loss;
-    UpdateAlphaBeta();
+    leaf_->template UpdateAlphaBeta<Node>(this);
     parents_.push_back(leaf_);
   }
 
@@ -1107,13 +1185,6 @@ class LeafToUpdate {
     assert(leaf.weak_lower_ <= leaf.alpha_ && leaf.alpha_ <= leaf.eval_goal_ &&
            leaf.eval_goal_ <= leaf.beta_ && leaf.beta_ <= leaf.weak_upper_);
     return leaf;
-  }
-
-  void UpdateAlphaBeta() {
-    alpha_ = MinEval(eval_goal_, MaxEval(
-        alpha_, leaf_->GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
-    beta_ = MaxEval(eval_goal_, MinEval(
-        beta_, leaf_->GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
   }
 };
 

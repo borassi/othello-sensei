@@ -13,3 +13,219 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <unistd.h>
+#include <vector>
+
+#include "evaluator_derivative.h"
+#include "tree_node.h"
+
+void EvaluatorThread::Run() {
+  auto time = std::chrono::system_clock::now();
+  auto duration = std::chrono::system_clock::now().time_since_epoch();
+  int n_visited;
+  stats_.Reset();
+  bool transposition = false;
+  while (!evaluator_->CheckFinished()) {
+    ElapsedTime t;
+    evaluator_->UpdateWeakLowerUpper();
+    auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(evaluator_->GetFirstPosition(), evaluator_->NThreadMultiplier());
+    if (leaf_opt) {
+      auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+      stats_.Add(1, NEXT_POSITION_SUCCESS);
+      evaluator_->UpdateNThreadMultiplierSuccess();
+    } else {
+      stats_.Add(1, NEXT_POSITION_FAIL);
+//      if (stats_.Get(NEXT_POSITION_FAIL) % 100 == 0) {
+//        std::cout << stats_.Get(NEXT_POSITION_FAIL) << "\n";
+//      }
+      evaluator_->UpdateNThreadMultiplierFail();
+      std::this_thread::sleep_for(1ms);
+//      if (evaluator_->GetFirstPosition()->RemainingWork() < 500000) {
+//        break;
+//      }
+//      evaluator_->Wait();
+      continue;
+    }
+    auto leaf = *leaf_opt;
+    TreeNode* node = (TreeNode*) leaf.Leaf();
+    assert(node->IsLeaf());
+    if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->VisitedForEndgame())) {
+      n_visited = SolvePosition(leaf, &transposition, evaluator_->VisitedForEndgame());
+    } else {
+      n_visited = AddChildren(leaf, &transposition);
+    }
+    evaluator_->NotifyAll();
+    evaluator_->Finalize(leaf, n_visited);
+  }
+}
+
+NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf,
+                     bool* transposition) {
+  TreeNode* node = (TreeNode*) leaf.Leaf();
+  assert(node->IsLeaf());
+  assert(node->NThreadsWorking() == 1);
+  NVisited n_visited = 0;
+  BitPattern player = node->Player();
+  BitPattern opponent = node->Opponent();
+  Stats stats;
+  stats.Add(1, TREE_NODE);
+
+  auto moves = GetAllMovesWithPass(player, opponent);
+
+  if (moves.empty()) {
+    int final_eval = GetEvaluationGameOver(player, opponent);
+    node->SetSolved(final_eval, final_eval);
+    stats_.Add(1, TREE_NODE);
+    return 1;
+  }
+
+  std::vector<TreeNode*> children;
+  children.reserve(moves.size());
+
+  evaluator_depth_one_->Setup(player, opponent);
+  evaluator_depth_one_->Invert();
+  EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
+  int child_n_empties = node->NEmpties() - 1;
+  int depth;
+
+  for (int i = 0; i < moves.size(); ++i) {
+    BitPattern flip = moves[i];
+    BitPattern square = flip & ~(opponent | player);
+    BitPattern new_player = NewPlayer(flip, opponent);
+    BitPattern new_opponent = NewOpponent(flip, player);
+    bool newly_inserted = false;
+    TreeNode* child = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, &newly_inserted);
+    *transposition = *transposition || !newly_inserted;
+    children.push_back(child);
+    if (!newly_inserted && child->IsValid()) {
+      continue;
+    }
+    if (flip != 0) {
+      evaluator_depth_one_->Update(square, flip);
+    }
+    EvalLarge eval;
+    EvalLarge quick_eval = evaluator_depth_one_->Evaluate();
+//      int expected_error = 8 * kErrors[child_n_empties];
+    // Example:
+    //      +4
+    // -4   +0   +10
+    if (child_n_empties > 28 || (quick_eval < child_eval_goal + 4 * 8 && child_n_empties > 20)) {
+      depth = 4;
+    } else if (child_n_empties > 24 || (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 18)) {
+      depth = 3;
+    } else {
+      depth = 2;
+    }
+    NVisited cur_n_visited;
+    eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+    const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
+    stats_.Merge(cur_stats);
+    cur_n_visited = cur_stats.GetAll();
+    n_visited += cur_n_visited;
+    child->SetLeaf(eval, depth);
+    // Usually a no-op, but another thread might have added a father before
+    // the node was valid. We need to update that father.
+//    child->UpdateFathers();
+    child->AddDescendants(n_visited);
+    if (flip != 0) {
+      evaluator_depth_one_->UndoUpdate(square, flip);
+    }
+  }
+  assert(children.size() == moves.size());
+  node->SetChildren(children);
+  assert(!node->IsLeaf());
+  assert((node->WeakLower() - kMinEval) % 2 == 1);
+  return n_visited;
+}
+
+NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
+                       bool* transposition, int max_proof) {
+  TreeNode* node = (TreeNode*) leaf.Leaf();
+  assert(node->IsLeaf());
+  EvalLarge alpha = EvalToEvalLarge(leaf.Alpha());
+  EvalLarge beta = EvalToEvalLarge(leaf.Beta());
+  NVisited seen_positions;
+  EvalLarge eval;
+  eval = evaluator_alpha_beta_.Evaluate(
+      node->Player(), node->Opponent(), node->NEmpties(), alpha, beta,
+      std::max(max_proof, 50000) * 10);
+  seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
+  stats_.Merge(evaluator_alpha_beta_.GetStats());
+  stats_.Add(1, TREE_NODE);
+
+  if (eval == kLessThenMinEvalLarge) {
+    return seen_positions + AddChildren(leaf, transposition);
+  }
+  assert(node->NThreadsWorking() == 1);
+  // No need to lock, because this is the only thread that can touch this node.
+  assert(node->IsLeaf());
+  assert(eval >= kMinEvalLarge && eval <= kMaxEvalLarge);
+  evaluator_->SetWeakLowerUpper(node);
+  node->SetSolved(
+      eval > alpha ? eval : kMinEvalLarge,
+      eval < beta ? eval : kMaxEvalLarge);
+  return seen_positions;
+}
+
+//NVisited EvaluatorThread::AddManyChildren(const TreeNodeLeafToUpdate& leaf, int max_proof) {
+//  auto root = leaf.Leaf();
+//  TreeNode* root_node = (TreeNode*) root;
+//  int eval_goal = leaf.EvalGoal();
+//  int initial_log_derivative = root->MaxLogDerivative(eval_goal);
+//  bool transposition = false;
+//
+//  float original_prob = root->ProbGreaterEqual(eval_goal);
+//  float original_work = std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal));
+//  NVisited n_visited = AddChildren(leaf, &transposition);
+//  const Evaluation& evaluation = root->GetEvaluation(eval_goal);
+//  if (evaluation.IsSolved()) {
+//    return n_visited;
+//  }
+//  NVisited cur_n_visited;
+//  int i = 0;
+//  bool proving = original_prob < 0.02 || original_prob > 0.98;
+//  while (true) {
+//    ++i;
+//    if (evaluation.IsSolved() ||
+//        (proving
+//         &&
+//         std::min(root->ProofNumber(eval_goal), root->DisproofNumber(eval_goal)) > 1.2 * original_work + 40000
+//        ) ||
+//        (!proving
+//         && (leaf.Loss() + ExpectedLoss(evaluation, original_prob) -
+//         initial_log_derivative < -3 * kLogDerivativeMultiplier)
+//         && i > 5
+//        ) ||
+//        transposition ||
+//        i > 30) {
+////        std::cout << i << " " << proving << " " << original_prob << " " << leaf
+////        .Loss() << " + " << ExpectedLoss(evaluation, original_prob) -
+////        initial_log_derivative << " < " <<
+////        -kLogDerivativeMultiplier * 1.5 << "\n";
+////        std::cout << std::min(root->ProofNumber(eval_goal),
+////                              root->DisproofNumber(eval_goal)) << " " <<
+////                              original_work << "\n";
+//      break;
+//    }
+//    assert(!leaf.Leaf()->GetEvaluation(eval_goal).IsSolved());
+//    TreeNodeLeafToUpdate new_leaf_start = leaf.Copy();
+//    auto new_leaf_opt = TreeNodeLeafToUpdate::BestDescendant(new_leaf_start, evaluator_->NThreadMultiplier());
+//    if (!new_leaf_opt) {
+//      break;
+//    }
+//    auto& new_leaf = *new_leaf_opt;
+//    TreeNode* new_leaf_node = new_leaf.Leaf();
+//    assert(new_leaf_node->IsLeaf());
+//    assert(new_leaf_node->NThreadsWorking() == 1);
+//    if (new_leaf_node->ToBeSolved(new_leaf.Alpha(), new_leaf.Beta(),
+//                                  max_proof)) {
+//      cur_n_visited = SolvePosition(new_leaf, &transposition, max_proof);
+//    } else {
+//      cur_n_visited = AddChildren(new_leaf, &transposition);
+//    }
+//    new_leaf.Finalize(cur_n_visited);
+//    n_visited += cur_n_visited;
+//    root_node->UpdateFather();
+//  }
+//  return n_visited;
+//}

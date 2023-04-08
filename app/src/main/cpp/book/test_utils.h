@@ -41,9 +41,9 @@ typedef BookTreeNode<TestBook> TestBookTreeNode;
 
 std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   std::shared_ptr<TreeNode> t(new TreeNode());
-  t->Reset(b.Player(), b.Opponent(), 4, 0);
+  t->Reset(b.Player(), b.Opponent(), 4, 0, weak_lower, weak_upper);
 //  Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited)
-  t->SetLeaf(weak_lower, weak_upper, EvalToEvalLarge(leaf_eval), 4);
+  t->SetLeaf(EvalToEvalLarge(leaf_eval), 4);
   t->AddDescendants(n_visited);
   return t;
 }
@@ -66,7 +66,7 @@ template<class Book>
 BookTreeNode<Book>* GetTestBookTreeNode(Book* book, Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   auto node = TestTreeNode(b, leaf_eval, weak_lower, weak_upper, n_visited);
   auto result = book->Get(b);
-  result->Reset(b.Unique(), 60, 0);
+  result->Reset(b.Unique(), 60, 0, weak_lower, weak_upper);
   result->Update(*node);
   result->AddDescendants(node->GetNVisited());
   return result;

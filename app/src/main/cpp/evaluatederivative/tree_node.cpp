@@ -46,3 +46,12 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
   stream << " (vis: " << b.GetNVisited() << ")";
   return stream;
 }
+
+std::optional<LeafToUpdate<TreeNode>> TreeNode::AsLeaf() {
+  return AsLeaf<TreeNode>();
+}
+
+LeafToUpdate<TreeNode> TreeNode::AsLeaf(Eval eval_goal) {
+  auto guard = ReadLock();
+  return AsLeafNoLock<TreeNode>(eval_goal);
+}

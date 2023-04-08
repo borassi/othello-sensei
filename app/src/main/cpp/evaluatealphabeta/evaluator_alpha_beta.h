@@ -80,7 +80,9 @@ enum StatsType {
   MOVES_OR_DISPROOF = 4,
   PASS = 5,
   TREE_NODE = 6,
-  NO_TYPE = 7
+  NEXT_POSITION_FAIL = 7,
+  NEXT_POSITION_SUCCESS = 8,
+  NO_TYPE = 9
 };
 
 class Stats {

@@ -40,10 +40,10 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     std::unique_ptr<TreeNode> t(new TreeNode());
-    t->Reset(start->ToBoard(), 1, 0);
-    t->SetLeaf(-63, 63, 0, 1, 1);
+    t->Reset(start->ToBoard(), 1, 0, -63, 63);
+    t->SetLeaf(0, 1);
     start->Update(*t);
-    LeafToUpdate<BookNode>::Leaf({book.Get(t->ToBoard())}).Finalize(1);
+    book.Get(t->ToBoard())->AsLeaf(1).Finalize(1);
   }
 
   while (true) {
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
         << "Descendants of start:  " << PrettyPrintDouble(start->GetNVisited()) << "\n"
         << "Evaluation of start:   " << PrettyPrintDouble(start->GetEval()) << "\n";
 
-    auto leaf = LeafToUpdate<BookNode>::BestDescendant(start).value();
+    auto leaf = LeafToUpdate<BookNode>::BestDescendant(start, 0).value();
     std::cout
         << "Eval goal:             " << (int) start->NextPositionEvalGoal(0, 1) << "\n"
         << "Board:\n" << leaf.Leaf()->ToBoard();

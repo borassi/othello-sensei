@@ -26,6 +26,7 @@ target_link_libraries( # Specifies the target library.
         tree_node
         pattern_evaluator
         evaluator_alpha_beta
+        evaluator_derivative
         hash_map
         ${JNI_LIBRARIES}
         -fPIC

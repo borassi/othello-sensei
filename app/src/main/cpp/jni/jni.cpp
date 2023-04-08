@@ -74,7 +74,8 @@ class JNIWrapper {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
           PatternEvaluator::Factory(evals_.data()),
-          std::thread::hardware_concurrency(),
+          12,
+//          std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
 //    if (!book_.Get(Board())->IsValid()) {
