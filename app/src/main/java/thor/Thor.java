@@ -37,14 +37,13 @@ public class Thor {
   HashMap<Board, ArrayList<Game>> gamesForPosition = new HashMap<>();
 
   public Thor(FileAccessor accessor) {
-    ArrayList<String> thorGames = new ArrayList<>();
-    for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
-      String filename = "thor/WTH_" + i + ".wtb";
-      thorGames.add(filename);
+    for (String source : new String[] {"WTH", "PLAYOK", "QUEST"}) {
+      ArrayList<String> files = new ArrayList<>();
+      for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
+        files.add("thor/" + source + "_" + i + ".wtb");
+      }
+      loadFiles(files, "thor/" + source + ".JOU", "thor/" + source + ".TRN", accessor);
     }
-    loadFiles(Arrays.asList("thor/PLAYOK.wtb"), "thor/PLAYOK.JOU", "thor/PLAYOK.TRN", accessor);
-    loadFiles(Arrays.asList("thor/QUEST.wtb"), "thor/QUEST.JOU", "thor/QUEST.TRN", accessor);
-    loadFiles(thorGames, "thor/WTHOR.JOU", "thor/WTHOR.TRN", accessor);
     for (Short year : gamesForYear.descendingKeySet()) {
       ArrayList<Game> gamesCurYear = gamesForYear.get(year);
       for (int i = gamesCurYear.size() - 1; i >= 0; --i) {
