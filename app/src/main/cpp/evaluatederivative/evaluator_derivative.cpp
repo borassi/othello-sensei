@@ -24,43 +24,38 @@ void EvaluatorThread::Run() {
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   int n_visited;
   stats_.Reset();
-  bool transposition = false;
-  while (!evaluator_->CheckFinished()) {
+  TreeNode* first_position = evaluator_->GetFirstPosition();
+  first_position_copy_.FromOtherNode(first_position);
+  while (!evaluator_->CheckFinished(&first_position_copy_)) {
     ElapsedTime t;
     evaluator_->UpdateWeakLowerUpper();
-    auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(evaluator_->GetFirstPosition(), evaluator_->NThreadMultiplier());
+    first_position_copy_.UpdateFather();
+    auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(&first_position_copy_, evaluator_->NThreadMultiplier());
     if (leaf_opt) {
       auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
       stats_.Add(1, NEXT_POSITION_SUCCESS);
       evaluator_->UpdateNThreadMultiplierSuccess();
     } else {
       stats_.Add(1, NEXT_POSITION_FAIL);
-//      if (stats_.Get(NEXT_POSITION_FAIL) % 100 == 0) {
-//        std::cout << stats_.Get(NEXT_POSITION_FAIL) << "\n";
-//      }
       evaluator_->UpdateNThreadMultiplierFail();
       std::this_thread::sleep_for(1ms);
-//      if (evaluator_->GetFirstPosition()->RemainingWork() < 500000) {
-//        break;
-//      }
-//      evaluator_->Wait();
       continue;
     }
     auto leaf = *leaf_opt;
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
-    if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->VisitedForEndgame())) {
-      n_visited = SolvePosition(leaf, &transposition, evaluator_->VisitedForEndgame());
+    leaf.UpdateFirstNode(first_position);
+    auto visited_for_endgame = evaluator_->VisitedForEndgame(first_position_copy_.RemainingWork());
+    if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), visited_for_endgame)) {
+      n_visited = SolvePosition(leaf, visited_for_endgame);
     } else {
-      n_visited = AddChildren(leaf, &transposition);
+      n_visited = AddChildren(leaf);
     }
-    evaluator_->NotifyAll();
     evaluator_->Finalize(leaf, n_visited);
   }
 }
 
-NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf,
-                     bool* transposition) {
+NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   TreeNode* node = (TreeNode*) leaf.Leaf();
   assert(node->IsLeaf());
   assert(node->NThreadsWorking() == 1);
@@ -95,7 +90,6 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf,
     BitPattern new_opponent = NewOpponent(flip, player);
     bool newly_inserted = false;
     TreeNode* child = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, &newly_inserted);
-    *transposition = *transposition || !newly_inserted;
     children.push_back(child);
     if (!newly_inserted && child->IsValid()) {
       continue;
@@ -139,7 +133,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf,
 }
 
 NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
-                       bool* transposition, int max_proof) {
+                                        int max_proof) {
   TreeNode* node = (TreeNode*) leaf.Leaf();
   assert(node->IsLeaf());
   EvalLarge alpha = EvalToEvalLarge(leaf.Alpha());
@@ -154,7 +148,7 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
   stats_.Add(1, TREE_NODE);
 
   if (eval == kLessThenMinEvalLarge) {
-    return seen_positions + AddChildren(leaf, transposition);
+    return seen_positions + AddChildren(leaf);
   }
   assert(node->NThreadsWorking() == 1);
   // No need to lock, because this is the only thread that can touch this node.

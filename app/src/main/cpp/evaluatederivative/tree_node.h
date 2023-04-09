@@ -118,6 +118,24 @@ class TreeNode {
     Reset(0, 0, 0, 0, kLessThenMinEval, kLessThenMinEval);
   }
 
+  void FromOtherNode(TreeNode* node) {
+    node->ReadLock();
+    assert(!node->IsLeaf());
+    assert(node->IsValid());
+    Reset(
+        node->Player(),
+        node->Opponent(),
+        node->Depth(),
+        node->WeakLower(),
+        node->WeakUpper(),
+        node->Evaluator());
+    n_children_ = node->n_children_;
+    children_ = new TreeNode*[n_children_];
+    for (int i = 0; i < n_children_; ++i) {
+      children_[i] = node->children_[i];
+    }
+  }
+
   Square NEmpties() const { return n_empties_; }
   BitPattern Player() const { return player_; }
   BitPattern Opponent() const { return opponent_; }
@@ -375,6 +393,9 @@ class TreeNode {
 
   void UpdateFathers() {
     GetFathersFromBook();
+    if (depth_ == 1) {
+      return;
+    }
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
     for (int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
@@ -485,6 +506,20 @@ class TreeNode {
     }
     SetLeafNoLock(leaf_eval_, eval_depth_);
     assert(IsValidNoLock());
+  }
+
+  // Measures the progress towards solving the position (lower is better).
+  // Starts from 0, decreases until kLogDerivativeMinusInf until partially
+  // solved, then decreases more until becoming -inf.
+  double Advancement() const {
+    double result = -std::numeric_limits<float>::infinity();
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      result = std::max(result, (double) GetEvaluation(i).MaxLogDerivative());
+    }
+    if (result == kLogDerivativeMinusInf) {
+      result += log(RemainingWork()) - 1E5;
+    }
+    return result;
   }
 
   float RemainingWork() const {
@@ -1064,6 +1099,11 @@ class LeafToUpdate {
     leaf_->UpdateFathers();
   }
 
+  void UpdateFirstNode(TreeNode* first_node) {
+    parents_[0]->DecreaseNThreadsWorking();
+    parents_[0] = first_node;
+    first_node->IncreaseNThreadsWorking();
+  }
  protected:
   friend class TreeNode;
   Node* leaf_;
