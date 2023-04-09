@@ -59,6 +59,8 @@ ELSE()
     SET(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
     find_package(JNI REQUIRED)
 ENDIF()
+
+message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
 include_directories( ${JNI_INCLUDE_DIRS} )
 
 SET(PDEP_PEXT NOT ANDROID)

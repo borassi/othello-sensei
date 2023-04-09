@@ -26,7 +26,6 @@ target_link_libraries( # Specifies the target library.
         get_flip
         hash_map
         stable
-        ${JNI_LIBRARIES}
 )
 
 add_executable(

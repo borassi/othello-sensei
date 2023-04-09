@@ -131,6 +131,7 @@ target_link_libraries(
         expand_book_main
         LINK_PRIVATE
         book
+        book_tree_node
         evaluator_alpha_beta
         evaluator_derivative
         hash_map

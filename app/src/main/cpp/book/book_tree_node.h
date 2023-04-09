@@ -198,17 +198,25 @@ class BookTreeNode : public TreeNode {
   void SetLeaf(EvalLarge leaf_eval, Square depth) override {
     throw std::logic_error("Cannot set leaf in book node.");
   }
-  void UpdateLeafEval() override {
+  void SetLeafNoLock(EvalLarge leaf_eval, Square depth) override {
     throw std::logic_error("Cannot update leaf eval in book node.");
-  }
-
-  LeafToUpdate<BookTreeNode> AsLeaf(Eval eval_goal) {
-    return this->TreeNode::template AsLeaf<BookTreeNode<Book>>(eval_goal);
-  }
+    }
 
   template<ChildValueType type>
   BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
     return (BookTreeNode*) this->TreeNode::template BestChild<type>(eval_goal, n_thread_multiplier);
+  }
+  BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
+    return (BookTreeNode*) this->TreeNode::BestChild(eval_goal, n_thread_multiplier);
+  }
+
+  std::optional<LeafToUpdate<BookTreeNode>> AsLeaf() {
+    return TreeNode::AsLeaf<BookTreeNode>();
+  }
+
+  LeafToUpdate<BookTreeNode> AsLeaf(Eval eval_goal) {
+    auto guard = ReadLock();
+    return TreeNode::AsLeafNoLock<BookTreeNode>(eval_goal);
   }
  private:
   bool is_leaf_;
