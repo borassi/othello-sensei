@@ -119,13 +119,12 @@ class TreeNodeSupplier {
     return num_nodes_;
   }
 
-  TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, Eval weak_lower, Eval weak_upper, u_int8_t evaluator_index) {
+  TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) {
     bool newly_inserted;
-    return AddTreeNode(player, opponent, depth, weak_lower, weak_upper, evaluator_index, &newly_inserted);
+    return AddTreeNode(player, opponent, depth, evaluator_index, &newly_inserted);
   }
   TreeNode* AddTreeNode(
       BitPattern player, BitPattern opponent, Square depth,
-      Eval weak_lower, Eval weak_upper,
       u_int8_t evaluator_index, bool* newly_inserted) {
     if (kUseTranspositions) {
       TreeNode* node = Get(player, opponent, evaluator_index);
@@ -138,7 +137,7 @@ class TreeNodeSupplier {
     int node_id = num_nodes_++;
     assert(node_id < kDerivativeEvaluatorSize);
     TreeNode& node = tree_nodes_[node_id];
-    node.Reset(player, opponent, depth, weak_lower, weak_upper, evaluator_index);
+    node.Reset(player, opponent, depth, evaluator_index);
     AddToHashMap(player, opponent, evaluator_index, node_id);
     *newly_inserted = true;
     return &node;
@@ -192,7 +191,6 @@ class EvaluatorThread {
   Stats stats_;
   EvaluatorDerivative* evaluator_;
   ElapsedTime t;
-  TreeNode first_position_copy_;
 
   NVisited SolvePosition(const TreeNodeLeafToUpdate& leaf, int max_proof);
 };
@@ -242,13 +240,13 @@ class EvaluatorDerivative {
     weak_lower_ = lower_;
     weak_upper_ = upper_;
     n_thread_multiplier_ = 1000;
-    next_update_ = 1000;
-    first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, weak_lower_, weak_upper_, index_);
-    first_position_->SetLeaf(0, 1);
+    first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
+    first_position_->SetLeafIfInvalid(0, 1, *this);
     auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier());
     assert(leaf);
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
     best_advancement_ = 0;
+    is_updating_weak_lower_upper_.clear();
     ContinueEvaluate(max_n_visited, max_time);
   }
 
@@ -268,15 +266,23 @@ class EvaluatorDerivative {
 
   u_int8_t Index() const { return index_; }
 
+  std::pair<Eval, Eval> GetWeakLowerUpper(Square depth) const {
+    if (depth & 1) {
+      return std::make_pair(-weak_upper_, -weak_lower_);
+    } else {
+      return std::make_pair(weak_lower_.load(), weak_upper_.load());
+    }
+  }
+
  private:
   friend class EvaluatorThread;
   Stats stats_;
   NVisited max_n_visited_;
   double max_time_;
-  Eval lower_ = -63;
-  Eval upper_ = 63;
-  Eval weak_lower_ = -63;
-  Eval weak_upper_ = 63;
+  Eval lower_;
+  Eval upper_;
+  std::atomic_int8_t weak_lower_;
+  std::atomic_int8_t weak_upper_;
   Status status_ = SOLVED;
   std::vector<std::shared_ptr<EvaluatorThread>> threads_;
   ElapsedTime elapsed_time_;
@@ -286,18 +292,17 @@ class EvaluatorDerivative {
   TreeNode* first_position_;
   u_int8_t index_;
   std::atomic_int n_thread_multiplier_;
-  std::mutex mutex_;
-  std::condition_variable condition_variable_;
-  NVisited next_update_;
+  std::atomic_flag is_updating_weak_lower_upper_;
   double best_advancement_;
 
-  int VisitedForEndgame(NVisited remaining_work) {
-    auto visited = first_position_->GetNVisited();
-    float position = (float) visited / (visited + remaining_work);
-    float remaining_nodes = (visited + remaining_work) / 1800.0F;
-    float current_nodes = tree_node_supplier_->NumTreeNodes();
-    return std::max(2000, std::min(100000, 20000 +
-        (int) ((current_nodes - pow(position, 0.7) * remaining_nodes) * 10)));
+  int VisitedForEndgame() {
+    float done = first_position_->GetNVisited();
+    float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
+    float solve_probability = first_position_->SolveProbability();
+    float goal = std::max(300.0F, std::min(1500.0F, 120 / pow(solve_probability, 0.5F)));
+    float result = 5000 - (done - done_tree_nodes * goal) / 40;
+
+    return std::max(2000, std::min(100000, (int) result));
   }
 
   void Run() {
@@ -347,78 +352,36 @@ class EvaluatorDerivative {
     return false;
   }
 
-  bool NeedUpdateWeakLowerUpper() {
-    NVisited n_visited = first_position_->GetNVisited();
-    if (n_visited < next_update_) {
-      return false;
+  void UpdateWeakLowerUpper(const TreeNode& first_position) {
+    if (is_updating_weak_lower_upper_.test_and_set()) {
+      return;
     }
-    next_update_ = (NVisited) (n_visited * 1.1);
-    return true;
-  }
-
-  void UpdateWeakLowerUpper() {
     assert((lower_ - kMinEval) % 2 == 1);
     assert((upper_ - kMinEval) % 2 == 1);
     assert(kMinEval <= lower_ && lower_ <= kMaxEval);
     assert(kMinEval <= upper_ && upper_ <= kMaxEval);
     assert(weak_lower_ >= lower_ && weak_upper_ <= upper_);
-    std::unique_lock<std::mutex> lock(mutex_); // TODO: This blocks everybody.
-    if (!NeedUpdateWeakLowerUpper()) {
-      return;
+    auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
+        first_position.ExpectedWeakLowerUpper();
+
+    weak_lower_ = new_weak_lower;
+    weak_upper_ = new_weak_upper;
+
+    if (new_weak_lower < weak_lower || new_weak_upper > weak_upper) {
+      first_position_->ExtendEval(weak_lower_, weak_upper_);
     }
-    bool done_something = true;
-    while (done_something) {
-      TreeNodeSummarized n = GetFirstPosition()->ToTreeNodeSummarized(weak_lower_, weak_upper_);
-      bool extend_lower = false;
-      bool extend_upper = false;
-      bool reduced = false;
-      if (n.prob_weak_lower < 1 - kProbIncreaseWeakEval
-          && n.weak_lower - 2 >= n.lower
-          && n.weak_lower - 2 >= lower_) {
-        extend_lower = true;
-      }
-      if (n.prob_weak_upper > kProbIncreaseWeakEval
-          && weak_upper_ + 2 <= n.upper
-          && weak_upper_ + 2 <= upper_) {
-        extend_upper = true;
-      }
-      if (!extend_lower && !extend_upper && n.prob_weak_lower_next >= 1) {
-        weak_lower_ += 2;
-        assert(weak_lower_ <= weak_upper_);
-        reduced = true;
-      }
-      if (!extend_lower && !extend_upper && n.prob_weak_upper_prev <= 0) {
-        weak_upper_ -= 2;
-        assert(weak_lower_ <= weak_upper_);
-        reduced = true;
-      }
-      if (extend_lower) {
-        weak_lower_ -= 2;
-        first_position_->ExtendEval(weak_lower_);
-      }
-      if (extend_upper) {
-        weak_upper_ += 2;
-        first_position_->ExtendEval(weak_upper_);
-      }
-      done_something = extend_lower || extend_upper || reduced;
-    }
+    is_updating_weak_lower_upper_.clear();
   }
 
-  std::pair<Eval, Eval> GetWeakLowerUpper(Square depth) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    return std::make_pair(
-        (depth & 1) == 0 ? weak_lower_ : -weak_upper_,
-        (depth & 1) == 0 ? weak_upper_ : -weak_lower_);
-  }
-
-  void SetWeakLowerUpper(TreeNode* node) {
-    auto weak_lower_upper = GetWeakLowerUpper(node->Depth());
-    node->SetWeakLowerUpper(weak_lower_upper.first, weak_lower_upper.second);
+  bool IsWeakLowerUpperOK() {
+    return
+        first_position_->WeakLower() <= weak_lower_
+        && weak_lower_ < weak_upper_
+        && weak_upper_ <= first_position_->WeakUpper();
   }
 
   TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, bool* newly_inserted) {
-    auto weak_lower_upper = GetWeakLowerUpper(depth);
-    return tree_node_supplier_->AddTreeNode(player, opponent, depth, weak_lower_upper.first, weak_lower_upper.second, index_, newly_inserted);
+    return tree_node_supplier_->AddTreeNode(player, opponent, depth, index_, newly_inserted);
   }
 
   void UpdateNThreadMultiplierSuccess() {
@@ -433,11 +396,6 @@ class EvaluatorDerivative {
 
   float NThreadMultiplier() {
     return n_thread_multiplier_ / 1000.0;
-  }
-
-  void Finalize(LeafToUpdate<TreeNode> leaf, NVisited n_visited) {
-    leaf.Finalize(n_visited);
-    just_started_ = false;
   }
 };
 

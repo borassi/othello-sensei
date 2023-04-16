@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     std::unique_ptr<TreeNode> t(new TreeNode());
-    t->Reset(start->ToBoard(), 1, 0, -63, 63);
-    t->SetLeaf(0, 1);
+    t->Reset(start->ToBoard(), 1, 0);
+    t->SetLeaf(0, 1, -63, 63);
     start->Update(*t);
     book.Get(t->ToBoard())->AsLeaf(1).Finalize(1);
   }

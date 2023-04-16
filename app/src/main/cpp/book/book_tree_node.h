@@ -31,7 +31,7 @@ template<class Book>
 class BookTreeNode : public TreeNode {
  public:
   BookTreeNode(Book* book, const Board& b) : TreeNode(), book_(book), is_leaf_(true) {
-    TreeNode::Reset(b.Unique(), 60, 0, -63, 63);
+    TreeNode::Reset(b.Unique(), 60, 0);
   }
 
   BookTreeNode(Book* book, const std::vector<char>& serialized, bool fathers = true) : book_(book) {
@@ -195,10 +195,7 @@ class BookTreeNode : public TreeNode {
     return children_ + n_children_;
   }
 
-  void SetLeaf(EvalLarge leaf_eval, Square depth) override {
-    throw std::logic_error("Cannot set leaf in book node.");
-  }
-  void SetLeafNoLock(EvalLarge leaf_eval, Square depth) override {
+  void SetLeafNoLock(EvalLarge leaf_eval, Square depth, Eval weak_lower, Eval weak_upper) override {
     throw std::logic_error("Cannot update leaf eval in book node.");
     }
 

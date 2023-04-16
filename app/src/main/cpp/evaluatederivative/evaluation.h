@@ -44,6 +44,7 @@ inline int LeafLogDerivative(float prob) {
 }
 
 struct CombineProb {
+  Probability combine_prob_shallow[kProbStep + 1][kProbStep + 1];
   Probability combine_prob[kProbStep + 1][kProbStep + 1];
   int log_derivative[kProbStep + 1];
   PN combine_disproof_number[kProofNumberStep + 1][kProofNumberStep + 1];
@@ -51,7 +52,8 @@ struct CombineProb {
   float byte_to_proof_number[kProofNumberStep];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<170>);
+    ProbCombiner combiner(ExpPolyLog<150>);
+    ProbCombiner combiner_shallow(ExpPolyLog<190>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       byte_to_proof_number[i] = ByteToProofNumberExplicit(i);
       for (int j = 0; j <= kProofNumberStep; ++j) {
@@ -91,6 +93,8 @@ struct CombineProb {
         double x2 = j / (double) kProbStep;
         combine_prob[i][j] = (Probability) (combiner.inverse(combiner.f(x1) * combiner.f(x2)) * kProbStep + 0.5);
         combine_prob[j][i] = combine_prob[i][j];
+        combine_prob_shallow[i][j] = (Probability) (combiner_shallow.inverse(combiner_shallow.f(x1) * combiner_shallow.f(x2)) * kProbStep + 0.5);
+        combine_prob_shallow[j][i] = combine_prob_shallow[i][j];
         assert(j == i || i == 0 || combine_prob[i][j] >= combine_prob[i][j-1]);
         assert(combine_prob[i][j] <= i);
         assert(combine_prob[i][j] <= j);
@@ -155,6 +159,7 @@ class Evaluation {
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
+  template<bool shallow>
   void UpdateFatherWithThisChild(const Evaluation& child) {
     assert(IsValid());
     assert(child.IsValid());
@@ -162,7 +167,11 @@ class Evaluation {
     assert(child.max_log_derivative_ < 0);
     float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
     assert(!child.IsSolved());
-    prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
+    if (shallow) {
+      prob_greater_equal_ = kCombineProb.combine_prob_shallow[prob_greater_equal_][child.prob_greater_equal_];
+    } else {
+      prob_greater_equal_ = kCombineProb.combine_prob[prob_greater_equal_][child.prob_greater_equal_];
+    }
     assert(prob_greater_equal_ <= child.prob_greater_equal_);
 
     PN cur_proof_number = kCombineProb.disproof_to_proof_number[child.disproof_number_][child.prob_greater_equal_];

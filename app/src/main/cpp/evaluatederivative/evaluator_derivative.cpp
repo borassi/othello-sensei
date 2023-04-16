@@ -24,15 +24,16 @@ void EvaluatorThread::Run() {
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   int n_visited;
   stats_.Reset();
-  TreeNode* first_position = evaluator_->GetFirstPosition();
-  first_position_copy_.FromOtherNode(first_position);
-  while (!evaluator_->CheckFinished(&first_position_copy_)) {
+  TreeNode* first_position;
+  first_position = evaluator_->GetFirstPosition();
+//  first_position_copy_.FromOtherNode(first_position);
+  while (!evaluator_->CheckFinished(first_position)) {
     ElapsedTime t;
-    evaluator_->UpdateWeakLowerUpper();
-    first_position_copy_.UpdateFather();
-    auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(&first_position_copy_, evaluator_->NThreadMultiplier());
+    evaluator_->UpdateWeakLowerUpper(*first_position);
+//    first_position.UpdateFather();
+    auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
+        first_position, evaluator_->NThreadMultiplier());
     if (leaf_opt) {
-      auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
       stats_.Add(1, NEXT_POSITION_SUCCESS);
       evaluator_->UpdateNThreadMultiplierSuccess();
     } else {
@@ -44,14 +45,15 @@ void EvaluatorThread::Run() {
     auto leaf = *leaf_opt;
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
-    leaf.UpdateFirstNode(first_position);
-    auto visited_for_endgame = evaluator_->VisitedForEndgame(first_position_copy_.RemainingWork());
+//    leaf.UpdateFirstNode(first_position);
+    auto visited_for_endgame = evaluator_->VisitedForEndgame();
     if (node->ToBeSolved(leaf.Alpha(), leaf.Beta(), visited_for_endgame)) {
       n_visited = SolvePosition(leaf, visited_for_endgame);
     } else {
       n_visited = AddChildren(leaf);
     }
-    evaluator_->Finalize(leaf, n_visited);
+    leaf.Finalize(n_visited);
+    evaluator_->just_started_ = false;
   }
 }
 
@@ -69,7 +71,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
 
   if (moves.empty()) {
     int final_eval = GetEvaluationGameOver(player, opponent);
-    node->SetSolved(final_eval, final_eval);
+    node->SetSolved(final_eval, final_eval, *evaluator_);
     stats_.Add(1, TREE_NODE);
     return 1;
   }
@@ -116,10 +118,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     stats_.Merge(cur_stats);
     cur_n_visited = cur_stats.GetAll();
     n_visited += cur_n_visited;
-    child->SetLeaf(eval, depth);
-    // Usually a no-op, but another thread might have added a father before
-    // the node was valid. We need to update that father.
-//    child->UpdateFathers();
+    child->SetLeafIfInvalid(eval, depth, *evaluator_);
     child->AddDescendants(n_visited);
     if (flip != 0) {
       evaluator_depth_one_->UndoUpdate(square, flip);
@@ -142,7 +141,7 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
   EvalLarge eval;
   eval = evaluator_alpha_beta_.Evaluate(
       node->Player(), node->Opponent(), node->NEmpties(), alpha, beta,
-      std::max(max_proof, 50000) * 10);
+      std::max(max_proof * 5, 30000));
   seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
   stats_.Merge(evaluator_alpha_beta_.GetStats());
   stats_.Add(1, TREE_NODE);
@@ -154,10 +153,10 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
   // No need to lock, because this is the only thread that can touch this node.
   assert(node->IsLeaf());
   assert(eval >= kMinEvalLarge && eval <= kMaxEvalLarge);
-  evaluator_->SetWeakLowerUpper(node);
   node->SetSolved(
       eval > alpha ? eval : kMinEvalLarge,
-      eval < beta ? eval : kMaxEvalLarge);
+      eval < beta ? eval : kMaxEvalLarge,
+      *evaluator_);
   return seen_positions;
 }
 

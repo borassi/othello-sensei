@@ -41,7 +41,6 @@ constexpr float kProbForProof = 0.03F;
 constexpr float kZeroPercForWeak = 0.05F;
 constexpr float kMinProbEvalGoal = 0.03F;
 constexpr float kProbReduceWeakEval = 0.001F;
-constexpr float kProbIncreaseWeakEval = 0.05F;
 constexpr float kProbForEndgameAlphaBeta = 0.05F;
 constexpr float kProbForEarlyMidgame = 0.25F;
 
