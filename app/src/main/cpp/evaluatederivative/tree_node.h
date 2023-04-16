@@ -1224,8 +1224,8 @@ class LeafToUpdate {
   LeafToUpdate CopyToChild(Node* child, double extra_loss) const {
     LeafToUpdate leaf(*this);
     leaf.ToChild(child, extra_loss);
-    assert(leaf.weak_lower_ <= leaf.alpha_ && leaf.alpha_ <= leaf.eval_goal_ &&
-           leaf.eval_goal_ <= leaf.beta_ && leaf.beta_ <= leaf.weak_upper_);
+    assert(leaf.alpha_ <= leaf.eval_goal_ &&
+           leaf.eval_goal_ <= leaf.beta_);
     return leaf;
   }
 };

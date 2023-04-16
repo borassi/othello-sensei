@@ -65,6 +65,9 @@ public class ThorGamesWindowMobile extends AppCompatActivity {
       if (player.startsWith(text)) {
         currentPlayers.add(player);
       }
+      if (currentPlayers.size() > 20) {
+        break;
+      }
     }
     ArrayAdapter aa = new ArrayAdapter(this, android.R.layout.simple_spinner_item, currentPlayers);
     listOfPlayers.setAdapter(aa);
