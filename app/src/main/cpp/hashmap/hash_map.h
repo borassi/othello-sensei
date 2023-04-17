@@ -48,6 +48,11 @@ class HashMapEntry {
     BitPattern player, BitPattern opponent, DepthValue depth, EvalLarge eval,
     EvalLarge lower, EvalLarge upper, Square best_move, Square second_best_move);
 
+  void Reset() {
+    player_ = 0;
+    opponent_ = 0;
+  }
+
   std::pair<EvalLarge, EvalLarge> GetLowerUpper(
     BitPattern player, BitPattern opponent, DepthValue min_depth) const;
 
@@ -96,7 +101,7 @@ class HashMap {
       BitPattern player, BitPattern opponent, DepthValue depth,
       EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
       Square second_best_move) {
-    auto& element = hash_map_[Hash(player, opponent)];
+    auto& element = hash_map_[Hash<kBitHashMap>(player, opponent)];
     {
       const std::lock_guard<std::mutex> guard(element.second);
       element.first.Update(
@@ -107,14 +112,14 @@ class HashMap {
 
   void Reset() {
     for (int i = 0; i < kHashMapSize; ++i) {
-      auto& element = hash_map_[i];
-      const std::lock_guard<std::mutex> guard(element.second);
-      element.first.Update(0, 0, 0, 0, kMinEvalLarge, kMaxEvalLarge, kNoSquare, kNoSquare);
+      hash_map_[i].first.Reset();
     }
   }
 
+  // NOTE: We cannot just return a reference because another thread might
+  // invalidate it. We need to copy it.
   std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) const {
-    auto& element = hash_map_[Hash(player, opponent)];
+    auto& element = hash_map_[Hash<kBitHashMap>(player, opponent)];
     {
       const std::lock_guard<std::mutex> guard(element.second);
       const auto& result = element.first;
