@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+add_executable(
+        collect_examples
+        collect_examples.cpp
+)
+
+target_link_libraries(
+        collect_examples
+        LINK_PRIVATE
+        board
+        evaluator_derivative
+        file
+        hash_map
+        load_training_set
+        parse_flags
+        pattern_evaluator
+)
+
 add_library(
         endgame_ffo
         endgame_ffo.h

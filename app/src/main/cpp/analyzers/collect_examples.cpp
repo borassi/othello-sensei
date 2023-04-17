@@ -1,0 +1,157 @@
+/*
+ * Copyright 2023 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <chrono>
+#include <fstream>
+#include <random>
+#include "../board/bitpattern.h"
+#include "../board/board.h"
+#include "../board/get_moves.h"
+#include "../hashmap/hash_map.h"
+#include "../evaluatedepthone/pattern_evaluator.h"
+#include "../evaluatederivative/evaluator_derivative.h"
+#include "../utils/file.h"
+#include "../utils/load_training_set.h"
+#include "../utils/parse_flags.h"
+
+class Collector {
+ public:
+
+  Collector(int to_collect) : to_collect_(to_collect), total_(0), collected_() {}
+
+  void AddBoard(const Board& b) {
+    ++total_;
+
+    // If you want to collect n, this will happen the first n times.
+    if (total_ <= to_collect_) {
+      collected_.push_back(b);
+      return;
+    }
+
+    // This happens with probability to_collect_ / total_.
+    if ((double) rand() / RAND_MAX < (double) to_collect_ / total_) {
+      collected_[rand() % collected_.size()] = b;
+    }
+  }
+
+  const std::vector<Board>& Get() { return collected_; }
+
+ private:
+  int to_collect_;
+  int total_;
+  std::vector<Board> collected_;
+};
+
+int main(int argc, char* argv[]) {
+  ParseFlags parse_flags(argc, argv);
+  int n = parse_flags.GetIntFlagOrDefault("n", 20);
+  std::vector<Collector> collectors;
+  for (int i = 0; i < 64; ++i) {
+    if (i <= 29) {
+      collectors.push_back(Collector(0));
+    } else if (i <= 27) {
+      // ~3 hours
+      collectors.push_back(Collector(40));
+    } else if (i == 28) {
+      // ~1 hour
+      collectors.push_back(Collector(20));
+    } else if (i == 29) {
+      // ~1 hour for 29, 2 hours for 30, 4 hours for 31, ...
+      collectors.push_back(Collector(10));
+    } else {
+      // ~1 hour for 30, 2 hours for 31 (time cutoff), ...
+      collectors.push_back(Collector(5));
+    }
+  }
+
+  std::ofstream output;
+  HashMap hash_map;
+  auto evals = LoadEvals();
+  TreeNodeSupplier tree_node_supplier;
+  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 12);
+  PatternEvaluator evaluator0(evals.data());
+  EvaluatorAlphaBeta evaluator_alpha_beta(&hash_map, PatternEvaluator::Factory(evals.data()));
+
+  for (const auto& board : load_train_set()) {
+    collectors[board.Empties()].AddBoard(board.GetBoard());
+  }
+
+  std::string filename = "endgame_results.txt";
+  int index = 0;
+  while (FileExists(filename)) {
+    ++index;
+    filename = "endgame_results_" + std::to_string(index) + ".txt";
+  }
+  output.open(filename, std::ios::app);
+  output
+      << "player opponent empties real_eval alpha_beta final_lower final_upper "
+      << "final_eval final_visited final_proof final_disproof final_weaklower "
+      << "final_weakupper eval0 eval1 eval2 eval3 eval4 "
+      << "moves_player moves_player_corner moves_player_x "
+      << "moves_player_app moves_player_corner_app moves_player_x_app "
+      << "moves_opponent moves_opponent_corner moves_opponent_x "
+      << "moves_opponent_app moves_opponent_corner_app moves_opponent_x_app\n";
+  output.close();
+  for (Collector collector : collectors) {
+    int depth = 0;
+    for (const Board& b : collector.Get()) {
+      std::stringstream low_depth_evals;
+      evaluator0.Setup(b.Player(), b.Opponent());
+      low_depth_evals << evaluator0.Evaluate();
+      for (int d = 1; d <= 4; ++d) {
+        low_depth_evals << " " << evaluator_alpha_beta.Evaluate(b.Player(), b.Opponent(), d);
+      }
+      for (bool invert : {false, true}) {
+        for (bool approx : {false, true}) {
+          BitPattern new_player = invert ? b.Opponent() : b.Player();
+          BitPattern new_opponent = invert ? b.Player() : b.Opponent();
+          BitPattern moves = approx ?
+              Neighbors(new_opponent) & ~(new_player | new_opponent)
+              : GetMoves(new_player, new_opponent);
+          low_depth_evals
+              << " " << __builtin_popcountll(moves)
+              << " " << __builtin_popcountll(moves & kCornerPattern)
+              << " " << __builtin_popcountll(moves & kXPattern);
+        }
+      }
+      depth = b.NEmpties();
+      tree_node_supplier.Reset();
+      evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, false);
+      int real_eval = evaluator.GetFirstPosition()->GetEval();
+      std::stringstream result;
+      for (int i = -63; i <= 63; i += 2) {
+        tree_node_supplier.Reset();
+        hash_map.Reset();
+        evaluator.Evaluate(b.Player(), b.Opponent(), i, i, 1000000000000L, 20, false);
+        auto first_position = evaluator.GetFirstPosition();
+        result
+            << b.Player() << " " << b.Opponent() << " " << b.NEmpties()
+            << " " << real_eval << " " << i << " " << (int) first_position->Lower()
+            << " " << (int) first_position->Upper() << " " << first_position->GetEval()
+            << " " << first_position->GetNVisited() << " " << first_position->ProofNumber(i)
+            << " " << first_position->DisproofNumber(i) << " " << (int) first_position->WeakLower()
+            << " " << (int) first_position->WeakUpper() << " " << low_depth_evals.str() << "\n";
+      }
+      output.open(filename, std::ios::app);
+      output << result.get();
+      output.close();
+    }
+    auto t = std::time(nullptr);
+    auto time = *std::localtime(&t);
+    std::cout << "Done " << depth << " at " << std::put_time(&time, "%H:%M:%S") << "\n";
+  }
+  return 0;
+}
