@@ -27,9 +27,6 @@ TEST(EvaluatorDerivativeTest, Base) {
   Board initial_board("e6");
   evaluator_derivative.Evaluate(initial_board.Player(), initial_board.Opponent(), kMinEval + 1, kMaxEval - 1, 100000, 1);
   evaluator_derivative.Evaluate(initial_board.Player(), initial_board.Opponent(), kMinEval + 1, kMaxEval - 1, 100000, 1);
-//  std::cout << evaluator_derivative.Get(initial_board)->GetEvaluation(1).ProbGreaterEqual();
-
-//  std::cout << evaluator_derivative.Get(initial_board)->GetEvaluation(1).ProbGreaterEqual() << "\n";
 }
 
 TEST(EvaluatorDerivativeTest, Endgame) {

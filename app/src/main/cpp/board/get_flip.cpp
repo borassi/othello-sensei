@@ -88,9 +88,6 @@ void PrintFlip() {
       }
       int l;  // First flipped
       int r;  // Last flipped
-      if (outflank == 0b00001000 && move == 5) {
-        std::cout << "HELLO!";
-      }
       if (__builtin_popcount(outflank) == 1) {  // Only one outflank.
         int x = __builtin_ctz(outflank);
         if (x > move + 1) {
@@ -110,10 +107,6 @@ void PrintFlip() {
           result += "0";
           continue;
         }
-      }
-      if (outflank == 0b00001000 && move == 5) {
-        std::cout << "HELLO!";
-        std::cout << l << " " << r << " " << std::to_string((1 << (l+1)) - (1 << r)) << "\n";
       }
       result += std::to_string((1 << (l+1)) - (1 << r));
     }

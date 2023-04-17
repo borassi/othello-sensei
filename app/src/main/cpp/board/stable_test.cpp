@@ -73,7 +73,6 @@ TEST(Stable, Center) {
           "----X---" 
           "--------"
           "--------", true);
-  std::cout << PatternToString(stable);
   EXPECT_EQ(expected, stable);
 }
 
