@@ -202,13 +202,13 @@ public class Main implements Runnable {
       return;
     }
     blackTurn = !blackTurn;
-    oldBoards.add(board);
-    oldBlackTurns.add(blackTurn);
 
     if (JNI.haveToPass(board)) {
       board = board.move(0);
       blackTurn = !blackTurn;
     }
+    oldBoards.add(board);
+    oldBlackTurns.add(blackTurn);
     ui.setCases(board, blackTurn);
   }
   
