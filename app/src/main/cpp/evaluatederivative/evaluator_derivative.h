@@ -165,7 +165,7 @@ class TreeNodeSupplier {
   }
 
   int HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
-    return Hash(player, opponent) ^ std::hash<u_int8_t>{}(evaluator);
+    return (HashFull(player, opponent) ^ std::hash<u_int8_t>{}(evaluator)) % tree_node_index_.size();
   }
 };
 
@@ -298,7 +298,7 @@ class EvaluatorDerivative {
   int VisitedForEndgame() {
     float done = first_position_->GetNVisited();
     float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
-    float solve_probability = first_position_->SolveProbability();
+    float solve_probability = first_position_->SolveProbability(lower_, upper_);
     float goal = std::max(300.0F, std::min(1500.0F, 120 / pow(solve_probability, 0.5F)));
     float result = 5000 - (done - done_tree_nodes * goal) / 40;
 
@@ -320,7 +320,7 @@ class EvaluatorDerivative {
   }
 
   bool CheckFinished(TreeNode* first_position) {
-    auto advancement = first_position->Advancement();
+    auto advancement = first_position->Advancement(lower_, upper_);
     best_advancement_ = std::min(best_advancement_, advancement);
     bool good_stop = advancement <= best_advancement_;
     if (status_ == KILLING) {
@@ -364,8 +364,8 @@ class EvaluatorDerivative {
     auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
         first_position.ExpectedWeakLowerUpper();
 
-    weak_lower_ = new_weak_lower;
-    weak_upper_ = new_weak_upper;
+    weak_lower_ = std::max(lower_, new_weak_lower);
+    weak_upper_ = std::min(upper_, new_weak_upper);
 
     if (new_weak_lower < weak_lower || new_weak_upper > weak_upper) {
       first_position_->ExtendEval(weak_lower_, weak_upper_);

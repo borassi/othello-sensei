@@ -253,8 +253,14 @@ class TreeNode {
     return lower_ == upper_;
   }
 
-  float SolveProbability() const {
+  float SolveProbability(Eval lower, Eval upper) const {
     auto guard = ReadLock();
+    if (lower >= weak_lower_ && ProbGreaterEqual(lower) < 0.5) {
+      return ProbGreaterEqual(lower);
+    }
+    if (upper <= weak_upper_ && ProbGreaterEqual(upper) > 0.5) {
+      return 1 - ProbGreaterEqual(upper);
+    }
     float last_prob = 1;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       float current_prob = ProbGreaterEqual(i);
@@ -262,6 +268,7 @@ class TreeNode {
         assert(i > weak_lower_);
         return std::max(1 - last_prob, current_prob);
       }
+      last_prob = current_prob;
     }
     assert(false);
     return 0.5;
@@ -505,7 +512,7 @@ class TreeNode {
   // Measures the progress towards solving the position (lower is better).
   // Starts from 0, decreases until kLogDerivativeMinusInf until partially
   // solved, then decreases more until becoming -inf.
-  double Advancement() const {
+  double Advancement(Eval lower, Eval upper) const {
     double result = -std::numeric_limits<double>::infinity();
     {
       auto guard = ReadLock();
@@ -514,15 +521,22 @@ class TreeNode {
       }
     }
     if (result == kLogDerivativeMinusInf) {
-      result += log(RemainingWork()) - 1E5;
+      result += log(RemainingWork(lower, upper)) - 1E5;
     }
     return result;
   }
 
-  double RemainingWork() const {
+  double RemainingWork(Eval lower, Eval upper) const {
     auto guard = ReadLock();
     assert(n_empties_ >= 0 && n_empties_ <= 60);
     double result = std::numeric_limits<double>::infinity();
+
+    if (lower >= weak_lower_) {
+      result = std::min(result, (double) GetEvaluation(lower).DisproofNumber());
+    }
+    if (upper <= weak_upper_) {
+      result = std::min(result, (double) GetEvaluation(upper).ProofNumber());
+    }
 
     for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
       result = std::min(result, (double) GetEvaluation(i-2).ProofNumber() + GetEvaluation(i).DisproofNumber());
