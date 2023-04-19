@@ -50,7 +50,7 @@ public class Main implements Runnable {
   private long startTime;
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
-  private final Thor thor;
+  private static Thor thor;
 
   /**
    * Creates a new UI and sets the initial position.
@@ -65,7 +65,7 @@ public class Main implements Runnable {
     return thor.getTournaments();
   }
 
-  public SortedSet<String> getThorPlayers() {
+  public static SortedSet<String> getThorPlayers() {
     return thor.getPlayers();
   }
 

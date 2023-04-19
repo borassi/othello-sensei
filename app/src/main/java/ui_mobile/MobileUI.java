@@ -113,8 +113,6 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   public void loadThor() {
     Intent intent = new Intent(this, ThorGamesWindowMobile.class);
-    SortedSet<String> players = main.getThorPlayers();
-    intent.putExtra("Players", players.toArray(new String[0]));
     startActivityForResult(intent, 1);
   }
 

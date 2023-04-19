@@ -25,11 +25,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
 
+import main.Main;
 import ui.R;
 
 public class ThorGamesWindowMobile extends AppCompatActivity {
 
-  private String[] players;
   private Spinner listOfPlayers;
   private TextView player;
 
@@ -37,8 +37,6 @@ public class ThorGamesWindowMobile extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.thor_window);
-    Intent intent = getIntent();
-    players = intent.getStringArrayExtra("Players");
     listOfPlayers = findViewById(R.id.spinner2);
     findViewById(R.id.selectAsBlack).setOnClickListener(view -> select(true));
     findViewById(R.id.selectAsWhite).setOnClickListener(view -> select(false));
@@ -61,7 +59,7 @@ public class ThorGamesWindowMobile extends AppCompatActivity {
   void updateListOfPlayers() {
     String text = player.getText().toString();
     ArrayList<String> currentPlayers = new ArrayList<>();
-    for (String player : players) {
+    for (String player : Main.getThorPlayers()) {
       if (player.startsWith(text)) {
         currentPlayers.add(player);
       }
