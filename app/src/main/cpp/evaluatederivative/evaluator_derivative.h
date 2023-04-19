@@ -80,9 +80,7 @@ class TreeNodeSupplier {
  public:
   TreeNodeSupplier() : first_valid_index_(1), num_nodes_(0), tree_node_index_(kHashMapSize) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
-    for (int i = 0; i < tree_node_index_.size(); ++i) {
-      tree_node_index_[i] = 0;
-    }
+    FullResetHashMap();
   }
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
@@ -108,9 +106,10 @@ class TreeNodeSupplier {
   }
 
   void Reset() {
+    assert(num_nodes_ <= kDerivativeEvaluatorSize);
     first_valid_index_ += num_nodes_;
-    if (first_valid_index_ >= UINT32_MAX - kDerivativeEvaluatorSize) {
-      first_valid_index_ = 0;
+    if (first_valid_index_ >= UINT32_MAX - kDerivativeEvaluatorSize - 1) {
+      FullResetHashMap();
     }
     num_nodes_ = 0;
   }
@@ -149,6 +148,13 @@ class TreeNodeSupplier {
   std::atomic_uint32_t num_nodes_;
   uint32_t first_valid_index_;
 
+  void FullResetHashMap() {
+    for (int i = 0; i < tree_node_index_.size(); ++i) {
+      tree_node_index_[i] = 0;
+    }
+    first_valid_index_ = 1;
+  }
+
   bool IsValid(uint32_t index) {
     return index >= first_valid_index_ && index < first_valid_index_ + num_nodes_;
   }
@@ -156,16 +162,17 @@ class TreeNodeSupplier {
   void AddToHashMap(BitPattern player, BitPattern opponent, u_int8_t evaluator_index, uint32_t node_id) {
     assert(first_valid_index_ <= UINT32_MAX - node_id);
     int hash = HashNode(player, opponent, evaluator_index);
-    uint32_t shifted_node_id = first_valid_index_ + node_id;
-    uint32_t next_node = shifted_node_id;
+    uint32_t next_node = first_valid_index_ + node_id;
     while (IsValid(next_node)) {
       next_node = tree_node_index_[hash].exchange(next_node);
       hash = (hash + 1) % tree_node_index_.size();
     }
   }
 
-  int HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
-    return (HashFull(player, opponent) ^ std::hash<u_int8_t>{}(evaluator)) % tree_node_index_.size();
+  uint32_t HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
+    uint32_t hash = (HashFull(player, opponent) ^ std::hash<u_int8_t>{}(evaluator)) % tree_node_index_.size();
+    assert(hash >= 0 && hash < tree_node_index_.size());
+    return hash;
   }
 };
 

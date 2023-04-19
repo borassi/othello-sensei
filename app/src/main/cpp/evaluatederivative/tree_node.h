@@ -254,21 +254,31 @@ class TreeNode {
   }
 
   float SolveProbability(Eval lower, Eval upper) const {
-    auto guard = ReadLock();
-    if (lower >= weak_lower_ && ProbGreaterEqual(lower) < 0.5) {
-      return ProbGreaterEqual(lower);
-    }
-    if (upper <= weak_upper_ && ProbGreaterEqual(upper) > 0.5) {
-      return 1 - ProbGreaterEqual(upper);
-    }
-    float last_prob = 1;
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      float current_prob = ProbGreaterEqual(i);
-      if (current_prob < 0.5) {
-        assert(i > weak_lower_);
-        return std::max(1 - last_prob, current_prob);
+    {
+      auto guard = ReadLock();
+      // This can very rarely happen when ProbGreaterEqual(weak_lower) < 0.5 and
+      // no thread has updated weak_lower, yet. We return 0.5 to stay
+      // conservative.
+      if (ProbGreaterEqual(weak_lower_) <= 0.5 ||
+          ProbGreaterEqual(weak_upper_) >= 0.5) {
+        return 0.5;
       }
-      last_prob = current_prob;
+      if (lower >= weak_lower_ && ProbGreaterEqual(lower) <= 0.5) {
+        assert (lower == weak_lower_);
+        return ProbGreaterEqual(lower);
+      }
+      if (upper <= weak_upper_ && ProbGreaterEqual(upper) >= 0.5) {
+        assert(upper == weak_upper_);
+        return 1 - ProbGreaterEqual(upper);
+      }
+      float last_prob = ProbGreaterEqual(weak_lower_);
+      for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
+        float current_prob = ProbGreaterEqual(i);
+        if (current_prob < 0.5) {
+          return std::max(1 - last_prob, current_prob);
+        }
+        last_prob = current_prob;
+      }
     }
     assert(false);
     return 0.5;
