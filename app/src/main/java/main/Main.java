@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import bitpattern.PositionIJ;
 import board.Board;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
@@ -53,6 +55,9 @@ public class Main implements Runnable {
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
   private static Thor thor;
+  private boolean canComputeError;
+  private ArrayList<Double> errorsWhite = new ArrayList<>();
+  private ArrayList<Double> errorsBlack = new ArrayList<>();
 
   /**
    * Creates a new UI and sets the initial position.
@@ -131,7 +136,17 @@ public class Main implements Runnable {
       board = oldBoards.get(oldBoards.size() - 1);
       oldBlackTurns.remove(oldBlackTurns.size() - 1);
       blackTurn = oldBlackTurns.get(oldBlackTurns.size() - 1);
+      if (blackTurn) {
+        if (!errorsBlack.isEmpty()) {
+          errorsBlack.remove(errorsBlack.get(errorsBlack.size() - 1));
+        }
+      } else {
+        if (!errorsWhite.isEmpty()) {
+          errorsWhite.remove(errorsWhite.get(errorsWhite.size() - 1));
+        }
+      }
       ui.setCases(board, blackTurn);
+      evaluate();
     }
   }
   
@@ -148,6 +163,10 @@ public class Main implements Runnable {
     oldBoards.add(board);
     oldBlackTurns.clear();
     oldBlackTurns.add(blackTurn);
+    errorsBlack.clear();
+    errorsBlack.add(0.0);
+    errorsWhite.clear();
+    errorsWhite.add(0.0);
     ui.setCases(board, blackTurn);
   }
 
@@ -171,6 +190,11 @@ public class Main implements Runnable {
   public void run() {
     waitingTasks.getAndAdd(-1);
     Board board = this.board.deepCopy();
+    if (JNI.isGameOver(board)) {
+      return;
+    }
+
+    boolean mustPlay = (ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn);
 
     ArrayList<Board> oldBoards = new ArrayList<>();
     for(Board oldBoard : this.oldBoards) {
@@ -187,18 +211,21 @@ public class Main implements Runnable {
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
     }
+    canComputeError = ui.delta() > 0;
     while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
-      showMCTSEvaluations();
+      if (!mustPlay) {
+        showMCTSEvaluations();
+      }
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
     }
     if (ui.useBook() && ui.delta() > 0) {
       EVALUATOR.addToBook(board, oldBoards);
     }
-    if (waitingTasks.get() == 0) {
+    if (mustPlay) {
+      this.play(findMoveToPlay(ui.getError()));
+      setExtras();
+    } else if (waitingTasks.get() == 0) {
       showMCTSEvaluations();
-    }
-    if ((ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn)) {
-      this.playMoveIfPossible(this.findBestMove());
     }
   }
   
@@ -208,24 +235,40 @@ public class Main implements Runnable {
    * @param move the move (0 is h8, 1 is g8, ..., 63 is a1).
    */
   private void playMoveIfPossible(int move) {
-    Board oldBoard = board.deepCopy();
+    Board newBoard;
     try {
-      board = JNI.move(board, move);
-      if (board.equals(oldBoard)) {
+      newBoard = JNI.move(board, move);
+      if (newBoard.equals(board)) {
         return;
       }
     } catch (IllegalArgumentException ex) {
       return;
     }
-    blackTurn = !blackTurn;
+    double error = getError(move);
+    if (blackTurn) {
+      if (error == Double.NEGATIVE_INFINITY) {
+        errorsBlack.clear();
+      } else if (!errorsBlack.isEmpty()) {
+        errorsBlack.add(error);
+      }
+    } else {
+      if (error == Double.NEGATIVE_INFINITY) {
+        errorsWhite.clear();
+      } else if (!errorsWhite.isEmpty()) {
+        errorsWhite.add(error);
+      }
+    }
 
-    if (JNI.haveToPass(board)) {
-      board = board.move(0);
+    if (JNI.haveToPass(newBoard) && !JNI.isGameOver(newBoard)) {
+      board = newBoard.move(0);
+    } else {
+      board = newBoard;
       blackTurn = !blackTurn;
     }
     oldBoards.add(board);
     oldBlackTurns.add(blackTurn);
     ui.setCases(board, blackTurn);
+    canComputeError = false;
   }
   
   private int moveFromBoard(Board father, Board child) {
@@ -234,23 +277,74 @@ public class Main implements Runnable {
     return Long.numberOfTrailingZeros(move);
   }
 
-  private int findBestMove() {
-    double best = Double.POSITIVE_INFINITY;
-    int bestMove = -1;
+  public static double generateExponential(double lambda) {
+    return -1 / lambda * Math.log(Math.random());
+  }
 
+  private double constant = 1.8;
+
+  private HashMap<Integer, TreeNodeInterface> getNextPositions() {
+    HashMap<Integer, TreeNodeInterface> result = new HashMap<>();
     for (Board child : JNI.children(board)) {
       TreeNodeInterface b = getStoredBoard(child);
       if (b == null) {
         continue;
       }
-      int eval = b.getEval();
-      int move = moveFromBoard(board, child);
-      if (eval < best) {
+      result.put(moveFromBoard(board, child), b);
+    }
+    return result;
+  }
+
+  int findMoveToPlay(double error) {
+    double bestScore = Double.POSITIVE_INFINITY;
+    int move = -1;
+    for (Map.Entry<Integer, TreeNodeInterface> entry : getNextPositions().entrySet()) {
+      double eval = -entry.getValue().getEval() / 100.0;
+      double score = generateExponential(Math.pow(constant, eval));
+      if (score < bestScore) {
+        bestScore = score;
+        move = entry.getKey();
+      }
+    }
+    return move;
+  }
+
+  private ArrayList<Integer> findBestMoves() {
+    double best = Double.NEGATIVE_INFINITY;
+    ArrayList<Integer> bestMove = new ArrayList<>();
+
+    for (Map.Entry<Integer, TreeNodeInterface> entry : getNextPositions().entrySet()) {
+      double eval = -entry.getValue().getEval() / 100.0;
+      int move = entry.getKey();
+      if (eval > best) {
         best = eval;
-        bestMove = move;
+        bestMove.clear();
+        bestMove.add(move);
+      } else if (eval == best) {
+        bestMove.add(move);
       }
     }
     return bestMove;
+  }
+
+  private double getError(int move) {
+    if (board.equals(new Board())) {
+      return 0;
+    }
+    if (!canComputeError) {
+      return Double.NEGATIVE_INFINITY;
+    }
+    double bestEval = Double.NEGATIVE_INFINITY;
+    HashMap<Integer, TreeNodeInterface> nextPositions = getNextPositions();
+    if (!nextPositions.containsKey(move)) {
+      return Double.NEGATIVE_INFINITY;
+    }
+
+    for (TreeNodeInterface b : nextPositions.values()) {
+      bestEval = Math.max(bestEval, -b.getEval() / 100.0);
+    }
+
+    return bestEval - (-nextPositions.get(move).getEval() / 100.0);
   }
   
   private void evaluate() {
@@ -259,13 +353,6 @@ public class Main implements Runnable {
     }
     if (ui.maxVisited() <= 0) {
       showMCTSEvaluations();
-      return;
-    }
-    if (ui.playBlackMoves() && !blackTurn) {
-      return;
-    }
-    
-    if (ui.playWhiteMoves() && blackTurn) {
       return;
     }
     if (waitingTasks.compareAndSet(0, 1)) {
@@ -297,7 +384,7 @@ public class Main implements Runnable {
   }
 
   private void showMCTSEvaluations() {
-    int bestMove = this.findBestMove();
+    ArrayList<Integer> bestMove = this.findBestMoves();
     boolean hasThor = thor.getNumGames(board) > 0;
     TreeNodeInterface father = getStoredBoard(board);
     for (Board child : JNI.children(board)) {
@@ -305,18 +392,29 @@ public class Main implements Runnable {
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
-        annotations = new CaseAnnotations(father, childStored, hasThor ? thor.getNumGames(child) : -1, move == bestMove);
+        annotations = new CaseAnnotations(
+            father,
+            childStored,
+            hasThor ? thor.getNumGames(child) : -1,
+            bestMove.contains(move));
         ui.setAnnotations(annotations, move);
       }
     }
+    setExtras();
+    ui.repaint();
+  }
+
+  public void setExtras() {
+    TreeNodeInterface father = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;
     if (father != null) {
       positionAnnotations = new CaseAnnotations(father, father, false);
     }
     ui.setExtras(
         getNVisited(), System.currentTimeMillis() - startTime,
-        positionAnnotations);
-    ui.repaint();
+        positionAnnotations,
+        errorsBlack.isEmpty() ? -1 : errorsBlack.stream().mapToDouble(Double::doubleValue).sum(),
+        errorsWhite.isEmpty() ? -1 : errorsWhite.stream().mapToDouble(Double::doubleValue).sum());
   }
 
   public void copy() {

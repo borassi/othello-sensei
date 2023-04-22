@@ -79,4 +79,8 @@ public class JNI {
   public native void addToBook(Board father, ArrayList<Board> parents);
 
   public native static String prettyPrintDouble(double d);
+
+  public static boolean isGameOver(Board b) {
+    return haveToPass(b) && haveToPass(b.move(0));
+  }
 }

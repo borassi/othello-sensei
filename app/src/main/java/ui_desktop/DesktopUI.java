@@ -107,6 +107,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JButton lookupThor;
   private final JCheckBox thorActive;
   private final ThorGamesWindow thorGamesWindow;
+  private final JSpinner error;
 
 
   public DesktopUI() {
@@ -145,6 +146,13 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     JButton setFirstPosition = new JButton("Set first position");
     JButton resetFirstPosition = new JButton("Reset first position");
     empties = new JLabel();
+    lower = new JSpinner(new SpinnerNumberModel(-63, -63, 63, 2));
+    upper = new JSpinner(new SpinnerNumberModel(63, -63, 63, 2));
+    depth = new JTextField();
+    depth.setText("10000000000");
+    delta = new JTextField();
+    delta.setText("0");
+    error = new JSpinner(new SpinnerNumberModel(12, 0, 120, 1));
 
     commands.add(newGame);
     commands.add(playBlackMoves);
@@ -167,13 +175,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     resetHashMaps.addActionListener((ActionEvent e) -> main.resetHashMaps());
     copy.addActionListener((ActionEvent e) -> main.copy());
-    depth = new JTextField();
-    depth.setText("10000000000");
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
 
-    delta = new JTextField();
-    delta.setText("0");
     delta.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * delta.getPreferredSize().height));
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
@@ -183,10 +187,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(ffoPositions);
     ffoPositions.addChangeListener((ChangeEvent e) -> main.setEndgameBoard((int) ffoPositions.getValue()));
 
-    SpinnerModel allowedLower = new SpinnerNumberModel(-63, -63, 63, 2);
-    SpinnerModel allowedUpper = new SpinnerNumberModel(63, -63, 63, 2);
-    lower = new JSpinner(allowedLower);
-    upper = new JSpinner(allowedUpper);
     lower.addChangeListener((ChangeEvent e) -> upper.setValue(Math.max((int) upper.getValue(), (int) lower.getValue())));
     upper.addChangeListener((ChangeEvent e) -> lower.setValue(Math.min((int) upper.getValue(), (int) lower.getValue())));
     commands.add(lower);
@@ -281,6 +281,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     } else {
       setAnnotationsLarge(annotations, move);
     }
+  }
+  @Override
+  public int getError() {
+    return (int) error.getValue();
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
     TreeNodeInterface treeNode = annotations.treeNode;
@@ -473,10 +477,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
+  public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations, double errorBlack, double errorWhite) {
     String text =
         "Positions: " + JNI.prettyPrintDouble(nVisited) + "\n" +
-            "Positions/s: " + JNI.prettyPrintDouble(nVisited * 1000 / milliseconds) + "\n";
+        "Positions/s: " + JNI.prettyPrintDouble(nVisited * 1000 / milliseconds) + "\n" +
+        "Error black: " + String.format("%,.2f", errorBlack) + "\n" +
+        "Error white: " + String.format("%,.2f", errorWhite) + "\n";
     SwingUtilities.invokeLater(() -> extras.setText(text));
     if (annotations == null) {
       return;

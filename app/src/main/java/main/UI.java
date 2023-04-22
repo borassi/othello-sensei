@@ -28,7 +28,8 @@ import ui_desktop.CaseAnnotations;
 public interface UI {
   void setCases(Board board, boolean blackTurn);
   void setAnnotations(CaseAnnotations annotations, int move);
-  void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations);
+  void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations,
+                 double errorBlack, double errorWhite);
   boolean playBlackMoves();
   boolean playWhiteMoves();
   long maxVisited();
@@ -41,4 +42,5 @@ public interface UI {
   FileAccessor fileAccessor();
   boolean active();
   boolean useBook();
+  int getError();
 }

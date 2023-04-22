@@ -195,13 +195,18 @@ public class MobileUI extends AppCompatActivity implements UI {
   public boolean useBook() { return false; }
 
   @Override
+  public int getError() {
+    return 0;
+  }
+
+  @Override
   public void setAnnotations(CaseAnnotations annotations, int move) {
     BoardView boardView = findViewById(R.id.board);
     boardView.setAnnotations(annotations, move);
   }
 
   @Override
-  public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations) {
+  public void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations, double errorBlack, double errorWhite) {
     if (wantThor) {
       return;
     }
