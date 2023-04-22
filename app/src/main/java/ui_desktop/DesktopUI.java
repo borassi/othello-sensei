@@ -142,6 +142,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     JButton stop = new JButton("Stop");
     JButton resetHashMaps = new JButton("Reset hash maps");
     JButton copy = new JButton("Copy");
+    JButton setFirstPosition = new JButton("Set first position");
+    JButton resetFirstPosition = new JButton("Reset first position");
+    empties = new JLabel();
+
     commands.add(newGame);
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
@@ -151,6 +155,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(stop);
     commands.add(resetHashMaps);
     commands.add(copy);
+    commands.add(setFirstPosition);
+    commands.add(resetFirstPosition);
+    commands.add(empties);
 
     main = new Main(this);
 
@@ -184,9 +191,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     upper.addChangeListener((ChangeEvent e) -> lower.setValue(Math.min((int) upper.getValue(), (int) lower.getValue())));
     commands.add(lower);
     commands.add(upper);
-
-    empties = new JLabel();
-    commands.add(empties);
     extras = new JTextArea();
     extras.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
     commands.add(extras);
@@ -245,6 +249,17 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     thorActive.addChangeListener((ChangeEvent e) -> thorGamesWindow.setVisible(thorActive.isSelected()));
     commands.add(thorActive);
 
+    setFirstPosition.addMouseListener(new MouseAdapter() {
+      public void mousePressed(MouseEvent me) {
+        main.setFirstPosition();
+      }
+    });
+
+    resetFirstPosition.addMouseListener(new MouseAdapter() {
+      public void mousePressed(MouseEvent me) {
+        main.resetFirstPosition();
+      }
+    });
     setSize(1200, 800);
 
     setVisible(true);

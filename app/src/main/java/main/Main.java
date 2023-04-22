@@ -41,10 +41,12 @@ import ui_desktop.CaseAnnotations;
  * Connects the board and the evaluation with the UI.
  */
 public class Main implements Runnable {
+  Board board;
+  boolean blackTurn;
+  Board firstPosition;
+  boolean firstBlackTurn;
   final ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
   final ArrayList<Board> oldBoards = new ArrayList<>();
-  boolean blackTurn = true;
-  Board board;
   private final JNI EVALUATOR;
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   private long startTime;
@@ -59,6 +61,7 @@ public class Main implements Runnable {
     Main.ui = ui;
     thor = new Thor(ui.fileAccessor());
     EVALUATOR = new JNI(ui.fileAccessor());
+    resetFirstPosition();
   }
 
   public SortedSet<String> getThorTournaments() {
@@ -82,6 +85,20 @@ public class Main implements Runnable {
     stop();
     playMoveIfPossible(move);
     evaluate();
+  }
+
+  public void setFirstPosition(Board board, boolean blackTurn) {
+    firstPosition = board;
+    firstBlackTurn = blackTurn;
+    newGame();
+  }
+
+  public void resetFirstPosition() {
+    setFirstPosition(new Board(), true);
+  }
+
+  public void setFirstPosition() {
+    setFirstPosition(board.deepCopy(), blackTurn);
   }
 
   public void stop() {
@@ -120,8 +137,7 @@ public class Main implements Runnable {
   
   public void newGame() {
     stop();
-//    setBoard(new Board("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
-    setBoard(new Board(), true);
+    setBoard(firstPosition, firstBlackTurn);
   }
   
   public void setBoard(Board b, boolean blackTurn) {
