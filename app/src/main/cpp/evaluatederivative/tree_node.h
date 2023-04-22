@@ -190,11 +190,6 @@ class TreeNode {
     float eval = lower - 1;
     for (int i = lower; i <= upper; i += 2) {
       float prob = GetEvaluation(i).ProbGreaterEqual();
-      if (prob >= 1 - kProbIncreaseWeakEval) {
-        prob = 1;
-      } else if (prob <= kProbIncreaseWeakEval) {
-        prob = 0;
-      }
       eval += 2 * prob;
     }
     return eval;
@@ -312,7 +307,7 @@ class TreeNode {
         return i - 1;
       }
     }
-    return upper_;
+    return upper + 1;
   }
 
   Eval GetPercentileLower(float p) {
@@ -325,7 +320,7 @@ class TreeNode {
         return i + 1;
       }
     }
-    return lower_;
+    return lower - 1;
   }
 
   int ChildLogDerivative(TreeNode* child, int eval_goal) const {
