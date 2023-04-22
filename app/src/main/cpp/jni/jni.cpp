@@ -107,6 +107,9 @@ class JNIWrapper {
     std::ostringstream stringStream;
     NVisited visited = 0;
     bool all_solved = true;
+    if (stopping_) {
+      return true;
+    }
     for (int i = 0; i < last_boards_.size(); ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
       visited += evaluator->GetFirstPosition()->GetNVisited();
@@ -115,12 +118,12 @@ class JNIWrapper {
         case RUNNING:
         case FAILED:
           assert(false);
-        case KILLING:
-        case KILLED:
         case STOPPED_TREE_POSITIONS:
           return true;
         case SOLVED:
           break;
+        case KILLING:
+        case KILLED:
         case STOPPED_TIME:
         case STOPPED_POSITIONS:
           all_solved = false;
@@ -148,7 +151,7 @@ class JNIWrapper {
             max_time / boards.size());
       }
     } else {
-      for (int step = 0; step < boards.size() && !stopping_ && !Finished(max_n_visited); ++step) {
+      for (int step = 0; step < boards.size() && !Finished(max_n_visited); ++step) {
         BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / boards.size());
       }
     }
