@@ -54,28 +54,24 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
       setPreferencesFromResource(R.xml.root_preferences, rootKey);
-      changeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-        @Override
-        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-          if (key.equals("delta_moves")) {
-            Preference preference = findPreference(key);
-            preference.setSummary(String.format("Spend 2x time on a move with score X than a move with score X-%s",
-                sharedPreferences.getString(key, "NA")));
-          }
-          if (key.equals("stop_after")) {
-            Preference preference = findPreference(key);
-            preference.setSummary(String.format("Stop after visiting %s position",
-                sharedPreferences.getString(key, "NA")));
-          }
+      changeListener = (sharedPreferences, key) -> {
+        if (key.equals("delta_moves")) {
+          Preference preference = findPreference(key);
+          preference.setSummary(String.format("Spend 2x time on a move with score X than a move with score X-%s",
+              sharedPreferences.getString(key, "NA")));
         }
       };
       EditTextPreference pref = findPreference("delta_moves");
       if (pref != null) {
         pref.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL));
       }
-      pref = findPreference("stop_after");
+      pref = findPreference("stop_after_eval");
       if (pref != null) {
         pref.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER));
+      }
+      pref = findPreference("error_when_playing");
+      if (pref != null) {
+        pref.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL));
       }
     }
 
@@ -87,14 +83,6 @@ public class SettingsActivity extends AppCompatActivity {
       findPreference("delta_moves").setSummary(
           String.format(getResources().getString(R.string.delta_moves_summary),
               getPreferenceScreen().getSharedPreferences().getString("delta_moves", "NA")));
-
-      findPreference("stop_after_eval").setSummary(
-          String.format(getResources().getString(R.string.stop_after_eval_summary),
-          getPreferenceScreen().getSharedPreferences().getString("stop_after_eval", "NA")));
-
-      findPreference("stop_after_play").setSummary(
-          String.format(getResources().getString(R.string.stop_after_play_summary),
-          getPreferenceScreen().getSharedPreferences().getString("stop_after_play", "NA")));
     }
     @Override
     public void onPause() {

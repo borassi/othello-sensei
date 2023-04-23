@@ -259,10 +259,6 @@ public class Main implements Runnable {
     return Long.numberOfTrailingZeros(move);
   }
 
-  public static double generateExponential(double lambda) {
-    return -1 / lambda * Math.log(Math.random());
-  }
-
   private HashMap<Integer, TreeNodeInterface> getNextPositions() {
     HashMap<Integer, TreeNodeInterface> result = new HashMap<>();
     for (Board child : JNI.children(board)) {
@@ -273,6 +269,10 @@ public class Main implements Runnable {
       result.put(moveFromBoard(board, child), b);
     }
     return result;
+  }
+
+  public static double generateExponential(double lambda) {
+    return -1 / lambda * Math.log(Math.random());
   }
 
   int findMoveToPlay(double error) {
