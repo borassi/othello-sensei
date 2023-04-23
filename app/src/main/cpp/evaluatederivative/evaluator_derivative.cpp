@@ -70,7 +70,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   auto moves = GetAllMovesWithPass(player, opponent);
 
   if (moves.empty()) {
-    int final_eval = GetEvaluationGameOver(player, opponent);
+    int final_eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
     node->SetSolved(final_eval, final_eval, *evaluator_);
     stats_.Add(1, TREE_NODE);
     return 1;

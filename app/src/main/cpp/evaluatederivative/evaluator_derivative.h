@@ -323,7 +323,6 @@ class EvaluatorDerivative {
       futures[i].get();
       stats_.Merge(threads_[i]->GetStats());
     }
-    first_position_->UpdateFather();
   }
 
   bool CheckFinished(TreeNode* first_position) {
