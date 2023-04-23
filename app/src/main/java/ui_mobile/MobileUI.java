@@ -25,6 +25,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import org.omg.PortableInterceptor.INACTIVE;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -44,14 +46,21 @@ import main.UI;
 import ui.R;
 
 public class MobileUI extends AppCompatActivity implements UI {
+  private enum Task {
+    INACTIVE,
+    SHOW_EVALS,
+    PLAY_BLACK,
+    PLAY_WHITE
+  }
   private BoardView boardView;
   private TextView extraInfo;
   public Main main;
   private Board board;
   private boolean blackTurn;
   private boolean wantThor = false;
-  private boolean active = true;
   private Menu menu;
+  private Task task = Task.SHOW_EVALS;
+
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     getMenuInflater().inflate(R.menu.menu, menu);
@@ -59,15 +68,25 @@ public class MobileUI extends AppCompatActivity implements UI {
     return true;
   }
 
-  private void setActive(boolean newActive) {
-    active = newActive;
+  private void rotateTask() {
     MenuItem item = menu.findItem(R.id.active);
-    if (active) {
-      item.setIcon(R.drawable.notifications_20px);
-      item.setTitle("Disable evaluations");
-    } else {
-      item.setIcon(R.drawable.notifications_off_20px);
-      item.setTitle("Enable evaluations");
+    switch (task) {
+      case SHOW_EVALS:
+        task = task.INACTIVE;
+        item.setIcon(R.drawable.notifications_off_20px);
+        break;
+      case INACTIVE:
+        task = Task.PLAY_BLACK;
+        item.setIcon(R.drawable.circle_full_20px);
+        break;
+      case PLAY_BLACK:
+        task = Task.PLAY_WHITE;
+        item.setIcon(R.drawable.circle_empty_20px);
+        break;
+      case PLAY_WHITE:
+        task = Task.SHOW_EVALS;
+        item.setIcon(R.drawable.notifications_20px);
+        break;
     }
   }
 
@@ -85,7 +104,7 @@ public class MobileUI extends AppCompatActivity implements UI {
         main.stop();
         return true;
       case R.id.active:
-        setActive(!active);
+        rotateTask();
         return true;
       case R.id.thor:
         main.stop();
@@ -94,6 +113,12 @@ public class MobileUI extends AppCompatActivity implements UI {
       case R.id.action_settings:
         main.stop();
         startActivity(new Intent(this, SettingsActivity.class));
+        return true;
+      case R.id.set_first_position:
+        main.setFirstPosition();
+        return true;
+      case R.id.reset_first_position:
+        main.resetFirstPosition();
         return true;
       default:
         return super.onOptionsItemSelected(item);
@@ -104,10 +129,10 @@ public class MobileUI extends AppCompatActivity implements UI {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     Constants.MOBILE = true;
-    main = new Main(this);
     setContentView(R.layout.activity_main);
     boardView = findViewById(R.id.board);
     extraInfo = findViewById(R.id.empties);
+    main = new Main(this);
     main.newGame();
   }
 
@@ -188,15 +213,16 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public boolean active() {
-    return active;
+    return task != Task.INACTIVE;
   }
 
   @Override
   public boolean useBook() { return false; }
 
   @Override
-  public int getError() {
-    return 0;
+  public double getError() {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    return Double.parseDouble(preferences.getString("error_when_playing", getResources().getString(R.string.error_when_playing_default)));
   }
 
   @Override
@@ -212,13 +238,17 @@ public class MobileUI extends AppCompatActivity implements UI {
     }
     String text = String.format(
         Locale.US,
-        "Black:     %5d\n" +
-        "White:     %5d\n" +
-        "Empties:   %5d\n" +
-        "Positions: %5s\n" +
-        "Pos/sec:   %5s\n",
+        "Black:       %5d\n" +
+        "White:       %5d\n" +
+        "Error Black: %5.2f\n" +
+        "Error White: %5.2f\n" +
+        "Empties:     %5d\n" +
+        "Positions:   %5s\n" +
+        "Pos/sec:     %5s\n",
         blackTurn ? board.getPlayerDisks() : board.getOpponentDisks(),
         blackTurn ? board.getOpponentDisks() : board.getPlayerDisks(),
+        errorBlack,
+        errorWhite,
         board.getEmptySquares(),
         JNI.prettyPrintDouble(nVisited),
         JNI.prettyPrintDouble(nVisited * 1000.0 / milliseconds));
@@ -227,18 +257,26 @@ public class MobileUI extends AppCompatActivity implements UI {
 
   @Override
   public boolean playBlackMoves() {
-    return false;
+    return task == Task.PLAY_BLACK;
   }
 
   @Override
   public boolean playWhiteMoves() {
-    return false;
+    return task == Task.PLAY_WHITE;
   }
 
   @Override
   public long maxVisited() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-    return Long.parseLong(preferences.getString("stop_after", getResources().getString(R.string.stop_after_default)));
+    if (task == Task.PLAY_BLACK || task == Task.PLAY_WHITE) {
+      return Long.parseLong(preferences.getString(
+          getResources().getString(R.string.stop_after_play),
+          getResources().getString(R.string.stop_after_play_default)));
+    } else {
+      return Long.parseLong(preferences.getString(
+          getResources().getString(R.string.stop_after_eval),
+          getResources().getString(R.string.stop_after_eval_default)));
+    }
   }
 
   @Override

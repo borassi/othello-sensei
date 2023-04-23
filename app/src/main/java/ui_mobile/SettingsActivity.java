@@ -85,17 +85,20 @@ public class SettingsActivity extends AppCompatActivity {
 
       getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(changeListener);
       findPreference("delta_moves").setSummary(
-          String.format("Spend 2x time on a move with score X than a move with score X-%s",
+          String.format(getResources().getString(R.string.delta_moves_summary),
               getPreferenceScreen().getSharedPreferences().getString("delta_moves", "NA")));
 
-      findPreference("stop_after").setSummary(
-          String.format("Stop after visiting %s position",
-          getPreferenceScreen().getSharedPreferences().getString("stop_after", "NA")));
+      findPreference("stop_after_eval").setSummary(
+          String.format(getResources().getString(R.string.stop_after_eval_summary),
+          getPreferenceScreen().getSharedPreferences().getString("stop_after_eval", "NA")));
+
+      findPreference("stop_after_play").setSummary(
+          String.format(getResources().getString(R.string.stop_after_play_summary),
+          getPreferenceScreen().getSharedPreferences().getString("stop_after_play", "NA")));
     }
     @Override
     public void onPause() {
       super.onPause();
-
       getPreferenceScreen().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(changeListener);
     }
   }

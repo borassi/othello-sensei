@@ -283,8 +283,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     }
   }
   @Override
-  public int getError() {
-    return (int) error.getValue();
+  public double getError() {
+    return (double) error.getValue();
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
     TreeNodeInterface treeNode = annotations.treeNode;

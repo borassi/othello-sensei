@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:launchMode="singleTop"
-    tools:context="ui_desktop.mobile_ui.MobileUI">
+    tools:context="ui_mobile.MobileUI">
 
     <ui_mobile.BoardView
         android:id="@+id/board"

@@ -43,12 +43,22 @@ import ui_desktop.CaseAnnotations;
  * Connects the board and the evaluation with the UI.
  */
 public class Main implements Runnable {
+  private class Position {
+    Board board;
+    boolean blackTurn;
+    double error;
+
+    public Position(Board board, boolean blackTurn, double error) {
+      this.board = board;
+      this.blackTurn = blackTurn;
+      this.error = error;
+    }
+  }
   Board board;
   boolean blackTurn;
   Board firstPosition;
   boolean firstBlackTurn;
-  final ArrayList<Boolean> oldBlackTurns = new ArrayList<>();
-  final ArrayList<Board> oldBoards = new ArrayList<>();
+  final ArrayList<Position> oldPositions = new ArrayList<>();
   private final JNI EVALUATOR;
   private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
   private long startTime;
@@ -56,8 +66,6 @@ public class Main implements Runnable {
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
   private static Thor thor;
   private boolean canComputeError;
-  private ArrayList<Double> errorsWhite = new ArrayList<>();
-  private ArrayList<Double> errorsBlack = new ArrayList<>();
 
   /**
    * Creates a new UI and sets the initial position.
@@ -126,28 +134,24 @@ public class Main implements Runnable {
     setBoard(JNI.getEndgameBoard(n), true);
   }
 
+  public boolean isSenseiTurn() {
+    return (blackTurn && ui.playBlackMoves()) || (!blackTurn && ui.playWhiteMoves());
+  }
+
   /**
    * Undoes a move, if possible.
    */
   public void undo() {
     stop();
-    if (oldBoards.size() > 1) {
-      oldBoards.remove(oldBoards.size() - 1);
-      board = oldBoards.get(oldBoards.size() - 1);
-      oldBlackTurns.remove(oldBlackTurns.size() - 1);
-      blackTurn = oldBlackTurns.get(oldBlackTurns.size() - 1);
-      if (blackTurn) {
-        if (!errorsBlack.isEmpty()) {
-          errorsBlack.remove(errorsBlack.get(errorsBlack.size() - 1));
-        }
-      } else {
-        if (!errorsWhite.isEmpty()) {
-          errorsWhite.remove(errorsWhite.get(errorsWhite.size() - 1));
-        }
-      }
+    boolean firstUndo = true;
+    while ((firstUndo || isSenseiTurn()) && oldPositions.size() > 0) {
+      Position position = oldPositions.remove(oldPositions.size() - 1);
+      board = position.board;
+      blackTurn = position.blackTurn;
       ui.setCases(board, blackTurn);
-      evaluate();
+      firstUndo = false;
     }
+    evaluate();
   }
   
   public void newGame() {
@@ -159,14 +163,7 @@ public class Main implements Runnable {
     stop();
     board = b;
     this.blackTurn = blackTurn;
-    oldBoards.clear();
-    oldBoards.add(board);
-    oldBlackTurns.clear();
-    oldBlackTurns.add(blackTurn);
-    errorsBlack.clear();
-    errorsBlack.add(0.0);
-    errorsWhite.clear();
-    errorsWhite.add(0.0);
+    oldPositions.clear();
     ui.setCases(board, blackTurn);
   }
 
@@ -193,12 +190,11 @@ public class Main implements Runnable {
     if (JNI.isGameOver(board)) {
       return;
     }
-
     boolean mustPlay = (ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn);
-
+    boolean isMatch = ui.playBlackMoves() || ui.playWhiteMoves();
     ArrayList<Board> oldBoards = new ArrayList<>();
-    for(Board oldBoard : this.oldBoards) {
-      oldBoards.add(oldBoard.deepCopy());
+    for (Position oldPosition : this.oldPositions) {
+      oldBoards.add(oldPosition.board.deepCopy());
     }
 
     ArrayList<Board> boards = getBoards();
@@ -213,7 +209,7 @@ public class Main implements Runnable {
     }
     canComputeError = ui.delta() > 0;
     while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
-      if (!mustPlay) {
+      if (!isMatch) {
         showMCTSEvaluations();
       }
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta());
@@ -223,10 +219,10 @@ public class Main implements Runnable {
     }
     if (mustPlay) {
       this.play(findMoveToPlay(ui.getError()));
-      setExtras();
-    } else if (waitingTasks.get() == 0) {
+    } else if (waitingTasks.get() == 0 && !isMatch) {
       showMCTSEvaluations();
     }
+    setExtras();
   }
   
   /**
@@ -245,19 +241,7 @@ public class Main implements Runnable {
       return;
     }
     double error = getError(move);
-    if (blackTurn) {
-      if (error == Double.NEGATIVE_INFINITY) {
-        errorsBlack.clear();
-      } else if (!errorsBlack.isEmpty()) {
-        errorsBlack.add(error);
-      }
-    } else {
-      if (error == Double.NEGATIVE_INFINITY) {
-        errorsWhite.clear();
-      } else if (!errorsWhite.isEmpty()) {
-        errorsWhite.add(error);
-      }
-    }
+    oldPositions.add(new Position(board, blackTurn, error));
 
     if (JNI.haveToPass(newBoard) && !JNI.isGameOver(newBoard)) {
       board = newBoard.move(0);
@@ -265,8 +249,6 @@ public class Main implements Runnable {
       board = newBoard;
       blackTurn = !blackTurn;
     }
-    oldBoards.add(board);
-    oldBlackTurns.add(blackTurn);
     ui.setCases(board, blackTurn);
     canComputeError = false;
   }
@@ -280,8 +262,6 @@ public class Main implements Runnable {
   public static double generateExponential(double lambda) {
     return -1 / lambda * Math.log(Math.random());
   }
-
-  private double constant = 1.8;
 
   private HashMap<Integer, TreeNodeInterface> getNextPositions() {
     HashMap<Integer, TreeNodeInterface> result = new HashMap<>();
@@ -300,7 +280,7 @@ public class Main implements Runnable {
     int move = -1;
     for (Map.Entry<Integer, TreeNodeInterface> entry : getNextPositions().entrySet()) {
       double eval = -entry.getValue().getEval() / 100.0;
-      double score = generateExponential(Math.pow(constant, eval));
+      double score = generateExponential(Math.pow(error, eval));
       if (score < bestScore) {
         bestScore = score;
         move = entry.getKey();
@@ -404,6 +384,16 @@ public class Main implements Runnable {
     ui.repaint();
   }
 
+  public double getError(boolean black) {
+    double result = 0;
+    for (Position position : oldPositions) {
+      if (position.blackTurn == black) {
+        result += position.error;
+      }
+    }
+    return result;
+  }
+
   public void setExtras() {
     TreeNodeInterface father = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;
@@ -412,16 +402,14 @@ public class Main implements Runnable {
     }
     ui.setExtras(
         getNVisited(), System.currentTimeMillis() - startTime,
-        positionAnnotations,
-        errorsBlack.isEmpty() ? -1 : errorsBlack.stream().mapToDouble(Double::doubleValue).sum(),
-        errorsWhite.isEmpty() ? -1 : errorsWhite.stream().mapToDouble(Double::doubleValue).sum());
+        positionAnnotations, getError(true), getError(false));
   }
 
   public void copy() {
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     String game = "";
-    for (int i = 1; i < oldBoards.size(); ++i) {
-      int move = moveFromBoard(oldBoards.get(i-1), oldBoards.get(i));
+    for (int i = 1; i < oldPositions.size(); ++i) {
+      int move = moveFromBoard(oldPositions.get(i-1).board, oldPositions.get(i).board);
       game += new PositionIJ(move).toString();
     }
     clipboard.setContents(new StringSelection(game), null);

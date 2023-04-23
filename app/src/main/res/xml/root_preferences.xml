@@ -1,11 +1,25 @@
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/title_activity_preferences">
 
     <EditTextPreference
-        app:defaultValue="@string/stop_after_default"
+        app:defaultValue="@string/stop_after_eval_default"
         app:iconSpaceReserved="false"
-        app:key="stop_after"
-        app:title="@string/stop_after"
+        app:key="stop_after_eval"
+        app:title="@string/stop_after_eval"
+        app:useSimpleSummaryProvider="false" />
+    <EditTextPreference
+        android:defaultValue="@string/stop_after_play_default"
+        android:key="stop_after_play"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/stop_after_play"
+        app:iconSpaceReserved="false" />
+    <EditTextPreference
+        app:defaultValue="@string/delta_moves_default"
+        app:iconSpaceReserved="false"
+        app:key="delta_moves"
+        app:title="@string/delta_moves"
         app:useSimpleSummaryProvider="false" />
     <EditTextPreference
         app:defaultValue="@string/delta_moves_default"

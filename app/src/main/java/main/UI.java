@@ -42,5 +42,5 @@ public interface UI {
   FileAccessor fileAccessor();
   boolean active();
   boolean useBook();
-  int getError();
+  double getError();
 }
