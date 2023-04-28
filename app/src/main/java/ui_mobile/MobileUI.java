@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Michele Borassi
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -270,11 +270,11 @@ public class MobileUI extends AppCompatActivity implements UI {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     if (task == Task.PLAY_BLACK || task == Task.PLAY_WHITE) {
       return Long.parseLong(preferences.getString(
-          getResources().getString(R.string.stop_after_play),
+          "stop_after_play",
           getResources().getString(R.string.stop_after_play_default)));
     } else {
       return Long.parseLong(preferences.getString(
-          getResources().getString(R.string.stop_after_eval),
+          "stop_after_eval",
           getResources().getString(R.string.stop_after_eval_default)));
     }
   }

@@ -21,7 +21,7 @@
         app:title="@string/delta_moves"
         app:useSimpleSummaryProvider="false" />
     <EditTextPreference
-        app:defaultValue="@string/delta_moves_default"
+        app:defaultValue="@string/error_when_playing_default"
         app:iconSpaceReserved="false"
         app:key="error_when_playing"
         app:title="Error when playing"

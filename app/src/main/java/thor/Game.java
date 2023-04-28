@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Michele Borassi
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ public class Game {
   public String tournament() { return tournament; }
   public int year() { return year; }
   public int score() { return score; }
+
+  public byte[] movesByte() { return moves; }
 
   public static String moveToString(byte move) {
     return String.valueOf((char) ((move % 10) - 1 + 'a')) + (move / 10);

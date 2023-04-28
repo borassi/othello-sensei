@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Michele Borassi
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -149,10 +149,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     lower = new JSpinner(new SpinnerNumberModel(-63, -63, 63, 2));
     upper = new JSpinner(new SpinnerNumberModel(63, -63, 63, 2));
     depth = new JTextField();
-    depth.setText("10000000000");
+    depth.setText("50000000");
     delta = new JTextField();
-    delta.setText("0");
-    error = new JSpinner(new SpinnerNumberModel(12, 0, 120, 1));
+    delta.setText("2");
+    error = new JSpinner(new SpinnerNumberModel(15, 5, 80, 1));
 
     commands.add(newGame);
     commands.add(playBlackMoves);
@@ -191,6 +191,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     upper.addChangeListener((ChangeEvent e) -> lower.setValue(Math.min((int) upper.getValue(), (int) lower.getValue())));
     commands.add(lower);
     commands.add(upper);
+    commands.add(error);
     extras = new JTextArea();
     extras.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
     commands.add(extras);
@@ -284,7 +285,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
   @Override
   public double getError() {
-    return (double) error.getValue();
+    return (int) error.getValue();
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
     TreeNodeInterface treeNode = annotations.treeNode;

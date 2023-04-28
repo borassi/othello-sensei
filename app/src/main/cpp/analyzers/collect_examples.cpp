@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   int n = parse_flags.GetIntFlagOrDefault("n", 20);
   std::vector<Collector> collectors;
   for (int i = 0; i < 64; ++i) {
-    if (i <= 29) {
+    if (i <= 25) {
       collectors.push_back(Collector(0));
     } else if (i <= 27) {
       // ~3 hours
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
       // ~1 hour
       collectors.push_back(Collector(20));
     } else if (i == 29) {
-      // ~1 hour for 29, 2 hours for 30, 4 hours for 31, ...
+      // ~1 hour
       collectors.push_back(Collector(10));
     } else {
       // ~1 hour for 30, 2 hours for 31 (time cutoff), ...
@@ -106,7 +106,16 @@ int main(int argc, char* argv[]) {
       << "moves_opponent_app moves_opponent_corner_app moves_opponent_x_app\n";
   output.close();
   for (Collector collector : collectors) {
-    int depth = 0;
+    const auto& boards = collector.Get();
+    if (boards.size() == 0) {
+      continue;
+    }
+    auto t = std::time(nullptr);
+    auto time = *std::localtime(&t);
+    std::cout
+        << "\nStarting " << collector.Get()[0].NEmpties()
+        << "(" << boards.size() << ") at "
+        << std::put_time(&time, "%H:%M:%S") << "\n";
     for (const Board& b : collector.Get()) {
       std::stringstream low_depth_evals;
       evaluator0.Setup(b.Player(), b.Opponent());
@@ -127,7 +136,6 @@ int main(int argc, char* argv[]) {
               << " " << __builtin_popcountll(moves & kXPattern);
         }
       }
-      depth = b.NEmpties();
       tree_node_supplier.Reset();
       evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, false);
       int real_eval = evaluator.GetFirstPosition()->GetEval();
@@ -144,14 +152,16 @@ int main(int argc, char* argv[]) {
             << " " << first_position->GetNVisited() << " " << first_position->ProofNumber(i)
             << " " << first_position->DisproofNumber(i) << " " << (int) first_position->WeakLower()
             << " " << (int) first_position->WeakUpper() << " " << low_depth_evals.str() << "\n";
+        std::cout << "." << std::flush;
       }
+      std::cout << "\n" << std::flush;
       output.open(filename, std::ios::app);
-      output << result.get();
+      output << result.str();
       output.close();
     }
-    auto t = std::time(nullptr);
-    auto time = *std::localtime(&t);
-    std::cout << "Done " << depth << " at " << std::put_time(&time, "%H:%M:%S") << "\n";
+    t = std::time(nullptr);
+    time = *std::localtime(&t);
+    std::cout << "\nFinished at " << std::put_time(&time, "%H:%M:%S") << "\n";
   }
   return 0;
 }

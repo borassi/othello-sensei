@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Google LLC
+ * Copyright 2023 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,12 +147,12 @@ class JNIWrapper {
       for (int i = 0; i < boards.size(); ++i) {
         Board b = boards[i];
         evaluator_derivative_[i]->Evaluate(
-            b.Player(), b.Opponent(), lower, upper, max_n_visited,
+            b.Player(), b.Opponent(), lower, upper, max_n_visited / boards.size(),
             max_time / boards.size());
       }
     } else {
       for (int step = 0; step < boards.size() && !Finished(max_n_visited); ++step) {
-        BestEvaluator(gap)->ContinueEvaluate(max_n_visited, max_time / boards.size());
+        BestEvaluator(gap)->ContinueEvaluate(max_n_visited / boards.size(), max_time / boards.size());
       }
     }
   }

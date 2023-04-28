@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Michele Borassi
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -168,7 +168,6 @@ public class Thor {
       }
       gamesForYear.put(year, games);
     } catch (IOException e) {
-      System.out.println("Cannot load Thor games " + filepath + ".");
     }
   }
 }

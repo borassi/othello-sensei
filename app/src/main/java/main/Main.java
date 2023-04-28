@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2023 Michele Borassi
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import bitpattern.PositionIJ;
 import board.Board;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import evaluateposition.TreeNodeInterface;
 import jni.JNI;
+import thor.Game;
 import thor.Thor;
 import ui_desktop.CaseAnnotations;
 
@@ -114,6 +117,50 @@ public class Main implements Runnable {
     setFirstPosition(board.deepCopy(), blackTurn);
   }
 
+  public void analyzeSelfGames() {
+    double error = 1.2;
+    System.out.println(error);
+    for (int i = 0; i < 20; ++i) {
+      while (!JNI.isGameOver(board)) {
+        run();
+        playMoveIfPossible(this.findMoveToPlay(error));
+      }
+      for (Position oldPosition : oldPositions) {
+        System.out.print(oldPosition.error + " ");
+      }
+      System.out.println();
+      newGame();
+    }
+  }
+
+  public void analyzeThorGames() {
+    for (int i = 0; i < 100; ++i) {
+      HashSet<String> players = new HashSet<String>(
+          Arrays.asList(new String[]{
+              "Borassi Michele", "Berg Matthias", "Marconi Francesco", "Di Mattei Alessandr",
+              "Takanashi Yusuke", "Aunchulee Piyanat", "Juigner Arthur", "Kashiwabara Takuji",
+              "Leader Imre", "Eklund Oskar", "Tastet Marc", "Sperandio Roberto", "Makkonen Olli",
+              "Pihlajapuro Lari", "Pihlajapuro Katie"
+          }));
+      thor.lookupPositions(players, new HashSet<>(), new HashSet<>());
+      ArrayList<Game> games = thor.getGames(new Board());
+      Game game = games.get((int) (Math.random() * games.size()));
+      byte[] moves = game.movesByte();
+      if (moves.length != 60) {
+        continue;
+      }
+      for (byte move : moves) {
+        run();
+        this.playMoveIfPossible((move / 10 - 1) * 8 + (move % 10 - 1));
+      }
+      for (Position oldPosition : oldPositions) {
+        System.out.print(oldPosition.error + " ");
+      }
+      System.out.println();
+      newGame();
+    }
+  }
+
   public void stop() {
     EVALUATOR.stop();
   }
@@ -190,7 +237,7 @@ public class Main implements Runnable {
     if (JNI.isGameOver(board)) {
       return;
     }
-    boolean mustPlay = (ui.playBlackMoves() && blackTurn) || (ui.playWhiteMoves() && !blackTurn);
+    boolean mustPlay = this.isSenseiTurn();
     boolean isMatch = ui.playBlackMoves() || ui.playWhiteMoves();
     ArrayList<Board> oldBoards = new ArrayList<>();
     for (Position oldPosition : this.oldPositions) {
@@ -218,7 +265,8 @@ public class Main implements Runnable {
       EVALUATOR.addToBook(board, oldBoards);
     }
     if (mustPlay) {
-      this.play(findMoveToPlay(ui.getError()));
+      double tmp = ui.getError();
+      this.play(findMoveToPlay(tmp));
     } else if (waitingTasks.get() == 0 && !isMatch) {
       showMCTSEvaluations();
     }
@@ -276,11 +324,18 @@ public class Main implements Runnable {
   }
 
   int findMoveToPlay(double error) {
+    assert(error > 5 && error < 80);
+    int currentMove = 60 - board.getEmptySquares();
+    double moveMultiplier = 0.06 * currentMove / 1.235;
+    if (currentMove >= 48) {
+      moveMultiplier = 0.77 / 1.235;
+    }
     double bestScore = Double.POSITIVE_INFINITY;
+    double base = 1 + 8.12 * Math.pow(error * moveMultiplier, -0.825);
     int move = -1;
     for (Map.Entry<Integer, TreeNodeInterface> entry : getNextPositions().entrySet()) {
       double eval = -entry.getValue().getEval() / 100.0;
-      double score = generateExponential(Math.pow(error, eval));
+      double score = generateExponential(Math.pow(base, eval));
       if (score < bestScore) {
         bestScore = score;
         move = entry.getKey();

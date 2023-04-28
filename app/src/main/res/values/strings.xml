@@ -6,18 +6,16 @@
     <!-- Preferences -->
     <string name="stop_after_eval">Stop after (when evaluating)</string>
     <string name="stop_after_eval_default">1000000000000</string>
-    <string name="stop_after_eval_summary">%s positions</string>
 
     <string name="delta_moves">Delta moves</string>
     <string name="delta_moves_default">2</string>
     <string name="delta_moves_summary">Spend 2x time on a move with score X than a move with score X-%s</string>
 
     <string name="stop_after_play">Stop after (when playing)</string>
-    <string name="stop_after_play_default">20000000</string>
-    <string name="stop_after_play_summary">%s positions</string>
+    <string name="stop_after_play_default">10000000</string>
 
     <string name="error_when_playing">Error when playing</string>
-    <string name="error_when_playing_default">1.7</string>
+    <string name="error_when_playing_default">15</string>
 
     <string name="title_activity_settings">Settings</string>
     <string name="title_activity_preferences">Settings</string>
