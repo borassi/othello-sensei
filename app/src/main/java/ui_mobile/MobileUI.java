@@ -18,14 +18,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-
-import org.omg.PortableInterceptor.INACTIVE;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +61,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   private boolean wantThor = false;
   private Menu menu;
   private Task task = Task.SHOW_EVALS;
+  private String notes = "";
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
@@ -110,15 +112,21 @@ public class MobileUI extends AppCompatActivity implements UI {
         main.stop();
         loadThor();
         return true;
-      case R.id.action_settings:
-        main.stop();
-        startActivity(new Intent(this, SettingsActivity.class));
-        return true;
       case R.id.set_first_position:
         main.setFirstPosition();
         return true;
       case R.id.reset_first_position:
         main.resetFirstPosition();
+        return true;
+      case R.id.copy_notes:
+        copyNotes();
+        return true;
+      case R.id.add_to_notes:
+        addToNotes();
+        return true;
+      case R.id.action_settings:
+        main.stop();
+        startActivity(new Intent(this, SettingsActivity.class));
         return true;
       default:
         return super.onOptionsItemSelected(item);
@@ -293,5 +301,16 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public int upper() {
     return 6300;
+  }
+
+  private void copyNotes() {
+    ClipboardManager clipboard = (ClipboardManager)
+        getSystemService(Context.CLIPBOARD_SERVICE);
+    ClipData clip = ClipData.newPlainText("Games", notes);
+    clipboard.setPrimaryClip(clip);
+  }
+
+  private void addToNotes() {
+    notes += main.getGame() + "\n";
   }
 }

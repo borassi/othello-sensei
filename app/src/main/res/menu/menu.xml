@@ -34,6 +34,12 @@
         android:id="@+id/reset_first_position"
         android:title="Reset first position" />
     <item
+        android:id="@+id/copy_notes"
+        android:title="@string/copy_notes" />
+    <item
+        android:id="@+id/add_to_notes"
+        android:title="@string/add_to_notes" />
+    <item
         android:id="@+id/action_settings"
         app:showAsAction="never"
         android:title="Settings">

@@ -23,6 +23,9 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -174,7 +177,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     stop.addActionListener((ActionEvent e) -> main.stop());
 
     resetHashMaps.addActionListener((ActionEvent e) -> main.resetHashMaps());
-    copy.addActionListener((ActionEvent e) -> main.copy());
+    copy.addActionListener((ActionEvent e) -> {
+      Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+      clipboard.setContents(new StringSelection(main.getGame()), null);
+    });
     depth.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * depth.getPreferredSize().height));
     commands.add(depth);
 

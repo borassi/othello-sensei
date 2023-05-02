@@ -460,13 +460,12 @@ public class Main implements Runnable {
         positionAnnotations, getError(true), getError(false));
   }
 
-  public void copy() {
-    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+  public String getGame() {
     String game = "";
     for (int i = 1; i < oldPositions.size(); ++i) {
       int move = moveFromBoard(oldPositions.get(i-1).board, oldPositions.get(i).board);
       game += new PositionIJ(move).toString();
     }
-    clipboard.setContents(new StringSelection(game), null);
+    return game;
   }
 }
