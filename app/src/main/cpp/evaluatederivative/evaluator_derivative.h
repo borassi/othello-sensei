@@ -227,6 +227,7 @@ class EvaluatorDerivative {
     max_n_visited_ = max_n_visited;
     max_time_ = max_time;
     elapsed_time_ = ElapsedTime();
+    start_visited_ = GetFirstPosition()->GetNVisited();
     just_started_ = true;
     status_ = RUNNING;
     Run();
@@ -293,6 +294,7 @@ class EvaluatorDerivative {
   Status status_ = SOLVED;
   std::vector<std::shared_ptr<EvaluatorThread>> threads_;
   ElapsedTime elapsed_time_;
+  NVisited start_visited_;
   std::atomic_bool just_started_;
   bool approx_;
   TreeNodeSupplier* tree_node_supplier_;
@@ -345,13 +347,15 @@ class EvaluatorDerivative {
       status_ = SOLVED;
       return true;
     }
+    NVisited visited_goal = max_n_visited_ - start_visited_;
+    NVisited visited_actual = first_position->GetNVisited() - start_visited_;
     if (!just_started_ && (
-        first_position->GetNVisited() > max_n_visited_ ||
-        first_position->GetNVisited() > 0.8 * max_n_visited_ && good_stop)) {
+        visited_actual > visited_goal ||
+        visited_actual > 0.8 * visited_goal && good_stop)) {
       status_ = STOPPED_POSITIONS;
       return true;
     }
-    if (tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 2000) {
+    if (tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 100000) {
       status_ = STOPPED_TREE_POSITIONS;
       return true;
     }

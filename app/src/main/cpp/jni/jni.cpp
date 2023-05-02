@@ -102,8 +102,15 @@ class JNIWrapper {
     }
     return best_evaluator;
   }
+  NVisited TotalVisited() const {
+    NVisited visited = 0;
+    for (int i = 0; i < last_boards_.size(); ++i) {
+      visited += evaluator_derivative_[i]->GetFirstPosition()->GetNVisited();
+    }
+    return visited;
+  }
 
-  bool Finished(NVisited max_n_visited) {
+  bool Finished(NVisited max_n_visited) const {
     std::ostringstream stringStream;
     NVisited visited = 0;
     bool all_solved = true;
@@ -129,7 +136,7 @@ class JNIWrapper {
           all_solved = false;
       }
     }
-    return visited > max_n_visited || all_solved;
+    return visited > 0.8 * max_n_visited || all_solved;
   }
 
   void Evaluate(
@@ -151,8 +158,13 @@ class JNIWrapper {
             max_time / boards.size());
       }
     } else {
-      for (int step = 0; step < boards.size() && !Finished(max_n_visited); ++step) {
-        BestEvaluator(gap)->ContinueEvaluate(max_n_visited / boards.size(), max_time / boards.size());
+      NVisited visited = TotalVisited();
+      int increments = 10;
+      for (int step = 0; step < increments && !Finished(max_n_visited); ++step) {
+        auto evaluator = BestEvaluator(gap);
+        evaluator->ContinueEvaluate(
+            (max_n_visited - visited) / increments,
+            max_time / increments);
       }
     }
   }
