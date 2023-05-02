@@ -46,7 +46,7 @@ int main() {
   for (int i = 0; i < 10000; ++i) {
     std::getline(tests_file, line);
     TestCase test;
-    sscanf(line.c_str(), "%lld %lld %d %d", &test.player, &test.opponent, &test.alpha, &test.beta);
+    sscanf(line.c_str(), "%lu %lu %d %d", &test.player, &test.opponent, &test.alpha, &test.beta);
     tests[i] = test;
   }
   tests_file.close();

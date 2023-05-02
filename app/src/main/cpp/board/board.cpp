@@ -47,9 +47,9 @@ std::ostream& operator<<(std::ostream& stream, const Board& b) {
   return stream;
 }
 
-Board::Board(const char* board, bool player_x)
-    : Board(ParsePattern(board, player_x ? 'X' : 'O'),
-            ParsePattern(board, player_x ? 'O' : 'X')) {}
+Board::Board(const std::string& board, bool player_x)
+    : Board(ParsePattern(board.c_str(), player_x ? 'X' : 'O'),
+            ParsePattern(board.c_str(), player_x ? 'O' : 'X')) {}
 
 Board::Board(const std::string& sequence) : Board() {
   assert(sequence.length() % 2 == 0);

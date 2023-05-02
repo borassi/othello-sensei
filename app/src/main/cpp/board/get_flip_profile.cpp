@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   int i = 0;
   while (std::getline(tests_file, line)) {
     TestCase test;
-    sscanf(line.c_str(), "%hhd %lld %lld", &test.move, &test.player, &test.opponent);
+    sscanf(line.c_str(), "%hhd %lu %lu", &test.move, &test.player, &test.opponent);
     tests.push_back(test);
   }
   tests_file.close();

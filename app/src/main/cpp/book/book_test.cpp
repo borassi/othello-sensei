@@ -41,13 +41,13 @@ TEST(Book, Basic) {
   Book book(kTempDir);
   book.Clean();
   // Updates this node.
-  book.Get(0, 1)->Update(*TestTreeNode(Board(0ULL, 1ULL), 0, -5, 5, 1010));
+  book.Get(0, 1)->Update(*TestTreeNode(Board(0UL, 1UL), 0, -5, 5, 1010));
   book.Get(0, 1)->AddDescendants(1010);
   // No update --> ignore
   book.Get(0, 2);
   book.Commit();
 
-  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0ULL, 1ULL), 0, -5, 5, 1010));
+  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -5, 5, 1010));
   EXPECT_FALSE(book.Get(0, 2)->IsValid());
   EXPECT_FALSE(book.Get(0, 3)->IsValid());
   EXPECT_EQ(book.Size(), 1);
@@ -58,19 +58,19 @@ TEST(Book, Reload) {
   Book book(kTempDir);
   book.Clean();
   // Updates this node.
-  book.Get(0, 1)->Update(*TestTreeNode(Board(0ULL, 1ULL), 0, -5, 5, 2000));
+  book.Get(0, 1)->Update(*TestTreeNode(Board(0UL, 1UL), 0, -5, 5, 2000));
   book.Get(0, 1)->AddDescendants(2000);
   // No update --> ignore
   book.Get(0, 2);
   book.Commit();
   Book book1(kTempDir);
-  book.Get(0, 3)->Update(*TestTreeNode(Board(0ULL, 3ULL), 5, -5, 5, 100));
+  book.Get(0, 3)->Update(*TestTreeNode(Board(0UL, 3UL), 5, -5, 5, 100));
   book.Get(0, 3)->AddDescendants(100);
   book.Commit();
 
-  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0ULL, 1ULL), 0, -5, 5, 2000));
+  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -5, 5, 2000));
   EXPECT_FALSE(book.Get(0, 2)->IsValid());
-  EXPECT_EQ(*book.Get(0, 3), *GetTestBookTreeNode(&test_book, Board(0ULL, 3ULL), 5, -5, 5, 100));
+  EXPECT_EQ(*book.Get(0, 3), *GetTestBookTreeNode(&test_book, Board(0UL, 3UL), 5, -5, 5, 100));
   EXPECT_EQ(book.Size(), 2);
 }
 
@@ -78,23 +78,23 @@ TEST(Book, Overwrite) {
   Book book(kTempDir);
   TestBook test_book;
   book.Clean();
-  book.Get(0, 1)->Update(*TestTreeNode(Board(0ULL, 1ULL), 0, -5, 5, 100));
+  book.Get(0, 1)->Update(*TestTreeNode(Board(0UL, 1UL), 0, -5, 5, 100));
   book.Get(0, 1)->AddDescendants(100);
-  book.Get(0, 1)->Update(*TestTreeNode(Board(0ULL, 1ULL), 0, -7, 5, 100));
+  book.Get(0, 1)->Update(*TestTreeNode(Board(0UL, 1UL), 0, -7, 5, 100));
   book.Commit();
-  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0ULL, 1ULL), 0, -7, 5, 100));
+  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -7, 5, 100));
 }
 
 TEST(Book, Unique) {
   Book book(kTempDir);
   TestBook test_book;
   book.Clean();
-  book.Get(0, 1ULL << 7)->Update(*TestTreeNode(Board(0ULL, 1ULL << 7), 1, 1, 3, 10));
+  book.Get(0, 1ULL << 7)->Update(*TestTreeNode(Board(0UL, 1UL << 7), 1, 1, 3, 10));
   book.Get(0, 1ULL << 7)->AddDescendants(10);
   book.Commit();
-  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0ULL, 1ULL << 7), 1, 1, 3, 10));
-  EXPECT_EQ(*book.Get(0, 1ULL << 56), *GetTestBookTreeNode(&test_book, Board(0ULL, 1ULL << 7), 1, 1, 3, 10));
-  EXPECT_EQ(*book.Get(0, 1ULL << 63), *GetTestBookTreeNode(&test_book, Board(0ULL, 1ULL << 7), 1, 1, 3, 10));
+  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL << 7), 1, 1, 3, 10));
+  EXPECT_EQ(*book.Get(0, 1ULL << 56), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL << 7), 1, 1, 3, 10));
+  EXPECT_EQ(*book.Get(0, 1ULL << 63), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL << 7), 1, 1, 3, 10));
 }
 
 TEST(Book, LargeOne) {

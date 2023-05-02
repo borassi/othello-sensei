@@ -1006,7 +1006,7 @@ class TreeNode {
         if (child->ToBoard() == next_board) {
           assert(!found);  // If it's true, there is a duplicate in the flips.
           found = true;
-          next_board = Board(0ULL, 0ULL);
+          next_board = Board(0UL, 0UL);
         }
       }
       if (!found) {
