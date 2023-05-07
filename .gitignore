@@ -22,3 +22,4 @@ keystore.properties
 /app/testdata/*
 /app/release/app-release.aab
 /.idea/*
+/gradle/wrapper/*
