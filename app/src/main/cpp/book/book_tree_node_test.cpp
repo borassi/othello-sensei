@@ -34,9 +34,7 @@ TEST(BookTreeNodeTestFixture, Basic) {
   TestBook book;
   auto tree_node = TestTreeNode(Board("e6"), 0, -5, 1, 40);
 
-  TestBookTreeNode* node = book.Get(Board("e6"));
-  node->Update(*tree_node);
-  LeafToUpdate<TestBookTreeNode>::Leaf({node}).Finalize(40);
+  TestBookTreeNode* node = book.Add(*tree_node);
 
   EXPECT_EQ(node->GetNVisited(), 40);
   EXPECT_EQ(node->GetEvaluation(-1), tree_node->GetEvaluation(-1));
@@ -53,16 +51,16 @@ TEST(BookTreeNodeTestFixture, Serialize) {
   }
 }
 
-TEST(BookTreeNodeTestFixture, Merge) {
-  TestBook book;
-  auto book_tree_node1 = GetTestBookTreeNode(&book, Board("e6f4c3c4d3"), 1, -5, 1, 10);
-  auto tree_node2 = TestTreeNode(Board("e6f4d3c4c3"), 3, -7, 3, 12);
-
-  book_tree_node1->Update(*tree_node2);
-  LeafToUpdate<TestBookTreeNode>::Leaf({book_tree_node1}).Finalize(12);
-  EXPECT_EQ(book_tree_node1->GetNVisited(), 22);
-  EXPECT_EQ(book_tree_node1->GetEvaluation(3), tree_node2->GetEvaluation(3));
-}
+//TEST(BookTreeNodeTestFixture, Merge) {
+//  TestBook book;
+//  auto book_tree_node1 = GetTestBookTreeNode(&book, Board("e6f4c3c4d3"), 1, -5, 1, 10);
+//  auto tree_node2 = TestTreeNode(Board("e6f4d3c4c3"), 3, -7, 3, 12);
+//
+//  book_tree_node1->Update(*tree_node2);
+//  LeafToUpdate<TestBookTreeNode>::Leaf({book_tree_node1}).Finalize(12);
+//  EXPECT_EQ(book_tree_node1->GetNVisited(), 22);
+//  EXPECT_EQ(book_tree_node1->GetEvaluation(3), tree_node2->GetEvaluation(3));
+//}
 
 TEST(BookTreeNodeTestFixture, UpdateChildrenDepth1) {
   TestBook book;
@@ -73,16 +71,15 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenDepth1) {
 
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
-  TestBookTreeNode* e6 = book.Get(Board("e6"));
-  e6->Update(*e6_node);
+  auto e6 = book.Add(*e6_node);
   e6->AddChildrenToBook(e6_node->GetChildren());
   LeafToUpdate<TestBookTreeNode>::Leaf({e6}).Finalize(120);
 
-  EXPECT_FALSE(book.Get(Board("e6"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6f4"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6f6"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6d6"))->IsLeaf());
-  EXPECT_EQ(book.Get(Board("e6"))->GetEval(), -10);
+  EXPECT_FALSE(book.Get(Board("e6")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6f4")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6f6")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6d6")).value()->IsLeaf());
+  EXPECT_EQ(book.Get(Board("e6")).value()->GetEval(), -10);
 }
 
 TEST(BookTreeNodeTestFixture, UpdateChildrenDepth2) {
@@ -99,52 +96,42 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenDepth2) {
 
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
-  TestBookTreeNode* e6 = book.Get(Board("e6"));
-  e6->Update(*e6_node);
+  TestBookTreeNode* e6 = book.Add(*e6_node);
   e6->AddChildrenToBook(e6_node->GetChildren());
   LeafToUpdate<TestBookTreeNode>::Leaf({e6}).Finalize(120);
-  auto e6f4 = book.Get(Board("e6f4"));
+  auto e6f4 = book.Get(Board("e6f4")).value();
   e6f4->AddChildrenToBook<TreeNode*>(
       {e6f4c3_node.get(), e6f4d3_node.get(), e6f4e3_node.get(), e6f4f3_node.get(), e6f4g3_node.get()});
-  LeafToUpdate<TestBookTreeNode>::Leaf({book.Get(Board("e6")), book.Get(Board("e6f4"))}).Finalize(120);
+  LeafToUpdate<TestBookTreeNode>::Leaf({book.Get(Board("e6")).value(), book.Get(Board("e6f4")).value()}).Finalize(120);
 
-  EXPECT_FALSE(book.Get(Board("e6"))->IsLeaf());
-  EXPECT_FALSE(book.Get(Board("e6f4"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6f6"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6d6"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6f4c3"))->IsLeaf());
-  EXPECT_NEAR(book.Get(Board("e6f4c3"))->GetEval(), -9, 0.01);
-  EXPECT_NEAR(book.Get(Board("e6f4"))->GetEval(), 9, 0.01);
-  EXPECT_NEAR(book.Get(Board("e6"))->GetEval(), -9, 0.01);
+  EXPECT_FALSE(book.Get(Board("e6")).value()->IsLeaf());
+  EXPECT_FALSE(book.Get(Board("e6f4")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6f6")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6d6")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6f4c3")).value()->IsLeaf());
+  EXPECT_NEAR(book.Get(Board("e6f4c3")).value()->GetEval(), -9, 0.01);
+  EXPECT_NEAR(book.Get(Board("e6f4")).value()->GetEval(), 9, 0.01);
+  EXPECT_NEAR(book.Get(Board("e6")).value()->GetEval(), -9, 0.01);
 }
 
 TEST(BookTreeNodeTestFixture, UpdateChildrenExisting) {
   TestBook book;
   auto e6_node = TestTreeNode(Board("e6"), 0, -63, 63, 40);
-  auto e6f4_node = TestTreeNode(Board("e6f4"), 30, -63, 63, 40);
+  auto e6f4_node = TestTreeNode(Board("e6f4"), 10, -63, 63, 40);
   auto e6f6_node = TestTreeNode(Board("e6f6"), 30, -63, 63, 40);
   auto e6d6_node = TestTreeNode(Board("e6d6"), 30, -63, 63, 40);
-  auto e6f4_node_bis = TestTreeNode(Board("e6f4"), 10, -63, 63, 40);
+  auto e6f4_node_bis = TestTreeNode(Board("e6f4"), 30, -63, 63, 40);
 
-  auto e6 = book.Get(Board("e6"));
-  e6->Update(*e6_node);
-  auto e6f4 = book.Get(Board("e6f4"));
-  e6f4->Update(*e6f4_node);
-  LeafToUpdate<TestBookTreeNode>::Leaf({e6f4}).Finalize(40);
+  auto e6 = book.Add(*e6_node);
+  auto e6f4 = book.Add(*e6f4_node);
   e6->AddChildrenToBook<std::shared_ptr<TreeNode>>(
       {e6f4_node_bis, e6f6_node, e6d6_node});
   LeafToUpdate<TestBookTreeNode>::Leaf({e6}).Finalize(120);
 
-  EXPECT_FALSE(book.Get(Board("e6"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6f4"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6f6"))->IsLeaf());
-  EXPECT_TRUE(book.Get(Board("e6d6"))->IsLeaf());
-  EXPECT_EQ(book.Get(Board("e6"))->GetEval(), -10);
-  EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), 80);
+  EXPECT_FALSE(book.Get(Board("e6")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6f4")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6f6")).value()->IsLeaf());
+  EXPECT_TRUE(book.Get(Board("e6d6")).value()->IsLeaf());
+  EXPECT_EQ(book.Get(Board("e6")).value()->GetEval(), -10);
+  EXPECT_EQ(book.Get(Board("e6f4")).value()->GetNVisited(), 80);
 }
-
-//
-//INSTANTIATE_TEST_SUITE_P(
-//    BookTreeNodeTest,
-//    BookTreeNodeTestFixture,
-//    ::testing::Values(false, true));

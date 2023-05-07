@@ -33,21 +33,19 @@ int main(int argc, char* argv[]) {
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 12);
-  auto start = book.Get(Board(start_line));
-  if (!start->IsValid()) {
+  if (!book.Get(Board(start_line))) {
     if (!force_first_position) {
       std::cout << "The node '" << start_line << "' is not in the library. Run with --force_first_position, or choose a different start.\n";
       return 1;
     }
     std::unique_ptr<TreeNode> t(new TreeNode());
-    t->Reset(start->ToBoard(), 1, 0);
-    t->SetLeaf(0, 1, -63, 63);
-    start->Update(*t);
-    book.Get(t->ToBoard())->AsLeaf(1).Finalize(1);
+    t->Reset(Board(start_line), 1, 0, 0, 1, -63, 63);
+    t->AddDescendants(1);
+    book.Add(*t);
   }
 
   while (true) {
-    start = book.Get(Board(start_line));
+    auto start = book.Get(Board(start_line)).value();
     ElapsedTime t;
     NVisited n_visited;
 

@@ -37,7 +37,15 @@ Book::Book(const std::string& folder) : folder_(folder), value_files_() {
   }
 }
 
-BookNode* Book::Get(const Board& b) {
+BookNode* Book::Add(const TreeNode& node) {
+  Board unique = node.ToBoard().Unique();
+  assert(!Get(unique));
+  auto [iterator, inserted] = modified_nodes_.try_emplace(unique, this, node);
+  assert(inserted);
+  return &iterator->second;
+}
+
+std::optional<BookNode*> Book::Get(const Board& b) {
   Board unique = b.Unique();
   auto iterator = modified_nodes_.find(unique);
   if (iterator != modified_nodes_.end()) {
@@ -49,26 +57,21 @@ BookNode* Book::Get(const Board& b) {
     iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
     return &iterator->second;
   }
-  iterator = modified_nodes_.try_emplace(unique, this, unique).first;
-  return &iterator->second;
+  return std::nullopt;
 }
 
 void Book::Commit() {
-  for (const auto& [unused_board, node] : modified_nodes_) {
+  for (const auto& [board, node] : modified_nodes_) {
     Commit(node);
   }
+  modified_nodes_.clear();
   auto file = OpenFile(IndexFilename());
   UpdateSizes(&file);
-  modified_nodes_.clear();
+  assert(modified_nodes_.empty());
 }
 
 void Book::Commit(const BookNode& node) {
-  if (!node.IsValid()) {
-    return;
-  }
-  auto pair = Find(node.Player(), node.Opponent());
-  auto file = std::move(pair.first);
-  auto hash_map_node = std::move(pair.second);
+  auto [file, hash_map_node] = Find(node.Player(), node.Opponent());
 
   if (!hash_map_node.IsEmpty()) {
     GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
@@ -89,7 +92,7 @@ void Book::Commit(const BookNode& node) {
   // So that the asserts below work.
   file.close();
   assert(Get(node.ToBoard()));
-  assert(Get(node.ToBoard())->IsValid());
+  assert(!Find(node.Player(), node.Opponent()).second.IsEmpty());
   assert(IsSizeOK());
 }
 
@@ -169,6 +172,7 @@ void Book::UpdateSizes(std::fstream* file) {
 }
 
 HashMapIndex Book::RepositionHash(HashMapIndex board_hash) {
+  assert(board_hash >= 0);
   HashMapIndex hash = board_hash % PowerAfterHashMapSize();
   if (hash >= hash_map_size_) {
     return hash - PowerBeforeHashMapSize();
@@ -189,13 +193,14 @@ std::pair<std::fstream, HashMapNode> Book::Find(BitPattern player, BitPattern op
   while (true) {
     file.read((char*) &node, sizeof(HashMapNode));
     if (node.IsEmpty()) {
-      file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
+      file.seekg((unsigned long long) file.tellg() - sizeof(HashMapNode), std::ios::beg);
       file.seekp(file.tellg());
       return std::make_pair(std::move(file), node);
     }
     std::vector<char> v = GetValueFile(node.Size()).Get(node.Offset());
     BookNode book_tree_node(this, v, false);
     Board b = book_tree_node.ToBoard();
+    assert(b == b.Unique());
     if (b.Player() == player && b.Opponent() == opponent) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
       file.seekp(file.tellg());

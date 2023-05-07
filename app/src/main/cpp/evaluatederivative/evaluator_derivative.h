@@ -118,29 +118,16 @@ class TreeNodeSupplier {
     return num_nodes_;
   }
 
-  TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) {
+  TreeNode* AddTreeNode(
+      BitPattern player, BitPattern opponent, Square depth,
+      EvalLarge weak_eval, Square eval_depth, EvaluatorDerivative* evaluator) {
     bool newly_inserted;
-    return AddTreeNode(player, opponent, depth, evaluator_index, &newly_inserted);
+    return AddTreeNode(player, opponent, depth, weak_eval, eval_depth, evaluator, &newly_inserted);
   }
   TreeNode* AddTreeNode(
       BitPattern player, BitPattern opponent, Square depth,
-      u_int8_t evaluator_index, bool* newly_inserted) {
-    if (kUseTranspositions) {
-      TreeNode* node = Get(player, opponent, evaluator_index);
-      if (node != nullptr) {
-        *newly_inserted = false;
-        return node;
-      }
-    }
-
-    int node_id = num_nodes_++;
-    assert(node_id < kDerivativeEvaluatorSize);
-    TreeNode& node = tree_nodes_[node_id];
-    node.Reset(player, opponent, depth, evaluator_index);
-    AddToHashMap(player, opponent, evaluator_index, node_id);
-    *newly_inserted = true;
-    return &node;
-  }
+      EvalLarge leaf_eval,
+      Square eval_depth, EvaluatorDerivative* evaluator, bool* newly_inserted);
 
  private:
   TreeNode* tree_nodes_;
@@ -248,8 +235,8 @@ class EvaluatorDerivative {
     weak_lower_ = lower_;
     weak_upper_ = upper_;
     n_thread_multiplier_ = 1000;
-    first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, index_);
-    first_position_->SetLeafIfInvalid(0, 1, *this);
+    first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, 0, 1, this);
+//    first_position_->SetLeafIfInvalid(0, 1, *this);
     auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier());
     assert(leaf);
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
@@ -390,8 +377,12 @@ class EvaluatorDerivative {
         && weak_upper_ <= first_position_->WeakUpper();
   }
 
-  TreeNode* AddTreeNode(BitPattern player, BitPattern opponent, Square depth, bool* newly_inserted) {
-    return tree_node_supplier_->AddTreeNode(player, opponent, depth, index_, newly_inserted);
+  TreeNode* AddTreeNode(
+      BitPattern player, BitPattern opponent, Square depth,
+      EvalLarge leaf_eval, Square eval_depth, bool* newly_inserted) {
+    return tree_node_supplier_->AddTreeNode(
+        player, opponent, depth, leaf_eval, eval_depth,
+        this, newly_inserted);
   }
 
   void UpdateNThreadMultiplierSuccess() {

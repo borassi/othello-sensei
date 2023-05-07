@@ -26,9 +26,16 @@ const std::string kTempDir = "app/testdata/tmp/book_test";
 
 class TestBook {
  public:
-  BookTreeNode<TestBook>* Get(const Board& b, bool father = false) {
-    Board unique = b.Unique();
-    return &(*(nodes_.try_emplace(unique, this, unique).first)).second;
+  BookTreeNode<TestBook>* Add(const TreeNode& node) {
+    Board unique = node.ToBoard().Unique();
+    return &(*(nodes_.try_emplace(unique, this, node).first)).second;
+  }
+  std::optional<BookTreeNode<TestBook>*> Get(const Board& b) {
+    auto it = nodes_.find(b.Unique());
+    if (it == nodes_.end()) {
+      return std::nullopt;
+    }
+    return &(it->second);
   }
   void Commit() {}
  private:
@@ -41,9 +48,18 @@ typedef BookTreeNode<TestBook> TestBookTreeNode;
 
 std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   std::shared_ptr<TreeNode> t(new TreeNode());
-  t->Reset(b.Player(), b.Opponent(), 4, 0);
-//  Eval weak_lower, Eval weak_upper, EvalLarge leaf_eval, Square depth, NVisited n_visited)
-  t->SetLeaf(EvalToEvalLarge(leaf_eval), 4, weak_lower, weak_upper);
+  t->Reset(b.Player(), b.Opponent(), 4, 0, EvalToEvalLarge(leaf_eval), 4, weak_lower, weak_upper);
+  t->AddDescendants(n_visited);
+  return t;
+}
+
+std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
+  std::shared_ptr<TreeNode> t(new TreeNode());
+  int weak_lower = -(int) ((rand() % 32) * 2 + 1);
+  int weak_upper = weak_lower + ((rand() % 20) * 2);
+  int eval = 2 * (rand() % 60) - 60;
+  int n_visited = rand() % 2000 + 1;
+  t->Reset(b.Player(), b.Opponent(), 4, 0, EvalToEvalLarge(eval), 4, weak_lower, weak_upper);
   t->AddDescendants(n_visited);
   return t;
 }
@@ -65,11 +81,7 @@ std::vector<TreeNode*> GetTreeNodeChildren(
 template<class Book>
 BookTreeNode<Book>* GetTestBookTreeNode(Book* book, Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   auto node = TestTreeNode(b, leaf_eval, weak_lower, weak_upper, n_visited);
-  auto result = book->Get(b);
-  result->Reset(b.Unique(), 60, 0);
-  result->Update(*node);
-  result->AddDescendants(node->GetNVisited());
-  return result;
+  return book->Add(*node);
 }
 
 template<class Book>
@@ -79,11 +91,7 @@ BookTreeNode<Book>* GetTestBookTreeNode(Book* book, BitPattern player, BitPatter
 
 template<class Book>
 BookTreeNode<Book>* RandomBookTreeNode(Book* book, Board b) {
-  int weak_lower = -(int) ((rand() % 32) * 2 + 1);
-  int weak_upper = weak_lower + ((rand() % 32) * 2);
-  int eval = 2 * (rand() % 60) - 60;
-  int n_visited = rand() % 2000 + 1;
-  return GetTestBookTreeNode(book, b, eval, weak_lower, weak_upper, n_visited);
+  return book->Add(*RandomTestTreeNode(b));
 }
 
 Book BookWithPositions(
@@ -95,15 +103,13 @@ Book BookWithPositions(
   book.Clean();
 
   auto first_line = lines[0];
-  auto start = book.Get(Board(first_line));
-  start->Update(*TestTreeNode(Board(first_line), 0, -63, 63, 1));
-  LeafToUpdate<BookNode>::Leaf({start}).Finalize(GetOrDefault(visited, Board(first_line), 1));
+  auto start = book.Add(*TestTreeNode(Board(first_line), 0, -63, 63, 1));
 
   for (const auto& line : lines) {
     NVisited total_visited = 0;
     std::vector<BookNode*> parents;
     for (int i = first_line.length(); i <= line.length(); i += 2) {
-      parents.push_back(book.Get(line.substr(0, i)));
+      parents.push_back(book.Get(line.substr(0, i)).value());
     }
     std::vector<std::shared_ptr<TreeNode>> children;
     Board father = Board(line);
@@ -116,7 +122,7 @@ Book BookWithPositions(
       children.push_back(TestTreeNode(child, eval, -63, 63, n_visited));
       total_visited += n_visited;
     }
-    book.Get(father)->AddChildrenToBook(children);
+    book.Get(father).value()->AddChildrenToBook(children);
     LeafToUpdate<BookNode>::Leaf(parents).Finalize(total_visited);
   }
   return book;

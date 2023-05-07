@@ -55,7 +55,6 @@ std::optional<LeafToUpdate<TreeNode>> TreeNode::AsLeaf() {
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
   auto guard = WriteLock();
   assert(depth_ > 0);  // Otherwise, the first position might lock the evaluator and viceversa.
-  assert(IsValidNoLock());
   assert(lower % 16 == 0);
   assert(upper % 16 == 0);
   assert(IsLeaf());
@@ -75,15 +74,49 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   }
 }
 
-void TreeNode::SetLeafIfInvalid(
-    EvalLarge leaf_eval,
-    Square depth,
-    const EvaluatorDerivative &evaluator_derivative) {
+void TreeNode::Reset(
+    BitPattern player, BitPattern opponent, int depth, EvalLarge leaf_eval,
+    Square eval_depth, EvaluatorDerivative* evaluator) {
   auto guard = WriteLock();
-  if (!IsValidNoLock()) {
-    auto [weak_lower, weak_upper] = evaluator_derivative.GetWeakLowerUpper(depth_);
-    SetLeafNoLock(leaf_eval, depth, weak_lower, weak_upper);
+  auto [weak_lower, weak_upper] = evaluator->GetWeakLowerUpper(depth);
+  ResetNoLock(player, opponent, depth, evaluator->Index(), leaf_eval, eval_depth, weak_lower, weak_upper);
+}
+
+void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
+                     u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
+                     Eval weak_lower, Eval weak_upper) {
+  auto guard = WriteLock();
+  ResetNoLock(player, opponent, depth, evaluator, leaf_eval, eval_depth, weak_lower, weak_upper);
+}
+
+void TreeNode::ResetNoLock(
+    BitPattern player, BitPattern opponent, int depth,
+    u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
+    Eval weak_lower, Eval weak_upper) {
+  if (evaluations_ != nullptr) {
+    free(evaluations_);
+    evaluations_ = nullptr;
   }
+  player_ = player;
+  opponent_ = opponent;
+  n_empties_ = ::NEmpties(player, opponent);
+  lower_ = kMinEval;
+  upper_ = kMaxEval;
+  evaluator_ = evaluator;
+  if (n_fathers_ != 0) {
+    free(fathers_);
+    n_fathers_ = 0;
+  }
+  if (n_children_ != 0) {
+    delete[] children_;
+    n_children_ = 0;
+  }
+  depth_ = depth;
+  min_evaluation_ = kLessThenMinEval;
+
+  n_threads_working_ = 0;
+  descendants_ = 0;
+  SetLeafNoLock(leaf_eval, eval_depth, weak_lower, weak_upper);
 }
 
 LeafToUpdate<TreeNode> TreeNode::AsLeaf(Eval eval_goal) {

@@ -50,7 +50,7 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 class JNIWrapper {
  public:
   static jobject TreeNodeToJava(TreeNode* n, JNIEnv* env) {
-    if (n == nullptr || !n->IsValid()) {
+    if (n == nullptr) {
       return NULL;
     }
     jclass TreeNodeCPP = env->FindClass("jni/TreeNodeCPP");

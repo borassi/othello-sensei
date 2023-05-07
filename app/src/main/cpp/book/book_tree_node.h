@@ -30,8 +30,31 @@
 template<class Book>
 class BookTreeNode : public TreeNode {
  public:
-  BookTreeNode(Book* book, const Board& b) : TreeNode(), book_(book), is_leaf_(true) {
-    TreeNode::Reset(b.Unique(), 60, 0);
+  BookTreeNode(Book* book, const TreeNode& node) : TreeNode(), book_(book), is_leaf_(true) {
+    Board b = node.ToBoard().Unique();
+    player_ = b.Player();
+    opponent_ = b.Opponent();
+
+    min_evaluation_ = -63;
+    weak_lower_ = -63;
+    weak_upper_ = 63;
+    lower_ = node.Lower();
+    upper_ = node.Upper();
+    leaf_eval_ = 0;
+    EnlargeEvaluations();
+    descendants_ = node.GetNVisited();
+
+    auto proof_number = node.GetEvaluation(node.WeakLower()).ProofNumber();
+    auto disproof_number = node.GetEvaluation(node.WeakUpper()).DisproofNumber();
+    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
+      if (i < node.WeakLower()) {
+        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(proof_number, node.WeakLower(), i)));
+      } else if (i > node.WeakUpper()) {
+        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(disproof_number, node.WeakUpper(), i)));
+      } else {
+        *MutableEvaluation(i) = Evaluation(node.GetEvaluation(i));
+      }
+    }
   }
 
   BookTreeNode(Book* book, const std::vector<char>& serialized, bool fathers = true) : book_(book) {
@@ -82,6 +105,14 @@ class BookTreeNode : public TreeNode {
         MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, tmp);
       }
     }
+  }
+
+  void SetUpper(Eval upper) {
+    upper_ = upper;
+  }
+
+  void SetLower(Eval lower) {
+    lower_ = lower;
   }
 
   std::vector<char> Serialize() const {
@@ -143,18 +174,14 @@ class BookTreeNode : public TreeNode {
         }
       }
     }
+    assert(result.size() < 256);
     return result;
   }
 
   bool IsLeaf() const override { return is_leaf_; }
 
-  template<class T>
-  bool Equals(const BookTreeNode<T>& other, bool approx) const {
+  bool Equals(const BookTreeNode<Book>& other, bool approx) const {
     return TreeNode::Equals((const TreeNode&) other, approx);
-  }
-
-  void Update(const TreeNode& node) {
-    Merge(node);
   }
 
   template<class ChildPointer>
@@ -164,16 +191,24 @@ class BookTreeNode : public TreeNode {
     std::vector<TreeNode*> children_in_book;
 
     for (const auto& [board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
-      BookTreeNode* child_in_book = book_->Get(board);
+      BookTreeNode* child_in_book = nullptr;
+      ChildPointer new_child = nullptr;
+      auto child_in_book_opt = book_->Get(board);
       for (ChildPointer child : children) {
         if (child->ToBoard().Unique() == board) {
-          if (child_in_book->IsLeaf()) {
-            child_in_book->Merge(*child);
-          }
-          child_in_book->AddDescendants(child->GetNVisited());
+          new_child = child;
         }
       }
-      assert(child_in_book->IsValid());
+      if (child_in_book_opt) {
+        child_in_book = child_in_book_opt.value();
+        if (new_child != nullptr) {
+          child_in_book->AddDescendants(new_child->GetNVisited());
+        }
+      } else {
+        assert(new_child != nullptr);
+        child_in_book = book_->Add(*new_child);
+      }
+      assert(child_in_book != nullptr);
       children_in_book.push_back(child_in_book);
     }
     SetChildren(children_in_book);
@@ -229,8 +264,9 @@ class BookTreeNode : public TreeNode {
       Square move = move_and_flip.first;
       BitPattern flip = move_and_flip.second;
 
-      BookTreeNode* father = book_->Get(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
-      father->GetChildrenFromBook();
+      std::optional<BookTreeNode<Book>*> father = book_->Get(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
+      assert(father);
+      (*father)->GetChildrenFromBook();
     }
   }
 
@@ -241,36 +277,11 @@ class BookTreeNode : public TreeNode {
     }
     std::vector<TreeNode*> children;
     for (const auto& [child_board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
-      children.push_back((TreeNode*) book_->Get(child_board));
-      assert(children[children.size() - 1]->IsValid());
+      auto child = book_->Get(child_board);
+      children.push_back((TreeNode*) child.value());
+//      assert(children[children.size() - 1]->IsValid());
     }
     SetChildren(children);
-  }
-
-  void Merge(const TreeNode& other) {
-    assert(ToBoard() == other.ToBoard().Unique());
-    assert(other.NThreadsWorking() == 0);
-    assert(IsLeaf());
-
-    min_evaluation_ = -63;
-    weak_lower_ = -63;
-    weak_upper_ = 63;
-    lower_ = other.Lower();
-    upper_ = other.Upper();
-    leaf_eval_ = 0;
-    EnlargeEvaluations();
-
-    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
-    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
-    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
-      if (i < other.WeakLower()) {
-        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(other_proof_number, other.WeakLower(), i)));
-      } else if (i > other.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i)));
-      } else {
-        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
-      }
-    }
   }
 
   bool AreChildrenCorrect() override {

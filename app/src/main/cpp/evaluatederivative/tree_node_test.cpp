@@ -42,8 +42,7 @@
 //  INF   0    1K  1K
 TEST(TreeNodeTest, OneThread) {
   TreeNode e6;
-  e6.Reset(Board("e6"), 0, 1);
-  e6.SetLeaf(EvalToEvalLarge(1), 4, -5, 1);
+  e6.Reset(Board("e6"), 0, 1, EvalToEvalLarge(1), 4, -5, 1);
   EXPECT_EQ(e6.Lower(), -65);
   EXPECT_EQ(e6.Upper(), 65);
   EXPECT_EQ(e6.WeakLower(), -5);
@@ -52,14 +51,11 @@ TEST(TreeNodeTest, OneThread) {
   EXPECT_NEAR(e6.GetEvaluation(1).ProbGreaterEqual(), 0.5, 1.01 / kProbStep);
   EXPECT_EQ(e6.GetNVisited(), 40);
   TreeNode e6f4;
-  e6f4.Reset(Board("e6f4"), 1, 1);
-  e6f4.SetLeaf(0, 4, -1, 5);
+  e6f4.Reset(Board("e6f4"), 1, 1, 0, 4, -1, 5);
   TreeNode e6f6;
-  e6f6.Reset(Board("e6f6"), 1, 1);
-  e6f6.SetLeaf(0, 4, -1, 5);
+  e6f6.Reset(Board("e6f6"), 1, 1, 0, 4, -1, 5);
   TreeNode e6d6;
-  e6d6.Reset(Board("e6d6"), 1, 1);
-  e6d6.SetLeaf(-8, 4, -1, 5);
+  e6d6.Reset(Board("e6d6"), 1, 1, -8, 4, -1, 5);
   e6.SetChildren({&e6f4, &e6f6, &e6d6});
   #ifndef NDEBUG
   EXPECT_THROW(e6.SetChildren({&e6f4, &e6f6, &e6f6}), ChildError);

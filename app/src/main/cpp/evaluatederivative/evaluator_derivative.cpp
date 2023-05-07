@@ -19,6 +19,29 @@
 #include "evaluator_derivative.h"
 #include "tree_node.h"
 
+TreeNode* TreeNodeSupplier::AddTreeNode(
+    BitPattern player, BitPattern opponent, Square depth,
+    EvalLarge leaf_eval,
+    Square eval_depth, EvaluatorDerivative* evaluator, bool* newly_inserted) {
+  auto evaluator_index = evaluator->Index();
+  if (kUseTranspositions) {
+    TreeNode* node = Get(player, opponent, evaluator_index);
+    if (node != nullptr) {
+      *newly_inserted = false;
+      return node;
+    }
+  }
+
+  int node_id = num_nodes_++;
+  assert(node_id < kDerivativeEvaluatorSize);
+  TreeNode& node = tree_nodes_[node_id];
+  node.Reset(player, opponent, depth, leaf_eval, eval_depth,
+             evaluator);
+  AddToHashMap(player, opponent, evaluator_index, node_id);
+  *newly_inserted = true;
+  return &node;
+}
+
 void EvaluatorThread::Run() {
   auto time = std::chrono::system_clock::now();
   auto duration = std::chrono::system_clock::now().time_since_epoch();
@@ -91,11 +114,6 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     BitPattern new_player = NewPlayer(flip, opponent);
     BitPattern new_opponent = NewOpponent(flip, player);
     bool newly_inserted = false;
-    TreeNode* child = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, &newly_inserted);
-    children.push_back(child);
-    if (!newly_inserted && child->IsValid()) {
-      continue;
-    }
     if (flip != 0) {
       evaluator_depth_one_->Update(square, flip);
     }
@@ -118,7 +136,9 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     stats_.Merge(cur_stats);
     cur_n_visited = cur_stats.GetAll();
     n_visited += cur_n_visited;
-    child->SetLeafIfInvalid(eval, depth, *evaluator_);
+    TreeNode* child = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, depth, &newly_inserted);
+    children.push_back(child);
+//    child->SetLeafIfInvalid(eval, depth, *evaluator_);
     child->AddDescendants(n_visited);
     if (flip != 0) {
       evaluator_depth_one_->UndoUpdate(square, flip);

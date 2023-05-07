@@ -118,7 +118,15 @@ class TreeNode {
       evaluator_(255) {}
   TreeNode(const TreeNode&) = delete;
   ~TreeNode() {
-    Reset(0, 0, 0, kLessThenMinEval);
+    if (evaluations_ != nullptr) {
+      free(evaluations_);
+    }
+    if (n_fathers_ != 0) {
+      free(fathers_);
+    }
+    if (n_children_ != 0) {
+      delete[] children_;
+    }
   }
 
 //  void FromOtherNode(TreeNode* node) {
@@ -146,8 +154,8 @@ class TreeNode {
   BitPattern Opponent() const { return opponent_; }
   Eval Lower() const { return lower_; }
   Eval Upper() const { return upper_; }
-  Eval WeakLower() const { return weak_lower_; };
-  Eval WeakUpper() const { return weak_upper_; };
+  Eval WeakLower() const { return weak_lower_; }
+  Eval WeakUpper() const { return weak_upper_; }
   NVisited GetNVisited() const { return descendants_; }
 
   Board ToBoard() const {
@@ -195,39 +203,19 @@ class TreeNode {
     return eval;
   }
 
-  virtual void Reset(Board b, int depth, u_int8_t evaluator) {
-    Reset(b.Player(), b.Opponent(), depth, evaluator);
+  virtual void Reset(BitPattern player, BitPattern opponent, int depth,
+                     EvalLarge leaf_eval, Square eval_depth,
+                     EvaluatorDerivative* evaluator);
+
+  virtual void Reset(Board b, int depth,
+                     u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
+                     Eval weak_lower, Eval weak_upper) {
+    Reset(b.Player(), b.Opponent(), depth, evaluator, leaf_eval, eval_depth, weak_lower, weak_upper);
   }
 
   virtual void Reset(BitPattern player, BitPattern opponent, int depth,
-                     u_int8_t evaluator) {
-    auto guard = WriteLock();
-    if (evaluations_ != nullptr) {
-      free(evaluations_);
-      evaluations_ = nullptr;
-    }
-    player_ = player;
-    opponent_ = opponent;
-    n_empties_ = ::NEmpties(player, opponent);
-    lower_ = kMinEval;
-    upper_ = kMaxEval;
-    evaluator_ = evaluator;
-    if (n_fathers_ != 0) {
-      free(fathers_);
-      n_fathers_ = 0;
-    }
-    if (n_children_ != 0) {
-      delete[] children_;
-      n_children_ = 0;
-    }
-    depth_ = depth;
-    min_evaluation_ = kLessThenMinEval;
-
-    leaf_eval_ = kLessThenMinEvalLarge;
-    eval_depth_ = 0;
-    n_threads_working_ = 0;
-    descendants_ = 0;
-  }
+                     u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
+                     Eval weak_lower, Eval weak_upper);
 
   const Evaluation& GetEvaluation(int eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
@@ -404,15 +392,15 @@ class TreeNode {
   std::lock_guard<std::mutex> WriteLock() const {
     return std::lock_guard<std::mutex>{mutex_};
   }
-
-  inline bool IsValid() const {
-    auto guard = ReadLock();
-    return IsValidNoLock();
-  }
-
-  inline bool IsValidNoLock() const {
-    return leaf_eval_ != kLessThenMinEvalLarge;
-  }
+//
+//  inline bool IsValid() const {
+//    auto guard = ReadLock();
+//    return IsValidNoLock();
+//  }
+//
+//  inline bool IsValidNoLock() const {
+//    return leaf_eval_ != kLessThenMinEvalLarge;
+//  }
 
   virtual void GetFathersFromBook() {}
 
@@ -451,7 +439,7 @@ class TreeNode {
     children_ = new TreeNode*[n_children_];
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children[i];
-      assert(!child->IsValidNoLock() || (child->WeakLower() - kMinEval) % 2 == 1);
+      assert((child->WeakLower() - kMinEval) % 2 == 1);
       child->AddFather(this);
       children_[i] = child;
     }
@@ -460,10 +448,6 @@ class TreeNode {
   }
 
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
-
-  virtual void SetLeafIfInvalid(
-      EvalLarge leaf_eval, Square depth,
-      const EvaluatorDerivative& evaluator_derivative);
 
   void SetLeaf(
       EvalLarge leaf_eval, Square depth,
@@ -500,7 +484,6 @@ class TreeNode {
   }
 
   virtual void UpdateLeafEvalNoLock() {
-    assert(IsValidNoLock());
     assert(IsLeaf());
     auto lower_large = EvalToEvalLarge(lower_);
     auto upper_large = EvalToEvalLarge(upper_);
@@ -511,7 +494,6 @@ class TreeNode {
       leaf_eval_ = upper_large;
       assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
     }
-    assert(IsValidNoLock());
   }
 
   // Measures the progress towards solving the position (lower is better).
@@ -609,8 +591,6 @@ class TreeNode {
   }
 
   bool Equals(const TreeNode& other, bool approx) const {
-    assert(IsValidNoLock());
-    assert(other.IsValidNoLock());
     if (!EqualsExceptDescendants(other)) {
       return false;
     }
@@ -793,6 +773,11 @@ class TreeNode {
   Square eval_depth_;
   u_int8_t evaluator_;
 
+  virtual void ResetNoLock(
+      BitPattern player, BitPattern opponent, int depth,
+      u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
+      Eval weak_lower, Eval weak_upper);
+
   void UpdateFatherNoLock() {
     assert((WeakLower() - kMinEval) % 2 == 1);
     assert((WeakUpper() - kMinEval) % 2 == 1);
@@ -930,15 +915,11 @@ class TreeNode {
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
     assert(depth > 0 && depth <= 4);
 
-    bool enlarge_evaluations = !IsValidNoLock() || weak_lower < weak_lower_ || weak_upper > weak_upper_;
-
     eval_depth_ = depth;
     leaf_eval_ = leaf_eval;
     weak_lower_ = weak_lower;
     weak_upper_ = weak_upper;
-    if (enlarge_evaluations) {
-      EnlargeEvaluations();
-    }
+    EnlargeEvaluations();
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       UpdateLeafEvaluation(i);
       assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
@@ -1141,7 +1122,7 @@ class LeafToUpdate {
 
   static bool leaf_less(const LeafToUpdate& left, const LeafToUpdate& right) {
     return left.Loss() < right.Loss();
-  };
+  }
 
   typedef std::priority_queue<
       LeafToUpdate, std::vector<LeafToUpdate>, decltype(&leaf_less)>
@@ -1195,7 +1176,7 @@ class LeafToUpdate {
     }
     assert(!best_child_eval.IsSolved());
     return best_child;
-  };
+  }
 
   static void BestDescendants(
       Node* root, int eval_goal, std::vector<LeafToUpdate>* result) {

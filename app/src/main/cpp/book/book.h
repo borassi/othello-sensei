@@ -64,11 +64,13 @@ class Book {
  public:
   Book(const std::string& folder);
 
-  BookNode* Get(const Board& b);
+  std::optional<BookNode*> Get(const Board& b);
 
-  BookNode* Get(BitPattern player, BitPattern opponent) {
+  std::optional<BookNode*> Get(BitPattern player, BitPattern opponent) {
     return Get(Board(player, opponent));
   }
+
+  BookNode* Add(const TreeNode& node);
 
   void Commit();
 
@@ -98,8 +100,6 @@ class Book {
   ValueFile& GetValueFile(int size);
 
   void UpdateSizes(std::fstream* file);
-
-  void Put(const BookNode& node, bool overwrite, bool update_fathers);
 
   std::vector<BookNode> MissingChildren(const Board& b, const std::vector<BookNode*>& children);
 
