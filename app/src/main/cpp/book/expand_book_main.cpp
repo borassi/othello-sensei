@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string start_line = parse_flags.GetFlagOrDefault("start", "");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  int n_descendants = parse_flags.GetIntFlagOrDefault("n_descendants", /*1G*/ 200000000);
+  int n_descendants = parse_flags.GetIntFlagOrDefault("n_descendants", /*1G*/ 1 * 1000 * 1000);
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   Book book(filepath);
