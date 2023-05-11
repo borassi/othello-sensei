@@ -14,25 +14,43 @@
  * limitations under the License.
  */
 
+#include <filesystem>
+#include <limits>
+
 #include "book.h"
 #include "../hashmap/hash_map.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
+#include "../utils/misc.h"
 #include "../utils/parse_flags.h"
+
+namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
-  std::string start_line = parse_flags.GetFlagOrDefault("start", "");
+//  std::string start_line = parse_flags.GetFlagOrDefault("start", "");
+  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  int n_descendants = parse_flags.GetIntFlagOrDefault("n_descendants", /*1G*/ 1 * 1000 * 1000);
+  NVisited n_descendants_children = 100 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 100 * 1000 * 1000UL);
+  NVisited n_descendants_solve = 5 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
+  if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
+    fs::create_directory(filepath);
+  }
   Book book(filepath);
   HashMap hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
-  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 12);
+  std::array<std::unique_ptr<EvaluatorDerivative>, 64> evaluators;
+  for (int i = 0; i < evaluators.size(); ++i) {
+    evaluators[i] = std::make_unique<EvaluatorDerivative>(
+        &tree_node_supplier, &hash_map,
+        PatternEvaluator::Factory(evals.data()),
+        std::thread::hardware_concurrency(),
+        static_cast<u_int8_t>(i));
+  }
   if (!book.Get(Board(start_line))) {
     if (!force_first_position) {
       std::cout << "The node '" << start_line << "' is not in the library. Run with --force_first_position, or choose a different start.\n";
@@ -46,27 +64,70 @@ int main(int argc, char* argv[]) {
 
   while (true) {
     auto start = book.Get(Board(start_line)).value();
-    ElapsedTime t;
-    NVisited n_visited;
-
+    if (start->IsSolved()) {
+      std::cout << "Solved the position!\n";
+      break;
+    }
+    tree_node_supplier.Reset();
+    NVisited n_visited = 0;
+    Eval eval_goal = start->NextPositionEvalGoal(0, 1);
     std::cout
-        << "Expanding line:        '" << start_line << "'\n"
+        << "Expanding line:        " << start_line << "\n"
         << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
         << "Descendants of start:  " << PrettyPrintDouble(start->GetNVisited()) << "\n"
-        << "Evaluation of start:   " << PrettyPrintDouble(start->GetEval()) << "\n";
+        << "Evaluation of start:   " << std::setprecision(2) << start->GetEval() << "\n"
+        << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
+        << "Eval goal:             " << (int) eval_goal << "\n";
 
-    auto leaf = LeafToUpdate<BookNode>::BestDescendant(start, 0).value();
+    ElapsedTime t;
+    auto leaf = LeafToUpdate<BookNode>::BestDescendant(start, eval_goal).value();
     std::cout
-        << "Eval goal:             " << (int) start->NextPositionEvalGoal(0, 1) << "\n"
-        << "Board:\n" << leaf.Leaf()->ToBoard();
-    tree_node_supplier.Reset();
-    evaluator.Evaluate(leaf.Leaf()->Player(), leaf.Leaf()->Opponent(), leaf.Alpha(), leaf.Beta(), n_descendants, 300, false);
+        << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
+    bool solved = false;
+    int alpha = leaf.Alpha();
+    int beta = leaf.Beta();
+    auto node = leaf.Leaf();
+    if (node->ToBeSolved(alpha, beta, n_descendants_solve)) {
+      std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
+      auto evaluator = evaluators[0].get();
+      evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 2 * n_descendants_solve, 240, false);
+      auto result = evaluator->GetFirstPosition();
+      auto eval = result->GetEval();
+      auto lower = result->Lower();
+      auto upper = result->Upper();
+      node->SetLower(lower);
+      node->SetUpper(upper);
+      n_visited += result->GetNVisited();
+      solved = lower != -64 || upper != 64;
+      if (solved) {
+        std::cout << "Solved: " << (int) result->Lower() << " <= eval <= " << (int) result->Upper() << "\n";
+      } else {
+        std::cout << "Did not solve it in time\n";
+      }
+    } else {
+      std::cout << "Too early to solve\n";
+    }
+    if (!solved) {
+      std::cout << "Adding children\n";
+      std::vector<TreeNode*> children;
+      int i = 0;
+      for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(node->ToBoard())) {
+        auto evaluator = evaluators[++i].get();
+        evaluator->Evaluate(
+            child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300);
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition()->RemainingWork(alpha, beta));
+        evaluator->ContinueEvaluate(
+            std::min(n_descendants_children, (NVisited) remaining_work / 30), 300);
+        children.push_back(evaluator->GetFirstPosition());
+        n_visited += evaluator->GetFirstPosition()->GetNVisited();
+      }
+      node->AddChildrenToBook(children);
+      node->UpdateFather();
+    }
     double time = t.Get();
-    n_visited = evaluator.GetFirstPosition()->GetNVisited();
-    std::cout << "Time:            " << PrettyPrintDouble(time) << " sec\n";
-    std::cout << "Positions / sec: " << PrettyPrintDouble(n_visited / time) << "\n\n";
-    auto children = evaluator.GetFirstPosition()->GetChildren();
-    leaf.Leaf()->AddChildrenToBook(children);
+    std::cout << "Position:              " << PrettyPrintDouble(n_visited) << "\n";
+    std::cout << "Time:                  " << PrettyPrintDouble(time) << " sec\n";
+    std::cout << "Positions / sec:       " << PrettyPrintDouble(n_visited / time) << "\n\n";
     leaf.Finalize(n_visited);
     book.Commit();
   }

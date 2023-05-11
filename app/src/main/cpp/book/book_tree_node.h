@@ -108,11 +108,17 @@ class BookTreeNode : public TreeNode {
   }
 
   void SetUpper(Eval upper) {
-    upper_ = upper;
+    upper_ = std::min(upper, upper_);
+    for (int i = weak_upper_; i >= upper_; i -= 2) {
+      MutableEvaluation(i)->SetDisproved();
+    }
   }
 
   void SetLower(Eval lower) {
-    lower_ = lower;
+    lower_ = std::max(lower, lower_);
+    for (int i = weak_lower_; i <= lower_; i += 2) {
+      MutableEvaluation(i)->SetProved();
+    }
   }
 
   std::vector<char> Serialize() const {
@@ -256,9 +262,6 @@ class BookTreeNode : public TreeNode {
   std::vector<CompressedFlip> father_flips_;
 
   void GetFathersFromBook() override {
-    if (n_fathers_ > 0) {
-      return;
-    }
     for (CompressedFlip father_flip : father_flips_) {
       auto move_and_flip = DeserializeFlip(father_flip);
       Square move = move_and_flip.first;
@@ -279,9 +282,8 @@ class BookTreeNode : public TreeNode {
     for (const auto& [child_board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
       auto child = book_->Get(child_board);
       children.push_back((TreeNode*) child.value());
-//      assert(children[children.size() - 1]->IsValid());
     }
-    SetChildren(children);
+    SetChildrenNoLock(children);
   }
 
   bool AreChildrenCorrect() override {

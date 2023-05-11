@@ -211,10 +211,10 @@ class EvaluatorDerivative {
   }
 
   void ContinueEvaluate(NVisited max_n_visited, double max_time) {
-    max_n_visited_ = max_n_visited;
     max_time_ = max_time;
     elapsed_time_ = ElapsedTime();
     start_visited_ = GetFirstPosition()->GetNVisited();
+    max_n_visited_ = start_visited_ + max_n_visited;
     just_started_ = true;
     status_ = RUNNING;
     Run();
@@ -295,7 +295,7 @@ class EvaluatorDerivative {
     float done = first_position_->GetNVisited();
     float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
     float solve_probability = first_position_->SolveProbability(lower_, upper_);
-    float goal = std::max(300.0F, std::min(1500.0F, 120 / pow(solve_probability, 0.5F)));
+    float goal = std::max(300.0F, std::min(1800.0F, 120 / pow(solve_probability, 0.5F)));
     float result = 5000 - (done - done_tree_nodes * goal) / 40;
 
     return std::max(2000, std::min(100000, (int) result));

@@ -78,6 +78,7 @@ public class Main implements Runnable {
     thor = new Thor(ui.fileAccessor());
     EVALUATOR = new JNI(ui.fileAccessor());
     resetFirstPosition();
+    setFirstPosition(new Board("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
   }
 
   public SortedSet<String> getThorTournaments() {
@@ -243,6 +244,7 @@ public class Main implements Runnable {
     for (Position oldPosition : this.oldPositions) {
       oldBoards.add(oldPosition.board.deepCopy());
     }
+    oldBoards.add(board.deepCopy());
 
     ArrayList<Board> boards = getBoards();
     if (boards.isEmpty()) {

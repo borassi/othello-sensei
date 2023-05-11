@@ -435,16 +435,7 @@ class TreeNode {
 
   void SetChildren(std::vector<TreeNode*> children) {
     auto guard = WriteLock();
-    n_children_ = (Square) children.size();
-    children_ = new TreeNode*[n_children_];
-    for (int i = 0; i < n_children_; ++i) {
-      TreeNode* child = children[i];
-      assert((child->WeakLower() - kMinEval) % 2 == 1);
-      child->AddFather(this);
-      children_[i] = child;
-    }
-    UpdateFatherNoLock();
-    assert(AreChildrenCorrect());
+    SetChildrenNoLock(children);
   }
 
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
@@ -519,10 +510,14 @@ class TreeNode {
     double result = std::numeric_limits<double>::infinity();
 
     if (lower >= weak_lower_) {
-      result = std::min(result, (double) GetEvaluation(lower).DisproofNumber());
+      result = std::min(
+          result,
+          (double) GetEvaluation(MinEval(lower, weak_upper_)).DisproofNumber());
     }
     if (upper <= weak_upper_) {
-      result = std::min(result, (double) GetEvaluation(upper).ProofNumber());
+      result = std::min(
+          result,
+          (double) GetEvaluation(MaxEval(upper, weak_lower_)).ProofNumber());
     }
 
     for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
@@ -744,7 +739,7 @@ class TreeNode {
     auto prob = GetEvaluation(eval_goal).ProbGreaterEqualSmall();
     if (prob == 0) {
       return this->template BestChild<LOSING>(eval_goal, n_thread_multiplier);
-    } else if (prob == kProbStep) {
+    } else if (prob > 0.9 * kProbStep) {
       return this->template BestChild<WINNING>(eval_goal, n_thread_multiplier);
     } else {
       return this->template BestChild<DEFAULT>(eval_goal, n_thread_multiplier);
@@ -843,8 +838,8 @@ class TreeNode {
 //    auto stage = n_visited / (n_visited + proof_number);
     auto disproof_number_father = father.DisproofNumber();
     auto result =
-        n_visited + 100000 > disproof_number_father / 500 ?
-        -2 + 1E-8 * log(n_visited) :
+//        n_visited + 100000 > disproof_number_father / 500 ?
+//        -2 + 1E-8 * log(n_visited) :
         -(n_visited / (n_visited + child_eval.ProofNumber()));
     return result - 10 * NThreadsWorking();
 //    return -1E16 * (n_visited / child_eval.ProofNumber());
@@ -1012,6 +1007,19 @@ class TreeNode {
       }
     }
     return true;
+  }
+
+  void SetChildrenNoLock(std::vector<TreeNode*> children) {
+    n_children_ = (Square) children.size();
+    children_ = new TreeNode*[n_children_];
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children[i];
+      assert((child->WeakLower() - kMinEval) % 2 == 1);
+      child->AddFather(this);
+      children_[i] = child;
+    }
+    UpdateFatherNoLock();
+    assert(AreChildrenCorrect());
   }
 };
 
