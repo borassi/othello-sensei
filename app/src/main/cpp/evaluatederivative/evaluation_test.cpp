@@ -49,7 +49,7 @@ TEST(EvaluationTest, Base) {
 
   e.SetLeaf(0, 10000, 5000);
   EXPECT_EQ(e.ProbGreaterEqual(), 0);
-  ExpectProofNumberNear(e.ProofNumber(), 10000);
+  EXPECT_EQ(e.ProofNumber(), INFINITY);
   ExpectProofNumberNear(e.DisproofNumber(), 5000);
   EXPECT_FALSE(e.IsSolved());
   EXPECT_EQ(e.MaxLogDerivative(), kLogDerivativeMinusInf);
@@ -73,3 +73,13 @@ TEST(EvaluationTest, ProofNumberToByte) {
     EXPECT_LT(converted_x, x * ((1.01 + kBaseLogProofNumber) / 2));
   }
 }
+
+TEST(EvaluationTest, ProbabilityToByte) {
+  ASSERT_EQ(ProbabilityToByte(0), 0);
+  ASSERT_EQ(ProbabilityToByte(1), kProbStep);
+
+  for (int i = 0; i <= kProbStep; ++i) {
+    ASSERT_EQ(ProbabilityToByte(ByteToProbability((Probability) i)), i);
+  }
+}
+

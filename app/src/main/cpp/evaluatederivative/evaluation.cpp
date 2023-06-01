@@ -42,6 +42,18 @@ float ByteToProofNumberExplicit(PN byte) {
 float ByteToProofNumber(PN byte) {
   return Evaluation::kCombineProb.byte_to_proof_number[byte];
 }
+
+float ByteToProbability(Probability byte) {
+  assert(byte >= 0);
+  assert(byte <= kProbStep);
+  return byte / (float) kProbStep;
+}
+float ProbabilityToByte(float probability) {
+  assert(probability >= 0);
+  assert(probability <= 1);
+  return round(probability * kProbStep);
+}
+
 std::ostream& operator<<(std::ostream& stream, const Evaluation& e) {
   stream << e.ProbGreaterEqual() << " " << e.MaxLogDerivative() << " ["
          << e.ProofNumber() << " " << e.DisproofNumber() << "]";

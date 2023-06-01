@@ -95,6 +95,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox debugMode = new JCheckBox("Debug mode", false);
   private final JCheckBox active = new JCheckBox("Active", true);
   private final JCheckBox useBook = new JCheckBox("Use book", true);
+  private final JCheckBox approx = new JCheckBox("Approx", false);
   private final JTextField depth;
   private final JTextField delta;
   private final JSpinner ffoPositions;
@@ -163,6 +164,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(debugMode);
     commands.add(active);
     commands.add(useBook);
+    commands.add(approx);
     commands.add(stop);
     commands.add(resetHashMaps);
     commands.add(copy);
@@ -478,6 +480,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public boolean useBook() { return useBook.isSelected(); }
+
+  @Override
+  public boolean approx() { return approx.isSelected(); }
 
   public static short roundEval(int eval) {
     return (short) Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));

@@ -46,7 +46,7 @@ class ProbCombiner {
   constexpr double f(double x) { return function_(x); };
 
   constexpr double inverse(double y) {
-    assert(y >= 0 && y <= 1);
+    assert(y <= 0);
     double l = 0;
     double u = 1;
     while (u - l > 1E-12) {

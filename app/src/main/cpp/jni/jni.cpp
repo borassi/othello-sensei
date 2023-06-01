@@ -139,7 +139,7 @@ class JNIWrapper {
 
   void Evaluate(
       std::vector<Board> boards, Eval lower, Eval upper, NVisited max_n_visited,
-      double max_time, float gap) {
+      double max_time, float gap, bool approx) {
     stopping_ = false;
     bool reset = reset_ || ((gap == 0) != (last_gap_ == 0)) || boards !=
         last_boards_;
@@ -153,7 +153,7 @@ class JNIWrapper {
         Board b = boards[i];
         evaluator_derivative_[i]->Evaluate(
             b.Player(), b.Opponent(), lower, upper, max_n_visited / boards.size(),
-            max_time / boards.size(), true);
+            max_time / boards.size(), approx);
       }
     } else {
       NVisited visited = TotalVisited();
@@ -323,7 +323,7 @@ JNIEXPORT void JNICALL Java_jni_JNI_finalize(JNIEnv* env, jobject obj) {
 
 JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
     JNIEnv* env, jobject obj, jobject boards, jint lower,
-    jint upper, jlong maxNVisited, jint maxTimeMillis, jfloat gap) {
+    jint upper, jlong maxNVisited, jint maxTimeMillis, jfloat gap, jboolean approx) {
   jclass arraylist = env->FindClass("java/util/ArrayList");
   jmethodID sizeId = env->GetMethodID(arraylist, "size", "()I");
   jmethodID getId = env->GetMethodID(arraylist, "get", "(I)Ljava/lang/Object;");
@@ -341,7 +341,7 @@ JNIEXPORT void JNICALL Java_jni_JNI_evaluate(
   JNIFromJava(env, obj)->Evaluate(
       boards_vector, static_cast<Eval>(lower / 100),
       static_cast<Eval>(upper / 100), maxNVisited,
-      maxTimeMillis / 1000.0, gap);
+      maxTimeMillis / 1000.0, gap, approx);
 }
 
 JNIEXPORT void JNICALL Java_jni_JNI_empty(JNIEnv* env, jobject obj) {

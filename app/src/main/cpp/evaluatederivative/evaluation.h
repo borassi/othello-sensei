@@ -39,6 +39,9 @@ PN ProofNumberToByte(float proof_number);
 float ByteToProofNumberExplicit(PN byte);
 float ByteToProofNumber(PN byte);
 
+float ByteToProbability(Probability byte);
+float ProbabilityToByte(float probability);
+
 inline int LeafLogDerivative(float prob) {
   return round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
 }
@@ -53,7 +56,7 @@ struct CombineProb {
   float byte_to_proof_number[kProofNumberStep];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<150>);
+    ProbCombiner combiner(ExpPolyLog<165>);
     ProbCombiner combiner_shallow(ExpPolyLog<190>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       byte_to_proof_number[i] = ByteToProofNumberExplicit(i);
@@ -74,14 +77,14 @@ struct CombineProb {
         } else {
           disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
               1.0F,
-              std::min(kMaxProofNumber, ByteToProofNumber(i) / (1.0F - j /
-              (float) kProbStep))));
+              std::min(kMaxProofNumber, ByteToProofNumber(i) / (1.0F -
+                  ByteToProbability(j)))));
         }
         assert(i == 0 || disproof_to_proof_number[i][j] > 0);
       }
     }
     for (int i = 0; i <= kProbStep; ++i) {
-      double x1 = i / (double) kProbStep;
+      double x1 = ByteToProbability(i);
       log_derivative[i] = round(std::max(
           (double) kLogDerivativeMinusInf,
           std::min((double) -kLogDerivativeMinusInf,
@@ -93,9 +96,10 @@ struct CombineProb {
       assert(log_derivative[i] > kLogDerivativeMinusInf);
       for (int j = i; j <= kProbStep; ++j) {
         double x2 = j / (double) kProbStep;
-        combine_prob[i][j] = round(combiner.inverse(combiner.f(x1) + combiner.f(x2)) * kProbStep);
+        combine_prob[i][j] = ProbabilityToByte(combiner.inverse(combiner.f(x1) + combiner.f(x2)));
         combine_prob[j][i] = combine_prob[i][j];
-        combine_prob_shallow[i][j] = round(combiner_shallow.inverse(combiner_shallow.f(x1) + combiner_shallow.f(x2)) * kProbStep);
+        combine_prob_shallow[i][j] = ProbabilityToByte(
+            combiner_shallow.inverse(combiner_shallow.f(x1) + combiner_shallow.f(x2)));
         combine_prob_shallow[j][i] = combine_prob_shallow[i][j];
         assert(j == i || i == 0 || combine_prob[i][j] >= combine_prob[i][j-1]);
         assert(combine_prob[i][j] <= i);
@@ -125,7 +129,8 @@ class Evaluation {
   bool IsValid() const { return max_log_derivative_ != kNoLogDerivative; }
 
   float ProbGreaterEqual() const {
-    return IsValid() ? ProbGreaterEqualUnsafe() : -1;
+    assert(IsValid());
+    return ByteToProbability(prob_greater_equal_);
   }
 
   bool IsSolved() const {
@@ -166,7 +171,7 @@ class Evaluation {
     assert(child.IsValid());
     assert(max_log_derivative_ - kCombineProb.log_derivative[prob_greater_equal_] < 0);
     assert(child.max_log_derivative_ < 0);
-    float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
+    float child_prob_greater_equal = child.ProbGreaterEqual();
     assert(!child.IsSolved());
     if (shallow) {
       prob_greater_equal_ = kCombineProb.combine_prob_shallow[prob_greater_equal_][child.prob_greater_equal_];
@@ -220,7 +225,7 @@ class Evaluation {
 
   void SetLeaf(float prob_greater_equal, float proof_number,
                float disproof_number, float log_derivative_add = 0) {
-    prob_greater_equal_ = RoundProb(prob_greater_equal);
+    prob_greater_equal_ = ProbabilityToByte(prob_greater_equal);
     proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep :
         ProofNumberToByte(proof_number);
     disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep :
@@ -228,7 +233,7 @@ class Evaluation {
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
-      max_log_derivative_ = LeafLogDerivative(ProbGreaterEqualUnsafe()) + log_derivative_add;
+      max_log_derivative_ = LeafLogDerivative(prob_greater_equal) + log_derivative_add;
     }
     Check();
   }
@@ -285,14 +290,6 @@ class Evaluation {
   PN proof_number_;
   PN disproof_number_;
   int max_log_derivative_;
-
-  static Probability RoundProb(float prob) {
-    return (Probability) round(prob * kProbStep);
-  }
-
-  float ProbGreaterEqualUnsafe() const {
-    return ((float) prob_greater_equal_) / kProbStep;
-  }
 
   void Check() const {
     assert((prob_greater_equal_ == 0) == (proof_number_ == kProofNumberStep));

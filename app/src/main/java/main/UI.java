@@ -43,4 +43,5 @@ public interface UI {
   boolean active();
   boolean useBook();
   double getError();
+  boolean approx();
 }

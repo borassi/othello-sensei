@@ -736,10 +736,10 @@ class TreeNode {
     if (eval_goal < weak_lower_ || eval_goal > weak_upper_) {
       return nullptr;
     }
-    auto prob = GetEvaluation(eval_goal).ProbGreaterEqualSmall();
+    auto prob = GetEvaluation(eval_goal).ProbGreaterEqual();
     if (prob == 0) {
       return this->template BestChild<LOSING>(eval_goal, n_thread_multiplier);
-    } else if (prob > 0.8 * kProbStep) {
+    } else if (prob > 0.9) {
       return this->template BestChild<WINNING>(eval_goal, n_thread_multiplier);
     } else {
       return this->template BestChild<DEFAULT>(eval_goal, n_thread_multiplier);
@@ -1138,10 +1138,10 @@ class LeafToUpdate {
       NextNodesPriorityQueue;
 
   Node* NextChildren(NextNodesPriorityQueue* next_nodes) const {
-    auto prob = leaf_->GetEvaluation(eval_goal_).ProbGreaterEqualSmall();
+    auto prob = leaf_->GetEvaluation(eval_goal_).ProbGreaterEqual();
     if (prob == 0) {
       return NextChildren<LOSING>(next_nodes);
-    } else if (prob == kProbStep) {
+    } else if (prob > 0.9) {
       return NextChildren<WINNING>(next_nodes);
     } else {
       return NextChildren<DEFAULT>(next_nodes);
