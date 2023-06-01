@@ -44,9 +44,10 @@ inline int LeafLogDerivative(float prob) {
 }
 
 struct CombineProb {
-  Probability combine_prob_shallow[kProbStep + 1][kProbStep + 1];
   Probability combine_prob[kProbStep + 1][kProbStep + 1];
+  Probability combine_prob_shallow[kProbStep + 1][kProbStep + 1];
   int log_derivative[kProbStep + 1];
+  int log_derivative_shallow[kProbStep + 1];
   PN combine_disproof_number[kProofNumberStep + 1][kProofNumberStep + 1];
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
   float byte_to_proof_number[kProofNumberStep];
@@ -81,19 +82,20 @@ struct CombineProb {
     }
     for (int i = 0; i <= kProbStep; ++i) {
       double x1 = i / (double) kProbStep;
-      if (x1 < 1E-15 || x1 > 1 - 1E-15) {
-        log_derivative[i] = kLogDerivativeMinusInf;
-      } else {
-        log_derivative[i] = round(
-            kLogDerivativeMultiplier
-            * log(combiner.f(x1) / combiner.derivative(x1)));
-        assert(log_derivative[i] > kLogDerivativeMinusInf);
-      }
+      log_derivative[i] = round(std::max(
+          (double) kLogDerivativeMinusInf,
+          std::min((double) -kLogDerivativeMinusInf,
+                   kLogDerivativeMultiplier * log(combiner.derivative(x1)))));
+      log_derivative_shallow[i] = round(std::max(
+          (double) kLogDerivativeMinusInf,
+          std::min((double) -kLogDerivativeMinusInf,
+                   kLogDerivativeMultiplier * log(combiner_shallow.derivative(x1)))));
+      assert(log_derivative[i] > kLogDerivativeMinusInf);
       for (int j = i; j <= kProbStep; ++j) {
         double x2 = j / (double) kProbStep;
-        combine_prob[i][j] = (Probability) (combiner.inverse(combiner.f(x1) * combiner.f(x2)) * kProbStep + 0.5);
+        combine_prob[i][j] = round(combiner.inverse(combiner.f(x1) + combiner.f(x2)) * kProbStep);
         combine_prob[j][i] = combine_prob[i][j];
-        combine_prob_shallow[i][j] = (Probability) (combiner_shallow.inverse(combiner_shallow.f(x1) * combiner_shallow.f(x2)) * kProbStep + 0.5);
+        combine_prob_shallow[i][j] = round(combiner_shallow.inverse(combiner_shallow.f(x1) + combiner_shallow.f(x2)) * kProbStep);
         combine_prob_shallow[j][i] = combine_prob_shallow[i][j];
         assert(j == i || i == 0 || combine_prob[i][j] >= combine_prob[i][j-1]);
         assert(combine_prob[i][j] <= i);
@@ -109,10 +111,9 @@ struct CombineProb {
   }
 };
 
-const CombineProb kCombineProb;
-
 class Evaluation {
  public:
+  static const CombineProb kCombineProb;
   Evaluation() { Reset(); }
   bool operator==(const Evaluation& other) const = default;
   void Reset() {
@@ -139,8 +140,8 @@ class Evaluation {
         father.prob_greater_equal_ == 0 || father.prob_greater_equal_ == kProbStep) {
       return kLogDerivativeMinusInf;
     }
-    return max_log_derivative_ - kCombineProb.log_derivative[prob_greater_equal_]
-           + kCombineProb.log_derivative[kProbStep - father.prob_greater_equal_];
+    return max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_]
+           - kCombineProb.log_derivative[kProbStep - father.prob_greater_equal_];
   }
 
   void Initialize() {
@@ -163,7 +164,7 @@ class Evaluation {
   void UpdateFatherWithThisChild(const Evaluation& child) {
     assert(IsValid());
     assert(child.IsValid());
-    assert(max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_] < 0);
+    assert(max_log_derivative_ - kCombineProb.log_derivative[prob_greater_equal_] < 0);
     assert(child.max_log_derivative_ < 0);
     float child_prob_greater_equal = child.ProbGreaterEqualUnsafe();
     assert(!child.IsSolved());
@@ -185,20 +186,28 @@ class Evaluation {
     disproof_number_ = kCombineProb.combine_disproof_number[disproof_number_][child.proof_number_];
     if (child_prob_greater_equal > 0 && child_prob_greater_equal < 1) {
       assert(child.max_log_derivative_ < 0);
-      int current_log_derivative =
-          child.max_log_derivative_ - kCombineProb.log_derivative[child.prob_greater_equal_];
+      int current_log_derivative = child.max_log_derivative_;
+      if (shallow) {
+        current_log_derivative += kCombineProb.log_derivative_shallow[child.prob_greater_equal_];
+      } else {
+        current_log_derivative += kCombineProb.log_derivative[child.prob_greater_equal_];
+      }
       if (current_log_derivative > max_log_derivative_) {
         max_log_derivative_ = current_log_derivative;
       }
-      assert(max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_] < 0);
+      assert(max_log_derivative_ - kCombineProb.log_derivative[prob_greater_equal_] < 0);
     }
   }
 
-  void Finalize() {
+  void Finalize(bool shallow) {
     if (prob_greater_equal_ == kProbStep || prob_greater_equal_ == 0) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
-      max_log_derivative_ = max_log_derivative_ + kCombineProb.log_derivative[prob_greater_equal_];
+      if (shallow) {
+        max_log_derivative_ -= kCombineProb.log_derivative_shallow[prob_greater_equal_];
+      } else {
+        max_log_derivative_ -= kCombineProb.log_derivative[prob_greater_equal_];
+      }
       assert(max_log_derivative_ < 0);
       assert(max_log_derivative_ > kLogDerivativeMinusInf);
     }

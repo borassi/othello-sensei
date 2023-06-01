@@ -16,6 +16,8 @@
 
 #include "evaluation.h"
 
+const CombineProb Evaluation::kCombineProb;
+
 PN ProofNumberToByte(float proof_number) {
   assert(proof_number == 0 || proof_number >= 1);
   if (proof_number <= 1E-8) {
@@ -38,7 +40,7 @@ float ByteToProofNumberExplicit(PN byte) {
 }
 
 float ByteToProofNumber(PN byte) {
-  return kCombineProb.byte_to_proof_number[byte];
+  return Evaluation::kCombineProb.byte_to_proof_number[byte];
 }
 std::ostream& operator<<(std::ostream& stream, const Evaluation& e) {
   stream << e.ProbGreaterEqual() << " " << e.MaxLogDerivative() << " ["

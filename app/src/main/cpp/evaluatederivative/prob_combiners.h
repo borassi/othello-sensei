@@ -28,7 +28,7 @@ template<int lambda_100>
 double ExpPolyLog(double x) {
   assert(x >= 0 && x <= 1);
   assert(lambda_100 >= 100 && lambda_100 <= 400);
-  return exp(-pow(-log(x), lambda_100 / 100.0));
+  return -pow(-log(x), lambda_100 / 100.0);
 }
 
 template<int lambda_100, int n>

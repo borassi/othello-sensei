@@ -153,7 +153,7 @@ class JNIWrapper {
         Board b = boards[i];
         evaluator_derivative_[i]->Evaluate(
             b.Player(), b.Opponent(), lower, upper, max_n_visited / boards.size(),
-            max_time / boards.size());
+            max_time / boards.size(), true);
       }
     } else {
       NVisited visited = TotalVisited();

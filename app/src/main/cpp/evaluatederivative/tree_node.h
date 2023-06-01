@@ -739,7 +739,7 @@ class TreeNode {
     auto prob = GetEvaluation(eval_goal).ProbGreaterEqualSmall();
     if (prob == 0) {
       return this->template BestChild<LOSING>(eval_goal, n_thread_multiplier);
-    } else if (prob > 0.9 * kProbStep) {
+    } else if (prob > 0.8 * kProbStep) {
       return this->template BestChild<WINNING>(eval_goal, n_thread_multiplier);
     } else {
       return this->template BestChild<DEFAULT>(eval_goal, n_thread_multiplier);
@@ -786,13 +786,14 @@ class TreeNode {
     }
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
+    bool shallow = GetNVisited() < 50000;
     for (auto child = start; child != end; ++child) {
-      UpdateWithChild(**child);
+      UpdateWithChild(**child, shallow);
     }
     // Mark as valid.
     leaf_eval_ = 0;
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      MutableEvaluation(i)->Finalize();
+      MutableEvaluation(i)->Finalize(shallow);
       assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
     }
     assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
@@ -856,7 +857,7 @@ class TreeNode {
   double GetValueWinning(const Evaluation& father, int eval_goal) const {
     const Evaluation& child_eval = GetEvaluation(eval_goal);
     auto proof_number_using_this =
-        ByteToProofNumber(kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()]);
+        ByteToProofNumber(Evaluation::kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()]);
     auto ratio = GetNVisited() / father.ProofNumber();
     float multiplier = -1;
     if (ratio < 1E-5) {
@@ -871,7 +872,7 @@ class TreeNode {
     return proof_number_using_this * multiplier;
   }
 
-  virtual void UpdateWithChild(const TreeNode& child) {
+  virtual void UpdateWithChild(const TreeNode& child, bool shallow) {
     auto child_guard = child.ReadLock();
 //    if (!child.IsValid()) {
 //      // Another thread is still working on this node or a child. This father
@@ -896,7 +897,7 @@ class TreeNode {
         const Evaluation& eval = child.GetEvaluation(-i);
         assert(eval.IsValid());
         assert(!eval.IsSolved());
-        if (GetNVisited() < 50000) {
+        if (shallow) {
           father_eval->UpdateFatherWithThisChild<true>(eval);
         } else {
           father_eval->UpdateFatherWithThisChild<false>(eval);
