@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <math.h>
+#include "../utils/functions.h"
 #include "../utils/misc.h"
 
 template<int lambda_100>
@@ -41,37 +42,21 @@ constexpr double Polynomial(double x) {
 
 class ProbCombiner {
  public:
-  constexpr ProbCombiner(double (*function)(double x)): function_(function) {}
+  constexpr ProbCombiner(double (*function)(double x)): function_(function) {
+    assert(f(0) == -std::numeric_limits<float>::infinity());
+    assert(f(1) == 0);
+  }
 
   constexpr double f(double x) { return function_(x); };
 
   constexpr double inverse(double y) {
     assert(y <= 0);
-    double l = 0;
-    double u = 1;
-    while (u - l > 1E-12) {
-      double mid = (l + u) / 2;
-      double fmid = f(mid);
-      if (fmid == y) {
-        return mid;
-      } else if (fmid < y) {
-        l = mid;
-      } else {
-        u = mid;
-      }
-    }
-    return (l + u) / 2;
+    return Inverse(function_, y, 0, 1);
   }
 
   constexpr double derivative(double x) {
     assert(x >= 0 && x <= 1);
-    double epsilon = 1E-10;
-    if (x < epsilon) {
-      return (f(x + epsilon) - f(x)) / epsilon;
-    } else if (x > 1 - epsilon) {
-      return (f(x) - f(x - epsilon)) / epsilon;
-    }
-    return (f(x + epsilon) - f(x - epsilon)) / (2 * epsilon);
+    return Derivative(function_, x);
   }
 
  private:

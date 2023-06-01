@@ -54,15 +54,10 @@ public class JNI {
     int upper, long maxNVisited, int maxTimeMillis, float gap, boolean approx);
 
   public native void empty();
-
   public native void stop();
-
   public native Status getStatus();
-
   public native TreeNodeInterface getFirstPosition();
-
   public native TreeNodeInterface get(long player, long opponent);
-
   public native TreeNodeInterface getFromBook(long player, long opponent);
 
   public native boolean finished(long maxNVisited);

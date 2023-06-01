@@ -36,6 +36,28 @@ set_target_properties(
 )
 
 add_library(
+        functions
+        functions.h
+)
+set_target_properties(
+        functions PROPERTIES LINKER_LANGUAGE CXX
+)
+
+add_executable(
+        functions_test
+        functions_test.cpp
+)
+
+target_link_libraries(
+        functions_test
+        LINK_PUBLIC
+        functions
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
+
+add_library(
         random
         random.h
 )

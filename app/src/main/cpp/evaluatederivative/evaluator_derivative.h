@@ -295,7 +295,7 @@ class EvaluatorDerivative {
     float done = first_position_->GetNVisited();
     float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
     float solve_probability = first_position_->SolveProbability(lower_, upper_);
-    float goal = std::max(300.0F, std::min(1800.0F, 120 / pow(solve_probability, 0.5F)));
+    float goal = std::max(300.0F, std::min(1800.0F, 100 / pow(solve_probability, 0.5F)));
     float result = 5000 - (done - done_tree_nodes * goal) / 40;
 
     return std::max(2000, std::min(100000, (int) result));

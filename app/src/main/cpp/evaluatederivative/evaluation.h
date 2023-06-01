@@ -39,8 +39,9 @@ PN ProofNumberToByte(float proof_number);
 float ByteToProofNumberExplicit(PN byte);
 float ByteToProofNumber(PN byte);
 
-float ByteToProbability(Probability byte);
-float ProbabilityToByte(float probability);
+double ByteToProbabilityExplicit(Probability byte);
+double ByteToProbability(Probability byte);
+Probability ProbabilityToByte(double probability);
 
 inline int LeafLogDerivative(float prob) {
   return round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
@@ -54,6 +55,7 @@ struct CombineProb {
   PN combine_disproof_number[kProofNumberStep + 1][kProofNumberStep + 1];
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
   float byte_to_proof_number[kProofNumberStep];
+  double byte_to_probability[kProbStep];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
     ProbCombiner combiner(ExpPolyLog<165>);
@@ -76,15 +78,16 @@ struct CombineProb {
           disproof_to_proof_number[i][j] = kProofNumberStep;
         } else {
           disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
-              1.0F,
-              std::min(kMaxProofNumber, ByteToProofNumber(i) / (1.0F -
-                  ByteToProbability(j)))));
+              1.0,
+              std::min((double) kMaxProofNumber, ByteToProofNumber(i) / (1.0F -
+                  ByteToProbabilityExplicit(j)))));
         }
         assert(i == 0 || disproof_to_proof_number[i][j] > 0);
       }
     }
     for (int i = 0; i <= kProbStep; ++i) {
-      double x1 = ByteToProbability(i);
+      byte_to_probability[i] = ByteToProbabilityExplicit(i);
+      double x1 = ByteToProbabilityExplicit(i);
       log_derivative[i] = round(std::max(
           (double) kLogDerivativeMinusInf,
           std::min((double) -kLogDerivativeMinusInf,
@@ -95,7 +98,7 @@ struct CombineProb {
                    kLogDerivativeMultiplier * log(combiner_shallow.derivative(x1)))));
       assert(log_derivative[i] > kLogDerivativeMinusInf);
       for (int j = i; j <= kProbStep; ++j) {
-        double x2 = j / (double) kProbStep;
+        double x2 = ByteToProbabilityExplicit(j);
         combine_prob[i][j] = ProbabilityToByte(combiner.inverse(combiner.f(x1) + combiner.f(x2)));
         combine_prob[j][i] = combine_prob[i][j];
         combine_prob_shallow[i][j] = ProbabilityToByte(

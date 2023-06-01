@@ -22,9 +22,10 @@ set_target_properties(
         prob_combiners PROPERTIES LINKER_LANGUAGE CXX
 )
 
-target_link_libraries( # Specifies the target library.
+target_link_libraries(
         prob_combiners
         LINK_PUBLIC
+        functions
         misc
 )
 
@@ -43,6 +44,7 @@ target_link_libraries(
         prob_combiners_test
         LINK_PRIVATE
         prob_combiners
+        GTest::gmock
         GTest::gtest
         GTest::gtest_main
         -no-pie

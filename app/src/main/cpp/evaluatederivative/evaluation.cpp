@@ -43,15 +43,35 @@ float ByteToProofNumber(PN byte) {
   return Evaluation::kCombineProb.byte_to_proof_number[byte];
 }
 
-float ByteToProbability(Probability byte) {
+constexpr double BaseRescaleProb(double x) {
+  if (x == 0) {
+    return 0;
+  }
+  return pow(-log(0.08 * x), -2);
+}
+
+constexpr double RescaleProb(double x) {
+  return (BaseRescaleProb(x) - BaseRescaleProb(1-x)) / (BaseRescaleProb(1) - BaseRescaleProb(0)) / 2 + 0.5;
+}
+
+double InverseRescaleProb(double y) {
+  return Inverse(RescaleProb, y, 0, 1);
+}
+
+double ByteToProbabilityExplicit(Probability byte) {
   assert(byte >= 0);
   assert(byte <= kProbStep);
-  return byte / (float) kProbStep;
+  return InverseRescaleProb(byte / (double) kProbStep);
 }
-float ProbabilityToByte(float probability) {
+
+double ByteToProbability(Probability byte) {
+  return Evaluation::kCombineProb.byte_to_probability[byte];
+}
+
+Probability ProbabilityToByte(double probability) {
   assert(probability >= 0);
   assert(probability <= 1);
-  return round(probability * kProbStep);
+  return round(RescaleProb(probability) * kProbStep);
 }
 
 std::ostream& operator<<(std::ostream& stream, const Evaluation& e) {

@@ -15,42 +15,30 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include "prob_combiners.h"
 
-class ProbCombinerTestClass : public testing::TestWithParam<ProbCombiner> {};
-
-TEST_P(ProbCombinerTestClass, F) {
-  ProbCombiner combiner = GetParam();
-  EXPECT_NEAR(0, combiner.f(0), 1E-6);
-  EXPECT_NEAR(0, combiner.f(1E-6), 1E-4);
-  EXPECT_NEAR(1, combiner.f(1), 1E-6);
-  EXPECT_NEAR(1, combiner.f(1 - 1E-6), 1E-4);
+TEST(ProbCombinerTest, F) {
+  ProbCombiner combiner(ExpPolyLog<150>);
+  EXPECT_EQ(-INFINITY, combiner.f(0));
+  EXPECT_EQ(0, combiner.f(1));
   for (double d = 0.01; d <= 1; d += 0.01) {
     EXPECT_TRUE(combiner.f(d) > combiner.f(d - 0.01));
-    EXPECT_TRUE(combiner.f(d) > 0);
-    EXPECT_TRUE(combiner.f(d) < 1);
+    EXPECT_TRUE(combiner.f(d) < 0);
   }
 }
 
-TEST_P(ProbCombinerTestClass, Inverse) {
-  ProbCombiner combiner = GetParam();
+TEST(ProbCombinerTest, Inverse) {
+  ProbCombiner combiner(ExpPolyLog<150>);
   for (double d = 0.01; d <= 1; d += 0.01) {
     EXPECT_NEAR(d, combiner.inverse(combiner.f(d)), 1E-6);
   }
 }
 
-TEST_P(ProbCombinerTestClass, Derivative) {
+TEST(ProbCombinerTest, Derivative) {
   double epsilon = 1E-10;
   double tolerance = 1E-4;
-  ProbCombiner combiner = GetParam();
-  EXPECT_NEAR(
-      (combiner.f(epsilon) - combiner.f(0)) / epsilon,
-      combiner.derivative(0),
-      tolerance);
-  EXPECT_NEAR(
-      (combiner.f(1) - combiner.f(1-epsilon)) / epsilon,
-      combiner.derivative(1),
-      tolerance);
+  ProbCombiner combiner(ExpPolyLog<150>);
 
   for (double d = 0.01; d <= 0.99; d += 0.01) {
     EXPECT_NEAR(
@@ -63,18 +51,3 @@ TEST_P(ProbCombinerTestClass, Derivative) {
         tolerance);
   }
 }
-
-INSTANTIATE_TEST_SUITE_P(ProbCombinerTest,
-    ProbCombinerTestClass,
-    testing::Values(
-        ProbCombiner(Exponential<-30>),
-        ProbCombiner(Exponential<-100>),
-        ProbCombiner(Polynomial<200, 2>),
-        ProbCombiner(Polynomial<120, 2>),
-        ProbCombiner(Polynomial<1, 2>),
-        ProbCombiner(Polynomial<110, 11>),
-        ProbCombiner(ExpPolyLog<100>),
-        ProbCombiner(ExpPolyLog<200>),
-        ProbCombiner(ExpPolyLog<400>)
-    )
-);
