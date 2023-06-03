@@ -195,12 +195,12 @@ class TreeNode {
   float GetEval() const {
     int lower = std::max(lower_ + 1, (int) WeakLower());
     int upper = std::min(upper_ - 1, (int) WeakUpper());
-    float eval = lower - 1;
+    double eval = lower - 1;
     for (int i = lower; i <= upper; i += 2) {
-      float prob = GetEvaluation(i).ProbGreaterEqual();
+      double prob = GetEvaluation(i).ProbGreaterEqual();
       eval += 2 * prob;
     }
-    return eval;
+    return (float) eval;
   }
 
   virtual void Reset(BitPattern player, BitPattern opponent, int depth,
@@ -237,8 +237,12 @@ class TreeNode {
   }
 
   float SolveProbability(Eval lower, Eval upper) const {
+    auto guard = ReadLock();
+    return SolveProbabilityNoLock(lower, upper);
+  }
+
+  float SolveProbabilityNoLock(Eval lower, Eval upper) const {
     {
-      auto guard = ReadLock();
       // This can very rarely happen when ProbGreaterEqual(weak_lower) < 0.5 and
       // no thread has updated weak_lower, yet. We return 0.5 to stay
       // conservative.
@@ -265,24 +269,6 @@ class TreeNode {
     }
     assert(false);
     return 0.5;
-  }
-
-  bool IsSolvedAtProb(float prob, Eval lower, Eval upper) {
-    if (WeakLower() <= lower && lower <= WeakUpper() &&
-        GetEvaluation(lower).ProbGreaterEqual() <= prob) {
-      return true;
-    }
-    if (WeakLower() <= upper && upper <= WeakUpper() &&
-        GetEvaluation(upper).ProbGreaterEqual() >= 1 - prob) {
-      return true;
-    }
-    for (int i = WeakLower(); i <= WeakUpper() - 2; i += 2) {
-      if (GetEvaluation(i).ProbGreaterEqual() >= 1 - prob &&
-          GetEvaluation(i + 2).ProbGreaterEqual() <= prob) {
-        return true;
-      }
-    }
-    return false;
   }
 
   Eval GetPercentileUpper(float p) {
@@ -629,7 +615,7 @@ class TreeNode {
       }
       assert(!child->GetEvaluation(child_eval_goal).IsSolved());
 //      assert(father_eval.ProbGreaterEqual() >= 1 - child->GetEvaluation(child_eval_goal).ProbGreaterEqual() - 0.001);
-      double cur_loss = child->template GetValue<type>(father_eval, child_eval_goal, n_thread_multiplier);
+      double cur_loss = child->template GetValue<type>(father_eval, child_eval_goal, n_thread_multiplier, GetNVisited());
       if (cur_loss > best_child_value) {
         best_child = child;
         best_child_value = cur_loss;
@@ -655,7 +641,7 @@ class TreeNode {
 
   bool IsSolved(Eval lower, Eval upper, bool approx) {
     auto guard = ReadLock();
-    return IsSolvedIn(lower, upper) || (IsSolvedAtProb(0.05, lower, upper) && approx);
+    return IsSolvedIn(lower, upper) || (SolveProbabilityNoLock(lower, upper) < 0.05 && approx);
   }
 
   template<class T>
@@ -721,13 +707,11 @@ class TreeNode {
   }
 
   template<ChildValueType type>
-  double GetValue(const Evaluation& father, int eval_goal, float n_thread_multiplier) const {
-    if (type == LOSING) {
-      return GetValueLosing(father, eval_goal);
-    } else if (type == WINNING) {
+  double GetValue(const Evaluation& father, int eval_goal, float n_thread_multiplier, NVisited father_visited) const {
+    if (type == WINNING) {
       return GetValueWinning(father, eval_goal);
     } else {
-      return GetValueDefault(father, eval_goal, n_thread_multiplier);
+      return GetValueDefault(father, eval_goal, n_thread_multiplier, father_visited);
     }
   }
 
@@ -737,9 +721,7 @@ class TreeNode {
       return nullptr;
     }
     auto prob = GetEvaluation(eval_goal).ProbGreaterEqual();
-    if (prob == 0) {
-      return this->template BestChild<LOSING>(eval_goal, n_thread_multiplier);
-    } else if (prob > 0.9) {
+    if (prob > 0.9) {
       return this->template BestChild<WINNING>(eval_goal, n_thread_multiplier);
     } else {
       return this->template BestChild<DEFAULT>(eval_goal, n_thread_multiplier);
@@ -830,28 +812,14 @@ class TreeNode {
     return &evaluations_[index];
   }
 
-  double GetValueLosing(const Evaluation& father, int eval_goal) const {
-    const Evaluation& child_eval = GetEvaluation(eval_goal);
+  double GetValueDefault(const Evaluation& father, int eval_goal, float n_thread_multiplier, NVisited father_visited) const {
+    const Evaluation& eval = GetEvaluation(eval_goal);
     NVisited n_visited = GetNVisited();
-//    assert(child_eval.ProbGreaterEqual() == 1);
-//    return 0.0000000000001 * n_visited;
-//    auto proof_number = child_eval.ProofNumber();
-//    auto stage = n_visited / (n_visited + proof_number);
-    auto disproof_number_father = father.DisproofNumber();
-    auto result =
-//        n_visited + 100000 > disproof_number_father / 500 ?
-//        -2 + 1E-8 * log(n_visited) :
-        -(n_visited / (n_visited + child_eval.ProofNumber()));
-    return result - 10 * NThreadsWorking();
-//    return -1E16 * (n_visited / child_eval.ProofNumber());
-//    return 1E-12 * (stage > 0.01 ? log(n_visited) : -stage);
-  }
-
-  double GetValueDefault(const Evaluation& father, int eval_goal, float n_thread_multiplier) const {
-//    if (father.ProbGreaterEqual() < 0.8) {
-//      n_thread_multiplier *= 10000;
-//    }
-    return GetEvaluation(eval_goal).LogDerivative(father) - n_thread_multiplier * NThreadsWorking() * pow(1 - father.ProbGreaterEqual(), 3);
+    return
+        (double) (n_visited * 2000.0 < father_visited ? -kLogDerivativeMinusInf : 0)
+        + eval.LogDerivative(father)
+        - n_visited / (n_visited + eval.ProofNumber())
+        - n_thread_multiplier * NThreadsWorking() * pow(1 - father.ProbGreaterEqual(), 3);
   }
 
   double GetValueWinning(const Evaluation& father, int eval_goal) const {
@@ -874,12 +842,6 @@ class TreeNode {
 
   virtual void UpdateWithChild(const TreeNode& child, bool shallow) {
     auto child_guard = child.ReadLock();
-//    if (!child.IsValid()) {
-//      // Another thread is still working on this node or a child. This father
-//      // will be updated by this other thread.
-//      leaf_eval_ = kLessThenMinEvalLarge;
-//      return false;
-//    }
     assert(min_evaluation_ <= WeakLower());
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
@@ -1160,7 +1122,7 @@ class LeafToUpdate {
     auto end = leaf_->ChildrenEnd();
     auto child_eval_goal = -EvalGoal();
 
-    double best_child_value = best_child->template GetValue<type>(father_eval, child_eval_goal, 0);
+    double best_child_value = best_child->template GetValue<type>(father_eval, child_eval_goal, 0, leaf_->GetNVisited());
     for (auto iter = start; iter != end; ++iter) {
       Node* child = (Node*) *iter;
       if (child_eval_goal <= child->Lower() ||
@@ -1170,7 +1132,7 @@ class LeafToUpdate {
       Evaluation child_eval = child->GetEvaluation(child_eval_goal);
       assert(child->GetNVisited() > 0);
       double extra_loss =
-          child->template GetValue<type>(father_eval, child_eval_goal, 0) -
+          child->template GetValue<type>(father_eval, child_eval_goal, 0, leaf_->GetNVisited()) -
           best_child_value
           + log(best_child_prob) * kLogDerivativeMultiplier;
       assert(extra_loss <= 0);
