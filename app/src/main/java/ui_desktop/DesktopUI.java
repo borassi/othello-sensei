@@ -471,7 +471,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       return;
     }
     TreeNodeCPP board = annotations.treeNode;
-    StringBuilder firstPositionText = new StringBuilder(board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n");
+    StringBuilder firstPositionText = new StringBuilder(annotations.getLines() + "\n");
 
     int eval = board.getEval();
     for (int evalGoal = roundEval(eval + 1200); evalGoal >= roundEval(eval - 1200); evalGoal -= 200) {

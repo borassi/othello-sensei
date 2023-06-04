@@ -34,28 +34,47 @@ public class CaseAnnotations {
     this.father = father;
   }
 
-  public String getLines() {
-    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
-    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
-    String rows;
+  public String evalLine() {
     String evalFormatter;
     if (treeNode.isSolved()) {
       evalFormatter = "%+.0f";
     } else {
       evalFormatter = "%+.2f";
     }
+    return String.format(evalFormatter, -treeNode.getEval() / 100.0);
+  }
+
+  public String proofDisproofNumberLine() {
+    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL) - 100;
+    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL) + 100;
+    return
+        JNI.prettyPrintDouble(treeNode.proofNumber(lower - 100)) + " " +
+        JNI.prettyPrintDouble(treeNode.disproofNumber(upper + 100));
+  }
+
+  public String solveProbabilityLine() {
+    return
+        JNI.prettyPrintDouble(treeNode.solveProbabilityLower(-6300)) + " " +
+        JNI.prettyPrintDouble(treeNode.solveProbabilityUpper(6300));
+  }
+
+  public String getLines() {
+    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL) - 100;
+    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL) + 100;
+    String rows;
     if (thorGames < 0) {
-     return
-          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
-          JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
-              lower == upper ?
-                  JNI.prettyPrintDouble(treeNode.proofNumber(lower)) + " " +
-                      JNI.prettyPrintDouble(treeNode.disproofNumber(lower)) :
-                  ("[" + (-upper/100) + ", " + (-lower/100) + "]")
-          );
+      rows = evalLine() + "\n"
+          + JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n";
+      if (lower == upper) {
+        rows += proofDisproofNumberLine() + "\n";
+        rows += solveProbabilityLine();
+      } else {
+        rows += "[" + (-upper/100) + ", " + (-lower/100) + "]";
+      }
+      return rows;
     } else {
       return (thorGames == 0 ? "" : thorGames) + "\n" +
-          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
+          evalLine() + "\n"
           + JNI.prettyPrintDouble(treeNode.getDescendants());
     }
   }

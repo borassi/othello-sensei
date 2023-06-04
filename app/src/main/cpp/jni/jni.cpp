@@ -458,7 +458,7 @@ JNIEXPORT jdouble JNICALL Java_jni_TreeNodeCPP_solveProbabilityLower(JNIEnv* env
 
 JNIEXPORT jdouble JNICALL Java_jni_TreeNodeCPP_solveProbabilityUpper(JNIEnv* env, jobject tree_node_java, jint upper) {
   auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->SolveProbabilityLower(static_cast<Eval>(upper / 100));
+  return node->SolveProbabilityUpper(static_cast<Eval>(upper / 100));
 }
 
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {

@@ -479,7 +479,8 @@ class TreeNode {
   }
 
   double RemainingWork(Eval lower, Eval upper) const {
-    assert((eval_goal - kMinEval) % 2 == 1);
+    assert((lower - kMinEval) % 2 == 1);
+    assert((upper - kMinEval) % 2 == 1);
     auto guard = ReadLock();
     assert(n_empties_ >= 0 && n_empties_ <= 60);
     double result = std::numeric_limits<double>::infinity();
