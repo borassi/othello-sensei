@@ -358,14 +358,19 @@ class EvaluatorDerivative {
     assert(kMinEval <= lower_ && lower_ <= kMaxEval);
     assert(kMinEval <= upper_ && upper_ <= kMaxEval);
     assert(weak_lower_ >= lower_ && weak_upper_ <= upper_);
-    auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
-        first_position.ExpectedWeakLowerUpper();
+    bool extended = true;
+    while (extended) {
+      auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
+          first_position.ExpectedWeakLowerUpper();
 
-    weak_lower_ = std::max(lower_, new_weak_lower);
-    weak_upper_ = std::min(upper_, new_weak_upper);
+      weak_lower_ = std::max(lower_, new_weak_lower);
+      weak_upper_ = std::min(upper_, new_weak_upper);
 
-    if (new_weak_lower < weak_lower || new_weak_upper > weak_upper) {
-      first_position_->ExtendEval(weak_lower_, weak_upper_);
+      if (new_weak_lower < weak_lower || new_weak_upper > weak_upper) {
+        first_position_->ExtendEval(weak_lower_, weak_upper_);
+      } else {
+        extended = false;
+      }
     }
     is_updating_weak_lower_upper_.clear();
   }

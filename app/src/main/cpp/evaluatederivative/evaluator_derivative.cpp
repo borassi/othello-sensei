@@ -35,8 +35,7 @@ TreeNode* TreeNodeSupplier::AddTreeNode(
   int node_id = num_nodes_++;
   assert(node_id < kDerivativeEvaluatorSize);
   TreeNode& node = tree_nodes_[node_id];
-  node.Reset(player, opponent, depth, leaf_eval, eval_depth,
-             evaluator);
+  node.Reset(player, opponent, depth, leaf_eval, eval_depth, evaluator);
   AddToHashMap(player, opponent, evaluator_index, node_id);
   *newly_inserted = true;
   return &node;
@@ -52,7 +51,6 @@ void EvaluatorThread::Run() {
 //  first_position_copy_.FromOtherNode(first_position);
   while (!evaluator_->CheckFinished(first_position)) {
     ElapsedTime t;
-    evaluator_->UpdateWeakLowerUpper(*first_position);
 //    first_position.UpdateFather();
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
         first_position, evaluator_->NThreadMultiplier());
@@ -76,6 +74,7 @@ void EvaluatorThread::Run() {
       n_visited = AddChildren(leaf);
     }
     leaf.Finalize(n_visited);
+    evaluator_->UpdateWeakLowerUpper(*first_position);
     evaluator_->just_started_ = false;
   }
 }

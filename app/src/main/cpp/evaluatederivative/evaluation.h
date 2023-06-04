@@ -28,7 +28,6 @@ typedef uint8_t Probability;
 typedef uint8_t PN;
 constexpr Probability kProbStep = 255;
 constexpr int kLogDerivativeMinusInf = -100000000;
-constexpr int kNoLogDerivative = -kLogDerivativeMinusInf;
 constexpr int kLogDerivativeMultiplier = 10;
 constexpr float kMaxProofNumber = 1E25;
 constexpr int kProofNumberStep = 255;
@@ -74,15 +73,19 @@ struct CombineProb {
         assert(i == kProofNumberStep || j == kProofNumberStep || combine_disproof_number[i][j] < kProofNumberStep);
       }
       for (int j = 0; j <= kProbStep; ++j) {
-        if (j == kProbStep) {
+        if (j == kProbStep || i == kProofNumberStep) {
           disproof_to_proof_number[i][j] = kProofNumberStep;
+        } else if (i == 0) {
+          disproof_to_proof_number[i][j] = 0;
         } else {
           disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
               1.0,
-              std::min((double) kMaxProofNumber, ByteToProofNumber(i) / (1.0F -
+              std::min((double) kMaxProofNumber, ByteToProofNumber(i) / (1.0 -
                   ByteToProbabilityExplicit(j)))));
         }
-        assert(i == 0 || disproof_to_proof_number[i][j] > 0);
+        assert((i == 0 && j != kProbStep) == (disproof_to_proof_number[i][j] == 0));
+        assert(
+            (i == kProofNumberStep || j == kProbStep) == (disproof_to_proof_number[i][j] == kProofNumberStep));
       }
     }
     for (int i = 0; i <= kProbStep; ++i) {
@@ -121,29 +124,20 @@ struct CombineProb {
 class Evaluation {
  public:
   static const CombineProb kCombineProb;
-  Evaluation() { Reset(); }
   bool operator==(const Evaluation& other) const = default;
-  void Reset() {
-    max_log_derivative_ = kNoLogDerivative;
-  }
   float ProofNumber() const { return ByteToProofNumber(proof_number_); }
   float DisproofNumber() const { return ByteToProofNumber(disproof_number_); }
   int MaxLogDerivative() const { return max_log_derivative_; }
-  bool IsValid() const { return max_log_derivative_ != kNoLogDerivative; }
 
   float ProbGreaterEqual() const {
-    assert(IsValid());
     return ByteToProbability(prob_greater_equal_);
   }
 
   bool IsSolved() const {
-    return IsValid() && (proof_number_ == 0 || disproof_number_ == 0);
+    return (proof_number_ == 0 || disproof_number_ == 0);
   }
 
   int LogDerivative(const Evaluation& father) const {
-    if (!IsValid()) {
-      return 0;
-    }
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep ||
         father.prob_greater_equal_ == 0 || father.prob_greater_equal_ == kProbStep) {
       return kLogDerivativeMinusInf;
@@ -159,23 +153,11 @@ class Evaluation {
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 
-  // TODO: Find a better way (setting prob_greater_equal_ = 0 so that later it's
-  // set to 1-prob_greater_equal_ is brittle).
-  void SetSolved() {
-    prob_greater_equal_ = 0;
-    proof_number_ = 0;
-    disproof_number_ = kProofNumberStep;
-    max_log_derivative_ = kLogDerivativeMinusInf;
-  }
-
   template<bool shallow>
   void UpdateFatherWithThisChild(const Evaluation& child) {
-    assert(IsValid());
-    assert(child.IsValid());
     assert(max_log_derivative_ - kCombineProb.log_derivative[prob_greater_equal_] < 0);
     assert(child.max_log_derivative_ < 0);
     float child_prob_greater_equal = child.ProbGreaterEqual();
-    assert(!child.IsSolved());
     if (shallow) {
       prob_greater_equal_ = kCombineProb.combine_prob_shallow[prob_greater_equal_][child.prob_greater_equal_];
     } else {
@@ -184,14 +166,17 @@ class Evaluation {
     assert(prob_greater_equal_ <= child.prob_greater_equal_);
 
     PN cur_proof_number = kCombineProb.disproof_to_proof_number[child.disproof_number_][child.prob_greater_equal_];
-    assert(cur_proof_number > 0);
+    assert((cur_proof_number > 0) || prob_greater_equal_ == 0);
     child.Check();
     assert((child.prob_greater_equal_ == kProbStep) ==
                (cur_proof_number == kProofNumberStep));
     if (cur_proof_number < proof_number_) {
       proof_number_ = cur_proof_number;
     }
-    disproof_number_ = kCombineProb.combine_disproof_number[disproof_number_][child.proof_number_];
+    auto new_disproof_number = kCombineProb.combine_disproof_number[disproof_number_][child.proof_number_];
+    assert((new_disproof_number == kProofNumberStep) ==
+           ((disproof_number_ == kProofNumberStep) || child.proof_number_ == kProofNumberStep));
+    disproof_number_ = new_disproof_number;
     if (child_prob_greater_equal > 0 && child_prob_greater_equal < 1) {
       assert(child.max_log_derivative_ < 0);
       int current_log_derivative = child.max_log_derivative_;
@@ -222,12 +207,14 @@ class Evaluation {
     prob_greater_equal_ = (kProbStep - prob_greater_equal_);
     if (prob_greater_equal_ == kProbStep) {
       disproof_number_ = kProofNumberStep;
+    } else {
+      assert(disproof_number_ < kProofNumberStep);
     }
     Check();
   }
 
   void SetLeaf(float prob_greater_equal, float proof_number,
-               float disproof_number, float log_derivative_add = 0) {
+               float disproof_number) {
     prob_greater_equal_ = ProbabilityToByte(prob_greater_equal);
     proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep :
         ProofNumberToByte(proof_number);
@@ -236,7 +223,7 @@ class Evaluation {
     if (prob_greater_equal_ == 0 || prob_greater_equal_ == kProbStep) {
       max_log_derivative_ = kLogDerivativeMinusInf;
     } else {
-      max_log_derivative_ = LeafLogDerivative(prob_greater_equal) + log_derivative_add;
+      max_log_derivative_ = LeafLogDerivative(prob_greater_equal);
     }
     Check();
   }

@@ -129,26 +129,6 @@ class TreeNode {
     }
   }
 
-//  void FromOtherNode(TreeNode* node) {
-//    node->ReadLock();
-//    assert(!node->IsLeaf());
-//    assert(node->IsValid());
-//    Reset(
-//        node->Player(),
-//        node->Opponent(),
-//        node->Depth(),
-//        node->Evaluator());
-//    weak_lower_ = node->weak_lower_;
-//    weak_upper_ = node->weak_upper_;
-//    EnlargeEvaluations();
-//    n_children_ = node->n_children_;
-//    children_ = new TreeNode*[n_children_];
-//    for (int i = 0; i < n_children_; ++i) {
-//      children_[i] = node->children_[i];
-//    }
-//    UpdateFather();
-//  }
-
   Square NEmpties() const { return n_empties_; }
   BitPattern Player() const { return player_; }
   BitPattern Opponent() const { return opponent_; }
@@ -242,59 +222,54 @@ class TreeNode {
   }
 
   float SolveProbabilityNoLock(Eval lower, Eval upper) const {
-    {
-      // This can very rarely happen when ProbGreaterEqual(weak_lower) < 0.5 and
-      // no thread has updated weak_lower, yet. We return 0.5 to stay
-      // conservative.
-      if (ProbGreaterEqual(weak_lower_) <= 0.5 ||
-          ProbGreaterEqual(weak_upper_) >= 0.5) {
-        return 0.5;
-      }
-      if (lower >= weak_lower_ && ProbGreaterEqual(lower) <= 0.5) {
-        assert (lower == weak_lower_);
-        return ProbGreaterEqual(lower);
-      }
-      if (upper <= weak_upper_ && ProbGreaterEqual(upper) >= 0.5) {
-        assert(upper == weak_upper_);
-        return 1 - ProbGreaterEqual(upper);
-      }
-      float last_prob = ProbGreaterEqual(weak_lower_);
-      for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
-        float current_prob = ProbGreaterEqual(i);
-        if (current_prob < 0.5) {
-          return std::max(1 - last_prob, current_prob);
-        }
-        last_prob = current_prob;
-      }
-    }
-    assert(false);
-    return 0.5;
+    return std::max(SolveProbabilityUpperNoLock(upper), SolveProbabilityLowerNoLock(lower));
   }
 
-  Eval GetPercentileUpper(float p) {
-//    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
-    int lower = std::max(lower_ + 1, (int) WeakLower());
-    int upper = std::min(upper_ - 1, (int) WeakUpper());
-    for (int i = lower; i <= upper; i += 2) {
-      const Evaluation& eval = GetEvaluation(i);
-      if (eval.IsValid() && eval.ProbGreaterEqual() <= p) {
-        return i - 1;
-      }
+  double SolveProbabilityUpperNoLock(Eval upper) const {
+    auto goal = MinEval(GetPercentileLower(0.5F), upper);
+    assert(goal >= weak_lower_);
+    // This can rarely happen when we are in dire need of updating the eval.
+    // Only happens with multiple threads.
+    if (goal > weak_upper_) {
+      return 0.5;
     }
-    return upper + 1;
+    return GetEvaluation(goal).ProbGreaterEqual();
   }
 
-  Eval GetPercentileLower(float p) {
-//    assert(p >= kProbIncreaseWeakEval && p <= 1 - kProbIncreaseWeakEval);
-    int lower = std::max(lower_ + 1, (int) WeakLower());
-    int upper = std::min(upper_ - 1, (int) WeakUpper());
+  double SolveProbabilityLowerNoLock(Eval lower) const {
+    auto goal = MaxEval(GetPercentileUpper(0.5F), lower);
+    assert(goal <= weak_upper_);
+    // This can rarely happen when we are in dire need of updating the eval.
+    // Only happens with multiple threads.
+    if (goal < weak_lower_) {
+      return 0.5;
+    }
+    return 1.0 - GetEvaluation(goal).ProbGreaterEqual();
+  }
+
+  Eval GetPercentileUpper(double p) const {
+    int lower = std::max(lower_ - 1, (int) WeakLower());
+    int upper = std::min(upper_ + 1, (int) WeakUpper());
     for (int i = upper; i >= lower; i -= 2) {
       const Evaluation& eval = GetEvaluation(i);
-      if (eval.IsValid() && eval.ProbGreaterEqual() >= 1 - p) {
-        return i + 1;
+      if (eval.ProbGreaterEqual() > p) {
+        return i;
       }
     }
-    return lower - 1;
+    return lower - 2;
+  }
+
+  // Returns the first score with probability <= 1-p.
+  Eval GetPercentileLower(double p) const {
+    int lower = std::max(lower_ - 1, (int) WeakLower());
+    int upper = std::min(upper_ + 1, (int) WeakUpper());
+    for (int i = lower; i <= upper; i += 2) {
+      const Evaluation& eval = GetEvaluation(i);
+      if (eval.ProbGreaterEqual() < 1 - p) {
+        return i;
+      }
+    }
+    return upper + 2;
   }
 
   int ChildLogDerivative(TreeNode* child, int eval_goal) const {
@@ -318,6 +293,11 @@ class TreeNode {
       evaluations_ = (Evaluation*) realloc(evaluations_, desired_size * sizeof(Evaluation));
     } else {
       evaluations_ = (Evaluation*) malloc(desired_size * sizeof(Evaluation));
+    }
+    if (!IsLeaf()) {
+      UpdateFatherNoLock();
+    } else {
+      UpdateLeafEvaluations();
     }
   }
 
@@ -352,7 +332,8 @@ class TreeNode {
       double cur_value = 0;
       // cur_value += (eval.ProbGreaterEqual() > kMinProbEvalGoal && eval.ProbGreaterEqual() < 1 - kMinProbEvalGoal) ?
       //                0 : kLogDerivativeMinusInf * 1000.0;
-      cur_value += eval.MaxLogDerivative() * 10;
+      cur_value += (eval.ProbGreaterEqual() > 0.01 && eval.ProbGreaterEqual() < 0.99) ?
+          eval.MaxLogDerivative() * 10 : kLogDerivativeMinusInf;
       cur_value += i == last_eval_goal ? 0 : 1;
 
       if (cur_value > best_value) {
@@ -441,7 +422,7 @@ class TreeNode {
       expected_weak_lower = weak_lower_ - 2;
     } else {
       for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
-        if (ProbGreaterEqual(i) < 1) {
+        if (ProbGreaterEqual(i) < 0.99) {
           expected_weak_lower = i - 2;
           break;
         }
@@ -451,7 +432,7 @@ class TreeNode {
       expected_weak_upper = weak_upper_ + 2;
     } else {
       for (int i = weak_upper_ - 2; i >= weak_lower_; i -= 2) {
-        if (ProbGreaterEqual(i) > 0) {
+        if (ProbGreaterEqual(i) > 0.01) {
           expected_weak_upper = i + 2;
           break;
         }
@@ -660,23 +641,27 @@ class TreeNode {
     leaf.leaf_ = (T*) this;
     leaf.parents_ = {(T*) this};
     leaf.eval_goal_ = eval_goal;
+    leaf.alpha_ = weak_lower_;
+    leaf.beta_ = weak_upper_;
 
-    leaf.alpha_ = MinEval(eval_goal, MaxEval(
-        weak_lower_, GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
-    leaf.beta_ = MaxEval(eval_goal, MinEval(
-        weak_upper_, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
+    UpdateAlphaBetaNoLock(&leaf);
 
     assert(leaf.alpha_ <= leaf.eval_goal_ && leaf.eval_goal_ <= leaf.beta_);
     return leaf;
   }
 
   template<class T>
+  void UpdateAlphaBetaNoLock(LeafToUpdate<T>* leaf) {
+    leaf->alpha_ = MinEval(leaf->eval_goal_, MaxEval(
+        leaf->alpha_, GetPercentileLower(kProbForEndgameAlphaBeta)));
+    leaf->beta_ = MaxEval(leaf->eval_goal_, MinEval(
+        leaf->beta_, GetPercentileUpper(kProbForEndgameAlphaBeta)));
+  }
+
+  template<class T>
   void UpdateAlphaBeta(LeafToUpdate<T>* leaf) {
     auto guard = ReadLock();
-    leaf->alpha_ = MinEval(leaf->eval_goal_, MaxEval(
-        leaf->alpha_, GetPercentileLower(kProbForEndgameAlphaBeta) + 1));
-    leaf->beta_ = MaxEval(leaf->eval_goal_, MinEval(
-        leaf->beta_, GetPercentileUpper(kProbForEndgameAlphaBeta) - 1));
+    UpdateAlphaBetaNoLock(leaf);
   }
 
   LeafToUpdate<TreeNode> AsLeaf(Eval eval_goal);
@@ -701,9 +686,7 @@ class TreeNode {
       weak_lower_ = weak_lower;
       weak_upper_ = weak_upper;
       EnlargeEvaluations();
-      UpdateFatherNoLock();
     }
-    assert(AllValidEvals());
   }
 
   template<ChildValueType type>
@@ -772,35 +755,11 @@ class TreeNode {
     for (auto child = start; child != end; ++child) {
       UpdateWithChild(**child, shallow);
     }
-    // Mark as valid.
-    leaf_eval_ = 0;
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Finalize(shallow);
       assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
     }
     assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
-  }
-
-  template<class U>
-  void Copy(const U& other) {
-    Reset(other.Player(), other.Opponent());
-    n_empties_ = other.NEmpties();
-    lower_ = other.Lower();
-    upper_ = other.Upper();
-    descendants_ = other.GetNVisited();
-    EnlargeEvaluations();
-
-    auto other_proof_number = other.GetEvaluation(other.WeakLower()).ProofNumber();
-    auto other_disproof_number = other.GetEvaluation(other.WeakUpper()).DisproofNumber();
-    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
-      if (i < other.WeakLower()) {
-        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(other_proof_number, other.WeakLower(), i)));
-      } else if (i > other.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(other_disproof_number, other.WeakUpper(), i)));
-      } else {
-        *MutableEvaluation(i) = Evaluation(other.GetEvaluation(i));
-      }
-    }
   }
 
   virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
@@ -829,9 +788,9 @@ class TreeNode {
     auto ratio = GetNVisited() / father.ProofNumber();
     float multiplier = -1;
     if (ratio < 1E-5) {
-      multiplier = -0.3;
+      multiplier = -0.1;
     } else if (ratio < 1E-4) {
-      multiplier = -0.6;
+      multiplier = -0.4;
     } else if (ratio < 1E-3) {
       multiplier = -0.8;
     } else if (ratio < 1E-2) {
@@ -845,26 +804,19 @@ class TreeNode {
     assert(min_evaluation_ <= WeakLower());
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
-    assert(AllValidEvals());
     // TODO: Make weak_lower_ >= lower_ to avoid extra computations.
     weak_lower_ = MaxEval(weak_lower_, (Eval) -child.weak_upper_);
     weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       Evaluation* father_eval = MutableEvaluation(i);
 //      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
-      if (-i > child.Upper()) {
-        father_eval->SetSolved();
-      } else if (-i > child.Lower()) {
-        assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
-        const Evaluation& eval = child.GetEvaluation(-i);
-        assert(eval.IsValid());
-        assert(!eval.IsSolved());
-        if (shallow) {
-          father_eval->UpdateFatherWithThisChild<true>(eval);
-        } else {
-          father_eval->UpdateFatherWithThisChild<false>(eval);
-        }
-      } // Else do nothing (child eval is solved).
+      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
+      const Evaluation& eval = child.GetEvaluation(-i);
+      if (shallow) {
+        father_eval->UpdateFatherWithThisChild<true>(eval);
+      } else {
+        father_eval->UpdateFatherWithThisChild<false>(eval);
+      }
     }
   }
 
@@ -878,22 +830,14 @@ class TreeNode {
     weak_lower_ = weak_lower;
     weak_upper_ = weak_upper;
     EnlargeEvaluations();
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      UpdateLeafEvaluation(i);
-      assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
-    }
     assert(min_evaluation_ <= WeakLower());
-    assert(AllValidEvals());
   }
 
-  bool AllValidEvals() const {
+  void UpdateLeafEvaluations() {
+    assert(IsLeaf());
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      const Evaluation& eval = GetEvaluation(i);
-      if (!eval.IsValid()) {
-        return false;
-      }
+      UpdateLeafEvaluation(i);
     }
-    return true;
   }
 
   void UpdateLeafEvaluation(int i) {
