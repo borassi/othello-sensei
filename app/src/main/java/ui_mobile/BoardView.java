@@ -30,8 +30,8 @@ import java.util.Arrays;
 import bitpattern.BitPattern;
 import board.Board;
 import constants.Constants;
-import evaluateposition.TreeNodeInterface;
 import jni.JNI;
+import jni.TreeNodeCPP;
 import ui_desktop.CaseAnnotations;
 
 public class BoardView extends View {
@@ -136,41 +136,16 @@ public class BoardView extends View {
     if (annotation == null || annotation.treeNode == null) {
       return;
     }
-    TreeNodeInterface treeNode = annotation.treeNode;
-    String evalFormatter;
-    if (treeNode.isSolved()) {
-      evalFormatter = "%+.0f";
-    } else if (treeNode.isPartiallySolved()) {
-      evalFormatter = "%+.1f";
-    } else {
-      evalFormatter = "%+.2f";
-    }
-    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
-    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
-    String rows;
-    if (annotation.thorGames < 0 || !wantThor) {
-      rows =
-          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
-          JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
-              lower == upper ?
-                  JNI.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
-                      JNI.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
-                  ("[" + (-upper/100) + ", " + (-lower/100) + "]")
-          );
-    } else {
-      rows = (annotation.thorGames == 0 ? "" : annotation.thorGames) + "\n" +
-          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
-          + JNI.prettyPrintDouble(treeNode.getDescendants());
-    }
+    String lines = annotation.getLines();
 
     Paint paint = new Paint();
     paint.setColor(annotation.isBestMove ? Color.RED : Color.BLACK);
     paint.setStyle(Paint.Style.FILL);
     paint.setTextSize(cellSize);
-    String[] rowArray = rows.split("\n");
+    String[] linesArray = lines.split("\n");
 
-    for (int i = 0; i < rowArray.length; ++i) {
-      String row = rowArray[i];
+    for (int i = 0; i < linesArray.length; ++i) {
+      String row = linesArray[i];
       int textSize = (i == 0) ? (cellSize / 3) : (cellSize / 5);
       paint.setTextSize(textSize);
       Rect textBounds = new Rect();

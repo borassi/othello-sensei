@@ -14,9 +14,6 @@
 
 package main;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 
 import bitpattern.PositionIJ;
@@ -34,8 +31,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import evaluateposition.TreeNodeInterface;
 import jni.JNI;
+import jni.TreeNodeCPP;
 import thor.Game;
 import thor.Thor;
 import ui_desktop.CaseAnnotations;
@@ -309,10 +306,10 @@ public class Main implements Runnable {
     return Long.numberOfTrailingZeros(move);
   }
 
-  private HashMap<Integer, TreeNodeInterface> getNextPositions() {
-    HashMap<Integer, TreeNodeInterface> result = new HashMap<>();
+  private HashMap<Integer, TreeNodeCPP> getNextPositions() {
+    HashMap<Integer, TreeNodeCPP> result = new HashMap<>();
     for (Board child : JNI.children(board)) {
-      TreeNodeInterface b = getStoredBoard(child);
+      TreeNodeCPP b = getStoredBoard(child);
       if (b == null) {
         continue;
       }
@@ -335,7 +332,7 @@ public class Main implements Runnable {
     double bestScore = Double.POSITIVE_INFINITY;
     double base = 1 + 8.12 * Math.pow(error * moveMultiplier, -0.825);
     int move = -1;
-    for (Map.Entry<Integer, TreeNodeInterface> entry : getNextPositions().entrySet()) {
+    for (Map.Entry<Integer, TreeNodeCPP> entry : getNextPositions().entrySet()) {
       double eval = -entry.getValue().getEval() / 100.0;
       double score = generateExponential(Math.pow(base, eval));
       if (score < bestScore) {
@@ -350,7 +347,7 @@ public class Main implements Runnable {
     double best = Double.NEGATIVE_INFINITY;
     ArrayList<Integer> bestMove = new ArrayList<>();
 
-    for (Map.Entry<Integer, TreeNodeInterface> entry : getNextPositions().entrySet()) {
+    for (Map.Entry<Integer, TreeNodeCPP> entry : getNextPositions().entrySet()) {
       double eval = -entry.getValue().getEval() / 100.0;
       int move = entry.getKey();
       if (eval > best) {
@@ -372,12 +369,12 @@ public class Main implements Runnable {
       return Double.NEGATIVE_INFINITY;
     }
     double bestEval = Double.NEGATIVE_INFINITY;
-    HashMap<Integer, TreeNodeInterface> nextPositions = getNextPositions();
+    HashMap<Integer, TreeNodeCPP> nextPositions = getNextPositions();
     if (!nextPositions.containsKey(move)) {
       return Double.NEGATIVE_INFINITY;
     }
 
-    for (TreeNodeInterface b : nextPositions.values()) {
+    for (TreeNodeCPP b : nextPositions.values()) {
       bestEval = Math.max(bestEval, -b.getEval() / 100.0);
     }
 
@@ -397,12 +394,12 @@ public class Main implements Runnable {
     }
   }
 
-  private TreeNodeInterface getStoredBoard(Board b) {
+  private TreeNodeCPP getStoredBoard(Board b) {
     return getStoredBoard(b.getPlayer(), b.getOpponent());
   }
 
-  private TreeNodeInterface getStoredBoard(long player, long opponent) {
-    TreeNodeInterface board = EVALUATOR.get(player, opponent);
+  private TreeNodeCPP getStoredBoard(long player, long opponent) {
+    TreeNodeCPP board = EVALUATOR.get(player, opponent);
     if (ui.useBook() && board == null) {
       return EVALUATOR.getFromBook(player, opponent);
     }
@@ -412,7 +409,7 @@ public class Main implements Runnable {
   private long getNVisited() {
     long result = 0;
     for (Board child : JNI.uniqueChildren(board)) {
-      TreeNodeInterface childStored = getStoredBoard(child);
+      TreeNodeCPP childStored = getStoredBoard(child);
       if (childStored != null) {
         result += childStored.getDescendants();
       }
@@ -423,9 +420,9 @@ public class Main implements Runnable {
   private void showMCTSEvaluations() {
     ArrayList<Integer> bestMove = this.findBestMoves();
     boolean hasThor = thor.getNumGames(board) > 0;
-    TreeNodeInterface father = getStoredBoard(board);
+    TreeNodeCPP father = getStoredBoard(board);
     for (Board child : JNI.children(board)) {
-      TreeNodeInterface childStored = getStoredBoard(child);
+      TreeNodeCPP childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
@@ -452,7 +449,7 @@ public class Main implements Runnable {
   }
 
   public void setExtras() {
-    TreeNodeInterface father = getStoredBoard(board);
+    TreeNodeCPP father = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;
     if (father != null) {
       positionAnnotations = new CaseAnnotations(father, father, false);

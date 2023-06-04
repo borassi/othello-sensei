@@ -451,6 +451,16 @@ JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_disproofNumber(JNIEnv* env, jobjec
   return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->DisproofNumber(static_cast<Eval>(eval_goal / 100));
 }
 
+JNIEXPORT jdouble JNICALL Java_jni_TreeNodeCPP_solveProbabilityLower(JNIEnv* env, jobject tree_node_java, jint lower) {
+  auto node = TreeNodeFromJava(env, tree_node_java);
+  return node->SolveProbabilityLower(static_cast<Eval>(lower / 100));
+}
+
+JNIEXPORT jdouble JNICALL Java_jni_TreeNodeCPP_solveProbabilityUpper(JNIEnv* env, jobject tree_node_java, jint upper) {
+  auto node = TreeNodeFromJava(env, tree_node_java);
+  return node->SolveProbabilityLower(static_cast<Eval>(upper / 100));
+}
+
 JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProbGreaterEqual(static_cast<Eval>(eval_goal / 100));
@@ -476,6 +486,11 @@ JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree
 JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return static_cast<long long>(node->Opponent());
+}
+
+JNIEXPORT jboolean JNICALL Java_jni_TreeNodeCPP_isSolved(JNIEnv* env, jobject tree_node_java) {
+  auto node = TreeNodeFromJava(env, tree_node_java);
+  return node->IsSolved();
 }
 
 JNIEXPORT jobject JNICALL

@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import board.Board;
 import constants.Constants;
 import evaluateposition.Status;
-import evaluateposition.TreeNodeInterface;
 import helpers.FileAccessor;
 
 public class JNI {
@@ -56,9 +55,9 @@ public class JNI {
   public native void empty();
   public native void stop();
   public native Status getStatus();
-  public native TreeNodeInterface getFirstPosition();
-  public native TreeNodeInterface get(long player, long opponent);
-  public native TreeNodeInterface getFromBook(long player, long opponent);
+  public native TreeNodeCPP getFirstPosition();
+  public native TreeNodeCPP get(long player, long opponent);
+  public native TreeNodeCPP getFromBook(long player, long opponent);
 
   public native boolean finished(long maxNVisited);
 

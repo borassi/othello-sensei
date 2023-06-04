@@ -13,22 +13,50 @@
 // limitations under the License.
 package ui_desktop;
 
-import evaluateposition.TreeNodeInterface;
+import constants.Constants;
+import jni.JNI;
+import jni.TreeNodeCPP;
 
 public class CaseAnnotations {
-  public final TreeNodeInterface father;
-  public final TreeNodeInterface treeNode;
+  public final TreeNodeCPP father;
+  public final TreeNodeCPP treeNode;
   public final boolean isBestMove;
   public final int thorGames;
 
-  public CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, boolean isBestMove) {
+  public CaseAnnotations(TreeNodeCPP father, TreeNodeCPP treeNode, boolean isBestMove) {
     this(father, treeNode, -1, isBestMove);
   }
 
-  public CaseAnnotations(TreeNodeInterface father, TreeNodeInterface treeNode, int thorGames, boolean isBestMove) {
+  public CaseAnnotations(TreeNodeCPP father, TreeNodeCPP treeNode, int thorGames, boolean isBestMove) {
     this.treeNode = treeNode;
     this.isBestMove = isBestMove;
     this.thorGames = thorGames;
     this.father = father;
+  }
+
+  public String getLines() {
+    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
+    String rows;
+    String evalFormatter;
+    if (treeNode.isSolved()) {
+      evalFormatter = "%+.0f";
+    } else {
+      evalFormatter = "%+.2f";
+    }
+    if (thorGames < 0) {
+     return
+          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
+          JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
+              lower == upper ?
+                  JNI.prettyPrintDouble(treeNode.proofNumber(lower)) + " " +
+                      JNI.prettyPrintDouble(treeNode.disproofNumber(lower)) :
+                  ("[" + (-upper/100) + ", " + (-lower/100) + "]")
+          );
+    } else {
+      return (thorGames == 0 ? "" : thorGames) + "\n" +
+          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
+          + JNI.prettyPrintDouble(treeNode.getDescendants());
+    }
   }
 }

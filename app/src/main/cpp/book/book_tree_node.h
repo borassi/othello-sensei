@@ -41,7 +41,7 @@ class BookTreeNode : public TreeNode {
     lower_ = node.Lower();
     upper_ = node.Upper();
     leaf_eval_ = 0;
-    EnlargeEvaluations();
+    EnlargeEvaluationsInternal();
     descendants_ = node.GetNVisited();
 
     auto proof_number = node.GetEvaluation(node.WeakLower()).ProofNumber();
@@ -89,7 +89,7 @@ class BookTreeNode : public TreeNode {
         break;
       }
     }
-    EnlargeEvaluations();
+    EnlargeEvaluationsInternal();
 
     for (int eval = WeakLower(); eval <= WeakUpper(); eval += 2) {
       if (eval <= last_1) {

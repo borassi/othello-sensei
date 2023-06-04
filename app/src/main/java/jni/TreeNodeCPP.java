@@ -14,66 +14,72 @@
 package jni;
 
 import board.Board;
-import evaluateposition.TreeNodeInterface;
+import constants.Constants;
 
-public class TreeNodeCPP extends TreeNodeInterface implements AutoCloseable {
+public class TreeNodeCPP implements AutoCloseable {
   private final long nodeAddress;
   public TreeNodeCPP(long nodeAddress) {
     this.nodeAddress = nodeAddress;
   }
 
   public long getNodeAddress() { return nodeAddress; }
-  @Override
   public native long getDescendants();
 
-  @Override
+  public native boolean isSolved();
+
   public native int getEval();
 
-  @Override
   public native int getPercentileLower(float prob);
 
-  @Override
   public native int getPercentileUpper(float prob);
 
-  @Override
   public native int getLower();
 
-  @Override
   public native int getUpper();
 
-  @Override
   public native int getWeakLower();
 
-  @Override
   public native int getWeakUpper();
 
-  @Override
   public native float proofNumber(int evalGoal);
 
-  @Override
   public native float disproofNumber(int evalGoal);
+  public native double solveProbabilityLower(int lower);
 
-  @Override
+  public native double solveProbabilityUpper(int upper);
+
   public native float getProb(int evalGoal);
 
-  @Override
   public native int maxLogDerivative(int evalGoal);
-
-  @Override
-  public int childLogDerivative(TreeNodeInterface child, int evalGoal) {
-    return childLogDerivative((TreeNodeCPP) child, evalGoal);
-  }
 
   public native int childLogDerivative(TreeNodeCPP child, int evalGoal);
 
   public native long getPlayer();
   public native long getOpponent();
 
-  @Override
   public Board getBoard() {
     return new Board(getPlayer(), getOpponent());
   }
 
-  @Override
   public native void close();
+
+  public String getLines() {
+    int lower = getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
+    int upper = getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
+    String lines;
+    String evalFormatter;
+    if (isSolved()) {
+      evalFormatter = "%+.0f";
+    } else {
+      evalFormatter = "%+.2f";
+    }
+    return
+        String.format(evalFormatter, -getEval() / 100.0) + "\n" +
+        JNI.prettyPrintDouble(getDescendants()) + "\n" + (
+            lower == upper ?
+                JNI.prettyPrintDouble(proofNumber(lower)) + " " +
+                    JNI.prettyPrintDouble(disproofNumber(lower)) :
+                ("[" + (-upper/100) + ", " + (-lower/100) + "]")
+        );
+  }
 }

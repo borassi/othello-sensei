@@ -47,7 +47,6 @@ import javax.swing.SpinnerModel;
 
 import board.Board;
 import constants.Constants;
-import evaluateposition.TreeNodeInterface;
 import helpers.FileAccessor;
 
 import javax.swing.JLabel;
@@ -58,6 +57,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 
 import jni.JNI;
+import jni.TreeNodeCPP;
 import main.Main;
 import main.UI;
 import thor.Game;
@@ -296,43 +296,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     return (int) error.getValue();
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
-    TreeNodeInterface treeNode = annotations.treeNode;
-    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL);
-    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL);
-    String rows;
-    String evalFormatter;
-    if (treeNode.isSolved()) {
-      evalFormatter = "%+.0f";
-    } else if (treeNode.isPartiallySolved()) {
-      evalFormatter = "%+.1f";
-    } else {
-      evalFormatter = "%+.2f";
-    }
-    if (!thorActive.isSelected() || annotations.thorGames < 0) {
-      rows =
-          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n" +
-          JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n" + (
-              lower == upper ?
-                  JNI.prettyPrintDouble(treeNode.proofNumber(lower-100)) + " " +
-                      JNI.prettyPrintDouble(treeNode.disproofNumber(lower+100)) :
-                  ("[" + (-upper/100) + ", " + (-lower/100) + "]")
-          );
-    } else {
-      rows = (annotations.thorGames == 0 ? "" : annotations.thorGames) + "\n" +
-          String.format(evalFormatter, -treeNode.getEval() / 100.0) + "\n"
-          + JNI.prettyPrintDouble(treeNode.getDescendants());
-    }
-
     int x = BitPattern.getX(move);
     int y = BitPattern.getY(move);
     cases[x][y].setFontSizes(new double[] {0.25, 0.16});
-    cases[x][y].setAnnotations(rows);
+    cases[x][y].setAnnotations(annotations.getLines());
     cases[x][y].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
     cases[x][y].repaint();
   }
 
   private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
-    TreeNodeInterface board = annotations.treeNode;
+    TreeNodeCPP board = annotations.treeNode;
     if (board == null) {
       return;
     }
@@ -341,8 +314,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     String formatter = "%+.2f ";
     if (board.isSolved()) {
       formatter = "%+.0f ";
-    } else if (board.isPartiallySolved()) {
-      formatter = "%+.1f ";
     }
     String evalStr = String.format(Locale.US, formatter, -board.getEval() / 100.0);
     if (board.getProb(board.getWeakLower()) > 1 - Constants.PROB_INCREASE_WEAK_EVAL) {
@@ -499,7 +470,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (annotations == null) {
       return;
     }
-    TreeNodeInterface board = annotations.treeNode;
+    TreeNodeCPP board = annotations.treeNode;
     StringBuilder firstPositionText = new StringBuilder(board.getEval() + " " + board.getLower() + " " + board.getUpper() + "\n");
 
     int eval = board.getEval();

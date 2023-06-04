@@ -143,7 +143,8 @@ class TreeNode {
   }
 
   float ProofNumber(Eval eval_goal) const {
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     if (eval_goal < lower_) {
       return 0;
     } else if (eval_goal > upper_) {
@@ -153,7 +154,8 @@ class TreeNode {
   }
 
   float DisproofNumber(Eval eval_goal) const {
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     if (eval_goal < lower_) {
       return std::numeric_limits<float>::infinity();
     } else if (eval_goal > upper_) {
@@ -163,12 +165,14 @@ class TreeNode {
   }
 
   float ProbGreaterEqual(Eval eval_goal) const {
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     return GetEvaluation(eval_goal).ProbGreaterEqual();
   }
 
   int MaxLogDerivative(Eval eval_goal) const {
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     return GetEvaluation(eval_goal).MaxLogDerivative();
   }
 
@@ -199,7 +203,7 @@ class TreeNode {
 
   const Evaluation& GetEvaluation(int eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     assert(min_evaluation_ <= WeakLower());
     int index = ToEvaluationIndex(eval_goal);
     assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
@@ -219,6 +223,16 @@ class TreeNode {
   float SolveProbability(Eval lower, Eval upper) const {
     auto guard = ReadLock();
     return SolveProbabilityNoLock(lower, upper);
+  }
+
+  float SolveProbabilityLower(Eval lower) const {
+    auto guard = ReadLock();
+    return SolveProbabilityLowerNoLock(lower);
+  }
+
+  float SolveProbabilityUpper(Eval upper) const {
+    auto guard = ReadLock();
+    return SolveProbabilityUpperNoLock(upper);
   }
 
   float SolveProbabilityNoLock(Eval lower, Eval upper) const {
@@ -273,7 +287,8 @@ class TreeNode {
   }
 
   int ChildLogDerivative(TreeNode* child, int eval_goal) const {
-//    assert(Contains(GetChildren(), (T*) child));
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     Evaluation eval = GetEvaluation(eval_goal);
     Evaluation child_eval = child->GetEvaluation(-eval_goal);
     return child_eval.LogDerivative(eval);
@@ -286,7 +301,7 @@ class TreeNode {
     return (eval - min_evaluation_) >> 1;
   }
 
-  virtual void EnlargeEvaluations() final {
+  void EnlargeEvaluationsInternal() {
     min_evaluation_ = weak_lower_;
     int desired_size = ToEvaluationIndex(WeakUpper()) + 1;
     if (evaluations_ != nullptr) {
@@ -294,6 +309,10 @@ class TreeNode {
     } else {
       evaluations_ = (Evaluation*) malloc(desired_size * sizeof(Evaluation));
     }
+  }
+
+  void EnlargeEvaluations() {
+    EnlargeEvaluationsInternal();
     if (!IsLeaf()) {
       UpdateFatherNoLock();
     } else {
@@ -359,23 +378,11 @@ class TreeNode {
   std::lock_guard<std::mutex> WriteLock() const {
     return std::lock_guard<std::mutex>{mutex_};
   }
-//
-//  inline bool IsValid() const {
-//    auto guard = ReadLock();
-//    return IsValidNoLock();
-//  }
-//
-//  inline bool IsValidNoLock() const {
-//    return leaf_eval_ != kLessThenMinEvalLarge;
-//  }
 
   virtual void GetFathersFromBook() {}
 
   void UpdateFathers() {
     GetFathersFromBook();
-//    if (depth_ == 1) {
-//      return;
-//    }
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
     for (int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
@@ -472,6 +479,7 @@ class TreeNode {
   }
 
   double RemainingWork(Eval lower, Eval upper) const {
+    assert((eval_goal - kMinEval) % 2 == 1);
     auto guard = ReadLock();
     assert(n_empties_ >= 0 && n_empties_ <= 60);
     double result = std::numeric_limits<double>::infinity();
@@ -849,7 +857,7 @@ class TreeNode {
     } else if (i >= upper_) {
       evaluation->SetDisproved();
     } else {
-      assert(eval_depth_ >= 0 && eval_depth_ <= 4);
+      assert(eval_depth_ >= 1 && eval_depth_ <= 4);
       assert(n_empties_ >= 0 && n_empties_ <= 63);
       float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 1 * 8 * std::max(3.0F, kErrors[eval_depth_][n_empties_]));
       float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
