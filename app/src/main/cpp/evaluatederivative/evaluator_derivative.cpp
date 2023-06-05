@@ -48,10 +48,7 @@ void EvaluatorThread::Run() {
   stats_.Reset();
   TreeNode* first_position;
   first_position = evaluator_->GetFirstPosition();
-//  first_position_copy_.FromOtherNode(first_position);
   while (!evaluator_->CheckFinished(first_position)) {
-    ElapsedTime t;
-//    first_position.UpdateFather();
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
         first_position, evaluator_->NThreadMultiplier());
     if (leaf_opt) {

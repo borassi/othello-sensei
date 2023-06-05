@@ -363,8 +363,10 @@ class EvaluatorDerivative {
       auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
           first_position.ExpectedWeakLowerUpper();
 
-      weak_lower_ = std::max(lower_, new_weak_lower);
-      weak_upper_ = std::min(upper_, new_weak_upper);
+      new_weak_lower = std::max(lower_, new_weak_lower);
+      new_weak_upper = std::min(upper_, new_weak_upper);
+      weak_lower_ = new_weak_lower;
+      weak_upper_ = new_weak_upper;
 
       if (new_weak_lower < weak_lower || new_weak_upper > weak_upper) {
         first_position_->ExtendEval(weak_lower_, weak_upper_);
