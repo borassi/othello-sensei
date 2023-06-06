@@ -37,29 +37,6 @@
 #include "../board/get_moves.h"
 #include "../utils/misc.h"
 
-constexpr float kErrors[][60] = {
-    {},
-    {2.00, 2.00, 2.00, 2.00, 6.64, 6.87, 7.64, 7.77, 8.18, 8.30, 8.72, 8.73,
-     8.98, 8.71, 8.65, 8.35, 8.29, 8.05, 8.20, 7.64, 7.55, 7.05, 6.82, 6.00,
-     6.36, 5.61, 5.86, 5.19, 5.76, 5.13, 5.58, 4.91, 5.19, 4.39, 4.89, 4.14,
-     4.82, 4.03, 4.38, 3.83, 4.16, 3.52, 3.82, 3.20, 3.28, 2.79, 2.96, 2.41,
-     2.84, 2.57, 2.51, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00},
-    {2.00, 2.00, 2.00, 2.00, 5.57, 5.86, 6.40, 7.08, 7.23, 7.63, 7.77, 8.06,
-     8.03, 8.19, 7.91, 7.81, 7.57, 7.51, 7.41, 7.29, 6.92, 6.56, 6.18, 5.41,
-     5.67, 5.14, 5.13, 4.66, 4.98, 4.56, 4.78, 4.37, 4.21, 3.90, 4.03, 3.73,
-     3.97, 3.63, 3.54, 3.46, 3.51, 3.15, 3.17, 2.94, 2.67, 2.52, 2.56, 2.21,
-     2.10, 2.48, 2.09, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00},
-    {2.00, 2.00, 2.00, 2.00, 5.17, 4.96, 5.63, 5.93, 6.68, 6.74, 7.21, 7.25,
-     7.47, 7.38, 7.51, 7.21, 7.10, 6.97, 6.89, 6.66, 6.57, 6.03, 5.75, 5.01,
-     5.30, 4.71, 5.16, 4.30, 4.73, 4.09, 4.59, 3.88, 4.40, 3.50, 3.97, 3.29,
-     4.03, 3.17, 3.81, 3.09, 3.50, 2.74, 3.25, 2.59, 3.00, 2.28, 2.61, 2.05,
-     2.25, 2.00, 2.37, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00},
-    {2.00, 2.00, 2.00, 2.00, 2.00, 4.72, 4.71, 5.25, 5.53, 6.34, 6.37, 6.77,
-     6.71, 6.87, 6.81, 7.03, 6.56, 6.54, 6.37, 6.27, 6.05, 5.93, 5.32, 4.77,
-     4.93, 4.39, 4.64, 3.98, 4.05, 3.66, 3.96, 3.53, 3.67, 3.24, 3.15, 2.96,
-     3.34, 2.93, 3.06, 2.86, 2.80, 2.57, 2.72, 2.40, 2.50, 2.13, 2.13, 2.00,
-     2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00, 2.00}
-};
 constexpr float kProbIncreaseWeakEval = 0.05;
 
 class ChildError: public std::exception {
@@ -508,14 +485,12 @@ class TreeNode {
     assert(alpha >= weak_lower_ && beta <= weak_upper_);
     assert(IsLeaf());
     assert(n_empties_ >= 0 && n_empties_ <= 60);
-
     assert ((alpha - kMinEval) % 2 == 1);
     assert ((beta - kMinEval) % 2 == 1);
 
     for (Eval i = alpha; i <= beta; i += 2) {
       assert(i >= weak_lower_ && i <= weak_upper_);
       Evaluation eval = GetEvaluation(i);
-      assert(IsLeaf());
       if (eval.RemainingWork() > max_proof) {
         return false;
       }
@@ -860,12 +835,12 @@ class TreeNode {
     } else {
       assert(eval_depth_ >= 1 && eval_depth_ <= 4);
       assert(n_empties_ >= 0 && n_empties_ <= 63);
-      float prob = 1 - (float) GaussianCDF(EvalToEvalLarge(i), leaf_eval_, 1 * 8 * std::max(3.0F, kErrors[eval_depth_][n_empties_]));
-      float proof_number = ::ProofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
+      EvalLarge i_large = EvalToEvalLarge(i);
+      float proof_number = ::ProofNumber(player_, opponent_, i_large, leaf_eval_);
       assert(isfinite(proof_number) && proof_number > 0);
-      float disproof_number = ::DisproofNumber(player_, opponent_, EvalToEvalLarge(i), leaf_eval_);
+      float disproof_number = ::DisproofNumber(player_, opponent_, i_large, leaf_eval_);
       assert(isfinite(disproof_number) && disproof_number > 0);
-      evaluation->SetLeaf(prob, proof_number, disproof_number);
+      evaluation->SetLeaf(i_large, leaf_eval_, eval_depth_, n_empties_, proof_number, disproof_number);
     }
     assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
   }
