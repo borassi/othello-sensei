@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   int n = parse_flags.GetIntFlagOrDefault("n", 20);
   std::vector<Collector> collectors;
   for (int i = 0; i < 64; ++i) {
-    if (i <= 25) {
+    if (i <= 4) {
       collectors.push_back(Collector(0));
     } else if (i <= 27) {
       // ~3 hours
@@ -68,12 +68,9 @@ int main(int argc, char* argv[]) {
     } else if (i == 28) {
       // ~1 hour
       collectors.push_back(Collector(20));
-    } else if (i == 29) {
-      // ~1 hour
-      collectors.push_back(Collector(10));
     } else {
       // ~1 hour for 30, 2 hours for 31 (time cutoff), ...
-      collectors.push_back(Collector(5));
+      collectors.push_back(Collector(15));
     }
   }
 
@@ -97,9 +94,10 @@ int main(int argc, char* argv[]) {
   }
   output.open(filename, std::ios::app);
   output
-      << "player opponent empties real_eval alpha_beta final_lower final_upper "
-      << "final_eval final_visited final_proof final_disproof final_weaklower "
-      << "final_weakupper eval0 eval1 eval2 eval3 eval4 "
+      << "player opponent empties real_eval perc_lower solve_probability_lower "
+      << "perc_upper solve_probability_upper alpha_beta final_lower "
+      << "final_upper final_eval final_visited final_proof final_disproof "
+      << "final_weaklower final_weakupper eval0 eval1 eval2 eval3 eval4 "
       << "moves_player moves_player_corner moves_player_x "
       << "moves_player_app moves_player_corner_app moves_player_x_app "
       << "moves_opponent moves_opponent_corner moves_opponent_x "
@@ -138,16 +136,23 @@ int main(int argc, char* argv[]) {
       }
       tree_node_supplier.Reset();
       evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, false);
-      int real_eval = evaluator.GetFirstPosition()->GetEval();
+      double real_eval = evaluator.GetFirstPosition()->GetEval();
+      double perc_lower = evaluator.GetFirstPosition()->GetPercentileUpper(0.5F);
+      double solve_probability_lower = evaluator.GetFirstPosition()->SolveProbabilityLower(-63);
+      double perc_upper = evaluator.GetFirstPosition()->GetPercentileLower(0.5F);
+      double solve_probability_upper = evaluator.GetFirstPosition()->SolveProbabilityUpper(63);
       std::stringstream result;
-      for (int i = -63; i <= 63; i += 2) {
+      int step = b.NEmpties() > 28 ? 3 : 1;
+      for (int i = -63 + (rand() % step) * 2; i <= 63; i += 2 * step) {
         tree_node_supplier.Reset();
         hash_map.Reset();
         evaluator.Evaluate(b.Player(), b.Opponent(), i, i, 1000000000000L, 20, false);
         auto first_position = evaluator.GetFirstPosition();
         result
             << b.Player() << " " << b.Opponent() << " " << b.NEmpties()
-            << " " << real_eval << " " << i << " " << (int) first_position->Lower()
+            << " " << real_eval << " " << perc_lower << " " << solve_probability_lower << " "
+            << perc_upper << " " << solve_probability_upper << " "
+            << i << " " << (int) first_position->Lower()
             << " " << (int) first_position->Upper() << " " << first_position->GetEval()
             << " " << first_position->GetNVisited() << " " << first_position->ProofNumber(i)
             << " " << first_position->DisproofNumber(i) << " " << (int) first_position->WeakLower()
