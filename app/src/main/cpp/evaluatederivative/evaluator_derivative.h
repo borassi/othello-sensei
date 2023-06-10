@@ -293,11 +293,12 @@ class EvaluatorDerivative {
 
   int VisitedForEndgame() {
     float done = first_position_->GetNVisited();
+    float remaining = first_position_->RemainingWork(lower_, upper_);
     float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
     float solve_probability = first_position_->SolveProbability(lower_, upper_);
-    float goal = std::max(300.0F, std::min(1800.0F, 100 / pow(solve_probability, 0.5F)));
-    float result = 5000 - (done - done_tree_nodes * goal) / 40;
-
+    float current_max = (350 * remaining + 1800.0F * done) / (remaining + done);
+    float goal = std::max(350.0F, std::min(current_max, 20 / solve_probability));
+    float result = 5000 - (done - done_tree_nodes * goal) * 0.01F;
     return std::max(2000, std::min(100000, (int) result));
   }
 

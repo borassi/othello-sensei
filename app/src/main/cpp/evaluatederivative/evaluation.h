@@ -20,6 +20,7 @@
 #include <cmath>
 #include <float.h>
 #include <iomanip>
+#include "endgame_time_estimator.h"
 #include "prob_combiners.h"
 #include "../board/bitpattern.h"
 #include "../utils/misc.h"
@@ -28,8 +29,7 @@ typedef uint8_t Probability;
 typedef uint8_t PN;
 constexpr Probability kProbStep = 255;
 constexpr int kLogDerivativeMinusInf = -100000000;
-constexpr int kLogDerivativeMultiplier = 10;
-constexpr float kMaxProofNumber = 1E25;
+constexpr int kLogDerivativeMultiplier = 100;
 constexpr int kProofNumberStep = 255;
 constexpr float kBaseLogProofNumber = ConstexprPow(kMaxProofNumber, 1.0 / (kProofNumberStep - 1.99));  // kBaseLogProofNumber ^ (kProofNumberStep-1) = kMaxProofNumber.
 
@@ -93,8 +93,8 @@ struct CombineProb {
   int leaf_log_derivative[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<165>);
-    ProbCombiner combiner_shallow(ExpPolyLog<190>);
+    ProbCombiner combiner(ExpPolyLog<135>);
+    ProbCombiner combiner_shallow(ExpPolyLog<175>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       byte_to_proof_number[i] = ByteToProofNumberExplicit(i);
       for (int j = 0; j <= kProofNumberStep; ++j) {
@@ -253,16 +253,20 @@ class Evaluation {
     Check();
   }
 
-  void SetLeaf(EvalLarge goal, EvalLarge eval, Square depth, Square n_empties,
-               float proof_number, float disproof_number) {
-    Probability prob = kCombineProb.gaussian_cdf[DataToCDFOffset(depth, n_empties, goal - eval)];
-
+  void SetLeaf(
+      BitPattern player, BitPattern opponent, EvalLarge goal, EvalLarge eval,
+      Square depth, Square n_empties) {
     prob_greater_equal_ = kCombineProb.gaussian_cdf[DataToCDFOffset(depth, n_empties, goal - eval)];
+    float proof_number = ::ProofNumber(player, opponent, goal, eval);
+    assert(isfinite(proof_number) && proof_number > 0);
+    float disproof_number = ::DisproofNumber(player, opponent, goal, eval);
+
+    assert(isfinite(disproof_number) && disproof_number > 0);
     proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep :
         ProofNumberToByte(proof_number);
     disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep :
         ProofNumberToByte(disproof_number);
-    max_log_derivative_ = kCombineProb.leaf_log_derivative[prob];
+    max_log_derivative_ = kCombineProb.leaf_log_derivative[prob_greater_equal_];
     Check();
   }
 
@@ -284,14 +288,13 @@ class Evaluation {
 
   double RemainingWork() const {
     Check();
-    // Needed to avoid 0 * infinity.
-    if (prob_greater_equal_ == 0) {
+    double prob_greater_equal = ProbGreaterEqual();
+    if (prob_greater_equal < 0.01) {
       return DisproofNumber();
-    } else if (prob_greater_equal_ == kProbStep) {
+    } else if (prob_greater_equal > 0.99) {
       return ProofNumber();
     }
-    double prob_greater_equal = ProbGreaterEqual();
-    return ProofNumber() * prob_greater_equal + DisproofNumber() * (1 - prob_greater_equal);
+    return std::max(ProofNumber(), DisproofNumber());
   }
 
   void SetProving(PN proof_number) {

@@ -61,6 +61,7 @@ target_link_libraries( # Specifies the target library.
         evaluation
         LINK_PUBLIC
         bitpattern
+        endgame_time_estimator
         misc
         prob_combiners
 )
@@ -88,7 +89,6 @@ target_link_libraries( # Specifies the target library.
         endgame_time_estimator
         LINK_PUBLIC
         bitpattern
-        evaluation
         get_moves
 )
 
@@ -123,7 +123,6 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bitpattern
         board
-        endgame_time_estimator
         evaluation
         get_moves
         misc

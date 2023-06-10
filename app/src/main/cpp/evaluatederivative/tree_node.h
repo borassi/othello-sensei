@@ -30,7 +30,6 @@
 #include <string.h>
 #include <unordered_set>
 #include <set>
-#include "endgame_time_estimator.h"
 #include "evaluation.h"
 #include "../board/bitpattern.h"
 #include "../board/board.h"
@@ -57,31 +56,6 @@ template<class Node>
 class LeafToUpdate;
 
 class EvaluatorDerivative;
-
-struct TreeNodeSummarized {
-  Eval weak_lower;
-  Eval weak_upper;
-  Eval lower;
-  Eval upper;
-  float prob_weak_lower;
-  float prob_weak_lower_next;
-  float prob_weak_upper;
-  float prob_weak_upper_prev;
-
-  TreeNodeSummarized(
-      Eval weak_lower, Eval weak_upper, Eval lower, Eval upper,
-      float prob_weak_lower, float prob_weak_lower_next,
-      float prob_weak_upper, float prob_weak_upper_prev) :
-      weak_lower(weak_lower),
-      weak_upper(weak_upper),
-      lower(lower),
-      upper(upper),
-      prob_weak_lower(prob_weak_lower),
-      prob_weak_lower_next(prob_weak_lower_next),
-      prob_weak_upper(prob_weak_upper),
-      prob_weak_upper_prev(prob_weak_upper_prev)
-      {}
-};
 
 class TreeNode {
  public:
@@ -328,7 +302,7 @@ class TreeNode {
       double cur_value = 0;
       // cur_value += (eval.ProbGreaterEqual() > kMinProbEvalGoal && eval.ProbGreaterEqual() < 1 - kMinProbEvalGoal) ?
       //                0 : kLogDerivativeMinusInf * 1000.0;
-      cur_value += (eval.ProbGreaterEqual() > 0.01 && eval.ProbGreaterEqual() < 0.99) ?
+      cur_value += (eval.ProbGreaterEqual() > 0.001 && eval.ProbGreaterEqual() < 0.999) ?
           eval.MaxLogDerivative() * 10 : kLogDerivativeMinusInf;
       cur_value += i == last_eval_goal ? 0 : 1;
 
@@ -496,21 +470,6 @@ class TreeNode {
       }
     }
     return true;
-  }
-
-  TreeNodeSummarized ToTreeNodeSummarized(Eval new_weak_lower, Eval new_weak_upper) {
-    assert(weak_lower_ <= new_weak_lower && new_weak_lower <= new_weak_upper && new_weak_upper <= weak_upper_);
-
-    auto guard = ReadLock();
-    return TreeNodeSummarized(
-        new_weak_lower,
-        new_weak_upper,
-        lower_,
-        upper_,
-        ProbGreaterEqual(new_weak_lower),
-        new_weak_lower + 4 <= weak_upper_ ? ProbGreaterEqual(new_weak_lower + 4) : 0,
-        ProbGreaterEqual(new_weak_upper),
-        new_weak_upper - 4 >= weak_lower_ ? ProbGreaterEqual(new_weak_upper - 4) : 1);
   }
 
   std::vector<TreeNode*> Fathers() const {
@@ -836,11 +795,7 @@ class TreeNode {
       assert(eval_depth_ >= 1 && eval_depth_ <= 4);
       assert(n_empties_ >= 0 && n_empties_ <= 63);
       EvalLarge i_large = EvalToEvalLarge(i);
-      float proof_number = ::ProofNumber(player_, opponent_, i_large, leaf_eval_);
-      assert(isfinite(proof_number) && proof_number > 0);
-      float disproof_number = ::DisproofNumber(player_, opponent_, i_large, leaf_eval_);
-      assert(isfinite(disproof_number) && disproof_number > 0);
-      evaluation->SetLeaf(i_large, leaf_eval_, eval_depth_, n_empties_, proof_number, disproof_number);
+      evaluation->SetLeaf(player_, opponent_, i_large, leaf_eval_, eval_depth_, n_empties_);
     }
     assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
   }

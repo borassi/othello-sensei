@@ -46,8 +46,7 @@ void EvaluatorThread::Run() {
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   int n_visited;
   stats_.Reset();
-  TreeNode* first_position;
-  first_position = evaluator_->GetFirstPosition();
+  TreeNode* first_position = evaluator_->GetFirstPosition();
   while (!evaluator_->CheckFinished(first_position)) {
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
         first_position, evaluator_->NThreadMultiplier());
@@ -121,7 +120,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     // -4   +0   +10
     if (child_n_empties > 28 || (quick_eval < child_eval_goal + 4 * 8 && child_n_empties > 20)) {
       depth = 4;
-    } else if (child_n_empties > 24 || (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 18)) {
+    } else if (child_n_empties > 24 || (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 14)) {
       depth = 3;
     } else {
       depth = 2;
@@ -157,7 +156,7 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
   EvalLarge eval;
   eval = evaluator_alpha_beta_.Evaluate(
       node->Player(), node->Opponent(), node->NEmpties(), alpha, beta,
-      std::max(max_proof * 5, 30000));
+      std::max(max_proof * 5, 50000));
   seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
   stats_.Merge(evaluator_alpha_beta_.GetStats());
   stats_.Add(1, TREE_NODE);
