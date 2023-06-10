@@ -45,20 +45,27 @@ target_link_libraries(
 )
 
 add_library(
-        gaussian
-        gaussian.h
-        gaussian.cpp
-)
-
-add_executable(
-        gaussian_test
-        gaussian_test.cpp
+        win_probability
+        win_probability.h
+        win_probability.cpp
 )
 
 target_link_libraries(
-        gaussian_test
+        win_probability
         LINK_PUBLIC
-        gaussian
+        functions
+)
+
+add_executable(
+        win_probability_test
+        win_probability_test.cpp
+)
+
+target_link_libraries(
+        win_probability_test
+        LINK_PUBLIC
+        bitpattern
+        win_probability
         GTest::gtest
         GTest::gtest_main
         -no-pie

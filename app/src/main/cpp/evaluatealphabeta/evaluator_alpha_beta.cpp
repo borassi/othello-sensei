@@ -18,7 +18,7 @@
 #include "../board/board.h"
 #include "../board/get_moves.h"
 #include "../board/stable.h"
-#include "../estimators/gaussian.h"
+#include "../estimators/win_probability.h"
 #include "../estimators/endgame_time.h"
 #include "evaluator_alpha_beta.h"
 #include "evaluator_last_moves.h"

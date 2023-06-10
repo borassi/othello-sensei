@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-#include <math.h>
-#include "gaussian.h"
+#include "win_probability.h"
 
-double GaussianCDF(double value) {
-  return 0.5 * erfc(-value * sqrt(0.5));
-}
+namespace {
 
-double GaussianCDF(double x, double mean, double stddev) {
-  return GaussianCDF((x - mean) / stddev);
-}
+}  // anonymous namespace
+

@@ -62,7 +62,7 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bitpattern
         endgame_time
-        gaussian
+        win_probability
         prob_combiners
 )
 
@@ -141,7 +141,7 @@ target_link_libraries(
         LINK_PRIVATE
         evaluator_alpha_beta
         evaluator_derivative
-        gaussian
+        win_probability
         hash_map
         pattern_evaluator
         GTest::gtest

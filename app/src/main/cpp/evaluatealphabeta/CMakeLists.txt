@@ -57,7 +57,7 @@ target_link_libraries( # Specifies the target library.
         bitpattern
         endgame_time
         evaluator_last_moves
-        gaussian
+        win_probability
         get_flip
         hash_map
         stable)

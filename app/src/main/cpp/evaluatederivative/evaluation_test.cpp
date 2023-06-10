@@ -74,38 +74,4 @@ TEST(EvaluationTest, ProofNumberToByte) {
   }
 }
 
-TEST(EvaluationTest, ProbabilityToByte) {
-  ASSERT_EQ(ProbabilityToByte(0), 0);
-  ASSERT_EQ(ProbabilityToByte(1), kProbStep);
-
-  for (int i = 0; i <= kProbStep; ++i) {
-    ASSERT_EQ(ProbabilityToByte(ByteToProbability((Probability) i)), i);
-  }
-}
-
-TEST(EvaluationTest, DeltaToCDFOffset) {
-  ASSERT_EQ(ProbabilityToByte(0), 0);
-  ASSERT_EQ(ProbabilityToByte(1), kProbStep);
-
-  for (Square depth = 1; depth <= 4; ++depth) {
-    for (EvalLarge delta = -128 * 8; delta <= 128 * 8; ++delta) {
-      for (Square empties = 0; empties < 64; ++empties) {
-        int offset = DataToCDFOffset(depth, empties, delta);
-        ASSERT_LT(offset, kMaxCDFOffset);
-        const auto& [actual_depth, actual_empties, actual_delta] = CDFOffsetToDepthEmptiesEval(offset);
-        ASSERT_EQ(actual_depth, depth)
-            << (int) depth << " " << (int) actual_depth << "\n"
-            << (int) delta << " " << (int) actual_delta << "\n"
-            << (int) empties << " " << (int) actual_empties << "\n"
-            << offset << "\n";
-        ASSERT_EQ(actual_empties, empties);
-        ASSERT_EQ(actual_delta, delta)
-            << (int) depth << " " << (int) actual_depth << "\n"
-            << (int) delta << " " << (int) actual_delta << "\n"
-            << (int) empties << " " << (int) actual_empties << "\n"
-            << offset << "\n";
-      }
-    }
-  }
-}
 
