@@ -55,11 +55,11 @@ target_link_libraries( # Specifies the target library.
         evaluator_alpha_beta
         LINK_PUBLIC
         bitpattern
-        endgame_time_estimator
+        endgame_time
         evaluator_last_moves
+        gaussian
         get_flip
         hash_map
-        misc
         stable)
 
 add_executable(

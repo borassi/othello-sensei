@@ -26,7 +26,6 @@
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
-#include "../utils/misc.h"
 
 using ::testing::UnorderedElementsAre;
 using ::testing::ElementsAreArray;

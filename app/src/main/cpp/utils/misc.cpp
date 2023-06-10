@@ -29,14 +29,6 @@ double ElapsedTime::Get() {
   return diff.count();
 }
 
-double GaussianCDF(double value) {
-  return 0.5 * erfc(-value * sqrt(0.5));
-}
-
-double GaussianCDF(double x, double mean, double stddev) {
-  return GaussianCDF((x - mean) / stddev);
-}
-
 std::string PrettyPrintDouble(double d) {
 //  std::locale::global(std::locale("en_US.UTF8"));
   if (d == INFINITY) {

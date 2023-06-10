@@ -24,7 +24,7 @@
 
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
-#include "../evaluatederivative/endgame_time_estimator.h"
+#include "../estimators/endgame_time.h"
 #include "value_file.h"
 
 template<class Book>

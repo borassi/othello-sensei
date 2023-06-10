@@ -100,10 +100,6 @@ constexpr double ConstexprPow(double x, double y) {
   return ConstexprExp(ConstexprLog(x) * y);
 }
 
-double GaussianCDF(double value);
-
-double GaussianCDF(double x, double mean, double stddev);
-
 template<typename T>
 bool Contains(std::vector<T> v, T elem) {
   return std::find(v.begin(), v.end(), elem) != v.end();

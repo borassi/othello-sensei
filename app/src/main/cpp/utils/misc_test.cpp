@@ -39,23 +39,6 @@ TEST(ConstexprMath, Pow) {
   }
 }
 
-TEST(Gaussian, Gaussian) {
-  EXPECT_NEAR(0.5, GaussianCDF(0, 0, 1), 1.E-5);
-
-  // https://en.wikipedia.org/wiki/Standard_normal_table.
-  EXPECT_NEAR(1.58655e-1, GaussianCDF(-1, 0, 1), 1.E-4);
-  EXPECT_NEAR(2.27501e-2, GaussianCDF(-2, 0, 1), 1.E-4);
-  EXPECT_NEAR(1.34990e-3, GaussianCDF(-3, 0, 1), 1.E-4);
-  EXPECT_NEAR(3.16712e-5, GaussianCDF(-4, 0, 1), 1.E-6);
-  EXPECT_NEAR(2.86652e-7, GaussianCDF(-5, 0, 1), 1.E-8);
-  EXPECT_NEAR(9.86588e-10, GaussianCDF(-6, 0, 1), 1.E-10);
-  std::cout << GaussianCDF(-6, 0, 1) << "\n";
-
-  for (int i = 0; i < 100; ++i) {
-    EXPECT_NEAR(GaussianCDF(i / 10.0, 0, 1), 1 - GaussianCDF(-i / 10.0, 0, 1), 1E-8);
-  }
-}
-
 TEST(Vector, VectorContains) {
   EXPECT_TRUE(Contains<int>({1, 2, 3}, 2));
   EXPECT_FALSE(Contains<int>({1, 2, 3}, 4));

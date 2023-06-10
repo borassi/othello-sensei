@@ -17,7 +17,7 @@
 #include <limits>
 #include <random>
 #include "../board/board.h"
-#include "endgame_time_estimator.h"
+#include "endgame_time.h"
 
 TEST(EndgameTimeEstimator, ConvertProofNumber) {
   for (int i = 0; i < 1000; ++i) {

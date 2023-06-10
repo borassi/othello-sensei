@@ -20,10 +20,10 @@
 #include <cmath>
 #include <float.h>
 #include <iomanip>
-#include "endgame_time_estimator.h"
+#include "../estimators/endgame_time.h"
 #include "prob_combiners.h"
 #include "../board/bitpattern.h"
-#include "../utils/misc.h"
+#include "../estimators/gaussian.h"
 
 typedef uint8_t Probability;
 typedef uint8_t PN;

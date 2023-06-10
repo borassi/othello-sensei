@@ -61,8 +61,8 @@ target_link_libraries( # Specifies the target library.
         evaluation
         LINK_PUBLIC
         bitpattern
-        endgame_time_estimator
-        misc
+        endgame_time
+        gaussian
         prob_combiners
 )
 
@@ -75,37 +75,6 @@ target_link_libraries(
         evaluation_test
         LINK_PRIVATE
         evaluation
-        GTest::gtest
-        GTest::gtest_main
-        -no-pie
-)
-
-add_library(
-        endgame_time_estimator
-        endgame_time_estimator.h
-)
-
-target_link_libraries( # Specifies the target library.
-        endgame_time_estimator
-        LINK_PUBLIC
-        bitpattern
-        get_moves
-)
-
-set_target_properties(
-        endgame_time_estimator PROPERTIES LINKER_LANGUAGE CXX
-)
-
-add_executable(
-        endgame_time_estimator_test
-        endgame_time_estimator_test.cpp
-)
-
-target_link_libraries(
-        endgame_time_estimator_test
-        LINK_PRIVATE
-        board
-        endgame_time_estimator
         GTest::gtest
         GTest::gtest_main
         -no-pie
@@ -157,7 +126,6 @@ target_link_libraries( # Specifies the target library.
         board
         constants
         get_moves
-        misc
         tree_node
         evaluator_alpha_beta
         evaluator_depth_one_base
@@ -173,6 +141,7 @@ target_link_libraries(
         LINK_PRIVATE
         evaluator_alpha_beta
         evaluator_derivative
+        gaussian
         hash_map
         pattern_evaluator
         GTest::gtest

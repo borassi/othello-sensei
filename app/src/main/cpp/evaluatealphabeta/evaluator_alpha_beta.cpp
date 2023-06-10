@@ -18,8 +18,8 @@
 #include "../board/board.h"
 #include "../board/get_moves.h"
 #include "../board/stable.h"
-#include "../evaluatederivative/endgame_time_estimator.h"
-#include "../utils/misc.h"
+#include "../estimators/gaussian.h"
+#include "../estimators/endgame_time.h"
 #include "evaluator_alpha_beta.h"
 #include "evaluator_last_moves.h"
 
