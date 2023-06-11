@@ -647,7 +647,7 @@ class TreeNode {
       return nullptr;
     }
     auto prob = GetEvaluation(eval_goal).ProbGreaterEqual();
-    if (prob > 0.9) {
+    if (prob > 0.99) {
       return this->template BestChild<WINNING>(eval_goal, n_thread_multiplier);
     } else {
       return this->template BestChild<DEFAULT>(eval_goal, n_thread_multiplier);
