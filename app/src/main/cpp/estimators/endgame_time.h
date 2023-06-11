@@ -14,17 +14,55 @@
  * limitations under the License.
  */
 
+#include <limits.h>
 #include <math.h>
+#include "win_probability.h"
 #include "../board/bitpattern.h"
 #include "../board/get_moves.h"
+#include "../utils/misc.h"
 
-#ifndef OTHELLOSENSEI_ENDGAME_TIME_ESTIMATOR_H
-#define OTHELLOSENSEI_ENDGAME_TIME_ESTIMATOR_H
+#ifndef OTHELLOSENSEI_ENDGAME_TIME_H
+#define OTHELLOSENSEI_ENDGAME_TIME_H
 
-constexpr double kErrorWeight = 0.1;
+typedef uint8_t PN;
 constexpr float kMaxProofNumber = 1E25;
+constexpr int kProofNumberStep = 255;
+constexpr float kBaseLogProofNumber = ConstexprPow(kMaxProofNumber, 1.0 / (kProofNumberStep - 1.99));
+constexpr int kMaxProofNumberOffset = /*depth*/ 16 * /*n_empties*/ 64 * /*eval_delta*/ (256+1);
+
+constexpr PN ProofNumberToByte(float proof_number) {
+  assert(proof_number == 0 || proof_number >= 1);
+  if (proof_number <= 1E-8) {
+    return 0;
+  } else if (proof_number > kMaxProofNumber) {
+    return kProofNumberStep;
+  }
+  float rescaled_proof_number = log(proof_number) / log(kBaseLogProofNumber) + 1;
+  assert(rescaled_proof_number >= 0.5 && rescaled_proof_number <= kProofNumberStep - 0.5);
+  return (PN) round(rescaled_proof_number);
+}
+
+constexpr float ByteToProofNumberExplicit(PN byte) {
+  if (byte == 0) {
+    return 0;
+  } else if (byte == kProofNumberStep) {
+    return INFINITY;
+  }
+  return pow(kBaseLogProofNumber, byte - 1);
+}
 
 
+constexpr int DataToProofNumberOffset(Square empties, Square moves, int eval_delta) {
+  assert(moves <= 15);
+  assert(empties <= 63);
+  assert(eval_delta <= 128);
+  assert(eval_delta >= -128);
+  return empties | (moves << 6) | (eval_delta - 2 * kMinEval) << 10;
+}
+
+constexpr std::tuple<Square, Square, int> ProofNumberOffsetToEmptiesMovesEval(int cdf_offset) {
+  return std::make_tuple((cdf_offset & 63), (cdf_offset >> 6) & 15, (cdf_offset >> 10) + 2 * kMinEval);
+}
 
 inline double Bound(double value) {
   return std::max(1.0, std::min(kMaxProofNumber * 0.99, value));
@@ -40,253 +78,299 @@ inline double ConvertDisproofNumber(double old, int old_goal, int new_goal) {
   return Bound(exp(log(old) - 0.07 * (new_goal - old_goal)));
 }
 
-inline double LogProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  BitPattern empties = ~(player | opponent);
-  int n_empties = __builtin_popcountll(empties);
-  EvalLarge error = approx_eval - lower;
-  switch (n_empties) {
-  case 5:
-    return +2.7732 +0.0602 * GetNMoves(opponent, player) +0.2851 * GetNMoves(player, opponent) -0.0080 * error / 8;
-  case 6:
-    return +2.5441 +0.1501 * GetNMoves(opponent, player) +0.3602 * GetNMoves(player, opponent) -0.0096 * error / 8;
-  case 7:
-    return +2.7848 +0.1439 * GetNMoves(opponent, player) +0.3046 * GetNMoves(player, opponent) -0.0089 * error / 8;
-  case 8:
-    return +3.3361 +0.1446 * GetNMoves(opponent, player) +0.2248 * GetNMoves(player, opponent) -0.0110 * error / 8;
-  case 9:
-    return +4.3329 +0.0666 * GetNMoves(opponent, player) +0.1746 * GetNMoves(player, opponent) -0.0157 * error / 8;
-  case 10:
-    return +3.9689 +0.1997 * GetNMoves(opponent, player) +0.2584 * GetNMoves(player, opponent) -0.0248 * error / 8;
-  case 11:
-    return +5.0026 +0.1339 * GetNMoves(opponent, player) +0.2097 * GetNMoves(player, opponent) -0.0344 * error / 8;
-  case 12:
-    return +5.6690 +0.1550 * GetNMoves(opponent, player) +0.1035 * GetNMoves(player, opponent) -0.0264 * error / 8;
-  case 13:
-    return +5.4306 +0.2542 * GetNMoves(opponent, player) +0.1857 * GetNMoves(player, opponent) -0.0413 * error / 8;
-  case 14:
-    return +7.4029 +0.1484 * GetNMoves(opponent, player) +0.0714 * GetNMoves(player, opponent) -0.0474 * error / 8;
-  case 15:
-    return +7.3226 +0.2202 * GetNMoves(opponent, player) +0.1349 * GetNMoves(player, opponent) -0.0607 * error / 8;
-  case 16:
-    return +7.9160 +0.2276 * GetNMoves(opponent, player) +0.0468 * GetNMoves(player, opponent) -0.0480 * error / 8;
-  case 17:
-    return +9.4770 +0.2385 * GetNMoves(opponent, player) -0.0182 * GetNMoves(player, opponent) -0.0674 * error / 8;
-  case 18:
-    return +10.2402 +0.2458 * GetNMoves(opponent, player) -0.0156 * GetNMoves(player, opponent) -0.0741 * error / 8;
-  case 19:
-    return +9.8372 +0.2298 * GetNMoves(opponent, player) +0.0663 * GetNMoves(player, opponent) -0.0661 * error / 8;
-  case 20:
-    return +10.6212 +0.2493 * GetNMoves(opponent, player) +0.0407 * GetNMoves(player, opponent) -0.0640 * error / 8;
-  case 21:
-    return +12.1072 +0.2160 * GetNMoves(opponent, player) -0.0069 * GetNMoves(player, opponent) -0.0770 * error / 8;
-  case 22:
-    return +11.7269 +0.2661 * GetNMoves(opponent, player) +0.0362 * GetNMoves(player, opponent) -0.0674 * error / 8;
-  case 23:
-    return +13.5002 +0.2543 * GetNMoves(opponent, player) -0.0825 * GetNMoves(player, opponent) -0.0644 * error / 8;
-  case 24:
-    return +13.8058 +0.2944 * GetNMoves(opponent, player) -0.0727 * GetNMoves(player, opponent) -0.0673 * error / 8;
-  case 25:
-    return +15.0216 +0.2667 * GetNMoves(opponent, player) -0.0976 * GetNMoves(player, opponent) -0.0708 * error / 8;
-  case 26:
-    return +14.4929 +0.3614 * GetNMoves(opponent, player) -0.0842 * GetNMoves(player, opponent) -0.0670 * error / 8;
-  case 27:
-    return +15.8368 +0.2876 * GetNMoves(opponent, player) -0.1098 * GetNMoves(player, opponent) -0.0654 * error / 8;
-  case 28:
-    return +13.6469 +0.4414 * GetNMoves(opponent, player) -0.0089 * GetNMoves(player, opponent) -0.0572 * error / 8;
-  case 29:
-    return +16.2992 +0.2582 * GetNMoves(opponent, player) +0.0218 * GetNMoves(player, opponent) -0.0624 * error / 8;
-  case 30:
-    return +15.5976 +0.3042 * GetNMoves(opponent, player) +0.0848 * GetNMoves(player, opponent) -0.0581 * error / 8;
-  case 31:
-    return +17.9854 +0.2917 * GetNMoves(opponent, player) -0.0564 * GetNMoves(player, opponent) -0.0606 * error / 8;
-  case 32:
-    return +13.1845 +0.5378 * GetNMoves(opponent, player) +0.1222 * GetNMoves(player, opponent) -0.0591 * error / 8;
-  case 33:
-    return +16.3814 +0.3654 * GetNMoves(opponent, player) +0.1215 * GetNMoves(player, opponent) -0.0602 * error / 8;
-  case 34:
-    return +18.7239 +0.3497 * GetNMoves(opponent, player) -0.0330 * GetNMoves(player, opponent) -0.0576 * error / 8;
-  case 35:
-    return +20.2311 +0.3157 * GetNMoves(opponent, player) -0.0808 * GetNMoves(player, opponent) -0.0653 * error / 8;
-  case 36:
-    return +19.5560 +0.1927 * GetNMoves(opponent, player) +0.1145 * GetNMoves(player, opponent) -0.0534 * error / 8;
-  case 37:
-    return +21.7995 +0.2178 * GetNMoves(opponent, player) -0.0041 * GetNMoves(player, opponent) -0.0642 * error / 8;
-  case 38:
-    return +17.0210 +0.6595 * GetNMoves(opponent, player) -0.1109 * GetNMoves(player, opponent) -0.0226 * error / 8;
-  case 39:
-    return +23.5217 +0.2420 * GetNMoves(opponent, player) -0.1619 * GetNMoves(player, opponent) -0.0340 * error / 8;
-  case 40:
-    return +22.7273 +0.2812 * GetNMoves(opponent, player) -0.1006 * GetNMoves(player, opponent) -0.0418 * error / 8;
-  case 41:
-    return +21.6721 +0.2179 * GetNMoves(opponent, player) +0.0758 * GetNMoves(player, opponent) -0.0397 * error / 8;
-  case 42:
-    return +23.8956 +0.1272 * GetNMoves(opponent, player) -0.0202 * GetNMoves(player, opponent) -0.0197 * error / 8;
-  case 43:
-    return +25.7905 +0.0694 * GetNMoves(opponent, player) -0.1084 * GetNMoves(player, opponent) -0.0186 * error / 8;
-  case 44:
-    return +24.8834 +0.0379 * GetNMoves(opponent, player) -0.0241 * GetNMoves(player, opponent) -0.0117 * error / 8;
-  case 45:
-    return +23.2936 +0.2420 * GetNMoves(opponent, player) -0.0837 * GetNMoves(player, opponent) -0.0154 * error / 8;
-  case 46:
-    return +25.5664 -0.0134 * GetNMoves(opponent, player) -0.0309 * GetNMoves(player, opponent) -0.0114 * error / 8;
-  case 47:
-    return +25.8121 -0.0117 * GetNMoves(opponent, player) -0.0514 * GetNMoves(player, opponent) -0.0115 * error / 8;
-  case 48:
-    return +25.4308 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 49:
-    return +25.9603 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 50:
-    return +26.4899 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 51:
-    return +27.0195 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 52:
-    return +27.5491 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 53:
-    return +28.0787 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 54:
-    return +28.6082 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 55:
-    return +29.1378 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 56:
-    return +29.6674 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 57:
-    return +30.1970 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 58:
-    return +30.7265 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  case 59:
-    return +31.2561 +0.0321 * GetNMoves(opponent, player) -0.0558 * GetNMoves(player, opponent) -0.0123 * error / 8;
-  default:
-    assert(false);
-    return 1;
-}
-}
-
-inline double ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  return Bound(exp(LogProofNumber(player, opponent, lower, approx_eval)));
-}
-
-inline double LogDisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  BitPattern empties = ~(player | opponent);
-  int n_empties = __builtin_popcountll(empties);
-  EvalLarge error = approx_eval - lower;
+inline double LogProofNumber(int n_empties, Square moves_opponent, int error) {
   switch (n_empties) {
     case 5:
-      return +3.0396 +0.0813 * GetNMoves(opponent, player) +0.3701 * GetNMoves(player, opponent) +0.0142 * error / 8;
+      return +3.9006 -0.0721 * moves_opponent -0.0057 * error;
     case 6:
-      return +3.2391 +0.0749 * GetNMoves(opponent, player) +0.3692 * GetNMoves(player, opponent) +0.0168 * error / 8;
+      return +4.2667 -0.0299 * moves_opponent -0.0076 * error;
     case 7:
-      return +3.5195 +0.0680 * GetNMoves(opponent, player) +0.3633 * GetNMoves(player, opponent) +0.0195 * error / 8;
+      return +4.3829 -0.0032 * moves_opponent -0.0075 * error;
     case 8:
-      return +3.7935 +0.0706 * GetNMoves(opponent, player) +0.3671 * GetNMoves(player, opponent) +0.0226 * error / 8;
+      return +4.7421 +0.0309 * moves_opponent -0.0088 * error;
     case 9:
-      return +4.1662 +0.0664 * GetNMoves(opponent, player) +0.3628 * GetNMoves(player, opponent) +0.0257 * error / 8;
+      return +5.5805 -0.0370 * moves_opponent -0.0150 * error;
     case 10:
-      return +4.5668 +0.0803 * GetNMoves(opponent, player) +0.3577 * GetNMoves(player, opponent) +0.0321 * error / 8;
+      return +6.0840 +0.0094 * moves_opponent -0.0224 * error;
     case 11:
-      return +5.0562 +0.0748 * GetNMoves(opponent, player) +0.3520 * GetNMoves(player, opponent) +0.0368 * error / 8;
+      return +6.6991 +0.0362 * moves_opponent -0.0328 * error;
     case 12:
-      return +5.6552 +0.0647 * GetNMoves(opponent, player) +0.3439 * GetNMoves(player, opponent) +0.0422 * error / 8;
+      return +6.6929 +0.0884 * moves_opponent -0.0258 * error;
     case 13:
-      return +6.2899 +0.0575 * GetNMoves(opponent, player) +0.3396 * GetNMoves(player, opponent) +0.0491 * error / 8;
+      return +7.2202 +0.1581 * moves_opponent -0.0403 * error;
     case 14:
-      return +6.9639 +0.0519 * GetNMoves(opponent, player) +0.3315 * GetNMoves(player, opponent) +0.0548 * error / 8;
+      return +8.1257 +0.1112 * moves_opponent -0.0470 * error;
     case 15:
-      return +7.5526 +0.0551 * GetNMoves(opponent, player) +0.3359 * GetNMoves(player, opponent) +0.0617 * error / 8;
+      return +8.9624 +0.1124 * moves_opponent -0.0596 * error;
     case 16:
-      return +7.9873 +0.0538 * GetNMoves(opponent, player) +0.3573 * GetNMoves(player, opponent) +0.0669 * error / 8;
+      return +8.3900 +0.2078 * moves_opponent -0.0478 * error;
     case 17:
-      return +8.9373 +0.0238 * GetNMoves(opponent, player) +0.3424 * GetNMoves(player, opponent) +0.0710 * error / 8;
+      return +9.3032 +0.2437 * moves_opponent -0.0675 * error;
     case 18:
-      return +9.6694 +0.0023 * GetNMoves(opponent, player) +0.3460 * GetNMoves(player, opponent) +0.0733 * error / 8;
+      return +10.0704 +0.2507 * moves_opponent -0.0743 * error;
     case 19:
-      return +10.3353 -0.0096 * GetNMoves(opponent, player) +0.3524 * GetNMoves(player, opponent) +0.0755 * error / 8;
+      return +10.6314 +0.1971 * moves_opponent -0.0653 * error;
     case 20:
-      return +11.1757 -0.0266 * GetNMoves(opponent, player) +0.3487 * GetNMoves(player, opponent) +0.0791 * error / 8;
+      return +11.0976 +0.2351 * moves_opponent -0.0638 * error;
     case 21:
-      return +12.0230 -0.0404 * GetNMoves(opponent, player) +0.3453 * GetNMoves(player, opponent) +0.0822 * error / 8;
+      return +12.0104 +0.2209 * moves_opponent -0.0770 * error;
     case 22:
-      return +12.1221 -0.0185 * GetNMoves(opponent, player) +0.3753 * GetNMoves(player, opponent) +0.0804 * error / 8;
+      return +12.2194 +0.2467 * moves_opponent -0.0672 * error;
     case 23:
-      return +12.7062 -0.0235 * GetNMoves(opponent, player) +0.3780 * GetNMoves(player, opponent) +0.0789 * error / 8;
+      return +12.4221 +0.2798 * moves_opponent -0.0657 * error;
     case 24:
-      return +13.2587 -0.0311 * GetNMoves(opponent, player) +0.3906 * GetNMoves(player, opponent) +0.0782 * error / 8;
+      return +12.9089 +0.3175 * moves_opponent -0.0684 * error;
     case 25:
-      return +13.9265 -0.0310 * GetNMoves(opponent, player) +0.3877 * GetNMoves(player, opponent) +0.0779 * error / 8;
+      return +13.7242 +0.3027 * moves_opponent -0.0715 * error;
     case 26:
-      return +14.3955 -0.0266 * GetNMoves(opponent, player) +0.3986 * GetNMoves(player, opponent) +0.0771 * error / 8;
+      return +13.3424 +0.3869 * moves_opponent -0.0678 * error;
     case 27:
-      return +15.0048 -0.0228 * GetNMoves(opponent, player) +0.3964 * GetNMoves(player, opponent) +0.0764 * error / 8;
+      return +14.3268 +0.3242 * moves_opponent -0.0656 * error;
     case 28:
-      return +15.6646 -0.0229 * GetNMoves(opponent, player) +0.3971 * GetNMoves(player, opponent) +0.0755 * error / 8;
+      return +13.4507 +0.4558 * moves_opponent -0.0574 * error;
     case 29:
-      return +15.9333 -0.0022 * GetNMoves(opponent, player) +0.4058 * GetNMoves(player, opponent) +0.0737 * error / 8;
+      return +16.5436 +0.2591 * moves_opponent -0.0623 * error;
     case 30:
-      return +16.1738 +0.0120 * GetNMoves(opponent, player) +0.4169 * GetNMoves(player, opponent) +0.0711 * error / 8;
+      return +16.3636 +0.3260 * moves_opponent -0.0576 * error;
     case 31:
-      return +17.2787 -0.0297 * GetNMoves(opponent, player) +0.3883 * GetNMoves(player, opponent) +0.0631 * error / 8;
+      return +17.2346 +0.2994 * moves_opponent -0.0616 * error;
     case 32:
-      return +18.1678 -0.0719 * GetNMoves(opponent, player) +0.3875 * GetNMoves(player, opponent) +0.0587 * error / 8;
+      return +15.1237 +0.5037 * moves_opponent -0.0589 * error;
     case 33:
-      return +19.0195 -0.0934 * GetNMoves(opponent, player) +0.3835 * GetNMoves(player, opponent) +0.0579 * error / 8;
+      return +18.0885 +0.3284 * moves_opponent -0.0596 * error;
     case 34:
-      return +19.7383 -0.0680 * GetNMoves(opponent, player) +0.3505 * GetNMoves(player, opponent) +0.0574 * error / 8;
+      return +17.9011 +0.3910 * moves_opponent -0.0578 * error;
     case 35:
-      return +20.3546 -0.0801 * GetNMoves(opponent, player) +0.3525 * GetNMoves(player, opponent) +0.0569 * error / 8;
+      return +18.7904 +0.3712 * moves_opponent -0.0659 * error;
     case 36:
-      return +20.9937 -0.0680 * GetNMoves(opponent, player) +0.3297 * GetNMoves(player, opponent) +0.0536 * error / 8;
+      return +20.8997 +0.2061 * moves_opponent -0.0533 * error;
     case 37:
-      return +21.3823 -0.0751 * GetNMoves(opponent, player) +0.3320 * GetNMoves(player, opponent) +0.0488 * error / 8;
+      return +21.2439 +0.2679 * moves_opponent -0.0637 * error;
     case 38:
-      return +21.7518 -0.0573 * GetNMoves(opponent, player) +0.3107 * GetNMoves(player, opponent) +0.0438 * error / 8;
+      return +16.2205 +0.6015 * moves_opponent -0.0230 * error;
     case 39:
-      return +22.0374 -0.0458 * GetNMoves(opponent, player) +0.3004 * GetNMoves(player, opponent) +0.0383 * error / 8;
+      return +20.2654 +0.3554 * moves_opponent -0.0362 * error;
     case 40:
-      return +22.8615 -0.0496 * GetNMoves(opponent, player) +0.2617 * GetNMoves(player, opponent) +0.0336 * error / 8;
+      return +20.9171 +0.3336 * moves_opponent -0.0430 * error;
     case 41:
-      return +22.7758 -0.0431 * GetNMoves(opponent, player) +0.2805 * GetNMoves(player, opponent) +0.0266 * error / 8;
+      return +22.5117 +0.2216 * moves_opponent -0.0399 * error;
     case 42:
-      return +23.4292 -0.0542 * GetNMoves(opponent, player) +0.2547 * GetNMoves(player, opponent) +0.0222 * error / 8;
+      return +23.5641 +0.1357 * moves_opponent -0.0200 * error;
     case 43:
-      return +23.7090 -0.0577 * GetNMoves(opponent, player) +0.2451 * GetNMoves(player, opponent) +0.0199 * error / 8;
+      return +24.1953 +0.0963 * moves_opponent -0.0187 * error;
     case 44:
-      return +24.0587 -0.0644 * GetNMoves(opponent, player) +0.2335 * GetNMoves(player, opponent) +0.0181 * error / 8;
+      return +24.4849 +0.0483 * moves_opponent -0.0118 * error;
     case 45:
-      return +24.1514 -0.0612 * GetNMoves(opponent, player) +0.2226 * GetNMoves(player, opponent) +0.0133 * error / 8;
+      return +22.6243 +0.2248 * moves_opponent -0.0158 * error;
     case 46:
-      return +24.0176 -0.0102 * GetNMoves(opponent, player) +0.1812 * GetNMoves(player, opponent) +0.0098 * error / 8;
+      return +25.2968 -0.0183 * moves_opponent -0.0117 * error;
     case 47:
-      return +24.6878 -0.0158 * GetNMoves(opponent, player) +0.1073 * GetNMoves(player, opponent) +0.0013 * error / 8;
+      return +25.2717 -0.0144 * moves_opponent -0.0116 * error;
     case 48:
-      return +24.6706 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +24.6883 +0.0403 * moves_opponent -0.0123 * error;
     case 49:
-      return +24.7978 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +25.2025 +0.0403 * moves_opponent -0.0123 * error;
     case 50:
-      return +24.9250 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +25.7166 +0.0403 * moves_opponent -0.0123 * error;
     case 51:
-      return +25.0523 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +26.2307 +0.0403 * moves_opponent -0.0123 * error;
     case 52:
-      return +25.1795 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +26.7448 +0.0403 * moves_opponent -0.0123 * error;
     case 53:
-      return +25.3067 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +27.2589 +0.0403 * moves_opponent -0.0123 * error;
     case 54:
-      return +25.4339 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +27.7730 +0.0403 * moves_opponent -0.0123 * error;
     case 55:
-      return +25.5611 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +28.2872 +0.0403 * moves_opponent -0.0123 * error;
     case 56:
-      return +25.6883 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +28.8013 +0.0403 * moves_opponent -0.0123 * error;
     case 57:
-      return +25.8155 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +29.3154 +0.0403 * moves_opponent -0.0123 * error;
     case 58:
-      return +25.9427 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +29.8295 +0.0403 * moves_opponent -0.0123 * error;
     case 59:
-      return +26.0700 -0.0103 * GetNMoves(opponent, player) +0.1162 * GetNMoves(player, opponent) +0.0006 * error / 8;
+      return +30.3436 +0.0403 * moves_opponent -0.0123 * error;
     default:
       assert(false);
       return 1;
   }
 }
 
-inline double DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
-  return Bound(exp(LogDisproofNumber(player, opponent, lower, approx_eval)));
+inline double LogDisproofNumber(int n_empties, Square moves_player, int error) {
+  switch (n_empties) {
+    case 5:
+      return +2.6487 +0.4631 * moves_player +0.0004 * error;
+    case 6:
+      return +3.2865 +0.3527 * moves_player +0.0130 * error;
+    case 7:
+      return +3.6414 +0.2925 * moves_player +0.0119 * error;
+    case 8:
+      return +4.2059 +0.2752 * moves_player +0.0178 * error;
+    case 9:
+      return +4.5260 +0.3005 * moves_player +0.0238 * error;
+    case 10:
+      return +4.9128 +0.3028 * moves_player +0.0274 * error;
+    case 11:
+      return +5.8246 +0.2820 * moves_player +0.0367 * error;
+    case 12:
+      return +6.4117 +0.2783 * moves_player +0.0454 * error;
+    case 13:
+      return +7.0188 +0.2877 * moves_player +0.0539 * error;
+    case 14:
+      return +7.6066 +0.2966 * moves_player +0.0586 * error;
+    case 15:
+      return +7.3853 +0.3711 * moves_player +0.0555 * error;
+    case 16:
+      return +8.2774 +0.3425 * moves_player +0.0611 * error;
+    case 17:
+      return +9.1560 +0.3551 * moves_player +0.0806 * error;
+    case 18:
+      return +10.9860 +0.2312 * moves_player +0.0845 * error;
+    case 19:
+      return +11.0712 +0.2700 * moves_player +0.0830 * error;
+    case 20:
+      return +10.0164 +0.4357 * moves_player +0.0795 * error;
+    case 21:
+      return +12.2923 +0.2840 * moves_player +0.0853 * error;
+    case 22:
+      return +11.2717 +0.4465 * moves_player +0.0811 * error;
+    case 23:
+      return +12.6521 +0.3762 * moves_player +0.0824 * error;
+    case 24:
+      return +12.9556 +0.4043 * moves_player +0.0866 * error;
+    case 25:
+      return +14.1359 +0.3698 * moves_player +0.0863 * error;
+    case 26:
+      return +13.6867 +0.4271 * moves_player +0.0742 * error;
+    case 27:
+      return +14.8523 +0.3689 * moves_player +0.0667 * error;
+    case 28:
+      return +14.7807 +0.4103 * moves_player +0.0604 * error;
+    case 29:
+      return +13.4046 +0.5485 * moves_player +0.0572 * error;
+    case 30:
+      return +16.8306 +0.3594 * moves_player +0.0583 * error;
+    case 31:
+      return +15.6065 +0.4406 * moves_player +0.0477 * error;
+    case 32:
+      return +19.8453 +0.2348 * moves_player +0.0610 * error;
+    case 33:
+      return +17.0428 +0.4922 * moves_player +0.0545 * error;
+    case 34:
+      return +19.0283 +0.3669 * moves_player +0.0632 * error;
+    case 35:
+      return +17.0419 +0.5606 * moves_player +0.0548 * error;
+    case 36:
+      return +21.4776 +0.2469 * moves_player +0.0629 * error;
+    case 37:
+      return +20.2735 +0.3842 * moves_player +0.0538 * error;
+    case 38:
+      return +20.4844 +0.3797 * moves_player +0.0413 * error;
+    case 39:
+      return +21.0481 +0.3619 * moves_player +0.0532 * error;
+    case 40:
+      return +21.3959 +0.3300 * moves_player +0.0253 * error;
+    case 41:
+      return +21.8329 +0.3346 * moves_player +0.0261 * error;
+    case 42:
+      return +22.7822 +0.2554 * moves_player +0.0186 * error;
+    case 43:
+      return +24.2546 +0.1090 * moves_player +0.0028 * error;
+    case 44:
+      return +23.8442 +0.1390 * moves_player +0.0032 * error;
+    case 45:
+      return +22.8040 +0.2311 * moves_player -0.0030 * error;
+    case 46:
+      return +24.7534 +0.0592 * moves_player -0.0048 * error;
+    case 47:
+      return +25.2828 +0.0210 * moves_player -0.0044 * error;
+    case 48:
+      return +24.5828 +0.0785 * moves_player -0.0064 * error;
+    case 49:
+      return +25.0947 +0.0785 * moves_player -0.0064 * error;
+    case 50:
+      return +25.6066 +0.0785 * moves_player -0.0064 * error;
+    case 51:
+      return +26.1185 +0.0785 * moves_player -0.0064 * error;
+    case 52:
+      return +26.6304 +0.0785 * moves_player -0.0064 * error;
+    case 53:
+      return +27.1424 +0.0785 * moves_player -0.0064 * error;
+    case 54:
+      return +27.6543 +0.0785 * moves_player -0.0064 * error;
+    case 55:
+      return +28.1662 +0.0785 * moves_player -0.0064 * error;
+    case 56:
+      return +28.6781 +0.0785 * moves_player -0.0064 * error;
+    case 57:
+      return +29.1900 +0.0785 * moves_player -0.0064 * error;
+    case 58:
+      return +29.7020 +0.0785 * moves_player -0.0064 * error;
+    case 59:
+      return +30.2139 +0.0785 * moves_player -0.0064 * error;
+    default:
+      assert(false);
+      return 1;
+  }
 }
-#endif  // OTHELLOSENSEI_ENDGAME_TIME_ESTIMATOR_H
+
+struct ProofDisproofNumberData {
+  PN proof_number[kMaxProofNumberOffset + 1];
+  PN disproof_number[kMaxProofNumberOffset + 1];
+  int disproof_number_over_prob[kMaxProofNumberOffset + 1];
+  double byte_to_proof_number[kProofNumberStep + 1];
+
+  ProofDisproofNumberData() : proof_number(), disproof_number(), byte_to_proof_number() {
+    for (Square empties = 5; empties < 60; ++empties) {
+      for (Square moves = 0; moves <= 15; ++moves) {
+        for (EvalLarge delta = -128; delta <= 128; ++delta) {
+          proof_number[DataToProofNumberOffset(empties, moves, delta)] =
+              ProofNumberToByte(Bound(exp(LogProofNumber(empties, moves, delta))));
+          disproof_number[DataToProofNumberOffset(empties, moves, delta)] =
+              ProofNumberToByte(Bound(exp(LogDisproofNumber(empties, moves, delta))));
+          disproof_number_over_prob[DataToProofNumberOffset(empties, moves, delta)] =
+              (int) round(
+                  std::min(
+                      (double) INT_MAX - 2,
+                      Bound(exp(LogDisproofNumber(empties, moves, delta))) /
+                          ProbabilityExplicit(1, empties, delta)));
+        }
+      }
+    }
+    for (int i = 0; i <= kProofNumberStep; ++i) {
+      byte_to_proof_number[i] = ByteToProofNumberExplicit(i);
+    }
+  }
+};
+
+const ProofDisproofNumberData kProofDisproofNumberData;
+
+constexpr float ByteToProofNumber(PN byte) {
+  return kProofDisproofNumberData.byte_to_proof_number[byte];
+}
+
+inline PN DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+  return kProofDisproofNumberData.disproof_number[DataToProofNumberOffset(
+      __builtin_popcountll(~(player | opponent)),
+      std::min(15, GetNMoves(player, opponent)),
+      (approx_eval - lower) >> 3
+  )];
+}
+
+inline PN ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+  return kProofDisproofNumberData.proof_number[DataToProofNumberOffset(
+      __builtin_popcountll(~(player | opponent)),
+      std::min(15, GetNMoves(opponent, player)),
+      (approx_eval - lower) >> 3
+  )];
+}
+
+inline float DisproofNumberOverProb(
+    BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
+  return kProofDisproofNumberData.disproof_number_over_prob[DataToProofNumberOffset(
+      __builtin_popcountll(~(player | opponent)),
+      std::min(15, GetNMoves(player, opponent)),
+      (approx_eval - lower) >> 3
+  )];
+}
+#endif  // OTHELLOSENSEI_ENDGAME_TIME_H

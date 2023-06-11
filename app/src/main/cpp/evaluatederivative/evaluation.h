@@ -25,16 +25,8 @@
 #include "../estimators/endgame_time.h"
 #include "../estimators/win_probability.h"
 
-typedef uint8_t PN;
 constexpr int kLogDerivativeMinusInf = -100000000;
 constexpr int kLogDerivativeMultiplier = 100;
-constexpr int kProofNumberStep = 255;
-constexpr float kBaseLogProofNumber = ConstexprPow(kMaxProofNumber, 1.0 / (kProofNumberStep - 1.99));  // kBaseLogProofNumber ^ (kProofNumberStep-1) = kMaxProofNumber.
-
-PN ProofNumberToByte(float proof_number);
-
-float ByteToProofNumberExplicit(PN byte);
-float ByteToProofNumber(PN byte);
 
 inline int LeafLogDerivative(double prob) {
   return round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
@@ -47,20 +39,18 @@ struct CombineProb {
   int log_derivative_shallow[kProbStep + 1];
   PN combine_disproof_number[kProofNumberStep + 1][kProofNumberStep + 1];
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
-  float byte_to_proof_number[kProofNumberStep + 1];
   int leaf_log_derivative[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
     ProbCombiner combiner(ExpPolyLog<135>);
     ProbCombiner combiner_shallow(ExpPolyLog<175>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
-      byte_to_proof_number[i] = ByteToProofNumberExplicit(i);
       for (int j = 0; j <= kProofNumberStep; ++j) {
         if (i == kProofNumberStep || j == kProofNumberStep) {
           combine_disproof_number[i][j] = kProofNumberStep;
         } else {
           combine_disproof_number[i][j] = std::max(i, std::max(j, (int)
-              ProofNumberToByte(std::min(ByteToProofNumber(i) + ByteToProofNumber(j), kMaxProofNumber - 1))));
+              ProofNumberToByte(std::min(ByteToProofNumberExplicit(i) + ByteToProofNumberExplicit(j), kMaxProofNumber - 1))));
         }
         assert(combine_disproof_number[i][j] >= i);
         assert(combine_disproof_number[i][j] >= j);
@@ -74,7 +64,7 @@ struct CombineProb {
         } else {
           disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
               1.0,
-              std::min((double) kMaxProofNumber, ByteToProofNumber(i) / (1.0 -
+              std::min((double) kMaxProofNumber, ByteToProofNumberExplicit(i) / (1.0 -
                   ByteToProbabilityExplicit(j)))));
         }
         assert((i == 0 && j != kProbStep) == (disproof_to_proof_number[i][j] == 0));
@@ -205,15 +195,10 @@ class Evaluation {
       BitPattern player, BitPattern opponent, EvalLarge goal, EvalLarge eval,
       Square depth, Square n_empties) {
     prob_greater_equal_ = WinProbability(depth, n_empties, goal, eval);
-    float proof_number = ::ProofNumber(player, opponent, goal, eval);
-    assert(isfinite(proof_number) && proof_number > 0);
-    float disproof_number = ::DisproofNumber(player, opponent, goal, eval);
-
-    assert(isfinite(disproof_number) && disproof_number > 0);
-    proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep :
-        ProofNumberToByte(proof_number);
-    disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep :
-        ProofNumberToByte(disproof_number);
+    proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep : ::ProofNumber(player, opponent, goal, eval);
+    assert(isfinite(proof_number_) && proof_number_ > 0);
+    disproof_number_ = ::DisproofNumber(player, opponent, goal, eval);
+    assert(isfinite(disproof_number_) && disproof_number_ > 0);
     max_log_derivative_ = kCombineProb.leaf_log_derivative[prob_greater_equal_];
     Check();
   }

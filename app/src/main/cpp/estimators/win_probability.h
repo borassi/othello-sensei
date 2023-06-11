@@ -95,15 +95,19 @@ inline double GaussianCDF(double x, double mean, double stddev) {
   return GaussianCDF((x - mean) / stddev);
 }
 
+double ProbabilityExplicit(Square depth, Square empties, EvalLarge delta) {
+  return 1 - GaussianCDF(delta, 0, 1 * 8 * std::max(3.0F, kErrors[depth][empties]));
+}
+
 struct WinProbabilityData {
   Probability win_probability[kMaxCDFOffset + 1];
   double byte_to_probability[kProbStep + 1];
 
   WinProbabilityData() : win_probability(), byte_to_probability() {
     for (Square depth = 1; depth <= 4; ++depth) {
-      for (EvalLarge delta = 2 * kMinEvalLarge; delta <= -2 * kMinEvalLarge; ++delta) {
-        for (Square empties = 0; empties < 64; ++empties) {
-          double prob = 1 - GaussianCDF(delta, 0, 1 * 8 * std::max(3.0F, kErrors[depth][empties]));
+      for (Square empties = 0; empties < 64; ++empties) {
+        for (EvalLarge delta = 2 * kMinEvalLarge; delta <= -2 * kMinEvalLarge; ++delta) {
+          double prob = ProbabilityExplicit(depth, empties, delta);
           win_probability[DataToCDFOffset(depth, empties, delta)] = ProbabilityToByteExplicit(prob);
         }
       }

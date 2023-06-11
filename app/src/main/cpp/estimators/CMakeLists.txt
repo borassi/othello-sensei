@@ -23,6 +23,7 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bitpattern
         get_moves
+        misc
 )
 
 set_target_properties(

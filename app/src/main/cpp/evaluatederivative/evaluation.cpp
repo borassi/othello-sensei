@@ -18,31 +18,6 @@
 
 const CombineProb Evaluation::kCombineProb;
 
-PN ProofNumberToByte(float proof_number) {
-  assert(proof_number == 0 || proof_number >= 1);
-  if (proof_number <= 1E-8) {
-    return 0;
-  } else if (proof_number > kMaxProofNumber) {
-    return kProofNumberStep;
-  }
-  float rescaled_proof_number = log(proof_number) / log(kBaseLogProofNumber) + 1;
-  assert(rescaled_proof_number >= 0.5 && rescaled_proof_number <= kProofNumberStep - 0.5);
-  return (PN) round(rescaled_proof_number);
-}
-
-float ByteToProofNumberExplicit(PN byte) {
-  if (byte == 0) {
-    return 0;
-  } else if (byte == kProofNumberStep) {
-    return INFINITY;
-  }
-  return pow(kBaseLogProofNumber, byte - 1);
-}
-
-float ByteToProofNumber(PN byte) {
-  return Evaluation::kCombineProb.byte_to_proof_number[byte];
-}
-
 std::ostream& operator<<(std::ostream& stream, const Evaluation& e) {
   stream << e.ProbGreaterEqual() << " " << e.MaxLogDerivative() << " ["
          << e.ProofNumber() << " " << e.DisproofNumber() << "]";

@@ -145,6 +145,7 @@ void MoveIteratorEval::Setup(
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   BitPattern flip;
   remaining_moves_ = 0;
+  empties_ = __builtin_popcountll(empties);
   if (entry != nullptr && entry->BestMove() != kNoSquare) {
     assert(player == entry->Player() && opponent == entry->Opponent());
     assert(entry->BestMove() == kNoSquare || (((1ULL << entry->BestMove()) & (player | opponent)) == 0));
@@ -162,7 +163,7 @@ void MoveIteratorEval::Setup(
     if (entry != nullptr && square == entry->BestMove()) {
       value = 99999999;
     } else {
-      value = Eval(player, opponent, flip, upper, square);
+      value = Eval(player, opponent, flip, upper, square, empties_);
     }
     moves_[remaining_moves_].Set(flip, value);
     remaining_moves_++;
@@ -186,20 +187,22 @@ BitPattern MoveIteratorEval::NextFlip() {
   return flip;
 }
 
-int MoveIteratorMinimizeOpponentMoves::Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) {
+int MoveIteratorMinimizeOpponentMoves::Eval(
+    BitPattern player, BitPattern opponent, BitPattern flip, int upper,
+    Square square, Square empties) {
   BitPattern moves = GetMoves(NewPlayer(flip, opponent), NewOpponent(flip, player));
   return
       -(__builtin_popcountll(moves) + __builtin_popcountll(moves & kCornerPattern)) * 1000
       + kSquareValue[square];
 }
 
-int MoveIteratorDisproofNumber::Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) {
+int MoveIteratorDisproofNumber::Eval(
+    BitPattern player, BitPattern opponent, BitPattern flip, int upper,
+    Square square, Square empties) {
   BitPattern square_pattern = 1ULL << square;
   depth_one_evaluator_->Update(square_pattern, flip);
   EvalLarge eval = depth_one_evaluator_->Evaluate();
-  int result = -(int) (
-      DisproofNumber(NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, eval)
-      / (GaussianCDF(-upper, eval, 80)));
+  int result = -DisproofNumberOverProb(NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, eval);
   depth_one_evaluator_->UndoUpdate(square_pattern, flip);
   return result;
 }

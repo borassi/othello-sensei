@@ -180,13 +180,14 @@ class MoveIteratorEval : public MoveIteratorBase {
              int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one_base) override;
 
-  virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) = 0;
+  virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) = 0;
 
   BitPattern NextFlip() override;
 
  private:
   Move moves_[64];
   int remaining_moves_;
+  Square empties_;
 
  protected:
   EvaluatorDepthOneBase* depth_one_evaluator_;
@@ -195,13 +196,13 @@ class MoveIteratorEval : public MoveIteratorBase {
 class MoveIteratorMinimizeOpponentMoves : public MoveIteratorEval {
  public:
   MoveIteratorMinimizeOpponentMoves(Stats* stats) : MoveIteratorEval(stats) {};
-  int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) final;
+  int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) final;
 };
 
 class MoveIteratorDisproofNumber : public MoveIteratorEval {
  public:
   MoveIteratorDisproofNumber(Stats* stats) : MoveIteratorEval(stats) {};
-  int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square) final;
+  int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) final;
 };
 
 class EvaluatorAlphaBeta {
