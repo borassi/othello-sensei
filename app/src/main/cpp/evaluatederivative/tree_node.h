@@ -721,7 +721,7 @@ class TreeNode {
         (double) (n_visited * 2000.0 < father_visited ? -kLogDerivativeMinusInf : 0)
         + eval.LogDerivative(father)
         - n_visited / (n_visited + eval.ProofNumber())
-        - n_thread_multiplier * NThreadsWorking() * pow(1 - father.ProbGreaterEqual(), 3);
+        - n_thread_multiplier * NThreadsWorking() * father.ProbLowerCubed();
   }
 
   double GetValueWinning(const Evaluation& father, int eval_goal) const {

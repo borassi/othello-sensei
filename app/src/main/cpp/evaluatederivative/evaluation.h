@@ -40,6 +40,7 @@ struct CombineProb {
   PN combine_disproof_number[kProofNumberStep + 1][kProofNumberStep + 1];
   PN disproof_to_proof_number[kProofNumberStep + 1][kProbStep + 1];
   int leaf_log_derivative[kProbStep + 1];
+  double prob_lower_cubed[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
     ProbCombiner combiner(ExpPolyLog<135>);
@@ -75,6 +76,7 @@ struct CombineProb {
 
     for (int i = 0; i <= kProbStep; ++i) {
       double x1 = ByteToProbabilityExplicit(i);
+      prob_lower_cubed[i] = pow(1 - x1, 3);
       leaf_log_derivative[i] = std::max(kLogDerivativeMinusInf, LeafLogDerivative(x1));
       log_derivative[i] = round(std::max(
           (double) kLogDerivativeMinusInf,
@@ -119,6 +121,10 @@ class Evaluation {
 
   float ProbGreaterEqual() const {
     return ByteToProbability(prob_greater_equal_);
+  }
+
+  float ProbLowerCubed() const {
+    return kCombineProb.prob_lower_cubed[prob_greater_equal_];
   }
 
   bool IsSolved() const {

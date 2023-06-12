@@ -38,15 +38,107 @@ inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexc
   return playerDisks - (playerDisks >= 64 ? 62 : 64);
 }
 
-Eval EvalTwoEmpties(
+inline Eval EvalTwoEmptiesOrMin(
+    const Square x1, const Square x2, const BitPattern player,
+    const BitPattern opponent, const Eval upper, int* const n_visited) noexcept __attribute__((always_inline));
+
+inline Eval EvalTwoEmptiesOrMin(
+    const Square x1, const Square x2, const BitPattern player,
+    const BitPattern opponent, const Eval upper, int* const n_visited) noexcept {
+  (*n_visited)++;
+  Eval eval = kLessThenMinEval;
+  BitPattern flip = GetFlip(x1, player, opponent);
+  if (flip != 0) {
+    (*n_visited)++;
+    eval = -EvalOneEmpty(x2, NewPlayer(flip, opponent), NewOpponent(flip, player));
+    if (eval >= upper) {
+      return eval;
+    }
+  }
+  flip = GetFlip(x2, player, opponent);
+  if (flip != 0) {
+    (*n_visited)++;
+    return max(eval, -EvalOneEmpty(x1, NewPlayer(flip, opponent), NewOpponent(flip, player)));
+  }
+  return eval;
+}
+
+inline Eval EvalTwoEmpties(
   const Square x1, const Square x2, const BitPattern player,
   const BitPattern opponent, const Eval lower, const Eval upper,
-  int* const n_visited) noexcept;
-Eval EvalThreeEmpties(
+  int* const n_visited) noexcept __attribute__((always_inline));
+
+inline Eval EvalTwoEmpties(
+  const Square x1, const Square x2, const BitPattern player,
+  const BitPattern opponent, const Eval lower, const Eval upper,
+  int* const n_visited) noexcept {
+  Eval eval = EvalTwoEmptiesOrMin(x1, x2, player, opponent, upper, n_visited);
+  if (eval > kLessThenMinEval) {
+    return eval;
+  }
+  eval = EvalTwoEmptiesOrMin(x1, x2, opponent, player, -lower, n_visited);
+  if (eval > kLessThenMinEval) {
+    return -eval;
+  }
+  return GetEvaluationGameOver(player, opponent);
+}
+
+inline Eval EvalThreeEmptiesOrMin(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
   const Eval lower, const Eval upper,
-  int* const n_visited);
+  int* const n_visited) noexcept __attribute__((always_inline));
+
+inline Eval EvalThreeEmptiesOrMin(
+  const Square x1, const Square x2, const Square x3,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper,
+  int* const n_visited) noexcept {
+  (*n_visited)++;
+  Eval eval = kLessThenMinEval;
+  BitPattern flip = GetFlip(x1, player, opponent);
+  if (flip != 0) {
+    eval = -EvalTwoEmpties(x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -lower, n_visited);
+    if (eval >= upper) {
+      return eval;
+    }
+  }
+  flip = GetFlip(x2, player, opponent);
+  if (flip != 0) {
+    eval = max(eval, -EvalTwoEmpties(x1, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+    if (eval >= upper) {
+      return eval;
+    }
+  }
+  flip = GetFlip(x3, player, opponent);
+  if (flip != 0) {
+    return max(eval, -EvalTwoEmpties(x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+  }
+  return eval;
+}
+
+inline Eval EvalThreeEmpties(
+  const Square x1, const Square x2, const Square x3,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper,
+  int* const n_visited) noexcept __attribute__((always_inline));
+
+inline Eval EvalThreeEmpties(
+  const Square x1, const Square x2, const Square x3,
+  const BitPattern player, const BitPattern opponent,
+  const Eval lower, const Eval upper,
+  int* const n_visited) noexcept {
+  Eval eval = EvalThreeEmptiesOrMin(x1, x2, x3, player, opponent, lower, upper, n_visited);
+  if (eval > kLessThenMinEval) {
+    return eval;
+  }
+  eval = EvalThreeEmptiesOrMin(x1, x2, x3, opponent, player, -upper, -lower, n_visited);
+  if (eval > kLessThenMinEval) {
+    return -eval;
+  }
+  return GetEvaluationGameOver(player, opponent);
+}
+
 Eval EvalFourEmpties(
   const Square x1, const Square x2, const Square x3, const Square x4,
   const BitPattern player, const BitPattern opponent,
