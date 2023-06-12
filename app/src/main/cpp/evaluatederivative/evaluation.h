@@ -122,6 +122,7 @@ class Evaluation {
   }
 
   bool IsSolved() const {
+    Check();
     return (proof_number_ == 0 || disproof_number_ == 0);
   }
 

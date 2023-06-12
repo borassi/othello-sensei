@@ -80,6 +80,14 @@ inline double ConvertDisproofNumber(double old, int old_goal, int new_goal) {
 
 inline double LogProofNumber(int n_empties, Square moves_opponent, int error) {
   switch (n_empties) {
+    case 1:
+      return 0;
+    case 2:
+      return 0.69314718056; /*ln(2)*/
+    case 3:
+      return 1.79175946923; /*ln(3*2)*/
+    case 4:
+      return 3.17805383035; /*ln(4*3*2)*/
     case 5:
       return +3.9006 -0.0721 * moves_opponent -0.0057 * error;
     case 6:
@@ -198,6 +206,14 @@ inline double LogProofNumber(int n_empties, Square moves_opponent, int error) {
 
 inline double LogDisproofNumber(int n_empties, Square moves_player, int error) {
   switch (n_empties) {
+    case 1:
+      return 0;
+    case 2:
+      return 0.69314718056; /*ln(2)*/
+    case 3:
+      return 1.79175946923; /*ln(3*2)*/
+    case 4:
+      return 3.17805383035; /*ln(4*3*2)*/
     case 5:
       return +2.6487 +0.4631 * moves_player +0.0004 * error;
     case 6:
@@ -321,19 +337,26 @@ struct ProofDisproofNumberData {
   double byte_to_proof_number[kProofNumberStep + 1];
 
   ProofDisproofNumberData() : proof_number(), disproof_number(), byte_to_proof_number() {
-    for (Square empties = 5; empties < 60; ++empties) {
+    for (Square empties = 1; empties < 60; ++empties) {
       for (Square moves = 0; moves <= 15; ++moves) {
         for (EvalLarge delta = -128; delta <= 128; ++delta) {
-          proof_number[DataToProofNumberOffset(empties, moves, delta)] =
+          int offset = DataToProofNumberOffset(empties, moves, delta);
+          assert(offset >= 0);
+          assert(offset <= kMaxProofNumberOffset);
+          proof_number[offset] =
               ProofNumberToByte(Bound(exp(LogProofNumber(empties, moves, delta))));
-          disproof_number[DataToProofNumberOffset(empties, moves, delta)] =
+          disproof_number[offset] =
               ProofNumberToByte(Bound(exp(LogDisproofNumber(empties, moves, delta))));
-          disproof_number_over_prob[DataToProofNumberOffset(empties, moves, delta)] =
+          disproof_number_over_prob[offset] =
               (int) round(
                   std::min(
                       (double) INT_MAX - 2,
                       Bound(exp(LogDisproofNumber(empties, moves, delta))) /
                           ProbabilityExplicit(1, empties, delta)));
+          assert(proof_number[offset] >= 1);
+          assert(proof_number[offset] <= kProofNumberStep - 1);
+          assert(disproof_number[offset] >= 1);
+          assert(disproof_number[offset] <= kProofNumberStep - 1);
         }
       }
     }
