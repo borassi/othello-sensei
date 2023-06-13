@@ -167,7 +167,7 @@ class EvaluatorDerivative;
 
 class EvaluatorThread {
  public:
-  EvaluatorThread(HashMap* hash_map, EvaluatorFactory evaluator_depth_one,
+  EvaluatorThread(HashMap<kBitHashMap>* hash_map, EvaluatorFactory evaluator_depth_one,
                   EvaluatorDerivative* evaluator) :
       evaluator_alpha_beta_(hash_map, evaluator_depth_one),
       evaluator_depth_one_(evaluator_depth_one()),
@@ -191,7 +191,7 @@ class EvaluatorThread {
 
 class EvaluatorDerivative {
  public:
-  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap* hash_map, EvaluatorFactory evaluator_depth_one, int n_threads, u_int8_t index = 0) :
+  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap<kBitHashMap>* hash_map, EvaluatorFactory evaluator_depth_one, int n_threads, u_int8_t index = 0) :
       threads_(),
       tree_node_supplier_(tree_node_supplier),
       first_position_(nullptr),
@@ -297,7 +297,10 @@ class EvaluatorDerivative {
     float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
     float solve_probability = first_position_->SolveProbability(lower_, upper_);
     float goal = std::max(400.0F, std::min(1800.0F, 20 / solve_probability));
-    float result = 5000 - (done - done_tree_nodes * goal) * 0.01F;
+    if (remaining < 4 * done) {
+      goal = 1800.0F;
+    }
+    float result = 5000 - (done - done_tree_nodes * goal) * 0.1F;
     return std::max(2000, std::min(100000, (int) result));
   }
 

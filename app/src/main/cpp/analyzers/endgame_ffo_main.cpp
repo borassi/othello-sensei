@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   int start = parse_flags.GetIntFlagOrDefault("start", 41);
   int end = parse_flags.GetIntFlagOrDefault("end", 60);
   using std::setw;
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), n_threads);

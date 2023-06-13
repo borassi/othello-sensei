@@ -67,7 +67,7 @@ TEST(EvaluatorLastMoves, ManyPass) {
 }
 
 TEST(EvaluatorLastMoves, E2E) {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
 //  EvaluatorLastMoves evaluator(&hash_map);
   for (int i = 0; i < 10000; i++) {
     double perc_player = (double) rand() / RAND_MAX * 0.9;

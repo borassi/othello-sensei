@@ -53,7 +53,7 @@ constexpr int MoveIteratorOffset(int depth, bool solve, bool unlikely) {
 
 void MoveIteratorVeryQuick::Setup(
     BitPattern player, BitPattern opponent,
-    BitPattern last_flip, int upper, HashMapEntry* entry,
+    BitPattern last_flip, int upper, const std::optional<HashMapEntry>& entry,
     EvaluatorDepthOneBase* evaluator_depth_one) {
   player_ = player;
   opponent_ = opponent;
@@ -94,7 +94,7 @@ MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) :
 template<bool very_quick>
 void MoveIteratorQuick<very_quick>::Setup(
     BitPattern player, BitPattern opponent,
-    BitPattern last_flip, int upper, HashMapEntry* entry,
+    BitPattern last_flip, int upper, const std::optional<HashMapEntry>& entry,
     EvaluatorDepthOneBase* evaluator_depth_one) {
   player_ = player;
   opponent_ = opponent;
@@ -140,16 +140,17 @@ BitPattern MoveIteratorQuick<very_quick>::NextFlip() {
 
 void MoveIteratorEval::Setup(
     BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
-    HashMapEntry* entry, EvaluatorDepthOneBase* evaluator_depth_one_base) {
+    const std::optional<HashMapEntry>& entry,
+    EvaluatorDepthOneBase* evaluator_depth_one_base) {
   BitPattern empties = ~(player | opponent);
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   BitPattern flip;
   remaining_moves_ = 0;
   empties_ = __builtin_popcountll(empties);
-  if (entry != nullptr && entry->BestMove() != kNoSquare) {
-    assert(player == entry->Player() && opponent == entry->Opponent());
-    assert(entry->BestMove() == kNoSquare || (((1ULL << entry->BestMove()) & (player | opponent)) == 0));
-    assert(entry->BestMove() == kNoSquare || GetFlip(entry->BestMove(), player, opponent) != 0);
+  if (entry && entry->best_move != kNoSquare) {
+    assert(player == entry->player && opponent == entry->opponent);
+    assert(entry->best_move == kNoSquare || (((1ULL << entry->best_move) & (player | opponent)) == 0));
+    assert(entry->best_move == kNoSquare || GetFlip(entry->best_move, player, opponent) != 0);
   }
   depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
@@ -160,7 +161,7 @@ void MoveIteratorEval::Setup(
       continue;
     }
     int value;
-    if (entry != nullptr && square == entry->BestMove()) {
+    if (entry && square == entry->best_move) {
       value = 99999999;
     } else {
       value = Eval(player, opponent, flip, upper, square, empties_);
@@ -352,7 +353,7 @@ constexpr bool UseHashMap(int depth, bool solve) {
 }
 
 EvaluatorAlphaBeta::EvaluatorAlphaBeta(
-    HashMap* hash_map,
+    HashMap<kBitHashMap>* hash_map,
     const EvaluatorFactory& evaluator_depth_one_factory) :
     hash_map_(hash_map),
     stats_(),
@@ -408,14 +409,14 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       return stability_cutoff_upper;
     }
   }
-  std::unique_ptr<HashMapEntry> hash_entry = nullptr;
+  std::optional<HashMapEntry> hash_entry = std::nullopt;
   if (UseHashMap(depth, solve)) {
     hash_entry = hash_map_->Get(player, opponent);
-    if (hash_entry != nullptr && hash_entry->Depth() >= depth) {
-      if (hash_entry->Lower() >= upper || hash_entry->Lower() == hash_entry->Upper()) {
-        return hash_entry->Lower();
-      } else if (hash_entry->Upper() <= lower) {
-        return hash_entry->Upper();
+    if (hash_entry && hash_entry->depth >= depth) {
+      if (hash_entry->lower >= upper || hash_entry->lower == hash_entry->upper) {
+        return hash_entry->lower;
+      } else if (hash_entry->upper <= lower) {
+        return hash_entry->upper;
       }
     }
   }
@@ -429,7 +430,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
   MoveIteratorBase* moves =
       move_iterators_[MoveIteratorOffset(depth, solve, unlikely)].get();
-  moves->Setup(player, opponent, last_flip, upper, hash_entry.get(), evaluator_depth_one_.get());
+  moves->Setup(player, opponent, last_flip, upper, hash_entry, evaluator_depth_one_.get());
   for (BitPattern flip = moves->NextFlip(); flip != 0; flip = moves->NextFlip()) {
     square = SquareFromFlip(flip, player, opponent);
     if (UpdateDepthOneEvaluator(depth, solve)) {

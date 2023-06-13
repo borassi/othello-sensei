@@ -55,7 +55,7 @@ class EvaluatorAlphaBetaEndgameTest : public testing::Test {
 };
 
 TEST(EvaluatorAlphaBetaTest, InitialBoard) {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
   Board board;
 
@@ -70,7 +70,7 @@ TEST(EvaluatorAlphaBetaTest, InitialBoard) {
 }
 
 TEST(EvaluatorAlphaBetaTest, Pass) {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
   Board board(
       "XXXXO---"
@@ -94,7 +94,7 @@ TEST(EvaluatorAlphaBetaTest, Pass) {
 }
 
 TEST(EvaluatorAlphaBetaTest, UsesHashMap) {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   EvaluatorAlphaBeta evaluator(&hash_map, TestEvaluatorDepthOne::Factory());
   Board b = RandomBoard(0.45, 0.45);
 
@@ -114,7 +114,7 @@ TEST(EvaluatorAlphaBetaTest, UsesHashMap) {
 }
 
 TEST(EvaluatorAlphaBetaTest, CompareWithTest) {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   EvaluatorAlphaBeta eval(&hash_map, TestEvaluatorDepthOne::Factory());
   TestEvaluator test_eval(TestEvaluatorDepthOne::Factory());
 
@@ -132,7 +132,7 @@ TEST(EvaluatorAlphaBetaTest, CompareWithTest) {
 }
 
 TEST_F(EvaluatorAlphaBetaEndgameTest, Endgame) {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   EvaluatorAlphaBeta evaluator(&hash_map, PatternEvaluator::Factory(evals_.data()));
   for (int i = 0; i < 1000; i++) {
     double perc_player = (double) rand() / RAND_MAX * 0.9;

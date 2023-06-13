@@ -21,6 +21,7 @@ add_library(
 target_link_libraries(
         hash_map
         LINK_PRIVATE
+        atomic
         bitpattern
 )
 
@@ -41,6 +42,7 @@ target_link_libraries(
         hash_map_test
         LINK_PRIVATE
         hash_map
+        GTest::gmock
         GTest::gtest
         GTest::gtest_main
         -no-pie

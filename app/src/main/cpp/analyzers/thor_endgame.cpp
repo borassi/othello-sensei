@@ -78,7 +78,7 @@ class EvaluateThor {
   NVisited n_visited_;
   ElapsedTime elapsed_time_;
   EvaluatorAlphaBeta evaluator_;
-  HashMap hash_map_;
+  HashMap<kBitHashMap> hash_map_;
   const int8_t* const evals_;
 };
 //

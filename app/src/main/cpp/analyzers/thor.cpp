@@ -60,7 +60,7 @@ class EvaluateInDepth : public Evaluator {
  private:
   DepthValue depth_;
   EvaluatorAlphaBeta test_evaluator_;
-  HashMap hash_map_;
+  HashMap<kBitHashMap> hash_map_;
   const int8_t* const evals_;
 };
 

@@ -36,7 +36,7 @@ typedef struct TestCase {
 } TestCase;
 
 int main() {
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();
   EvaluatorAlphaBeta evaluator(&hash_map, PatternEvaluator::Factory(evals.data()));
 //  EvaluatorLastMoves evaluator(&hash_map);

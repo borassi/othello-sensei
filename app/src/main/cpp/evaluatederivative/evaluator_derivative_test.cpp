@@ -21,7 +21,7 @@
 
 TEST(EvaluatorDerivativeTest, Base) {
   EvalType evals = LoadEvals();
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   TreeNodeSupplier supplier;
   EvaluatorDerivative evaluator_derivative(&supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 1);
   Board initial_board("e6");
@@ -31,7 +31,7 @@ TEST(EvaluatorDerivativeTest, Base) {
 
 TEST(EvaluatorDerivativeTest, Endgame) {
   EvalType evals = LoadEvals();
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   TreeNodeSupplier supplier;
   EvaluatorDerivative evaluator_derivative(&supplier, &hash_map,
                                            PatternEvaluator::Factory(evals

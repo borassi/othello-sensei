@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   int n = parse_flags.GetIntFlagOrDefault("n", 20);
   std::vector<Collector> collectors;
   for (int i = 0; i < 64; ++i) {
-    if (i <= 4) {
+    if (i <= 3) {
       collectors.push_back(Collector(0));
     } else if (i <= 27) {
       // ~3 hours
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
   }
 
   std::ofstream output;
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), 12);

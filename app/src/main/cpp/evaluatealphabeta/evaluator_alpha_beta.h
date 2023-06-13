@@ -132,8 +132,10 @@ class Stats {
 class MoveIteratorBase {
  public:
   MoveIteratorBase(Stats* stats) : stats_(stats) {}
-  virtual void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip, int upper, HashMapEntry* entry,
-                     EvaluatorDepthOneBase* evaluator_depth_one) = 0;
+  virtual void Setup(
+      BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
+      const std::optional<HashMapEntry>& entry,
+      EvaluatorDepthOneBase* evaluator_depth_one) = 0;
   virtual BitPattern NextFlip() = 0;
 
  protected:
@@ -144,7 +146,7 @@ class MoveIteratorVeryQuick : public MoveIteratorBase {
  public:
   MoveIteratorVeryQuick(Stats* stats) : MoveIteratorBase(stats) {}
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, HashMapEntry* entry,
+             int upper, const std::optional<HashMapEntry>& entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -159,7 +161,7 @@ class MoveIteratorQuick : public MoveIteratorBase {
  public:
   MoveIteratorQuick(Stats* stats);
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, HashMapEntry* entry,
+             int upper, const std::optional<HashMapEntry>& entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -177,7 +179,7 @@ class MoveIteratorEval : public MoveIteratorBase {
   MoveIteratorEval(Stats* stats) : MoveIteratorBase(stats), moves_() {};
 
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, HashMapEntry* entry,
+             int upper, const std::optional<HashMapEntry>& entry,
              EvaluatorDepthOneBase* evaluator_depth_one_base) override;
 
   virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) = 0;
@@ -208,7 +210,7 @@ class MoveIteratorDisproofNumber : public MoveIteratorEval {
 class EvaluatorAlphaBeta {
  public:
   EvaluatorAlphaBeta(
-      HashMap* hash_map,
+      HashMap<kBitHashMap>* hash_map,
       const EvaluatorFactory& evaluator_depth_one_factory);
   EvaluatorAlphaBeta(const EvaluatorAlphaBeta&) = delete;
 
@@ -246,7 +248,7 @@ class EvaluatorAlphaBeta {
 
   static const EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static const EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
-  HashMap* hash_map_;
+  HashMap<kBitHashMap>* hash_map_;
   std::shared_ptr<MoveIteratorBase> move_iterators_[4 * kMaxDepth];
   std::unique_ptr<EvaluatorDepthOneBase> evaluator_depth_one_;
   Stats stats_;

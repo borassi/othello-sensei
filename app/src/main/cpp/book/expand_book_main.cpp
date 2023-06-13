@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     fs::create_directory(filepath);
   }
   Book book(filepath);
-  HashMap hash_map;
+  HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   std::array<std::unique_ptr<EvaluatorDerivative>, 64> evaluators;

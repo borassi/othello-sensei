@@ -278,7 +278,7 @@ class JNIWrapper {
  private:
   Book book_;
   EvalType evals_;
-  HashMap hash_map_;
+  HashMap<kBitHashMap> hash_map_;
   std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluator_derivative_;
   TreeNodeSupplier tree_node_supplier_;
   std::vector<Board> last_boards_;
