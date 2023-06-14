@@ -287,8 +287,7 @@ class TreeNode {
     return n_threads_working_;
   }
 
-  Eval NextPositionEvalGoal(float prob_min, float prob_max) const {
-    static std::atomic_int last_eval_goal = kLessThenMinEval;
+  Eval NextPositionEvalGoal(float prob_min, float prob_max, int last_eval_goal) const {
     Eval best_eval = kLessThenMinEval;
     double best_value = -DBL_MAX;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
@@ -306,7 +305,6 @@ class TreeNode {
         best_eval = i;
       }
     }
-    last_eval_goal = best_eval;
     return best_eval;
   }
 
@@ -564,9 +562,9 @@ class TreeNode {
   }
 
   template<class T>
-  std::optional<LeafToUpdate<T>> AsLeaf() {
+  std::optional<LeafToUpdate<T>> AsLeaf(int last_eval_goal) {
     auto guard = ReadLock();
-    auto eval_goal = NextPositionEvalGoal(0, 1);
+    auto eval_goal = NextPositionEvalGoal(0, 1, last_eval_goal);
     if (eval_goal == kLessThenMinEval) {
       return std::nullopt;
     }
@@ -602,8 +600,8 @@ class TreeNode {
     UpdateAlphaBetaNoLock(leaf);
   }
 
-  LeafToUpdate<TreeNode> AsLeaf(Eval eval_goal);
-  std::optional<LeafToUpdate<TreeNode>> AsLeaf();
+  LeafToUpdate<TreeNode> AsLeafWithGoal(Eval eval_goal);
+  std::optional<LeafToUpdate<TreeNode>> AsLeaf(int last_eval_goal);
 
   void ExtendEval(Eval weak_lower, Eval weak_upper) {
     {
@@ -869,8 +867,8 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b);
 template<class Node>
 class LeafToUpdate {
  public:
-  static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier) {
-    auto leaf = node->AsLeaf();
+  static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal) {
+    auto leaf = node->AsLeaf(last_eval_goal);
     if (leaf == std::nullopt) {
       return std::nullopt;
     }

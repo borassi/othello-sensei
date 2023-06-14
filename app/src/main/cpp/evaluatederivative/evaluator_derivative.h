@@ -237,7 +237,7 @@ class EvaluatorDerivative {
     n_thread_multiplier_ = 1000;
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, 0, 1, this);
 //    first_position_->SetLeafIfInvalid(0, 1, *this);
-    auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier());
+    auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
     best_advancement_ = 0;

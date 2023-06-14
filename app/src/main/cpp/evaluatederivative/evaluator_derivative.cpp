@@ -47,18 +47,19 @@ void EvaluatorThread::Run() {
   int n_visited;
   stats_.Reset();
   TreeNode* first_position = evaluator_->GetFirstPosition();
+  int last_eval_goal = kLessThenMinEval;
   while (!evaluator_->CheckFinished(first_position)) {
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
-        first_position, evaluator_->NThreadMultiplier());
-    if (leaf_opt) {
-      stats_.Add(1, NEXT_POSITION_SUCCESS);
-      evaluator_->UpdateNThreadMultiplierSuccess();
-    } else {
+        first_position, evaluator_->NThreadMultiplier(), last_eval_goal);
+    if (!leaf_opt) {
       stats_.Add(1, NEXT_POSITION_FAIL);
       evaluator_->UpdateNThreadMultiplierFail();
       std::this_thread::sleep_for(1ms);
       continue;
     }
+    stats_.Add(1, NEXT_POSITION_SUCCESS);
+    evaluator_->UpdateNThreadMultiplierSuccess();
+    last_eval_goal = leaf_opt->EvalGoal() * (leaf_opt->Leaf()->Depth() % 2 == 0 ? 1 : -1);
     auto leaf = *leaf_opt;
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
