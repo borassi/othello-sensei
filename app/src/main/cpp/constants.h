@@ -20,7 +20,7 @@
 #ifdef ANDROID
 constexpr int kBitHashMap = 23;
 #else
-constexpr int kBitHashMap = 22;
+constexpr int kBitHashMap = 24;
 #endif
 
 constexpr int kHashMapSize = 1 << kBitHashMap;

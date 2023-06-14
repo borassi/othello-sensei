@@ -79,255 +79,263 @@ inline double ConvertDisproofNumber(double old, int old_goal, int new_goal) {
 }
 
 inline double LogProofNumber(int n_empties, Square moves_opponent, int error) {
-  switch (n_empties) {
-    case 1:
-      return 0;
-    case 2:
-      return 0.69314718056; /*ln(2)*/
-    case 3:
-      return 1.79175946923; /*ln(3*2)*/
-    case 4:
-      return 3.17805383035; /*ln(4*3*2)*/
-    case 5:
-      return +3.9006 -0.0721 * moves_opponent -0.0057 * error;
-    case 6:
-      return +4.2667 -0.0299 * moves_opponent -0.0076 * error;
-    case 7:
-      return +4.3829 -0.0032 * moves_opponent -0.0075 * error;
-    case 8:
-      return +4.7421 +0.0309 * moves_opponent -0.0088 * error;
-    case 9:
-      return +5.5805 -0.0370 * moves_opponent -0.0150 * error;
-    case 10:
-      return +6.0840 +0.0094 * moves_opponent -0.0224 * error;
-    case 11:
-      return +6.6991 +0.0362 * moves_opponent -0.0328 * error;
-    case 12:
-      return +6.6929 +0.0884 * moves_opponent -0.0258 * error;
-    case 13:
-      return +7.2202 +0.1581 * moves_opponent -0.0403 * error;
-    case 14:
-      return +8.1257 +0.1112 * moves_opponent -0.0470 * error;
-    case 15:
-      return +8.9624 +0.1124 * moves_opponent -0.0596 * error;
-    case 16:
-      return +8.3900 +0.2078 * moves_opponent -0.0478 * error;
-    case 17:
-      return +9.3032 +0.2437 * moves_opponent -0.0675 * error;
-    case 18:
-      return +10.0704 +0.2507 * moves_opponent -0.0743 * error;
-    case 19:
-      return +10.6314 +0.1971 * moves_opponent -0.0653 * error;
-    case 20:
-      return +11.0976 +0.2351 * moves_opponent -0.0638 * error;
-    case 21:
-      return +12.0104 +0.2209 * moves_opponent -0.0770 * error;
-    case 22:
-      return +12.2194 +0.2467 * moves_opponent -0.0672 * error;
-    case 23:
-      return +12.4221 +0.2798 * moves_opponent -0.0657 * error;
-    case 24:
-      return +12.9089 +0.3175 * moves_opponent -0.0684 * error;
-    case 25:
-      return +13.7242 +0.3027 * moves_opponent -0.0715 * error;
-    case 26:
-      return +13.3424 +0.3869 * moves_opponent -0.0678 * error;
-    case 27:
-      return +14.3268 +0.3242 * moves_opponent -0.0656 * error;
-    case 28:
-      return +13.4507 +0.4558 * moves_opponent -0.0574 * error;
-    case 29:
-      return +16.5436 +0.2591 * moves_opponent -0.0623 * error;
-    case 30:
-      return +16.3636 +0.3260 * moves_opponent -0.0576 * error;
-    case 31:
-      return +17.2346 +0.2994 * moves_opponent -0.0616 * error;
-    case 32:
-      return +15.1237 +0.5037 * moves_opponent -0.0589 * error;
-    case 33:
-      return +18.0885 +0.3284 * moves_opponent -0.0596 * error;
-    case 34:
-      return +17.9011 +0.3910 * moves_opponent -0.0578 * error;
-    case 35:
-      return +18.7904 +0.3712 * moves_opponent -0.0659 * error;
-    case 36:
-      return +20.8997 +0.2061 * moves_opponent -0.0533 * error;
-    case 37:
-      return +21.2439 +0.2679 * moves_opponent -0.0637 * error;
-    case 38:
-      return +16.2205 +0.6015 * moves_opponent -0.0230 * error;
-    case 39:
-      return +20.2654 +0.3554 * moves_opponent -0.0362 * error;
-    case 40:
-      return +20.9171 +0.3336 * moves_opponent -0.0430 * error;
-    case 41:
-      return +22.5117 +0.2216 * moves_opponent -0.0399 * error;
-    case 42:
-      return +23.5641 +0.1357 * moves_opponent -0.0200 * error;
-    case 43:
-      return +24.1953 +0.0963 * moves_opponent -0.0187 * error;
-    case 44:
-      return +24.4849 +0.0483 * moves_opponent -0.0118 * error;
-    case 45:
-      return +22.6243 +0.2248 * moves_opponent -0.0158 * error;
-    case 46:
-      return +25.2968 -0.0183 * moves_opponent -0.0117 * error;
-    case 47:
-      return +25.2717 -0.0144 * moves_opponent -0.0116 * error;
-    case 48:
-      return +24.6883 +0.0403 * moves_opponent -0.0123 * error;
-    case 49:
-      return +25.2025 +0.0403 * moves_opponent -0.0123 * error;
-    case 50:
-      return +25.7166 +0.0403 * moves_opponent -0.0123 * error;
-    case 51:
-      return +26.2307 +0.0403 * moves_opponent -0.0123 * error;
-    case 52:
-      return +26.7448 +0.0403 * moves_opponent -0.0123 * error;
-    case 53:
-      return +27.2589 +0.0403 * moves_opponent -0.0123 * error;
-    case 54:
-      return +27.7730 +0.0403 * moves_opponent -0.0123 * error;
-    case 55:
-      return +28.2872 +0.0403 * moves_opponent -0.0123 * error;
-    case 56:
-      return +28.8013 +0.0403 * moves_opponent -0.0123 * error;
-    case 57:
-      return +29.3154 +0.0403 * moves_opponent -0.0123 * error;
-    case 58:
-      return +29.8295 +0.0403 * moves_opponent -0.0123 * error;
-    case 59:
-      return +30.3436 +0.0403 * moves_opponent -0.0123 * error;
-    default:
-      assert(false);
-      return 1;
-  }
+switch (n_empties) {
+  case 0:
+    return +2.3823 -0.0049 * moves_opponent -0.0069 * error;
+  case 1:
+    return +2.6645 -0.0049 * moves_opponent -0.0069 * error;
+  case 2:
+    return +2.9467 -0.0049 * moves_opponent -0.0069 * error;
+  case 3:
+    return +3.2290 -0.0049 * moves_opponent -0.0069 * error;
+  case 4:
+    return +3.4752 +0.0019 * moves_opponent -0.0067 * error;
+  case 5:
+    return +3.8135 +0.0052 * moves_opponent -0.0083 * error;
+  case 6:
+    return +4.1489 +0.0257 * moves_opponent -0.0101 * error;
+  case 7:
+    return +4.5471 +0.0315 * moves_opponent -0.0121 * error;
+  case 8:
+    return +4.9379 +0.0384 * moves_opponent -0.0139 * error;
+  case 9:
+    return +5.3321 +0.0647 * moves_opponent -0.0176 * error;
+  case 10:
+    return +5.7920 +0.0703 * moves_opponent -0.0214 * error;
+  case 11:
+    return +6.2460 +0.0834 * moves_opponent -0.0253 * error;
+  case 12:
+    return +6.7418 +0.0994 * moves_opponent -0.0294 * error;
+  case 13:
+    return +7.2755 +0.1125 * moves_opponent -0.0345 * error;
+  case 14:
+    return +7.7354 +0.1332 * moves_opponent -0.0379 * error;
+  case 15:
+    return +8.1444 +0.1637 * moves_opponent -0.0420 * error;
+  case 16:
+    return +8.6897 +0.1802 * moves_opponent -0.0471 * error;
+  case 17:
+    return +9.2969 +0.1900 * moves_opponent -0.0522 * error;
+  case 18:
+    return +10.0266 +0.1858 * moves_opponent -0.0570 * error;
+  case 19:
+    return +10.6556 +0.1936 * moves_opponent -0.0604 * error;
+  case 20:
+    return +11.3347 +0.1924 * moves_opponent -0.0625 * error;
+  case 21:
+    return +11.9484 +0.2040 * moves_opponent -0.0664 * error;
+  case 22:
+    return +12.5270 +0.2224 * moves_opponent -0.0698 * error;
+  case 23:
+    return +13.1520 +0.2373 * moves_opponent -0.0745 * error;
+  case 24:
+    return +13.8372 +0.2411 * moves_opponent -0.0763 * error;
+  case 25:
+    return +14.5052 +0.2408 * moves_opponent -0.0763 * error;
+  case 26:
+    return +15.1244 +0.2425 * moves_opponent -0.0756 * error;
+  case 27:
+    return +15.5652 +0.2653 * moves_opponent -0.0765 * error;
+  case 28:
+    return +16.0781 +0.2727 * moves_opponent -0.0764 * error;
+  case 29:
+    return +16.5090 +0.2955 * moves_opponent -0.0784 * error;
+  case 30:
+    return +17.1433 +0.2902 * moves_opponent -0.0806 * error;
+  case 31:
+    return +17.6227 +0.3109 * moves_opponent -0.0825 * error;
+  case 32:
+    return +17.3572 +0.4034 * moves_opponent -0.0837 * error;
+  case 33:
+    return +17.9530 +0.3978 * moves_opponent -0.0809 * error;
+  case 34:
+    return +18.8028 +0.3810 * moves_opponent -0.0821 * error;
+  case 35:
+    return +19.3981 +0.3939 * moves_opponent -0.0799 * error;
+  case 36:
+    return +21.3964 +0.2864 * moves_opponent -0.0840 * error;
+  case 37:
+    return +22.5100 +0.3092 * moves_opponent -0.0825 * error;
+  case 38:
+    return +24.1326 +0.1616 * moves_opponent -0.0824 * error;
+  case 39:
+    return +24.7671 +0.1616 * moves_opponent -0.0824 * error;
+  case 40:
+    return +25.4017 +0.1616 * moves_opponent -0.0824 * error;
+  case 41:
+    return +26.0363 +0.1616 * moves_opponent -0.0824 * error;
+  case 42:
+    return +26.6709 +0.1616 * moves_opponent -0.0824 * error;
+  case 43:
+    return +27.3055 +0.1616 * moves_opponent -0.0824 * error;
+  case 44:
+    return +27.9400 +0.1616 * moves_opponent -0.0824 * error;
+  case 45:
+    return +28.5746 +0.1616 * moves_opponent -0.0824 * error;
+  case 46:
+    return +29.2092 +0.1616 * moves_opponent -0.0824 * error;
+  case 47:
+    return +29.8438 +0.1616 * moves_opponent -0.0824 * error;
+  case 48:
+    return +30.4783 +0.1616 * moves_opponent -0.0824 * error;
+  case 49:
+    return +31.1129 +0.1616 * moves_opponent -0.0824 * error;
+  case 50:
+    return +31.7475 +0.1616 * moves_opponent -0.0824 * error;
+  case 51:
+    return +32.3821 +0.1616 * moves_opponent -0.0824 * error;
+  case 52:
+    return +33.0166 +0.1616 * moves_opponent -0.0824 * error;
+  case 53:
+    return +33.6512 +0.1616 * moves_opponent -0.0824 * error;
+  case 54:
+    return +34.2858 +0.1616 * moves_opponent -0.0824 * error;
+  case 55:
+    return +34.9204 +0.1616 * moves_opponent -0.0824 * error;
+  case 56:
+    return +35.5549 +0.1616 * moves_opponent -0.0824 * error;
+  case 57:
+    return +36.1895 +0.1616 * moves_opponent -0.0824 * error;
+  case 58:
+    return +36.8241 +0.1616 * moves_opponent -0.0824 * error;
+  case 59:
+    return +37.4587 +0.1616 * moves_opponent -0.0824 * error;
+  case 60:
+    return +38.0932 +0.1616 * moves_opponent -0.0824 * error;
+  default:
+    assert(false);
+    return 1;
+}
 }
 
 inline double LogDisproofNumber(int n_empties, Square moves_player, int error) {
-  switch (n_empties) {
-    case 1:
-      return 0;
-    case 2:
-      return 0.69314718056; /*ln(2)*/
-    case 3:
-      return 1.79175946923; /*ln(3*2)*/
-    case 4:
-      return 3.17805383035; /*ln(4*3*2)*/
-    case 5:
-      return +2.6487 +0.4631 * moves_player +0.0004 * error;
-    case 6:
-      return +3.2865 +0.3527 * moves_player +0.0130 * error;
-    case 7:
-      return +3.6414 +0.2925 * moves_player +0.0119 * error;
-    case 8:
-      return +4.2059 +0.2752 * moves_player +0.0178 * error;
-    case 9:
-      return +4.5260 +0.3005 * moves_player +0.0238 * error;
-    case 10:
-      return +4.9128 +0.3028 * moves_player +0.0274 * error;
-    case 11:
-      return +5.8246 +0.2820 * moves_player +0.0367 * error;
-    case 12:
-      return +6.4117 +0.2783 * moves_player +0.0454 * error;
-    case 13:
-      return +7.0188 +0.2877 * moves_player +0.0539 * error;
-    case 14:
-      return +7.6066 +0.2966 * moves_player +0.0586 * error;
-    case 15:
-      return +7.3853 +0.3711 * moves_player +0.0555 * error;
-    case 16:
-      return +8.2774 +0.3425 * moves_player +0.0611 * error;
-    case 17:
-      return +9.1560 +0.3551 * moves_player +0.0806 * error;
-    case 18:
-      return +10.9860 +0.2312 * moves_player +0.0845 * error;
-    case 19:
-      return +11.0712 +0.2700 * moves_player +0.0830 * error;
-    case 20:
-      return +10.0164 +0.4357 * moves_player +0.0795 * error;
-    case 21:
-      return +12.2923 +0.2840 * moves_player +0.0853 * error;
-    case 22:
-      return +11.2717 +0.4465 * moves_player +0.0811 * error;
-    case 23:
-      return +12.6521 +0.3762 * moves_player +0.0824 * error;
-    case 24:
-      return +12.9556 +0.4043 * moves_player +0.0866 * error;
-    case 25:
-      return +14.1359 +0.3698 * moves_player +0.0863 * error;
-    case 26:
-      return +13.6867 +0.4271 * moves_player +0.0742 * error;
-    case 27:
-      return +14.8523 +0.3689 * moves_player +0.0667 * error;
-    case 28:
-      return +14.7807 +0.4103 * moves_player +0.0604 * error;
-    case 29:
-      return +13.4046 +0.5485 * moves_player +0.0572 * error;
-    case 30:
-      return +16.8306 +0.3594 * moves_player +0.0583 * error;
-    case 31:
-      return +15.6065 +0.4406 * moves_player +0.0477 * error;
-    case 32:
-      return +19.8453 +0.2348 * moves_player +0.0610 * error;
-    case 33:
-      return +17.0428 +0.4922 * moves_player +0.0545 * error;
-    case 34:
-      return +19.0283 +0.3669 * moves_player +0.0632 * error;
-    case 35:
-      return +17.0419 +0.5606 * moves_player +0.0548 * error;
-    case 36:
-      return +21.4776 +0.2469 * moves_player +0.0629 * error;
-    case 37:
-      return +20.2735 +0.3842 * moves_player +0.0538 * error;
-    case 38:
-      return +20.4844 +0.3797 * moves_player +0.0413 * error;
-    case 39:
-      return +21.0481 +0.3619 * moves_player +0.0532 * error;
-    case 40:
-      return +21.3959 +0.3300 * moves_player +0.0253 * error;
-    case 41:
-      return +21.8329 +0.3346 * moves_player +0.0261 * error;
-    case 42:
-      return +22.7822 +0.2554 * moves_player +0.0186 * error;
-    case 43:
-      return +24.2546 +0.1090 * moves_player +0.0028 * error;
-    case 44:
-      return +23.8442 +0.1390 * moves_player +0.0032 * error;
-    case 45:
-      return +22.8040 +0.2311 * moves_player -0.0030 * error;
-    case 46:
-      return +24.7534 +0.0592 * moves_player -0.0048 * error;
-    case 47:
-      return +25.2828 +0.0210 * moves_player -0.0044 * error;
-    case 48:
-      return +24.5828 +0.0785 * moves_player -0.0064 * error;
-    case 49:
-      return +25.0947 +0.0785 * moves_player -0.0064 * error;
-    case 50:
-      return +25.6066 +0.0785 * moves_player -0.0064 * error;
-    case 51:
-      return +26.1185 +0.0785 * moves_player -0.0064 * error;
-    case 52:
-      return +26.6304 +0.0785 * moves_player -0.0064 * error;
-    case 53:
-      return +27.1424 +0.0785 * moves_player -0.0064 * error;
-    case 54:
-      return +27.6543 +0.0785 * moves_player -0.0064 * error;
-    case 55:
-      return +28.1662 +0.0785 * moves_player -0.0064 * error;
-    case 56:
-      return +28.6781 +0.0785 * moves_player -0.0064 * error;
-    case 57:
-      return +29.1900 +0.0785 * moves_player -0.0064 * error;
-    case 58:
-      return +29.7020 +0.0785 * moves_player -0.0064 * error;
-    case 59:
-      return +30.2139 +0.0785 * moves_player -0.0064 * error;
-    default:
-      assert(false);
-      return 1;
-  }
+switch (n_empties) {
+  case 0:
+    return +2.5647 +0.3849 * moves_player +0.0063 * error;
+  case 1:
+    return +2.6427 +0.3849 * moves_player +0.0063 * error;
+  case 2:
+    return +2.7207 +0.3849 * moves_player +0.0063 * error;
+  case 3:
+    return +2.7987 +0.3849 * moves_player +0.0063 * error;
+  case 4:
+    return +3.0259 +0.3559 * moves_player +0.0089 * error;
+  case 5:
+    return +3.2196 +0.3445 * moves_player +0.0111 * error;
+  case 6:
+    return +3.5497 +0.3195 * moves_player +0.0137 * error;
+  case 7:
+    return +3.8825 +0.3106 * moves_player +0.0160 * error;
+  case 8:
+    return +4.2705 +0.3033 * moves_player +0.0189 * error;
+  case 9:
+    return +4.7928 +0.2886 * moves_player +0.0243 * error;
+  case 10:
+    return +5.3074 +0.2795 * moves_player +0.0297 * error;
+  case 11:
+    return +5.7678 +0.2878 * moves_player +0.0351 * error;
+  case 12:
+    return +6.2748 +0.2993 * moves_player +0.0407 * error;
+  case 13:
+    return +6.8043 +0.3054 * moves_player +0.0456 * error;
+  case 14:
+    return +7.3693 +0.3106 * moves_player +0.0513 * error;
+  case 15:
+    return +7.9107 +0.3224 * moves_player +0.0575 * error;
+  case 16:
+    return +8.4207 +0.3410 * moves_player +0.0639 * error;
+  case 17:
+    return +8.8964 +0.3661 * moves_player +0.0689 * error;
+  case 18:
+    return +9.4206 +0.3756 * moves_player +0.0723 * error;
+  case 19:
+    return +10.0301 +0.3825 * moves_player +0.0754 * error;
+  case 20:
+    return +10.6434 +0.3907 * moves_player +0.0798 * error;
+  case 21:
+    return +11.1585 +0.4021 * moves_player +0.0807 * error;
+  case 22:
+    return +11.6420 +0.4162 * moves_player +0.0815 * error;
+  case 23:
+    return +12.3193 +0.4172 * moves_player +0.0834 * error;
+  case 24:
+    return +12.9593 +0.4149 * moves_player +0.0840 * error;
+  case 25:
+    return +13.5496 +0.4171 * moves_player +0.0836 * error;
+  case 26:
+    return +14.2067 +0.4112 * moves_player +0.0834 * error;
+  case 27:
+    return +14.7368 +0.4132 * moves_player +0.0823 * error;
+  case 28:
+    return +15.3281 +0.4165 * moves_player +0.0819 * error;
+  case 29:
+    return +15.6478 +0.4418 * moves_player +0.0815 * error;
+  case 30:
+    return +16.4196 +0.4197 * moves_player +0.0815 * error;
+  case 31:
+    return +17.5832 +0.3736 * moves_player +0.0867 * error;
+  case 32:
+    return +16.8901 +0.4616 * moves_player +0.0767 * error;
+  case 33:
+    return +17.3387 +0.4674 * moves_player +0.0752 * error;
+  case 34:
+    return +18.0499 +0.4549 * moves_player +0.0753 * error;
+  case 35:
+    return +18.1173 +0.4807 * moves_player +0.0751 * error;
+  case 36:
+    return +18.5480 +0.4755 * moves_player +0.0772 * error;
+  case 37:
+    return +18.6004 +0.4705 * moves_player +0.0753 * error;
+  case 38:
+    return +20.8487 +0.3855 * moves_player +0.0753 * error;
+  case 39:
+    return +21.3969 +0.3855 * moves_player +0.0753 * error;
+  case 40:
+    return +21.9451 +0.3855 * moves_player +0.0753 * error;
+  case 41:
+    return +22.4934 +0.3855 * moves_player +0.0753 * error;
+  case 42:
+    return +23.0416 +0.3855 * moves_player +0.0753 * error;
+  case 43:
+    return +23.5898 +0.3855 * moves_player +0.0753 * error;
+  case 44:
+    return +24.1381 +0.3855 * moves_player +0.0753 * error;
+  case 45:
+    return +24.6863 +0.3855 * moves_player +0.0753 * error;
+  case 46:
+    return +25.2345 +0.3855 * moves_player +0.0753 * error;
+  case 47:
+    return +25.7827 +0.3855 * moves_player +0.0753 * error;
+  case 48:
+    return +26.3310 +0.3855 * moves_player +0.0753 * error;
+  case 49:
+    return +26.8792 +0.3855 * moves_player +0.0753 * error;
+  case 50:
+    return +27.4274 +0.3855 * moves_player +0.0753 * error;
+  case 51:
+    return +27.9756 +0.3855 * moves_player +0.0753 * error;
+  case 52:
+    return +28.5239 +0.3855 * moves_player +0.0753 * error;
+  case 53:
+    return +29.0721 +0.3855 * moves_player +0.0753 * error;
+  case 54:
+    return +29.6203 +0.3855 * moves_player +0.0753 * error;
+  case 55:
+    return +30.1685 +0.3855 * moves_player +0.0753 * error;
+  case 56:
+    return +30.7168 +0.3855 * moves_player +0.0753 * error;
+  case 57:
+    return +31.2650 +0.3855 * moves_player +0.0753 * error;
+  case 58:
+    return +31.8132 +0.3855 * moves_player +0.0753 * error;
+  case 59:
+    return +32.3614 +0.3855 * moves_player +0.0753 * error;
+  case 60:
+    return +32.9097 +0.3855 * moves_player +0.0753 * error;
+  default:
+    assert(false);
+    return 1;
+}
 }
 
 struct ProofDisproofNumberData {

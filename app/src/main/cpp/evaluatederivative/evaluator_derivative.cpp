@@ -102,6 +102,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
   int child_n_empties = node->NEmpties() - 1;
   int depth;
+  float remaining_work = node->RemainingWork(leaf.Alpha(), leaf.Beta());
 
   for (int i = 0; i < moves.size(); ++i) {
     BitPattern flip = moves[i];
@@ -114,13 +115,18 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     }
     EvalLarge eval;
     EvalLarge quick_eval = evaluator_depth_one_->Evaluate();
+    EvalLarge delta = abs(quick_eval - child_eval_goal);
 //      int expected_error = 8 * kErrors[child_n_empties];
     // Example:
     //      +4
     // -4   +0   +10
-    if (child_n_empties > 28 || (quick_eval < child_eval_goal + 4 * 8 && child_n_empties > 20)) {
+    if (remaining_work > 10000000 ||
+        (delta < 16 * 8 && remaining_work > 5000000) ||
+        (delta < 8 * 8 && remaining_work > 1000000)) {
       depth = 4;
-    } else if (child_n_empties > 24 || (quick_eval < child_eval_goal + 12 * 8 && child_n_empties > 14)) {
+    } else if (remaining_work > 2000000 ||
+        (delta < 16 * 8 && remaining_work > 1000000) ||
+        (delta < 8 * 8)) {
       depth = 3;
     } else {
       depth = 2;

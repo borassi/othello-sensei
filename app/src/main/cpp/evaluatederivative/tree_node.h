@@ -288,7 +288,7 @@ class TreeNode {
   }
 
   Eval NextPositionEvalGoal(float prob_min, float prob_max) const {
-    static Eval last_eval_goal = kLessThenMinEval;
+    static std::atomic_int last_eval_goal = kLessThenMinEval;
     Eval best_eval = kLessThenMinEval;
     double best_value = -DBL_MAX;
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
@@ -299,12 +299,7 @@ class TreeNode {
               (i > weak_lower_ && GetEvaluation(i - 2).ProbGreaterEqual() < kMinProbEvalGoal)) {
         continue;
       }
-      double cur_value = 0;
-      // cur_value += (eval.ProbGreaterEqual() > kMinProbEvalGoal && eval.ProbGreaterEqual() < 1 - kMinProbEvalGoal) ?
-      //                0 : kLogDerivativeMinusInf * 1000.0;
-      cur_value += (eval.ProbGreaterEqual() > 0.001 && eval.ProbGreaterEqual() < 0.999) ?
-          eval.MaxLogDerivative() * 10 : kLogDerivativeMinusInf;
-      cur_value += i == last_eval_goal ? 0 : 1;
+      double cur_value = i == last_eval_goal ? kLogDerivativeMinusInf : eval.MaxLogDerivative();
 
       if (cur_value > best_value) {
         best_value = cur_value;
