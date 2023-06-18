@@ -59,8 +59,9 @@ void EvaluatorThread::Run() {
     }
     stats_.Add(1, NEXT_POSITION_SUCCESS);
     evaluator_->UpdateNThreadMultiplierSuccess();
-    last_eval_goal = leaf_opt->EvalGoal() * (leaf_opt->Leaf()->Depth() % 2 == 0 ? 1 : -1);
     auto leaf = *leaf_opt;
+    last_eval_goal = leaf.EvalGoal() * (leaf.Leaf()->Depth() % 2 == 0 ? 1 : -1);
+    assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
 //    leaf.UpdateFirstNode(first_position);

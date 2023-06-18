@@ -48,10 +48,6 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
   return stream;
 }
 
-std::optional<LeafToUpdate<TreeNode>> TreeNode::AsLeaf(int last_eval_goal) {
-  return AsLeaf<TreeNode>(last_eval_goal);
-}
-
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
   auto guard = WriteLock();
   assert(depth_ > 0);  // Otherwise, the first position might lock the evaluator and viceversa.
@@ -119,7 +115,11 @@ void TreeNode::ResetNoLock(
   SetLeafNoLock(leaf_eval, eval_depth, weak_lower, weak_upper);
 }
 
-LeafToUpdate<TreeNode> TreeNode::AsLeafWithGoal(Eval eval_goal) {
-  auto guard = ReadLock();
-  return AsLeafNoLock<TreeNode>(eval_goal);
-}
+//std::optional<LeafToUpdate<TreeNode>> TreeNode::AsLeaf(int last_eval_goal) {
+//  return AsLeaf<TreeNode>(last_eval_goal);
+//}
+//
+//LeafToUpdate<TreeNode> TreeNode::AsLeafWithGoal(Eval eval_goal) {
+//  auto guard = ReadLock();
+//  return AsLeafNoLock<TreeNode>(eval_goal);
+//}

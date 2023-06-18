@@ -587,6 +587,12 @@ class TreeNode {
   }
 
   template<class T>
+  LeafToUpdate<T> AsLeafWithGoal(Eval eval_goal) {
+    auto guard = ReadLock();
+    return AsLeafNoLock<T>(eval_goal);
+  }
+
+  template<class T>
   void UpdateAlphaBetaNoLock(LeafToUpdate<T>* leaf) {
     leaf->alpha_ = MinEval(leaf->eval_goal_, MaxEval(
         leaf->alpha_, GetPercentileLower(kProbForEndgameAlphaBeta)));
@@ -599,9 +605,6 @@ class TreeNode {
     auto guard = ReadLock();
     UpdateAlphaBetaNoLock(leaf);
   }
-
-  LeafToUpdate<TreeNode> AsLeafWithGoal(Eval eval_goal);
-  std::optional<LeafToUpdate<TreeNode>> AsLeaf(int last_eval_goal);
 
   void ExtendEval(Eval weak_lower, Eval weak_upper) {
     {
@@ -868,7 +871,7 @@ template<class Node>
 class LeafToUpdate {
  public:
   static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal) {
-    auto leaf = node->AsLeaf(last_eval_goal);
+    auto leaf = node->template AsLeaf<Node>(last_eval_goal);
     if (leaf == std::nullopt) {
       return std::nullopt;
     }
@@ -876,7 +879,7 @@ class LeafToUpdate {
   }
 
   static LeafToUpdate Leaf(std::vector<Node*> sequence) {
-    LeafToUpdate leaf = sequence[0]->AsLeaf(1);
+    LeafToUpdate leaf = sequence[0]->template AsLeafWithGoal<Node>(1);
     sequence[0]->IncreaseNThreadsWorking();
     for (int i = 1; i < sequence.size(); ++i) {
       Node* descendant = sequence[i];
@@ -915,7 +918,7 @@ class LeafToUpdate {
     std::vector<LeafToUpdate> result;
 
     int eval_goal = node->NextPositionEvalGoal(0, 1);
-    LeafToUpdate best_descendant = node->AsLeaf(eval_goal);
+    LeafToUpdate best_descendant = node->AsLeafWithGoal(eval_goal);
     BestDescendants(node, eval_goal, &result);
     int secondary_eval_goal = kLessThenMinEval;
     if (node->ProbGreaterEqual(eval_goal) == 0) {
@@ -1031,7 +1034,7 @@ class LeafToUpdate {
     assert(!root->GetEvaluation(eval_goal).IsSolved());
     NextNodesPriorityQueue next_nodes(&leaf_less);
 
-    next_nodes.push(root->AsLeaf(eval_goal));
+    next_nodes.push(root->AsLeafWithGoal(eval_goal));
 
     Node* current_leaf;
     while (!next_nodes.empty() && result->size() < 200) {

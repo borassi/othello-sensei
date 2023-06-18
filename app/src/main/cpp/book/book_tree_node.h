@@ -248,14 +248,6 @@ class BookTreeNode : public TreeNode {
     return (BookTreeNode*) this->TreeNode::BestChild(eval_goal, n_thread_multiplier);
   }
 
-  std::optional<LeafToUpdate<BookTreeNode>> AsLeaf() {
-    return TreeNode::AsLeaf<BookTreeNode>();
-  }
-
-  LeafToUpdate<BookTreeNode> AsLeaf(Eval eval_goal) {
-    auto guard = ReadLock();
-    return TreeNode::AsLeafNoLock<BookTreeNode>(eval_goal);
-  }
  private:
   bool is_leaf_;
   Book* book_;

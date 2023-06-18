@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     }
     tree_node_supplier.Reset();
     NVisited n_visited = 0;
-    Eval eval_goal = start->NextPositionEvalGoal(0, 1);
+    Eval eval_goal = start->NextPositionEvalGoal(0, 1, kLessThenMinEval);
     std::cout
         << "Expanding line:        " << start_line << "\n"
         << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
@@ -80,13 +80,14 @@ int main(int argc, char* argv[]) {
         << "Eval goal:             " << (int) eval_goal << "\n";
 
     ElapsedTime t;
-    auto leaf = LeafToUpdate<BookNode>::BestDescendant(start, eval_goal).value();
+    auto leaf = LeafToUpdate<BookNode>::BestDescendant(start, 0, kLessThenMinEval).value();
     std::cout
         << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
     bool solved = false;
     int alpha = leaf.Alpha();
     int beta = leaf.Beta();
     auto node = leaf.Leaf();
+    assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     if (node->ToBeSolved(alpha, beta, n_descendants_solve)) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();

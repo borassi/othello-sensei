@@ -30,9 +30,12 @@
 class Collector {
  public:
 
-  Collector(int to_collect) : to_collect_(to_collect), total_(0), collected_() {}
+  Collector(int to_collect) : to_collect_(to_collect), total_(0), collected_(), seen_() {}
 
   void AddBoard(const Board& b) {
+    if (seen_.contains(b)) {
+      return;
+    }
     ++total_;
 
     // If you want to collect n, this will happen the first n times.
@@ -53,6 +56,7 @@ class Collector {
   int to_collect_;
   int total_;
   std::vector<Board> collected_;
+  std::unordered_set<Board> seen_;
 };
 
 int main(int argc, char* argv[]) {
@@ -60,14 +64,14 @@ int main(int argc, char* argv[]) {
   int n = parse_flags.GetIntFlagOrDefault("n", 20);
   std::vector<Collector> collectors;
   for (int i = 0; i < 64; ++i) {
-    if (i <= 3) {
+    if (i <= 51) {
       collectors.push_back(Collector(0));
-    } else if (i <= 27) {
-      // ~3 hours
-      collectors.push_back(Collector(40));
-    } else if (i == 28) {
+//    } else if (i <= 27) {
+//      // ~3 hours
+//      collectors.push_back(Collector(40));
+    } else if (i == 52) {
       // ~1 hour
-      collectors.push_back(Collector(20));
+      collectors.push_back(Collector(4));
     } else {
       // ~1 hour for 30, 2 hours for 31 (time cutoff), ...
       collectors.push_back(Collector(15));
