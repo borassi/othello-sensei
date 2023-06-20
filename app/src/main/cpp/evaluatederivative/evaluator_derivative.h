@@ -175,6 +175,8 @@ class EvaluatorThread {
 
   void Run();
 
+  void ResetStats() { stats_.Reset(); }
+
   const Stats& GetStats() const { return stats_; }
 
   NVisited AddChildren(const TreeNodeLeafToUpdate& leaf);
@@ -228,7 +230,9 @@ class EvaluatorDerivative {
     assert(kMinEval <= lower && lower <= kMaxEval);
     assert(kMinEval <= upper && upper <= kMaxEval);
     assert(lower <= upper);
-    stats_.Reset();
+    for (int i = 0; i < threads_.size(); ++i) {
+      threads_[i]->ResetStats();
+    }
     approx_ = approx;
     lower_ = lower;
     upper_ = upper;
@@ -236,8 +240,7 @@ class EvaluatorDerivative {
     weak_upper_ = upper_;
     n_thread_multiplier_ = 1000;
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, 0, 1, this);
-//    first_position_->SetLeafIfInvalid(0, 1, *this);
-    auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
+    auto leaf = TreeNodeLeafToUpdate::BestDescendant(GetFirstPosition(), NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
     best_advancement_ = 0;
@@ -257,7 +260,13 @@ class EvaluatorDerivative {
 
   Status GetStatus() { return status_; }
 
-  const Stats& GetStats() const { return stats_; }
+  Stats GetStats() const {
+    Stats stats;
+    for (int i = 0; i < threads_.size(); ++i) {
+      stats.Merge(threads_[i]->GetStats());
+    }
+    return std::move(stats);
+  }
 
   u_int8_t Index() const { return index_; }
 
@@ -271,7 +280,6 @@ class EvaluatorDerivative {
 
  private:
   friend class EvaluatorThread;
-  Stats stats_;
   NVisited max_n_visited_;
   double max_time_;
   Eval lower_;
@@ -296,12 +304,12 @@ class EvaluatorDerivative {
     float remaining = first_position_->RemainingWork(lower_, upper_);
     float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
     float solve_probability = first_position_->SolveProbability(lower_, upper_);
-    float goal = std::max(400.0F, std::min(1800.0F, 20 / solve_probability));
+    float goal = std::max(400.0F, std::min(2200.0F, 20 / solve_probability));
     if (remaining < 4 * done) {
-      goal = 1800.0F;
+      goal = 2200.0F;
     }
-    float result = 5000 - (done - done_tree_nodes * goal) * 0.1F;
-    return std::max(2000, std::min(100000, (int) result));
+    float result = 5000 - (done - done_tree_nodes * goal) * 0.4F;
+    return std::max(2000, std::min(70000, (int) result));
   }
 
   void Run() {
@@ -313,12 +321,11 @@ class EvaluatorDerivative {
     }
     for (int i = 0; i < threads_.size(); ++i) {
       futures[i].get();
-      stats_.Merge(threads_[i]->GetStats());
     }
   }
 
-  bool CheckFinished(TreeNode* first_position) {
-    auto advancement = first_position->Advancement(lower_, upper_);
+  bool CheckFinished() {
+    auto advancement = first_position_->Advancement(lower_, upper_);
     best_advancement_ = std::min(best_advancement_, advancement);
     bool good_stop = advancement <= best_advancement_;
     if (status_ == KILLING) {
@@ -333,12 +340,12 @@ class EvaluatorDerivative {
       status_ = STOPPED_TIME;
       return true;
     }
-    if (first_position->IsSolved(lower_, upper_, approx_)) {
+    if (first_position_->IsSolved(lower_, upper_, approx_)) {
       status_ = SOLVED;
       return true;
     }
     NVisited visited_goal = max_n_visited_ - start_visited_;
-    NVisited visited_actual = first_position->GetNVisited() - start_visited_;
+    NVisited visited_actual = first_position_->GetNVisited() - start_visited_;
     if (!just_started_ && (
         visited_actual > visited_goal ||
         visited_actual > 0.8 * visited_goal && good_stop)) {
@@ -352,7 +359,7 @@ class EvaluatorDerivative {
     return false;
   }
 
-  void UpdateWeakLowerUpper(const TreeNode& first_position) {
+  void UpdateWeakLowerUpper() {
     if (is_updating_weak_lower_upper_.test_and_set()) {
       return;
     }
@@ -364,7 +371,7 @@ class EvaluatorDerivative {
     bool extended = true;
     while (extended) {
       auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
-          first_position.ExpectedWeakLowerUpper();
+          first_position_->ExpectedWeakLowerUpper();
 
       new_weak_lower = std::max(lower_, new_weak_lower);
       new_weak_upper = std::min(upper_, new_weak_upper);

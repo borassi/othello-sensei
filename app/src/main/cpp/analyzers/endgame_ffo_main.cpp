@@ -56,6 +56,7 @@ int main(int argc, char* argv[]) {
     }
     const Stats& stats = evaluator.GetStats();
     auto n_visited = stats.GetAll();
+    assert(n_visited == first_position->GetNVisited());
     std::cout
         << setw(4) << i << setw(8) << b.NEmpties()
         << std::fixed

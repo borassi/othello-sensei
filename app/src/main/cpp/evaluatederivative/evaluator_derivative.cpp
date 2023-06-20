@@ -45,10 +45,9 @@ void EvaluatorThread::Run() {
   auto time = std::chrono::system_clock::now();
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   int n_visited;
-  stats_.Reset();
   TreeNode* first_position = evaluator_->GetFirstPosition();
   int last_eval_goal = kLessThenMinEval;
-  while (!evaluator_->CheckFinished(first_position)) {
+  while (!evaluator_->CheckFinished()) {
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
         first_position, evaluator_->NThreadMultiplier(), last_eval_goal);
     if (!leaf_opt) {
@@ -72,7 +71,7 @@ void EvaluatorThread::Run() {
       n_visited = AddChildren(leaf);
     }
     leaf.Finalize(n_visited);
-    evaluator_->UpdateWeakLowerUpper(*first_position);
+    evaluator_->UpdateWeakLowerUpper();
     evaluator_->just_started_ = false;
   }
 }
@@ -81,19 +80,17 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   TreeNode* node = (TreeNode*) leaf.Leaf();
   assert(node->IsLeaf());
   assert(node->NThreadsWorking() == 1);
-  NVisited n_visited = 0;
   BitPattern player = node->Player();
   BitPattern opponent = node->Opponent();
-  Stats stats;
-  stats.Add(1, TREE_NODE);
+  NVisited n_visited = 1;
+  stats_.Add(1, TREE_NODE);
 
   auto moves = GetAllMovesWithPass(player, opponent);
 
   if (moves.empty()) {
     int final_eval = EvalToEvalLarge(GetEvaluationGameOver(player, opponent));
     node->SetSolved(final_eval, final_eval, *evaluator_);
-    stats_.Add(1, TREE_NODE);
-    return 1;
+    return n_visited;
   }
 
   std::vector<TreeNode*> children;

@@ -23,6 +23,8 @@
 #include "evaluator_alpha_beta.h"
 #include "evaluator_last_moves.h"
 
+constexpr int kMinEmptiesForDisproofNumber = 11;
+
 constexpr BitPattern kCentralPattern = ParsePattern(
     "--------"
     "--XXXX--"
@@ -344,7 +346,7 @@ const EvaluatorAlphaBeta::EvaluateInternalFunction
 };
 
 constexpr bool UpdateDepthOneEvaluator(int depth, bool solve) {
-  return !solve || depth > 10;
+  return !solve || depth > kMinEmptiesForHashMap || depth > kMinEmptiesForDisproofNumber;
 }
 
 constexpr bool UseHashMap(int depth, bool solve) {
@@ -372,7 +374,7 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>(&stats_);
         } else if ((solve && depth <= 9) || (!solve && depth <= 4)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick<false>>(&stats_);
-        } else if ((solve && depth <= 10) || (!solve)) {
+        } else if ((solve && depth <= kMinEmptiesForDisproofNumber - 1) || (!solve)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>(&stats_);
         } else {
           assert(UpdateDepthOneEvaluator(depth, solve));

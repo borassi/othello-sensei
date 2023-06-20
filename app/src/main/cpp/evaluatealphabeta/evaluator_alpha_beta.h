@@ -88,7 +88,6 @@ enum StatsType {
 class Stats {
  public:
   Stats() { Reset(); }
-  Stats(const Stats&) = delete;
 
   void Reset() {
     std::fill(std::begin(n_visited_), std::end(n_visited_), 0);
@@ -110,7 +109,7 @@ class Stats {
 
   NVisited GetAll() const {
     NVisited total = 0;
-    for (int i = 0; i < NO_TYPE; ++i) {
+    for (int i = 0; i <= TREE_NODE; ++i) {
       total += n_visited_[i];
     }
     return total;
