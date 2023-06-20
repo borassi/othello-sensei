@@ -308,7 +308,7 @@ class EvaluatorDerivative {
     if (remaining < 4 * done) {
       goal = 2200.0F;
     }
-    float result = 5000 - (done - done_tree_nodes * goal) * 0.4F;
+    float result = 5000 - (done - done_tree_nodes * goal) * 0.2F;
     return std::max(2000, std::min(70000, (int) result));
   }
 
