@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), n_threads);
-  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid  eval     deepen   next\n";
+  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   eval too_early     deepen   next\n";
   //  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval       last5  vquick  quick1  quick2   moves    pass   nodes \n";
   for (int i = start; i <= end; i++) {
     Board b = GetIthBoard(i);
@@ -65,9 +65,9 @@ int main(int argc, char* argv[]) {
         << setw(14) << static_cast<double>(n_visited / time)
         << setw(10) << tree_node_supplier.NumTreeNodes()
         << setw(8) << n_visited / tree_node_supplier.NumTreeNodes()
-        << setw(8) << 0 // n_visited / evaluator.GetStats()
 //        << setw(13) << std::setprecision(2) << evaluator.AverageBatchSize()
         << setw(6) << std::setprecision(0) << first_position->GetEval()
+        << setw(11) << stats.Get(SOLVED_TOO_EARLY)
         << "    ";
 
     std::cout << std::setprecision(2) << std::setw(7) << stats.Get(NEXT_POSITION_SUCCESS) << std::setw(7) << stats.Get(NEXT_POSITION_FAIL);

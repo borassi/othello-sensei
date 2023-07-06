@@ -298,7 +298,7 @@ class TreeNode {
               (i > weak_lower_ && GetEvaluation(i - 2).ProbGreaterEqual() < kMinProbEvalGoal)) {
         continue;
       }
-      double cur_value = i == last_eval_goal ? kLogDerivativeMinusInf : eval.MaxLogDerivative();
+      double cur_value = i == last_eval_goal ? 2 * kLogDerivativeMinusInf : eval.MaxLogDerivative();
 
       if (cur_value > best_value) {
         best_value = cur_value;
@@ -417,53 +417,14 @@ class TreeNode {
       }
     }
     if (result == kLogDerivativeMinusInf) {
-      result += log(RemainingWork(lower, upper)) - 1E5;
+      result += log(RemainingWorkOptimistic(lower, upper)) - 1E5;
     }
     return result;
   }
 
-  double RemainingWork(Eval lower, Eval upper) const {
-    assert((lower - kMinEval) % 2 == 1);
-    assert((upper - kMinEval) % 2 == 1);
-    auto guard = ReadLock();
-    assert(n_empties_ >= 0 && n_empties_ <= 60);
-    double result = std::numeric_limits<double>::infinity();
+  double RemainingWorkPessimistic(Eval lower, Eval upper, bool speak=false) const;
 
-    if (lower >= weak_lower_) {
-      result = std::min(
-          result,
-          (double) GetEvaluation(MinEval(lower, weak_upper_)).DisproofNumber());
-    }
-    if (upper <= weak_upper_) {
-      result = std::min(
-          result,
-          (double) GetEvaluation(MaxEval(upper, weak_lower_)).ProofNumber());
-    }
-
-    for (int i = weak_lower_ + 2; i <= weak_upper_; i += 2) {
-      result = std::min(result, (double) GetEvaluation(i-2).ProofNumber() + GetEvaluation(i).DisproofNumber());
-    }
-    assert(result < std::numeric_limits<double>::infinity());
-    return result;
-  }
-
-  bool ToBeSolved(Eval alpha, Eval beta, NVisited max_proof) const {
-    assert(alpha <= beta);
-    assert(alpha >= weak_lower_ && beta <= weak_upper_);
-    assert(IsLeaf());
-    assert(n_empties_ >= 0 && n_empties_ <= 60);
-    assert ((alpha - kMinEval) % 2 == 1);
-    assert ((beta - kMinEval) % 2 == 1);
-
-    for (Eval i = alpha; i <= beta; i += 2) {
-      assert(i >= weak_lower_ && i <= weak_upper_);
-      Evaluation eval = GetEvaluation(i);
-      if (eval.RemainingWork() > max_proof) {
-        return false;
-      }
-    }
-    return true;
-  }
+  double RemainingWorkOptimistic(Eval lower, Eval upper) const;
 
   std::vector<TreeNode*> Fathers() const {
     std::vector<TreeNode*> result;

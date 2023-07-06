@@ -32,8 +32,8 @@ int main(int argc, char* argv[]) {
 //  std::string start_line = parse_flags.GetFlagOrDefault("start", "");
   std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  NVisited n_descendants_children = 100 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 100 * 1000 * 1000UL);
-  NVisited n_descendants_solve = 5 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
+  NVisited n_descendants_children = 20 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
+  NVisited n_descendants_solve = 5 * 100 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
         << "Descendants of start:  " << PrettyPrintDouble(start->GetNVisited()) << "\n"
         << "Evaluation of start:   " << std::setprecision(2) << start->GetEval() << "\n"
-        << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
+        << "Missing:               " << PrettyPrintDouble(start->RemainingWorkOptimistic(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
     ElapsedTime t;
@@ -88,10 +88,10 @@ int main(int argc, char* argv[]) {
     int beta = leaf.Beta();
     auto node = leaf.Leaf();
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
-    if (node->ToBeSolved(alpha, beta, n_descendants_solve)) {
+    if (node->RemainingWorkPessimistic(alpha, beta) < n_descendants_solve) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();
-      evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 2 * n_descendants_solve, 240, false);
+      evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, false);
       auto result = evaluator->GetFirstPosition();
       auto eval = result->GetEval();
       auto lower = result->Lower();
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300);
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition()->RemainingWork(alpha, beta));
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition()->RemainingWorkOptimistic(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300);
         children.push_back(evaluator->GetFirstPosition());

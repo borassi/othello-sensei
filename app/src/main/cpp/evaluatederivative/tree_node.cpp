@@ -115,6 +115,49 @@ void TreeNode::ResetNoLock(
   SetLeafNoLock(leaf_eval, eval_depth, weak_lower, weak_upper);
 }
 
+double TreeNode::RemainingWorkPessimistic(Eval lower, Eval upper, bool speak) const {
+  auto guard = ReadLock();
+  assert((lower - kMinEval) % 2 == 1);
+  assert((upper - kMinEval) % 2 == 1);
+  assert(n_empties_ >= 0 && n_empties_ <= 60);
+  lower = MaxEval(lower, weak_lower_);
+  upper = MinEval(upper, weak_upper_);
+  double last_prob = 1;
+  double last_proof_number = 0;
+  double result = 0;
+  double old_result = 0;
+
+  for (int i = lower; i <= upper; i += 2) {
+    Evaluation eval = GetEvaluation(i);
+    double cur_prob = eval.ProbGreaterEqual();
+    result += (last_prob - cur_prob) * (last_proof_number + std::min(kMaxProofNumber, eval.DisproofNumber()));
+    last_prob = cur_prob;
+    last_proof_number = std::min(kMaxProofNumber, eval.ProofNumber());
+  }
+
+  result += last_prob * last_proof_number;
+  return result;
+}
+
+double TreeNode::RemainingWorkOptimistic(Eval lower, Eval upper) const {
+  auto guard = ReadLock();
+  assert((lower - kMinEval) % 2 == 1);
+  assert((upper - kMinEval) % 2 == 1);
+  assert(n_empties_ >= 0 && n_empties_ <= 60);
+  lower = MaxEval(lower, weak_lower_);
+  upper = MinEval(upper, weak_upper_);
+  int disproof = GetPercentileLower(0.5F);
+  int proof = disproof - 2;
+
+  if (disproof <= lower) {
+    return GetEvaluation(std::min(lower, weak_upper_)).DisproofNumber();
+  } else if (proof >= upper) {
+    return GetEvaluation(std::max(upper, weak_lower_)).ProofNumber();
+  }
+  assert(disproof >= lower && disproof <= upper);
+  assert(proof >= lower && proof <= upper);
+  return GetEvaluation(proof).ProofNumber() + GetEvaluation(disproof).DisproofNumber();
+}
 //std::optional<LeafToUpdate<TreeNode>> TreeNode::AsLeaf(int last_eval_goal) {
 //  return AsLeaf<TreeNode>(last_eval_goal);
 //}

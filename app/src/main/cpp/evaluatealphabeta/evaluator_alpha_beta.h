@@ -80,9 +80,11 @@ enum StatsType {
   MOVES_OR_DISPROOF = 4,
   PASS = 5,
   TREE_NODE = 6,
+  LAST_NODE_TYPE = 6,
   NEXT_POSITION_FAIL = 7,
   NEXT_POSITION_SUCCESS = 8,
-  NO_TYPE = 9
+  SOLVED_TOO_EARLY = 9,
+  NO_TYPE = 10
 };
 
 class Stats {
@@ -109,7 +111,7 @@ class Stats {
 
   NVisited GetAll() const {
     NVisited total = 0;
-    for (int i = 0; i <= TREE_NODE; ++i) {
+    for (int i = 0; i <= LAST_NODE_TYPE; ++i) {
       total += n_visited_[i];
     }
     return total;

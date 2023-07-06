@@ -226,17 +226,6 @@ class Evaluation {
     Check();
   }
 
-  double RemainingWork() const {
-    Check();
-    double prob_greater_equal = ProbGreaterEqual();
-    if (prob_greater_equal < 0.01) {
-      return DisproofNumber();
-    } else if (prob_greater_equal > 0.99) {
-      return ProofNumber();
-    }
-    return std::max(ProofNumber(), DisproofNumber());
-  }
-
   void SetProving(PN proof_number) {
     prob_greater_equal_ = kProbStep;
     proof_number_ = proof_number;

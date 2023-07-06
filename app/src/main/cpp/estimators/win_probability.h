@@ -96,7 +96,7 @@ inline double GaussianCDF(double x, double mean, double stddev) {
 }
 
 constexpr double ProbabilityExplicit(Square depth, Square empties, EvalLarge delta) {
-  return 1 - GaussianCDF(delta, 0, 0.8 * 8 * std::max(3.0F, kErrors[depth][empties]));
+  return 1 - GaussianCDF(delta, 0, 8 * std::max(3.0F, kErrors[depth][empties]));
 }
 
 struct WinProbabilityData {

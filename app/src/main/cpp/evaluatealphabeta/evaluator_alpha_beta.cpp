@@ -427,6 +427,10 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     depth_zero_eval = evaluator_depth_one_->Evaluate();
     evaluator_depth_one_->Invert();
   }
+  double n_for_max_visited = stats_.GetAll();
+  if (solve && n_for_max_visited > max_visited) {
+    return kLessThenMinEvalLarge;
+  }
   BitPattern square;
   int cur_n_visited;
   bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
@@ -455,7 +459,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
           NewPlayer(flip, opponent), NewOpponent(flip, player),
           -upper, -max_lower_eval, flip, new_stable, max_visited);
     }
-    if (depth > 3 && stats_.GetAll() > max_visited) {
+    if (current_eval == -kLessThenMinEvalLarge) {
       return kLessThenMinEvalLarge;
     }
     if (current_eval > best_eval) {
@@ -481,7 +485,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       stats_.Add(1, PASS);
       best_eval = -EvaluateInternal<depth, true, solve>(
           opponent, player, -upper, -lower, last_flip, new_stable, max_visited);
-      if (depth > 3 && stats_.GetAll() > max_visited) {
+      if (best_eval == -kLessThenMinEvalLarge) {
         return kLessThenMinEvalLarge;
       }
     }
