@@ -93,19 +93,19 @@ class BookTreeNode : public TreeNode {
 
     EnlargeEvaluationsInternal();
 
-    for (int eval = WeakLower(); eval <= WeakUpper(); eval += 2) {
-      if (eval <= last_1) {
-        MutableEvaluation(eval)->SetProving(serialized[i++]);
-      } else if (eval >= first_0) {
-        MutableEvaluation(eval)->SetDisproving(serialized[i++]);
-      } else {
-        Probability prob = serialized[i++];
-        PN proof_number = serialized[i++];
-        PN disproof_number = serialized[i++];
-        int tmp = *((int*) &serialized[i]);
-        i += 4;
-        MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, tmp);
-      }
+    for (int eval = lower_ + 1; eval <= last_1; eval += 2) {
+      MutableEvaluation(eval)->SetProving(serialized[i++]);
+    }
+    for (int eval = last_1 + 2; eval <= first_0 - 2; eval += 2) {
+      Probability prob = serialized[i++];
+      PN proof_number = serialized[i++];
+      PN disproof_number = serialized[i++];
+      int tmp = *((int*) &serialized[i]);
+      i += 4;
+      MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, tmp);
+    }
+    for (int eval = first_0; eval <= upper_ - 1; eval += 2) {
+      MutableEvaluation(eval)->SetDisproving(serialized[i++]);
     }
   }
 
@@ -174,21 +174,21 @@ class BookTreeNode : public TreeNode {
     }
     result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      Evaluation evaluation = GetEvaluation(i);
-      if (i <= last_1) {
-        result.push_back((char) evaluation.ProofNumberSmall());
-      } else if (i >= first_0) {
-        result.push_back((char) evaluation.DisproofNumberSmall());
-      } else {
-        result.push_back((char) evaluation.ProbGreaterEqualSmall());
-        result.push_back((char) evaluation.ProofNumberSmall());
-        result.push_back((char) evaluation.DisproofNumberSmall());
-        int tmp = evaluation.MaxLogDerivative();
-        for (int k = 0; k < 4; ++k) {
-          result.push_back(*(((char*) &tmp) + k));
-        }
+    for (int i = lower_ + 1; i <= last_1; i += 2) {
+      result.push_back((char) GetEvaluation(i).ProofNumberSmall());
+    }
+    for (int i = last_1 + 2; i <= first_0 - 2; i += 2) {
+      const Evaluation& evaluation = GetEvaluation(i);
+      result.push_back((char) evaluation.ProbGreaterEqualSmall());
+      result.push_back((char) evaluation.ProofNumberSmall());
+      result.push_back((char) evaluation.DisproofNumberSmall());
+      int tmp = evaluation.MaxLogDerivative();
+      for (int k = 0; k < 4; ++k) {
+        result.push_back(*(((char*) &tmp) + k));
       }
+    }
+    for (int i = first_0; i <= upper_ - 1; i += 2) {
+      result.push_back((char) GetEvaluation(i).DisproofNumberSmall());
     }
     assert(result.size() < 256);
     return result;
