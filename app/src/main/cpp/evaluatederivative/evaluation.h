@@ -119,7 +119,7 @@ class Evaluation {
   float DisproofNumber() const { return ByteToProofNumber(disproof_number_); }
   int MaxLogDerivative() const { return max_log_derivative_; }
 
-  float ProbGreaterEqual() const {
+  double ProbGreaterEqual() const {
     return ByteToProbability(prob_greater_equal_);
   }
 
@@ -195,6 +195,7 @@ class Evaluation {
     } else {
       assert(disproof_number_ < kProofNumberStep);
     }
+    assert((prob_greater_equal_ == 0) == (proof_number_ == kProofNumberStep));
     Check();
   }
 
@@ -203,8 +204,18 @@ class Evaluation {
       Square depth, Square n_empties) {
     prob_greater_equal_ = WinProbability(depth, n_empties, goal, eval);
     proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep : ::ProofNumber(player, opponent, goal, eval);
-    assert(isfinite(proof_number_) && proof_number_ > 0);
-    disproof_number_ = ::DisproofNumber(player, opponent, goal, eval);
+    if (prob_greater_equal_ > 0) {
+      assert(isfinite(ProofNumber()));
+      assert(ProofNumber() > 0);
+    } else {
+      assert(ProofNumber() == std::numeric_limits<float>::infinity());
+    }
+    disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep : ::DisproofNumber(player, opponent, goal, eval);
+    if (prob_greater_equal_ < kProbStep) {
+      assert(isfinite(DisproofNumber()) && DisproofNumber() > 0);
+    } else {
+      assert(DisproofNumber() == std::numeric_limits<float>::infinity());
+    }
     assert(isfinite(disproof_number_) && disproof_number_ > 0);
     max_log_derivative_ = kCombineProb.leaf_log_derivative[prob_greater_equal_];
     Check();

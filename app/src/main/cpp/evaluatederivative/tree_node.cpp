@@ -27,11 +27,16 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
     float p = eval.ProbGreaterEqual();
     stream << " " << i << ":";
     if (p == 0) {
+      assert(eval.MaxLogDerivative() == kLogDerivativeMinusInf);
       stream << std::setprecision(0) << eval.DisproofNumber();
     } else if (p == 1) {
+      assert(eval.MaxLogDerivative() == kLogDerivativeMinusInf);
       stream << std::setprecision(0) << eval.ProofNumber();
     } else {
-      stream << std::setprecision(2) << p;
+      stream
+          << "(" << std::setprecision(4) << p << " "
+          << std::setprecision(0) << eval.MaxLogDerivative() << " "
+          << eval.ProofNumber() << " " << eval.DisproofNumber() << ")";
     }
   }
   stream << (b.IsLeaf() ? " (leaf)" : " (internal)");

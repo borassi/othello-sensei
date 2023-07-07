@@ -63,6 +63,20 @@ class BookTreeNode : public TreeNode {
     opponent_ = board.Opponent();
     n_empties_ = board.NEmpties();
     int i = 13;
+
+    while (true) {
+      CompressedFlip compressed_flip = 0;
+      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
+      i += 3;
+      if (compressed_flip == 0) {
+        break;
+      }
+      father_flips_.push_back(compressed_flip >> 2);
+      if ((compressed_flip & 1) == 0) {
+        break;
+      }
+    }
+
     descendants_ = (u_int64_t) *((float*) &(serialized[i]));
     i += sizeof(float);
     lower_ = (Eval) serialized[i++];
@@ -77,18 +91,6 @@ class BookTreeNode : public TreeNode {
     leaf_eval_ = 0;
     n_threads_working_ = 0;
 
-    while (true) {
-      CompressedFlip compressed_flip = 0;
-      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
-      i += 3;
-      if (compressed_flip == 0) {
-        break;
-      }
-      father_flips_.push_back(compressed_flip >> 2);
-      if ((compressed_flip & 1) == 0) {
-        break;
-      }
-    }
     EnlargeEvaluationsInternal();
 
     for (int eval = WeakLower(); eval <= WeakUpper(); eval += 2) {
@@ -122,26 +124,13 @@ class BookTreeNode : public TreeNode {
   }
 
   std::vector<char> Serialize() const {
+    // 0 - 12: Board
     assert(NThreadsWorking() == 0);
     std::vector<char> result;
     SerializedBoard board = ToBoard().Serialize();
-    int last_1 = kMinEval - 1;
-    int first_0 = kMaxEval + 1;
-
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      if (GetEvaluation(i).ProbGreaterEqual() == 1) {
-        last_1 = i;
-      }
-      if (GetEvaluation(i).ProbGreaterEqual() == 0) {
-        first_0 = i;
-        break;
-      }
-    }
     result.insert(result.end(), board.begin(), board.end());
-    float descendants = (float) descendants_;
-    result.insert(result.end(), (char*) &descendants, (char*) &descendants + sizeof(float));
-    result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
+    // 13 - 13+max(1, 3*n_fathers).
     if (n_fathers_ == 0) {
       if (father_flips_.empty()) {
         result.insert(result.end(), {0, 0, 0});
@@ -163,6 +152,27 @@ class BookTreeNode : public TreeNode {
         result.insert(result.end(), {(char) (flip_serialized % 256), (char) ((flip_serialized >> 8) % 256), (char) ((flip_serialized >> 16) % 256)});
       }
     }
+
+    float descendants = (float) descendants_;
+    result.insert(result.end(), (char*) &descendants, (char*) &descendants + sizeof(float));
+
+    int last_1 = kMinEval - 1;
+    int first_0 = kMaxEval + 1;
+
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      if (GetEvaluation(i).ProbGreaterEqual() == 1) {
+        assert(GetEvaluation(i).MaxLogDerivative() == kLogDerivativeMinusInf);
+        assert(GetEvaluation(i).DisproofNumber() == std::numeric_limits<float>::infinity());
+        last_1 = i;
+      }
+      if (GetEvaluation(i).ProbGreaterEqual() == 0) {
+        assert(GetEvaluation(i).MaxLogDerivative() == kLogDerivativeMinusInf);
+        assert(GetEvaluation(i).ProofNumber() == std::numeric_limits<float>::infinity());
+        first_0 = i;
+        break;
+      }
+    }
+    result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       Evaluation evaluation = GetEvaluation(i);

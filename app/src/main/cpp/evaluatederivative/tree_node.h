@@ -755,6 +755,9 @@ class TreeNode {
       evaluation->SetLeaf(player_, opponent_, i_large, leaf_eval_, eval_depth_, n_empties_);
     }
     assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
+    assert(
+        (evaluation->ProbGreaterEqual() == 0 || evaluation->ProbGreaterEqual() == 1) ==
+            (evaluation->MaxLogDerivative() == kLogDerivativeMinusInf));
   }
 
   void AddFather(TreeNode* father) {
