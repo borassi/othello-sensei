@@ -19,7 +19,8 @@
 #include "../utils/file.h"
 
 BookFileOffset ValueFile::Add(const std::vector<char>& value) {
-  assert(value.size() == size_);
+  assert(value.size() <= size_);
+  assert(value.size() > size_ / 2);
   std::fstream file = OpenFile(Filename());
   BookFileOffset offset;
   file.read((char*) &offset, sizeof(offset));
@@ -33,6 +34,10 @@ BookFileOffset ValueFile::Add(const std::vector<char>& value) {
   }
   Seek(offset, &file);
   file.write(&value[0], value.size() * sizeof(char));
+  if (size_ != value.size()) {
+    std::vector<char> zeros(size_ - value.size(), {0});
+    file.write(&zeros[0], zeros.size() * sizeof(char));
+  }
   return offset;
 }
 

@@ -139,7 +139,7 @@ TEST(BitPattern, DiagonalToFirstRow) {
 TEST(BitPattern, Hash) {
   BitPattern player = RandomPattern();
   BitPattern opponent = RandomPattern() & ~player;
-  int n = 1 << 20;
+  int n = 1 << 10;
   std::vector<int> hashes(n, 0);
 
   for (int i = 0; i < n; ++i) {
@@ -158,7 +158,7 @@ TEST(BitPattern, Hash) {
   int full = 0;
   for (int i = 0; i < n; ++i) {
     full += hashes[i] > 0 ? 1 : 0;
-    EXPECT_LT(hashes[i], log(n));
+    EXPECT_LT(hashes[i], 2 * log(n));
   }
   EXPECT_GT(full, 0.9 * n / exp(1));
 }

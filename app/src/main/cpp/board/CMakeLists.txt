@@ -54,6 +54,7 @@ target_link_libraries(
         board_test
         LINK_PUBLIC
         board
+        get_moves
         GTest::gtest
         GTest::gtest_main
         -no-pie

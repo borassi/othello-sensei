@@ -212,8 +212,9 @@ std::unordered_map<Board, std::pair<Square, BitPattern>> GetUniqueNextBoardsWith
     }
     assert(best_square != 65);
     assert(best_child == b.Next(base_flip).Unique());
-    assert(result.find(best_child) == result.end() || result[best_child] ==
-           std::make_pair(best_square, best_flip));
+    // NOTE: We cannot assert that best_square and best_flip are the same as
+    // result.find(best_child) if available, as there can be two different flips
+    // that yield symmetric positions.
     result[best_child] = {best_square, best_flip};
   }
   return result;

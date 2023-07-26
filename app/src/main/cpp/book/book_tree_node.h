@@ -27,6 +27,9 @@
 #include "../estimators/endgame_time.h"
 #include "value_file.h"
 
+// Max fathers = 140656 (see test).
+constexpr int kMaxNodeSize = 13 /*board*/ + 3 * 140656 /*fathers*/ + 4 /*descendants*/ + 5 /*bounds*/ + 7 * 64 /*evals*/;
+
 template<class Book>
 class BookTreeNode : public TreeNode {
  public:
@@ -34,6 +37,7 @@ class BookTreeNode : public TreeNode {
     Board b = node.ToBoard().Unique();
     player_ = b.Player();
     opponent_ = b.Opponent();
+    n_empties_ = b.NEmpties();
 
     min_evaluation_ = -63;
     weak_lower_ = -63;
@@ -47,7 +51,11 @@ class BookTreeNode : public TreeNode {
     auto proof_number = node.GetEvaluation(node.WeakLower()).ProofNumber();
     auto disproof_number = node.GetEvaluation(node.WeakUpper()).DisproofNumber();
     for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
-      if (i < node.WeakLower()) {
+      if (i < lower_) {
+        MutableEvaluation(i)->SetProved();
+      } else if (i > upper_) {
+        MutableEvaluation(i)->SetDisproved();
+      } else if (i < node.WeakLower()) {
         MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(proof_number, node.WeakLower(), i)));
       } else if (i > node.WeakUpper()) {
         MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(disproof_number, node.WeakUpper(), i)));
@@ -93,6 +101,23 @@ class BookTreeNode : public TreeNode {
 
     EnlargeEvaluationsInternal();
 
+    for (int eval = weak_lower_; eval <= lower_; eval += 2) {
+      MutableEvaluation(eval)->SetProved();
+    }
+//    if (lower_ + 1 <= last_1) {
+//      PN current_proof = serialized[i++];
+//      MutableEvaluation(lower_ + 1)->SetProving(current_proof);
+//
+//      bool* serialized_proof = (bool*) (&(serialized[0]) + i);
+//      int j = 0;
+//      for (int eval = lower_ + 3; eval <= last_1; eval += 2) {
+//        while (*(serialized_proof + j++) == 0) {
+//          current_proof++;
+//        }
+//        MutableEvaluation(eval)->SetProving(current_proof);
+//      }
+//      i += j;
+//    }
     for (int eval = lower_ + 1; eval <= last_1; eval += 2) {
       MutableEvaluation(eval)->SetProving(serialized[i++]);
     }
@@ -107,19 +132,8 @@ class BookTreeNode : public TreeNode {
     for (int eval = first_0; eval <= upper_ - 1; eval += 2) {
       MutableEvaluation(eval)->SetDisproving(serialized[i++]);
     }
-  }
-
-  void SetUpper(Eval upper) {
-    upper_ = std::min(upper, upper_);
-    for (int i = weak_upper_; i >= upper_; i -= 2) {
-      MutableEvaluation(i)->SetDisproved();
-    }
-  }
-
-  void SetLower(Eval lower) {
-    lower_ = std::max(lower, lower_);
-    for (int i = weak_lower_; i <= lower_; i += 2) {
-      MutableEvaluation(i)->SetProved();
+    for (int eval = weak_upper_; eval >= std::max(upper_, weak_lower_); eval -= 2) {
+      MutableEvaluation(eval)->SetDisproved();
     }
   }
 
@@ -174,6 +188,23 @@ class BookTreeNode : public TreeNode {
     }
     result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
+//    if (lower_ + 1 <= last_1) {
+//      PN last_proof = GetEvaluation(lower_ + 1).ProofNumberSmall();
+//      result.push_back((char) last_proof);
+//      std::vector<bool> serialized_proof;
+//      for (int i = lower_ + 3; i <= last_1; i += 2) {
+//        PN current_proof = (char) GetEvaluation(i).ProofNumberSmall();
+//        while (last_proof < current_proof) {
+//          serialized_proof.push_back(false);
+//          last_proof++;
+//        }
+//        serialized_proof.push_back(true);
+//      }
+//      while (serialized_proof.size() % (sizeof(char) / sizeof(bool)) != 0) {
+//        serialized_proof.push_back(false);
+//      }
+//      result.insert(result.end(), serialized_proof.begin(), serialized_proof.end());
+//    }
     for (int i = lower_ + 1; i <= last_1; i += 2) {
       result.push_back((char) GetEvaluation(i).ProofNumberSmall());
     }
@@ -190,7 +221,7 @@ class BookTreeNode : public TreeNode {
     for (int i = first_0; i <= upper_ - 1; i += 2) {
       result.push_back((char) GetEvaluation(i).DisproofNumberSmall());
     }
-    assert(result.size() < 256);
+    assert(result.size() <= kMaxNodeSize);
     return result;
   }
 
@@ -256,6 +287,18 @@ class BookTreeNode : public TreeNode {
   }
   BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
     return (BookTreeNode*) this->TreeNode::BestChild(eval_goal, n_thread_multiplier);
+  }
+
+  void SetLeafNeverSolved() {
+    assert(weak_lower_ = kMinEval + 1);
+    assert(weak_upper_ = kMaxEval - 1);
+    lower_ = -64;
+    upper_ = 64;
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      MutableEvaluation(i)->SetLeaf(player_, opponent_, EvalToEvalLarge(i), EvalToEvalLarge(i), 1, n_empties_);
+      assert(GetEvaluation(i).ProbGreaterEqual() > 0 &&
+             GetEvaluation(i).ProbGreaterEqual() < 1);
+    }
   }
 
  private:

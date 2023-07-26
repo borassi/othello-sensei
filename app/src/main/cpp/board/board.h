@@ -57,14 +57,23 @@ public:
     opponent_ = NewOpponent(flip, player_);
     player_ = NewPlayer(flip, tmp);
   }
-  Board Next(BitPattern flip) {
+  Board Next(BitPattern flip) const {
     Board next(*this);
     next.PlayMove(flip);
     return next;
   }
+  void UndoMove(BitPattern flip, Square move) {
+    BitPattern tmp = opponent_;
+    opponent_ = (player_ | flip) & ~(1ULL << move);
+    player_ = (tmp & ~flip);
+  }
+  Square MoveFromFlip(BitPattern flip) const {
+    BitPattern move_bitpattern = flip & ~(player_ | opponent_);
+    assert(__builtin_popcountll(move_bitpattern) == 1);
+    return __builtin_ctzll(move_bitpattern);
+  }
   bool operator==(const Board& rhs) const {
-    return Player() == rhs.Player()
-           && Opponent() == rhs.Opponent();
+    return Player() == rhs.Player() && Opponent() == rhs.Opponent();
   }
   std::vector<Board> AllTranspositions() const {
     auto players = AllBitPatternTranspositions(player_);

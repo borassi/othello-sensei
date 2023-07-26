@@ -57,9 +57,13 @@ std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
   std::shared_ptr<TreeNode> t(new TreeNode());
   int weak_lower = -(int) ((rand() % 32) * 2 + 1);
   int weak_upper = weak_lower + ((rand() % 20) * 2);
+  int lower = -(int) ((rand() % 32) * 2);
+  int upper = lower + ((rand() % 20) * 2);
   int eval = 2 * (rand() % 60) - 60;
   int n_visited = rand() % 2000 + 1;
   t->Reset(b.Player(), b.Opponent(), 4, 0, EvalToEvalLarge(eval), 4, weak_lower, weak_upper);
+  t->SetLower(lower);
+  t->SetUpper(upper);
   t->AddDescendants(n_visited);
   return t;
 }
@@ -127,4 +131,112 @@ Book BookWithPositions(
   }
   return book;
 }
+
+// Example: last_row = ---OOOOO, dir = -0, square = 0.
+// CanContinueFlipping(b, [0, 1, 2, 3], -1) = true.
+// CanContinueFlipping(b, 4, -1) = false
+//   because we cannot have flipped ---XXXXX (missing outflank).
+bool CanContinueFlipping(Board b, int square, int dir) {
+  assert(square >= 0 && square <= 63);
+  if (square + dir < 0 || square + dir > 63) {
+    return false;
+  }
+  if ((square + dir) % 8 == 0 && square % 8 == 7) {
+    return false;
+  }
+  if ((square + dir) % 8 == 7 && square % 8 == 0) {
+    return false;
+  }
+  return b.IsOpponent(square + dir);
+}
+
+std::vector<BitPattern> AllPossibleFlips(Board b, Square square, int dir) {
+  std::vector<BitPattern> result;
+  if (!b.IsOpponent(square)) {
+    return result;
+  }
+  BitPattern p = 1ULL << square;
+  result.push_back(p);
+  if (!CanContinueFlipping(b, square, dir)) {
+    return result;
+  }
+  for (int c = square + dir; CanContinueFlipping(b, c, dir); c += dir) {
+    p |= 1ULL << c;
+    result.push_back(p);
+  }
+  return result;
+}
+
+template<class Book>
+BookTreeNode<Book>* LargestTreeNode(Book& book, int max_fathers = 0) {
+  BookTreeNode<Book>* result = RandomBookTreeNode(&book, Board(
+      "OOOOOO-O"
+      "OOOOOOOO"
+      "OOOOOOOO"
+      "OOOOOOOO"
+      "OOOOOOOO"
+      "OOOOOOOO"
+      "OOOOOOOO"
+      "OOOOOOOO", true));
+  result->SetLeafNeverSolved();
+  BitPattern flip;
+  Board b = result->ToBoard();
+  int tmp = 0;
+  for (int i = 0; i < 64; ++i) {
+    std::vector<Board> all_possible_fathers;
+    for (BitPattern flip_minus9 : AllPossibleFlips(b, i, -9)) {
+      for (BitPattern flip_minus8 : AllPossibleFlips(b, i, -8)) {
+        for (BitPattern flip_minus7 : AllPossibleFlips(b, i, -7)) {
+          for (BitPattern flip_minus1 : AllPossibleFlips(b, i, -1)) {
+            for (BitPattern flip_plus1 : AllPossibleFlips(b, i, 1)) {
+              for (BitPattern flip_plus7 : AllPossibleFlips(b, i, 7)) {
+                for (BitPattern flip_plus8 : AllPossibleFlips(b, i, 8)) {
+                  for (BitPattern flip_plus9 : AllPossibleFlips(b, i, 9)) {
+                    BitPattern flip = flip_minus9 | flip_minus8 | flip_minus7 | flip_minus1 | flip_plus1 | flip_plus7 | flip_plus8 | flip_plus9;
+                    if (flip == 1ULL << i) {
+                      continue;
+                    }
+                    Board b = result->ToBoard();
+                    b.UndoMove(flip, i);
+                    // It could be that other disks are flipped, and in this
+                    // case this is not a valid father.
+                    if (GetFlip(i, b.Player(), b.Opponent()) == flip) {
+                      all_possible_fathers.push_back(b);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    std::vector<BookTreeNode<Book>*> fathers;
+    for (const Board& father_board : all_possible_fathers) {
+      // We might have already added a transposition of father.
+      if (book.Get(father_board)) {
+        continue;
+      }
+      BookTreeNode<Book>* father = RandomBookTreeNode(&book, father_board);
+      std::vector<BookTreeNode<Book>*> children = {result};
+      for (auto [b, unused] : GetUniqueNextBoardsWithPass(father_board)) {
+        if (b == result->ToBoard()) {
+          continue;
+        }
+        auto child = book.Get(b);
+        if (child) {
+          children.push_back(*child);
+        } else {
+          children.push_back(RandomBookTreeNode(&book, b));
+        }
+      }
+      father->template AddChildrenToBook<BookTreeNode<Book>*>(children);
+      if (max_fathers > 0 && result->Fathers().size() > max_fathers) {
+        return result;
+      }
+    }
+  }
+  return result;
+}
+
 #endif //OTHELLOSENSEI_BOOK_TEST_UTILS_H

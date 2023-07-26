@@ -20,9 +20,39 @@ std::ostream& operator<<(std::ostream& stream, const HashMapNode& n) {
   return stream;
 }
 
+// static
+u_int8_t HashMapNode::SizeToByte(int size) {
+  assert(size >= 0);
+  if (size == 0) {
+    return 0;
+  } else if (size <= kMinFileSize) {
+    return 1;
+  }
+  int size_shifted = size - kMinFileSize + 1;
+  if (size_shifted <= 255 - kNumDoubling) {
+    return size_shifted;
+  } else {
+    return 255 - kNumDoubling + (int) (ceil(log(size / (255.0 - kNumDoubling)) / log(2)));
+  }
+}
+// static
+int HashMapNode::ByteToSize(u_int8_t b) {
+  if (b == 0) {
+    return 0;
+  } else if (b == 1) {
+    return kMinFileSize;
+  }
+  int byte_shifted = b + kMinFileSize - 1;
+  if (b <= 255 - kNumDoubling) {
+    return byte_shifted;
+  } else {
+    return (255 - kNumDoubling) * (int) pow(2, b - 255 + kNumDoubling);
+  }
+}
+
 Book::Book(const std::string& folder) : folder_(folder), value_files_() {
-  for (int i = kMinFileSize; i <= kMaxFileSize; ++i) {
-    value_files_.push_back(ValueFile(folder, i));
+  for (int i = 1; i <= 255; ++i) {
+    value_files_.push_back(ValueFile(folder, HashMapNode::ByteToSize(i)));
   }
   if (!FileExists(IndexFilename())) {
     CreateEmptyFile(IndexFilename());
@@ -53,7 +83,7 @@ std::optional<BookNode*> Book::Get(const Board& b) {
   }
   HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
   if (!node.IsEmpty()) {
-    std::vector<char> serialized = GetValueFile(node.Size()).Get(node.Offset());
+    std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
     iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
     return &iterator->second;
   }
@@ -74,14 +104,15 @@ void Book::Commit(const BookNode& node) {
   auto [file, hash_map_node] = Find(node.Player(), node.Opponent());
 
   if (!hash_map_node.IsEmpty()) {
-    GetValueFile(hash_map_node.Size()).Remove(hash_map_node.Offset());
+    GetValueFile(hash_map_node).Remove(hash_map_node.Offset());
   } else {
     ++book_size_;
   }
 
   std::vector<char> to_store = node.Serialize();
   auto size = to_store.size();
-  auto offset = GetValueFile(size).Add(to_store);
+  // TODO: Remove the code duplication between here and HashMapNode.
+  auto offset = value_files_[HashMapNode::SizeToByte(to_store.size()) - 1].Add(to_store);
   HashMapNode to_be_stored(size, offset);
   if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
     file.write((char*) &to_be_stored, sizeof(HashMapNode));
@@ -153,15 +184,9 @@ void Book::Clean() {
   modified_nodes_.clear();
 }
 
-int Book::GetValueFileOffset(int size) {
-  assert(size >= kMinFileSize);
-  assert(size <= kMaxFileSize);
-  return size - kMinFileSize;
-}
-
-ValueFile& Book::GetValueFile(int size) {
-  ValueFile& file = value_files_[GetValueFileOffset(size)];
-  assert(file.Size() == size);
+ValueFile& Book::GetValueFile(const HashMapNode& node) {
+  ValueFile& file = value_files_[node.GetValueFileOffset()];
+  assert(file.Size() == node.Size());
   return file;
 }
 
@@ -197,7 +222,7 @@ std::pair<std::fstream, HashMapNode> Book::Find(BitPattern player, BitPattern op
       file.seekp(file.tellg());
       return std::make_pair(std::move(file), node);
     }
-    std::vector<char> v = GetValueFile(node.Size()).Get(node.Offset());
+    std::vector<char> v = GetValueFile(node).Get(node.Offset());
     BookNode book_tree_node(this, v, false);
     Board b = book_tree_node.ToBoard();
     assert(b == b.Unique());
@@ -240,7 +265,7 @@ void Book::Resize(std::fstream* file, std::vector<HashMapNode> add_elements) {
   }
 
   for (const HashMapNode& node_to_move : add_elements) {
-    std::vector<char> v = GetValueFile(node_to_move.Size()).Get(node_to_move.Offset());
+    std::vector<char> v = GetValueFile(node_to_move).Get(node_to_move.Offset());
     BookNode node(this, v, false);
     Board board = node.ToBoard();
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));

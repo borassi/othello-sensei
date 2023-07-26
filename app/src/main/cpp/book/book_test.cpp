@@ -35,6 +35,35 @@ class BookParameterizedFixture : public ::testing::TestWithParam<bool> {
   bool only_new;
 };
 
+TEST(HashMapNode, SizeToByte) {
+  EXPECT_EQ(0, HashMapNode::ByteToSize(0));
+  EXPECT_EQ(0, HashMapNode::SizeToByte(0));
+
+  for (int i = 1; i <= kMinFileSize; ++i) {
+    EXPECT_EQ(1, (int) HashMapNode::SizeToByte(i));
+  }
+  EXPECT_EQ(kMinFileSize, HashMapNode::ByteToSize(1));
+
+  EXPECT_LE(kMaxFileSize, HashMapNode::ByteToSize(255));
+  // Just to avoid making too large files.
+  EXPECT_GT(2 * kMaxFileSize, HashMapNode::ByteToSize(255));
+
+  for (int i = 0; i <= 255; ++i) {
+    ASSERT_EQ(i, HashMapNode::SizeToByte(HashMapNode::ByteToSize(i)))
+        << i << " "
+        << HashMapNode::ByteToSize(i) << " "
+        << (int) HashMapNode::SizeToByte(HashMapNode::ByteToSize(i)) << "\n";
+  }
+  for (int i = kMinFileSize; i < kMaxFileSize; ++i) {
+    int new_size = HashMapNode::ByteToSize(HashMapNode::SizeToByte(i));
+    ASSERT_LE(i, new_size)
+        << i << " "
+        << (int) HashMapNode::SizeToByte(i) << " "
+        << HashMapNode::ByteToSize(HashMapNode::SizeToByte(i)) << "\n";
+    ASSERT_GT(i, new_size / 2);
+  }
+}
+
 TEST(Book, Basic) {
   TestBook test_book;
   Book book(kTempDir);
@@ -46,6 +75,17 @@ TEST(Book, Basic) {
   EXPECT_EQ(*book.Get(0, 1).value(), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -5, 5, 1010));
   EXPECT_FALSE(book.Get(0, 2));
   EXPECT_EQ(book.Size(), 1);
+}
+
+TEST(Book, HugeNode) {
+  TestBook test_book;
+  Book book(kTempDir);
+  book.Clean();
+  // Also adds the node to the book and all fathers / children.
+  auto node = LargestTreeNode(book, 1000);
+  book.Commit();
+
+  EXPECT_EQ(*book.Get(node->ToBoard()).value(), *LargestTreeNode(test_book, 1000));
 }
 
 TEST(Book, Reload) {
@@ -66,16 +106,6 @@ TEST(Book, Reload) {
   EXPECT_EQ(book.Size(), 2);
 }
 
-//TEST(Book, Overwrite) {
-//  Book book(kTempDir);
-//  TestBook test_book;
-//  book.Clean();
-//  book.Add(*TestTreeNode(Board(0UL, 1UL), 0, -5, 5, 100));
-//  book.Add(*TestTreeNode(Board(0UL, 1UL), 0, -7, 5, 100));
-//  book.Commit();
-//  EXPECT_EQ(*book.Get(0, 1), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -7, 5, 100));
-//}
-
 TEST(Book, Unique) {
   Book book(kTempDir);
   TestBook test_book;
@@ -87,53 +117,53 @@ TEST(Book, Unique) {
   EXPECT_EQ(*book.Get(0, 1ULL << 63).value(), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL << 7), 1, 1, 3, 10));
 }
 
-//TEST(Book, LargeOne) {
-//  Book book(kTempDir);
-//  std::unordered_map<Board, std::shared_ptr<TreeNode>> expected;
-//  std::vector<Board> old_boards;
-//  book.Clean();
-//
-//  for (int i = 0; i < 10000; ++i) {
-//    if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
-//      std::cout << i << "\n";
-//    }
-//    Board b = RandomBoard();
-//    Board unique = b.Unique();
-//    if (expected.find(unique) != expected.end()) {
-//      continue;
-//    }
-//    std::shared_ptr<TreeNode> node = RandomTestTreeNode(b);
-//    old_boards.push_back(b);
-//
-//    expected[unique] = node;
-//
-//    book.Add(*node);
-//
-//    book.Commit();
-//
-//    ASSERT_EQ(*book.Get(b.Player(), b.Opponent()).value(), BookNode(&book, *node));
-//    int test_i = rand() % (i+1);
-//    Board test_board = old_boards[test_i];
-//    BookNode expected_node(&book, *expected[test_board.Unique()]);
-//    ASSERT_EQ(*book.Get(test_board.Player(), test_board.Opponent()).value(),
-//              expected_node);
-//
-//    if (i < 100) {
-//      for (int test_i = 0 ; test_i < i; ++test_i) {
-//        Board test_board = old_boards[test_i];
-//        BookNode expected_node(&book, *expected[test_board.Unique()]);
-//        ASSERT_EQ(*book.Get(test_board.Player(), test_board.Opponent()).value(),
-//                  expected_node);
-//      }
-//    }
-//    if (i < 2000) {
-//      assert(book.IsSizeOK());
-//    }
-//    if (rand() % 100 == 0) {
-//      book = Book(kTempDir);
-//    }
-//  }
-//}
+TEST(Book, LargeOne) {
+  Book book(kTempDir);
+  std::unordered_map<Board, std::shared_ptr<TreeNode>> expected;
+  std::vector<Board> old_boards;
+  book.Clean();
+
+  for (int i = 0; i < 10000; ++i) {
+    if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
+      std::cout << i << "\n";
+    }
+    Board b = RandomBoard();
+    Board unique = b.Unique();
+    if (expected.find(unique) != expected.end()) {
+      continue;
+    }
+    std::shared_ptr<TreeNode> node = RandomTestTreeNode(b);
+    old_boards.push_back(b);
+
+    expected[unique] = node;
+
+    book.Add(*node);
+
+    book.Commit();
+
+    ASSERT_EQ(*book.Get(b.Player(), b.Opponent()).value(), BookNode(&book, *node));
+    int test_i = rand() % (i+1);
+    Board test_board = old_boards[test_i];
+    BookNode expected_node(&book, *expected[test_board.Unique()]);
+    ASSERT_EQ(*book.Get(test_board.Player(), test_board.Opponent()).value(),
+              expected_node);
+
+    if (i < 100) {
+      for (int test_i = 0 ; test_i < i; ++test_i) {
+        Board test_board = old_boards[test_i];
+        BookNode expected_node(&book, *expected[test_board.Unique()]);
+        ASSERT_EQ(*book.Get(test_board.Player(), test_board.Opponent()).value(),
+                  expected_node);
+      }
+    }
+    if (i < 2000) {
+      assert(book.IsSizeOK());
+    }
+    if (rand() % 100 == 0) {
+      book = Book(kTempDir);
+    }
+  }
+}
 
 TEST(Book, AddChildren) {
   TestBook test_book;

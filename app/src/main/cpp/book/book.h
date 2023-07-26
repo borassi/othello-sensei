@@ -31,7 +31,8 @@
 #include "../utils/misc.h"
 
 constexpr int kMinFileSize = kMinValueFileSize;
-constexpr int kMaxFileSize = 300;
+constexpr int kMaxFileSize = 524288; // 2^19
+constexpr int kNumDoubling = 12;
 constexpr char kBookFilepath[] = "book";
 typedef u_int64_t HashMapIndex;
 
@@ -41,17 +42,23 @@ constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 
 class HashMapNode {
  public:
-  HashMapNode() : size_(0), offset_(0) {}
-  HashMapNode(u_int8_t size, BookFileOffset offset) : size_(size), offset_(offset) {}
+  HashMapNode() : size_byte_(0), offset_(0) {}
+  HashMapNode(int size, BookFileOffset offset) : offset_(offset) {
+    size_byte_ = SizeToByte(size);
+  }
 
   BookFileOffset Offset() const { return offset_; }
-  u_int8_t Size() const { return size_; }
-  bool IsEmpty() const { return size_ == 0; }
+  int Size() const { return ByteToSize(size_byte_); }
+  bool IsEmpty() const { return size_byte_ == 0; }
   bool operator==(const HashMapNode& other) const = default;
 
+  int GetValueFileOffset() const { return size_byte_ - 1; }
+
+  static u_int8_t SizeToByte(int size);
+  static int ByteToSize(u_int8_t b);
  private:
   BookFileOffset offset_;
-  u_int8_t size_;
+  u_int8_t size_byte_;
 } __attribute__((packed));
 
 std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
@@ -97,7 +104,7 @@ class Book {
 
   int GetValueFileOffset(int size);
 
-  ValueFile& GetValueFile(int size);
+  ValueFile& GetValueFile(const HashMapNode& node);
 
   void UpdateSizes(std::fstream* file);
 

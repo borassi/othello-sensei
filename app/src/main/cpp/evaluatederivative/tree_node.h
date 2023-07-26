@@ -356,6 +356,20 @@ class TreeNode {
     SetChildrenNoLock(children);
   }
 
+  void SetUpper(Eval upper) {
+    upper_ = std::min(upper, upper_);
+    for (int i = weak_upper_; i >= std::max(upper_, weak_lower_); i -= 2) {
+      MutableEvaluation(i)->SetDisproved();
+    }
+  }
+
+  void SetLower(Eval lower) {
+    lower_ = std::max(lower, lower_);
+    for (int i = weak_lower_; i <= std::min(lower_, weak_upper_); i += 2) {
+      MutableEvaluation(i)->SetProved();
+    }
+  }
+
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
 
   void SetLeaf(
@@ -620,6 +634,7 @@ class TreeNode {
   TreeNode** fathers_;
   Evaluation* evaluations_;
   EvalLarge leaf_eval_;
+  u_int32_t n_fathers_;
   Square n_empties_;
   Eval lower_;
   Eval upper_;
@@ -628,7 +643,6 @@ class TreeNode {
   Eval min_evaluation_;
   std::atomic_uint8_t n_threads_working_;
   Square n_children_;
-  Square n_fathers_;
   Square depth_;
   Square eval_depth_;
   u_int8_t evaluator_;

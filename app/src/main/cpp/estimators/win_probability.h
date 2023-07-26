@@ -52,6 +52,9 @@ constexpr float kErrors[][60] = {
 constexpr int kMaxCDFOffset = /*depth*/ 4 * /*n_empties*/ 64 * /*eval_delta*/ (256*8+1);
 
 constexpr int DataToCDFOffset(Square depth, Square n_empties, EvalLarge eval_delta) {
+  assert(depth >= 1 && depth <= 4);
+  assert(n_empties >= 0 && n_empties <= 63);
+  assert(eval_delta >= 2 * kMinEvalLarge && eval_delta <= -2 * kMinEvalLarge);
   return (depth-1) | (n_empties << 2) | ((eval_delta - 2 * kMinEvalLarge) << 8);
 }
 

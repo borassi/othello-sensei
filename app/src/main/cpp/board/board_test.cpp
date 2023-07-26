@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <regex>
 #include "board.h"
+#include "get_moves.h"
 
 TEST(Board, Basic) {
   std::string board_string = "--------"
@@ -68,6 +69,20 @@ TEST(Board, Unique) {
     for (Board t : b.AllTranspositions()) {
       EXPECT_EQ(b.Unique(), t.Unique());
     }
+  }
+}
+
+TEST(Board, UndoMove) {
+  for (int i = 0; i < 1000; ++i) {
+    const Board b = RandomBoard();
+    const auto flips = GetAllMoves(b.Player(), b.Opponent());
+    if (flips.size() == 0) {
+      continue;
+    }
+    BitPattern flip = flips[rand() % flips.size()];
+    Board b_copy = b.Next(flip);
+    b_copy.UndoMove(flip, b.MoveFromFlip(flip));
+    ASSERT_EQ(b, b_copy);
   }
 }
 
