@@ -52,8 +52,9 @@ class HashMapNode {
   bool IsEmpty() const { return size_byte_ == 0; }
   bool operator==(const HashMapNode& other) const = default;
 
-  int GetValueFileOffset() const { return size_byte_ - 1; }
-
+  int GetValueFilePosition() const { return SizeByteToPosition(size_byte_); }
+  static int SizeToPosition(int size) { return SizeByteToPosition(SizeToByte(size)); }
+  static int SizeByteToPosition(int size_byte) { return size_byte - 1; }
   static u_int8_t SizeToByte(int size);
   static int ByteToSize(u_int8_t b);
  private:

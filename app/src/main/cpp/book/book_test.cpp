@@ -142,7 +142,7 @@ TEST(Book, LargeOne) {
     book.Commit();
 
     ASSERT_EQ(*book.Get(b.Player(), b.Opponent()).value(), BookNode(&book, *node));
-    int test_i = rand() % (i+1);
+    int test_i = rand() % old_boards.size();
     Board test_board = old_boards[test_i];
     BookNode expected_node(&book, *expected[test_board.Unique()]);
     ASSERT_EQ(*book.Get(test_board.Player(), test_board.Opponent()).value(),

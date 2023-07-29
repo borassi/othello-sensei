@@ -111,9 +111,8 @@ void Book::Commit(const BookNode& node) {
 
   std::vector<char> to_store = node.Serialize();
   auto size = to_store.size();
-  // TODO: Remove the code duplication between here and HashMapNode.
-  auto offset = value_files_[HashMapNode::SizeToByte(to_store.size()) - 1].Add(to_store);
-  HashMapNode to_be_stored(size, offset);
+  auto position = value_files_[HashMapNode::SizeToPosition(to_store.size())].Add(to_store);
+  HashMapNode to_be_stored(size, position);
   if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
     file.write((char*) &to_be_stored, sizeof(HashMapNode));
     Resize(&file, {});
@@ -185,7 +184,7 @@ void Book::Clean() {
 }
 
 ValueFile& Book::GetValueFile(const HashMapNode& node) {
-  ValueFile& file = value_files_[node.GetValueFileOffset()];
+  ValueFile& file = value_files_[node.GetValueFilePosition()];
   assert(file.Size() == node.Size());
   return file;
 }
