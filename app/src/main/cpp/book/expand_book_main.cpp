@@ -29,11 +29,11 @@ namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
-//  std::string start_line = parse_flags.GetFlagOrDefault("start", "");
-  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
+  std::string start_line = parse_flags.GetFlagOrDefault("start", "");
+//  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  NVisited n_descendants_children = 200 * 1000 * 100UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
-  NVisited n_descendants_solve = 5 * 1000 * 1000 * 100UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
+  NVisited n_descendants_children = 200 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
+  NVisited n_descendants_solve = 5 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
@@ -63,6 +63,7 @@ int main(int argc, char* argv[]) {
   }
 
   while (true) {
+    ElapsedTime t;
     auto start = book.Get(Board(start_line)).value();
     if (start->IsSolved()) {
       std::cout << "Solved the position!\n";
@@ -79,7 +80,6 @@ int main(int argc, char* argv[]) {
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
-    ElapsedTime t;
     auto leaf = LeafToUpdate<BookNode>::BestDescendant(start, 0, kLessThenMinEval).value();
     std::cout
         << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
@@ -125,12 +125,12 @@ int main(int argc, char* argv[]) {
       node->AddChildrenToBook(children);
       node->UpdateFather();
     }
+    leaf.Finalize(n_visited);
+    book.Commit();
     double time = t.Get();
     std::cout << "Position:              " << PrettyPrintDouble(n_visited) << "\n";
     std::cout << "Time:                  " << PrettyPrintDouble(time) << " sec\n";
     std::cout << "Positions / sec:       " << PrettyPrintDouble(n_visited / time) << "\n";
-    book.Commit();
     std::cout << "\n";
-    leaf.Finalize(n_visited);
   }
 }

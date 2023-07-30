@@ -66,7 +66,8 @@ class TreeNode {
       n_children_(0),
       fathers_(nullptr),
       n_fathers_(0),
-      evaluator_(255) {}
+      evaluator_(255),
+      n_threads_working_(0) {}
   TreeNode(const TreeNode&) = delete;
   ~TreeNode() {
     if (evaluations_ != nullptr) {
