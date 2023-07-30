@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
         << "Descendants of start:  " << PrettyPrintDouble(start->GetNVisited()) << "\n"
         << "Evaluation of start:   " << std::setprecision(2) << start->GetEval() << "\n"
-        << "Missing:               " << PrettyPrintDouble(start->RemainingWorkOptimistic(-63, 63)) << "\n"
+        << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
     ElapsedTime t;
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     int beta = leaf.Beta();
     auto node = leaf.Leaf();
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
-    if (node->RemainingWorkPessimistic(alpha, beta) < n_descendants_solve) {
+    if (node->RemainingWork(alpha, beta) < n_descendants_solve) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();
       evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, false);
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300);
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition()->RemainingWorkOptimistic(alpha, beta));
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition()->RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300);
         children.push_back(evaluator->GetFirstPosition());

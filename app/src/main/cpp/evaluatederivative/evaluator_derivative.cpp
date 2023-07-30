@@ -65,7 +65,7 @@ void EvaluatorThread::Run() {
     assert(node->IsLeaf());
 //    leaf.UpdateFirstNode(first_position);
     auto visited_for_endgame = evaluator_->VisitedForEndgame();
-    if (node->RemainingWorkPessimistic(leaf.Alpha(), leaf.Beta()) * 8 < visited_for_endgame) {
+    if (node->RemainingWork(leaf.Alpha(), leaf.Beta()) * 12 < visited_for_endgame) {
       n_visited = SolvePosition(leaf, visited_for_endgame);
     } else {
       n_visited = AddChildren(leaf);
@@ -101,7 +101,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
   int child_n_empties = node->NEmpties() - 1;
   int depth;
-  float remaining_work = node->RemainingWorkOptimistic(leaf.Alpha(), leaf.Beta());
+  float remaining_work = node->RemainingWork(leaf.Alpha(), leaf.Beta());
 
   for (int i = 0; i < moves.size(); ++i) {
     BitPattern flip = moves[i];
@@ -167,13 +167,6 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
   stats_.Add(1, TREE_NODE);
 
   if (eval == kLessThenMinEvalLarge) {
-    if (rand() % 10 == 10) {
-      std::cout
-          << "\n" << leaf.Leaf()->ToBoard() << (int) leaf.Alpha() << " " << (int) leaf.Beta() << " " << (int) leaf.EvalGoal() << "\n"
-          << max_proof << " " << seen_positions << "\n"
-          << *leaf.Leaf() << "\n";
-      leaf.Leaf()->RemainingWorkPessimistic(leaf.Alpha(), leaf.Beta(), true);
-    }
     stats_.Add(seen_positions, SOLVED_TOO_EARLY);
     return seen_positions + AddChildren(leaf);
   }

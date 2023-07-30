@@ -63,10 +63,14 @@ struct CombineProb {
         } else if (i == 0) {
           disproof_to_proof_number[i][j] = 0;
         } else {
+          float proof_number =  ByteToProofNumberExplicit(i);
+          double prob = ByteToProbabilityExplicit(j);
+          if (prob > 0.5) {
+            proof_number *= pow(0.5 / (1 - prob), 3);
+          }
           disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
-              1.0,
-              std::min((double) kMaxProofNumber, ByteToProofNumberExplicit(i) / (1.0 -
-                  ByteToProbabilityExplicit(j)))));
+              1.0F,
+              std::min(kMaxProofNumber, proof_number)));
         }
         assert((i == 0 && j != kProbStep) == (disproof_to_proof_number[i][j] == 0));
         assert(

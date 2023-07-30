@@ -431,14 +431,12 @@ class TreeNode {
       }
     }
     if (result == kLogDerivativeMinusInf) {
-      result += log(RemainingWorkOptimistic(lower, upper)) - 1E5;
+      result += log(RemainingWork(lower, upper)) - 1E5;
     }
     return result;
   }
 
-  double RemainingWorkPessimistic(Eval lower, Eval upper, bool speak=false) const;
-
-  double RemainingWorkOptimistic(Eval lower, Eval upper) const;
+  double RemainingWork(Eval lower, Eval upper) const;
 
   std::vector<TreeNode*> Fathers() const {
     std::vector<TreeNode*> result;
@@ -697,8 +695,7 @@ class TreeNode {
 
   double GetValueWinning(const Evaluation& father, int eval_goal) const {
     const Evaluation& child_eval = GetEvaluation(eval_goal);
-    auto proof_number_using_this =
-        ByteToProofNumber(Evaluation::kCombineProb.disproof_to_proof_number[child_eval.DisproofNumberSmall()][child_eval.ProbGreaterEqualSmall()]);
+    auto proof_number_using_this = child_eval.DisproofNumber() / (1 - child_eval.ProbGreaterEqual());
     auto ratio = GetNVisited() / father.ProofNumber();
     float multiplier = -1;
     if (ratio < 1E-5) {
