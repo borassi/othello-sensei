@@ -18,7 +18,6 @@ local.properties
 keystore.properties
 /app/build
 /app/desktop_res
-/app/src/main/assets/coefficients
 /app/libs/rt.jar
 /app/testdata/*
 /app/release/app-release.aab
