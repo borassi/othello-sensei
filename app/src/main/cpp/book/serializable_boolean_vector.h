@@ -22,8 +22,9 @@
 class SerializableBooleanVector {
  public:
   SerializableBooleanVector() : memory_(), size_(0) {}
-  SerializableBooleanVector(const std::vector<char>& serialized, int size)
-      : memory_(serialized.begin(), serialized.end()), size_(size) {}
+  template<class InputIt>
+  SerializableBooleanVector(InputIt begin, InputIt end, int size)
+      : memory_(begin, end), size_(size) {}
 
   void PushBack(bool b);
   int Size() const { return size_; };

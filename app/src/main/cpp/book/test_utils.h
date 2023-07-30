@@ -62,6 +62,19 @@ std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
   int eval = 2 * (rand() % 60) - 60;
   int n_visited = rand() % 2000 + 1;
   t->Reset(b.Player(), b.Opponent(), 4, 0, EvalToEvalLarge(eval), 4, weak_lower, weak_upper);
+  // To test serializing / deserializing cases where the log derivative needs
+  // > 2 bytes.
+  for (int i = std::max(lower + 1, weak_lower); i < std::min(upper - 1, weak_upper); i += 2) {
+    Evaluation* eval = t->MutableEvaluation(i);
+    if (eval->ProbGreaterEqual() > 0 && eval->ProbGreaterEqual() < 1) {
+      eval->Set(
+          eval->ProbGreaterEqualSmall(),
+          eval->ProofNumberSmall(),
+          eval->DisproofNumberSmall(),
+          eval->MaxLogDerivative() - (rand() % 100) * 3000
+      );
+    }
+  }
   t->SetLower(lower);
   t->SetUpper(upper);
   t->AddDescendants(n_visited);

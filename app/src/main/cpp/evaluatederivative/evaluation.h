@@ -25,7 +25,7 @@
 #include "../estimators/endgame_time.h"
 #include "../estimators/win_probability.h"
 
-constexpr int kLogDerivativeMinusInf = -100000000;
+constexpr int kLogDerivativeMinusInf = -1000000;
 constexpr int kLogDerivativeMultiplier = 100;
 
 inline int LeafLogDerivative(double prob) {
@@ -99,6 +99,8 @@ struct CombineProb {
         assert(combine_prob[i][j] <= j);
       }
     }
+    assert(log_derivative_shallow[0] == -kLogDerivativeMinusInf);
+    assert((log_derivative_shallow[1] - log_derivative_shallow[255]) * 64 < -kLogDerivativeMinusInf);
     for (int i = 0; i <= kProbStep; ++i) {
       assert(combine_prob[i][0] == 0);
       assert(combine_prob[0][i] == 0);

@@ -126,6 +126,7 @@ target_link_libraries(
         LINK_PRIVATE
         endgame_time
         evaluation
+        serializable_boolean_vector
         tree_node
         value_file
 )

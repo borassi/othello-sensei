@@ -625,6 +625,15 @@ class TreeNode {
     }
   }
 
+  virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
+    assert((eval_goal - kMinEval) % 2 == 1);
+    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
+    assert(min_evaluation_ <= WeakLower());
+    int index = ToEvaluationIndex(eval_goal);
+    assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
+    return &evaluations_[index];
+  }
+
  protected:
   mutable std::mutex mutex_;
   BitPattern player_;
@@ -674,15 +683,6 @@ class TreeNode {
       assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
     }
     assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
-  }
-
-  virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
-    assert((eval_goal - kMinEval) % 2 == 1);
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
-    assert(min_evaluation_ <= WeakLower());
-    int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
-    return &evaluations_[index];
   }
 
   double GetValueDefault(const Evaluation& father, int eval_goal, float n_thread_multiplier, NVisited father_visited) const {

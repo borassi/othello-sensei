@@ -28,10 +28,10 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
     stream << " " << i << ":";
     if (p == 0) {
       assert(eval.MaxLogDerivative() == kLogDerivativeMinusInf);
-      stream << std::setprecision(0) << eval.DisproofNumber();
+      stream << std::setprecision(0) << "D " << eval.DisproofNumber();
     } else if (p == 1) {
       assert(eval.MaxLogDerivative() == kLogDerivativeMinusInf);
-      stream << std::setprecision(0) << eval.ProofNumber();
+      stream << std::setprecision(0) << "P " << eval.ProofNumber();
     } else {
       stream
           << "(" << std::setprecision(4) << p << " "

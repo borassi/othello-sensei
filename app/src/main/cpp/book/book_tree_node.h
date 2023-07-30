@@ -25,6 +25,7 @@
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
 #include "../estimators/endgame_time.h"
+#include "serializable_boolean_vector.h"
 #include "value_file.h"
 
 // Max fathers = 140656 (see test).
@@ -104,36 +105,51 @@ class BookTreeNode : public TreeNode {
     for (int eval = weak_lower_; eval <= lower_; eval += 2) {
       MutableEvaluation(eval)->SetProved();
     }
-//    if (lower_ + 1 <= last_1) {
-//      PN current_proof = serialized[i++];
-//      MutableEvaluation(lower_ + 1)->SetProving(current_proof);
-//
-//      bool* serialized_proof = (bool*) (&(serialized[0]) + i);
-//      int j = 0;
-//      for (int eval = lower_ + 3; eval <= last_1; eval += 2) {
-//        while (*(serialized_proof + j++) == 0) {
-//          current_proof++;
-//        }
-//        MutableEvaluation(eval)->SetProving(current_proof);
-//      }
-//      i += j;
-//    }
-    for (int eval = lower_ + 1; eval <= last_1; eval += 2) {
-      MutableEvaluation(eval)->SetProving(serialized[i++]);
+    for (int eval = weak_upper_; eval >= std::max(upper_, weak_lower_); eval -= 2) {
+      MutableEvaluation(eval)->SetDisproved();
     }
     for (int eval = last_1 + 2; eval <= first_0 - 2; eval += 2) {
       Probability prob = serialized[i++];
       PN proof_number = serialized[i++];
       PN disproof_number = serialized[i++];
-      int tmp = *((int*) &serialized[i]);
-      i += 4;
-      MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, tmp);
+      u_int32_t max_log_derivative = 0;
+      u_int8_t first_byte = serialized[i];
+      if (first_byte & (1U << 7)) {
+        max_log_derivative |= (first_byte & ~(1U << 7)) << 16;
+        i++;
+      }
+      max_log_derivative |= (u_int8_t) serialized[i++] << 8;
+      max_log_derivative |= (u_int8_t) serialized[i++];
+      MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -max_log_derivative);
     }
-    for (int eval = first_0; eval <= upper_ - 1; eval += 2) {
-      MutableEvaluation(eval)->SetDisproving(serialized[i++]);
+    PN proof, disproof;
+    if (lower_ + 1 <= last_1) {
+      proof = serialized[i++];
     }
-    for (int eval = weak_upper_; eval >= std::max(upper_, weak_lower_); eval -= 2) {
-      MutableEvaluation(eval)->SetDisproved();
+    if (upper_ - 1 >= first_0) {
+      disproof = serialized[i++];
+    }
+    SerializableBooleanVector proof_disproof_numbers(serialized.begin() + i, serialized.end(), 8 * (serialized.size() - i));
+    int j = 0;
+    if (lower_ + 1 <= last_1) {
+      MutableEvaluation(lower_ + 1)->SetProving(proof);
+
+      for (int eval = lower_ + 3; eval <= last_1; eval += 2) {
+        while (proof_disproof_numbers.Get(j++) == 0) {
+          proof++;
+        }
+        MutableEvaluation(eval)->SetProving(proof);
+      }
+    }
+    if (upper_ - 1 >= first_0) {
+      MutableEvaluation(upper_ - 1)->SetDisproving(disproof);
+
+      for (int eval = upper_ - 3; eval >= first_0; eval -= 2) {
+        while (proof_disproof_numbers.Get(j++) == 0) {
+          disproof++;
+        }
+        MutableEvaluation(eval)->SetDisproving(disproof);
+      }
     }
   }
 
@@ -188,39 +204,58 @@ class BookTreeNode : public TreeNode {
     }
     result.insert(result.end(), {(char) lower_, (char) upper_, (char) last_1, (char) first_0, (char) is_leaf_});
 
-//    if (lower_ + 1 <= last_1) {
-//      PN last_proof = GetEvaluation(lower_ + 1).ProofNumberSmall();
-//      result.push_back((char) last_proof);
-//      std::vector<bool> serialized_proof;
-//      for (int i = lower_ + 3; i <= last_1; i += 2) {
-//        PN current_proof = (char) GetEvaluation(i).ProofNumberSmall();
-//        while (last_proof < current_proof) {
-//          serialized_proof.push_back(false);
-//          last_proof++;
-//        }
-//        serialized_proof.push_back(true);
-//      }
-//      while (serialized_proof.size() % (sizeof(char) / sizeof(bool)) != 0) {
-//        serialized_proof.push_back(false);
-//      }
-//      result.insert(result.end(), serialized_proof.begin(), serialized_proof.end());
-//    }
-    for (int i = lower_ + 1; i <= last_1; i += 2) {
-      result.push_back((char) GetEvaluation(i).ProofNumberSmall());
-    }
     for (int i = last_1 + 2; i <= first_0 - 2; i += 2) {
       const Evaluation& evaluation = GetEvaluation(i);
+      assert(evaluation.MaxLogDerivative() != kLogDerivativeMinusInf);
       result.push_back((char) evaluation.ProbGreaterEqualSmall());
       result.push_back((char) evaluation.ProofNumberSmall());
       result.push_back((char) evaluation.DisproofNumberSmall());
-      int tmp = evaluation.MaxLogDerivative();
-      for (int k = 0; k < 4; ++k) {
-        result.push_back(*(((char*) &tmp) + k));
+      uint32_t max_log_derivative = -evaluation.MaxLogDerivative();
+      assert(max_log_derivative > 0);
+      assert(max_log_derivative < -kLogDerivativeMinusInf);
+      assert(max_log_derivative < 8388607 /*2^23-1*/);
+      if (max_log_derivative <= 32767 /*2^15-1*/) {
+        result.push_back((char) (max_log_derivative >> 8));
+        result.push_back((char) (max_log_derivative & 255));
+      } else {
+        max_log_derivative |= (1U << 23);
+        result.push_back((char) ((max_log_derivative >> 16) & 255));
+        result.push_back((char) ((max_log_derivative >> 8) & 255));
+        result.push_back((char) (max_log_derivative & 255));
       }
     }
-    for (int i = first_0; i <= upper_ - 1; i += 2) {
-      result.push_back((char) GetEvaluation(i).DisproofNumberSmall());
+    if (lower_ + 1 <= last_1) {
+      result.push_back((char) GetEvaluation(lower_ + 1).ProofNumberSmall());
     }
+    if (upper_ - 1 >= first_0) {
+      result.push_back((char) GetEvaluation(upper_ - 1).DisproofNumberSmall());
+    }
+
+    SerializableBooleanVector proof_disproof_numbers;
+    if (lower_ + 1 <= last_1) {
+      PN last = GetEvaluation(lower_ + 1).ProofNumberSmall();
+      for (int i = lower_ + 3; i <= last_1; i += 2) {
+        PN current = (char) GetEvaluation(i).ProofNumberSmall();
+        while (last < current) {
+          proof_disproof_numbers.PushBack(false);
+          last++;
+        }
+        proof_disproof_numbers.PushBack(true);
+      }
+    }
+    if (upper_ - 1 >= first_0) {
+      PN last = GetEvaluation(upper_ - 1).DisproofNumberSmall();
+      for (int i = upper_ - 3; i >= first_0; i -= 2) {
+        PN current = (char) GetEvaluation(i).DisproofNumberSmall();
+        while (last < current) {
+          proof_disproof_numbers.PushBack(false);
+          last++;
+        }
+        proof_disproof_numbers.PushBack(true);
+      }
+    }
+    const std::vector<char>& serialized_proof_disproof_numbers = proof_disproof_numbers.Serialize();
+    result.insert(result.end(), serialized_proof_disproof_numbers.begin(), serialized_proof_disproof_numbers.end());
     assert(result.size() <= kMaxNodeSize);
     return result;
   }

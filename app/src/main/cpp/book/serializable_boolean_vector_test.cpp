@@ -50,7 +50,8 @@ TEST(SerializableBooleanVector, Serialize) {
       expected.push_back(b);
       actual.PushBack(b);
     }
-    SerializableBooleanVector deserialized(actual.Serialize(), actual.Size());
+    auto serialized = actual.Serialize();
+    SerializableBooleanVector deserialized(serialized.begin(), serialized.end(), actual.Size());
     ASSERT_EQ(expected.size(), actual.Size());
     ASSERT_EQ(expected.size(), deserialized.Size());
     for (int j = 0; j < size; ++j) {
