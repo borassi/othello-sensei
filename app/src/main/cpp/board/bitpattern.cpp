@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <cassert>
 
-#if PDEP_PEXT
+#if __BMI2__
 #include <immintrin.h>
 #endif
 

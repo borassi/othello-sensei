@@ -25,7 +25,7 @@ target_link_libraries(
         bitpattern
 )
 
-IF(${PDEP_PEXT})
+IF(${__BMI2__})
     target_compile_options(
             hash_map
             PUBLIC

@@ -114,7 +114,7 @@ inline BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) __
 
 BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) {
   BitPattern stable = kStableDisksEdge.arr[(player & kBottomEdgePattern) | ((opponent & kBottomEdgePattern) << 8)];
-#if PDEP_PEXT
+#if __BMI2__
   stable |= _pdep_u64(kStableDisksEdge.arr[_pext_u64(player, kTopEdgePattern) | (_pext_u64(opponent, kTopEdgePattern) << 8)], kTopEdgePattern);
   stable |= _pdep_u64(kStableDisksEdge.arr[_pext_u64(player, kRightEdgePattern) | (_pext_u64(opponent, kRightEdgePattern) << 8)], kRightEdgePattern);
   stable |= _pdep_u64(kStableDisksEdge.arr[_pext_u64(player, kLeftEdgePattern) | (_pext_u64(opponent, kLeftEdgePattern) << 8)], kLeftEdgePattern);

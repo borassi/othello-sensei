@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if PDEP_PEXT
+#if __BMI2__
 #include <immintrin.h>
 #endif
 

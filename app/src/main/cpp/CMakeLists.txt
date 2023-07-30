@@ -62,14 +62,6 @@ ENDIF()
 
 include_directories( ${JNI_INCLUDE_DIRS} )
 
-SET(PDEP_PEXT NOT ANDROID)
-
-IF(${PDEP_PEXT})
-    add_definitions(-DPDEP_PEXT=true)
-ELSE()
-    add_definitions(-DPDEP_PEXT=false)
-ENDIF()
-
 SET(
         CMAKE_CXX_FLAGS_RELEASE
         "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -D_GNU_SOURCE=1 -m64 -Ofast -DNDEBUG -march=native -funroll-loops -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"

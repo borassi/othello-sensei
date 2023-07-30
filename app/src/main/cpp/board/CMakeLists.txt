@@ -68,7 +68,7 @@ add_library(
 
 target_link_libraries(get_flip LINK_PUBLIC bitpattern)
 
-IF(${PDEP_PEXT})
+IF(${__BMI2__})
     target_compile_options(
             get_flip
             PUBLIC
@@ -109,7 +109,7 @@ add_library(
         get_moves.cpp
 )
 
-IF(${PDEP_PEXT})
+IF(${__BMI2__})
     target_compile_options(
             get_moves
             PUBLIC
@@ -162,7 +162,7 @@ target_compile_options(
         -fconstexpr-steps=1000000000
 )
 
-IF(${PDEP_PEXT})
+IF(${__BMI2__})
     target_compile_options(
             stable
             PUBLIC

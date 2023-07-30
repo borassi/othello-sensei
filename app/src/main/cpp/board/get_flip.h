@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include "bitpattern.h"
-#if PDEP_PEXT
+#if __BMI2__
 #include <immintrin.h>
 #endif
 
@@ -189,7 +189,7 @@ struct MoveMetadata {
   MoveShift position_in_diag7;
   MoveShift position_in_diag9;
 
-#if !PDEP_PEXT
+#if !__BMI2__
   MoveShift row_shift;
   MoveShift column_shift;
 #endif
@@ -201,7 +201,7 @@ struct MoveMetadata {
     diag9(GetDiag9(move)),
     position_in_row(GetPositionInPattern(move, GetRow(move)) << 8),
     neighbors(Neighbors(1ULL << move)),
-#if PDEP_PEXT
+#if __BMI2__
     position_in_column(GetPositionInPattern(move, GetColumn(move)) << 8),
     position_in_diag7(GetPositionInPattern(move, GetDiag7(move)) << 8),
     position_in_diag9(GetPositionInPattern(move, GetDiag9(move)) << 8)
@@ -239,7 +239,7 @@ inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) n
 inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept {
   assert(((1ULL << move) & (player | opponent)) == 0);
   const MoveMetadata* m = kMoveMetadata + move;
-#if PDEP_PEXT
+#if __BMI2__
   return _pdep_u64(kFlip[m->position_in_row | (kOutflank[m->position_in_row | _pext_u64(opponent, m->row)] & _pext_u64(player, m->row))], m->row)
       | _pdep_u64(kFlip[m->position_in_column | (kOutflank[m->position_in_column | _pext_u64(opponent, m->column)] & _pext_u64(player, m->column))], m->column)
       | _pdep_u64(kFlip[m->position_in_diag7 | (kOutflank[m->position_in_diag7 | _pext_u64(opponent, m->diag7)] & _pext_u64(player, m->diag7))], m->diag7)
