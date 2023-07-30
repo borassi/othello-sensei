@@ -15,6 +15,10 @@
  */
 #include "book.h"
 
+#include <signal.h>
+
+std::atomic_int Book::received_signal_ = NSIG;
+
 std::ostream& operator<<(std::ostream& stream, const HashMapNode& n) {
   stream << "[" << (int) n.Size() << " " << n.Offset() << "]";
   return stream;
@@ -91,13 +95,28 @@ std::optional<BookNode*> Book::Get(const Board& b) {
 }
 
 void Book::Commit() {
+  // Logic taken from https://stackoverflow.com/questions/76798937.
+  signal(SIGINT, this->HandleSignal);   // CTRL-C
+  signal(SIGHUP, this->HandleSignal);   // Close terminal
+  signal(SIGQUIT, this->HandleSignal);  // CTRL-/
+  std::cout << "Committing " << modified_nodes_.size() << " nodes: " << std::flush;
   for (const auto& [board, node] : modified_nodes_) {
+    std::cout << "." << std::flush;
     Commit(node);
   }
   modified_nodes_.clear();
   auto file = OpenFile(IndexFilename());
   UpdateSizes(&file);
   assert(modified_nodes_.empty());
+  file.close();
+  std::cout << " Done\n" << std::flush;
+  // Reset these actions to default behavior.
+  signal(SIGINT, SIG_DFL);
+  signal(SIGHUP, SIG_DFL);
+  signal(SIGQUIT, SIG_DFL);
+  if (received_signal_ != NSIG) {
+    raise(received_signal_);
+  }
 }
 
 void Book::Commit(const BookNode& node) {

@@ -17,6 +17,7 @@
 #define OTHELLOSENSEI_POSITION_TO_DATA_H
 
 #include <algorithm>
+#include <atomic>
 #include <fstream>
 #include <memory>
 #include <optional>
@@ -98,8 +99,15 @@ class Book {
   // References are not invalidated:
   // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
   std::unordered_map<Board, BookNode> modified_nodes_;
+  // If we receive a signal when we are updating the book, we store it here
+  // instead of letting it kill the program. We re-raise this after we updated
+  // everything, to avoid inconsistencies. We use an atomic in case multiple
+  // signals come at the same time (not sure if it's really needed).
+  static std::atomic_int received_signal_;
 
   void Commit(const BookNode& node);
+
+  static void HandleSignal(int signal) { received_signal_ = signal; }
 
   BookNode GetBookNode(HashMapNode node);
 
