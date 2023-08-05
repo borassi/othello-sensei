@@ -412,6 +412,11 @@ JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getEval(JNIEnv* env, jobject tree_no
   return lround(node->GetEval() * 100);
 }
 
+JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLeafEval(JNIEnv* env, jobject tree_node_java) {
+  auto node = TreeNodeFromJava(env, tree_node_java);
+  return lround(node->GetLeafEval() * 100);
+}
+
 JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLower(JNIEnv* env, jobject tree_node_java) {
   auto node = TreeNodeFromJava(env, tree_node_java);
   return node->Lower() * 100;

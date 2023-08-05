@@ -62,13 +62,13 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
   auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(depth_);
 
+  leaf_eval_ = std::min(upper, std::max(lower, leaf_eval_));
   Eval lower_small = EvalLargeToEvalRound(lower);
   Eval upper_small = EvalLargeToEvalRound(upper);
   lower_ = MaxEval(lower_, lower_small);
   upper_ = MinEval(upper_, upper_small);
   assert(lower_ <= 64);
   assert(upper_ >= -64);
-  UpdateLeafEvalNoLock();
   SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower, weak_upper);
   for (int i = weak_lower_; i <= weak_upper_; i += 2) {
     assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
@@ -122,6 +122,10 @@ void TreeNode::ResetNoLock(
 
 double TreeNode::RemainingWork(Eval lower, Eval upper) const {
   auto guard = ReadLock();
+  return RemainingWorkNoLock(lower, upper);
+}
+
+double TreeNode::RemainingWorkNoLock(Eval lower, Eval upper) const {
   assert((lower - kMinEval) % 2 == 1);
   assert((upper - kMinEval) % 2 == 1);
   assert(n_empties_ >= 0 && n_empties_ <= 60);

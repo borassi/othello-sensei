@@ -29,6 +29,8 @@ public class TreeNodeCPP implements AutoCloseable {
 
   public native int getEval();
 
+  public native int getLeafEval();
+
   public native int getPercentileLower(float prob);
 
   public native int getPercentileUpper(float prob);
