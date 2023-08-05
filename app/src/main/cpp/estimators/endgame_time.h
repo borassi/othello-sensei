@@ -69,14 +69,14 @@ inline double Bound(double value) {
   return std::max(1.0, std::min(kMaxProofNumber * 0.99, value));
 }
 
-inline double ConvertProofNumber(double old, Eval old_goal, Eval new_goal) {
-  assert(new_goal < old_goal);
-  return Bound(exp(log(old) + 0.07 * (new_goal - old_goal)));
+inline double ConvertProofNumber(double old, int delta) {
+  assert(delta > 0);
+  return Bound(exp(log(old) + 0.07 * delta));
 }
 
-inline double ConvertDisproofNumber(double old, int old_goal, int new_goal) {
-  assert(new_goal > old_goal);
-  return Bound(exp(log(old) - 0.07 * (new_goal - old_goal)));
+inline double ConvertDisproofNumber(double old, int delta) {
+  assert(delta > 0);
+  return Bound(exp(log(old) - 0.07 * delta));
 }
 
 inline double LogProofNumber(int n_empties, Square moves_opponent, int error) {

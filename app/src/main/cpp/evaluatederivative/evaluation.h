@@ -243,6 +243,22 @@ class Evaluation {
     Check();
   }
 
+  void SetProving(const Evaluation& other_eval, int delta) {
+    assert(delta > 0);
+    assert(delta % 2 == 0);
+    prob_greater_equal_ = kProbStep;
+    proof_number_ = ProofNumberToByte(ConvertProofNumber(other_eval.ProofNumber(), delta));
+    disproof_number_ = kProofNumberStep;
+    max_log_derivative_ = kLogDerivativeMinusInf;
+  }
+
+  void SetDisproving(const Evaluation& other_eval, int delta) {
+    prob_greater_equal_ = 0;
+    proof_number_ = kProofNumberStep;
+    disproof_number_ = ProofNumberToByte(ConvertDisproofNumber(other_eval.DisproofNumber(), delta));
+    max_log_derivative_ = kLogDerivativeMinusInf;
+  }
+
   void SetProving(PN proof_number) {
     prob_greater_equal_ = kProbStep;
     proof_number_ = proof_number;

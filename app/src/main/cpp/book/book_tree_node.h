@@ -49,17 +49,17 @@ class BookTreeNode : public TreeNode {
     EnlargeEvaluationsInternal();
     descendants_ = node.GetNVisited();
 
-    auto proof_number = node.GetEvaluation(node.WeakLower()).ProofNumber();
-    auto disproof_number = node.GetEvaluation(node.WeakUpper()).DisproofNumber();
+    auto proof_eval = node.GetEvaluation(node.WeakLower());
+    auto disproof_eval = node.GetEvaluation(node.WeakUpper());
     for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
       if (i < lower_) {
         MutableEvaluation(i)->SetProved();
       } else if (i > upper_) {
         MutableEvaluation(i)->SetDisproved();
       } else if (i < node.WeakLower()) {
-        MutableEvaluation(i)->SetProving(ProofNumberToByte(ConvertProofNumber(proof_number, node.WeakLower(), i)));
+        MutableEvaluation(i)->SetProving(proof_eval, node.WeakLower() - i);
       } else if (i > node.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(ProofNumberToByte(ConvertDisproofNumber(disproof_number, node.WeakUpper(), i)));
+        MutableEvaluation(i)->SetDisproving(disproof_eval, i - node.WeakUpper());
       } else {
         *MutableEvaluation(i) = Evaluation(node.GetEvaluation(i));
       }

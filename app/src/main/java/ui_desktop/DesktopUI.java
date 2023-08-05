@@ -478,7 +478,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       if (evalGoal < board.getWeakLower() || evalGoal > board.getWeakUpper()) {
         continue;
       }
-      firstPositionText.append(String.format(Locale.US, "\n%+3d %3.0f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
+      firstPositionText.append(String.format(Locale.US, "\n%+3d %3.4f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
           JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
           JNI.prettyPrintDouble(board.proofNumber(evalGoal)), JNI.prettyPrintDouble(board.disproofNumber(evalGoal))));
     }
