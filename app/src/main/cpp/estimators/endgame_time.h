@@ -71,7 +71,7 @@ inline double Bound(double value) {
 
 inline double ConvertProofNumber(double old, int delta) {
   assert(delta > 0);
-  return Bound(exp(log(old) + 0.07 * delta));
+  return Bound(exp(log(old) - 0.07 * delta));
 }
 
 inline double ConvertDisproofNumber(double old, int delta) {
