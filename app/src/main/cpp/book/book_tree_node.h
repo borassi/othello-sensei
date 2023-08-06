@@ -45,7 +45,7 @@ class BookTreeNode : public TreeNode {
     weak_upper_ = 63;
     lower_ = node.Lower();
     upper_ = node.Upper();
-    leaf_eval_ = 0;
+    leaf_eval_ = node.LeafEval();
     EnlargeEvaluationsInternal();
     descendants_ = node.GetNVisited();
 
@@ -334,6 +334,7 @@ class BookTreeNode : public TreeNode {
       assert(GetEvaluation(i).ProbGreaterEqual() > 0 &&
              GetEvaluation(i).ProbGreaterEqual() < 1);
     }
+    leaf_eval_ = 4;
   }
 
  private:

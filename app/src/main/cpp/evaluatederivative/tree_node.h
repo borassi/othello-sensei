@@ -128,7 +128,7 @@ class TreeNode {
     return GetEvaluation(eval_goal).MaxLogDerivative();
   }
 
-  float GetLeafEval() const { return leaf_eval_ / 8.0; }
+  EvalLarge LeafEval() const { return leaf_eval_; }
 
   float GetEval() const {
     int lower = std::max(lower_ + 1, (int) WeakLower());
@@ -725,9 +725,9 @@ class TreeNode {
   }
 
   virtual void UpdateWithChild(const TreeNode& child, bool shallow) {
+    auto child_guard = child.ReadLock();
     assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
     assert(child.leaf_eval_ >= EvalToEvalLarge(child.lower_) && child.leaf_eval_ <= EvalToEvalLarge(child.upper_));
-    auto child_guard = child.ReadLock();
     assert(min_evaluation_ <= WeakLower());
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
@@ -834,7 +834,8 @@ class TreeNode {
         lower_ != other.lower_ ||
         upper_ != other.upper_ ||
         weak_lower_ != other.weak_lower_ ||
-        weak_upper_ != other.weak_upper_) {
+        weak_upper_ != other.weak_upper_ ||
+        leaf_eval_ != other.leaf_eval_) {
       return false;
     }
 

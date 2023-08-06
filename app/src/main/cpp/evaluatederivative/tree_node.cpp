@@ -20,11 +20,11 @@
 
 std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
   Board board = b.ToBoard();
-  stream << b.Player() << " " << b.Opponent() << ": ["
-         << (int) b.Lower() << " " << (int) b.Upper() << "]";
+  stream << b.Player() << " " << b.Opponent() << ": " << b.LeafEval() / 8.0
+         << " [" << (int) b.Lower() << " " << (int) b.Upper() << "]";
   for (int i = b.WeakLower(); i <= b.WeakUpper(); i += 2) {
     Evaluation eval = b.GetEvaluation(i);
-    float p = eval.ProbGreaterEqual();
+    double p = eval.ProbGreaterEqual();
     stream << " " << i << ":";
     if (p == 0) {
       assert(eval.MaxLogDerivative() == kLogDerivativeMinusInf);
