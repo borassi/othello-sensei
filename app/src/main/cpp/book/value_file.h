@@ -46,7 +46,7 @@ class ValueFile {
 
   BookFileOffset Add(const std::vector<char>& value);
 
-  void Remove(BookFileOffset offset);
+  std::vector<char> Remove(BookFileOffset offset);
 
   std::vector<char> Get(BookFileOffset offset);
 
@@ -71,6 +71,7 @@ class ValueFile {
     return folder_ + "/value_" + std::to_string(size_) + ".val";
   }
 
+  std::vector<char> Get(BookFileOffset offset, std::fstream* file);
   void Seek(BookFileOffset offset, std::fstream* file);
   void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream* file);
 };

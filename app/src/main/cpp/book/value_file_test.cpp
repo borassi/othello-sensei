@@ -48,7 +48,8 @@ TEST(ValueFile, AddAndRemove) {
   std::vector<char> values1 = {0, 1, 2, 3};
   BookFileOffset offset1 = value_file.Add(values1);
 
-  value_file.Remove(offset1);
+  auto values1_copy = value_file.Remove(offset1);
+  EXPECT_EQ(values1_copy, values1);
   EXPECT_EQ(value_file.Elements(), 2);
   EXPECT_EQ(value_file.Get(offset1), std::vector<char>({0, 0, 0, 0}));
 
@@ -62,7 +63,8 @@ TEST(ValueFile, AddAndRemove) {
   std::vector<char> values3 = {1, 1, 2, 4};
   BookFileOffset offset3 = value_file.Add(values3);
 
-  value_file.Remove(offset2);
+  auto values2_copy = value_file.Remove(offset2);
+  EXPECT_EQ(values2_copy, values2);
   EXPECT_EQ(value_file.Elements(), 4);
   EXPECT_EQ(value_file.Get(offset2), std::vector<char>({0, 0, 0, 0}));
 

@@ -41,20 +41,26 @@ BookFileOffset ValueFile::Add(const std::vector<char>& value) {
   return offset;
 }
 
-void ValueFile::Remove(BookFileOffset offset) {
+std::vector<char> ValueFile::Remove(BookFileOffset offset) {
   std::fstream file = OpenFile(Filename());
+  std::vector<char> result = Get(offset, &file);
   Seek(0, &file);
   BookFileOffset next_free;
   file.read((char*) &next_free, sizeof(next_free));
   SetAsEmpty(offset, next_free, &file);
   SetAsEmpty(0, offset, &file);
+  return result;
 }
 
 std::vector<char> ValueFile::Get(BookFileOffset offset) {
+  auto file = OpenFile(Filename());
+  return Get(offset, &file);
+}
+
+std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream* file) {
   std::vector<char> result(size_);
-  std::fstream file = OpenFile(Filename());
-  Seek(offset, &file);
-  file.read(&result[0], size_ * sizeof(char));
+  Seek(offset, file);
+  file->read(&result[0], size_ * sizeof(char));
   return result;
 }
 
