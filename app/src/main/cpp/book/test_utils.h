@@ -24,13 +24,17 @@
 
 const std::string kTempDir = "app/testdata/tmp/book_test";
 
+class TestBook;
+
+typedef BookTreeNode<TestBook, kBookVersion> TestBookTreeNode;
+
 class TestBook {
  public:
-  BookTreeNode<TestBook>* Add(const TreeNode& node) {
+  TestBookTreeNode* Add(const TreeNode& node) {
     Board unique = node.ToBoard().Unique();
     return &(*(nodes_.try_emplace(unique, this, node).first)).second;
   }
-  std::optional<BookTreeNode<TestBook>*> Get(const Board& b) {
+  std::optional<TestBookTreeNode*> Get(const Board& b) {
     auto it = nodes_.find(b.Unique());
     if (it == nodes_.end()) {
       return std::nullopt;
@@ -41,10 +45,8 @@ class TestBook {
  private:
   // References are not invalidated:
   // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
-  std::unordered_map<Board, BookTreeNode<TestBook>> nodes_;
+  std::unordered_map<Board, TestBookTreeNode> nodes_;
 };
-
-typedef BookTreeNode<TestBook> TestBookTreeNode;
 
 std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   std::shared_ptr<TreeNode> t(new TreeNode());
@@ -97,22 +99,23 @@ std::vector<TreeNode*> GetTreeNodeChildren(
 
 
 template<class Book>
-BookTreeNode<Book>* GetTestBookTreeNode(Book* book, Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+BookTreeNode<Book, kBookVersion>* GetTestBookTreeNode(Book* book, Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   auto node = TestTreeNode(b, leaf_eval, weak_lower, weak_upper, n_visited);
   return book->Add(*node);
 }
 
 template<class Book>
-BookTreeNode<Book>* GetTestBookTreeNode(Book* book, BitPattern player, BitPattern opponent, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+BookTreeNode<Book, kBookVersion>* GetTestBookTreeNode(Book* book, BitPattern player, BitPattern opponent, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   return GetTestBookTreeNode(book, Board(player, opponent), leaf_eval, weak_lower, weak_upper, n_visited);
 }
 
 template<class Book>
-BookTreeNode<Book>* RandomBookTreeNode(Book* book, Board b) {
+BookTreeNode<Book, kBookVersion>* RandomBookTreeNode(Book* book, Board b) {
   return book->Add(*RandomTestTreeNode(b));
 }
 
-Book BookWithPositions(
+template<int version = kBookVersion>
+Book<version> BookWithPositions(
     const std::vector<std::string>& lines,
     const std::unordered_map<Board, int>& evals,
     const std::unordered_set<std::pair<Board, Board>, PairHash>& skip,
@@ -125,7 +128,7 @@ Book BookWithPositions(
 
   for (const auto& line : lines) {
     NVisited total_visited = 0;
-    std::vector<BookNode*> parents;
+    std::vector<typename Book<version>::BookNode*> parents;
     for (int i = first_line.length(); i <= line.length(); i += 2) {
       parents.push_back(book.Get(line.substr(0, i)).value());
     }
@@ -141,7 +144,7 @@ Book BookWithPositions(
       total_visited += n_visited;
     }
     book.Get(father).value()->AddChildrenToBook(children);
-    LeafToUpdate<BookNode>::Leaf(parents).Finalize(total_visited);
+    LeafToUpdate<typename Book<version>::BookNode>::Leaf(parents).Finalize(total_visited);
   }
   return book;
 }
@@ -182,8 +185,8 @@ std::vector<BitPattern> AllPossibleFlips(Board b, Square square, int dir) {
 }
 
 template<class Book>
-BookTreeNode<Book>* LargestTreeNode(Book& book, int max_fathers = 0) {
-  BookTreeNode<Book>* result = RandomBookTreeNode(&book, Board(
+BookTreeNode<Book, kBookVersion>* LargestTreeNode(Book& book, int max_fathers = 0) {
+  auto result = RandomBookTreeNode(&book, Board(
       "OOOOOO-O"
       "OOOOOOOO"
       "OOOOOOOO"
@@ -225,14 +228,14 @@ BookTreeNode<Book>* LargestTreeNode(Book& book, int max_fathers = 0) {
         }
       }
     }
-    std::vector<BookTreeNode<Book>*> fathers;
+    std::vector<BookTreeNode<Book, kBookVersion>*> fathers;
     for (const Board& father_board : all_possible_fathers) {
       // We might have already added a transposition of father.
       if (book.Get(father_board)) {
         continue;
       }
-      BookTreeNode<Book>* father = RandomBookTreeNode(&book, father_board);
-      std::vector<BookTreeNode<Book>*> children = {result};
+      BookTreeNode<Book, kBookVersion>* father = RandomBookTreeNode(&book, father_board);
+      std::vector<BookTreeNode<Book, kBookVersion>*> children = {result};
       for (auto [b, unused] : GetUniqueNextBoardsWithPass(father_board)) {
         if (b == result->ToBoard()) {
           continue;
@@ -244,7 +247,7 @@ BookTreeNode<Book>* LargestTreeNode(Book& book, int max_fathers = 0) {
           children.push_back(RandomBookTreeNode(&book, b));
         }
       }
-      father->template AddChildrenToBook<BookTreeNode<Book>*>(children);
+      father->template AddChildrenToBook<BookTreeNode<Book, kBookVersion>*>(children);
       if (max_fathers > 0 && result->Fathers().size() > max_fathers) {
         return result;
       }

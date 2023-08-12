@@ -95,42 +95,41 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     // Handle item selection
-    switch (item.getItemId()) {
-      case R.id.newGame:
-        main.newGame();
-        return true;
-      case R.id.undo:
-        main.undo();
-        return true;
-      case R.id.stop:
-        main.stop();
-        return true;
-      case R.id.active:
-        rotateTask();
-        return true;
-      case R.id.thor:
-        main.stop();
-        loadThor();
-        return true;
-      case R.id.set_first_position:
-        main.setFirstPosition();
-        return true;
-      case R.id.reset_first_position:
-        main.resetFirstPosition();
-        return true;
-      case R.id.copy_notes:
-        copyNotes();
-        return true;
-      case R.id.add_to_notes:
-        addToNotes();
-        return true;
-      case R.id.action_settings:
-        main.stop();
-        startActivity(new Intent(this, SettingsActivity.class));
-        return true;
-      default:
-        return super.onOptionsItemSelected(item);
+    int itemId = item.getItemId();
+    if (itemId == R.id.newGame) {
+      main.newGame();
+      return true;
+    } else if (itemId == R.id.undo) {
+      main.undo();
+      return true;
+    } else if (itemId == R.id.stop) {
+      main.stop();
+      return true;
+    } else if (itemId == R.id.active) {
+      rotateTask();
+      return true;
+    } else if (itemId == R.id.thor) {
+      main.stop();
+      loadThor();
+      return true;
+    } else if (itemId == R.id.set_first_position) {
+      main.setFirstPosition();
+      return true;
+    } else if (itemId == R.id.reset_first_position) {
+      main.resetFirstPosition();
+      return true;
+    } else if (itemId == R.id.copy_notes) {
+      copyNotes();
+      return true;
+    } else if (itemId == R.id.add_to_notes) {
+      addToNotes();
+      return true;
+    } else if (itemId == R.id.action_settings) {
+      main.stop();
+      startActivity(new Intent(this, SettingsActivity.class));
+      return true;
     }
+    return super.onOptionsItemSelected(item);
   }
 
   @Override

@@ -265,18 +265,18 @@ class JNIWrapper {
       children.push_back(child);
       n_visited += child->GetNVisited();
     }
-    std::vector<BookNode*> parents_node;
+    std::vector<Book<>::BookNode*> parents_node;
 
     for (auto parent : parents) {
       parents_node.push_back(book_.Get(parent).value());
     }
     father_node.value()->AddChildrenToBook(children);
-    LeafToUpdate<BookNode>::Leaf(parents_node).Finalize(n_visited);
+    LeafToUpdate<Book<>::BookNode>::Leaf(parents_node).Finalize(n_visited);
     book_.Commit();
   }
 
  private:
-  Book book_;
+  Book<> book_;
   EvalType evals_;
   HashMap<kBitHashMap> hash_map_;
   std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluator_derivative_;

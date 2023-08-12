@@ -41,8 +41,8 @@ public class CaseAnnotations {
     } else {
       evalFormatter = "%+.2f";
     }
-    return String.format(evalFormatter, -treeNode.getEval() / 100.0);
-//               + "\n" + String.format(evalFormatter, -treeNode.getLeafEval() / 100.0);
+    return String.format(evalFormatter, -treeNode.getEval() / 100.0)
+               + "\n" + String.format(evalFormatter, -treeNode.getLeafEval() / 100.0);
   }
 
   public String proofDisproofNumberLine() {

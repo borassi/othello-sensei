@@ -19,8 +19,10 @@
 #include <algorithm>
 #include <atomic>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <signal.h>
 #include <stdio.h>
 #include <string>
 
@@ -65,12 +67,13 @@ class HashMapNode {
 
 std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
 
-class Book;
+constexpr int kBookVersion = 1;
 
-typedef BookTreeNode<Book> BookNode;
-
+template<int version = kBookVersion>
 class Book {
  public:
+  typedef BookTreeNode<Book, version> BookNode;
+
   Book(const std::string& folder);
 
   std::optional<BookNode*> Get(const Board& b);
@@ -81,7 +84,7 @@ class Book {
 
   BookNode* Add(const TreeNode& node);
 
-  void Commit();
+  void Commit(bool verbose = false);
 
   bool IsSizeOK();
 
@@ -141,6 +144,270 @@ class Book {
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);
 };
 
+template<int version>
+std::atomic_int Book<version>::received_signal_ = NSIG;
 
+template<int version>
+Book<version>::Book(const std::string& folder) : folder_(folder), value_files_() {
+  for (int i = 1; i <= 255; ++i) {
+    value_files_.push_back(ValueFile(folder, HashMapNode::ByteToSize(i)));
+  }
+  if (!FileExists(IndexFilename())) {
+    CreateEmptyFile(IndexFilename());
+  }
+  std::fstream index_file(IndexFilename());
+  if (FileSize(index_file) < kOffset) {
+    index_file.close();
+    Clean();
+  } else {
+    index_file.read((char*) &hash_map_size_, sizeof(hash_map_size_));
+    index_file.read((char*) &book_size_, sizeof(book_size_));
+  }
+}
+
+template<int version>
+typename Book<version>::BookNode* Book<version>::Add(const TreeNode& node) {
+  Board unique = node.ToBoard().Unique();
+  assert(!Get(unique));
+  auto [iterator, inserted] = modified_nodes_.try_emplace(unique, this, node);
+  assert(inserted);
+  return &iterator->second;
+}
+
+template<int version>
+std::optional<typename Book<version>::BookNode*> Book<version>::Get(const Board& b) {
+  Board unique = b.Unique();
+  auto iterator = modified_nodes_.find(unique);
+  if (iterator != modified_nodes_.end()) {
+    return &(iterator->second);
+  }
+  HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
+  if (!node.IsEmpty()) {
+    std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
+    iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
+    return &iterator->second;
+  }
+  return std::nullopt;
+}
+
+template<int version>
+void Book<version>::Commit(bool verbose) {
+  // Logic taken from https://stackoverflow.com/questions/76798937.
+  signal(SIGINT, this->HandleSignal);   // CTRL-C
+  signal(SIGHUP, this->HandleSignal);   // Close terminal
+  signal(SIGQUIT, this->HandleSignal);  // CTRL-/
+  if (verbose) {
+    std::cout << "Committing " << modified_nodes_.size() << " nodes: " << std::flush;
+  }
+  for (const auto& [board, node] : modified_nodes_) {
+    if (verbose) {
+      std::cout << "." << std::flush;
+    }
+    Commit(node);
+  }
+  modified_nodes_.clear();
+  auto file = OpenFile(IndexFilename());
+  UpdateSizes(&file);
+  assert(modified_nodes_.empty());
+  file.close();
+  if (verbose) {
+    std::cout << " Done\n" << std::flush;
+  }
+  // Reset these actions to default behavior.
+  signal(SIGINT, SIG_DFL);
+  signal(SIGHUP, SIG_DFL);
+  signal(SIGQUIT, SIG_DFL);
+  if (received_signal_ != NSIG) {
+    raise(received_signal_);
+  }
+}
+
+template<int version>
+void Book<version>::Commit(const BookNode& node) {
+  auto [file, hash_map_node] = Find(node.Player(), node.Opponent());
+
+  if (!hash_map_node.IsEmpty()) {
+    GetValueFile(hash_map_node).Remove(hash_map_node.Offset());
+  } else {
+    ++book_size_;
+  }
+
+  std::vector<char> to_store = node.Serialize();
+  auto size = to_store.size();
+  auto position = value_files_[HashMapNode::SizeToPosition(to_store.size())].Add(to_store);
+  HashMapNode to_be_stored(size, position);
+  if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
+    file.write((char*) &to_be_stored, sizeof(HashMapNode));
+    Resize(&file, {});
+  } else {
+    Resize(&file, {to_be_stored});
+  }
+  // So that the asserts below work.
+  file.close();
+  assert(Get(node.ToBoard()));
+  assert(!Find(node.Player(), node.Opponent()).second.IsEmpty());
+  assert(IsSizeOK());
+}
+
+template<int version>
+bool Book<version>::IsSizeOK() {
+  std::fstream index_file = OpenFile(IndexFilename());
+  if (OffsetToFilePosition(hash_map_size_) != FileSize(index_file)) {
+    std::cout << "Wrong hash map size " << OffsetToFilePosition(hash_map_size_) << ". Should be " << FileSize(index_file) << "\n";
+    return false;
+  }
+  HashMapNode node;
+  HashMapIndex num_elements = 0;
+  index_file.seekg(kOffset);
+  for (HashMapIndex hash = 0; hash < hash_map_size_; ++hash) {
+    index_file.read((char*) &node, sizeof(HashMapNode));
+    if (!node.IsEmpty()) {
+      ++num_elements;
+    }
+  }
+  if (num_elements != book_size_) {
+    std::cout << "Wrong book size " << book_size_ << ". Should be " << num_elements << "\n";
+    return false;
+  }
+  return true;
+}
+
+template<int version>
+void Book<version>::Print(int start, int end) {
+  std::fstream index_file = OpenFile(IndexFilename());
+  int size = FileSize(index_file);
+  HashMapNode node;
+  if (end == -1) {
+    end = hash_map_size_;
+  }
+
+  std::cout << "Book with " << book_size_ << " elements in " << hash_map_size_ << " buckets:\n";
+  for (int hash = start; hash < end; ++hash) {
+    index_file.seekg(OffsetToFilePosition(hash));
+    index_file.read((char*) &node, sizeof(HashMapNode));
+    if (node.IsEmpty()) {
+      continue;
+    }
+    std::cout << "  " << hash << ": size=" << (int) node.Size() << " off="
+              << node.Offset() << " -> " << node << "\n";
+  }
+}
+
+template<int version>
+void Book<version>::Clean() {
+  std::ofstream(IndexFilename(), std::ios::out).close();
+  u_int32_t to_write = 0;
+  for (ValueFile& value_file : value_files_) {
+    value_file.Clean();
+  }
+  auto file = OpenFile(IndexFilename());
+  hash_map_size_ = kInitialHashMapSize;
+  book_size_ = 0;
+  UpdateSizes(&file);
+  std::vector<HashMapNode> nodes(kInitialHashMapSize);
+  file.write((char*) &nodes[0], kInitialHashMapSize * sizeof(HashMapNode));
+  modified_nodes_.clear();
+}
+
+template<int version>
+ValueFile& Book<version>::GetValueFile(const HashMapNode& node) {
+  ValueFile& file = value_files_[node.GetValueFilePosition()];
+  assert(file.Size() == node.Size());
+  return file;
+}
+
+template<int version>
+void Book<version>::UpdateSizes(std::fstream* file) {
+  file->seekp(0);
+  file->write((char*) &hash_map_size_, sizeof(hash_map_size_));
+  file->write((char*) &book_size_, sizeof(book_size_));
+}
+
+template<int version>
+HashMapIndex Book<version>::RepositionHash(HashMapIndex board_hash) {
+  assert(board_hash >= 0);
+  HashMapIndex hash = board_hash % PowerAfterHashMapSize();
+  if (hash >= hash_map_size_) {
+    return hash - PowerBeforeHashMapSize();
+  }
+  return hash;
+}
+
+template<int version>
+std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitPattern opponent) {
+  Board unique = Board(player, opponent).Unique();
+  player = unique.Player();
+  opponent = unique.Opponent();
+  auto hash = RepositionHash(HashFull(player, opponent));
+  std::fstream file = OpenFile(IndexFilename());
+  assert(file);
+  file.seekg(OffsetToFilePosition(hash));
+  HashMapNode node;
+
+  while (true) {
+    file.read((char*) &node, sizeof(HashMapNode));
+    if (node.IsEmpty()) {
+      file.seekg((unsigned long long) file.tellg() - sizeof(HashMapNode), std::ios::beg);
+      file.seekp(file.tellg());
+      return std::make_pair(std::move(file), node);
+    }
+    std::vector<char> v = GetValueFile(node).Get(node.Offset());
+    BookNode book_tree_node(this, v, false);
+    Board b = book_tree_node.ToBoard();
+    assert(b == b.Unique());
+    if (b.Player() == player && b.Opponent() == opponent) {
+      file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
+      file.seekp(file.tellg());
+      return std::make_pair(std::move(file), node);
+    }
+
+    if (file.tellg() == OffsetToFilePosition(hash_map_size_)) {
+      file.seekp(file.tellg());
+      return std::make_pair(std::move(file), HashMapNode());
+    }
+  }
+}
+
+template<int version>
+void Book<version>::Resize(std::fstream* file, std::vector<HashMapNode> add_elements) {
+  HashMapNode node_to_move;
+  HashMapNode empty_node;
+
+  int extra_buffer = add_elements.size();
+  while (book_size_ > 0.4 * hash_map_size_ || extra_buffer > 0) {
+    int current_buffer = 0;
+    for (HashMapIndex invalidated = RepositionHash(hash_map_size_); true; ++invalidated) {
+      file->seekg(OffsetToFilePosition(invalidated));
+      file->read((char*) &node_to_move, sizeof(node_to_move));
+      file->seekp(OffsetToFilePosition(invalidated));
+      file->write((char*) &empty_node, sizeof(empty_node));
+      if (node_to_move.IsEmpty()) {
+        break;
+      }
+      add_elements.push_back(node_to_move);
+      ++current_buffer;
+    }
+    extra_buffer = std::max(current_buffer, extra_buffer);
+    file->seekp(0, std::ios::end);
+    file->write((char*) &empty_node, sizeof(empty_node));
+    ++hash_map_size_;
+    --extra_buffer;
+  }
+
+  for (const HashMapNode& node_to_move : add_elements) {
+    std::vector<char> v = GetValueFile(node_to_move).Get(node_to_move.Offset());
+    BookNode node(this, v, false);
+    Board board = node.ToBoard();
+    HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
+    HashMapNode board_in_position;
+    file->seekg(OffsetToFilePosition(hash));
+    file->read((char*) &board_in_position, sizeof(board_in_position));
+    while (!board_in_position.IsEmpty()) {
+      file->read((char*) &board_in_position, sizeof(board_in_position));
+    }
+    file->seekp((u_int64_t) file->tellg() - sizeof(HashMapNode));
+    file->write((char*) &node_to_move, sizeof(node_to_move));
+  }
+}
 
 #endif //OTHELLOSENSEI_POSITION_TO_DATA_H

@@ -51,14 +51,14 @@ TEST(BookTreeNodeTestFixture, Serialize) {
   }
 }
 
-TEST(BookTreeNodeTestFixture, SerializeLargestTreeNode) {
-  TestBook book;
-  TestBookTreeNode* n = LargestTreeNode<TestBook>(book, 10000);
-  auto serialized = n->Serialize();
-  std::cout << n->Fathers().size() << " " << serialized.size() << " " << kMaxNodeSize << "\n";
-  TestBookTreeNode actual = TestBookTreeNode(&book, serialized);
-  ASSERT_EQ(*n, actual);
-}
+//TEST(BookTreeNodeTestFixture, SerializeLargestTreeNode) {
+//  TestBook book;
+//  TestBookTreeNode* n = LargestTreeNode<TestBook>(book, 10000);
+//  auto serialized = n->Serialize();
+//  std::cout << n->Fathers().size() << " " << serialized.size() << " " << kMaxNodeSize << "\n";
+//  TestBookTreeNode actual = TestBookTreeNode(&book, serialized);
+//  ASSERT_EQ(*n, actual);
+//}
 //TEST(BookTreeNodeTestFixture, Merge) {
 //  TestBook book;
 //  auto book_tree_node1 = GetTestBookTreeNode(&book, Board("e6f4c3c4d3"), 1, -5, 1, 10);

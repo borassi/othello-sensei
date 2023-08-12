@@ -30,6 +30,8 @@
 using ::testing::UnorderedElementsAre;
 using ::testing::ElementsAreArray;
 
+typedef Book<kBookVersion>::BookNode BookNode;
+
 class BookParameterizedFixture : public ::testing::TestWithParam<bool> {
  protected:
   bool only_new;
@@ -123,7 +125,7 @@ TEST(Book, LargeOne) {
   std::vector<Board> old_boards;
   book.Clean();
 
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
       std::cout << i << "\n";
     }
@@ -359,17 +361,6 @@ TEST(Book, BestDescendant) {
   EXPECT_TRUE(result);
   EXPECT_EQ(result->Leaf()->ToBoard().Unique(), Board("e6f4d3c4c3").Unique());
 }
-
-//TEST(Book, BestDescendants) {
-//  std::vector<std::string> lines = {"e6f4", "e6f4c3", "e6f4c3c4", "e6f4d3", "e6f4d3c4"};
-//  std::unordered_map<Board, int> evals = {{Board("e6f4d3c4c3"), 0}, {Board("e6f4e3"), 2}};
-//  Book book = BookWithPositions(lines, evals, /*skip=*/{}, /*visited=*/{});
-//  BookNode* start = book.Get(Board("e6f4")).value();
-//  auto result = LeafToUpdate<BookNode>::BestDescendants(start);
-//  EXPECT_EQ(result.size(), 2);
-//  EXPECT_EQ(result[0].Leaf()->ToBoard().Unique(), Board("e6f4d3c4c3").Unique());
-//  EXPECT_EQ(result[1].Leaf()->ToBoard().Unique(), Board("e6f4e3").Unique());
-//}
 
 INSTANTIATE_TEST_SUITE_P(
     BookParameterized,

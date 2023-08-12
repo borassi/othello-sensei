@@ -31,7 +31,7 @@
 // Max fathers = 140656 (see test).
 constexpr int kMaxNodeSize = 13 /*board*/ + 3 * 140656 /*fathers*/ + 4 /*descendants*/ + 5 /*bounds*/ + 7 * 64 /*evals*/;
 
-template<class Book>
+template<class Book, int version>
 class BookTreeNode : public TreeNode {
  public:
   BookTreeNode(Book* book, const TreeNode& node) : TreeNode(), book_(book), is_leaf_(true) {
@@ -96,8 +96,6 @@ class BookTreeNode : public TreeNode {
     Eval last_1 = (Eval) serialized[i++];
     Eval first_0 = (Eval) serialized[i++];
     is_leaf_ = (bool) serialized[i++];
-    // Mark as valid.
-    leaf_eval_ = 0;
     n_threads_working_ = 0;
 
     EnlargeEvaluationsInternal();
@@ -129,13 +127,22 @@ class BookTreeNode : public TreeNode {
     if (upper_ - 1 >= first_0) {
       disproof = serialized[i++];
     }
-    SerializableBooleanVector proof_disproof_numbers(serialized.begin() + i, serialized.end(), 8 * (serialized.size() - i));
+    SerializableBooleanVector serialized_bool(serialized.begin() + i, serialized.end(), 8 * (serialized.size() - i));
+
     int j = 0;
+    if (version >= 1) {
+      // Max: 64 * 8 - 64 * 8 = 128 * 8 = 1024 => 11 bits.
+      uint32_t leaf_eval_small = serialized_bool.Get(0, 11);
+      leaf_eval_ = leaf_eval_small + kMinEvalLarge;
+      j += 11;
+    } else {
+      leaf_eval_ = 0;
+    }
     if (lower_ + 1 <= last_1) {
       MutableEvaluation(lower_ + 1)->SetProving(proof);
 
       for (int eval = lower_ + 3; eval <= last_1; eval += 2) {
-        while (proof_disproof_numbers.Get(j++) == 0) {
+        while (serialized_bool.Get(j++) == 0) {
           proof++;
         }
         MutableEvaluation(eval)->SetProving(proof);
@@ -145,7 +152,7 @@ class BookTreeNode : public TreeNode {
       MutableEvaluation(upper_ - 1)->SetDisproving(disproof);
 
       for (int eval = upper_ - 3; eval >= first_0; eval -= 2) {
-        while (proof_disproof_numbers.Get(j++) == 0) {
+        while (serialized_bool.Get(j++) == 0) {
           disproof++;
         }
         MutableEvaluation(eval)->SetDisproving(disproof);
@@ -231,16 +238,22 @@ class BookTreeNode : public TreeNode {
       result.push_back((char) GetEvaluation(upper_ - 1).DisproofNumberSmall());
     }
 
-    SerializableBooleanVector proof_disproof_numbers;
+    SerializableBooleanVector serialized_bool;
+    if (version >= 1) {
+      // Max: 64 * 8 - 64 * 8 = 128 * 8 = 1024 => 11 bits.
+      uint32_t leaf_eval_small = leaf_eval_ - kMinEvalLarge;
+      serialized_bool.PushBack(leaf_eval_small, 11);
+    }
+
     if (lower_ + 1 <= last_1) {
       PN last = GetEvaluation(lower_ + 1).ProofNumberSmall();
       for (int i = lower_ + 3; i <= last_1; i += 2) {
         PN current = (char) GetEvaluation(i).ProofNumberSmall();
         while (last < current) {
-          proof_disproof_numbers.PushBack(false);
+          serialized_bool.PushBack(false);
           last++;
         }
-        proof_disproof_numbers.PushBack(true);
+        serialized_bool.PushBack(true);
       }
     }
     if (upper_ - 1 >= first_0) {
@@ -248,21 +261,21 @@ class BookTreeNode : public TreeNode {
       for (int i = upper_ - 3; i >= first_0; i -= 2) {
         PN current = (char) GetEvaluation(i).DisproofNumberSmall();
         while (last < current) {
-          proof_disproof_numbers.PushBack(false);
+          serialized_bool.PushBack(false);
           last++;
         }
-        proof_disproof_numbers.PushBack(true);
+        serialized_bool.PushBack(true);
       }
     }
-    const std::vector<char>& serialized_proof_disproof_numbers = proof_disproof_numbers.Serialize();
-    result.insert(result.end(), serialized_proof_disproof_numbers.begin(), serialized_proof_disproof_numbers.end());
+    const std::vector<char>& serialized_bool_converted = serialized_bool.Serialize();
+    result.insert(result.end(), serialized_bool_converted.begin(), serialized_bool_converted.end());
     assert(result.size() <= kMaxNodeSize);
     return result;
   }
 
   bool IsLeaf() const override { return is_leaf_; }
 
-  bool Equals(const BookTreeNode<Book>& other, bool approx) const {
+  bool Equals(const BookTreeNode<Book, version>& other, bool approx) const {
     return TreeNode::Equals((const TreeNode&) other, approx);
   }
 
@@ -348,7 +361,7 @@ class BookTreeNode : public TreeNode {
       Square move = move_and_flip.first;
       BitPattern flip = move_and_flip.second;
 
-      std::optional<BookTreeNode<Book>*> father = book_->Get(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
+      std::optional<BookTreeNode<Book, version>*> father = book_->Get(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
       assert(father);
       (*father)->GetChildrenFromBook();
     }
