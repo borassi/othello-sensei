@@ -27,9 +27,11 @@ class SerializableBooleanVector {
       : memory_(begin, end), size_(size) {}
 
   void PushBack(bool b);
+  void PushBack(uint32_t value, int num_bits);
   int Size() const { return size_; };
   const std::vector<char>& Serialize() const { return memory_; }
   bool Get(int i) const;
+  uint32_t Get(int i, int num_bits) const;
 
  private:
   std::vector<char> memory_;

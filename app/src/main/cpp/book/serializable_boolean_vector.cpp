@@ -34,8 +34,28 @@ void SerializableBooleanVector::PushBack(bool b) {
   ++size_;
 }
 
+void SerializableBooleanVector::PushBack(uint32_t value, int num_bits) {
+  assert(num_bits >= 1 && num_bits <= 32);
+  assert(num_bits == 32 || value < (1U << num_bits));
+  for (int offset = num_bits - 1; offset >= 0; --offset) {
+    PushBack((value >> offset) & 1);
+  }
+}
+
 bool SerializableBooleanVector::Get(int i) const {
   assert(i < size_);
   int value = memory_[i / kBitPerChar];
   return (value & (1 << PositionInByte(i))) != 0;
+}
+
+uint32_t SerializableBooleanVector::Get(int i, int num_bits) const {
+  assert(num_bits >= 1 && num_bits <= 32);
+  assert(i + num_bits - 1 < size_);
+  uint32_t value = 0;
+  for (int offset = num_bits - 1; offset >= 0; --offset) {
+    if (Get(i + (num_bits - 1 - offset))) {
+      value = value | (1U << offset);
+    }
+  }
+  return value;
 }

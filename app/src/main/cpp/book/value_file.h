@@ -56,7 +56,7 @@ class ValueFile {
     SetAsEmpty(0, 0, &file);
   }
 
-  BookFileOffset Elements() {
+  BookFileOffset Elements() const {
     auto file = OpenFile(Filename());
     return FileSize(file) / size_;
   }
@@ -67,7 +67,7 @@ class ValueFile {
   std::string folder_;
   ValueFileSize size_;
 
-  std::string Filename() {
+  std::string Filename() const {
     return folder_ + "/value_" + std::to_string(size_) + ".val";
   }
 

@@ -359,8 +359,10 @@ class TreeNode {
     SetChildrenNoLock(children);
   }
 
+  // TODO: Avoid code duplication with SetSolved.
   void SetUpper(Eval upper) {
     upper_ = std::min(upper, upper_);
+    leaf_eval_ = std::min(leaf_eval_, EvalToEvalLarge(upper_));
     for (int i = weak_upper_; i >= std::max(upper_, weak_lower_); i -= 2) {
       MutableEvaluation(i)->SetDisproved();
     }
@@ -368,6 +370,7 @@ class TreeNode {
 
   void SetLower(Eval lower) {
     lower_ = std::max(lower, lower_);
+    leaf_eval_ = std::max(leaf_eval_, EvalToEvalLarge(lower_));
     for (int i = weak_lower_; i <= std::min(lower_, weak_upper_); i += 2) {
       MutableEvaluation(i)->SetProved();
     }
