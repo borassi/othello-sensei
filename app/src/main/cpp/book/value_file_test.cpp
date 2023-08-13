@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "test_utils.h"
 #include "value_file.h"
 
-const std::string kTempDir = "app/testdata/tmp/book_test";
+const std::string kTempFile = kTempDir + "/value_file_test/value_file_test.val";
 
 TEST(ValueFile, AddOnly) {
-  ValueFile value_file(kTempDir, 5);
+  ValueFile value_file(kTempFile, 5);
   value_file.Clean();
   EXPECT_EQ(value_file.Elements(), 1);
 
@@ -38,12 +40,33 @@ TEST(ValueFile, AddOnly) {
   BookFileOffset offset3 = value_file.Add(values3);
   EXPECT_EQ(value_file.Get(offset3), values3);
   EXPECT_EQ(value_file.Elements(), 4);
-  value_file.Clean();
+  value_file.Remove();
+}
+
+TEST(ValueFile, Reopen) {
+  ValueFile value_file(kTempFile, 5);
+  EXPECT_EQ(value_file.Elements(), 1);
+
+  std::vector<char> values1 = {0, 1, 2, 3, 4};
+  BookFileOffset offset1 = value_file.Add(values1);
+
+  ValueFile value_file_copy(kTempFile, 5);
+
+  EXPECT_EQ(value_file.Get(offset1), values1);
+  EXPECT_EQ(value_file.Elements(), 2);
+  value_file.Remove();
+}
+
+TEST(ValueFile, NotExistingDir) {
+  auto path = std::filesystem::path(kTempFile);
+  std::filesystem::remove_all(path.remove_filename());
+  ValueFile value_file(kTempFile, 5);
+  EXPECT_EQ(value_file.Elements(), 1);
+  value_file.Remove();
 }
 
 TEST(ValueFile, AddAndRemove) {
-  ValueFile value_file(kTempDir, 4);
-  value_file.Clean();
+  ValueFile value_file(kTempFile, 4);
 
   std::vector<char> values1 = {0, 1, 2, 3};
   BookFileOffset offset1 = value_file.Add(values1);
@@ -88,5 +111,38 @@ TEST(ValueFile, AddAndRemove) {
   BookFileOffset offset6 = value_file.Add(values6);
   EXPECT_EQ(value_file.Get(offset6), values6);
   EXPECT_EQ(value_file.Elements(), 4);
-  value_file.Clean();
+  value_file.Remove();
+}
+
+TEST(ValueFile, Iterator) {
+  ValueFile value_file(kTempFile, 5);
+  EXPECT_EQ(value_file.Elements(), 1);
+
+  std::vector<char> values1 = {0, 1, 2, 3, 4};
+  value_file.Add(values1);
+
+  std::vector<char> values2 = {1, 1, 2, 3, 4};
+  ValueFileSize offset2 = value_file.Add(values2);
+
+  std::vector<char> values3 = {1, 1, 2, 3, 3};
+  value_file.Add(values3);
+
+  std::vector<std::pair<int, std::vector<char>>> all_elements(value_file.begin(), value_file.end());
+
+  EXPECT_THAT(all_elements,
+              ::testing::UnorderedElementsAre(
+                  ::testing::Pair(1, values1),
+                  ::testing::Pair(2, values2),
+                  ::testing::Pair(3, values3)
+              ));
+
+  value_file.Remove(offset2);
+
+  std::vector<std::pair<int, std::vector<char>>> all_elements2(value_file.begin(), value_file.end());
+
+  EXPECT_THAT(all_elements2,
+              ::testing::UnorderedElementsAre(
+                  ::testing::Pair(1, values1),
+                  ::testing::Pair(3, values3)
+              ));  value_file.Clean();
 }

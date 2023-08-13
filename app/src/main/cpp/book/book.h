@@ -25,6 +25,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string>
+#include <unordered_map>
 
 #include "book_tree_node.h"
 #include "value_file.h"
@@ -76,6 +77,9 @@ class Book {
 
   Book(const std::string& folder);
 
+  // TODO: Add Mutable alongside Get, to avoid having to commit only for a read.
+  // Difficulty: we cannot copy TreeNodes (what if Get returns a value in the
+  // hash map?).
   std::optional<BookNode*> Get(const Board& b);
 
   std::optional<BookNode*> Get(BitPattern player, BitPattern opponent) {
@@ -94,9 +98,23 @@ class Book {
 
   HashMapIndex Size() { return book_size_; }
 
+  std::vector<Board> Roots() {
+    // We update the roots when we commit, so we cannot call this function if
+    // we did not commit.
+    // TODO: Remove this problem by updating roots_ when we add a new node.
+    assert(modified_nodes_.empty());
+    std::vector<Board> result;
+    for (const auto& [board, unused_offset] : roots_) {
+      result.push_back(board);
+    }
+    return result;
+  }
+
  private:
   std::string folder_;
   std::vector<ValueFile> value_files_;
+  ValueFile roots_file_;
+  std::unordered_map<Board, int> roots_;
   HashMapIndex hash_map_size_;
   HashMapIndex book_size_;
   // References are not invalidated:
@@ -108,7 +126,7 @@ class Book {
   // signals come at the same time (not sure if it's really needed).
   static std::atomic_int received_signal_;
 
-  void Commit(const BookNode& node);
+  void Commit(BookNode& node);
 
   static void HandleSignal(int signal) { received_signal_ = signal; }
 
@@ -148,9 +166,15 @@ template<int version>
 std::atomic_int Book<version>::received_signal_ = NSIG;
 
 template<int version>
-Book<version>::Book(const std::string& folder) : folder_(folder), value_files_() {
+Book<version>::Book(const std::string& folder) : folder_(folder), value_files_(), roots_file_(folder + "/roots.val", kSerializedBoardSize), roots_() {
   for (int i = 1; i <= 255; ++i) {
-    value_files_.push_back(ValueFile(folder, HashMapNode::ByteToSize(i)));
+    int size = HashMapNode::ByteToSize(i);
+    std::string filename = folder + "/value_" + std::to_string(size) + ".val";
+    value_files_.push_back(ValueFile(filename, size));
+  }
+
+  for (const auto& [offset, serialized] : roots_file_) {
+    roots_[Board::Deserialize(serialized.begin())] = offset;
   }
   if (!FileExists(IndexFilename())) {
     CreateEmptyFile(IndexFilename());
@@ -225,11 +249,25 @@ void Book<version>::Commit(bool verbose) {
 template<int version>
 void Book<version>::Commit(const BookNode& node) {
   auto [file, hash_map_node] = Find(node.Player(), node.Opponent());
+  Board b = node.ToBoard();
 
   if (!hash_map_node.IsEmpty()) {
-    GetValueFile(hash_map_node).Remove(hash_map_node.Offset());
+    std::vector<char> removed = GetValueFile(hash_map_node).Remove(hash_map_node.Offset());
+    const BookNode removed_node(this, removed);
+    assert(node.NFathers() >= removed_node.NFathers());
+    assert(b == removed_node.ToBoard());
+    if (removed_node.HasFathers()) {
+      assert (!roots_.contains(b));
+    } else if (node.HasFathers()) {
+      assert (roots_.contains(b));
+      roots_file_.Remove(roots_[b]);
+      roots_.erase(b);
+    }
   } else {
     ++book_size_;
+    if (!node.HasFathers()) {
+      roots_[b] = roots_file_.Add(b.Serialize());
+    }
   }
 
   std::vector<char> to_store = node.Serialize();
@@ -300,6 +338,8 @@ void Book<version>::Clean() {
   for (ValueFile& value_file : value_files_) {
     value_file.Clean();
   }
+  roots_file_.Clean();
+  roots_.clear();
   auto file = OpenFile(IndexFilename());
   hash_map_size_ = kInitialHashMapSize;
   book_size_ = 0;

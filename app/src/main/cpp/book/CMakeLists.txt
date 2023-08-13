@@ -58,7 +58,9 @@ add_executable(
 target_link_libraries(
         value_file_test
         LINK_PRIVATE
+        test_utils
         value_file
+        GTest::gmock
         GTest::gtest
         GTest::gtest_main
         -no-pie
@@ -148,6 +150,18 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+
+#add_executable(
+#        book_visit_main
+#        book_visit_main.cpp
+#)
+#
+#target_link_libraries(
+#        book_visit_main
+#        LINK_PRIVATE
+#        book
+#        parse_flags
+#)
 
 add_executable(
         expand_book_main

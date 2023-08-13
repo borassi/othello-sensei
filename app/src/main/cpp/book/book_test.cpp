@@ -74,6 +74,7 @@ TEST(Book, Basic) {
   book.Add(*TestTreeNode(Board(0UL, 1UL), 0, -5, 5, 1010));
   book.Commit();
 
+  EXPECT_THAT(book.Roots(), testing::ElementsAre(Board(0UL, 1UL)));
   EXPECT_EQ(*book.Get(0, 1).value(), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -5, 5, 1010));
   EXPECT_FALSE(book.Get(0, 2));
   EXPECT_EQ(book.Size(), 1);
@@ -199,6 +200,34 @@ TEST(Book, AddChildren) {
       book.Get(Board("e6f4")).value(),
       book.Get(Board("e6f6")).value(),
       book.Get(Board("e6d6")).value()));
+}
+
+TEST(Book, RemoveRoots) {
+  TestBook test_book;
+  Book book(kTempDir);
+  book.Clean();
+
+  auto e6_node = TestTreeNode(Board("e6"), 0, -63, 63, 10);
+  auto e6f4_node = TestTreeNode(Board("e6f4"), 30, -63, 63, 10);
+  auto e6f6_node = TestTreeNode(Board("e6f6"), 30, -63, 63, 10);
+  auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
+
+  book.Add(*e6_node);
+  book.Add(*e6f4_node);
+
+//  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+  book.Commit();
+  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+  EXPECT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+
+  auto e6 = *book.Get(Board("e6"));
+  e6->template AddChildrenToBook<std::shared_ptr<TreeNode>>({e6f4_node, e6f6_node, e6d6_node});
+  LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
+
+//  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  book.Commit();
+  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  EXPECT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique()));
 }
 
 TEST(Book, AddChildrenDoubleCommit) {

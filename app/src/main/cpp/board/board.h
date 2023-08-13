@@ -21,6 +21,7 @@
 #include "bitpattern.h"
 #include "get_flip.h"
 
+constexpr int kSerializedBoardSize = 13;
 typedef std::vector<char> SerializedBoard;
 
 class Board {
@@ -105,7 +106,7 @@ public:
   SerializedBoard Serialize() {
     SerializedBoard serialized;
     BitPattern current_square = 1ULL << 63;
-    for (int i = 0; i < 13; ++i) {
+    for (int i = 0; i < kSerializedBoardSize; ++i) {
       uint8_t five_squares_serialized = 0;
       int current_multiplier = 1;
       for (int j = 0; j < 5; ++j) {
@@ -119,6 +120,7 @@ public:
       }
       serialized.push_back(five_squares_serialized);
     }
+    assert(serialized.size() == kSerializedBoardSize);
     return serialized;
   }
 
@@ -127,7 +129,7 @@ public:
     BitPattern opponent = 0;
     BitPattern current_square = 1ULL << 63;
 
-    for (int i = 0; i < 13; ++i) {
+    for (int i = 0; i < kSerializedBoardSize; ++i) {
       uint8_t five_squares_serialized = (uint8_t) (*serialized++);
       for (int j = 0; j < 5; ++j) {
         int current_value = five_squares_serialized % 3;

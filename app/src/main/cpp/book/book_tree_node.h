@@ -71,7 +71,7 @@ class BookTreeNode : public TreeNode {
     player_ = board.Player();
     opponent_ = board.Opponent();
     n_empties_ = board.NEmpties();
-    int i = 13;
+    int i = kSerializedBoardSize;
 
     while (true) {
       CompressedFlip compressed_flip = 0;
@@ -348,6 +348,19 @@ class BookTreeNode : public TreeNode {
              GetEvaluation(i).ProbGreaterEqual() < 1);
     }
     leaf_eval_ = 4;
+  }
+
+  int NFathers() const {
+    // Possible cases:
+    // - This comes from a TreeNode. Empty father_flips_, has n_fathers.
+    // - This comes from a Deserialize. n_fathers = 0, full father_flips.
+    // - This comes from a Deserialize after AddFathersToBook.
+    //   Equivalent n_fathers and father_flips.
+    return std::max(n_fathers_, (unsigned) father_flips_.size());
+  }
+
+  bool HasFathers() const {
+    return NFathers() > 0;
   }
 
  private:
