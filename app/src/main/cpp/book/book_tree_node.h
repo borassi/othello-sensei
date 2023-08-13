@@ -31,6 +31,10 @@
 // Max fathers = 140656 (see test).
 constexpr int kMaxNodeSize = 13 /*board*/ + 3 * 140656 /*fathers*/ + 4 /*descendants*/ + 5 /*bounds*/ + 7 * 64 /*evals*/;
 
+template<int version>
+class Book;
+class TestBook;
+
 template<class Book, int version>
 class BookTreeNode : public TreeNode {
  public:
@@ -279,37 +283,6 @@ class BookTreeNode : public TreeNode {
     return TreeNode::Equals((const TreeNode&) other, approx);
   }
 
-  template<class ChildPointer>
-  void AddChildrenToBook(const std::vector<ChildPointer>& children) {
-    assert(IsLeaf());
-    is_leaf_ = false;
-    std::vector<TreeNode*> children_in_book;
-
-    for (const auto& [board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
-      BookTreeNode* child_in_book = nullptr;
-      ChildPointer new_child = nullptr;
-      auto child_in_book_opt = book_->Get(board);
-      for (ChildPointer child : children) {
-        if (child->ToBoard().Unique() == board) {
-          new_child = child;
-        }
-      }
-      if (child_in_book_opt) {
-        child_in_book = child_in_book_opt.value();
-        if (new_child != nullptr) {
-          child_in_book->AddDescendants(new_child->GetNVisited());
-        }
-      } else {
-        assert(new_child != nullptr);
-        child_in_book = book_->Add(*new_child);
-      }
-      assert(child_in_book != nullptr);
-      children_in_book.push_back(child_in_book);
-    }
-    SetChildren(children_in_book);
-    assert(AreChildrenCorrect());
-  }
-
   std::vector<TreeNode*> Fathers() {
     GetFathersFromBook();
     return TreeNode::Fathers();
@@ -367,6 +340,9 @@ class BookTreeNode : public TreeNode {
   bool is_leaf_;
   Book* book_;
   std::vector<CompressedFlip> father_flips_;
+
+  friend class TestBook;
+  friend class ::Book<version>;
 
   void GetFathersFromBook() override {
     for (CompressedFlip father_flip : father_flips_) {

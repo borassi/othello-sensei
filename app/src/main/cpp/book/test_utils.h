@@ -30,6 +30,23 @@ typedef BookTreeNode<TestBook, kBookVersion> TestBookTreeNode;
 
 class TestBook {
  public:
+  template<class TreeNodePointer>
+  void AddChildren(const Board& father_board, const std::vector<TreeNodePointer>& children) {
+    auto& father = nodes_.find(father_board.Unique())->second;
+    father.is_leaf_ = false;
+    std::vector<TreeNode*> children_in_board;
+    for (const auto& child : children) {
+      auto iter = nodes_.find(child->ToBoard().Unique());
+      if (iter == nodes_.end()) {
+        children_in_board.push_back((TreeNode*) Add(*child));
+      } else {
+        children_in_board.push_back((TreeNode*) &iter->second);
+        iter->second.AddDescendants(child->GetNVisited());
+      }
+    }
+    father.SetChildren(children_in_board);
+  }
+
   TestBookTreeNode* Add(const TreeNode& node) {
     Board unique = node.ToBoard().Unique();
     return &(*(nodes_.try_emplace(unique, this, node).first)).second;
@@ -42,6 +59,7 @@ class TestBook {
     return &(it->second);
   }
   void Commit() {}
+
  private:
   // References are not invalidated:
   // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
@@ -143,7 +161,7 @@ Book<version> BookWithPositions(
       children.push_back(TestTreeNode(child, eval, -63, 63, n_visited));
       total_visited += n_visited;
     }
-    book.Get(father).value()->AddChildrenToBook(children);
+    book.AddChildren(father, children);
     LeafToUpdate<typename Book<version>::BookNode>::Leaf(parents).Finalize(total_visited);
   }
   return book;
@@ -247,7 +265,7 @@ BookTreeNode<Book, kBookVersion>* LargestTreeNode(Book& book, int max_fathers = 
           children.push_back(RandomBookTreeNode(&book, b));
         }
       }
-      father->template AddChildrenToBook<BookTreeNode<Book, kBookVersion>*>(children);
+      book.template AddChildren<BookTreeNode<Book, kBookVersion>*>(father_board, children);
       if (max_fathers > 0 && result->Fathers().size() > max_fathers) {
         return result;
       }

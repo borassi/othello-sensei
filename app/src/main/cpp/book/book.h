@@ -44,6 +44,12 @@ constexpr HashMapIndex kInitialHashMapSize = 8;
 constexpr HashMapIndex kNumElementsOffset = sizeof(HashMapIndex) / sizeof(char);
 constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 
+enum NodeType {
+  LEAF = 0,
+  FIRST_VISIT = 1,
+  LAST_VISIT = 2,
+};
+
 class HashMapNode {
  public:
   HashMapNode() : size_byte_(0), offset_(0) {}
@@ -88,6 +94,9 @@ class Book {
 
   BookNode* Add(const TreeNode& node);
 
+  template<class TreeNodePointer>
+  void AddChildren(const Board& father_board, const std::vector<TreeNodePointer>& children);
+
   void Commit(bool verbose = false);
 
   bool IsSizeOK();
@@ -99,16 +108,95 @@ class Book {
   HashMapIndex Size() { return book_size_; }
 
   std::vector<Board> Roots() {
-    // We update the roots when we commit, so we cannot call this function if
-    // we did not commit.
-    // TODO: Remove this problem by updating roots_ when we add a new node.
-    assert(modified_nodes_.empty());
     std::vector<Board> result;
     for (const auto& [board, unused_offset] : roots_) {
       result.push_back(board);
     }
     return result;
   }
+
+  class Iterator {
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type   = std::ptrdiff_t;
+    using value_type        = std::pair<BookNode*, NodeType>;
+    using pointer           = value_type*;
+    using reference         = value_type;
+
+    Iterator(Book* book, int start_root) : book_(book), roots_(book_->Roots()), next_root_(start_root), stack_() {
+      assert (next_root_ == 0 || next_root_ == roots_.size());
+      ToNextRoot();
+    }
+    reference operator*() const {
+      BookNode* node = stack_.back();
+      if (node->IsLeaf()) {
+        return {node, LEAF};
+      } else if (visited_.contains(node->ToBoard())) {
+        return {node, LAST_VISIT};
+      } else {
+        return {node, FIRST_VISIT};
+      }
+    }
+    pointer operator->() { return &stack_.back(); }
+
+    // Prefix increment
+    Iterator& operator++() {
+      ToNext();
+      return *this;
+    }
+
+    // Postfix increment
+    Iterator operator++(int) {
+      Iterator tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+
+    bool operator==(const Iterator& other) const {
+      return book_ == other.book_ && roots_ == other.roots_ && stack_ == other.stack_ && next_root_ == other.next_root_;
+    }
+    bool operator!=(const Iterator& other) const {
+      return !(*this == other);
+    }
+
+   private:
+    Book* book_;
+    std::vector<Board> roots_;
+    std::vector<BookNode*> stack_;
+    int next_root_;
+    std::unordered_set<Board> visited_;
+
+    void ToNextRoot() {
+      assert(stack_.empty());
+      if (next_root_ == roots_.size()) {
+        // Finished iteration.
+        return;
+      }
+      auto next = book_->Get(roots_[next_root_++]).value();
+      stack_.push_back(next);
+    }
+
+    void ToNext() {
+      BookNode* node = stack_.back();
+      bool visited = visited_.contains(node->ToBoard());
+      visited_.insert(node->ToBoard());
+      if (visited || node->IsLeaf()) {
+        stack_.pop_back();
+        if (stack_.empty()) {
+          ToNextRoot();
+        }
+      } else {
+        for (auto child = node->ChildrenStart(); child != node->ChildrenEnd(); ++child) {
+          if (!visited_.contains((*child)->ToBoard())) {
+            stack_.push_back((BookNode*) *child);
+          }
+        }
+      }
+    }
+  };
+
+  Iterator begin() { return Iterator(this, 0); }
+  Iterator end() { return Iterator(this, roots_.size()); }
 
  private:
   std::string folder_;
@@ -126,11 +214,13 @@ class Book {
   // signals come at the same time (not sure if it's really needed).
   static std::atomic_int received_signal_;
 
-  void Commit(BookNode& node);
+  void Commit(const BookNode& node);
 
   static void HandleSignal(int signal) { received_signal_ = signal; }
 
   BookNode GetBookNode(HashMapNode node);
+
+  BookNode* AddNoRootsUpdate(const TreeNode& node);
 
   int GetValueFileOffset(int size);
 
@@ -190,7 +280,53 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
 }
 
 template<int version>
+template<class TreeNodePointer>
+void Book<version>::AddChildren(const Board& father_board, const std::vector<TreeNodePointer>& children) {
+  auto father_opt = Get(father_board);
+  assert(father_opt);
+  Book<version>::BookNode* father = father_opt.value();
+  assert(father->IsLeaf());
+  father->is_leaf_ = false;
+  std::vector<TreeNode*> children_in_book;
+
+  for (const auto& [board, unused_move] : GetUniqueNextBoardsWithPass(father->ToBoard())) {
+    Book<version>::BookNode* child_in_book = nullptr;
+    auto child_in_book_opt = Get(board);
+    TreeNodePointer new_child = nullptr;
+    for (TreeNodePointer child : children) {
+      if (child->ToBoard().Unique() == board) {
+        new_child = child;
+      }
+    }
+    if (child_in_book_opt) {
+      child_in_book = child_in_book_opt.value();
+      if (new_child != nullptr) {
+        child_in_book->AddDescendants(new_child->GetNVisited());
+      }
+      if (!child_in_book->HasFathers()) {
+        roots_file_.Remove(roots_[board]);
+        roots_.erase(board);
+      }
+    } else {
+      assert(new_child != nullptr);
+      child_in_book = AddNoRootsUpdate(*new_child);
+    }
+    assert(child_in_book != nullptr);
+    children_in_book.push_back(child_in_book);
+  }
+  father->SetChildren(children_in_book);
+  assert(father->AreChildrenCorrect());
+}
+
+template<int version>
 typename Book<version>::BookNode* Book<version>::Add(const TreeNode& node) {
+  Board unique = node.ToBoard().Unique();
+  roots_[unique] = roots_file_.Add(unique.Serialize());
+  return AddNoRootsUpdate(node);
+}
+
+template<int version>
+typename Book<version>::BookNode* Book<version>::AddNoRootsUpdate(const TreeNode& node) {
   Board unique = node.ToBoard().Unique();
   assert(!Get(unique));
   auto [iterator, inserted] = modified_nodes_.try_emplace(unique, this, node);
@@ -256,18 +392,9 @@ void Book<version>::Commit(const BookNode& node) {
     const BookNode removed_node(this, removed);
     assert(node.NFathers() >= removed_node.NFathers());
     assert(b == removed_node.ToBoard());
-    if (removed_node.HasFathers()) {
-      assert (!roots_.contains(b));
-    } else if (node.HasFathers()) {
-      assert (roots_.contains(b));
-      roots_file_.Remove(roots_[b]);
-      roots_.erase(b);
-    }
+    assert (roots_.contains(b) == !node.HasFathers());
   } else {
     ++book_size_;
-    if (!node.HasFathers()) {
-      roots_[b] = roots_file_.Add(b.Serialize());
-    }
   }
 
   std::vector<char> to_store = node.Serialize();

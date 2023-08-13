@@ -80,7 +80,7 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenDepth1) {
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
   auto e6 = book.Add(*e6_node);
-  e6->AddChildrenToBook(e6_node->GetChildren());
+  book.AddChildren(Board("e6"), e6_node->GetChildren());
   LeafToUpdate<TestBookTreeNode>::Leaf({e6}).Finalize(120);
 
   EXPECT_FALSE(book.Get(Board("e6")).value()->IsLeaf());
@@ -105,10 +105,11 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenDepth2) {
   e6_node->SetChildren({e6f4_node.get(), e6f6_node.get(), e6d6_node.get()});
 
   TestBookTreeNode* e6 = book.Add(*e6_node);
-  e6->AddChildrenToBook(e6_node->GetChildren());
+  book.AddChildren(Board("e6"), e6_node->GetChildren());
   LeafToUpdate<TestBookTreeNode>::Leaf({e6}).Finalize(120);
   auto e6f4 = book.Get(Board("e6f4")).value();
-  e6f4->AddChildrenToBook<TreeNode*>(
+  book.AddChildren<TreeNode*>(
+      Board("e6f4"),
       {e6f4c3_node.get(), e6f4d3_node.get(), e6f4e3_node.get(), e6f4f3_node.get(), e6f4g3_node.get()});
   LeafToUpdate<TestBookTreeNode>::Leaf({book.Get(Board("e6")).value(), book.Get(Board("e6f4")).value()}).Finalize(120);
 
@@ -132,7 +133,8 @@ TEST(BookTreeNodeTestFixture, UpdateChildrenExisting) {
 
   auto e6 = book.Add(*e6_node);
   auto e6f4 = book.Add(*e6f4_node);
-  e6->AddChildrenToBook<std::shared_ptr<TreeNode>>(
+  book.AddChildren<std::shared_ptr<TreeNode>>(
+      Board("e6"),
       {e6f4_node_bis, e6f6_node, e6d6_node});
   LeafToUpdate<TestBookTreeNode>::Leaf({e6}).Finalize(120);
 

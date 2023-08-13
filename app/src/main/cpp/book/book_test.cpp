@@ -78,6 +78,11 @@ TEST(Book, Basic) {
   EXPECT_EQ(*book.Get(0, 1).value(), *GetTestBookTreeNode(&test_book, Board(0UL, 1UL), 0, -5, 5, 1010));
   EXPECT_FALSE(book.Get(0, 2));
   EXPECT_EQ(book.Size(), 1);
+  book.Commit();
+  std::vector<std::pair<Book<>::BookNode*, NodeType>> nodes(book.begin(), book.end());
+  EXPECT_THAT(nodes, UnorderedElementsAre(
+      std::make_pair(book.Get(0, 1).value(), LEAF)
+  ));
 }
 
 TEST(Book, HugeNode) {
@@ -179,7 +184,7 @@ TEST(Book, AddChildren) {
   auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
 
   auto e6 = book.Add(*e6_node);
-  e6->AddChildrenToBook<std::shared_ptr<TreeNode>>({e6f4_node, e6f6_node, e6d6_node});
+  book.AddChildren<std::shared_ptr<TreeNode>>(Board("e6"), {e6f4_node, e6f6_node, e6d6_node});
   LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
 
   book.Commit();
@@ -215,19 +220,19 @@ TEST(Book, RemoveRoots) {
   book.Add(*e6_node);
   book.Add(*e6f4_node);
 
-//  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+  ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
   book.Commit();
-  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
-  EXPECT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+  ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+  ASSERT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
 
   auto e6 = *book.Get(Board("e6"));
-  e6->template AddChildrenToBook<std::shared_ptr<TreeNode>>({e6f4_node, e6f6_node, e6d6_node});
+  book.AddChildren<std::shared_ptr<TreeNode>>(Board("e6"), {e6f4_node, e6f6_node, e6d6_node});
   LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
 
-//  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
   book.Commit();
-  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
-  EXPECT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  ASSERT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique()));
 }
 
 TEST(Book, AddChildrenDoubleCommit) {
@@ -241,7 +246,7 @@ TEST(Book, AddChildrenDoubleCommit) {
   auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
 
   auto e6 = book.Add(*e6_node);
-  e6->AddChildrenToBook<std::shared_ptr<TreeNode>>({e6f4_node, e6f6_node, e6d6_node});
+  book.AddChildren<std::shared_ptr<TreeNode>>(Board("e6"), {e6f4_node, e6f6_node, e6d6_node});
   LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
 
   book.Commit();
@@ -280,9 +285,9 @@ TEST(Book, AddChildrenTransposition) {
   auto children2 = GetTreeNodeChildren(*e6f4d3c4, &memory);
 
   auto e6f4c3c4_book = book.Add(*e6f4c3c4);
-  e6f4c3c4_book->AddChildrenToBook(children1);
+  book.AddChildren(Board("e6f4c3c4"), children1);
   auto e6f4d3c4_book = book.Add(*e6f4d3c4);
-  e6f4d3c4_book->AddChildrenToBook(children2);
+  book.AddChildren(Board("e6f4d3c4"), children2);
   book.Commit();
 
   auto fathers = book.Get(Board("e6f4c3c4d3")).value()->Fathers();
@@ -316,7 +321,7 @@ TEST(Book, AddChildrenStartingPosition) {
   auto children = GetTreeNodeChildren(*start, &memory);
 
   auto start_book = book.Add(*start);
-  start_book->AddChildrenToBook(children);
+  book.AddChildren(Board(), children);
 
   book.Commit();
   EXPECT_THAT(book.Get(Board()).value()->GetChildren(), UnorderedElementsAre(
@@ -379,6 +384,144 @@ TEST_P(BookParameterizedFixture, UpdateFathers) {
   EXPECT_EQ(book.Get(Board("e6f4d3")).value()->GetNVisited(), add_only_once ? 12 : 13);
   // 11 from c3 + 13 from d3 + 3 other moves + 1 from itself
   EXPECT_EQ(book.Get(Board("e6f4")).value()->GetNVisited(), add_only_once ? 127 : 128);
+}
+
+void CheckVectorHasRightOrder(const std::vector<std::pair<Book<kBookVersion>::BookNode*, NodeType>>& nodes) {
+  std::unordered_set<Board> visited;
+  for (int i = 0; i < nodes.size(); ++i) {
+    auto& [node, node_type] = nodes[i];
+    visited.insert(node->ToBoard());
+    if (node_type == FIRST_VISIT) {
+      auto children = GetUniqueNextBoardsWithPass(node->ToBoard());
+      for (const Board& b : visited) {
+        children.erase(b);
+      }
+      for (int j = i+1; j <= nodes.size(); ++j) {
+        ASSERT_LT(j, nodes.size());
+        auto& [child, child_type] = nodes[j];
+        if (child->ToBoard() == node->ToBoard()) {
+          ASSERT_EQ(child_type, LAST_VISIT);
+          ASSERT_TRUE(children.empty());
+          break;
+        }
+        ASSERT_FALSE(visited.contains(child->ToBoard()));
+        children.erase(child->ToBoard());
+      }
+    }
+  }
+}
+
+TEST(Book, IteratorBasic) {
+  std::vector<std::string> lines = {"e6f4", "e6f4c3"};
+  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
+  book.Commit();
+
+  std::vector<std::pair<Book<kBookVersion>::BookNode*, NodeType>> nodes(book.begin(), book.end());
+  EXPECT_THAT(nodes, UnorderedElementsAre(
+      std::make_pair(book.Get(Board("e6f4")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4d3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4e3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4f3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4g3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c6")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3d6")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3e7")).value(), LEAF)
+  ));
+  CheckVectorHasRightOrder(nodes);
+}
+
+TEST(Book, IteratorTraspositions) {
+  Book book(kTempDir);
+  book.Clean();
+  book.Add(*RandomTestTreeNode(Board("e6f4c3c4")));
+  book.Add(*RandomTestTreeNode(Board("e6f4d3c4")));
+
+  std::vector<std::shared_ptr<TreeNode>> children1;
+  for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4"))) {
+    children1.push_back(RandomTestTreeNode(child));
+  }
+  std::vector<std::shared_ptr<TreeNode>> children2;
+  for (Board child : GetNextBoardsWithPass(Board("e6f4d3c4"))) {
+    children2.push_back(RandomTestTreeNode(child));
+  }
+  book.AddChildren(Board("e6f4c3c4"), children1);
+  book.AddChildren(Board("e6f4d3c4"), children2);
+
+  std::vector<std::pair<Book<kBookVersion>::BookNode*, NodeType>> nodes(book.begin(), book.end());
+  EXPECT_THAT(nodes, UnorderedElementsAre(
+      std::make_pair(book.Get(Board("e6f4c3c4")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3c4")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4d3c4")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4d3c4")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3c4b3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4c5")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4e3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4f3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4g3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4b3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4b5")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4e3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4f3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4f5")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4g3")).value(), LEAF)
+  ));
+  CheckVectorHasRightOrder(nodes);
+}
+
+TEST(Book, IteratorTraspositionsChild) {
+  Book book(kTempDir);
+  book.Clean();
+  book.Add(*RandomTestTreeNode(Board("e6f4c3c4")));
+  book.Add(*RandomTestTreeNode(Board("e6f4d3c4")));
+
+  std::vector<std::shared_ptr<TreeNode>> children1;
+  for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4"))) {
+    children1.push_back(RandomTestTreeNode(child));
+  }
+  std::vector<std::shared_ptr<TreeNode>> children2;
+  for (Board child : GetNextBoardsWithPass(Board("e6f4d3c4"))) {
+    children2.push_back(RandomTestTreeNode(child));
+  }
+  std::vector<std::shared_ptr<TreeNode>> children3;
+  for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4d3"))) {
+    children3.push_back(RandomTestTreeNode(child));
+  }
+  book.AddChildren(Board("e6f4c3c4"), children1);
+  book.AddChildren(Board("e6f4d3c4"), children2);
+  book.AddChildren(Board("e6f4c3c4d3"), children3);
+
+  std::vector<std::pair<Book<kBookVersion>::BookNode*, NodeType>> nodes(book.begin(), book.end());
+  EXPECT_THAT(nodes, UnorderedElementsAre(
+      std::make_pair(book.Get(Board("e6f4c3c4")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3c4")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4d3c4")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4d3c4")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3c4d3")).value(), FIRST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3c4d3")).value(), LAST_VISIT),
+      std::make_pair(book.Get(Board("e6f4c3c4b3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4c5")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4e3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4f3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4g3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4b3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4b5")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4e3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4f3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4f5")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4d3c4g3")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3c2")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3c6")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3d6")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3e2")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3e7")).value(), LEAF),
+      std::make_pair(book.Get(Board("e6f4c3c4d3f7")).value(), LEAF)
+  ));
+  CheckVectorHasRightOrder(nodes);
 }
 
 TEST(Book, BestDescendant) {
