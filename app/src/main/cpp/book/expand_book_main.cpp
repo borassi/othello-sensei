@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
         children.push_back(evaluator->GetFirstPosition());
         n_visited += evaluator->GetFirstPosition()->GetNVisited();
       }
-      node->AddChildrenToBook(children);
+      book.AddChildren(node->ToBoard(), children);
       node->UpdateFather();
     }
     leaf.Finalize(n_visited);

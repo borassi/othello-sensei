@@ -151,17 +151,17 @@ target_link_libraries(
         -no-pie
 )
 
-#add_executable(
-#        book_visit_main
-#        book_visit_main.cpp
-#)
-#
-#target_link_libraries(
-#        book_visit_main
-#        LINK_PRIVATE
-#        book
-#        parse_flags
-#)
+add_executable(
+        merge_books_main
+        merge_books_main.cpp
+)
+
+target_link_libraries(
+        merge_books_main
+        LINK_PRIVATE
+        book
+        parse_flags
+)
 
 add_executable(
         expand_book_main

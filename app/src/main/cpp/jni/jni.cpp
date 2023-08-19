@@ -270,7 +270,7 @@ class JNIWrapper {
     for (auto parent : parents) {
       parents_node.push_back(book_.Get(parent).value());
     }
-    father_node.value()->AddChildrenToBook(children);
+    book_.AddChildren(father, children);
     LeafToUpdate<Book<>::BookNode>::Leaf(parents_node).Finalize(n_visited);
     book_.Commit();
   }
