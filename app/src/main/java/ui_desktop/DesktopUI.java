@@ -57,7 +57,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 
 import jni.JNI;
-import jni.TreeNodeCPP;
+import jni.Node;
 import main.Main;
 import main.UI;
 import thor.Game;
@@ -305,7 +305,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
-    TreeNodeCPP board = annotations.treeNode;
+    Node board = annotations.node;
     if (board == null) {
       return;
     }
@@ -332,10 +332,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     rows.append(" ").append(JNI.prettyPrintDouble(board.getDescendants()));
 
     int roundEval = roundEval(board.getEval());
-    for (int evalGoal = Math.min(board.getWeakUpper(), roundEval + 400);
-         evalGoal >= Math.max(board.getWeakLower(), roundEval - 400);
+    for (int evalGoal = Math.min(board.getWeakUpper(), roundEval + 4);
+         evalGoal >= Math.max(board.getWeakLower(), roundEval - 4);
          evalGoal -= 200) {
-      float prob = 1 - board.getProb(evalGoal);
+      double prob = 1 - board.getProb(evalGoal);
       rows.append(String.format(Locale.US, "\n%+3d %3.0f%% ", -evalGoal / 100, (float) Math.round((0.0049 + (1-2*0.0049) * prob) * 100)));
 
       if (prob == 1) {
@@ -343,11 +343,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       } else if (prob == 0) {
         rows.append(JNI.prettyPrintDouble(board.proofNumber(evalGoal)));
       } else {
-        if (annotations.father != null) {
-          rows.append(JNI.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
-        } else {
+//        if (annotations.father != null) {
+//          rows.append(JNI.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
+//        } else {
           rows.append(JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
-        }
+//        }
       }
     }
 
@@ -455,8 +455,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   @Override
   public boolean approx() { return approx.isSelected(); }
 
-  public static short roundEval(int eval) {
-    return (short) Math.max(-6300, Math.min(6300, ((eval + 20000) / 200) * 200 - 19900));
+  public static short roundEval(double eval) {
+    return (short) Math.max(-63, Math.min(63, Math.round(eval / 2) * 2));
   }
 
   @Override
@@ -470,15 +470,15 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     if (annotations == null) {
       return;
     }
-    TreeNodeCPP board = annotations.treeNode;
+    Node board = annotations.node;
     StringBuilder firstPositionText = new StringBuilder(annotations.getLines() + "\n");
 
-    int eval = board.getEval();
-    for (int evalGoal = roundEval(eval + 1200); evalGoal >= roundEval(eval - 1200); evalGoal -= 200) {
+    double eval = board.getEval();
+    for (int evalGoal = roundEval(eval + 12); evalGoal >= roundEval(eval - 12); evalGoal -= 2) {
       if (evalGoal < board.getWeakLower() || evalGoal > board.getWeakUpper()) {
         continue;
       }
-      firstPositionText.append(String.format(Locale.US, "\n%+3d %3.4f%% %4s %4s %4s", evalGoal / 100, (board.getProb(evalGoal)) * 100,
+      firstPositionText.append(String.format(Locale.US, "\n%+3d %3.4f%% %4s %4s %4s", evalGoal, (board.getProb(evalGoal)) * 100,
           JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)),
           JNI.prettyPrintDouble(board.proofNumber(evalGoal)), JNI.prettyPrintDouble(board.disproofNumber(evalGoal))));
     }

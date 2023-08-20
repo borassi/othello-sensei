@@ -49,15 +49,53 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 
 class JNIWrapper {
  public:
-  static jobject TreeNodeToJava(TreeNode* n, JNIEnv* env) {
-    if (n == nullptr) {
+
+  static jobject EvaluationToJava(const Evaluation& evaluation, JNIEnv* env) {
+    const jclass EvaluationJava = env->FindClass("jni/Evaluation");
+    const jmethodID initEvaluationJava = env->GetMethodID(EvaluationJava, "<init>", "(DIFF)V");
+    return env->NewObject(
+        EvaluationJava,
+        initEvaluationJava,
+        evaluation.ProbGreaterEqual(),
+        evaluation.MaxLogDerivative(),
+        evaluation.ProofNumber(),
+        evaluation.DisproofNumber()
+        );
+  }
+
+  static jobject NodeToJava(std::optional<Node> n, JNIEnv* env) {
+    if (!n) {
       return NULL;
     }
-    jclass TreeNodeCPP = env->FindClass("jni/TreeNodeCPP");
+    const Node& node = *n;
+    const jclass NodeJava = env->FindClass("jni/Node");
+    const jmethodID initNodeJava = env->GetMethodID(NodeJava, "<init>", "(JJJFFIIIIIILjava/util/ArrayList;)V");
+
+    const jclass ArrayList = env->FindClass("java/util/ArrayList");
+    const jmethodID initArrayList = env->GetMethodID(ArrayList, "<init>", "()V");
+    const jmethodID addArrayList = env->GetMethodID(ArrayList, "add", "(Ljava/lang/Object;)Z");
+
+    jobject evaluations = env->NewObject(ArrayList, initArrayList);
+    assert((node.WeakLower() - kMinEval) % 2 == 1);
+    for (int i = node.WeakLower(); i <= node.WeakUpper(); i += 2) {
+      env->CallBooleanMethod(evaluations, addArrayList, EvaluationToJava(node.GetEvaluation(i), env));
+    }
     return env->NewObject(
-        TreeNodeCPP,
-        env->GetMethodID(TreeNodeCPP, "<init>", "(J)V"),
-        (jlong) n);
+        NodeJava,
+        initNodeJava,
+        (jlong) node.Player(),
+        (jlong) node.Opponent(),
+        (jlong) node.GetNVisited(),
+        node.GetEval(),
+        node.LeafEval(),
+        node.Lower(),
+        node.Upper(),
+        node.WeakLower(),
+        node.WeakUpper(),
+        node.GetPercentileLower(kProbIncreaseWeakEval),
+        node.GetPercentileUpper(kProbIncreaseWeakEval),
+        evaluations
+    );
   }
 
   JNIWrapper() :
@@ -104,7 +142,7 @@ class JNIWrapper {
   NVisited TotalVisited() const {
     NVisited visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
-      visited += evaluator_derivative_[i]->GetFirstPosition()->GetNVisited();
+      visited += evaluator_derivative_[i]->GetFirstPosition().GetNVisited();
     }
     return visited;
   }
@@ -118,7 +156,7 @@ class JNIWrapper {
     }
     for (int i = 0; i < last_boards_.size(); ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
-      visited += evaluator->GetFirstPosition()->GetNVisited();
+      visited += evaluator->GetFirstPosition().GetNVisited();
       switch (evaluator->GetStatus()) {
         case NONE:
         case RUNNING:
@@ -169,37 +207,30 @@ class JNIWrapper {
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
-    return TreeNodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
+    return NodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
   }
 
   jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    auto node = book_.Get(player, opponent);
-    if (!node) {
-      return NULL;
-    }
-    return TreeNodeToJava(node.value(), env);
+    return NodeToJava(book_.Get(player, opponent), env);
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    TreeNode* node = nullptr;
+    std::optional<Node> node = std::nullopt;
     Board unique = Board(player, opponent).Unique();
     for (int i = 0; i < last_boards_.size(); ++i) {
       const auto& evaluator = evaluator_derivative_[i];
-      TreeNode* first_position = evaluator->GetFirstPosition();
-      if (first_position != nullptr && first_position->ToBoard().Unique() == unique) {
-        node = first_position;
-        break;
+      Node first_position = evaluator->GetFirstPosition();
+      if (first_position.ToBoard().Unique() == unique) {
+        return NodeToJava(first_position, env);
       }
-      if (!node) {
-        for (Board b : unique.AllTranspositions()) {
-          node = tree_node_supplier_.Get(b.Player(), b.Opponent(), evaluator->Index());
-          if (node) {
-            break;
-          }
+      for (Board b : unique.AllTranspositions()) {
+        auto node = tree_node_supplier_.Get(b.Player(), b.Opponent(), evaluator->Index());
+        if (node) {
+          return NodeToJava(node, env);
         }
       }
     }
-    return TreeNodeToJava(node, env);
+    return NULL;
   }
 
   void Empty() {
@@ -254,21 +285,20 @@ class JNIWrapper {
 
   void AddToBook(const Board& father, const std::vector<Board>& parents) {
     auto father_node = book_.Get(father);
-    if (!father_node || !father_node.value()->IsLeaf()) {
+    if (!father_node || !father_node.value().IsLeaf()) {
       return;
     }
-    std::vector<TreeNode*> children;
-    children.reserve(last_boards_.size());
+    std::vector<Node> children(last_boards_.size());
     NVisited n_visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
-      TreeNode* child = evaluator_derivative_[i]->GetFirstPosition();
+      Node child = evaluator_derivative_[i]->GetFirstPosition();
       children.push_back(child);
-      n_visited += child->GetNVisited();
+      n_visited += child.GetNVisited();
     }
     std::vector<Book<>::BookNode*> parents_node;
 
     for (auto parent : parents) {
-      parents_node.push_back(book_.Get(parent).value());
+      parents_node.push_back(book_.Mutable(parent).value());
     }
     book_.AddChildren(father, children);
     LeafToUpdate<Book<>::BookNode>::Leaf(parents_node).Finalize(n_visited);
@@ -306,8 +336,7 @@ fileAccessor) {
   jmethodID get_asset = env->GetMethodID(file_accessor,
                                          "getAssetManager",
                                          "()Landroid/content/res/AssetManager;");
-  AndroidAsset::Setup(env, env->CallObjectMethod(
-      fileAccessor, get_asset));
+  AndroidAsset::Setup(env, env->CallObjectMethod(fileAccessor, get_asset));
 #endif
   env->CallVoidMethod(obj, mid, (jlong) new JNIWrapper());
 }
@@ -391,112 +420,6 @@ JNIEXPORT jobject JNICALL Java_jni_JNI_getFromBook(
 
 JNIEXPORT jboolean JNICALL Java_jni_JNI_finished(JNIEnv* env, jobject obj, jlong max_nvisited) {
   return JNIFromJava(env, obj)->Finished(max_nvisited);
-}
-
-bool IsEvalGoalInvalid(TreeNode* node, int eval_goal) {
-  return node->WeakLower() > eval_goal / 100 || node->WeakUpper() < eval_goal / 100;
-}
-
-JNIEXPORT void JNICALL Java_jni_TreeNodeCPP_close(JNIEnv *env, jobject thiz) {
-  auto node = TreeNodeFromJava(env, thiz);
-  delete(node);
-}
-
-JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getDescendants(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return static_cast<long>(node->GetNVisited());
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getEval(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return lround(node->GetEval() * 100);
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLeafEval(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return lround(node->LeafEval() / 8.0F * 100);
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getLower(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->Lower() * 100;
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getUpper(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->Upper() * 100;
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakLower(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->WeakLower() * 100;
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getWeakUpper(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->WeakUpper() * 100;
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileLower(JNIEnv* env, jobject tree_node_java, jfloat p) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->GetPercentileLower(p) * 100;
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_getPercentileUpper(JNIEnv* env, jobject tree_node_java, jfloat p) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->GetPercentileUpper(p) * 100;
-}
-
-JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_proofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProofNumber(static_cast<Eval>(eval_goal / 100));
-}
-
-JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_disproofNumber(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->DisproofNumber(static_cast<Eval>(eval_goal / 100));
-}
-
-JNIEXPORT jdouble JNICALL Java_jni_TreeNodeCPP_solveProbabilityLower(JNIEnv* env, jobject tree_node_java, jint lower) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->SolveProbabilityLower(static_cast<Eval>(lower / 100));
-}
-
-JNIEXPORT jdouble JNICALL Java_jni_TreeNodeCPP_solveProbabilityUpper(JNIEnv* env, jobject tree_node_java, jint upper) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->SolveProbabilityUpper(static_cast<Eval>(upper / 100));
-}
-
-JNIEXPORT jfloat JNICALL Java_jni_TreeNodeCPP_getProb(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? NAN : node->ProbGreaterEqual(static_cast<Eval>(eval_goal / 100));
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_maxLogDerivative(JNIEnv* env, jobject tree_node_java, jint eval_goal) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return IsEvalGoalInvalid(node, eval_goal) ? kLogDerivativeMinusInf : node->MaxLogDerivative(static_cast<Eval>(eval_goal / 100));
-}
-
-JNIEXPORT jint JNICALL Java_jni_TreeNodeCPP_childLogDerivative(JNIEnv* env, jobject father_node_java, jobject child_node_java, jint eval_goal) {
-  auto father = TreeNodeFromJava(env, father_node_java);
-  auto child = TreeNodeFromJava(env, child_node_java);
-  return IsEvalGoalInvalid(father, eval_goal) || IsEvalGoalInvalid(child, -eval_goal) ?
-      kLogDerivativeMinusInf : father->ChildLogDerivative(child, static_cast<Eval>(eval_goal / 100));
-}
-
-JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getPlayer(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return static_cast<long long>(node->Player());
-}
-
-JNIEXPORT jlong JNICALL Java_jni_TreeNodeCPP_getOpponent(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return static_cast<long long>(node->Opponent());
-}
-
-JNIEXPORT jboolean JNICALL Java_jni_TreeNodeCPP_isSolved(JNIEnv* env, jobject tree_node_java) {
-  auto node = TreeNodeFromJava(env, tree_node_java);
-  return node->IsSolved();
 }
 
 JNIEXPORT jobject JNICALL

@@ -25,7 +25,7 @@ TreeNode* TreeNodeSupplier::AddTreeNode(
     Square eval_depth, EvaluatorDerivative* evaluator, bool* newly_inserted) {
   auto evaluator_index = evaluator->Index();
   if (kUseTranspositions) {
-    TreeNode* node = Get(player, opponent, evaluator_index);
+    TreeNode* node = Mutable(player, opponent, evaluator_index);
     if (node != nullptr) {
       *newly_inserted = false;
       return node;
@@ -45,7 +45,7 @@ void EvaluatorThread::Run() {
   auto time = std::chrono::system_clock::now();
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   int n_visited;
-  TreeNode* first_position = evaluator_->GetFirstPosition();
+  TreeNode* first_position = evaluator_->first_position_;
   int last_eval_goal = kLessThenMinEval;
   while (!evaluator_->CheckFinished()) {
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(

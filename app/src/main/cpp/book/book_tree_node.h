@@ -38,7 +38,7 @@ class TestBook;
 template<class Book, int version>
 class BookTreeNode : public TreeNode {
  public:
-  BookTreeNode(Book* book, const TreeNode& node) : TreeNode(), book_(book), is_leaf_(true) {
+  BookTreeNode(Book* book, const Node& node) : TreeNode(node), book_(book) {
     Board b = node.ToBoard().Unique();
     player_ = b.Player();
     opponent_ = b.Opponent();
@@ -47,11 +47,8 @@ class BookTreeNode : public TreeNode {
     min_evaluation_ = -63;
     weak_lower_ = -63;
     weak_upper_ = 63;
-    lower_ = node.Lower();
-    upper_ = node.Upper();
-    leaf_eval_ = node.LeafEval();
+    is_leaf_ = true;
     EnlargeEvaluationsInternal();
-    descendants_ = node.GetNVisited();
 
     auto proof_eval = node.GetEvaluation(node.WeakLower());
     auto disproof_eval = node.GetEvaluation(node.WeakUpper());
@@ -70,7 +67,7 @@ class BookTreeNode : public TreeNode {
     }
   }
 
-  BookTreeNode(Book* book, const std::vector<char>& serialized, bool fathers = true) : book_(book) {
+  BookTreeNode(Book* book, const std::vector<char>& serialized) : TreeNode(), book_(book) {
     Board board = Board::Deserialize(serialized.begin());
     player_ = board.Player();
     opponent_ = board.Opponent();
@@ -277,13 +274,11 @@ class BookTreeNode : public TreeNode {
     return result;
   }
 
-  bool IsLeaf() const override { return is_leaf_; }
-
   bool Equals(const BookTreeNode<Book, version>& other, bool approx) const {
     return TreeNode::Equals((const TreeNode&) other, approx);
   }
 
-  std::vector<TreeNode*> Fathers() {
+  std::vector<Node> Fathers() override {
     GetFathersFromBook();
     return TreeNode::Fathers();
   }
@@ -300,14 +295,14 @@ class BookTreeNode : public TreeNode {
 
   void SetLeafNoLock(EvalLarge leaf_eval, Square depth, Eval weak_lower, Eval weak_upper) override {
     throw std::logic_error("Cannot update leaf eval in book node.");
-    }
+  }
 
   template<ChildValueType type>
   BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
-    return (BookTreeNode*) this->TreeNode::template BestChild<type>(eval_goal, n_thread_multiplier);
+    return (BookTreeNode*) TreeNode::template BestChild<type>(eval_goal, n_thread_multiplier);
   }
   BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
-    return (BookTreeNode*) this->TreeNode::BestChild(eval_goal, n_thread_multiplier);
+    return (BookTreeNode*) TreeNode::BestChild(eval_goal, n_thread_multiplier);
   }
 
   void SetLeafNeverSolved() {
@@ -336,8 +331,11 @@ class BookTreeNode : public TreeNode {
     return NFathers() > 0;
   }
 
+  bool IsLeafNoLock() const final {
+    return this->Node::IsLeaf();
+  }
+
  private:
-  bool is_leaf_;
   Book* book_;
   std::vector<CompressedFlip> father_flips_;
 
@@ -345,25 +343,29 @@ class BookTreeNode : public TreeNode {
   friend class ::Book<version>;
 
   void GetFathersFromBook() override {
+    if (n_fathers_ > 0) {
+      return;
+    }
     for (CompressedFlip father_flip : father_flips_) {
       auto move_and_flip = DeserializeFlip(father_flip);
       Square move = move_and_flip.first;
       BitPattern flip = move_and_flip.second;
 
-      std::optional<BookTreeNode<Book, version>*> father = book_->Get(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
+      std::optional<BookTreeNode<Book, version>*> father =
+          book_->Mutable(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
       assert(father);
       (*father)->GetChildrenFromBook();
     }
   }
 
   void GetChildrenFromBook() {
-    assert(!IsLeaf());
+    assert(!IsLeafNoLock());
     if (n_children_ > 0) {
       return;
     }
     std::vector<TreeNode*> children;
     for (const auto& [child_board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
-      auto child = book_->Get(child_board);
+      auto child = book_->Mutable(child_board);
       children.push_back((TreeNode*) child.value());
     }
     SetChildrenNoLock(children);

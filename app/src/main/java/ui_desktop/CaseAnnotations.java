@@ -13,22 +13,21 @@
 // limitations under the License.
 package ui_desktop;
 
-import constants.Constants;
 import jni.JNI;
-import jni.TreeNodeCPP;
+import jni.Node;
 
 public class CaseAnnotations {
-  public final TreeNodeCPP father;
-  public final TreeNodeCPP treeNode;
+  public final Node father;
+  public final Node node;
   public final boolean isBestMove;
   public final int thorGames;
 
-  public CaseAnnotations(TreeNodeCPP father, TreeNodeCPP treeNode, boolean isBestMove) {
+  public CaseAnnotations(Node father, Node treeNode, boolean isBestMove) {
     this(father, treeNode, -1, isBestMove);
   }
 
-  public CaseAnnotations(TreeNodeCPP father, TreeNodeCPP treeNode, int thorGames, boolean isBestMove) {
-    this.treeNode = treeNode;
+  public CaseAnnotations(Node father, Node treeNode, int thorGames, boolean isBestMove) {
+    this.node = treeNode;
     this.isBestMove = isBestMove;
     this.thorGames = thorGames;
     this.father = father;
@@ -36,47 +35,47 @@ public class CaseAnnotations {
 
   public String evalLine() {
     String evalFormatter;
-    if (treeNode.isSolved()) {
+    if (node.isSolved()) {
       evalFormatter = "%+.0f";
     } else {
       evalFormatter = "%+.2f";
     }
-    return String.format(evalFormatter, -treeNode.getEval() / 100.0)
-               + "\n" + String.format(evalFormatter, -treeNode.getLeafEval() / 100.0);
+    return String.format(evalFormatter, -node.getEval())
+               + "\n" + String.format(evalFormatter, -node.getLeafEval());
   }
 
   public String proofDisproofNumberLine() {
-    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL) - 100;
-    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL) + 100;
+    int lower = node.getPercentileLower() - 2;
+    int upper = node.getPercentileUpper() + 2;
     return
-        JNI.prettyPrintDouble(treeNode.proofNumber(lower - 100)) + " " +
-        JNI.prettyPrintDouble(treeNode.disproofNumber(upper + 100));
+        (lower >= node.getWeakLower() ? JNI.prettyPrintDouble(node.proofNumber(lower)) : "-") + " " +
+        (upper <= node.getWeakUpper() ? JNI.prettyPrintDouble(node.disproofNumber(upper)) : "-");
   }
 
-  public String solveProbabilityLine() {
-    return
-        JNI.prettyPrintDouble(treeNode.solveProbabilityLower(-6300)) + " " +
-        JNI.prettyPrintDouble(treeNode.solveProbabilityUpper(6300));
-  }
+//  public String solveProbabilityLine() {
+//    return
+//        JNI.prettyPrintDouble(treeNode.solveProbabilityLower(-6300)) + " " +
+//        JNI.prettyPrintDouble(treeNode.solveProbabilityUpper(6300));
+//  }
 
   public String getLines() {
-    int lower = treeNode.getPercentileLower(Constants.PROB_INCREASE_WEAK_EVAL) - 100;
-    int upper = treeNode.getPercentileUpper(Constants.PROB_INCREASE_WEAK_EVAL) + 100;
+    int lower = node.getPercentileLower() - 1;
+    int upper = node.getPercentileUpper() + 1;
     String rows;
     if (thorGames < 0) {
       rows = evalLine() + "\n"
-          + JNI.prettyPrintDouble(treeNode.getDescendants()) + "\n";
+          + JNI.prettyPrintDouble(node.getDescendants()) + "\n";
       if (lower == upper) {
         rows += proofDisproofNumberLine() + "\n";
-        rows += solveProbabilityLine();
+//        rows += solveProbabilityLine();
       } else {
-        rows += "[" + (-upper/100) + ", " + (-lower/100) + "]";
+        rows += "[" + (-upper) + ", " + (-lower) + "]";
       }
       return rows;
     } else {
       return (thorGames == 0 ? "" : thorGames) + "\n" +
           evalLine() + "\n"
-          + JNI.prettyPrintDouble(treeNode.getDescendants());
+          + JNI.prettyPrintDouble(node.getDescendants());
     }
   }
 }

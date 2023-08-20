@@ -18,9 +18,9 @@
 #include "tree_node.h"
 #include "evaluator_derivative.h"
 
-std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
+std::ostream& operator<<(std::ostream& stream, const Node& b) {
   Board board = b.ToBoard();
-  stream << b.Player() << " " << b.Opponent() << ": " << b.LeafEval() / 8.0
+  stream << b.Player() << " " << b.Opponent() << ": " << b.LeafEval()
          << " [" << (int) b.Lower() << " " << (int) b.Upper() << "]";
   for (int i = b.WeakLower(); i <= b.WeakUpper(); i += 2) {
     Evaluation eval = b.GetEvaluation(i);
@@ -40,17 +40,16 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& b) {
     }
   }
   stream << (b.IsLeaf() ? " (leaf)" : " (internal)");
-  if (b.Fathers().empty()) {
-    stream << " (no fathers)";
-  } else {
-    stream << " (fathers: ";
-    for (const auto& father : b.Fathers()) {
-      stream << father;
-    }
-    stream << ")";
-  }
   stream << " (vis: " << b.GetNVisited() << ")";
   return stream;
+}
+
+std::vector<Node> TreeNode::Fathers() {
+  std::vector<Node> result;
+  for (int i = 0; i < n_fathers_; ++i) {
+    result.push_back(fathers_[i]);
+  }
+  return result;
 }
 
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
@@ -58,7 +57,7 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   assert(depth_ > 0);  // Otherwise, the first position might lock the evaluator and viceversa.
   assert(lower % 16 == 0);
   assert(upper % 16 == 0);
-  assert(IsLeaf());
+  assert(IsLeafNoLock());
   assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
   auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(depth_);
 
@@ -107,11 +106,17 @@ void TreeNode::ResetNoLock(
   if (n_fathers_ != 0) {
     free(fathers_);
     n_fathers_ = 0;
+    fathers_ = nullptr;
   }
   if (n_children_ != 0) {
     delete[] children_;
     n_children_ = 0;
+    is_leaf_ = true;
+    children_ = nullptr;
   }
+  assert(is_leaf_);
+  assert(children_ == nullptr);
+
   depth_ = depth;
   min_evaluation_ = kLessThenMinEval;
 
@@ -120,12 +125,7 @@ void TreeNode::ResetNoLock(
   SetLeafNoLock(leaf_eval, eval_depth, weak_lower, weak_upper);
 }
 
-double TreeNode::RemainingWork(Eval lower, Eval upper) const {
-  auto guard = ReadLock();
-  return RemainingWorkNoLock(lower, upper);
-}
-
-double TreeNode::RemainingWorkNoLock(Eval lower, Eval upper) const {
+double Node::RemainingWork(Eval lower, Eval upper) const {
   assert((lower - kMinEval) % 2 == 1);
   assert((upper - kMinEval) % 2 == 1);
   assert(n_empties_ >= 0 && n_empties_ <= 60);

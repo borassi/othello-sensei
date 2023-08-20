@@ -55,9 +55,9 @@ public class JNI {
   public native void empty();
   public native void stop();
   public native Status getStatus();
-  public native TreeNodeCPP getFirstPosition();
-  public native TreeNodeCPP get(long player, long opponent);
-  public native TreeNodeCPP getFromBook(long player, long opponent);
+  public native Node getFirstPosition();
+  public native Node get(long player, long opponent);
+  public native Node getFromBook(long player, long opponent);
 
   public native boolean finished(long maxNVisited);
 

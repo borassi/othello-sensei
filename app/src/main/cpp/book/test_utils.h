@@ -30,18 +30,18 @@ typedef BookTreeNode<TestBook, kBookVersion> TestBookTreeNode;
 
 class TestBook {
  public:
-  template<class TreeNodePointer>
-  void AddChildren(const Board& father_board, const std::vector<TreeNodePointer>& children) {
+
+  void AddChildren(const Board& father_board, const std::vector<Node>& children) {
     auto& father = nodes_.find(father_board.Unique())->second;
     father.is_leaf_ = false;
     std::vector<TreeNode*> children_in_board;
-    for (const auto& child : children) {
-      auto iter = nodes_.find(child->ToBoard().Unique());
+    for (const auto child : children) {
+      auto iter = nodes_.find(child.ToBoard().Unique());
       if (iter == nodes_.end()) {
-        children_in_board.push_back((TreeNode*) Add(*child));
+        children_in_board.push_back((TreeNode*) Add(child));
       } else {
         children_in_board.push_back((TreeNode*) &iter->second);
-        iter->second.AddDescendants(child->GetNVisited());
+        iter->second.AddDescendants(child.GetNVisited());
       }
     }
     father.SetChildren(children_in_board);
@@ -51,7 +51,14 @@ class TestBook {
     Board unique = node.ToBoard().Unique();
     return &(*(nodes_.try_emplace(unique, this, node).first)).second;
   }
-  std::optional<TestBookTreeNode*> Get(const Board& b) {
+  std::optional<Node> Get(const Board& b) {
+    auto it = nodes_.find(b.Unique());
+    if (it == nodes_.end()) {
+      return std::nullopt;
+    }
+    return Node(it->second);
+  }
+  std::optional<TestBookTreeNode*> Mutable(const Board& b) {
     auto it = nodes_.find(b.Unique());
     if (it == nodes_.end()) {
       return std::nullopt;
@@ -102,15 +109,14 @@ std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
   return t;
 }
 
-std::vector<TreeNode*> GetTreeNodeChildren(
+std::vector<Node> GetTreeNodeChildren(
     const TreeNode& node, std::vector<std::shared_ptr<TreeNode>>* memory,
     int default_eval = 0, int default_desc = 10) {
   auto children_board = GetNextBoardsWithPass(node.ToBoard());
-  std::vector<TreeNode*> children;
+  std::vector<Node> children;
   children.reserve(children_board.size());
   for (const Board& child : children_board) {
-    memory->push_back(TestTreeNode(child, default_eval, -63, 63, default_desc));
-    children.push_back((*memory)[memory->size() - 1].get());
+    children.push_back(*TestTreeNode(child, default_eval, -63, 63, default_desc));
   }
   return children;
 }
@@ -148,9 +154,9 @@ Book<version> BookWithPositions(
     NVisited total_visited = 0;
     std::vector<typename Book<version>::BookNode*> parents;
     for (int i = first_line.length(); i <= line.length(); i += 2) {
-      parents.push_back(book.Get(line.substr(0, i)).value());
+      parents.push_back(book.Mutable(line.substr(0, i)).value());
     }
-    std::vector<std::shared_ptr<TreeNode>> children;
+    std::vector<Node> children;
     Board father = Board(line);
     for (Board child : GetNextBoardsWithPass(father)) {
       if (skip.contains(std::make_pair(father, child))) {
@@ -158,7 +164,7 @@ Book<version> BookWithPositions(
       }
       int eval = GetOrDefault(evals, child, 41);
       int n_visited = GetOrDefault(visited, child, 1);
-      children.push_back(TestTreeNode(child, eval, -63, 63, n_visited));
+      children.push_back(*TestTreeNode(child, eval, -63, 63, n_visited));
       total_visited += n_visited;
     }
     book.AddChildren(father, children);
@@ -253,20 +259,20 @@ BookTreeNode<Book, kBookVersion>* LargestTreeNode(Book& book, int max_fathers = 
         continue;
       }
       BookTreeNode<Book, kBookVersion>* father = RandomBookTreeNode(&book, father_board);
-      std::vector<BookTreeNode<Book, kBookVersion>*> children = {result};
+      std::vector<Node> children = {result};
       for (auto [b, unused] : GetUniqueNextBoardsWithPass(father_board)) {
         if (b == result->ToBoard()) {
           continue;
         }
-        auto child = book.Get(b);
+        auto child = book.Mutable(b);
         if (child) {
           children.push_back(*child);
         } else {
           children.push_back(RandomBookTreeNode(&book, b));
         }
       }
-      book.template AddChildren<BookTreeNode<Book, kBookVersion>*>(father_board, children);
-      if (max_fathers > 0 && result->Fathers().size() > max_fathers) {
+      book.AddChildren(father_board, children);
+      if (max_fathers > 0 && result->NFathers() > max_fathers) {
         return result;
       }
     }

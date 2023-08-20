@@ -29,9 +29,6 @@ import java.util.Arrays;
 
 import bitpattern.BitPattern;
 import board.Board;
-import constants.Constants;
-import jni.JNI;
-import jni.TreeNodeCPP;
 import ui_desktop.CaseAnnotations;
 
 public class BoardView extends View {
@@ -133,7 +130,7 @@ public class BoardView extends View {
   }
 
   public void drawAnnotation(Canvas canvas, CaseAnnotations annotation, int x, int y) {
-    if (annotation == null || annotation.treeNode == null) {
+    if (annotation == null || annotation.node == null) {
       return;
     }
     String lines = annotation.getLines();

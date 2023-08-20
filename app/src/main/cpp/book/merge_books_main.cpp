@@ -41,6 +41,6 @@ int main(int argc, char* argv[]) {
 
   int i = 0;
   for (auto [node, node_type] : old_book) {
-    std::cout << node->ToBoard() << node_type << "\n\n";
+    std::cout << node.ToBoard() << node_type << "\n\n";
   }
 }

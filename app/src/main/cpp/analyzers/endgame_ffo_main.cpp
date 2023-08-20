@@ -48,15 +48,14 @@ int main(int argc, char* argv[]) {
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition();
     if (parse_flags.GetBoolFlagOrDefault("show_evals", false)) {
-      first_position->ExtendToAllEvals();
       for (int k = -63; k <= 63; k += 2) {
-        std::cout << std::setprecision(0) << k << " " << first_position->ProofNumber(k) << " " <<
-        first_position->DisproofNumber(k) << "\n";
+        std::cout << std::setprecision(0) << k << " " << first_position.ProofNumber(k) << " " <<
+        first_position.DisproofNumber(k) << "\n";
       }
     }
     const Stats& stats = evaluator.GetStats();
     auto n_visited = stats.GetAll();
-    assert(n_visited == first_position->GetNVisited());
+    assert(n_visited == first_position.GetNVisited());
     std::cout
         << setw(4) << i << setw(8) << b.NEmpties()
         << std::fixed
@@ -66,7 +65,7 @@ int main(int argc, char* argv[]) {
         << setw(10) << tree_node_supplier.NumTreeNodes()
         << setw(8) << n_visited / tree_node_supplier.NumTreeNodes()
 //        << setw(13) << std::setprecision(2) << evaluator.AverageBatchSize()
-        << setw(6) << std::setprecision(0) << first_position->GetEval()
+        << setw(6) << std::setprecision(0) << first_position.GetEval()
         << setw(11) << stats.Get(SOLVED_TOO_EARLY)
         << "    ";
 

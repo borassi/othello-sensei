@@ -85,24 +85,21 @@ class TreeNodeSupplier {
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
   }
-  const TreeNode* const Get(const Board& b, u_int8_t evaluator_index) {
+  std::optional<Node> Get(const Board& b, u_int8_t evaluator_index) const {
     return Get(b.Player(), b.Opponent(), evaluator_index);
   }
 
-  TreeNode* Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) {
-    for (int hash = HashNode(player, opponent, evaluator_index);
-         true;
-         hash = (hash + 1) % tree_node_index_.size()) {
-      uint32_t index = tree_node_index_[hash];
-      if (!IsValid(index)) {
-        return nullptr;
-      }
-      assert(index - first_valid_index_ >= 0 && index - first_valid_index_ < num_nodes_);
-      TreeNode& node = tree_nodes_[index - first_valid_index_];
-      if (node.Player() == player && node.Opponent() == opponent && node.Evaluator() == evaluator_index) {
-        return &node;
-      }
+  std::optional<Node> Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
+    TreeNode* tree_node = Mutable(player, opponent, evaluator_index);
+    if (tree_node) {
+      return *tree_node;
+    } else {
+      return std::nullopt;
     }
+  }
+
+  TreeNode* Mutable(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
+    return MutableInternal(player, opponent, evaluator_index);
   }
 
   void Reset() {
@@ -135,6 +132,23 @@ class TreeNodeSupplier {
   std::atomic_uint32_t num_nodes_;
   uint32_t first_valid_index_;
 
+  TreeNode* MutableInternal(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
+    for (int hash = HashNode(player, opponent, evaluator_index);
+         true;
+         hash = (hash + 1) % tree_node_index_.size()) {
+      uint32_t index = tree_node_index_[hash];
+      if (!IsValid(index)) {
+        return nullptr;
+      }
+      assert(index - first_valid_index_ >= 0 && index - first_valid_index_ < num_nodes_);
+      TreeNode& node = tree_nodes_[index - first_valid_index_];
+      if (node.Player() == player && node.Opponent() == opponent && node.Evaluator() == evaluator_index) {
+        return &node;
+      }
+    }
+    assert(false);
+  }
+
   void FullResetHashMap() {
     for (int i = 0; i < tree_node_index_.size(); ++i) {
       tree_node_index_[i] = 0;
@@ -142,7 +156,7 @@ class TreeNodeSupplier {
     first_valid_index_ = 1;
   }
 
-  bool IsValid(uint32_t index) {
+  bool IsValid(uint32_t index) const {
     return index >= first_valid_index_ && index < first_valid_index_ + num_nodes_;
   }
 
@@ -156,7 +170,7 @@ class TreeNodeSupplier {
     }
   }
 
-  uint32_t HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) {
+  uint32_t HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) const {
     uint32_t hash = (HashFull(player, opponent) ^ std::hash<u_int8_t>{}(evaluator)) % tree_node_index_.size();
     assert(hash >= 0 && hash < tree_node_index_.size());
     return hash;
@@ -207,7 +221,7 @@ class EvaluatorDerivative {
     if (GetStatus() == SOLVED) {
       return -INFINITY;
     }
-    TreeNode* board = GetFirstPosition();
+    TreeNode* board = first_position_;
     double evalEffect = -board->GetEval() / std::max(1.0F, gap);
     return evalEffect - log(board->GetNVisited()) / log(2);
   }
@@ -215,7 +229,7 @@ class EvaluatorDerivative {
   void ContinueEvaluate(NVisited max_n_visited, double max_time) {
     max_time_ = max_time;
     elapsed_time_ = ElapsedTime();
-    start_visited_ = GetFirstPosition()->GetNVisited();
+    start_visited_ = first_position_->GetNVisited();
     max_n_visited_ = start_visited_ + max_n_visited;
     just_started_ = true;
     status_ = RUNNING;
@@ -240,7 +254,7 @@ class EvaluatorDerivative {
     weak_upper_ = upper_;
     n_thread_multiplier_ = 1000;
     first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, 0, 1, this);
-    auto leaf = TreeNodeLeafToUpdate::BestDescendant(GetFirstPosition(), NThreadMultiplier(), kLessThenMinEval);
+    auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
     best_advancement_ = 0;
@@ -254,8 +268,8 @@ class EvaluatorDerivative {
     }
   }
 
-  TreeNode* const GetFirstPosition() {
-    return first_position_;
+  Node GetFirstPosition() const {
+    return *first_position_;
   }
 
   Status GetStatus() { return status_; }

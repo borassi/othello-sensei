@@ -32,7 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jni.JNI;
-import jni.TreeNodeCPP;
+import jni.Node;
 import thor.Game;
 import thor.Thor;
 import ui_desktop.CaseAnnotations;
@@ -306,10 +306,10 @@ public class Main implements Runnable {
     return Long.numberOfTrailingZeros(move);
   }
 
-  private HashMap<Integer, TreeNodeCPP> getNextPositions() {
-    HashMap<Integer, TreeNodeCPP> result = new HashMap<>();
+  private HashMap<Integer, Node> getNextPositions() {
+    HashMap<Integer, Node> result = new HashMap<>();
     for (Board child : JNI.children(board)) {
-      TreeNodeCPP b = getStoredBoard(child);
+      Node b = getStoredBoard(child);
       if (b == null) {
         continue;
       }
@@ -332,7 +332,7 @@ public class Main implements Runnable {
     double bestScore = Double.POSITIVE_INFINITY;
     double base = 1 + 8.12 * Math.pow(error * moveMultiplier, -0.825);
     int move = -1;
-    for (Map.Entry<Integer, TreeNodeCPP> entry : getNextPositions().entrySet()) {
+    for (Map.Entry<Integer, Node> entry : getNextPositions().entrySet()) {
       double eval = -entry.getValue().getEval() / 100.0;
       double score = generateExponential(Math.pow(base, eval));
       if (score < bestScore) {
@@ -347,7 +347,7 @@ public class Main implements Runnable {
     double best = Double.NEGATIVE_INFINITY;
     ArrayList<Integer> bestMove = new ArrayList<>();
 
-    for (Map.Entry<Integer, TreeNodeCPP> entry : getNextPositions().entrySet()) {
+    for (Map.Entry<Integer, Node> entry : getNextPositions().entrySet()) {
       double eval = -entry.getValue().getEval() / 100.0;
       int move = entry.getKey();
       if (eval > best) {
@@ -369,12 +369,12 @@ public class Main implements Runnable {
       return Double.NEGATIVE_INFINITY;
     }
     double bestEval = Double.NEGATIVE_INFINITY;
-    HashMap<Integer, TreeNodeCPP> nextPositions = getNextPositions();
+    HashMap<Integer, Node> nextPositions = getNextPositions();
     if (!nextPositions.containsKey(move)) {
       return Double.NEGATIVE_INFINITY;
     }
 
-    for (TreeNodeCPP b : nextPositions.values()) {
+    for (Node b : nextPositions.values()) {
       bestEval = Math.max(bestEval, -b.getEval() / 100.0);
     }
 
@@ -394,12 +394,12 @@ public class Main implements Runnable {
     }
   }
 
-  private TreeNodeCPP getStoredBoard(Board b) {
+  private Node getStoredBoard(Board b) {
     return getStoredBoard(b.getPlayer(), b.getOpponent());
   }
 
-  private TreeNodeCPP getStoredBoard(long player, long opponent) {
-    TreeNodeCPP board = EVALUATOR.get(player, opponent);
+  private Node getStoredBoard(long player, long opponent) {
+    Node board = EVALUATOR.get(player, opponent);
     if (ui.useBook() && board == null) {
       return EVALUATOR.getFromBook(player, opponent);
     }
@@ -409,7 +409,7 @@ public class Main implements Runnable {
   private long getNVisited() {
     long result = 0;
     for (Board child : JNI.uniqueChildren(board)) {
-      TreeNodeCPP childStored = getStoredBoard(child);
+      Node childStored = getStoredBoard(child);
       if (childStored != null) {
         result += childStored.getDescendants();
       }
@@ -420,9 +420,9 @@ public class Main implements Runnable {
   private void showMCTSEvaluations() {
     ArrayList<Integer> bestMove = this.findBestMoves();
     boolean hasThor = thor.getNumGames(board) > 0;
-    TreeNodeCPP father = getStoredBoard(board);
+    Node father = getStoredBoard(board);
     for (Board child : JNI.children(board)) {
-      TreeNodeCPP childStored = getStoredBoard(child);
+      Node childStored = getStoredBoard(child);
       CaseAnnotations annotations;
       int move = moveFromBoard(board, child);
       if (childStored != null) {
@@ -449,7 +449,7 @@ public class Main implements Runnable {
   }
 
   public void setExtras() {
-    TreeNodeCPP father = getStoredBoard(board);
+    Node father = getStoredBoard(board);
     CaseAnnotations positionAnnotations = null;
     if (father != null) {
       positionAnnotations = new CaseAnnotations(father, father, false);

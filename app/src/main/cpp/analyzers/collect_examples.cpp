@@ -140,11 +140,11 @@ int main(int argc, char* argv[]) {
       }
       tree_node_supplier.Reset();
       evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, false);
-      double real_eval = evaluator.GetFirstPosition()->GetEval();
-      double perc_lower = evaluator.GetFirstPosition()->GetPercentileUpper(0.5F);
-      double solve_probability_lower = evaluator.GetFirstPosition()->SolveProbabilityLower(-63);
-      double perc_upper = evaluator.GetFirstPosition()->GetPercentileLower(0.5F);
-      double solve_probability_upper = evaluator.GetFirstPosition()->SolveProbabilityUpper(63);
+      double real_eval = evaluator.GetFirstPosition().GetEval();
+      double perc_lower = evaluator.GetFirstPosition().GetPercentileUpper(0.5F);
+      double solve_probability_lower = evaluator.GetFirstPosition().SolveProbabilityLower(-63);
+      double perc_upper = evaluator.GetFirstPosition().GetPercentileLower(0.5F);
+      double solve_probability_upper = evaluator.GetFirstPosition().SolveProbabilityUpper(63);
       std::stringstream result;
       int step = b.NEmpties() > 28 ? 3 : 1;
       for (int i = -63 + (rand() % step) * 2; i <= 63; i += 2 * step) {
@@ -156,11 +156,11 @@ int main(int argc, char* argv[]) {
             << b.Player() << " " << b.Opponent() << " " << b.NEmpties()
             << " " << real_eval << " " << perc_lower << " " << solve_probability_lower << " "
             << perc_upper << " " << solve_probability_upper << " "
-            << i << " " << (int) first_position->Lower()
-            << " " << (int) first_position->Upper() << " " << first_position->GetEval()
-            << " " << first_position->GetNVisited() << " " << first_position->ProofNumber(i)
-            << " " << first_position->DisproofNumber(i) << " " << (int) first_position->WeakLower()
-            << " " << (int) first_position->WeakUpper() << " " << low_depth_evals.str() << "\n";
+            << i << " " << (int) first_position.Lower()
+            << " " << (int) first_position.Upper() << " " << first_position.GetEval()
+            << " " << first_position.GetNVisited() << " " << first_position.ProofNumber(i)
+            << " " << first_position.DisproofNumber(i) << " " << (int) first_position.WeakLower()
+            << " " << (int) first_position.WeakUpper() << " " << low_depth_evals.str() << "\n";
         std::cout << "." << std::flush;
       }
       std::cout << "\n" << std::flush;

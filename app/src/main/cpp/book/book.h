@@ -86,16 +86,30 @@ class Book {
   // TODO: Add Mutable alongside Get, to avoid having to commit only for a read.
   // Difficulty: we cannot copy TreeNodes (what if Get returns a value in the
   // hash map?).
-  std::optional<BookNode*> Get(const Board& b);
+  std::optional<Node> Get(const Board& b);
 
-  std::optional<BookNode*> Get(BitPattern player, BitPattern opponent) {
+  std::optional<Node> Get(BitPattern player, BitPattern opponent) {
     return Get(Board(player, opponent));
+  }
+
+  std::optional<BookNode*> Mutable(const Board& b) {
+    Board unique = b.Unique();
+    auto iterator = modified_nodes_.find(unique);
+    if (iterator != modified_nodes_.end()) {
+      return &(iterator->second);
+    }
+    HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
+    if (!node.IsEmpty()) {
+      std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
+      iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
+      return &iterator->second;
+    }
+    return std::nullopt;
   }
 
   BookNode* Add(const TreeNode& node);
 
-  template<class TreeNodePointer>
-  void AddChildren(const Board& father_board, const std::vector<TreeNodePointer>& children);
+  void AddChildren(const Board& father_board, const std::vector<Node>& children);
 
   void Commit(bool verbose = false);
 
@@ -119,7 +133,7 @@ class Book {
    public:
     using iterator_category = std::forward_iterator_tag;
     using difference_type   = std::ptrdiff_t;
-    using value_type        = std::pair<BookNode*, NodeType>;
+    using value_type        = std::pair<Node, NodeType>;
     using pointer           = value_type*;
     using reference         = value_type;
 
@@ -128,16 +142,16 @@ class Book {
       ToNextRoot();
     }
     reference operator*() const {
-      BookNode* node = stack_.back();
-      if (node->IsLeaf()) {
+      const Node& node = stack_.back();
+      if (node.IsLeaf()) {
         return {node, LEAF};
-      } else if (visited_.contains(node->ToBoard())) {
+      } else if (visited_.contains(node.ToBoard())) {
         return {node, LAST_VISIT};
       } else {
         return {node, FIRST_VISIT};
       }
     }
-    pointer operator->() { return &stack_.back(); }
+//    pointer operator->() { return &operator*(); }
 
     // Prefix increment
     Iterator& operator++() {
@@ -162,7 +176,7 @@ class Book {
    private:
     Book* book_;
     std::vector<Board> roots_;
-    std::vector<BookNode*> stack_;
+    std::vector<Node> stack_;
     int next_root_;
     std::unordered_set<Board> visited_;
 
@@ -177,18 +191,19 @@ class Book {
     }
 
     void ToNext() {
-      BookNode* node = stack_.back();
-      bool visited = visited_.contains(node->ToBoard());
-      visited_.insert(node->ToBoard());
-      if (visited || node->IsLeaf()) {
+      Node node = stack_.back();
+      Board b = node.ToBoard();
+      bool visited = visited_.contains(b);
+      visited_.insert(b);
+      if (visited || node.IsLeaf()) {
         stack_.pop_back();
         if (stack_.empty()) {
           ToNextRoot();
         }
       } else {
-        for (auto child = node->ChildrenStart(); child != node->ChildrenEnd(); ++child) {
-          if (!visited_.contains((*child)->ToBoard())) {
-            stack_.push_back((BookNode*) *child);
+        for (auto [child, unused] : GetUniqueNextBoardsWithPass(b)) {
+          if (!visited_.contains(child)) {
+            stack_.push_back(book_->Get(child).value());
           }
         }
       }
@@ -280,9 +295,8 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
 }
 
 template<int version>
-template<class TreeNodePointer>
-void Book<version>::AddChildren(const Board& father_board, const std::vector<TreeNodePointer>& children) {
-  auto father_opt = Get(father_board);
+void Book<version>::AddChildren(const Board& father_board, const std::vector<Node>& children) {
+  auto father_opt = Mutable(father_board);
   assert(father_opt);
   Book<version>::BookNode* father = father_opt.value();
   assert(father->IsLeaf());
@@ -291,11 +305,12 @@ void Book<version>::AddChildren(const Board& father_board, const std::vector<Tre
 
   for (const auto& [board, unused_move] : GetUniqueNextBoardsWithPass(father->ToBoard())) {
     Book<version>::BookNode* child_in_book = nullptr;
-    auto child_in_book_opt = Get(board);
-    TreeNodePointer new_child = nullptr;
-    for (TreeNodePointer child : children) {
-      if (child->ToBoard().Unique() == board) {
-        new_child = child;
+    auto child_in_book_opt = Mutable(board);
+    const Node* new_child = nullptr;
+    for (const Node& child : children) {
+      if (child.ToBoard().Unique() == board) {
+        new_child = &child;
+        break;
       }
     }
     if (child_in_book_opt) {
@@ -335,17 +350,16 @@ typename Book<version>::BookNode* Book<version>::AddNoRootsUpdate(const TreeNode
 }
 
 template<int version>
-std::optional<typename Book<version>::BookNode*> Book<version>::Get(const Board& b) {
+std::optional<Node> Book<version>::Get(const Board& b) {
   Board unique = b.Unique();
   auto iterator = modified_nodes_.find(unique);
   if (iterator != modified_nodes_.end()) {
-    return &(iterator->second);
+    return Node(iterator->second);
   }
   HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
   if (!node.IsEmpty()) {
     std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
-    iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
-    return &iterator->second;
+    return Node(BookNode(this, serialized));
   }
   return std::nullopt;
 }
@@ -519,7 +533,7 @@ std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitP
       return std::make_pair(std::move(file), node);
     }
     std::vector<char> v = GetValueFile(node).Get(node.Offset());
-    BookNode book_tree_node(this, v, false);
+    BookNode book_tree_node(this, v);
     Board b = book_tree_node.ToBoard();
     assert(b == b.Unique());
     if (b.Player() == player && b.Opponent() == opponent) {
@@ -563,7 +577,7 @@ void Book<version>::Resize(std::fstream* file, std::vector<HashMapNode> add_elem
 
   for (const HashMapNode& node_to_move : add_elements) {
     std::vector<char> v = GetValueFile(node_to_move).Get(node_to_move.Offset());
-    BookNode node(this, v, false);
+    BookNode node(this, v);
     Board board = node.ToBoard();
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
     HashMapNode board_in_position;

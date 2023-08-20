@@ -32,8 +32,8 @@ int main(int argc, char* argv[]) {
   std::string start_line = parse_flags.GetFlagOrDefault("start", "");
 //  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  NVisited n_descendants_children = 200 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
-  NVisited n_descendants_solve = 5 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
+  NVisited n_descendants_children = 200 * 1000 * 100UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
+  NVisited n_descendants_solve = 5 * 1000 * 1000 * 100UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
@@ -64,8 +64,8 @@ int main(int argc, char* argv[]) {
 
   while (true) {
     ElapsedTime t;
-    auto start = book.Get(Board(start_line)).value();
-    if (start->IsSolved()) {
+    auto start = book.Mutable(Board(start_line)).value();
+    if (start->Node::IsSolved()) {
       std::cout << "Solved the position!\n";
       break;
     }
@@ -93,15 +93,14 @@ int main(int argc, char* argv[]) {
       auto evaluator = evaluators[0].get();
       evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, false);
       auto result = evaluator->GetFirstPosition();
-      auto eval = result->GetEval();
-      auto lower = result->Lower();
-      auto upper = result->Upper();
+      auto lower = result.Lower();
+      auto upper = result.Upper();
       node->SetLower(lower);
       node->SetUpper(upper);
-      n_visited += result->GetNVisited();
+      n_visited += result.GetNVisited();
       solved = lower != -64 || upper != 64;
       if (solved) {
-        std::cout << "Solved: " << (int) result->Lower() << " <= eval <= " << (int) result->Upper() << "\n";
+        std::cout << "Solved: " << (int) result.Lower() << " <= eval <= " << (int) result.Upper() << "\n";
       } else {
         std::cout << "Did not solve it in time\n";
       }
@@ -110,17 +109,17 @@ int main(int argc, char* argv[]) {
     }
     if (!solved) {
       std::cout << "Adding children\n";
-      std::vector<TreeNode*> children;
+      std::vector<Node> children;
       int i = 0;
       for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(node->ToBoard())) {
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300);
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition()->RemainingWork(alpha, beta));
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition().RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300);
         children.push_back(evaluator->GetFirstPosition());
-        n_visited += evaluator->GetFirstPosition()->GetNVisited();
+        n_visited += evaluator->GetFirstPosition().GetNVisited();
       }
       book.AddChildren(node->ToBoard(), children);
       node->UpdateFather();
