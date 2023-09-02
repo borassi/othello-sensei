@@ -142,3 +142,29 @@ target_link_libraries(
         LINK_PRIVATE
         load_training_set
 )
+
+add_library(
+        serializable_boolean_vector
+        serializable_boolean_vector.h
+        serializable_boolean_vector.cpp
+)
+
+target_link_libraries(
+        serializable_boolean_vector
+        LINK_PRIVATE
+        file
+)
+
+add_executable(
+        serializable_boolean_vector_test
+        serializable_boolean_vector_test.cpp
+)
+
+target_link_libraries(
+        serializable_boolean_vector_test
+        LINK_PRIVATE
+        serializable_boolean_vector
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)

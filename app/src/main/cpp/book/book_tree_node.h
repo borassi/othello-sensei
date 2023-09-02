@@ -25,7 +25,7 @@
 #include "../board/board.h"
 #include "../evaluatederivative/tree_node.h"
 #include "../estimators/endgame_time.h"
-#include "serializable_boolean_vector.h"
+#include "../utils/serializable_boolean_vector.h"
 #include "value_file.h"
 
 // Max fathers = 140656 (see test).
