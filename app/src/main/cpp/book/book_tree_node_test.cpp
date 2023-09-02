@@ -46,8 +46,8 @@ TEST(BookTreeNodeTestFixture, Serialize) {
   TestBook book;
   for (int i = 0; i < 10000; ++i) {
     TestBookTreeNode* n = RandomBookTreeNode(&book, RandomBoard());
-    TestBookTreeNode actual = TestBookTreeNode(&book, n->Serialize());
-    ASSERT_EQ(*n, actual);
+    std::unique_ptr<TestBookTreeNode> actual = TestBookTreeNode::Deserialize(&book, n->Serialize());
+    ASSERT_EQ(*n, *actual);
   }
 }
 //

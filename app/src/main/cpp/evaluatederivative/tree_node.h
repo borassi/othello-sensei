@@ -37,6 +37,7 @@
 #include "../board/board.h"
 #include "../board/get_moves.h"
 #include "../utils/misc.h"
+#include "../utils/serializable_boolean_vector.h"
 
 constexpr float kProbIncreaseWeakEval = 0.05;
 
@@ -95,6 +96,103 @@ class Node {
     if (evaluations_ != nullptr) {
       free(evaluations_);
     }
+  }
+
+  static Node Deserialize(const std::vector<char>& serialized, int version, std::vector<CompressedFlip>* father_flips) {
+    Node n;
+    Board board = Board::Deserialize(serialized.begin());
+    n.player_ = board.Player();
+    n.opponent_ = board.Opponent();
+    n.n_empties_ = board.NEmpties();
+    int i = kSerializedBoardSize;
+
+    while (true) {
+      CompressedFlip compressed_flip = 0;
+      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
+      i += 3;
+      if (compressed_flip == 0) {
+        break;
+      }
+      if (father_flips) {
+        father_flips->push_back(compressed_flip >> 2);
+      }
+      if ((compressed_flip & 1) == 0) {
+        break;
+      }
+    }
+
+    n.descendants_ = (u_int64_t) *((float*) &(serialized[i]));
+    i += sizeof(float);
+    n.lower_ = (Eval) serialized[i++];
+    n.upper_ = (Eval) serialized[i++];
+    n.weak_lower_ = -63;
+    n.weak_upper_ = 63;
+    n.min_evaluation_ = -63;
+    Eval last_1 = (Eval) serialized[i++];
+    Eval first_0 = (Eval) serialized[i++];
+    n.is_leaf_ = (bool) serialized[i++];
+
+    n.EnlargeEvaluationsInternal();
+
+    for (int eval = n.weak_lower_; eval <= n.lower_; eval += 2) {
+      n.MutableEvaluation(eval)->SetProved();
+    }
+    for (int eval = n.weak_upper_; eval >= std::max(n.upper_, n.weak_lower_); eval -= 2) {
+      n.MutableEvaluation(eval)->SetDisproved();
+    }
+    for (int eval = last_1 + 2; eval <= first_0 - 2; eval += 2) {
+      Probability prob = serialized[i++];
+      PN proof_number = serialized[i++];
+      PN disproof_number = serialized[i++];
+      u_int32_t max_log_derivative = 0;
+      u_int8_t first_byte = serialized[i];
+      if (first_byte & (1U << 7)) {
+        max_log_derivative |= (first_byte & ~(1U << 7)) << 16;
+        i++;
+      }
+      max_log_derivative |= (u_int8_t) serialized[i++] << 8;
+      max_log_derivative |= (u_int8_t) serialized[i++];
+      n.MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -max_log_derivative);
+    }
+    PN proof, disproof;
+    if (n.lower_ + 1 <= last_1) {
+      proof = serialized[i++];
+    }
+    if (n.upper_ - 1 >= first_0) {
+      disproof = serialized[i++];
+    }
+    SerializableBooleanVector serialized_bool(serialized.begin() + i, serialized.end(), 8 * (serialized.size() - i));
+
+    int j = 0;
+    if (version >= 1) {
+      // Max: 64 * 8 - 64 * 8 = 128 * 8 = 1024 => 11 bits.
+      uint32_t leaf_eval_small = serialized_bool.Get(0, 11);
+      n.leaf_eval_ = leaf_eval_small + kMinEvalLarge;
+      j += 11;
+    } else {
+      n.leaf_eval_ = 0;
+    }
+    if (n.lower_ + 1 <= last_1) {
+      n.MutableEvaluation(n.lower_ + 1)->SetProving(proof);
+
+      for (int eval = n.lower_ + 3; eval <= last_1; eval += 2) {
+        while (serialized_bool.Get(j++) == 0) {
+          proof++;
+        }
+        n.MutableEvaluation(eval)->SetProving(proof);
+      }
+    }
+    if (n.upper_ - 1 >= first_0) {
+      n.MutableEvaluation(n.upper_ - 1)->SetDisproving(disproof);
+
+      for (int eval = n.upper_ - 3; eval >= first_0; eval -= 2) {
+        while (serialized_bool.Get(j++) == 0) {
+          disproof++;
+        }
+        n.MutableEvaluation(eval)->SetDisproving(disproof);
+      }
+    }
+    return n;
   }
 
   Square NEmpties() const { return n_empties_; }
@@ -414,6 +512,7 @@ class TreeNode : public Node {
       fathers_(nullptr),
       n_fathers_(0),
       n_threads_working_(0) {}
+
   TreeNode() :
       Node(),
       children_(nullptr),
@@ -421,6 +520,7 @@ class TreeNode : public Node {
       fathers_(nullptr),
       n_fathers_(0),
       n_threads_working_(0) {}
+
   ~TreeNode() {
     if (n_fathers_ != 0) {
       free(fathers_);

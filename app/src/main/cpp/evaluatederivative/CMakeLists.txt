@@ -95,6 +95,7 @@ target_link_libraries( # Specifies the target library.
         evaluation
         get_moves
         misc
+        serializable_boolean_vector
 )
 
 add_executable(

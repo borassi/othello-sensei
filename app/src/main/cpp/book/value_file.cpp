@@ -52,12 +52,12 @@ std::vector<char> ValueFile::Remove(BookFileOffset offset) {
   return result;
 }
 
-std::vector<char> ValueFile::Get(BookFileOffset offset) {
+std::vector<char> ValueFile::Get(BookFileOffset offset) const {
   auto file = OpenFile(Filename());
   return Get(offset, &file);
 }
 
-std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream* file) {
+std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream* file) const {
   std::vector<char> result(size_);
   Seek(offset, file);
   file->read(&result[0], size_ * sizeof(char));
@@ -79,7 +79,7 @@ void ValueFile::Print() {
   std::cout << "\n";
 }
 
-void ValueFile::Seek(BookFileOffset offset, std::fstream* file) {
+void ValueFile::Seek(BookFileOffset offset, std::fstream* file) const {
   file->seekg(offset * size_);
   file->seekp(file->tellg(), std::ios::beg);
 }

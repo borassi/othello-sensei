@@ -47,7 +47,6 @@ class BookTreeNode : public TreeNode {
     min_evaluation_ = -63;
     weak_lower_ = -63;
     weak_upper_ = 63;
-    is_leaf_ = true;
     EnlargeEvaluationsInternal();
 
     auto proof_eval = node.GetEvaluation(node.WeakLower());
@@ -67,98 +66,12 @@ class BookTreeNode : public TreeNode {
     }
   }
 
-  BookTreeNode(Book* book, const std::vector<char>& serialized) : TreeNode(), book_(book) {
-    Board board = Board::Deserialize(serialized.begin());
-    player_ = board.Player();
-    opponent_ = board.Opponent();
-    n_empties_ = board.NEmpties();
-    int i = kSerializedBoardSize;
-
-    while (true) {
-      CompressedFlip compressed_flip = 0;
-      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
-      i += 3;
-      if (compressed_flip == 0) {
-        break;
-      }
-      father_flips_.push_back(compressed_flip >> 2);
-      if ((compressed_flip & 1) == 0) {
-        break;
-      }
-    }
-
-    descendants_ = (u_int64_t) *((float*) &(serialized[i]));
-    i += sizeof(float);
-    lower_ = (Eval) serialized[i++];
-    upper_ = (Eval) serialized[i++];
-    weak_lower_ = -63;
-    weak_upper_ = 63;
-    min_evaluation_ = -63;
-    Eval last_1 = (Eval) serialized[i++];
-    Eval first_0 = (Eval) serialized[i++];
-    is_leaf_ = (bool) serialized[i++];
-    n_threads_working_ = 0;
-
-    EnlargeEvaluationsInternal();
-
-    for (int eval = weak_lower_; eval <= lower_; eval += 2) {
-      MutableEvaluation(eval)->SetProved();
-    }
-    for (int eval = weak_upper_; eval >= std::max(upper_, weak_lower_); eval -= 2) {
-      MutableEvaluation(eval)->SetDisproved();
-    }
-    for (int eval = last_1 + 2; eval <= first_0 - 2; eval += 2) {
-      Probability prob = serialized[i++];
-      PN proof_number = serialized[i++];
-      PN disproof_number = serialized[i++];
-      u_int32_t max_log_derivative = 0;
-      u_int8_t first_byte = serialized[i];
-      if (first_byte & (1U << 7)) {
-        max_log_derivative |= (first_byte & ~(1U << 7)) << 16;
-        i++;
-      }
-      max_log_derivative |= (u_int8_t) serialized[i++] << 8;
-      max_log_derivative |= (u_int8_t) serialized[i++];
-      MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -max_log_derivative);
-    }
-    PN proof, disproof;
-    if (lower_ + 1 <= last_1) {
-      proof = serialized[i++];
-    }
-    if (upper_ - 1 >= first_0) {
-      disproof = serialized[i++];
-    }
-    SerializableBooleanVector serialized_bool(serialized.begin() + i, serialized.end(), 8 * (serialized.size() - i));
-
-    int j = 0;
-    if (version >= 1) {
-      // Max: 64 * 8 - 64 * 8 = 128 * 8 = 1024 => 11 bits.
-      uint32_t leaf_eval_small = serialized_bool.Get(0, 11);
-      leaf_eval_ = leaf_eval_small + kMinEvalLarge;
-      j += 11;
-    } else {
-      leaf_eval_ = 0;
-    }
-    if (lower_ + 1 <= last_1) {
-      MutableEvaluation(lower_ + 1)->SetProving(proof);
-
-      for (int eval = lower_ + 3; eval <= last_1; eval += 2) {
-        while (serialized_bool.Get(j++) == 0) {
-          proof++;
-        }
-        MutableEvaluation(eval)->SetProving(proof);
-      }
-    }
-    if (upper_ - 1 >= first_0) {
-      MutableEvaluation(upper_ - 1)->SetDisproving(disproof);
-
-      for (int eval = upper_ - 3; eval >= first_0; eval -= 2) {
-        while (serialized_bool.Get(j++) == 0) {
-          disproof++;
-        }
-        MutableEvaluation(eval)->SetDisproving(disproof);
-      }
-    }
+  static std::unique_ptr<BookTreeNode> Deserialize(Book* book, const std::vector<char>& serialized) {
+    std::vector<CompressedFlip> father_flips;
+    Node n = Node::Deserialize(serialized, version, &father_flips);
+    auto result = std::make_unique<BookTreeNode>(book, n);
+    result->GetFathersFromBook(father_flips);
+    return result;
   }
 
   std::vector<char> Serialize() const {
@@ -323,14 +236,13 @@ class BookTreeNode : public TreeNode {
 
  private:
   Book* book_;
-  std::vector<CompressedFlip> father_flips_;
 
   friend class TestBook;
   friend class ::Book<version>;
 
-  void GetFathersFromBook() {
+  void GetFathersFromBook(const std::vector<CompressedFlip>& father_flips) {
     assert(n_fathers_ == 0);
-    for (CompressedFlip father_flip : father_flips_) {
+    for (CompressedFlip father_flip : father_flips) {
       auto [move, flip] = DeserializeFlip(father_flip);
       std::optional<BookTreeNode<Book, version>*> father_opt =
           book_->Mutable(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));

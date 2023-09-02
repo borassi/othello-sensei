@@ -91,9 +91,10 @@ TEST(Book, HugeNode) {
   book.Clean();
   // Also adds the node to the book and all fathers / children.
   auto node = LargestTreeNode(book, 1000);
+  Board b = node->ToBoard();
   book.Commit();
 
-  EXPECT_EQ(book.Get(node->ToBoard()).value(), *LargestTreeNode(test_book, 1000));
+  EXPECT_EQ(book.Get(b).value(), *LargestTreeNode(test_book, 1000));
 }
 
 TEST(Book, Reload) {
@@ -198,8 +199,7 @@ TEST(Book, AddChildren) {
   EXPECT_EQ(-10, book.Get(Board("e6")).value().GetEval()) << book.Get(Board("e6")).value();
 
   auto fathers = book.Mutable(Board("e6f6")).value()->Fathers();
-  EXPECT_EQ(fathers.size(), 1);
-  EXPECT_EQ(fathers[0], book.Get(Board("e6")).value());
+  EXPECT_THAT(fathers, UnorderedElementsAre(book.Get(Board("e6")).value()));
   EXPECT_THAT(
       book.Mutable(Board("e6")).value()->GetChildren(),
       UnorderedElementsAre(

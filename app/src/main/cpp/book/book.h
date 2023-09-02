@@ -84,9 +84,9 @@ class Book {
   Book(const std::string& folder);
 
   // TODO: Remove code duplication between Get and Mutable.
-  std::optional<Node> Get(const Board& b);
+  std::optional<Node> Get(const Board& b) const;
 
-  std::optional<Node> Get(BitPattern player, BitPattern opponent) {
+  std::optional<Node> Get(BitPattern player, BitPattern opponent) const {
     return Get(Board(player, opponent));
   }
 
@@ -94,14 +94,14 @@ class Book {
     Board unique = b.Unique();
     auto iterator = modified_nodes_.find(unique);
     if (iterator != modified_nodes_.end()) {
-      return &(iterator->second);
+      return iterator->second.get();
     }
     HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
     if (!node.IsEmpty()) {
       std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
-      iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
-      iterator->second.GetFathersFromBook();
-      return &iterator->second;
+      std::unique_ptr<BookNode> node = BookNode::Deserialize(this, serialized);
+      iterator = modified_nodes_.insert(std::make_pair(unique, std::move(node))).first;
+      return iterator->second.get();
     }
     return std::nullopt;
   }
@@ -120,7 +120,7 @@ class Book {
 
   HashMapIndex Size() { return book_size_; }
 
-  std::vector<Board> Roots() {
+  std::vector<Board> Roots() const {
     std::vector<Board> result;
     for (const auto& [board, unused_offset] : roots_) {
       result.push_back(board);
@@ -136,7 +136,7 @@ class Book {
     using pointer           = value_type*;
     using reference         = value_type;
 
-    Iterator(Book* book, int start_root) : book_(book), roots_(book_->Roots()), next_root_(start_root), stack_() {
+    Iterator(const Book& book, int start_root) : book_(book), roots_(book_.Roots()), next_root_(start_root), stack_() {
       assert (next_root_ == 0 || next_root_ == roots_.size());
       ToNextRoot();
     }
@@ -166,14 +166,14 @@ class Book {
     }
 
     bool operator==(const Iterator& other) const {
-      return book_ == other.book_ && roots_ == other.roots_ && stack_ == other.stack_ && next_root_ == other.next_root_;
+      return &book_ == &other.book_ && roots_ == other.roots_ && stack_ == other.stack_ && next_root_ == other.next_root_;
     }
     bool operator!=(const Iterator& other) const {
       return !(*this == other);
     }
 
    private:
-    Book* book_;
+    const Book& book_;
     std::vector<Board> roots_;
     std::vector<Node> stack_;
     int next_root_;
@@ -185,7 +185,7 @@ class Book {
         // Finished iteration.
         return;
       }
-      auto next = book_->Get(roots_[next_root_++]).value();
+      auto next = book_.Get(roots_[next_root_++]).value();
       stack_.push_back(next);
     }
 
@@ -202,15 +202,15 @@ class Book {
       } else {
         for (auto [child, unused] : GetUniqueNextBoardsWithPass(b)) {
           if (!visited_.contains(child)) {
-            stack_.push_back(book_->Get(child).value());
+            stack_.push_back(book_.Get(child).value());
           }
         }
       }
     }
   };
 
-  Iterator begin() { return Iterator(this, 0); }
-  Iterator end() { return Iterator(this, roots_.size()); }
+  Iterator begin() const { return Iterator(*this, 0); }
+  Iterator end() const { return Iterator(*this, roots_.size()); }
 
  private:
   std::string folder_;
@@ -221,7 +221,7 @@ class Book {
   HashMapIndex book_size_;
   // References are not invalidated:
   // https://stackoverflow.com/questions/39868640/stdunordered-map-pointers-reference-invalidation
-  std::unordered_map<Board, BookNode> modified_nodes_;
+  std::unordered_map<Board, std::unique_ptr<BookNode>> modified_nodes_;
   // If we receive a signal when we are updating the book, we store it here
   // instead of letting it kill the program. We re-raise this after we updated
   // everything, to avoid inconsistencies. We use an atomic in case multiple
@@ -238,7 +238,11 @@ class Book {
 
   int GetValueFileOffset(int size);
 
-  ValueFile& GetValueFile(const HashMapNode& node);
+  const ValueFile& GetValueFile(const HashMapNode& node) const;
+
+  ValueFile& MutableValueFile(const HashMapNode& node) {
+    return const_cast<ValueFile&>(GetValueFile(node));
+  }
 
   void UpdateSizes(std::fstream* file);
 
@@ -246,22 +250,22 @@ class Book {
 
   void UpdateFathers(const BookNode& b);
 
-  u_int64_t OffsetToFilePosition(HashMapIndex offset) {
+  u_int64_t OffsetToFilePosition(HashMapIndex offset) const {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);
   }
-  std::string IndexFilename() { return folder_ + "/index.sen"; }
+  std::string IndexFilename() const { return folder_ + "/index.sen"; }
 
-  HashMapIndex PowerAfterHashMapSize() {
+  HashMapIndex PowerAfterHashMapSize() const {
     return 1ULL << (sizeof(HashMapIndex) * 8 - __builtin_clzll(hash_map_size_ - 1));
   }
 
-  HashMapIndex PowerBeforeHashMapSize() {
+  HashMapIndex PowerBeforeHashMapSize() const {
     return PowerAfterHashMapSize() / 2;
   }
 
-  HashMapIndex RepositionHash(HashMapIndex board_hash);
+  HashMapIndex RepositionHash(HashMapIndex board_hash) const;
 
-  std::pair<std::fstream, HashMapNode> Find(BitPattern player, BitPattern opponent);
+  std::pair<std::fstream, HashMapNode> Find(BitPattern player, BitPattern opponent) const;
 
   void Resize(std::fstream* file, std::vector<HashMapNode> add_elements);
 };
@@ -344,22 +348,23 @@ template<int version>
 typename Book<version>::BookNode* Book<version>::AddNoRootsUpdate(const TreeNode& node) {
   Board unique = node.ToBoard().Unique();
   assert(!Get(unique));
-  auto [iterator, inserted] = modified_nodes_.try_emplace(unique, this, node);
+  auto [iterator, inserted] = modified_nodes_.try_emplace(unique, std::make_unique<BookNode>(this, node));
+  iterator->second->is_leaf_ = true;
   assert(inserted);
-  return &iterator->second;
+  return iterator->second.get();
 }
 
 template<int version>
-std::optional<Node> Book<version>::Get(const Board& b) {
+std::optional<Node> Book<version>::Get(const Board& b) const {
   Board unique = b.Unique();
   auto iterator = modified_nodes_.find(unique);
   if (iterator != modified_nodes_.end()) {
-    return Node(iterator->second);
+    return Node(*iterator->second);
   }
   HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
   if (!node.IsEmpty()) {
     std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
-    return Node(BookNode(this, serialized));
+    return Node::Deserialize(serialized, version, nullptr);
   }
   return std::nullopt;
 }
@@ -377,7 +382,7 @@ void Book<version>::Commit(bool verbose) {
     if (verbose) {
       std::cout << "." << std::flush;
     }
-    Commit(node);
+    Commit(*node);
   }
   modified_nodes_.clear();
   auto file = OpenFile(IndexFilename());
@@ -402,10 +407,10 @@ void Book<version>::Commit(const BookNode& node) {
   Board b = node.ToBoard();
 
   if (!hash_map_node.IsEmpty()) {
-    std::vector<char> removed = GetValueFile(hash_map_node).Remove(hash_map_node.Offset());
-    const BookNode removed_node(this, removed);
-    assert(node.NFathers() >= removed_node.NFathers());
-    assert(b == removed_node.ToBoard());
+    std::vector<char> removed = MutableValueFile(hash_map_node).Remove(hash_map_node.Offset());
+    std::unique_ptr<BookNode> removed_node = BookNode::Deserialize(this, removed);
+    assert(node.NFathers() >= removed_node->NFathers());
+    assert(b == removed_node->ToBoard());
     assert (roots_.contains(b) == !node.HasFathers());
   } else {
     ++book_size_;
@@ -491,8 +496,8 @@ void Book<version>::Clean() {
 }
 
 template<int version>
-ValueFile& Book<version>::GetValueFile(const HashMapNode& node) {
-  ValueFile& file = value_files_[node.GetValueFilePosition()];
+const ValueFile& Book<version>::GetValueFile(const HashMapNode& node) const {
+  const ValueFile& file = value_files_[node.GetValueFilePosition()];
   assert(file.Size() == node.Size());
   return file;
 }
@@ -505,7 +510,7 @@ void Book<version>::UpdateSizes(std::fstream* file) {
 }
 
 template<int version>
-HashMapIndex Book<version>::RepositionHash(HashMapIndex board_hash) {
+HashMapIndex Book<version>::RepositionHash(HashMapIndex board_hash) const {
   assert(board_hash >= 0);
   HashMapIndex hash = board_hash % PowerAfterHashMapSize();
   if (hash >= hash_map_size_) {
@@ -515,7 +520,7 @@ HashMapIndex Book<version>::RepositionHash(HashMapIndex board_hash) {
 }
 
 template<int version>
-std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitPattern opponent) {
+std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitPattern opponent) const {
   Board unique = Board(player, opponent).Unique();
   player = unique.Player();
   opponent = unique.Opponent();
@@ -533,8 +538,7 @@ std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitP
       return std::make_pair(std::move(file), node);
     }
     std::vector<char> v = GetValueFile(node).Get(node.Offset());
-    BookNode book_tree_node(this, v);
-    Board b = book_tree_node.ToBoard();
+    Board b = Board::Deserialize(v.begin());
     assert(b == b.Unique());
     if (b.Player() == player && b.Opponent() == opponent) {
       file.seekg((unsigned) file.tellg() - sizeof(HashMapNode), std::ios::beg);
@@ -577,8 +581,7 @@ void Book<version>::Resize(std::fstream* file, std::vector<HashMapNode> add_elem
 
   for (const HashMapNode& node_to_move : add_elements) {
     std::vector<char> v = GetValueFile(node_to_move).Get(node_to_move.Offset());
-    BookNode node(this, v);
-    Board board = node.ToBoard();
+    Board board = Board::Deserialize(v.begin());
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
     HashMapNode board_in_position;
     file->seekg(OffsetToFilePosition(hash));

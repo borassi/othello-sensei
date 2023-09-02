@@ -50,13 +50,13 @@ class ValueFile {
     }
   }
 
-  ValueFileSize Size() { return size_; }
+  ValueFileSize Size() const { return size_; }
 
   BookFileOffset Add(const std::vector<char>& value);
 
   std::vector<char> Remove(BookFileOffset offset);
 
-  std::vector<char> Get(BookFileOffset offset);
+  std::vector<char> Get(BookFileOffset offset) const;
 
   void Clean() {
     std::ofstream(Filename(), std::ios::out).close();
@@ -143,8 +143,8 @@ class ValueFile {
     return filename_;
   }
 
-  std::vector<char> Get(BookFileOffset offset, std::fstream* file);
-  void Seek(BookFileOffset offset, std::fstream* file);
+  std::vector<char> Get(BookFileOffset offset, std::fstream* file) const;
+  void Seek(BookFileOffset offset, std::fstream* file) const;
   void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream* file);
 };
 
