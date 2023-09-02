@@ -170,15 +170,7 @@ class BookTreeNode : public TreeNode {
 
     // 13 - 13+max(1, 3*n_fathers).
     if (n_fathers_ == 0) {
-      if (father_flips_.empty()) {
-        result.insert(result.end(), {0, 0, 0});
-      } else {
-        for (int i = 0; i < father_flips_.size(); ++i) {
-          auto father_flip = father_flips_[i];
-          father_flip = father_flip << 2 | (i == father_flips_.size() - 1 ? 0 : 1);
-          result.insert(result.end(), {(char) (father_flip % 256), (char) ((father_flip >> 8) % 256), (char) ((father_flip >> 16) % 256)});
-        }
-      }
+      result.insert(result.end(), {0, 0, 0});
     } else {
       for (int i = 0; i < n_fathers_; ++i) {
         TreeNode* father = fathers_[i];
@@ -279,7 +271,6 @@ class BookTreeNode : public TreeNode {
   }
 
   std::vector<Node> Fathers() override {
-    GetFathersFromBook();
     return TreeNode::Fathers();
   }
 
@@ -319,12 +310,7 @@ class BookTreeNode : public TreeNode {
   }
 
   int NFathers() const {
-    // Possible cases:
-    // - This comes from a TreeNode. Empty father_flips_, has n_fathers.
-    // - This comes from a Deserialize. n_fathers = 0, full father_flips.
-    // - This comes from a Deserialize after AddFathersToBook.
-    //   Equivalent n_fathers and father_flips.
-    return std::max(n_fathers_, (unsigned) father_flips_.size());
+    return n_fathers_;
   }
 
   bool HasFathers() const {
@@ -342,19 +328,14 @@ class BookTreeNode : public TreeNode {
   friend class TestBook;
   friend class ::Book<version>;
 
-  void GetFathersFromBook() override {
-    if (n_fathers_ > 0) {
-      return;
-    }
+  void GetFathersFromBook() {
+    assert(n_fathers_ == 0);
     for (CompressedFlip father_flip : father_flips_) {
-      auto move_and_flip = DeserializeFlip(father_flip);
-      Square move = move_and_flip.first;
-      BitPattern flip = move_and_flip.second;
-
-      std::optional<BookTreeNode<Book, version>*> father =
+      auto [move, flip] = DeserializeFlip(father_flip);
+      std::optional<BookTreeNode<Book, version>*> father_opt =
           book_->Mutable(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
-      assert(father);
-      (*father)->GetChildrenFromBook();
+      auto father = father_opt.value();
+      father->GetChildrenFromBook();
     }
   }
 
@@ -363,6 +344,9 @@ class BookTreeNode : public TreeNode {
     if (n_children_ > 0) {
       return;
     }
+    // This is a trick to prevent GetChildrenFromBook calling Mutable calling
+    // GetFathersFromBook calling GetChildrenFromBook.
+    n_children_ = 255;
     std::vector<TreeNode*> children;
     for (const auto& [child_board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
       auto child = book_->Mutable(child_board);

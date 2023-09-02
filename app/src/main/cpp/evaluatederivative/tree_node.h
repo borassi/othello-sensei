@@ -274,8 +274,6 @@ class Node {
 
   Square Depth() const { return depth_; }
 
-  virtual void GetFathersFromBook() {}
-
   // TODO: Avoid code duplication with SetSolved.
   void SetUpper(Eval upper) {
     upper_ = std::min(upper, upper_);
@@ -466,7 +464,6 @@ class TreeNode : public Node {
   }
 
   void UpdateFathers() {
-    GetFathersFromBook();
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
     for (int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
@@ -858,6 +855,7 @@ class TreeNode : public Node {
   }
 
   void SetChildrenNoLock(std::vector<TreeNode*> children) {
+    assert(n_children_ == 0 || n_children_ == 255);
     n_children_ = (Square) children.size();
     children_ = new TreeNode*[n_children_];
     is_leaf_ = false;

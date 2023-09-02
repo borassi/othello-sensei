@@ -83,9 +83,7 @@ class Book {
 
   Book(const std::string& folder);
 
-  // TODO: Add Mutable alongside Get, to avoid having to commit only for a read.
-  // Difficulty: we cannot copy TreeNodes (what if Get returns a value in the
-  // hash map?).
+  // TODO: Remove code duplication between Get and Mutable.
   std::optional<Node> Get(const Board& b);
 
   std::optional<Node> Get(BitPattern player, BitPattern opponent) {
@@ -102,6 +100,7 @@ class Book {
     if (!node.IsEmpty()) {
       std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
       iterator = modified_nodes_.try_emplace(unique, this, serialized).first;
+      iterator->second.GetFathersFromBook();
       return &iterator->second;
     }
     return std::nullopt;
@@ -319,6 +318,7 @@ void Book<version>::AddChildren(const Board& father_board, const std::vector<Nod
         child_in_book->AddDescendants(new_child->GetNVisited());
       }
       if (!child_in_book->HasFathers()) {
+        // TODO: Change the file only when committing!!
         roots_file_.Remove(roots_[board]);
         roots_.erase(board);
       }
