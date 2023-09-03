@@ -70,7 +70,7 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   assert(upper_ >= -64);
   SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower, weak_upper);
   for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-    assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
+    assert(GetEvaluation(i, true).IsSolved() == (i < lower_ || i > upper_));
   }
 }
 
@@ -129,15 +129,18 @@ double Node::RemainingWork(Eval lower, Eval upper) const {
   assert((lower - kMinEval) % 2 == 1);
   assert((upper - kMinEval) % 2 == 1);
   assert(n_empties_ >= 0 && n_empties_ <= 60);
-  lower = MaxEval(lower, weak_lower_);
-  upper = MinEval(upper, weak_upper_);
+  assert(!Node::IsSolved(lower, upper, false));
+  Eval weak_lower = MaxEval(lower_ + 1, weak_lower_);
+  Eval weak_upper = MinEval(upper_ - 1, weak_upper_);
+  lower = MaxEval(lower, weak_lower);
+  upper = MinEval(upper, weak_upper);
   int disproof = GetPercentileLower(0.5F);
   int proof = disproof - 2;
 
   if (disproof <= lower) {
-    return GetEvaluation(std::min(lower, weak_upper_)).DisproofNumber();
+    return GetEvaluation(std::min(lower, weak_upper)).DisproofNumber();
   } else if (proof >= upper) {
-    return GetEvaluation(std::max(upper, weak_lower_)).ProofNumber();
+    return GetEvaluation(std::max(upper, weak_lower)).ProofNumber();
   }
   assert(disproof >= lower && disproof <= upper);
   assert(proof >= lower && proof <= upper);

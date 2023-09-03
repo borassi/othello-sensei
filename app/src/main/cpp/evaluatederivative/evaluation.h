@@ -43,7 +43,7 @@ struct CombineProb {
   double prob_lower_cubed[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<145>);
+    ProbCombiner combiner(ExpPolyLog<150>);
     ProbCombiner combiner_shallow(ExpPolyLog<175>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       for (int j = 0; j <= kProofNumberStep; ++j) {
