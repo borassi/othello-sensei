@@ -82,10 +82,10 @@ std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower,
 
 std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
   std::shared_ptr<TreeNode> t(new TreeNode());
-  int weak_lower = -(int) ((rand() % 32) * 2 + 1);
-  int weak_upper = weak_lower + ((rand() % 20) * 2);
   int lower = -(int) ((rand() % 32) * 2);
   int upper = lower + ((rand() % 20) * 2);
+  int weak_lower = std::min(upper - 1, -(int) ((rand() % 32) * 2 + 1));
+  int weak_upper = std::max(lower + 1, weak_lower + ((rand() % 20) * 2));
   int eval = EvalToEvalLarge(lower) + rand() % (EvalToEvalLarge(upper) - EvalToEvalLarge(lower) + 1);
   int n_visited = rand() % 2000 + 1;
   t->Reset(b.Player(), b.Opponent(), /*depth=*/ 4, /*evaluator=*/rand() % 20,
@@ -148,7 +148,7 @@ Book<version> BookWithPositions(
   book.Clean();
 
   auto first_line = lines[0];
-  auto start = book.Add(*TestTreeNode(Board(first_line), 0, -63, 63, 1));
+  auto start = book.Add(*TestTreeNode(Board(first_line), 0, -63, 63, GetOrDefault(visited, Board(first_line), 1)));
 
   for (const auto& line : lines) {
     NVisited total_visited = 0;
@@ -259,6 +259,8 @@ BookTreeNode<Book, kBookVersion>* LargestTreeNode(Book& book, int max_fathers = 
         continue;
       }
       BookTreeNode<Book, kBookVersion>* father = RandomBookTreeNode(&book, father_board);
+      // To avoid that the father has incompatible lower/upper wrt children.
+      father->SetLeafNeverSolved();
       std::vector<Node> children = {result};
       for (auto [b, unused] : GetUniqueNextBoardsWithPass(father_board)) {
         if (b == result->ToBoard()) {
@@ -268,7 +270,8 @@ BookTreeNode<Book, kBookVersion>* LargestTreeNode(Book& book, int max_fathers = 
         if (child) {
           children.push_back(*child);
         } else {
-          children.push_back(RandomBookTreeNode(&book, b));
+          auto new_child = RandomBookTreeNode(&book, b);
+          children.push_back(new_child);
         }
       }
       book.AddChildren(father_board, children);

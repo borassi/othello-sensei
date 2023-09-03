@@ -69,7 +69,7 @@ class JNIWrapper {
     }
     const Node& node = *n;
     const jclass NodeJava = env->FindClass("jni/Node");
-    const jmethodID initNodeJava = env->GetMethodID(NodeJava, "<init>", "(JJJFFIIIIIILjava/util/ArrayList;)V");
+    const jmethodID initNodeJava = env->GetMethodID(NodeJava, "<init>", "(JJJDFIIIIIILjava/util/ArrayList;)V");
 
     const jclass ArrayList = env->FindClass("java/util/ArrayList");
     const jmethodID initArrayList = env->GetMethodID(ArrayList, "<init>", "()V");

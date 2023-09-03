@@ -40,7 +40,5 @@ int main(int argc, char* argv[]) {
       << " in path " << new_book_path << "\n";
 
   int i = 0;
-  for (auto [node, node_type] : old_book) {
-    std::cout << node.ToBoard() << node_type << "\n\n";
-  }
+  new_book.Merge(old_book);
 }

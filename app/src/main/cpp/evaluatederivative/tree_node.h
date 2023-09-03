@@ -134,12 +134,6 @@ class Node {
 
     n.EnlargeEvaluationsInternal();
 
-    for (int eval = n.weak_lower_; eval <= n.lower_; eval += 2) {
-      n.MutableEvaluation(eval)->SetProved();
-    }
-    for (int eval = n.weak_upper_; eval >= std::max(n.upper_, n.weak_lower_); eval -= 2) {
-      n.MutableEvaluation(eval)->SetDisproved();
-    }
     for (int eval = last_1 + 2; eval <= first_0 - 2; eval += 2) {
       Probability prob = serialized[i++];
       PN proof_number = serialized[i++];
@@ -169,8 +163,6 @@ class Node {
       uint32_t leaf_eval_small = serialized_bool.Get(0, 11);
       n.leaf_eval_ = leaf_eval_small + kMinEvalLarge;
       j += 11;
-    } else {
-      n.leaf_eval_ = 0;
     }
     if (n.lower_ + 1 <= last_1) {
       n.MutableEvaluation(n.lower_ + 1)->SetProving(proof);
@@ -192,6 +184,9 @@ class Node {
         n.MutableEvaluation(eval)->SetDisproving(disproof);
       }
     }
+    if (version < 1) {
+      n.leaf_eval_ = std::round(n.GetEval() * 8);
+    }
     return n;
   }
 
@@ -200,8 +195,8 @@ class Node {
   BitPattern Opponent() const { return opponent_; }
   Eval Lower() const { return lower_; }
   Eval Upper() const { return upper_; }
-  Eval WeakLower() const { return weak_lower_; }
-  Eval WeakUpper() const { return weak_upper_; }
+  Eval WeakLower() const { return MaxEval(weak_lower_, lower_ + 1); }
+  Eval WeakUpper() const { return MinEval(weak_upper_, upper_ - 1); }
   NVisited GetNVisited() const { return descendants_; }
 
   Board ToBoard() const {
@@ -230,7 +225,7 @@ class Node {
     return GetEvaluation(eval_goal).DisproofNumber();
   }
 
-  float ProbGreaterEqual(Eval eval_goal) const {
+  double ProbGreaterEqual(Eval eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     return GetEvaluation(eval_goal).ProbGreaterEqual();
@@ -277,8 +272,10 @@ class Node {
   virtual double SolveProbabilityUpper(Eval upper) const {
     auto goal = MinEval(GetPercentileLower(0.5F), upper);
     assert(goal >= weak_lower_);
-    if (goal > upper_) {
-      // Prob(goal - 2) > 0.5; Prob(goal) = 0 because goal > upper.
+    if (goal > upper_ || goal < lower_) {
+      // Goal > upper: Prob(goal - 2) > 0.5; Prob(goal) = 0.
+      // Goal < lower: Only possibility: upper < lower_. We already proved that
+      // it's >= upper, so nothing else to do here.
       return 0;
     }
     // This can rarely happen when we are in dire need of updating the eval.
@@ -292,8 +289,8 @@ class Node {
   virtual double SolveProbabilityLower(Eval lower) const {
     auto goal = MaxEval(GetPercentileUpper(0.5F), lower);
     assert(goal <= weak_upper_);
-    if (goal < lower_) {
-      // Prob(goal + 2) < 0.5; Prob(goal) = 1 because goal < lower.
+    if (goal < lower_ || goal > upper_) {
+      // Same as SolveProbabilityUpper.
       return 0;
     }
     // This can rarely happen when we are in dire need of updating the eval.
@@ -390,17 +387,11 @@ class Node {
   void SetUpper(Eval upper) {
     upper_ = std::min(upper, upper_);
     leaf_eval_ = std::min(leaf_eval_, EvalToEvalLarge(upper_));
-    for (int i = weak_upper_; i >= std::max(upper_, weak_lower_); i -= 2) {
-      MutableEvaluation(i)->SetDisproved();
-    }
   }
 
   void SetLower(Eval lower) {
     lower_ = std::max(lower, lower_);
     leaf_eval_ = std::max(leaf_eval_, EvalToEvalLarge(lower_));
-    for (int i = weak_lower_; i <= std::min(lower_, weak_upper_); i += 2) {
-      MutableEvaluation(i)->SetProved();
-    }
   }
 
   // Measures the progress towards solving the position (lower is better).
@@ -729,20 +720,20 @@ class TreeNode : public Node {
     Eval expected_weak_lower = std::max(lower_ + 1, (int) weak_lower_);
     Eval expected_weak_upper = std::min(upper_ - 1, (int) weak_upper_);
 
-    if (weak_lower_ - 2 > lower_ && ProbGreaterEqual(weak_lower_) < 1 - kZeroPercForWeak) {
+    if (weak_lower_ - 2 > lower_ && weak_lower_ < upper_ && ProbGreaterEqual(weak_lower_) < 1 - kZeroPercForWeak) {
       expected_weak_lower = weak_lower_ - 2;
     } else {
-      for (int i = expected_weak_lower + 2; i <= expected_weak_upper; i += 2) {
+      for (int i = expected_weak_lower + 2; i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
         if (ProbGreaterEqual(i) < 0.99) {
           expected_weak_lower = i - 2;
           break;
         }
       }
     }
-    if (weak_upper_ + 2 < upper_ && ProbGreaterEqual(weak_upper_) > kZeroPercForWeak) {
+    if (weak_upper_ + 2 < upper_ && weak_upper_ > lower_ && ProbGreaterEqual(weak_upper_) > kZeroPercForWeak) {
       expected_weak_upper = weak_upper_ + 2;
     } else {
-      for (int i = expected_weak_upper - 2; i >= expected_weak_lower; i -= 2) {
+      for (int i = expected_weak_upper - 2; i >= std::max(lower_ + 1, (int) weak_lower_); i -= 2) {
         if (ProbGreaterEqual(i) > 0.01) {
           expected_weak_upper = i + 2;
           break;

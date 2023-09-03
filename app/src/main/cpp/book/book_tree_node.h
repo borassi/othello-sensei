@@ -39,6 +39,8 @@ template<class Book, int version>
 class BookTreeNode : public TreeNode {
  public:
   BookTreeNode(Book* book, const Node& node) : TreeNode(node), book_(book) {
+    assert(node.WeakUpper() >= node.Lower() - 1);
+    assert(node.WeakLower() <= node.Upper() + 1);
     Board b = node.ToBoard().Unique();
     player_ = b.Player();
     opponent_ = b.Opponent();
@@ -49,17 +51,11 @@ class BookTreeNode : public TreeNode {
     weak_upper_ = 63;
     EnlargeEvaluationsInternal();
 
-    auto proof_eval = node.GetEvaluation(node.WeakLower());
-    auto disproof_eval = node.GetEvaluation(node.WeakUpper());
-    for (int i = kMinEval + 1; i <= kMaxEval - 1; i += 2) {
-      if (i < lower_) {
-        MutableEvaluation(i)->SetProved();
-      } else if (i > upper_) {
-        MutableEvaluation(i)->SetDisproved();
-      } else if (i < node.WeakLower()) {
-        MutableEvaluation(i)->SetProving(proof_eval, node.WeakLower() - i);
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      if (i < node.WeakLower()) {
+        MutableEvaluation(i)->SetProving(node.GetEvaluation(node.WeakLower()), node.WeakLower() - i);
       } else if (i > node.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(disproof_eval, i - node.WeakUpper());
+        MutableEvaluation(i)->SetDisproving(node.GetEvaluation(node.WeakUpper()), i - node.WeakUpper());
       } else {
         *MutableEvaluation(i) = Evaluation(node.GetEvaluation(i));
       }
@@ -99,8 +95,8 @@ class BookTreeNode : public TreeNode {
     float descendants = (float) descendants_;
     result.insert(result.end(), (char*) &descendants, (char*) &descendants + sizeof(float));
 
-    int last_1 = kMinEval - 1;
-    int first_0 = kMaxEval + 1;
+    int last_1 = lower_ - 1;
+    int first_0 = upper_ + 1;
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       if (GetEvaluation(i).ProbGreaterEqual() == 1) {
@@ -203,7 +199,7 @@ class BookTreeNode : public TreeNode {
 
   template<ChildValueType type>
   BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
-    return (BookTreeNode*) TreeNode::template BestChild<type>(eval_goal, n_thread_multiplier);
+    return (BookTreeNode*) TreeNode::BestChild(eval_goal, n_thread_multiplier);
   }
   BookTreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
     return (BookTreeNode*) TreeNode::BestChild(eval_goal, n_thread_multiplier);
@@ -232,6 +228,29 @@ class BookTreeNode : public TreeNode {
 
   bool IsLeafNoLock() const final {
     return this->Node::IsLeaf();
+  }
+
+  bool AreChildrenCorrect() override {
+    GetChildrenFromBook();
+    auto next_boards = GetUniqueNextBoardsWithPass(ToBoard());
+    if (n_children_ != next_boards.size()) {
+      throw ChildError("Wrong children size");
+    }
+
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children_[i];
+      bool found = false;
+      for (auto& [next_board, unused_move] : next_boards) {
+        if (child->ToBoard() == next_board) {
+          assert(!found);  // If it's true, there is a duplicate in the flips.
+          found = true;
+        }
+      }
+      if (!found) {
+        throw ChildError("Missing child");
+      }
+    }
+    return true;
   }
 
  private:
@@ -265,29 +284,6 @@ class BookTreeNode : public TreeNode {
       children.push_back((TreeNode*) child.value());
     }
     SetChildrenNoLock(children);
-  }
-
-  bool AreChildrenCorrect() override {
-    GetChildrenFromBook();
-    auto next_boards = GetUniqueNextBoardsWithPass(ToBoard());
-    if (n_children_ != next_boards.size()) {
-      throw ChildError("Wrong children size");
-    }
-
-    for (int i = 0; i < n_children_; ++i) {
-      TreeNode* child = children_[i];
-      bool found = false;
-      for (auto& [next_board, unused_move] : next_boards) {
-        if (child->ToBoard() == next_board) {
-          assert(!found);  // If it's true, there is a duplicate in the flips.
-          found = true;
-        }
-      }
-      if (!found) {
-        throw ChildError("Missing child");
-      }
-    }
-    return true;
   }
 };
 

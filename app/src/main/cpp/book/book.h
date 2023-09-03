@@ -212,6 +212,30 @@ class Book {
   Iterator begin() const { return Iterator(*this, 0); }
   Iterator end() const { return Iterator(*this, roots_.size()); }
 
+  template<int other_version>
+  void Merge(const Book<other_version>& other_book) {
+    for (const auto& [other_node, other_node_type] : other_book) {
+      std::optional<BookNode*> my_node_opt = Mutable(other_node.ToBoard());
+      if (my_node_opt) {
+        BookNode* my_node = *my_node_opt;
+        if (other_node_type == LEAF || other_node_type == FIRST_VISIT) {
+          my_node->AddDescendants(other_node.GetNVisited());
+          my_node->lower_ = MaxEval(my_node->lower_, other_node.Lower());
+          my_node->upper_ = MinEval(my_node->upper_, other_node.Upper());
+        } else {
+          if (my_node->IsLeaf()) {
+            AddChildren(my_node->ToBoard(), {});
+          }
+        }
+      } else {
+        assert(other_node_type == LEAF || other_node_type == FIRST_VISIT);
+        Add(other_node);
+      }
+    }
+    std::cout << "Committing!\n";
+    Commit();
+  }
+
  private:
   std::string folder_;
   std::vector<ValueFile> value_files_;

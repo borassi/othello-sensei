@@ -132,7 +132,7 @@ TEST(Book, LargeOne) {
   std::vector<Board> old_boards;
   book.Clean();
 
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < 2000; ++i) {
     if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
       std::cout << i << "\n";
     }
@@ -439,8 +439,8 @@ TEST(Book, IteratorBasic) {
 TEST(Book, IteratorTraspositions) {
   Book book(kTempDir);
   book.Clean();
-  book.Add(*RandomTestTreeNode(Board("e6f4c3c4")));
-  book.Add(*RandomTestTreeNode(Board("e6f4d3c4")));
+  book.Add(*TestTreeNode(Board("e6f4c3c4"), 0, -63, 63, 10));
+  book.Add(*TestTreeNode(Board("e6f4d3c4"), 0, -63, 63, 10));
 
   std::vector<Node> children1;
   for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4"))) {
@@ -478,16 +478,16 @@ TEST(Book, IteratorTraspositions) {
 TEST(Book, IteratorTraspositionsChild) {
   Book book(kTempDir);
   book.Clean();
-  book.Add(*RandomTestTreeNode(Board("e6f4c3c4")));
-  book.Add(*RandomTestTreeNode(Board("e6f4d3c4")));
+  book.Add(*TestTreeNode(Board("e6f4c3c4"), 0, -63, 63, 10));
+  book.Add(*TestTreeNode(Board("e6f4d3c4"), 0, -63, 63, 10));
 
   std::vector<Node> children1;
   for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4"))) {
-    children1.push_back(*RandomTestTreeNode(child));
+    children1.push_back(*TestTreeNode(child, 0, -63, 63, 10));
   }
   std::vector<Node> children2;
   for (Board child : GetNextBoardsWithPass(Board("e6f4d3c4"))) {
-    children2.push_back(*RandomTestTreeNode(child));
+    children2.push_back(*TestTreeNode(child, 0, -63, 63, 10));
   }
   std::vector<Node> children3;
   for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4d3"))) {
@@ -534,6 +534,67 @@ TEST(Book, BestDescendant) {
   auto result = LeafToUpdate<BookNode>::BestDescendant(start, 0, kLessThenMinEval);
   EXPECT_TRUE(result);
   EXPECT_EQ(result->Leaf()->ToBoard().Unique(), Board("e6f4d3c4c3").Unique());
+}
+
+TEST(Book, MergeDisjoint) {
+  std::vector<std::string> lines = {"e6f4"};
+  std::vector<std::string> lines2 = {"e6f6"};
+  Book book = BookWithPositions(lines, /*evals=*/{}, /*skip=*/{}, /*visited=*/{});
+  Book book2 = BookWithPositions(lines2, /*evals=*/{}, /*skip=*/{}, /*visited=*/{});
+  Node old_e6f4 = book.Get(Board("e6f4")).value();
+  Node old_e6f4c3 = book.Get(Board("e6f4c3")).value();
+
+  book.Merge(book2);
+  EXPECT_EQ(book.Size(), 11);
+  EXPECT_EQ(book.Get(Board("e6f4c3")), old_e6f4c3);
+  EXPECT_EQ(book.Get(Board("e6f4")), old_e6f4);
+  EXPECT_EQ(book.Get(Board("e6f6")), book2.Get(Board("e6f6")));
+  EXPECT_EQ(book.Get(Board("e6f6f5")), book2.Get(Board("e6f6f5")));
+  EXPECT_THAT(
+      book.Roots(),
+      UnorderedElementsAre(Board("e6f4").Unique(), Board("e6f6").Unique()));
+}
+
+TEST(Book, MergeSameLine) {
+  Book book = BookWithPositions(
+      {"e6", "e6f4"},
+      /*evals=*/{{Board("e6f4"), 1}},
+      /*skip=*/{},
+      /*visited=*/{{Board("e6"), 1}, {Board("e6f4"), 3}});
+  Book book2 = BookWithPositions(
+      {"e6", "e6f6"},
+      /*evals=*/{{Board("e6f6"), 10}},
+      /*skip=*/{},
+      /*visited=*/{{Board("e6"), 3}, {Board("e6f6"), 2}});
+
+  book.Merge(book2);
+  EXPECT_EQ(book.Size(), 13); // e6, par, diag, perp, diag+4, perp+5
+//  EXPECT_EQ(book.Get(Board("e6f4")).value().GetEval(), 1);
+  EXPECT_EQ(book.Get(Board("e6f4")).value().GetNVisited(), 9); // e6f4(3) + successors of e6f4(5) + element in other book(1)
+//  EXPECT_EQ(book.Get(Board("e6f6")).value().GetEval(), 1);
+  EXPECT_EQ(book.Get(Board("e6f6")).value().GetNVisited(), 7); // e6f6(2) + successors of e6f6(4) + element in other book(1)
+  // First book: 1 from start, 8 from e6f4, 2 from other children.
+  // Second book: 3 from start, 6 from e6f6, 2 from other children.
+  EXPECT_EQ(book.Get(Board("e6")).value().GetNVisited(), 22);
+  EXPECT_TRUE((*book.Mutable(Board("e6")))->AreChildrenCorrect());
+  EXPECT_TRUE((*book.Mutable(Board("e6f4")))->AreChildrenCorrect());
+  EXPECT_TRUE((*book.Mutable(Board("e6f6")))->AreChildrenCorrect());
+  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+}
+
+TEST(Book, MergeDifferentStarts) {
+  Book book = BookWithPositions({"e6"}, {}, {}, {});
+  Book book2 = BookWithPositions({"", "e6"}, {}, {}, {});
+  book.Merge(book2);
+
+  EXPECT_EQ(book.Size(), 5);
+  EXPECT_EQ(book.Get(Board("e6f4")).value().GetNVisited(), 2);
+  EXPECT_EQ(book.Get(Board("e6")).value().GetNVisited(), 8);
+  // new board + 4 children + 3 grandchildren
+  EXPECT_EQ(book.Get(Board("")).value().GetNVisited(), 8);
+  EXPECT_TRUE((*book.Mutable(Board("")))->AreChildrenCorrect());
+  EXPECT_TRUE((*book.Mutable(Board("e6")))->AreChildrenCorrect());
+  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("").Unique()));
 }
 
 INSTANTIATE_TEST_SUITE_P(

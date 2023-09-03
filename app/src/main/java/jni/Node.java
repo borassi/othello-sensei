@@ -23,7 +23,7 @@ public class Node {
   private final long player;
   private final long opponent;
   private final long descendants;
-  private final float eval;
+  private final double eval;
   private final float leafEval;
   private final int lower;
   private final int upper;
@@ -37,7 +37,7 @@ public class Node {
       long player,
       long opponent,
       long descendants,
-      float eval,
+      double eval,
       float leafEval,
       int lower,
       int upper,
@@ -64,7 +64,7 @@ public class Node {
 
   public boolean isSolved() { return lower == upper; }
 
-  public float getEval() { return eval; }
+  public double getEval() { return eval; }
 
   public float getLeafEval() { return leafEval; }
 
