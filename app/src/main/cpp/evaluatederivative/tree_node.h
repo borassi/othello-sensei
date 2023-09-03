@@ -847,9 +847,9 @@ class TreeNode : public Node {
     assert((lower_ - kMinEval) % 2 == 0);
     assert((upper_ - kMinEval) % 2 == 0);
     assert(!IsLeafNoLock());
-    lower_ = kLessThenMinEval;
+    Eval old_upper = upper_;
     upper_ = kLessThenMinEval;
-    leaf_eval_ = kLessThenMinEvalLarge;
+    leaf_eval_ = EvalToEvalLarge(lower_);
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       MutableEvaluation(i)->Initialize();
     }
@@ -859,11 +859,22 @@ class TreeNode : public Node {
     for (auto child = start; child != end; ++child) {
       UpdateWithChild(**child, shallow);
     }
+    if (old_upper < upper_) {
+      upper_ = old_upper;
+      leaf_eval_ = std::min(leaf_eval_, EvalToEvalLarge(upper_));
+    }
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      MutableEvaluation(i)->Finalize(shallow);
+      if (i >= lower_ && i <= upper_) {
+        MutableEvaluation(i)->Finalize(shallow);
+      } else if (i > upper_) {
+        MutableEvaluation(i)->SetDisproved();
+      } else {
+        MutableEvaluation(i)->SetProved();
+      }
       assert(GetEvaluation(i).IsSolved() == (i < lower_ || i > upper_));
     }
     assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
+    assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
   }
 
   bool IsUnderAnalyzed(const TreeNode& father, int eval_goal) const {
@@ -919,13 +930,14 @@ class TreeNode : public Node {
 
   virtual void UpdateWithChild(const TreeNode& child, bool shallow) {
     auto child_guard = child.ReadLock();
-    assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
+    // We cannot check the upper, because we are currently updating it.
+    assert(leaf_eval_ >= EvalToEvalLarge(lower_));
     assert(child.leaf_eval_ >= EvalToEvalLarge(child.lower_) && child.leaf_eval_ <= EvalToEvalLarge(child.upper_));
     assert(min_evaluation_ <= WeakLower());
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
     leaf_eval_ = std::max(leaf_eval_, -child.leaf_eval_);
-    assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
+    assert(leaf_eval_ >= EvalToEvalLarge(lower_));
     // TODO: Make weak_lower_ >= lower_ to avoid extra computations.
     weak_lower_ = MaxEval(weak_lower_, (Eval) -child.weak_upper_);
     weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
