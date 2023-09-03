@@ -84,14 +84,8 @@ class Node {
       eval_depth_(other.eval_depth_),
       evaluator_(other.evaluator_) {
     EnlargeEvaluationsInternal();
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      if (i < lower_) {
-        MutableEvaluation(i, true)->SetProved();
-      } else if (i > upper_) {
-        MutableEvaluation(i, true)->SetDisproved();
-      } else {
-        *MutableEvaluation(i) = other.GetEvaluation(i);
-      }
+    for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
+      *MutableEvaluation(i) = other.GetEvaluation(i);
     }
   }
   // We cannot convert to Node directly, because it calls a copy constructor
@@ -250,7 +244,7 @@ class Node {
 
   float LeafEval() const { return leaf_eval_ / 8.0F; }
 
-  float GetEval() const {
+  double GetEval() const {
     int lower = std::max(lower_ + 1, (int) weak_lower_);
     int upper = std::min(upper_ - 1, (int) weak_upper_);
     double eval = lower - 1;
@@ -258,13 +252,13 @@ class Node {
       double prob = GetEvaluation(i).ProbGreaterEqual();
       eval += 2 * prob;
     }
-    return (float) eval;
+    return eval;
   }
 
-  const Evaluation& GetEvaluation(int eval_goal, bool outside = false) const {
+  const Evaluation& GetEvaluation(int eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    assert(outside || (eval_goal >= lower_ && eval_goal <= upper_));
+    assert(eval_goal >= lower_ && eval_goal <= upper_);
     assert(min_evaluation_ <= weak_lower_);
     int index = ToEvaluationIndex(eval_goal);
     assert(index >= 0 && index <= (weak_upper_ - min_evaluation_) / 2);
@@ -452,10 +446,10 @@ class Node {
     return IsSolved(-63, 63, false);
   }
 
-  virtual Evaluation* MutableEvaluation(Eval eval_goal, bool outside = false) final {
+  virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    assert(outside || (eval_goal >= lower_ && eval_goal <= upper_));
+    assert(eval_goal >= lower_ && eval_goal <= upper_);
     assert(min_evaluation_ <= weak_lower_);
     int index = ToEvaluationIndex(eval_goal);
     assert(index >= 0 && index <= (weak_upper_ - min_evaluation_) / 2);
@@ -485,19 +479,13 @@ class Node {
 
   void UpdateLeafEvaluation(int i) {
     assert(i >= weak_lower_ && i <= weak_upper_);
-    Evaluation* evaluation = MutableEvaluation(i, true);
+    assert(i >= lower_ && i <= upper_);
+    assert(eval_depth_ >= 1 && eval_depth_ <= 4);
+    assert(n_empties_ >= 0 && n_empties_ <= 63);
+    Evaluation* evaluation = MutableEvaluation(i);
     assert(evaluation != nullptr);
-    if (i <= lower_) {
-      evaluation->SetProved();
-    } else if (i >= upper_) {
-      evaluation->SetDisproved();
-    } else {
-      assert(eval_depth_ >= 1 && eval_depth_ <= 4);
-      assert(n_empties_ >= 0 && n_empties_ <= 63);
-      EvalLarge i_large = EvalToEvalLarge(i);
-      evaluation->SetLeaf(player_, opponent_, i_large, leaf_eval_, eval_depth_, n_empties_);
-    }
-    assert(GetEvaluation(i, true).IsSolved() == (i < lower_ || i > upper_));
+    EvalLarge i_large = EvalToEvalLarge(i);
+    evaluation->SetLeaf(player_, opponent_, i_large, leaf_eval_, eval_depth_, n_empties_);
     assert(
         (evaluation->ProbGreaterEqual() == 0 || evaluation->ProbGreaterEqual() == 1) ==
             (evaluation->MaxLogDerivative() == kLogDerivativeMinusInf));
@@ -780,7 +768,7 @@ class TreeNode : public Node {
 
   void UpdateLeafEvaluations() {
     assert(IsLeafNoLock());
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+    for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
       UpdateLeafEvaluation(i);
     }
   }
@@ -865,15 +853,8 @@ class TreeNode : public Node {
       upper_ = new_upper;
     }
     leaf_eval_ = std::min(leaf_eval_, EvalToEvalLarge(upper_));
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      if (i >= lower_ && i <= upper_) {
-        MutableEvaluation(i)->Finalize(shallow);
-      } else if (i > upper_) {
-        MutableEvaluation(i, true)->SetDisproved();
-      } else {
-        MutableEvaluation(i, true)->SetProved();
-      }
-      assert(GetEvaluation(i, true).IsSolved() == (i < lower_ || i > upper_));
+    for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
+      MutableEvaluation(i)->Finalize(shallow);
     }
     assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
     assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
@@ -902,12 +883,16 @@ class TreeNode : public Node {
     const Evaluation& eval = GetEvaluation(eval_goal);
     const Evaluation& father_eval = father.GetEvaluation(-eval_goal);
 
-    return
-        IsUnderAnalyzed(father, -eval_goal) ? -kLogDerivativeMinusInf : 0
-        + father_eval.ProbGreaterEqual() < 0.99 ? eval.LogDerivative(father_eval) : 0
-        - eval.DisproofNumberSmall() / (float) kProofNumberStep
-        - 0.0001 * leaf_eval_
-        - n_thread_multiplier * NThreadsWorking() * father_eval.ProbLowerCubed();
+    if (IsUnderAnalyzed(father, -eval_goal)) {
+      return -kLogDerivativeMinusInf;
+    }
+    if (father_eval.ProbGreaterEqual() < 0.99) {
+      return
+          eval.LogDerivative(father_eval)
+          - n_thread_multiplier * NThreadsWorking() * father_eval.ProbLowerCubed()
+          ;
+    }
+    return -eval.DisproofNumberSmall() - 0.4 * leaf_eval_ / 8.0;
   }
 
   virtual void UpdateWithChild(const TreeNode& child, bool shallow) {

@@ -69,9 +69,6 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   assert(lower_ <= 64);
   assert(upper_ >= -64);
   SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower, weak_upper);
-  for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-    assert(GetEvaluation(i, true).IsSolved() == (i < lower_ || i > upper_));
-  }
 }
 
 void TreeNode::Reset(
@@ -146,11 +143,3 @@ double Node::RemainingWork(Eval lower, Eval upper) const {
   assert(proof >= lower && proof <= upper);
   return GetEvaluation(proof).ProofNumber() + GetEvaluation(disproof).DisproofNumber();
 }
-//std::optional<LeafToUpdate<TreeNode>> TreeNode::AsLeaf(int last_eval_goal) {
-//  return AsLeaf<TreeNode>(last_eval_goal);
-//}
-//
-//LeafToUpdate<TreeNode> TreeNode::AsLeafWithGoal(Eval eval_goal) {
-//  auto guard = ReadLock();
-//  return AsLeafNoLock<TreeNode>(eval_goal);
-//}
