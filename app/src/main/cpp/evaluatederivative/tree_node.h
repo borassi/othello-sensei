@@ -622,7 +622,10 @@ class TreeNode : public Node {
     auto guard = ReadLock();
     assert(!IsLeafNoLock());
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    assert(!Node::IsSolved(eval_goal, eval_goal, false));
+    // If another thread has already solved this node.
+    if (Node::IsSolved(eval_goal, eval_goal, false)) {
+      return nullptr;
+    }
     double best_child_value = -INFINITY;
     TreeNode* best_child = nullptr;
     auto start = ChildrenStart();
@@ -714,6 +717,9 @@ class TreeNode : public Node {
 
   double RemainingWork(Eval lower, Eval upper) const override {
     auto guard = ReadLock();
+    if (Node::IsSolved(lower, upper, false)) {
+      return 0;
+    }
     return Node::RemainingWork(lower, upper);
   }
 
@@ -1015,7 +1021,6 @@ class LeafToUpdate {
       result.leaf_->IncreaseNThreadsWorking();
     }
     while (!result.leaf_->IsLeaf()) {
-      assert(!result.leaf_->IsSolved(result.eval_goal_, result.eval_goal_, false));
       Node* best_child = result.leaf_->BestChild(result.eval_goal_, n_thread_multiplier);
       if (best_child == nullptr) {
         for (Node* node : result.parents_) {
