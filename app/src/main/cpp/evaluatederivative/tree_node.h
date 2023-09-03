@@ -245,8 +245,8 @@ class Node {
   float LeafEval() const { return leaf_eval_ / 8.0F; }
 
   float GetEval() const {
-    int lower = std::max(lower_ + 1, (int) WeakLower());
-    int upper = std::min(upper_ - 1, (int) WeakUpper());
+    int lower = std::max(lower_ + 1, (int) weak_lower_);
+    int upper = std::min(upper_ - 1, (int) weak_upper_);
     double eval = lower - 1;
     for (int i = lower; i <= upper; i += 2) {
       double prob = GetEvaluation(i).ProbGreaterEqual();
@@ -258,9 +258,10 @@ class Node {
   const Evaluation& GetEvaluation(int eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    assert(min_evaluation_ <= WeakLower());
+//    assert(eval_goal >= lower_ && eval_goal <= upper_);
+    assert(min_evaluation_ <= weak_lower_);
     int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
+    assert(index >= 0 && index <= (weak_upper_ - min_evaluation_) / 2);
     assert(evaluations_ != nullptr);
     return evaluations_[index];
   }
@@ -292,8 +293,8 @@ class Node {
   }
 
   Eval GetPercentileUpper(double p) const {
-    int lower = std::max(lower_ - 1, (int) WeakLower());
-    int upper = std::min(upper_ + 1, (int) WeakUpper());
+    int lower = std::max(lower_ - 1, (int) weak_lower_);
+    int upper = std::min(upper_ + 1, (int) weak_upper_);
     for (int i = upper; i >= lower; i -= 2) {
       const Evaluation& eval = GetEvaluation(i);
       if (eval.ProbGreaterEqual() > p) {
@@ -305,8 +306,8 @@ class Node {
 
   // Returns the first score with probability <= 1-p.
   Eval GetPercentileLower(double p) const {
-    int lower = std::max(lower_ - 1, (int) WeakLower());
-    int upper = std::min(upper_ + 1, (int) WeakUpper());
+    int lower = std::max(lower_ - 1, (int) weak_lower_);
+    int upper = std::min(upper_ + 1, (int) weak_upper_);
     for (int i = lower; i <= upper; i += 2) {
       const Evaluation& eval = GetEvaluation(i);
       if (eval.ProbGreaterEqual() < 1 - p) {
@@ -333,7 +334,7 @@ class Node {
 
   void EnlargeEvaluationsInternal() {
     min_evaluation_ = weak_lower_;
-    int desired_size = ToEvaluationIndex(WeakUpper()) + 1;
+    int desired_size = ToEvaluationIndex(weak_upper_) + 1;
     if (evaluations_) {
       evaluations_ = (Evaluation*) realloc(evaluations_, desired_size * sizeof(Evaluation));
     } else {
@@ -434,10 +435,11 @@ class Node {
 
   virtual Evaluation* MutableEvaluation(Eval eval_goal) final {
     assert((eval_goal - kMinEval) % 2 == 1);
-    assert(eval_goal >= WeakLower() && eval_goal <= WeakUpper());
-    assert(min_evaluation_ <= WeakLower());
+    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
+//    assert(eval_goal >= lower_ && eval_goal <= upper_);
+    assert(min_evaluation_ <= weak_lower_);
     int index = ToEvaluationIndex(eval_goal);
-    assert(index >= 0 && index <= (WeakUpper() - min_evaluation_) / 2);
+    assert(index >= 0 && index <= (weak_upper_ - min_evaluation_) / 2);
     return &evaluations_[index];
   }
 
@@ -763,7 +765,7 @@ class TreeNode : public Node {
       TreeNode* child = *iter;
       auto guard = child->ReadLock();
       if (child_eval_goal <= child->Lower() || child_eval_goal >= child->Upper() ||
-          child_eval_goal < child->WeakLower() || child_eval_goal > child->WeakUpper()) {
+          child_eval_goal < child->weak_lower_ || child_eval_goal > child->weak_upper_) {
         continue;
       }
       assert(!child->GetEvaluation(child_eval_goal).IsSolved());
@@ -816,7 +818,7 @@ class TreeNode : public Node {
     weak_upper_ = weak_upper;
     EnlargeEvaluations();
     assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
-    assert(min_evaluation_ <= WeakLower());
+    assert(min_evaluation_ <= weak_lower_);
   }
 
   void EnlargeEvaluations() {
@@ -842,15 +844,15 @@ class TreeNode : public Node {
       Eval weak_lower, Eval weak_upper);
 
   void UpdateFatherNoLock() {
-    assert((WeakLower() - kMinEval) % 2 == 1);
-    assert((WeakUpper() - kMinEval) % 2 == 1);
+    assert((weak_lower_ - kMinEval) % 2 == 1);
+    assert((weak_upper_ - kMinEval) % 2 == 1);
     assert((lower_ - kMinEval) % 2 == 0);
     assert((upper_ - kMinEval) % 2 == 0);
     assert(!IsLeafNoLock());
     Eval old_upper = upper_;
     upper_ = kLessThenMinEval;
     leaf_eval_ = EvalToEvalLarge(lower_);
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       MutableEvaluation(i)->Initialize();
     }
     auto start = ChildrenStart();
@@ -863,7 +865,7 @@ class TreeNode : public Node {
       upper_ = old_upper;
       leaf_eval_ = std::min(leaf_eval_, EvalToEvalLarge(upper_));
     }
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       if (i >= lower_ && i <= upper_) {
         MutableEvaluation(i)->Finalize(shallow);
       } else if (i > upper_) {
@@ -933,7 +935,7 @@ class TreeNode : public Node {
     // We cannot check the upper, because we are currently updating it.
     assert(leaf_eval_ >= EvalToEvalLarge(lower_));
     assert(child.leaf_eval_ >= EvalToEvalLarge(child.lower_) && child.leaf_eval_ <= EvalToEvalLarge(child.upper_));
-    assert(min_evaluation_ <= WeakLower());
+    assert(min_evaluation_ <= weak_lower_);
     lower_ = MaxEval(lower_, (Eval) -child.Upper());
     upper_ = MaxEval(upper_, (Eval) -child.Lower());
     leaf_eval_ = std::max(leaf_eval_, -child.leaf_eval_);
@@ -943,8 +945,7 @@ class TreeNode : public Node {
     weak_upper_ = MinEval(weak_upper_, (Eval) -child.weak_lower_);
     for (int i = weak_lower_; i <= weak_upper_; i += 2) {
       Evaluation* father_eval = MutableEvaluation(i);
-//      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
-      assert(-i >= child.WeakLower() && -i <= child.WeakUpper());
+      assert(-i >= child.weak_lower_ && -i <= child.weak_upper_);
       const Evaluation& eval = child.GetEvaluation(-i);
       if (shallow) {
         father_eval->UpdateFatherWithThisChild<true>(eval);
@@ -973,8 +974,8 @@ class TreeNode : public Node {
     is_leaf_ = false;
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children[i];
-      assert((child->WeakLower() - kMinEval) % 2 == 1);
-      assert((child->WeakUpper() - kMinEval) % 2 == 1);
+      assert((child->weak_lower_ - kMinEval) % 2 == 1);
+      assert((child->weak_upper_ - kMinEval) % 2 == 1);
       child->AddFather(this);
       children_[i] = child;
     }
