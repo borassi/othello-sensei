@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
     book.Add(*t);
   }
 
+  Eval last_eval_goal = kLessThenMinEval;
   while (true) {
     ElapsedTime t;
     auto start = book.Mutable(Board(start_line)).value();
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]) {
     }
     tree_node_supplier.Reset();
     NVisited n_visited = 0;
-    Eval eval_goal = start->NextPositionEvalGoal(0, 1, kLessThenMinEval);
+    Eval eval_goal = start->NextPositionEvalGoal(0, 1, last_eval_goal);
     std::cout
         << "Expanding line:        " << start_line << "\n"
         << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
@@ -80,7 +81,8 @@ int main(int argc, char* argv[]) {
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
-    auto leaf = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, kLessThenMinEval).value();
+    auto leaf = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, last_eval_goal).value();
+    last_eval_goal = eval_goal;
     std::cout
         << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
     bool solved = false;
