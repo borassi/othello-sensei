@@ -44,7 +44,7 @@ struct CombineProb {
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
     ProbCombiner combiner(ExpPolyLog<150>);
-    ProbCombiner combiner_shallow(ExpPolyLog<175>);
+    ProbCombiner combiner_shallow(ExpPolyLog<180>);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       for (int j = 0; j <= kProofNumberStep; ++j) {
         if (i == kProofNumberStep || j == kProofNumberStep) {
