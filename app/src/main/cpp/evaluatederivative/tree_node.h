@@ -397,7 +397,7 @@ class Node {
   // Measures the progress towards solving the position (lower is better).
   // Starts from 0, decreases until kLogDerivativeMinusInf until partially
   // solved, then decreases more until becoming -inf.
-  double Advancement(Eval lower, Eval upper) const {
+  virtual double Advancement(Eval lower, Eval upper) const {
     double result = -std::numeric_limits<double>::infinity();
     for (int i = std::max(lower_ + 1, (int) weak_lower_); i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
       result = std::max(result, (double) GetEvaluation(i).MaxLogDerivative());
@@ -753,6 +753,11 @@ class TreeNode : public Node {
 
   int NThreadsWorking() const {
     return n_threads_working_;
+  }
+
+  double Advancement(Eval lower, Eval upper) const override {
+    ReadLock();
+    return Node::Advancement(lower, upper);
   }
 
  protected:
