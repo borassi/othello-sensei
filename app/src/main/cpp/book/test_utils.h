@@ -141,9 +141,9 @@ BookTreeNode<Book, kBookVersion>* RandomBookTreeNode(Book* book, Board b) {
 template<int version = kBookVersion>
 Book<version> BookWithPositions(
     const std::vector<std::string>& lines,
-    const std::unordered_map<Board, int>& evals,
-    const std::unordered_set<std::pair<Board, Board>, PairHash>& skip,
-    const std::unordered_map<Board, int>& visited) {
+    const std::unordered_map<Board, int>& evals = {},
+    const std::unordered_set<std::pair<Board, Board>, PairHash>& skip = {},
+    const std::unordered_map<Board, int>& visited = {}) {
   Book book(kTempDir);
   book.Clean();
 

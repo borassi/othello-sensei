@@ -103,7 +103,7 @@ public:
     return best_board;
   }
 
-  SerializedBoard Serialize() {
+  SerializedBoard Serialize() const {
     SerializedBoard serialized;
     BitPattern current_square = 1ULL << 63;
     for (int i = 0; i < kSerializedBoardSize; ++i) {

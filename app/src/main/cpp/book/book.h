@@ -120,12 +120,8 @@ class Book {
 
   HashMapIndex Size() { return book_size_; }
 
-  std::vector<Board> Roots() const {
-    std::vector<Board> result;
-    for (const auto& [board, unused_offset] : roots_) {
-      result.push_back(board);
-    }
-    return result;
+  const std::unordered_set<Board>& Roots() const {
+    return roots_;
   }
 
   class Iterator {
@@ -136,7 +132,7 @@ class Book {
     using pointer           = value_type*;
     using reference         = value_type;
 
-    Iterator(const Book& book, int start_root) : book_(book), roots_(book_.Roots()), next_root_(start_root), stack_() {
+    Iterator(const Book& book, int start_root) : book_(book), roots_(book_.Roots().begin(), book_.Roots().end()), next_root_(start_root), stack_() {
       assert (next_root_ == 0 || next_root_ == roots_.size());
       ToNextRoot();
     }
@@ -174,7 +170,7 @@ class Book {
 
    private:
     const Book& book_;
-    std::vector<Board> roots_;
+    const std::vector<Board> roots_;
     std::vector<Node> stack_;
     int next_root_;
     std::unordered_set<Board> visited_;
@@ -214,6 +210,14 @@ class Book {
 
   template<int other_version>
   void Merge(const Book<other_version>& other_book) {
+    // This avoids adding a lot of roots and removing them afterwards (to avoid
+    // memory problems).
+    for (const auto& root : other_book.Roots()) {
+      Board unique = root.Unique();
+      if (!Get(unique)) {
+        roots_.insert(unique);
+      }
+    }
     for (const auto& [other_node, other_node_type] : other_book) {
       std::optional<BookNode*> my_node_opt = Mutable(other_node.ToBoard());
       if (my_node_opt) {
@@ -229,10 +233,9 @@ class Book {
         }
       } else {
         assert(other_node_type == LEAF || other_node_type == FIRST_VISIT);
-        Add(other_node);
+        AddNoRootsUpdate(other_node);
       }
     }
-    std::cout << "Committing!\n";
     Commit();
   }
 
@@ -240,7 +243,7 @@ class Book {
   std::string folder_;
   std::vector<ValueFile> value_files_;
   ValueFile roots_file_;
-  std::unordered_map<Board, int> roots_;
+  std::unordered_set<Board> roots_;
   HashMapIndex hash_map_size_;
   HashMapIndex book_size_;
   // References are not invalidated:
@@ -306,7 +309,7 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
   }
 
   for (const auto& [offset, serialized] : roots_file_) {
-    roots_[Board::Deserialize(serialized.begin())] = offset;
+    roots_.insert(Board::Deserialize(serialized.begin()));
   }
   if (!FileExists(IndexFilename())) {
     CreateEmptyFile(IndexFilename());
@@ -346,8 +349,6 @@ void Book<version>::AddChildren(const Board& father_board, const std::vector<Nod
         child_in_book->AddDescendants(new_child->GetNVisited());
       }
       if (!child_in_book->HasFathers()) {
-        // TODO: Change the file only when committing!!
-        roots_file_.Remove(roots_[board]);
         roots_.erase(board);
       }
     } else {
@@ -364,7 +365,7 @@ void Book<version>::AddChildren(const Board& father_board, const std::vector<Nod
 template<int version>
 typename Book<version>::BookNode* Book<version>::Add(const TreeNode& node) {
   Board unique = node.ToBoard().Unique();
-  roots_[unique] = roots_file_.Add(unique.Serialize());
+  roots_.insert(unique);
   return AddNoRootsUpdate(node);
 }
 
@@ -401,6 +402,11 @@ void Book<version>::Commit(bool verbose) {
   signal(SIGQUIT, this->HandleSignal);  // CTRL-/
   if (verbose) {
     std::cout << "Committing " << modified_nodes_.size() << " nodes: " << std::flush;
+  }
+  roots_file_.Clean();
+  for (const Board& b : roots_) {
+    assert(b == b.Unique());
+    roots_file_.Add(b.Serialize());
   }
   for (const auto& [board, node] : modified_nodes_) {
     if (verbose) {

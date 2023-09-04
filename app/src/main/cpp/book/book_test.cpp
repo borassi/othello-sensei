@@ -148,8 +148,6 @@ TEST(Book, LargeOne) {
 
     book.Add(*node);
 
-    book.Commit();
-
     ASSERT_EQ(book.Get(b.Player(), b.Opponent()).value(), BookNode(&book, *node));
     int test_i = rand() % old_boards.size();
     Board test_board = old_boards[test_i];
@@ -169,6 +167,7 @@ TEST(Book, LargeOne) {
       assert(book.IsSizeOK());
     }
     if (rand() % 100 == 0) {
+      book.Commit();
       book = Book(kTempDir);
     }
   }
@@ -222,6 +221,8 @@ TEST(Book, RemoveRoots) {
   book.Add(*e6f4_node);
 
   ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
+  // Not yet committed the change.
+  ASSERT_TRUE(Book(kTempDir).Roots().empty());
   book.Commit();
   ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
   ASSERT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
@@ -231,6 +232,8 @@ TEST(Book, RemoveRoots) {
   LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
 
   ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  // Not yet committed the change.
+  ASSERT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
   book.Commit();
   ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
   ASSERT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique()));
@@ -595,6 +598,14 @@ TEST(Book, MergeDifferentStarts) {
   EXPECT_TRUE((*book.Mutable(Board("")))->AreChildrenCorrect());
   EXPECT_TRUE((*book.Mutable(Board("e6")))->AreChildrenCorrect());
   EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("").Unique()));
+}
+
+TEST(Book, MergeTranspositions) {
+  Book book = BookWithPositions({"e6"});
+  Book book2 = BookWithPositions({"e6f4", "e6f4c3", "e6f4d3", "e6f4c3c4", "e6f4d3c4", "e6f4c3c4d3"});
+  book.Merge(book2);
+
+  EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
 }
 
 INSTANTIATE_TEST_SUITE_P(
