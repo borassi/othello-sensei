@@ -288,7 +288,8 @@ class JNIWrapper {
     if (!father_node || !father_node.value().IsLeaf()) {
       return;
     }
-    std::vector<Node> children(last_boards_.size());
+    std::vector<Node> children;
+    children.reserve(last_boards_.size());
     NVisited n_visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
       Node child = evaluator_derivative_[i]->GetFirstPosition();
