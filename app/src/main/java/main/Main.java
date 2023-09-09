@@ -260,7 +260,7 @@ public class Main implements Runnable {
       }
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta(), ui.approx());
     }
-    if (ui.useBook() && ui.delta() > 0) {
+    if (ui.useBook() && ui.delta() > 0 && firstPosition.equals(new Board())) {
       EVALUATOR.addToBook(board, oldBoards);
     }
     if (mustPlay) {

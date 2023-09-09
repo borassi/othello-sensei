@@ -29,7 +29,7 @@ class Board {
 public:
   Board(BitPattern player, BitPattern opponent) : player_(player), opponent_(opponent) {}
   Board(const std::string& board, bool player_black);
-  Board(const std::string& sequence);
+  Board(const std::string& sequence, std::vector<Board>* previous = nullptr);
   Board();
 
   BitPattern Player() const {

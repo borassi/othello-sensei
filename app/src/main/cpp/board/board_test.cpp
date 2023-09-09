@@ -15,6 +15,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include <regex>
 #include "board.h"
 #include "get_moves.h"
@@ -61,6 +63,73 @@ TEST(Board, Sequence) {
                "--------"
                "--------", false);
   EXPECT_EQ(b, b_copy);
+}
+
+TEST(Board, BoardsFromSequenceEmpty) {
+  std::vector<Board> previous;
+  Board b("", &previous);
+  EXPECT_THAT(previous, ::testing::ElementsAre());
+}
+
+TEST(Board, BoardsFromSequenceBase) {
+  std::vector<Board> previous;
+  Board b("e6f4c3c4d3", &previous);
+  EXPECT_THAT(
+      previous,
+      ::testing::ElementsAre(
+          Board(), Board("e6"), Board("e6f4"), Board("e6f4c3"),
+          Board("e6f4c3c4"))
+  );
+}
+
+TEST(Board, BoardsFromSequencePass) {
+  std::vector<Board> previous;
+  Board b("e6f6g6f4f5g7f7h7h8d6h6g8f8", &previous);
+  EXPECT_THAT(
+      previous,
+      ::testing::ElementsAre(
+          Board(""),
+          Board("e6"),
+          Board("e6f6"),
+          Board("e6f6g6"),
+          Board("e6f6g6f4"),
+          Board("e6f6g6f4f5"),
+          Board("e6f6g6f4f5g7"),
+          Board("e6f6g6f4f5g7f7"),
+          Board("e6f6g6f4f5g7f7h7"),
+          Board("e6f6g6f4f5g7f7h7h8"),
+          Board("e6f6g6f4f5g7f7h7h8d6"),
+          Board("e6f6g6f4f5g7f7h7h8d6h6"),
+          Board("e6f6g6f4f5g7f7h7h8d6h6g8"),
+          Board(b.Opponent(), b.Player())
+      )
+  );
+}
+
+TEST(Board, BoardsFromSequencePass1) {
+  std::vector<Board> previous;
+  Board b("e6f6g6f4f5g7f7h7h8d6h6g8f8g5", &previous);
+  Board result_after_pass = Board("e6f6g6f4f5g7f7h7h8d6h6g8f8");
+  EXPECT_THAT(
+      previous,
+      ::testing::ElementsAre(
+          Board(""),
+          Board("e6"),
+          Board("e6f6"),
+          Board("e6f6g6"),
+          Board("e6f6g6f4"),
+          Board("e6f6g6f4f5"),
+          Board("e6f6g6f4f5g7"),
+          Board("e6f6g6f4f5g7f7"),
+          Board("e6f6g6f4f5g7f7h7"),
+          Board("e6f6g6f4f5g7f7h7h8"),
+          Board("e6f6g6f4f5g7f7h7h8d6"),
+          Board("e6f6g6f4f5g7f7h7h8d6h6"),
+          Board("e6f6g6f4f5g7f7h7h8d6h6g8"),
+          Board(result_after_pass.Opponent(), result_after_pass.Player()),
+          Board("e6f6g6f4f5g7f7h7h8d6h6g8f8")
+      )
+  );
 }
 
 TEST(Board, Unique) {

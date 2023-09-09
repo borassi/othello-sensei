@@ -1007,6 +1007,19 @@ class LeafToUpdate {
     return BestDescendant(*leaf, n_thread_multiplier);
   }
 
+  static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal, const std::vector<Node*>& parents) {
+    std::optional<LeafToUpdate> leaf_opt = BestDescendant(node, n_thread_multiplier, last_eval_goal);
+    if (!leaf_opt) {
+      return std::nullopt;
+    }
+    LeafToUpdate leaf = *leaf_opt;
+    leaf.parents_.insert(leaf.parents_.begin(), parents.begin(), parents.end());
+    for (auto parent : parents) {
+      parent->IncreaseNThreadsWorking();
+    }
+    return leaf;
+  }
+
   static LeafToUpdate Leaf(std::vector<Node*> sequence) {
     LeafToUpdate leaf = sequence[0]->template AsLeafWithGoal<Node>(1);
     sequence[0]->IncreaseNThreadsWorking();

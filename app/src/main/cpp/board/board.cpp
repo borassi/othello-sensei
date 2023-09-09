@@ -19,6 +19,7 @@
 #include <sstream>
 #include "board.h"
 #include "get_flip.h"
+#include "get_moves.h"
 
 const char kInitialBoard[] =
     "--------"
@@ -51,15 +52,22 @@ Board::Board(const std::string& board, bool player_x)
     : Board(ParsePattern(board.c_str(), player_x ? 'X' : 'O'),
             ParsePattern(board.c_str(), player_x ? 'O' : 'X')) {}
 
-Board::Board(const std::string& sequence) : Board() {
+Board::Board(const std::string& sequence, std::vector<Board>* previous) : Board() {
   assert(sequence.length() % 2 == 0);
   for (int i = 0; i < sequence.length(); i += 2) {
     Square move = MoveToSquare(sequence.substr(i, 2));
     BitPattern flip = GetFlip(move, player_, opponent_);
     assert(flip != 0);
-    BitPattern tmp = player_;
-    player_ = NewPlayer(flip, opponent_);
-    opponent_ = NewOpponent(flip, tmp);
+    if (previous) {
+      previous->push_back(Board(*this));
+    }
+    PlayMove(flip);
+    if (HaveToPass(player_, opponent_)) {
+      if (previous) {
+        previous->push_back(Board(*this));
+      }
+      PlayMove(0);
+    }
   }
 }
 

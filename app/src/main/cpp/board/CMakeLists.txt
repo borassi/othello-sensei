@@ -43,7 +43,8 @@ target_link_libraries(
         board
         LINK_PUBLIC
         bitpattern
-        get_flip)
+        get_flip
+        get_moves)
 
 add_executable(
         board_test
@@ -57,6 +58,7 @@ target_link_libraries(
         get_moves
         GTest::gtest
         GTest::gtest_main
+        gmock
         -no-pie
 )
 

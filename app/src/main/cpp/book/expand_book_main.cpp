@@ -27,6 +27,11 @@
 
 namespace fs = std::filesystem;
 
+// TODO: Merge book with right n visited.
+// TODO: Fix proof / disproof number at end.
+// TODO: Optimize the speed.
+// TODO: Test Google cloud.
+
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string start_line = parse_flags.GetFlagOrDefault("start", "");
@@ -63,9 +68,15 @@ int main(int argc, char* argv[]) {
   }
 
   Eval last_eval_goal = kLessThenMinEval;
+  std::vector<Board> start_line_boards;
+  Board start_board(start_line, &start_line_boards);
   while (true) {
     ElapsedTime t;
-    auto start = book.Mutable(Board(start_line)).value();
+    std::vector<Book<>::BookNode*> start_line_in_book;
+    for (const Board& start_line_board : start_line_boards) {
+      start_line_in_book.push_back(book.Mutable(start_line_board).value());
+    }
+    Book<>::BookNode* start = book.Mutable(start_board).value();
     if (start->Node::IsSolved()) {
       std::cout << "Solved the position!\n";
       break;
@@ -82,7 +93,7 @@ int main(int argc, char* argv[]) {
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
-    auto leaf = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, last_eval_goal).value();
+    auto leaf = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, last_eval_goal, start_line_in_book).value();
     last_eval_goal = eval_goal;
     std::cout
         << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
