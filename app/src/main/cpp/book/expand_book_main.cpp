@@ -27,9 +27,9 @@
 
 namespace fs = std::filesystem;
 
-// TODO: Merge book with right n visited.
 // TODO: Fix proof / disproof number at end.
 // TODO: Optimize the speed.
+// TODO: Empty the n_descendants to parallelize over multiple computers.
 // TODO: Test Google cloud.
 
 int main(int argc, char* argv[]) {

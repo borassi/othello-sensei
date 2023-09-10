@@ -19,7 +19,7 @@
 #include "book.h"
 #include "../utils/parse_flags.h"
 
-constexpr int kOldVersion = 0;
+constexpr int kOldVersion = 1;
 constexpr int kNewVersion = 1;
 
 int main(int argc, char* argv[]) {
