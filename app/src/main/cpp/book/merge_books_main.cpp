@@ -18,9 +18,45 @@
 
 #include "book.h"
 #include "../utils/parse_flags.h"
+#include "../estimators/win_probability.h"
 
 constexpr int kOldVersion = 1;
 constexpr int kNewVersion = 1;
+
+// TODO: This is just to document the conversion. Remove in a next commit.
+constexpr double BaseRescaleProbOld(double x) {
+  if (x == 0) {
+    return 0;
+  }
+  return pow(-log(0.08 * x), -2);
+}
+
+constexpr double RescaleProbOld(double x) {
+  return (BaseRescaleProbOld(x) - BaseRescaleProbOld(1-x)) / (BaseRescaleProbOld(1) - BaseRescaleProbOld(0)) / 2 + 0.5;
+}
+
+constexpr double InverseRescaleProbOld(double y) {
+  return Inverse(RescaleProbOld, y, 0, 1);
+}
+
+constexpr Probability ProbabilityToByteExplicitOld(double probability) {
+  assert(probability >= 0);
+  assert(probability <= 1);
+  return round(RescaleProbOld(probability) * kProbStep);
+}
+
+constexpr double ByteToProbabilityExplicitOld(Probability byte) {
+  assert(byte >= 0);
+  assert(byte <= kProbStep);
+  return InverseRescaleProbOld(byte / (double) kProbStep);
+}
+
+void UpdateProbabilities(Node* node) {
+  for (int i = -63; i <= 63; i += 2) {
+    node->MutableEvaluation(i)->prob_greater_equal_ = ProbabilityToByteExplicit(ByteToProbabilityExplicitOld(node->MutableEvaluation(i)->prob_greater_equal_));
+  }
+}
+// TODO: Remove until here.
 
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
@@ -39,6 +75,5 @@ int main(int argc, char* argv[]) {
       << ", size " << old_book.Size() << ") to version " << kNewVersion
       << " in path " << new_book_path << "\n";
 
-  int i = 0;
-  new_book.Merge(old_book);
+  new_book.Merge(old_book, UpdateProbabilities);
 }

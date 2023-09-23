@@ -43,8 +43,8 @@ struct CombineProb {
   double prob_lower_cubed[kProbStep + 1];
 
   CombineProb() : combine_prob(), log_derivative(), combine_disproof_number() {
-    ProbCombiner combiner(ExpPolyLog<230>);
-    ProbCombiner combiner_shallow(ExpPolyLog<230>);
+    ProbCombiner combiner(ExponentialTimesPolyLog);
+    ProbCombiner combiner_shallow(ExponentialTimesPolyLog);
     for (int i = 0; i <= kProofNumberStep; ++i) {
       for (int j = 0; j <= kProofNumberStep; ++j) {
         if (i == kProofNumberStep || j == kProofNumberStep) {
@@ -285,9 +285,9 @@ class Evaluation {
     disproof_number_ = disproof_number;
     max_log_derivative_ = max_log_derivative;
   }
+  Probability prob_greater_equal_;
 
  private:
-  Probability prob_greater_equal_;
   PN proof_number_;
   PN disproof_number_;
   int max_log_derivative_;

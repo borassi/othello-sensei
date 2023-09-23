@@ -63,17 +63,24 @@ constexpr std::tuple<Square, Square, EvalLarge> CDFOffsetToDepthEmptiesEval(int 
 }
 
 constexpr double BaseRescaleProb(double x) {
-  if (x == 0) {
-    return 0;
-  }
-  return pow(-log(0.08 * x), -2);
+  return pow(-log(x) + 10, -3.5);
 }
 
 constexpr double RescaleProb(double x) {
+  if (x <= 1E-14) {
+    return 0;
+  } else if (x >= 1-1E-14) {
+    return 1;
+  }
   return (BaseRescaleProb(x) - BaseRescaleProb(1-x)) / (BaseRescaleProb(1) - BaseRescaleProb(0)) / 2 + 0.5;
 }
 
 constexpr double InverseRescaleProb(double y) {
+  if (y <= 1E-14) {
+    return 0;
+  } else if (y >= 1-1E-14) {
+    return 1;
+  }
   return Inverse(RescaleProb, y, 0, 1);
 }
 
@@ -99,7 +106,7 @@ inline double GaussianCDF(double x, double mean, double stddev) {
 }
 
 constexpr double ProbabilityExplicit(Square depth, Square empties, EvalLarge delta) {
-  return 1 - GaussianCDF(delta, 0, 8 * std::max(3.0F, kErrors[depth][empties]));
+  return 1 - GaussianCDF(delta, 0, 0.9 * 8 * std::max(3.0F, kErrors[depth][empties]));
 }
 
 struct WinProbabilityData {

@@ -40,6 +40,19 @@ constexpr double Polynomial(double x) {
   return lambda_100 / 100.0 * x - (lambda_100 / 100.0 - 1) * pow(x, n);
 }
 
+constexpr double Exponential(double x) {
+  return pow(2, 8 * (1-x)) - 1;
+}
+
+constexpr double PolyLog(double x) {
+  return pow(-log(x), 1.5);
+}
+
+constexpr double ExponentialTimesPolyLog(double x) {
+  assert(x >= 0 && x <= 1);
+  return -Exponential(x) * PolyLog(x);
+}
+
 class ProbCombiner {
  public:
   constexpr ProbCombiner(double (*function)(double x)): function_(function) {

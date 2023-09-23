@@ -209,7 +209,7 @@ class Book {
   Iterator end() const { return Iterator(*this, roots_.size()); }
 
   template<int other_version>
-  void Merge(const Book<other_version>& other_book) {
+  void Merge(const Book<other_version>& other_book, void (*leaf_func)(Node*) = nullptr) {
     // This avoids adding a lot of roots and removing them afterwards (to avoid
     // memory problems).
     for (const auto& root : other_book.Roots()) {
@@ -218,7 +218,7 @@ class Book {
         roots_.insert(unique);
       }
     }
-    for (const auto& [other_node, other_node_type] : other_book) {
+    for (auto [other_node, other_node_type] : other_book) {
       std::optional<BookNode*> my_node_opt = Mutable(other_node.ToBoard());
       if (my_node_opt) {
         BookNode* my_node = *my_node_opt;
@@ -233,6 +233,11 @@ class Book {
         }
       } else {
         assert(other_node_type == LEAF || other_node_type == FIRST_VISIT);
+        if (other_node_type == LEAF) {
+          if (leaf_func) {
+            leaf_func(&other_node);
+          }
+        }
         AddNoRootsUpdate(other_node);
       }
     }
