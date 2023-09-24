@@ -224,7 +224,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public boolean useBook() { return false; }
+  public UseBook useBook() { return UseBook.DO_NOT_USE; }
 
   @Override
   public double getError() {

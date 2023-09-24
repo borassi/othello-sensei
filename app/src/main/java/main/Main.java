@@ -66,6 +66,7 @@ public class Main implements Runnable {
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
   private static Thor thor;
   private boolean canComputeError;
+  private UI.UseBook useBook;
 
   /**
    * Creates a new UI and sets the initial position.
@@ -75,7 +76,8 @@ public class Main implements Runnable {
     thor = new Thor(ui.fileAccessor());
     EVALUATOR = new JNI(ui.fileAccessor());
     resetFirstPosition();
-    setFirstPosition(new Board("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
+    useBook = ui.useBook();
+    setFirstPosition(new Board(), true);//"e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
   }
 
   public SortedSet<String> getThorTournaments() {
@@ -215,12 +217,12 @@ public class Main implements Runnable {
   public ArrayList<Board> getBoards() {
     ArrayList<Board> boards = new ArrayList<>();
     if (ui.delta() == 0) {
-      if (!ui.useBook() || EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
+      if (!readBook() || EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
         boards.add(board);
       }
     } else {
       for (Board child : JNI.uniqueChildren(board)) {
-        if (!ui.useBook() || EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
+        if (!readBook() || EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
           boards.add(child);
         }
       }
@@ -235,6 +237,7 @@ public class Main implements Runnable {
     if (JNI.isGameOver(board)) {
       return;
     }
+    useBook = ui.useBook();
     boolean mustPlay = this.isSenseiTurn();
     boolean isMatch = ui.playBlackMoves() || ui.playWhiteMoves();
     ArrayList<Board> oldBoards = new ArrayList<>();
@@ -260,7 +263,7 @@ public class Main implements Runnable {
       }
       EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta(), ui.approx());
     }
-    if (ui.useBook() && ui.delta() > 0 && firstPosition.equals(new Board())) {
+    if (writeBook() && ui.delta() > 0 && firstPosition.equals(new Board())) {
       EVALUATOR.addToBook(board, oldBoards);
     }
     if (mustPlay) {
@@ -380,6 +383,14 @@ public class Main implements Runnable {
 
     return bestEval - (-nextPositions.get(move).getEval() / 100.0);
   }
+
+  private boolean writeBook() {
+    return useBook == UI.UseBook.READ_WRITE;
+  }
+
+  private boolean readBook() {
+    return useBook != UI.UseBook.DO_NOT_USE;
+  }
   
   private void evaluate() {
     if (!ui.active()) {
@@ -399,11 +410,14 @@ public class Main implements Runnable {
   }
 
   private Node getStoredBoard(long player, long opponent) {
-    Node board = EVALUATOR.get(player, opponent);
-    if (ui.useBook() && board == null) {
-      return EVALUATOR.getFromBook(player, opponent);
+    Node node = null;
+    if (readBook()) {
+      node = EVALUATOR.getFromBook(player, opponent);
+      if (node != null) {
+        return node;
+      }
     }
-    return board;
+    return EVALUATOR.get(player, opponent);
   }
 
   private long getNVisited() {

@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.TreeMap;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -94,7 +95,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox playWhiteMoves = new JCheckBox("Play white moves");
   private final JCheckBox debugMode = new JCheckBox("Debug mode", false);
   private final JCheckBox active = new JCheckBox("Active", true);
-  private final JCheckBox useBook = new JCheckBox("Use book", true);
+  private final JSpinner useBookSpinner;
   private final JCheckBox approx = new JCheckBox("Approx", false);
   private final JTextField depth;
   private final JTextField delta;
@@ -112,7 +113,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox thorActive;
   private final ThorGamesWindow thorGamesWindow;
   private final JSpinner error;
-
+  private final TreeMap<String, UseBook> useBookValues = new TreeMap<String, UseBook>() {{
+      put("Do not use the book", UseBook.DO_NOT_USE);
+      put("Read from book, do not write", UseBook.READ_ONLY);
+      put("Read and write to book", UseBook.READ_WRITE);
+  }};
 
   public DesktopUI() {
     super("Othello");
@@ -153,17 +158,18 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     lower = new JSpinner(new SpinnerNumberModel(-63, -63, 63, 2));
     upper = new JSpinner(new SpinnerNumberModel(63, -63, 63, 2));
     depth = new JTextField();
-    depth.setText("50000000");
+    depth.setText("5000000000000");
     delta = new JTextField();
-    delta.setText("2");
+    delta.setText("6");
     error = new JSpinner(new SpinnerNumberModel(15, 5, 80, 1));
+    useBookSpinner = new JSpinner(new SpinnerListModel(new ArrayList<>(useBookValues.keySet())));
+    useBookSpinner.setValue("Read from book, do not write");
 
     commands.add(newGame);
     commands.add(playBlackMoves);
     commands.add(playWhiteMoves);
     commands.add(debugMode);
     commands.add(active);
-    commands.add(useBook);
     commands.add(approx);
     commands.add(stop);
     commands.add(resetHashMaps);
@@ -189,6 +195,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     delta.setMaximumSize(new Dimension(Short.MAX_VALUE, 2 * delta.getPreferredSize().height));
     commands.add(delta);
     add(commands, BorderLayout.LINE_END);
+
+    commands.add(useBookSpinner);
 
     SpinnerModel allowedFFOPositions = new SpinnerNumberModel(40, 40, 64, 1);
     ffoPositions = new JSpinner(allowedFFOPositions);
@@ -450,7 +458,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public boolean useBook() { return useBook.isSelected(); }
+  public UseBook useBook() { return useBookValues.get(useBookSpinner.getValue()); }
 
   @Override
   public boolean approx() { return approx.isSelected(); }

@@ -26,6 +26,11 @@ import ui_desktop.CaseAnnotations;
  * @author michele
  */
 public interface UI {
+  enum UseBook {
+    DO_NOT_USE,
+    READ_ONLY,
+    READ_WRITE
+  }
   void setCases(Board board, boolean blackTurn);
   void setAnnotations(CaseAnnotations annotations, int move);
   void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations,
@@ -41,7 +46,7 @@ public interface UI {
   void setThorGames(Board b, ArrayList<Game> games);
   FileAccessor fileAccessor();
   boolean active();
-  boolean useBook();
+  UseBook useBook();
   double getError();
   boolean approx();
 }
