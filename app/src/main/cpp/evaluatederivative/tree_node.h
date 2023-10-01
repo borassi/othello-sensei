@@ -29,6 +29,7 @@
 #include <optional>
 #include <queue>
 #include <set>
+#include <stdexcept>
 #include <string.h>
 #include <unordered_set>
 
@@ -563,15 +564,19 @@ class TreeNode : public Node {
     return IsLeafNoLock();
   }
 
-  bool TryLockLeaf() {
+  // Locks a leaf by setting n_threads_working_ = 1. If n_threads_working_ > 0,
+  // the lock fails. We should never have n_threads_working_ > 1 for a leaf.
+  bool TryLockLeaf(Eval solved_lower, Eval solved_upper) {
     auto guard = ReadLock();
-    // Some other thread has added this node's children when I was not looking.
-    if (!IsLeafNoLock()) {
+    // Some other thread has added this node's children or solved this node
+    // before locking it.
+    if (!IsLeafNoLock() || Node::IsSolved(solved_lower, solved_upper, false)) {
       return false;
     }
     uint8_t expected = 0;
+    assert(n_threads_working_ <= 1);
     bool locked = n_threads_working_.compare_exchange_strong(expected, (uint8_t) 1);
-    assert((locked && expected == 0) || (!locked && expected == 1));
+    assert((locked && expected == 0 && n_threads_working_ == 1) || (!locked && expected == 1));
     return locked;
   }
 
@@ -623,6 +628,9 @@ class TreeNode : public Node {
 
   TreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
     auto guard = ReadLock();
+    if (IsLeafNoLock()) {
+      return this;
+    }
     assert(!IsLeafNoLock());
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     // If another thread has already solved this node.
@@ -649,9 +657,6 @@ class TreeNode : public Node {
         best_child = child;
         best_child_value = cur_loss;
       }
-    }
-    if (best_child != nullptr && !best_child->IsLeaf()) {
-      best_child->IncreaseNThreadsWorking();
     }
     return best_child;
   }
@@ -761,10 +766,12 @@ class TreeNode : public Node {
   }
 
   void IncreaseNThreadsWorking() {
+    assert(!IsLeaf());
     n_threads_working_++;
   }
 
   void DecreaseNThreadsWorking() {
+    assert(n_threads_working_ > 0);
     n_threads_working_--;
   }
 
@@ -802,7 +809,6 @@ class TreeNode : public Node {
   LeafToUpdate<T> AsLeafNoLock(Eval eval_goal) {
     LeafToUpdate<T> leaf;
     leaf.leaf_ = (T*) this;
-    leaf.parents_ = {(T*) this};
     leaf.eval_goal_ = eval_goal;
     leaf.alpha_ = std::max(lower_ + 1, (int) weak_lower_);
     leaf.beta_ = std::min(upper_ - 1, (int) weak_upper_);
@@ -1039,44 +1045,38 @@ class LeafToUpdate {
 
   static LeafToUpdate Leaf(std::vector<Node*> sequence) {
     LeafToUpdate leaf = sequence[0]->template AsLeafWithGoal<Node>(1);
-    sequence[0]->IncreaseNThreadsWorking();
     for (int i = 1; i < sequence.size(); ++i) {
       Node* descendant = sequence[i];
       leaf.ToChild(descendant, 0);
-      descendant->IncreaseNThreadsWorking();
+    }
+    if (!leaf.Leaf()->TryLockLeaf(1, 1)) {
+      throw std::invalid_argument("Cannot lock a leaf");
     }
     return leaf;
   }
 
   static std::optional<LeafToUpdate> BestDescendant(LeafToUpdate& result, float n_thread_multiplier) {
-    if (!result.leaf_->IsLeaf()) {
-      result.leaf_->IncreaseNThreadsWorking();
-    }
-    while (!result.leaf_->IsLeaf()) {
+    while (true) {
       Node* best_child = result.leaf_->BestChild(result.eval_goal_, n_thread_multiplier);
       if (best_child == nullptr) {
         for (Node* node : result.parents_) {
           node->DecreaseNThreadsWorking();
         }
         return std::nullopt;
+      } else if (best_child == result.leaf_) {
+        // This means that result.leaf_ is a leaf.
+        if (result.leaf_->TryLockLeaf(result.Alpha(), result.Beta())) {
+          assert(!result.leaf_->IsSolved(result.Alpha(), result.Beta(), false));
+          return result;
+        } else {
+          for (Node* node : result.parents_) {
+            node->DecreaseNThreadsWorking();
+          }
+          return std::nullopt;
+        }
       }
       result.ToChild(best_child, 0);
     }
-    if (result.Leaf()->TryLockLeaf()) {
-      return result;
-    }
-    for (Node* node : result.parents_) {
-      if (!node->IsLeaf()) {
-        node->DecreaseNThreadsWorking();
-      }
-    }
-    return std::nullopt;
-  }
-
-  LeafToUpdate Copy() const {
-    LeafToUpdate result(*this);
-    result.parents_ = {leaf_};
-    return result;
   }
 
   Eval EvalGoal() const { return eval_goal_; }
@@ -1089,7 +1089,8 @@ class LeafToUpdate {
   bool operator==(const LeafToUpdate& other) const = default;
 
   void Finalize(NVisited n_visited) {
-    assert(leaf_ == parents_[parents_.size() - 1]);
+    leaf_->AddDescendants(n_visited);
+    leaf_->DecreaseNThreadsWorking();
     for (auto parent : Parents()) {
       parent->AddDescendants(n_visited);
       parent->DecreaseNThreadsWorking();
@@ -1097,11 +1098,6 @@ class LeafToUpdate {
     leaf_->UpdateFathers();
   }
 
-  void UpdateFirstNode(TreeNode* first_node) {
-    parents_[0]->DecreaseNThreadsWorking();
-    parents_[0] = first_node;
-    first_node->IncreaseNThreadsWorking();
-  }
  protected:
   friend class TreeNode;
   Node* leaf_;
@@ -1114,6 +1110,8 @@ class LeafToUpdate {
   void ToChild(Node* child, double extra_loss) {
     int tmp;
 
+    leaf_->IncreaseNThreadsWorking();
+    parents_.push_back(leaf_);
     leaf_ = child;
     eval_goal_ = -eval_goal_;
     tmp = alpha_;
@@ -1121,7 +1119,6 @@ class LeafToUpdate {
     beta_ = -tmp;
     loss_ += extra_loss;
     leaf_->template UpdateAlphaBeta<Node>(this);
-    parents_.push_back(leaf_);
   }
 };
 

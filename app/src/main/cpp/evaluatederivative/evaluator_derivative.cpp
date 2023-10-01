@@ -19,16 +19,15 @@
 #include "evaluator_derivative.h"
 #include "tree_node.h"
 
-TreeNode* TreeNodeSupplier::AddTreeNode(
+std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
     BitPattern player, BitPattern opponent, Square depth,
     EvalLarge leaf_eval,
-    Square eval_depth, EvaluatorDerivative* evaluator, bool* newly_inserted) {
+    Square eval_depth, EvaluatorDerivative* evaluator) {
   auto evaluator_index = evaluator->Index();
   if (kUseTranspositions) {
     TreeNode* node = Mutable(player, opponent, evaluator_index);
     if (node != nullptr) {
-      *newly_inserted = false;
-      return node;
+      return std::make_pair(node, false);
     }
   }
 
@@ -37,8 +36,7 @@ TreeNode* TreeNodeSupplier::AddTreeNode(
   TreeNode& node = tree_nodes_[node_id];
   node.Reset(player, opponent, depth, leaf_eval, eval_depth, evaluator);
   AddToHashMap(player, opponent, evaluator_index, node_id);
-  *newly_inserted = true;
-  return &node;
+  return std::make_pair(&node, true);
 }
 
 void EvaluatorThread::Run() {
@@ -59,11 +57,12 @@ void EvaluatorThread::Run() {
     stats_.Add(1, NEXT_POSITION_SUCCESS);
     evaluator_->UpdateNThreadMultiplierSuccess();
     auto leaf = *leaf_opt;
-    last_eval_goal = leaf.EvalGoal() * (leaf.Leaf()->Depth() % 2 == 0 ? 1 : -1);
-    assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     TreeNode* node = (TreeNode*) leaf.Leaf();
+    last_eval_goal = leaf.EvalGoal() * (node->Depth() % 2 == 0 ? 1 : -1);
+    assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     assert(node->IsLeaf());
-    if (leaf.Leaf()->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->tree_node_supplier_->NumTreeNodes(), first_position->GetNVisited())) {
+    assert(evaluator_->tree_node_supplier_->NumTreeNodes() == evaluator_->num_tree_nodes_);
+    if (leaf.Leaf()->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->num_tree_nodes_, first_position->GetNVisited())) {
       n_visited = SolvePosition(leaf, std::max(50000.0, leaf.Leaf()->RemainingWork(leaf.Alpha(), leaf.Beta())));
     } else {
       n_visited = AddChildren(leaf);
@@ -106,7 +105,6 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     BitPattern square = flip & ~(opponent | player);
     BitPattern new_player = NewPlayer(flip, opponent);
     BitPattern new_opponent = NewOpponent(flip, player);
-    bool newly_inserted = false;
     if (flip != 0) {
       evaluator_depth_one_->Update(square, flip);
     }
@@ -134,7 +132,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     stats_.Merge(cur_stats);
     cur_n_visited = cur_stats.GetAll();
     n_visited += cur_n_visited;
-    TreeNode* child = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, depth, &newly_inserted);
+    auto [child, newly_inserted] = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, depth);
     children.push_back(child);
 //    child->SetLeafIfInvalid(eval, depth, *evaluator_);
     child->AddDescendants(n_visited);
@@ -167,7 +165,8 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
     stats_.Add(seen_positions, SOLVED_TOO_EARLY);
     return seen_positions + AddChildren(leaf);
   }
-  assert(node->NThreadsWorking() == 1);
+  assert(node->NThreadsWorking() <= 1);
+  assert(node->NThreadsWorking() >= 1);
   // No need to lock, because this is the only thread that can touch this node.
   assert(node->IsLeaf());
   assert(eval >= kMinEvalLarge && eval <= kMaxEvalLarge);

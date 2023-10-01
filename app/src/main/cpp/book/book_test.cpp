@@ -184,8 +184,9 @@ TEST(Book, AddChildren) {
   auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
 
   auto e6 = book.Add(*e6_node);
+  auto leaf = LeafToUpdate<BookNode>::Leaf({e6});
   book.AddChildren(Board("e6"), {*e6f4_node, *e6f6_node, *e6d6_node});
-  LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
+  leaf.Finalize(30);
 
   book.Commit();
 
@@ -228,8 +229,9 @@ TEST(Book, RemoveRoots) {
   ASSERT_THAT(Book(kTempDir).Roots(), UnorderedElementsAre(Board("e6").Unique(), Board("e6f4").Unique()));
 
   auto e6 = *book.Mutable(Board("e6"));
+  auto leaf = LeafToUpdate<BookNode>::Leaf({e6});
   book.AddChildren(Board("e6"), {*e6f4_node, *e6f6_node, *e6d6_node});
-  LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
+  leaf.Finalize(30);
 
   ASSERT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
   // Not yet committed the change.
@@ -250,8 +252,9 @@ TEST(Book, AddChildrenDoubleCommit) {
   auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
 
   auto e6 = book.Add(*e6_node);
+  auto leaf = LeafToUpdate<BookNode>::Leaf({e6});
   book.AddChildren(Board("e6"), {*e6f4_node, *e6f6_node, *e6d6_node});
-  LeafToUpdate<BookNode>::Leaf({e6}).Finalize(30);
+  leaf.Finalize(30);
 
   book.Commit();
 
@@ -363,12 +366,13 @@ TEST_P(BookParameterizedFixture, UpdateFathers) {
 
   // Overwrite: more nodes.
   auto e6f4c3c4d3 = book.Mutable(Board("e6f4c3c4d3")).value();
-  EXPECT_TRUE(e6f4c3c4d3->IsLeaf());
-  e6f4c3c4d3->SetLower(20);
-  LeafToUpdate<BookNode>::Leaf(
+  auto leaf = LeafToUpdate<BookNode>::Leaf(
       {book.Mutable(Board("e6f4")).value(), book.Mutable(Board("e6f4c3")).value(),
        book.Mutable(Board("e6f4c3c4")).value(), book.Mutable(Board("e6f4c3c4d3")).value()}
-  ).Finalize(100);
+  );
+  EXPECT_TRUE(e6f4c3c4d3->IsLeaf());
+  e6f4c3c4d3->SetLower(20);
+  leaf.Finalize(100);
 
   EXPECT_NEAR(book.Get(Board("e6f4c3c4d3")).value().GetEval(), 20, 1E-4);
   EXPECT_NEAR(book.Get(Board("e6f4c3c4")).value().GetEval(), -20, 1E-4);

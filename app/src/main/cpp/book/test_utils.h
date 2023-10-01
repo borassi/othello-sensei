@@ -49,7 +49,9 @@ class TestBook {
 
   TestBookTreeNode* Add(const TreeNode& node) {
     Board unique = node.ToBoard().Unique();
-    return &(*(nodes_.try_emplace(unique, this, node).first)).second;
+    auto& it = (*(nodes_.try_emplace(unique, this, node).first)).second;
+    it.is_leaf_ = true;
+    return &it;
   }
   std::optional<Node> Get(const Board& b) {
     auto it = nodes_.find(b.Unique());
@@ -167,8 +169,9 @@ Book<version> BookWithPositions(
       children.push_back(*TestTreeNode(child, eval, -63, 63, n_visited));
       total_visited += n_visited;
     }
+    auto leaf = LeafToUpdate<typename Book<version>::BookNode>::Leaf(parents);
     book.AddChildren(father, children);
-    LeafToUpdate<typename Book<version>::BookNode>::Leaf(parents).Finalize(total_visited);
+    leaf.Finalize(total_visited);
   }
   return book;
 }

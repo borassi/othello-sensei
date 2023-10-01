@@ -111,16 +111,10 @@ class TreeNodeSupplier {
     return num_nodes_;
   }
 
-  TreeNode* AddTreeNode(
-      BitPattern player, BitPattern opponent, Square depth,
-      EvalLarge weak_eval, Square eval_depth, EvaluatorDerivative* evaluator) {
-    bool newly_inserted;
-    return AddTreeNode(player, opponent, depth, weak_eval, eval_depth, evaluator, &newly_inserted);
-  }
-  TreeNode* AddTreeNode(
+  std::pair<TreeNode*, bool> AddTreeNode(
       BitPattern player, BitPattern opponent, Square depth,
       EvalLarge leaf_eval,
-      Square eval_depth, EvaluatorDerivative* evaluator, bool* newly_inserted);
+      Square eval_depth, EvaluatorDerivative* evaluator);
 
  private:
   TreeNode* tree_nodes_;
@@ -248,8 +242,9 @@ class EvaluatorDerivative {
     upper_ = upper;
     weak_lower_ = lower_;
     weak_upper_ = upper_;
+    num_tree_nodes_ = 0;
     n_thread_multiplier_ = 1000;
-    first_position_ = tree_node_supplier_->AddTreeNode(player, opponent, 0, 0, 1, this);
+    first_position_ = AddTreeNode(player, opponent, 0, 0, 1).first;
     auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
@@ -294,6 +289,7 @@ class EvaluatorDerivative {
   double max_time_;
   Eval lower_;
   Eval upper_;
+  std::atomic_uint32_t num_tree_nodes_;
   std::atomic_int8_t weak_lower_;
   std::atomic_int8_t weak_upper_;
   Status status_ = SOLVED;
@@ -322,9 +318,6 @@ class EvaluatorDerivative {
   }
 
   bool CheckFinished() {
-    auto advancement = first_position_->Advancement(lower_, upper_);
-    best_advancement_ = std::min(best_advancement_, advancement);
-    bool good_stop = advancement <= best_advancement_;
     if (status_ == KILLING) {
       status_ = KILLED;
       return true;
@@ -332,25 +325,31 @@ class EvaluatorDerivative {
     if (status_ == KILLED) {
       return true;
     }
-    auto time = elapsed_time_.Get();
-    if (time > max_time_ || time > 0.8 * max_time_ && good_stop) {
-      status_ = STOPPED_TIME;
-      return true;
-    }
     if (first_position_->IsSolved(lower_, upper_, approx_)) {
       status_ = SOLVED;
       return true;
     }
+    if (tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 100000) {
+      status_ = STOPPED_TREE_POSITIONS;
+      return true;
+    }
+    auto time = elapsed_time_.Get();
     NVisited visited_goal = max_n_visited_ - start_visited_;
     NVisited visited_actual = first_position_->GetNVisited() - start_visited_;
+    bool good_stop = false;
+    if (time > 0.7 * max_time_ || visited_actual > 0.7 * visited_goal) {
+      auto advancement = first_position_->Advancement(lower_, upper_);
+      best_advancement_ = std::min(best_advancement_, advancement);
+      good_stop = advancement <= best_advancement_;
+    }
+    if (time > max_time_ || time > 0.8 * max_time_ && good_stop) {
+      status_ = STOPPED_TIME;
+      return true;
+    }
     if (!just_started_ && (
         visited_actual > visited_goal ||
         visited_actual > 0.8 * visited_goal && good_stop)) {
       status_ = STOPPED_POSITIONS;
-      return true;
-    }
-    if (tree_node_supplier_->NumTreeNodes() > kDerivativeEvaluatorSize - 100000) {
-      status_ = STOPPED_TREE_POSITIONS;
       return true;
     }
     return false;
@@ -391,12 +390,14 @@ class EvaluatorDerivative {
         && weak_upper_ <= first_position_->WeakUpper();
   }
 
-  TreeNode* AddTreeNode(
+  std::pair<TreeNode*, bool> AddTreeNode(
       BitPattern player, BitPattern opponent, Square depth,
-      EvalLarge leaf_eval, Square eval_depth, bool* newly_inserted) {
-    return tree_node_supplier_->AddTreeNode(
-        player, opponent, depth, leaf_eval, eval_depth,
-        this, newly_inserted);
+      EvalLarge leaf_eval, Square eval_depth) {
+    auto pair = tree_node_supplier_->AddTreeNode(
+        player, opponent, depth, leaf_eval, eval_depth, this);
+    // Add 1 if it's a new node, 0 otherwise.
+    num_tree_nodes_ += pair.second;
+    return pair;
   }
 
   void UpdateNThreadMultiplierSuccess() {
