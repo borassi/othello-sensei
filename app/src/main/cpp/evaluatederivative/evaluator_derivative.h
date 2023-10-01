@@ -38,10 +38,6 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 
 constexpr bool kUseTranspositions = true;
-constexpr int kVisitedEndgameStart = 10000;
-constexpr int kVisitedEndgameGoal = 10000;
-constexpr int kMaxChildrenUpdates = 5;
-constexpr float kNextPositionFailGoal = 0.05;
 
 using namespace std::chrono_literals;
 
@@ -312,21 +308,6 @@ class EvaluatorDerivative {
   std::atomic_int n_thread_multiplier_;
   std::atomic_flag is_updating_weak_lower_upper_;
   double best_advancement_;
-
-  int VisitedForEndgame() {
-    float done = first_position_->GetNVisited();
-    float remaining = first_position_->RemainingWork(first_position_->WeakLower(), first_position_->WeakUpper());
-    float done_tree_nodes = tree_node_supplier_->NumTreeNodes();
-    float solve_probability = first_position_->SolveProbability(lower_, upper_);
-    float goal = std::max(400.0F, std::min(1800.0F, 20 / solve_probability));
-    if (remaining < 4 * done) {  // done > (remaining + done) / 5
-      goal = 1800.0F;
-    }
-    float result = 10000 - (done - done_tree_nodes * goal) * 1.0F;
-//    if (rand() % 100 == 0)
-//      std::cout << done << " " << remaining << " " << done / done_tree_nodes << " " << result << "\n";
-    return std::max(10000, std::min(400000, (int) result));
-  }
 
   void Run() {
     std::vector<std::future<void>> futures;

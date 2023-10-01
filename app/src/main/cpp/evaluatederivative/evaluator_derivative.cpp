@@ -63,10 +63,8 @@ void EvaluatorThread::Run() {
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     TreeNode* node = (TreeNode*) leaf.Leaf();
     assert(node->IsLeaf());
-//    leaf.UpdateFirstNode(first_position);
-    auto visited_for_endgame = evaluator_->VisitedForEndgame();
-    if (node->RemainingWork(leaf.Alpha(), leaf.Beta()) * 12 < visited_for_endgame) {
-      n_visited = SolvePosition(leaf, visited_for_endgame);
+    if (leaf.Leaf()->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->tree_node_supplier_->NumTreeNodes(), first_position->GetNVisited())) {
+      n_visited = SolvePosition(leaf, std::max(50000.0, leaf.Leaf()->RemainingWork(leaf.Alpha(), leaf.Beta())));
     } else {
       n_visited = AddChildren(leaf);
     }
@@ -160,8 +158,7 @@ NVisited EvaluatorThread::SolvePosition(const TreeNodeLeafToUpdate& leaf,
   NVisited seen_positions;
   EvalLarge eval;
   eval = evaluator_alpha_beta_.Evaluate(
-      node->Player(), node->Opponent(), node->NEmpties(), alpha, beta,
-      std::max(max_proof, 100000));
+      node->Player(), node->Opponent(), node->NEmpties(), alpha, beta, max_proof);
   seen_positions = evaluator_alpha_beta_.GetNVisited() + 1;
   stats_.Merge(evaluator_alpha_beta_.GetStats());
   stats_.Add(1, TREE_NODE);

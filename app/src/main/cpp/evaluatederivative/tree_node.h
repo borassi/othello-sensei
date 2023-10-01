@@ -408,7 +408,19 @@ class Node {
     return result;
   }
 
-  virtual double RemainingWork(Eval lower, Eval upper) const;
+  double RemainingWork(Eval lower, Eval upper) const;
+
+  bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
+    double remaining_work = RemainingWork(lower, upper);
+    EvalLarge delta = std::max(EvalToEvalLarge(lower) - leaf_eval_, leaf_eval_ - EvalToEvalLarge(upper)) / 8.0;
+
+    double mult = 1;
+    double frac = num_tree_nodes * 2000.0 / total_visited;
+    if (frac < 1) {
+      mult = frac * frac * frac * frac;
+    }
+    return remaining_work < mult * std::min(40000, 7500 + std::max(0, delta) * 1843);
+  }
 
   u_int8_t Evaluator() const { return evaluator_; }
 
@@ -706,7 +718,12 @@ class TreeNode : public Node {
     return Node::IsSolved(lower, upper, approx);
   }
 
-  double RemainingWork(Eval lower, Eval upper) const override {
+  bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
+    auto guard = ReadLock();
+    return Node::ToBeSolved(lower, upper, num_tree_nodes, total_visited);
+  }
+
+  double RemainingWork(Eval lower, Eval upper) const {
     auto guard = ReadLock();
     if (Node::IsSolved(lower, upper, false)) {
       return 0;
