@@ -61,7 +61,6 @@ void EvaluatorThread::Run() {
     last_eval_goal = leaf.EvalGoal() * (node->Depth() % 2 == 0 ? 1 : -1);
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     assert(node->IsLeaf());
-    assert(evaluator_->tree_node_supplier_->NumTreeNodes() == evaluator_->num_tree_nodes_);
     if (leaf.Leaf()->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->num_tree_nodes_, first_position->GetNVisited())) {
       n_visited = SolvePosition(leaf, std::max(50000.0, leaf.Leaf()->RemainingWork(leaf.Alpha(), leaf.Beta())));
     } else {
