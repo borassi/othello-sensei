@@ -37,8 +37,8 @@ int main(int argc, char* argv[]) {
   std::string start_line = parse_flags.GetFlagOrDefault("start", "");
 //  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  NVisited n_descendants_children = 50 * 1000 * 100UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
-  NVisited n_descendants_solve = 4 * 1000 * 1000 * 100UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
+  NVisited n_descendants_children = 50 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
+  NVisited n_descendants_solve = 4 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
         << "Expanding line:        " << start_line << "\n"
         << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
         << "Descendants of start:  " << PrettyPrintDouble(start->GetNVisited()) << "\n"
-        << "Evaluation of start:   " << std::setprecision(2) << start->GetEval() << "\n"
+        << "Evaluation of start:   " << std::setprecision(3) << start->GetEval() << "\n"
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
