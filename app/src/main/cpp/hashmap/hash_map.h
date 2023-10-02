@@ -16,6 +16,9 @@
 
 #include <array>
 #include <atomic>
+#if !ANDROID
+#include <gtest/gtest_prod.h>
+#endif
 #include <memory>
 #include <optional>
 #include "../board/bitpattern.h"
@@ -35,6 +38,11 @@ struct HashMapEntry {
   Square second_best_move;
 
   bool operator==(const HashMapEntry& other) const = default;
+};
+
+struct HashMapEntryWithBusy {
+  HashMapEntry entry;
+  std::atomic_bool busy;
 };
 
 std::ostream& operator<<(std::ostream& stream, const HashMapEntry& e) {
@@ -60,36 +68,51 @@ class HashMap {
       BitPattern player, BitPattern opponent, DepthValue depth,
       EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
       Square second_best_move) {
-    HashMapEntry entry {
-      .player = player,
-      .opponent = opponent,
-      .lower = eval > lower ? eval : kMinEvalLarge,
-      .upper = eval < upper ? eval : kMaxEvalLarge,
-      .depth = depth,
-      .best_move = best_move,
-      .second_best_move = second_best_move
-    };
-    hash_map_[Hash(player, opponent)].store(entry, std::memory_order_relaxed);
+    auto& entry_with_busy = hash_map_[Hash(player, opponent)];
+    bool expected = false;
+    if (!entry_with_busy.busy.compare_exchange_strong(expected, true)) {
+      return;
+    }
+    auto& entry = entry_with_busy.entry;
+    entry.player = player;
+    entry.opponent = opponent;
+    entry.lower = eval > lower ? eval : kMinEvalLarge;
+    entry.upper = eval < upper ? eval : kMaxEvalLarge;
+    entry.depth = depth;
+    entry.best_move = best_move;
+    entry.second_best_move = second_best_move;
+    entry_with_busy.busy = false;
   }
 
   void Reset() {
     HashMapEntry empty { .player = 0, .opponent = 0 };
     for (int i = 0; i < size; ++i) {
-      std::atomic_init(&hash_map_[i], empty);
+      hash_map_[i].entry = empty;
+      hash_map_[i].busy = false;
     }
   }
 
   // NOTE: We cannot just return a reference because another thread might
   // invalidate it. We need to copy it.
   std::optional<HashMapEntry> Get(BitPattern player, BitPattern opponent) {
-    HashMapEntry result = hash_map_[Hash(player, opponent)].load(std::memory_order_relaxed);
-    if (result.player == player && result.opponent == opponent) {
-      return result;
+    auto& entry_with_busy = hash_map_[Hash(player, opponent)];
+    bool expected = false;
+    if (!entry_with_busy.busy.compare_exchange_strong(expected, true)) {
+      return std::nullopt;
     }
-    return std::nullopt;
+    if (entry_with_busy.entry.player != player || entry_with_busy.entry.opponent != opponent) {
+      entry_with_busy.busy = false;
+      return std::nullopt;
+    }
+    HashMapEntry entry = entry_with_busy.entry;
+    entry_with_busy.busy = false;
+    return entry;
   }
 
  private:
-  std::vector<std::atomic<HashMapEntry>> hash_map_;
+#if !ANDROID
+  FRIEND_TEST(HashMapTest, Parallel);
+#endif
+  std::vector<HashMapEntryWithBusy> hash_map_;
 };
 #endif  // HASH_MAP_H

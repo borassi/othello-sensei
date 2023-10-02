@@ -23,6 +23,7 @@ target_link_libraries(
         LINK_PRIVATE
         atomic
         bitpattern
+        GTest::gtest
 )
 
 IF(${__BMI2__})

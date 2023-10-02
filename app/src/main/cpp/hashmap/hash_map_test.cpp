@@ -31,11 +31,13 @@ void CheckCorrect(const HashMapEntry& entry, BitPattern player, BitPattern oppon
   ASSERT_EQ(entry.upper, i % 8 + (entry.best_move - 10) * 8);
 }
 
-void FillAndTestHashMap(int thread_num) {
-  HashMap<5> hash_map;
-  for (int i = 1; i < 1000; ++i) {
+void FillAndTestHashMap(HashMap<5>& hash_map, int thread_num) {
+  for (int i = 1; i < 10000; ++i) {
     hash_map.Update(i * 2, 1, i % 4, i % 8 + (thread_num - 10) * 8, kMinEvalLarge, kMaxEvalLarge, thread_num, 0);
-    CheckCorrect(hash_map.Get(i*2, 1).value(), i*2, 1);
+    auto entry = hash_map.Get(i * 2, 1);
+    if (entry) {
+      CheckCorrect(entry.value(), i * 2, 1);
+    }
     int j = rand() % i;
     for (int check : {i, rand() % i, rand() % 10000}) {
       auto entry = hash_map.Get(check * 2, 1);
@@ -46,16 +48,21 @@ void FillAndTestHashMap(int thread_num) {
   }
 }
 
-TEST(HashMap, Base) {
-  FillAndTestHashMap(0);
+TEST(HashMapTest, Base) {
+  HashMap<5> hash_map;
+  FillAndTestHashMap(hash_map, 0);
 }
 
-TEST(HashMap, Parallel) {
+TEST(HashMapTest, Parallel) {
+  HashMap<5> hash_map;
   std::vector<std::future<void>> futures;
   for (int i = 0; i < 64; ++i) {
-    futures.push_back(std::async(std::launch::async, &FillAndTestHashMap, i));
+    futures.push_back(std::async(std::launch::async, &FillAndTestHashMap, std::ref(hash_map), i));
   }
   for (int i = 0; i < 64; ++i) {
     futures[i].get();
+  }
+  for (int i = 0; i < 5; ++i) {
+     ASSERT_FALSE(hash_map.hash_map_[i].busy);
   }
 }
