@@ -869,9 +869,8 @@ class TreeNode : public Node {
     }
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
-    bool shallow = GetNVisited() < 50000;
     for (auto child = start; child != end; ++child) {
-      UpdateWithChild(**child, shallow);
+      UpdateWithChild(**child);
       new_upper = MaxEval(new_upper, (Eval) -(*child)->Lower());
     }
     if (new_upper < upper_) {
@@ -879,7 +878,7 @@ class TreeNode : public Node {
     }
     leaf_eval_ = std::min(leaf_eval_, EvalToEvalLarge(upper_));
     for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
-      MutableEvaluation(i)->Finalize(shallow);
+      MutableEvaluation(i)->Finalize();
     }
     assert(kMinEval <= lower_ && lower_ <= upper_ && upper_ <= kMaxEval);
     assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
@@ -926,7 +925,7 @@ class TreeNode : public Node {
     return -eval.DisproofNumberSmall() - 0.4 * leaf_eval_ / 8.0;
   }
 
-  virtual void UpdateWithChild(const TreeNode& child, bool shallow) {
+  virtual void UpdateWithChild(const TreeNode& child) {
     auto child_guard = child.ReadLock();
     // We cannot check the upper, because we are currently updating it.
     assert(leaf_eval_ >= EvalToEvalLarge(lower_));
@@ -946,11 +945,7 @@ class TreeNode : public Node {
         continue;
       }
       const Evaluation& eval = child.GetEvaluation(-i);
-      if (shallow) {
-        father_eval->UpdateFatherWithThisChild<true>(eval);
-      } else {
-        father_eval->UpdateFatherWithThisChild<false>(eval);
-      }
+      father_eval->UpdateFatherWithThisChild(eval);
     }
   }
 
