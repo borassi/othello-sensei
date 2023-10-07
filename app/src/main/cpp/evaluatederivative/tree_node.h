@@ -443,7 +443,7 @@ class Node {
 
   virtual bool IsSolved(Eval lower, Eval upper, bool approx) const {
     assert((lower - kMinEval) % 2 == 1);
-    return upper_ <= lower || lower_ >= upper || lower_ == upper_ || (approx && SolveProbabilityNoLock(lower, upper) < 0.1);
+    return upper_ <= lower || lower_ >= upper || lower_ == upper_ || (approx && SolveProbabilityNoLock(lower, upper) < 0.05);
   }
 
   bool IsSolved() {

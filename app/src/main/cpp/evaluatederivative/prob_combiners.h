@@ -41,11 +41,26 @@ constexpr double Polynomial(double x) {
 }
 
 constexpr double Exponential(double x) {
-  return pow(2, 8 * (1-x)) - 1;
+  //    double d = (ByteToProbability(kProbStep - prob_greater_equal_));
+  double rescaled_x;
+  double exponent = 2;
+  if (x < 0.5) {
+    rescaled_x = pow(x, exponent) / pow(0.5, exponent - 1);
+  } else {
+    rescaled_x = 1 - pow(1-x, exponent) / pow(0.5, exponent - 1);
+  }
+  return pow(2, 8 * (1-rescaled_x)) - 1;
 }
 
 constexpr double PolyLog(double x) {
-  return pow(-log(x), 1.5);
+  double rescaled_x;
+  double exponent = 2;
+  if (x < 0.5) {
+    rescaled_x = pow(x, exponent) / pow(0.5, exponent - 1);
+  } else {
+    rescaled_x = 1 - pow(1-x, exponent) / pow(0.5, exponent - 1);
+  }
+  return pow(-log(rescaled_x), 1.5);
 }
 
 constexpr double ExponentialTimesPolyLog(double x) {
