@@ -464,7 +464,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   public boolean approx() { return approx.isSelected(); }
 
   public static short roundEval(double eval) {
-    return (short) Math.max(-63, Math.min(63, Math.round(eval / 2) * 2));
+    return (short) Math.max(-63, Math.min(63, Math.round((eval + 64) / 2) * 2 - 63));
   }
 
   @Override
