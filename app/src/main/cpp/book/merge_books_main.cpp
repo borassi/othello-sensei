@@ -75,5 +75,5 @@ int main(int argc, char* argv[]) {
       << ", size " << old_book.Size() << ") to version " << kNewVersion
       << " in path " << new_book_path << "\n";
 
-  new_book.Merge(old_book, UpdateProbabilities);
+  new_book.Merge(old_book);
 }
