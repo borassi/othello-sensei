@@ -90,7 +90,7 @@ struct CombineProb {
           combine_prob[i][j] = std::min(i, j);
         } else {
           combine_prob[i][j] = ProbabilityToByteExplicit(combiner.inverse(combiner.f(x1) + combiner.f(x2)));
-          combine_prob[i][j] = std::min(std::min((int) combine_prob[i][j], i), j);
+          combine_prob[i][j] = std::max(6, std::min(std::min((int) combine_prob[i][j], i), j));
         }
         combine_prob[j][i] = combine_prob[i][j];
         assert(j == i || i == 0 || combine_prob[i][j] >= combine_prob[i][j-1]);

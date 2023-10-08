@@ -301,8 +301,9 @@ class JNIWrapper {
     for (auto parent : parents) {
       parents_node.push_back(book_.Mutable(parent).value());
     }
+    auto leaf = LeafToUpdate<Book<>::BookNode>::Leaf(parents_node);
     book_.AddChildren(father, children);
-    LeafToUpdate<Book<>::BookNode>::Leaf(parents_node).Finalize(n_visited);
+    leaf.Finalize(n_visited);
     book_.Commit();
   }
 
