@@ -389,6 +389,31 @@ constexpr bool UseStabilityCutoff(int depth) {
   return depth > 3;
 }
 
+int EvaluatorAlphaBeta::VisitedToDisprove(const BitPattern player, const BitPattern opponent, const EvalLarge upper) {
+  int to_be_visited = 0;
+  BitPattern flip;
+  BitPattern empties = ~(player | opponent);
+  BitPattern candidate_moves = Neighbors(opponent) & empties;
+  FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
+    Square square = __builtin_ctzll(square_pattern);
+    assert(((1ULL << square) & (player | opponent)) == 0);
+    flip = GetFlip(square, player, opponent);
+    if (flip == 0) {
+      continue;
+    }
+    BitPattern new_player = NewPlayer(flip, opponent);
+    BitPattern new_opponent = NewOpponent(flip, player);
+    evaluator_depth_one_->Update(square_pattern, flip);
+    to_be_visited += VisitedToProve(new_player, new_opponent, -upper);
+    evaluator_depth_one_->UndoUpdate(square_pattern, flip);
+  }
+  return to_be_visited;
+}
+
+int EvaluatorAlphaBeta::VisitedToProve(const BitPattern player, const BitPattern opponent, const EvalLarge lower) {
+  return (int) ByteToProofNumber(ProofNumber(player, opponent, lower, evaluator_depth_one_->Evaluate()));
+}
+
 // clangtidy: no-warning.
 template<int depth, bool passed, bool solve>
 EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
@@ -427,16 +452,22 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     depth_zero_eval = evaluator_depth_one_->Evaluate();
     evaluator_depth_one_->Invert();
   }
-  double n_for_max_visited = stats_.GetAll();
-  if (solve && n_for_max_visited > max_visited) {
+  bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
+  MoveIteratorBase* moves =
+      move_iterators_[MoveIteratorOffset(depth, solve, unlikely && depth <= 13)].get();
+  moves->Setup(player, opponent, last_flip, upper, hash_entry, evaluator_depth_one_.get());
+  double to_be_visited = 0;
+  double already_visited = stats_.GetAll();
+  bool try_early_filter = depth > 13 && solve && depth_zero_eval < upper - 32;
+  if (try_early_filter) {
+    assert(UpdateDepthOneEvaluator(depth, solve));
+    to_be_visited = VisitedToDisprove(player, opponent, upper);
+  }
+  if (solve && to_be_visited + already_visited > max_visited) {
     return kLessThenMinEvalLarge;
   }
   BitPattern square;
   int cur_n_visited;
-  bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
-  MoveIteratorBase* moves =
-      move_iterators_[MoveIteratorOffset(depth, solve, unlikely)].get();
-  moves->Setup(player, opponent, last_flip, upper, hash_entry, evaluator_depth_one_.get());
   for (BitPattern flip = moves->NextFlip(); flip != 0; flip = moves->NextFlip()) {
     square = SquareFromFlip(flip, player, opponent);
     if (UpdateDepthOneEvaluator(depth, solve)) {
@@ -455,9 +486,16 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       current_eval = (depth_zero_eval * kWeightDepthZero - evaluator_depth_one_->Evaluate() * kWeightDepthOne) / (kWeightDepthZero + kWeightDepthOne);
     } else {
       int max_lower_eval = std::max(lower, best_eval);
+      BitPattern new_player = NewPlayer(flip, opponent);
+      BitPattern new_opponent = NewOpponent(flip, player);
+
+      if (try_early_filter) {
+        to_be_visited -= VisitedToProve(new_player, new_opponent, -upper);
+        assert(to_be_visited > 0);
+      }
       current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
-          NewPlayer(flip, opponent), NewOpponent(flip, player),
-          -upper, -max_lower_eval, flip, new_stable, max_visited);
+          new_player, new_opponent,
+          -upper, -max_lower_eval, flip, new_stable, max_visited - to_be_visited);
     }
     if (current_eval == -kLessThenMinEvalLarge) {
       return kLessThenMinEvalLarge;

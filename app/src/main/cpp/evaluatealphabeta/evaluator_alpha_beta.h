@@ -247,6 +247,9 @@ class EvaluatorAlphaBeta {
       const EvalLarge lower, const EvalLarge upper,
       const BitPattern last_flip, const BitPattern stable, int max_visited);
 
+  int VisitedToDisprove(const BitPattern player, const BitPattern opponent, const EvalLarge upper);
+  int VisitedToProve(const BitPattern player, const BitPattern opponent, const EvalLarge lower);
+
   static const EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static const EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];
   HashMap<kBitHashMap>* hash_map_;

@@ -413,14 +413,14 @@ class Node {
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
     double remaining_work = RemainingWork(lower, upper);
-    EvalLarge delta = std::max(EvalToEvalLarge(lower) - leaf_eval_, leaf_eval_ - EvalToEvalLarge(upper)) / 8.0;
+    EvalLarge delta = std::max(EvalToEvalLarge(lower) - leaf_eval_, leaf_eval_ - EvalToEvalLarge(upper));
 
     double mult = 1;
     double frac = num_tree_nodes * 2000.0 / total_visited;
     if (frac < 1) {
-      mult = frac * frac * frac * frac;
+      mult = 5 * (frac - 0.8);
     }
-    return remaining_work < mult * std::min(40000, 7500 + std::max(0, delta) * 1843);
+    return remaining_work < mult * std::min(70000, 10000 + std::max(0, delta) * 250);
   }
 
   u_int8_t Evaluator() const { return evaluator_; }
@@ -886,20 +886,20 @@ class TreeNode : public Node {
 
   bool IsUnderAnalyzed(const TreeNode& father, int father_eval_goal) const {
     NVisited father_visited = father.GetNVisited();
-    float final_visited = 0.00008 * (father_visited + father.Node::RemainingWork(father_eval_goal, father_eval_goal));
+    float final_visited = 0.00005 * (father_visited + father.Node::RemainingWork(father_eval_goal, father_eval_goal));
     float current_visited;
     if (leaf_eval_ < -father.leaf_eval_ + 2 * 8) {
-      current_visited = 0.02 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 4 * 8) {
       current_visited = 0.01 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 6 * 8) {
+    } else if (leaf_eval_ < -father.leaf_eval_ + 4 * 8) {
       current_visited = 0.005 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 8 * 8) {
+    } else if (leaf_eval_ < -father.leaf_eval_ + 6 * 8) {
       current_visited = 0.002 * father_visited;
+    } else if (leaf_eval_ < -father.leaf_eval_ + 8 * 8) {
+      current_visited = 0.001 * father_visited;
     } else if (leaf_eval_ < -father.leaf_eval_ + 16 * 8) {
-      current_visited = 0.0005 * father_visited;
+      current_visited = 0.00005 * father_visited;
     } else {
-      current_visited = 0.0001 * father_visited;
+      current_visited = 0.00001 * father_visited;
     }
     return GetNVisited() < std::min(current_visited, final_visited);
   }
@@ -909,12 +909,12 @@ class TreeNode : public Node {
     const Evaluation& eval = GetEvaluation(eval_goal);
     const Evaluation& father_eval = father.GetEvaluation(-eval_goal);
 
-    if (IsUnderAnalyzed(father, -eval_goal)) {
-      return
-          -2 * kLogDerivativeMinusInf
-          + eval.LogDerivative(father_eval)
-          - leaf_eval_ / (double) (kMaxEvalLarge - kMinEvalLarge);
-    }
+//    if (IsUnderAnalyzed(father, -eval_goal)) {
+//      return
+//          -2 * kLogDerivativeMinusInf
+//          + eval.LogDerivative(father_eval)
+//          - leaf_eval_ / (double) (kMaxEvalLarge - kMinEvalLarge);
+//    }
     if (father_eval.ProbGreaterEqual() < 0.99) {
       return
           eval.LogDerivative(father_eval)
