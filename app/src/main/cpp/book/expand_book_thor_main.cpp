@@ -100,6 +100,7 @@ class ExpandBookThorMain {
       book_.AddChildren(father_in_book->ToBoard(), children);
     }
     leaf.Finalize(n_visited);
+    book_.Commit();
   }
 
   void AddGame(std::vector<Square> game, NVisited n_descendants_children, NVisited n_descendants_solve, double max_error) {
@@ -141,7 +142,6 @@ class ExpandBookThorMain {
         old_b = b;
       }
     }
-    book_.Commit();
   }
 
  private:
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = parse_flags.GetIntFlagOrDefault("n_descendants_children", 50 * 1000 * 1000UL);
   NVisited n_descendants_solve = parse_flags.GetIntFlagOrDefault("n_descendants_solve",  2 * 1000 * 1000 * 1000UL);
-  int max_error = parse_flags.GetIntFlagOrDefault("max_error",  20);
+  int max_error = parse_flags.GetIntFlagOrDefault("max_error",  15);
 
   ExpandBookThorMain expander(filepath);
   for (int year = 2023; year >= 1977; --year) {
