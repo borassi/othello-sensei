@@ -23,7 +23,7 @@
 #include "evaluator_alpha_beta.h"
 #include "evaluator_last_moves.h"
 
-constexpr int kMinEmptiesForDisproofNumber = 11;
+constexpr int kMinEmptiesForDisproofNumber = 12;
 
 constexpr BitPattern kCentralPattern = ParsePattern(
     "--------"
@@ -346,7 +346,7 @@ const EvaluatorAlphaBeta::EvaluateInternalFunction
 };
 
 constexpr bool UpdateDepthOneEvaluator(int depth, bool solve) {
-  return !solve || depth > kMinEmptiesForHashMap || depth > kMinEmptiesForDisproofNumber;
+  return !solve || depth >= kMinEmptiesForDisproofNumber;
 }
 
 constexpr bool UseHashMap(int depth, bool solve) {
@@ -374,7 +374,7 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick<true>>(&stats_);
         } else if ((solve && depth <= 9) || (!solve && depth <= 4)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorQuick<false>>(&stats_);
-        } else if ((solve && depth <= kMinEmptiesForDisproofNumber - 1) || (!solve)) {
+        } else if ((solve && depth < kMinEmptiesForDisproofNumber) || (!solve)) {
           move_iterators_[offset] = std::make_unique<MoveIteratorMinimizeOpponentMoves>(&stats_);
         } else {
           assert(UpdateDepthOneEvaluator(depth, solve));
@@ -396,6 +396,7 @@ int EvaluatorAlphaBeta::VisitedToDisprove(const BitPattern player, const BitPatt
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
     Square square = __builtin_ctzll(square_pattern);
+    BitPattern pattern = 1ULL << square;
     assert(((1ULL << square) & (player | opponent)) == 0);
     flip = GetFlip(square, player, opponent);
     if (flip == 0) {
@@ -403,9 +404,9 @@ int EvaluatorAlphaBeta::VisitedToDisprove(const BitPattern player, const BitPatt
     }
     BitPattern new_player = NewPlayer(flip, opponent);
     BitPattern new_opponent = NewOpponent(flip, player);
-    evaluator_depth_one_->Update(square_pattern, flip);
+    evaluator_depth_one_->Update(pattern, flip);
     to_be_visited += VisitedToProve(new_player, new_opponent, -upper);
-    evaluator_depth_one_->UndoUpdate(square_pattern, flip);
+    evaluator_depth_one_->UndoUpdate(pattern, flip);
   }
   return to_be_visited;
 }
@@ -491,7 +492,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
 
       if (try_early_filter) {
         to_be_visited -= VisitedToProve(new_player, new_opponent, -upper);
-        assert(to_be_visited > 0);
+        assert(to_be_visited >= 0);
       }
       current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
           new_player, new_opponent,
