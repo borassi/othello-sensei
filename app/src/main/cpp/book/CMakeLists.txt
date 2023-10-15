@@ -153,3 +153,24 @@ target_link_libraries(
         parse_flags
         pattern_evaluator
 )
+
+add_executable(
+        expand_book_thor_main
+        expand_book_thor_main.cpp
+)
+
+target_link_libraries(
+        expand_book_thor_main
+        LINK_PRIVATE
+        assets
+        board
+        book
+        book_tree_node
+        evaluator_alpha_beta
+        evaluator_derivative
+        hash_map
+        misc
+        parse_flags
+        pattern_evaluator
+        load_thor
+)

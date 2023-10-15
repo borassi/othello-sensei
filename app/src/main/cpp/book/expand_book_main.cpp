@@ -140,7 +140,6 @@ int main(int argc, char* argv[]) {
         n_visited += evaluator->GetFirstPosition().GetNVisited();
       }
       book.AddChildren(node->ToBoard(), children);
-      node->UpdateFather();
     }
     leaf.Finalize(n_visited);
     book.Commit();

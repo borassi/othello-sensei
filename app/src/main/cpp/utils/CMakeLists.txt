@@ -145,6 +145,17 @@ add_executable(
         serializable_boolean_vector_test.cpp
 )
 
+add_library(
+        load_thor
+        load_thor.h
+)
+
+target_link_libraries(
+        load_thor
+        LINK_PRIVATE
+        assets
+)
+
 target_link_libraries(
         serializable_boolean_vector_test
         LINK_PRIVATE
