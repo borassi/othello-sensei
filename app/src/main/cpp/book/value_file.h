@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "../utils/file.h"
+#include "../utils/assets.h"
 
 typedef u_int32_t BookFileOffset;
 typedef int ValueFileSize;
@@ -43,9 +43,9 @@ class ValueFile {
  public:
   ValueFile(std::string filename, ValueFileSize size) : filename_(filename), size_(size) {
     assert(size >= kMinValueFileSize);
-    auto path = std::filesystem::path(Filename());
-    std::filesystem::create_directories(path.remove_filename());
-    if (!std::filesystem::exists(Filename())) {
+    auto asset = GetAsset();
+    asset->CreateIfNotExists();
+    if (Elements() == 0) {
       Clean();
     }
   }
@@ -59,18 +59,17 @@ class ValueFile {
   std::vector<char> Get(BookFileOffset offset) const;
 
   void Clean() {
-    std::ofstream(Filename(), std::ios::out).close();
-    std::fstream file = OpenFile(Filename());
-    SetAsEmpty(0, 0, &file);
+    auto asset = GetAsset();
+    asset->CreateOrReset();
+    SetAsEmpty(0, 0, asset.get());
   }
 
   void Remove() {
-    remove(Filename().c_str());
+    GetAsset()->Remove();
   }
 
   BookFileOffset Elements() const {
-    auto file = OpenFile(Filename());
-    return FileSize(file) / size_;
+    return GetAsset()->GetLength() / size_;
   }
 
   void Print();
@@ -114,9 +113,9 @@ class ValueFile {
     void ToNextNonEmpty() {
       auto& [offset, value] = current_;
       while (offset == next_empty_ && offset < elements_) {
-        std::fstream file = OpenFile(file_->Filename());
-        file_->Seek(next_empty_, &file);
-        file.read((char*) &next_empty_, sizeof(next_empty_));
+        auto file = file_->GetAsset();
+        file->Seek(next_empty_);
+        file->Read((char*) &next_empty_, sizeof(next_empty_));
         ++offset;
       }
       if (offset < elements_) {
@@ -135,6 +134,8 @@ class ValueFile {
   Iterator begin() { return Iterator(this, 0); }
   Iterator end() { return Iterator(this, Elements()); }
 
+  std::unique_ptr<Asset> GetAsset() const;
+
  private:
   std::string filename_;
   ValueFileSize size_;
@@ -143,9 +144,9 @@ class ValueFile {
     return filename_;
   }
 
-  std::vector<char> Get(BookFileOffset offset, std::fstream* file) const;
-  void Seek(BookFileOffset offset, std::fstream* file) const;
-  void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream* file);
+  std::vector<char> Get(BookFileOffset offset, Asset* asset) const;
+  void Seek(BookFileOffset offset, Asset* asset) const;
+  void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, Asset* asset);
 };
 
 #endif //OTHELLOSENSEI_VALUEFILE_H

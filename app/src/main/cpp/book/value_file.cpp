@@ -16,60 +16,60 @@
 
 #include "value_file.h"
 
-#include "../utils/file.h"
+#include "../utils/assets.h"
 
 BookFileOffset ValueFile::Add(const std::vector<char>& value) {
   assert(value.size() <= size_);
   assert(value.size() > size_ / 2);
-  std::fstream file = OpenFile(Filename());
+  auto asset = GetAsset();
   BookFileOffset offset;
-  file.read((char*) &offset, sizeof(offset));
+  asset->Read((char*) &offset, sizeof(offset));
   if (offset == 0) {
     offset = Elements();
   } else {
-    Seek(offset, &file);
+    Seek(offset, asset.get());
     BookFileOffset new_offset;
-    file.read((char*) &new_offset, sizeof(new_offset));
-    SetAsEmpty(0, new_offset, &file);
+    asset->Read((char*) &new_offset, sizeof(new_offset));
+    SetAsEmpty(0, new_offset, asset.get());
   }
-  Seek(offset, &file);
-  file.write(&value[0], value.size() * sizeof(char));
+    Seek(offset, asset.get());
+  asset->Write(&value[0], value.size() * sizeof(char));
   if (size_ != value.size()) {
     std::vector<char> zeros(size_ - value.size(), {0});
-    file.write(&zeros[0], zeros.size() * sizeof(char));
+    asset->Write(&zeros[0], zeros.size() * sizeof(char));
   }
   return offset;
 }
 
 std::vector<char> ValueFile::Remove(BookFileOffset offset) {
-  std::fstream file = OpenFile(Filename());
-  std::vector<char> result = Get(offset, &file);
-  Seek(0, &file);
+  auto asset = GetAsset();
+  std::vector<char> result = Get(offset, asset.get());
+  Seek(0, asset.get());
   BookFileOffset next_free;
-  file.read((char*) &next_free, sizeof(next_free));
-  SetAsEmpty(offset, next_free, &file);
-  SetAsEmpty(0, offset, &file);
+  asset->Read((char*) &next_free, sizeof(next_free));
+  SetAsEmpty(offset, next_free, asset.get());
+  SetAsEmpty(0, offset, asset.get());
   return result;
 }
 
 std::vector<char> ValueFile::Get(BookFileOffset offset) const {
-  auto file = OpenFile(Filename());
-  return Get(offset, &file);
+  auto asset = GetAsset();
+  return Get(offset, asset.get());
 }
 
-std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream* file) const {
+std::vector<char> ValueFile::Get(BookFileOffset offset, Asset* asset) const {
   std::vector<char> result(size_);
-  Seek(offset, file);
-  file->read(&result[0], size_ * sizeof(char));
+  Seek(offset, asset);
+  asset->Read(&result[0], size_ * sizeof(char));
   return result;
 }
 
 void ValueFile::Print() {
-  auto file = OpenFile(Filename());
-  auto size = FileSize(file);
-  std::vector<char> content(size);
-  file.read(&content[0], size * sizeof(char));
-  std::cout << "Value file with " << Elements() << " elements:";
+  auto asset = GetAsset();
+  auto elements = Elements();
+  std::vector<char> content(elements);
+  asset->Read(&content[0], elements * sizeof(char));
+  std::cout << "Value file with " << elements << " elements:";
   for (int i = 0; i < content.size(); ++i) {
     if (i % 5 == 0) {
       std::cout << "\n ";
@@ -79,14 +79,17 @@ void ValueFile::Print() {
   std::cout << "\n";
 }
 
-void ValueFile::Seek(BookFileOffset offset, std::fstream* file) const {
-  file->seekg(offset * size_);
-  file->seekp(file->tellg(), std::ios::beg);
+std::unique_ptr<Asset> ValueFile::GetAsset() const {
+  return ::GetAsset(filename_);
 }
 
-void ValueFile::SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream* file) {
-  Seek(offset, file);
+void ValueFile::Seek(BookFileOffset offset, Asset* asset) const {
+  asset->Seek(offset * size_);
+}
+
+void ValueFile::SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, Asset* asset) {
+  Seek(offset, asset);
   std::vector<char> to_write(size_ - sizeof(BookFileOffset) / sizeof(char), 0);
-  file->write((char*) &next_empty, sizeof(BookFileOffset));
-  file->write(&to_write[0], to_write.size() * sizeof(char));
+  asset->Write((char*) &next_empty, sizeof(BookFileOffset));
+  asset->Write(&to_write[0], to_write.size() * sizeof(char));
 }

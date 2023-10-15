@@ -25,13 +25,13 @@
 #endif
 
 #include <assert.h>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <fstream>
-#include <filesystem>
-#include <vector>
 #include <unistd.h>
+#include <vector>
 
 constexpr char kAssetFilepath[] = "app/src/main/assets/";
 
@@ -41,8 +41,18 @@ class Asset {
  public:
   virtual ~Asset() {};
   virtual void Seek(FileOffset position) = 0;
+  virtual FileOffset Tellg() = 0;
   virtual FileOffset GetLength() = 0;
   virtual void Read(char* buffer, FileOffset length) = 0;
+  virtual void Write(const char* buffer, FileOffset length) = 0;
+  virtual bool Exists() = 0;
+  virtual void Remove() = 0;
+  virtual void CreateIfNotExists() {
+    if (!Exists()) {
+      CreateOrReset();
+    }
+  }
+  virtual void CreateOrReset() = 0;
 
   template<typename T>
   std::vector<T> ReadAll() {
@@ -57,30 +67,66 @@ class Asset {
 
 class PCAsset : public Asset {
  public:
-  PCAsset(const std::string& filepath) {
-    file_.open(kAssetFilepath + filepath, std::ios_base::binary | std::ios_base::in);
-    assert (file_.is_open());
+  PCAsset(const std::string& filepath) : filepath_(filepath) {
+    file_ = std::fstream(filepath_, std::ios::binary | std::ios::out | std::ios::in);
   }
 
   ~PCAsset() {
-    file_.close();
+    if (file_.is_open()) {
+      file_.close();
+    }
   }
 
   FileOffset GetLength() override {
+    assert(file_.is_open());
+    auto position = file_.tellg();
     file_.seekg(0, std::ios_base::end);
-    return file_.tellg();
+    auto result = file_.tellg();
+    file_.seekg(position, std::ios_base::beg);
+    return result;
   }
 
   void Seek(FileOffset position) override {
+    assert(file_.is_open());
     file_.seekg(position, std::ios_base::beg);
+    file_.seekp(position, std::ios_base::beg);
+  }
+
+  FileOffset Tellg() override {
+    assert(file_.is_open());
+    return file_.tellg();
   }
 
   void Read(char* buffer, FileOffset length) override {
+    assert(file_.is_open());
     file_.read(buffer, length);
   }
 
+  void Write(const char* buffer, FileOffset length) override {
+    assert(file_.is_open());
+    file_.write(buffer, length);
+  }
+
+  void Remove() override {
+    assert(file_.is_open());
+    file_.close();
+    remove(filepath_.c_str());
+  }
+
+  bool Exists() override { return file_.is_open(); }
+
+  void CreateOrReset() override {
+    auto path = std::filesystem::path(filepath_);
+    std::filesystem::create_directories(path.remove_filename());
+    std::ofstream(filepath_, std::ios::out).close();
+    file_ = std::fstream(filepath_, std::ios::binary | std::ios::out | std::ios::in);
+    file_.seekg(0, std::ios::end);
+    assert(file_.is_open());
+  }
+
  private:
-  std::ifstream file_;
+  std::fstream file_;
+  std::string filepath_;
 };
 
 #if ANDROID
@@ -88,7 +134,9 @@ class AndroidAsset : public Asset {
  public:
   static void Setup(JNIEnv *env, jobject assetManager);
 
-  AndroidAsset(const std::string& filepath);
+  AndroidAsset(const std::string& filepath) {
+    asset_ = AAssetManager_open(manager_, filepath.c_str(), AASSET_MODE_STREAMING);
+  }
 
   ~AndroidAsset() {
     AAsset_close(asset_);
@@ -102,8 +150,26 @@ class AndroidAsset : public Asset {
     AAsset_seek64(asset_, position, std::ios_base::beg);
   }
 
+  FileOffset Tellg() override {
+    return AAsset_seek(asset_, 0, SEEK_CUR);
+  }
+
   void Read(char* buffer, FileOffset length) final {
     AAsset_read(asset_, buffer, length);
+  }
+
+  bool Exists() override { return asset_ != nullptr; }
+
+  void Write(const char* buffer, FileOffset length) override {
+    throw std::invalid_argument("Cannot write a mobile file.");
+  }
+
+  void CreateOrReset() override {
+    throw std::invalid_argument("Cannot create a mobile file.");
+  }
+
+  void Remove() override {
+    throw std::invalid_argument("Cannot remove a mobile file.");
   }
 
  private:

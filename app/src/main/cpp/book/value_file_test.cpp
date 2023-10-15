@@ -16,10 +16,9 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "test_utils.h"
 #include "value_file.h"
 
-const std::string kTempFile = kTempDir + "/value_file_test/value_file_test.val";
+const std::string kTempFile = "app/testdata/tmp/value_file_test/value_file_test.val";
 
 TEST(ValueFile, AddOnly) {
   ValueFile value_file(kTempFile, 5);

@@ -27,15 +27,6 @@ target_link_libraries(
 ENDIF()
 
 add_library(
-        file
-        file.h
-        file.cpp
-)
-set_target_properties(
-        file PROPERTIES LINKER_LANGUAGE CXX
-)
-
-add_library(
         functions
         functions.h
 )
@@ -147,12 +138,6 @@ add_library(
         serializable_boolean_vector
         serializable_boolean_vector.h
         serializable_boolean_vector.cpp
-)
-
-target_link_libraries(
-        serializable_boolean_vector
-        LINK_PRIVATE
-        file
 )
 
 add_executable(

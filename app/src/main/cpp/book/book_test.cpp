@@ -94,6 +94,7 @@ TEST(Book, HugeNode) {
   Board b = node->ToBoard();
   book.Commit();
 
+  EXPECT_TRUE(book.IsSizeOK());
   EXPECT_EQ(book.Get(b).value(), *LargestTreeNode(test_book, 1000));
 }
 

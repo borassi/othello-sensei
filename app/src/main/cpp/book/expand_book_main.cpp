@@ -28,7 +28,6 @@
 namespace fs = std::filesystem;
 
 // TODO: Fix proof / disproof number at end.
-// TODO: Optimize the speed.
 // TODO: Empty the n_descendants to parallelize over multiple computers.
 // TODO: Test Google cloud.
 

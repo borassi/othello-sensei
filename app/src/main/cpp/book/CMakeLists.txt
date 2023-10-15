@@ -21,7 +21,7 @@ add_library(
 target_link_libraries(
         value_file
         LINK_PRIVATE
-        file
+        assets
 )
 
 add_executable(
@@ -32,7 +32,6 @@ add_executable(
 target_link_libraries(
         value_file_test
         LINK_PRIVATE
-        test_utils
         value_file
         GTest::gmock
         GTest::gtest

@@ -22,7 +22,6 @@ target_link_libraries(
         LINK_PRIVATE
         board
         evaluator_derivative
-        file
         hash_map
         load_training_set
         parse_flags

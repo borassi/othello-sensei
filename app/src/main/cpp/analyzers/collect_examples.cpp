@@ -23,7 +23,6 @@
 #include "../hashmap/hash_map.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../evaluatederivative/evaluator_derivative.h"
-#include "../utils/file.h"
 #include "../utils/load_training_set.h"
 #include "../utils/parse_flags.h"
 
@@ -92,7 +91,7 @@ int main(int argc, char* argv[]) {
 
   std::string filename = "endgame_results.txt";
   int index = 0;
-  while (FileExists(filename)) {
+  while (std::ifstream(filename).good()) {
     ++index;
     filename = "endgame_results_" + std::to_string(index) + ".txt";
   }
