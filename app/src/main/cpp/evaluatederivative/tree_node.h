@@ -1044,7 +1044,7 @@ class LeafToUpdate {
       Node* descendant = sequence[i];
       leaf.ToChild(descendant, 0);
     }
-    if (!leaf.Leaf()->TryLockLeaf(1, 1)) {
+    if (!leaf.Leaf()->TryLockLeaf(-63, 63)) {
       throw std::invalid_argument("Cannot lock a leaf");
     }
     return leaf;

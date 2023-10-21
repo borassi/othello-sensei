@@ -157,12 +157,16 @@ int main(int argc, char* argv[]) {
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = parse_flags.GetIntFlagOrDefault("n_descendants_children", 50 * 1000 * 1000UL);
   NVisited n_descendants_solve = parse_flags.GetIntFlagOrDefault("n_descendants_solve",  2 * 1000 * 1000 * 1000UL);
-  int max_error = parse_flags.GetIntFlagOrDefault("max_error",  15);
+
+  int start_year = parse_flags.GetIntFlagOrDefault("start_year",  2023);
+  int end_year = parse_flags.GetIntFlagOrDefault("end_year",  1977);
+  int start_game = parse_flags.GetIntFlagOrDefault("start_game",  0);
+  int max_error = parse_flags.GetIntFlagOrDefault("max_error",  20);
 
   ExpandBookThorMain expander(filepath);
-  for (int year = 2023; year >= 1977; --year) {
+  for (int year = start_year; year >= end_year; --year) {
     auto games = GetGames(kAssetFilepath + std::string("thor/WTH_" + std::to_string(year) + ".wtb"));
-    for (int i = 0; i < games.size(); ++i) {
+    for (int i = year == start_year ? start_game : 0; i < games.size(); ++i) {
       const auto& game = games[i];
       expander.AddGame(game, n_descendants_children, n_descendants_solve, max_error);
       std::cout << "\n\n\nDONE GAME " << i << "/" << games.size() << " OF YEAR " << year << ".\n\n\n";

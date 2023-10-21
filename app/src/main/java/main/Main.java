@@ -479,6 +479,8 @@ public class Main implements Runnable {
       int move = moveFromBoard(oldPositions.get(i-1).board, oldPositions.get(i).board);
       game += new PositionIJ(move).toString();
     }
+    int move = moveFromBoard(oldPositions.get(oldPositions.size() - 1).board, board);
+    game += new PositionIJ(move).toString();
     return game;
   }
 }
