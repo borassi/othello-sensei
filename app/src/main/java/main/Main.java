@@ -238,6 +238,7 @@ public class Main implements Runnable {
       return;
     }
     useBook = ui.useBook();
+    canComputeError = ui.delta() > 0;
     boolean mustPlay = this.isSenseiTurn();
     boolean isMatch = ui.playBlackMoves() || ui.playWhiteMoves();
     ArrayList<Board> oldBoards = new ArrayList<>();
@@ -256,7 +257,6 @@ public class Main implements Runnable {
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
     }
-    canComputeError = ui.delta() > 0;
     while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
       if (!isMatch) {
         showMCTSEvaluations();
@@ -378,10 +378,10 @@ public class Main implements Runnable {
     }
 
     for (Node b : nextPositions.values()) {
-      bestEval = Math.max(bestEval, -b.getEval() / 100.0);
+      bestEval = Math.max(bestEval, -b.getEval());
     }
 
-    return bestEval - (-nextPositions.get(move).getEval() / 100.0);
+    return bestEval - (-nextPositions.get(move).getEval());
   }
 
   private boolean writeBook() {
