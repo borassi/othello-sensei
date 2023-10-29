@@ -133,7 +133,7 @@ public class BoardView extends View {
     if (annotation == null || annotation.node == null) {
       return;
     }
-    String lines = annotation.getLines();
+    String lines = annotation.getLines(false);
 
     Paint paint = new Paint();
     paint.setColor(annotation.isBestMove ? Color.RED : Color.BLACK);

@@ -23,16 +23,28 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.io.ByteStreams;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.SortedSet;
 
 import board.Board;
 
@@ -62,6 +74,71 @@ public class MobileUI extends AppCompatActivity implements UI {
   private Menu menu;
   private Task task = Task.SHOW_EVALS;
   private String notes = "";
+  private final static String VERSION = "1";
+  private final static String VERSION_FILE = "/version.txt";
+  private String localFolderPath;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    try {
+      Context context = getApplicationContext();
+      localFolderPath = context.getFilesDir().getAbsolutePath();
+      copyAssetsIfNotPresent();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    Constants.MOBILE = true;
+    setContentView(R.layout.activity_main);
+    boardView = findViewById(R.id.board);
+    extraInfo = findViewById(R.id.empties);
+    main = new Main(this);
+    main.newGame();
+  }
+
+  private static void deleteDirectoryRecursively(File dir) {
+    for (File file: dir.listFiles()) {
+      if (file.isDirectory())
+        deleteDirectoryRecursively(file);
+      file.delete();
+    }
+  }
+  private void copyAssetsIfNotPresent() throws IOException {
+    String versionFilepath = localFolderPath + VERSION_FILE;
+    String version = "";
+    try {
+      BufferedReader versionBR = new BufferedReader(new FileReader(versionFilepath));
+      version = versionBR.readLine();
+      versionBR.close();
+    } catch (IOException e) {}
+    if (version.equals(VERSION)) {
+      return;
+    }
+    deleteDirectoryRecursively(new File(localFolderPath));
+    AssetManager manager = getApplicationContext().getAssets();
+    copyAssets(manager, "", localFolderPath);
+    BufferedWriter versionBW = new BufferedWriter(new FileWriter(versionFilepath));
+    versionBW.write(VERSION);
+    versionBW.close();
+  }
+
+  private void copyAssets(AssetManager assetManager, String source, String destination) throws IOException {
+    String[] filenames = assetManager.list(source);
+    if (filenames.length == 0) {
+      InputStream in = assetManager.open(source);
+      OutputStream out = new FileOutputStream(destination);
+      ByteStreams.copy(in, out);
+      in.close();
+      out.close();
+      return;
+    }
+    new File(destination).mkdirs();
+    for (String filename : filenames) {
+      String childSource = source + (source == "" ? "" : "/") + filename;
+      String childDestination = destination + "/" + filename;
+      copyAssets(assetManager, childSource, childDestination);
+    }
+  }
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
@@ -130,17 +207,6 @@ public class MobileUI extends AppCompatActivity implements UI {
       return true;
     }
     return super.onOptionsItemSelected(item);
-  }
-
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    Constants.MOBILE = true;
-    setContentView(R.layout.activity_main);
-    boardView = findViewById(R.id.board);
-    extraInfo = findViewById(R.id.empties);
-    main = new Main(this);
-    main.newGame();
   }
 
   public void loadThor() {
@@ -214,8 +280,18 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public FileAccessor fileAccessor() {
-    return new FileAccessorMobile(getBaseContext().getAssets());
+  public String evalFile() {
+    return Paths.get(localFolderPath, "pattern_evaluator.dat").toString();
+  }
+
+  @Override
+  public String thorFolder() {
+    return Paths.get(localFolderPath, "thor").toString();
+  }
+
+  @Override
+  public String bookFolder() {
+    return Paths.get(localFolderPath, "book").toString();
   }
 
   @Override
@@ -224,7 +300,14 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public UseBook useBook() { return UseBook.DO_NOT_USE; }
+  public UseBook useBook() {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    if (preferences.getBoolean("use_book", false)) {
+      return UseBook.READ_ONLY;
+    } else {
+      return UseBook.DO_NOT_USE;
+    }
+  }
 
   @Override
   public double getError() {

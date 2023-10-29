@@ -44,7 +44,9 @@ public interface UI {
   void repaint();
   boolean wantThorGames();
   void setThorGames(Board b, ArrayList<Game> games);
-  FileAccessor fileAccessor();
+  String evalFile();
+  String thorFolder();
+  String bookFolder();
   boolean active();
   UseBook useBook();
   double getError();

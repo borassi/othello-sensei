@@ -63,6 +63,6 @@ TEST(HashMapTest, Parallel) {
     futures[i].get();
   }
   for (int i = 0; i < 5; ++i) {
-     ASSERT_FALSE(hash_map.hash_map_[i].busy);
+    ASSERT_TRUE(hash_map.IsAllFree());
   }
 }

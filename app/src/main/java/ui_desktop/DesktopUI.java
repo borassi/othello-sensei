@@ -31,6 +31,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -118,6 +119,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       put("Read from book, do not write", UseBook.READ_ONLY);
       put("Read and write to book", UseBook.READ_WRITE);
   }};
+
+  private final String ASSET_FILEPATH = "app/src/main/assets";
 
   public DesktopUI() {
     super("Othello");
@@ -448,8 +451,18 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public FileAccessor fileAccessor() {
-    return new FileAccessor();
+  public String bookFolder() {
+    return "book";
+  }
+
+  @Override
+  public String thorFolder() {
+    return Paths.get(ASSET_FILEPATH, "thor").toString();
+  }
+
+  @Override
+  public String evalFile() {
+    return Paths.get(ASSET_FILEPATH, "pattern_evaluator.dat").toString();
   }
 
   @Override

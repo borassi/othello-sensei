@@ -50,6 +50,31 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
 class JNIWrapper {
  public:
 
+  JNIWrapper(std::string evals_filepath, std::string book_filepath) :
+      evals_(LoadEvals(evals_filepath)),
+      hash_map_(),
+      tree_node_supplier_(),
+      last_boards_(),
+      last_gap_(-1),
+      stopping_(false),
+      reset_(true),
+      book_(book_filepath) {
+    for (int i = 0; i < kNumEvaluators; ++i) {
+      evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
+          &tree_node_supplier_, &hash_map_,
+          PatternEvaluator::Factory(evals_.data()),
+//          1,
+          std::thread::hardware_concurrency(),
+          static_cast<u_int8_t>(i));
+    }
+    if (!book_.Get(Board())) {
+      std::shared_ptr<TreeNode> t(new TreeNode());
+      t->Reset(Board().Player(), Board().Opponent(), 0, 0, 0, 2, -63, 63);
+      book_.Add(*t);
+      book_.Commit();
+    }
+  }
+
   static jobject EvaluationToJava(const Evaluation& evaluation, JNIEnv* env) {
     const jclass EvaluationJava = env->FindClass("jni/Evaluation");
     const jmethodID initEvaluationJava = env->GetMethodID(EvaluationJava, "<init>", "(DIFF)V");
@@ -96,31 +121,6 @@ class JNIWrapper {
         node.GetPercentileUpper(kProbIncreaseWeakEval),
         evaluations
     );
-  }
-
-  JNIWrapper() :
-      evals_(LoadEvals()),
-      hash_map_(),
-      tree_node_supplier_(),
-      last_boards_(),
-      last_gap_(-1),
-      stopping_(false),
-      reset_(true),
-      book_(kBookFilepath) {
-    for (int i = 0; i < kNumEvaluators; ++i) {
-      evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
-          &tree_node_supplier_, &hash_map_,
-          PatternEvaluator::Factory(evals_.data()),
-//          1,
-          std::thread::hardware_concurrency(),
-          static_cast<u_int8_t>(i));
-    }
-    if (!book_.Get(Board())) {
-      std::shared_ptr<TreeNode> t(new TreeNode());
-      t->Reset(Board().Player(), Board().Opponent(), 0, 0, 0, 2, -63, 63);
-      book_.Add(*t);
-      book_.Commit();
-    }
   }
 
   EvaluatorDerivative* BestEvaluator(float gap) {
@@ -329,18 +329,13 @@ JNIWrapper* JNIFromJava(JNIEnv* env, jobject obj) {
   return (JNIWrapper*) env->CallLongMethod(obj, mid);
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jobject
-fileAccessor) {
-  jclass cls = env->FindClass("jni/JNI");
-  jmethodID mid = env->GetMethodID(cls, "setup", "(J)V");
-#if ANDROID
-  jclass file_accessor = env->FindClass("ui_mobile/FileAccessorMobile");
-  jmethodID get_asset = env->GetMethodID(file_accessor,
-                                         "getAssetManager",
-                                         "()Landroid/content/res/AssetManager;");
-  AndroidAsset::Setup(env, env->CallObjectMethod(fileAccessor, get_asset));
-#endif
-  env->CallVoidMethod(obj, mid, (jlong) new JNIWrapper());
+JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jstring evalFile, jstring bookFolder) {
+  jclass jni = env->FindClass("jni/JNI");
+  jmethodID setup = env->GetMethodID(jni, "setup", "(J)V");
+  jboolean isCopy;
+  const char* eval_file = (env)->GetStringUTFChars(evalFile, &isCopy);
+  const char* book_folder = (env)->GetStringUTFChars(bookFolder, &isCopy);
+  env->CallVoidMethod(obj, setup, (jlong) new JNIWrapper(eval_file, book_folder));
 }
 
 TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {

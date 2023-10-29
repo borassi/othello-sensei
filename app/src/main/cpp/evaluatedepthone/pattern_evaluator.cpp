@@ -219,7 +219,7 @@ EvalLarge PatternEvaluator::Evaluate() const {
 
 
 EvalType LoadEvals(std::string filepath) {
-  std::unique_ptr<Asset> evals_asset = GetAsset(kAssetFilepath + filepath);
+  std::unique_ptr<Asset> evals_asset = GetAsset(filepath);
   std::vector<int8_t> file_content = evals_asset->ReadAll<int8_t>();
   return file_content;
 }

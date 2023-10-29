@@ -73,8 +73,8 @@ public class Main implements Runnable {
    */
   public Main(UI ui) {
     Main.ui = ui;
-    thor = new Thor(ui.fileAccessor());
-    EVALUATOR = new JNI(ui.fileAccessor());
+    thor = new Thor(ui.thorFolder());
+    EVALUATOR = new JNI(ui.evalFile(), ui.bookFolder());
     resetFirstPosition();
     useBook = ui.useBook();
     setFirstPosition(new Board(), true);//"e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);

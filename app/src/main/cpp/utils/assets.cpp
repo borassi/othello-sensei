@@ -35,9 +35,5 @@ AndroidAsset::AndroidAsset(const std::string& filepath) {
 #endif
 
 std::unique_ptr<Asset> GetAsset(const std::string& filepath) {
-#if ANDROID
-  return std::make_unique<AndroidAsset>(filepath);
-#else
   return std::make_unique<PCAsset>(filepath);
-#endif
 }

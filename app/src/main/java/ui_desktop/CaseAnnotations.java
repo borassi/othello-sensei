@@ -33,15 +33,18 @@ public class CaseAnnotations {
     this.father = father;
   }
 
-  public String evalLine() {
+  public String evalLine(boolean doubleEval) {
     String evalFormatter;
     if (node.isSolved()) {
       evalFormatter = "%+.0f";
     } else {
       evalFormatter = "%+.2f";
     }
-    return String.format(evalFormatter, -node.getEval())
-               + "\n" + String.format(evalFormatter, -node.getLeafEval());
+    String result = String.format(evalFormatter, -node.getEval());
+    if (doubleEval) {
+      result += "\n" + String.format(evalFormatter, -node.getLeafEval());
+    }
+    return result;
   }
 
   public String proofDisproofNumberLine() {
@@ -59,11 +62,15 @@ public class CaseAnnotations {
 //  }
 
   public String getLines() {
+    return getLines(true);
+  }
+
+  public String getLines(boolean doubleEval) {
     int lower = node.getPercentileLower() - 1;
     int upper = node.getPercentileUpper() + 1;
     String rows;
     if (thorGames < 0) {
-      rows = evalLine() + "\n"
+      rows = evalLine(doubleEval) + "\n"
           + JNI.prettyPrintDouble(node.getDescendants()) + "\n";
       if (lower == upper) {
         rows += proofDisproofNumberLine() + "\n";
@@ -74,7 +81,7 @@ public class CaseAnnotations {
       return rows;
     } else {
       return (thorGames == 0 ? "" : thorGames) + "\n" +
-          evalLine() + "\n"
+          evalLine(doubleEval) + "\n"
           + JNI.prettyPrintDouble(node.getDescendants());
     }
   }

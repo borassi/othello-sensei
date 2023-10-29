@@ -14,8 +14,10 @@
 package thor;
 
 import java.io.DataInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,13 +38,17 @@ public class Thor {
   TreeMap<Short, ArrayList<Game>> gamesForYear = new TreeMap<>();
   HashMap<Board, ArrayList<Game>> gamesForPosition = new HashMap<>();
 
-  public Thor(FileAccessor accessor) {
+  public Thor(String folder) {
     for (String source : new String[] {"WTH", "PLAYOK", "QUEST"}) {
       ArrayList<String> files = new ArrayList<>();
       for (int i = 1977; i <= LocalDate.now().getYear(); ++i) {
-        files.add("thor/" + source + "_" + i + ".wtb");
+        files.add(Paths.get(folder, source + "_" + i + ".wtb").toString());
       }
-      loadFiles(files, "thor/" + source + ".JOU", "thor/" + source + ".TRN", accessor);
+      loadFiles(
+          files,
+          Paths.get(folder, source + ".JOU").toString(),
+          Paths.get(folder, source + ".TRN").toString()
+      );
     }
     for (Short year : gamesForYear.descendingKeySet()) {
       ArrayList<Game> gamesCurYear = gamesForYear.get(year);
@@ -115,11 +121,11 @@ public class Thor {
     return getGames(child).size();
   }
 
-  public void loadFiles(List<String> gamesFilepath, String playersFilepath, String tournamentsFilepath, FileAccessor accessor) {
+  public void loadFiles(List<String> gamesFilepath, String playersFilepath, String tournamentsFilepath) {
     ArrayList<String> players = new ArrayList<>();
     ArrayList<String> tournaments = new ArrayList<>();
     try {
-      DataInputStream s = new DataInputStream(accessor.fileInputStream(playersFilepath));
+      DataInputStream s = new DataInputStream(new FileInputStream(playersFilepath));
       s.skip(16);
       while (s.available() > 0) {
         int nextSize = Math.min(s.available(), 2000);
@@ -133,7 +139,7 @@ public class Thor {
       System.out.println("Cannot load Thor players!");
     }
     try {
-      DataInputStream s = new DataInputStream(accessor.fileInputStream(tournamentsFilepath));
+      DataInputStream s = new DataInputStream(new FileInputStream(tournamentsFilepath));
       s.skip(16);
       while (s.available() > 0) {
         int nextSize = Math.min(s.available(), 1300);
@@ -147,13 +153,13 @@ public class Thor {
       System.out.println("Cannot load Thor tournaments!");
     }
     for (String gameFilepath : gamesFilepath) {
-      loadGames(gameFilepath, players, tournaments, accessor);
+      loadGames(gameFilepath, players, tournaments);
     }
   }
 
-  public void loadGames(String filepath, ArrayList<String> players, ArrayList<String> tournaments, FileAccessor accessor) {
+  public void loadGames(String filepath, ArrayList<String> players, ArrayList<String> tournaments) {
     try {
-      DataInputStream s = new DataInputStream(accessor.fileInputStream(filepath));
+      DataInputStream s = new DataInputStream(new FileInputStream(filepath));
       s.skip(10);
       short year = Short.reverseBytes(s.readShort());
       ArrayList<Game> games = gamesForYear.getOrDefault(year, new ArrayList<>());
@@ -167,7 +173,6 @@ public class Thor {
         }
       }
       gamesForYear.put(year, games);
-    } catch (IOException e) {
-    }
+    } catch (IOException e) {}
   }
 }

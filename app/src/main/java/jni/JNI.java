@@ -27,11 +27,11 @@ public class JNI {
     return pointer;
   }
 
-  public JNI(FileAccessor fileAccessor) {
+  public JNI(String evalFile, String bookFolder) {
     pointer = 0;
-    create(fileAccessor);
+    create(evalFile, bookFolder);
   }
-  public native void create(FileAccessor fileAccessor);
+  public native void create(String evalFile, String bookFolder);
 
   @Override
   protected native void finalize();

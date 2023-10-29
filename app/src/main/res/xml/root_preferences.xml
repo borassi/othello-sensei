@@ -24,6 +24,12 @@
         app:defaultValue="@string/error_when_playing_default"
         app:iconSpaceReserved="false"
         app:key="error_when_playing"
-        app:title="Error when playing"
+        app:title="@string/error_when_playing"
         app:useSimpleSummaryProvider="true" />
+    <CheckBoxPreference
+        android:layout_width="wrap_content"
+        android:defaultValue="true"
+        android:key="use_book"
+        android:title="@string/use_book"
+        app:iconSpaceReserved="false" />
 </PreferenceScreen>

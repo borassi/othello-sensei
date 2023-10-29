@@ -52,11 +52,12 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+SET(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
+SET(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
+
 IF(ANDROID)
     find_library(log-lib JNI_LIBRARIES)
 ELSE()
-    SET(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
-    SET(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
     find_package(JNI REQUIRED)
 ENDIF()
 

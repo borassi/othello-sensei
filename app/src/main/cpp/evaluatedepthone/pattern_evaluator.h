@@ -28,6 +28,7 @@
 #include "evaluator_depth_one_base.h"
 #include "../board/bitpattern.h"
 
+constexpr char kEvalFilepath[] = "app/src/main/assets/pattern_evaluator.dat";
 constexpr BitPattern kCorner4x4 = ParsePattern("--------"
                                      "--------"
                                      "--------"
@@ -276,8 +277,6 @@ struct Features {
     assert (kNumFeatures == num_features);
   }
 };
-
-constexpr char kEvalFilepath[] = "coefficients/pattern_evaluator_cpp.dat";
 
 typedef std::vector<int8_t> EvalType;
 EvalType LoadEvals(std::string filepath = kEvalFilepath);

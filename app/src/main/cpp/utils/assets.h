@@ -129,56 +129,6 @@ class PCAsset : public Asset {
   std::string filepath_;
 };
 
-#if ANDROID
-class AndroidAsset : public Asset {
- public:
-  static void Setup(JNIEnv *env, jobject assetManager);
-
-  AndroidAsset(const std::string& filepath) {
-    asset_ = AAssetManager_open(manager_, filepath.c_str(), AASSET_MODE_STREAMING);
-  }
-
-  ~AndroidAsset() {
-    AAsset_close(asset_);
-  }
-
-  FileOffset GetLength() final {
-    return AAsset_getLength(asset_);
-  }
-
-  void Seek(FileOffset position) final {
-    AAsset_seek64(asset_, position, std::ios_base::beg);
-  }
-
-  FileOffset Tellg() override {
-    return AAsset_seek(asset_, 0, SEEK_CUR);
-  }
-
-  void Read(char* buffer, FileOffset length) final {
-    AAsset_read(asset_, buffer, length);
-  }
-
-  bool Exists() override { return asset_ != nullptr; }
-
-  void Write(const char* buffer, FileOffset length) override {
-    throw std::invalid_argument("Cannot write a mobile file.");
-  }
-
-  void CreateOrReset() override {
-    throw std::invalid_argument("Cannot create a mobile file.");
-  }
-
-  void Remove() override {
-    throw std::invalid_argument("Cannot remove a mobile file.");
-  }
-
- private:
-  AAsset* asset_;
-  static AAssetManager* manager_;
-};
-
-#endif  // ANDROID
-
 std::unique_ptr<Asset> GetAsset(const std::string& filepath);
 
 #endif //OTHELLOSENSEI_APP_SRC_MAIN_CPP_UTILS_ASSETS_H_

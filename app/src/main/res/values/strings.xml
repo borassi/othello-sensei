@@ -7,6 +7,9 @@
     <string name="stop_after_eval">Stop after (when evaluating)</string>
     <string name="stop_after_eval_default">1000000000000</string>
 
+    <string name="use_book">Use book</string>
+    <string name="use_book_default">false</string>
+
     <string name="delta_moves">Delta moves</string>
     <string name="delta_moves_default">2</string>
     <string name="delta_moves_summary">Spend 2x time on a move with score X than a move with score X-%s</string>

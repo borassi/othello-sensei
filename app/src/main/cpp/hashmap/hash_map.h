@@ -16,9 +16,6 @@
 
 #include <array>
 #include <atomic>
-#if !ANDROID
-#include <gtest/gtest_prod.h>
-#endif
 #include <memory>
 #include <optional>
 #include "../board/bitpattern.h"
@@ -109,10 +106,16 @@ class HashMap {
     return entry;
   }
 
+  bool IsAllFree() {
+    for (const HashMapEntryWithBusy& entry : hash_map_) {
+      if (entry.busy) {
+        return false;
+      }
+    }
+    return true;
+  }
+
  private:
-#if !ANDROID
-  FRIEND_TEST(HashMapTest, Parallel);
-#endif
   std::vector<HashMapEntryWithBusy> hash_map_;
 };
 #endif  // HASH_MAP_H
