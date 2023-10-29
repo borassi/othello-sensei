@@ -122,6 +122,14 @@ class Book {
     return roots_;
   }
 
+  Book RemoveDescendants(const std::string& filepath) {
+    Book book_no_descendants(filepath);
+    assert(book_no_descendants.Size() == 0);
+
+    book_no_descendants.Merge(*this, [](Node* node) { node->ResetDescendants(); }, [](Node* node) { node->ResetDescendants(); });
+    return book_no_descendants;
+  }
+
   class Iterator {
    public:
     using iterator_category = std::forward_iterator_tag;
@@ -207,7 +215,7 @@ class Book {
   Iterator end() const { return Iterator(*this, roots_.size()); }
 
   template<int other_version>
-  void Merge(const Book<other_version>& other_book, void (*leaf_func)(Node*) = nullptr) {
+  void Merge(const Book<other_version>& other_book, void (*leaf_func)(Node*) = nullptr, void (*internal_func)(Node*) = nullptr) {
     // This avoids adding a lot of roots and removing them afterwards (to avoid
     // memory problems).
     for (const auto& root : other_book.Roots()) {
@@ -227,14 +235,17 @@ class Book {
         } else {
           if (my_node->IsLeaf()) {
             AddChildren(my_node->ToBoard(), {});
+          } else {
+            my_node->UpdateFather();
           }
         }
       } else {
         assert(other_node_type == LEAF || other_node_type == FIRST_VISIT);
-        if (other_node_type == LEAF) {
-          if (leaf_func) {
-            leaf_func(&other_node);
-          }
+        if (other_node_type == LEAF && leaf_func) {
+          leaf_func(&other_node);
+        }
+        if (other_node_type == FIRST_VISIT && internal_func) {
+          internal_func(&other_node);
         }
         AddNoRootsUpdate(other_node);
       }

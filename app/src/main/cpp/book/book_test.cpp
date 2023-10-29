@@ -613,6 +613,101 @@ TEST(Book, MergeTranspositions) {
   EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
 }
 
+TEST(Book, ResetDescendants) {
+  Book(kTempDir + "child1").Clean();
+  Book(kTempDir).Clean();
+  Book(kTempDir + "copy").Clean();
+  Book book = BookWithPositions({"e6", "e6f4", "e6f4c3", "e6f4d3", "e6f4c3c4", "e6f4d3c4", "e6f4c3c4d3"});
+  Book book_copy(kTempDir + "copy");
+  book_copy.Clean();
+  book_copy.Merge(book);
+
+  Book book_child = book.RemoveDescendants(kTempDir + "child1");
+
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      auto leaf_child = LeafToUpdate<Book<>::BookNode>::BestDescendant(
+          book_child.Mutable(Board("e6")).value(), 0, kLessThenMinEval, {}).value();
+      auto leaf_copy = LeafToUpdate<Book<>::BookNode>::BestDescendant(
+          book_copy.Mutable(Board("e6")).value(), 0, kLessThenMinEval, {}).value();
+
+      ASSERT_EQ(leaf_child.Leaf()->ToBoard(), leaf_copy.Leaf()->ToBoard());
+
+      std::vector<Node> children;
+      int n_visited;
+      for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(leaf_child.Leaf()->ToBoard())) {
+        auto eval_result = RandomTestTreeNode(child);
+        eval_result->SetLeafNeverSolved();
+        children.push_back(*eval_result);
+        n_visited += eval_result->GetNVisited();
+      }
+      book_child.AddChildren(leaf_child.Leaf()->ToBoard(), children);
+      book_copy.AddChildren(leaf_child.Leaf()->ToBoard(), children);
+      leaf_child.Finalize(n_visited);
+      leaf_copy.Finalize(n_visited);
+    }
+    book.Merge(book_child);
+
+    std::vector<std::pair<Node, NodeType>> nodes_child(book.begin(), book.end());
+    std::vector<std::pair<Node, NodeType>> nodes_copy(book_copy.begin(), book_copy.end());
+    ASSERT_THAT(nodes_child, ::testing::UnorderedElementsAreArray(nodes_copy));
+
+    book_child.Clean();
+    book_child = book.RemoveDescendants(kTempDir + "child1");
+  }
+}
+
+TEST(Book, ResetDescendantsDouble) {
+  Book(kTempDir + "child1").Clean();
+  Book(kTempDir + "child2").Clean();
+  Book(kTempDir).Clean();
+  Book(kTempDir + "copy").Clean();
+  Book book = BookWithPositions({"e6", "e6f4", "e6f6"});
+  Book book_copy(kTempDir + "copy");
+  book_copy.Merge(book);
+
+  Book book_child1 = book.RemoveDescendants(kTempDir + "child1");
+  Book book_child2 = book.RemoveDescendants(kTempDir + "child2");
+
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      bool diagonal = rand() % 2;
+      std::string line = diagonal ? "e6f6" : "e6f4";
+      auto& current_book = diagonal ? book_child2 : book_child1;
+      auto leaf_child = LeafToUpdate<Book<>::BookNode>::BestDescendant(
+          current_book.Mutable(Board(line)).value(), 0, kLessThenMinEval, {}).value();
+      auto leaf_copy = LeafToUpdate<Book<>::BookNode>::BestDescendant(
+          book_copy.Mutable(Board(line)).value(), 0, kLessThenMinEval, {}).value();
+
+      ASSERT_EQ(leaf_child.Leaf()->ToBoard(), leaf_copy.Leaf()->ToBoard());
+
+      std::vector<Node> children;
+      int n_visited;
+      for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(leaf_child.Leaf()->ToBoard())) {
+        auto eval_result = RandomTestTreeNode(child);
+        eval_result->SetLeafNeverSolved();
+        children.push_back(*eval_result);
+        n_visited += eval_result->GetNVisited();
+      }
+      current_book.AddChildren(leaf_child.Leaf()->ToBoard(), children);
+      book_copy.AddChildren(leaf_child.Leaf()->ToBoard(), children);
+      leaf_child.Finalize(n_visited);
+      leaf_copy.Finalize(n_visited);
+    }
+    book.Merge(book_child1);
+    book.Merge(book_child2);
+
+    std::vector<std::pair<Node, NodeType>> nodes_child(book.begin(), book.end());
+    std::vector<std::pair<Node, NodeType>> nodes_copy(book_copy.begin(), book_copy.end());
+    ASSERT_THAT(nodes_child, ::testing::UnorderedElementsAreArray(nodes_copy));
+
+    book_child1.Clean();
+    book_child1 = book.RemoveDescendants(kTempDir + "child1");
+    book_child2.Clean();
+    book_child2 = book.RemoveDescendants(kTempDir + "child2");
+  }
+}
+
 INSTANTIATE_TEST_SUITE_P(
     BookParameterized,
     BookParameterizedFixture,

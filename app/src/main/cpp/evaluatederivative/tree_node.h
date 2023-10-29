@@ -353,9 +353,9 @@ class Node {
     }
   }
 
-  void AddDescendants(NVisited n) {
-    descendants_ += n;
-  }
+  void AddDescendants(NVisited n) { descendants_ += n; }
+
+  void ResetDescendants() { descendants_ = 0; }
 
   Eval NextPositionEvalGoal(float prob_min, float prob_max, int last_eval_goal) const {
     Eval best_eval = kLessThenMinEval;
@@ -614,7 +614,7 @@ class TreeNode : public Node {
   virtual std::vector<Node> Fathers();
 
   void ExtendToAllEvals() {
-    ExtendEval(weak_lower_, weak_upper_);
+    ExtendEval(-63, 63);
   }
 
   bool ContainsFather(TreeNode* father) {
@@ -782,6 +782,21 @@ class TreeNode : public Node {
   double Advancement(Eval lower, Eval upper) const override {
     ReadLock();
     return Node::Advancement(lower, upper);
+  }
+
+  void SetLeafNeverSolved() {
+    lower_ = -64;
+    upper_ = 64;
+    ExtendToAllEvals();
+    assert(weak_lower_ == kMinEval + 1);
+    assert(weak_upper_ == kMaxEval - 1);
+    assert(min_evaluation_ == weak_lower_);
+    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
+      MutableEvaluation(i)->SetLeaf(player_, opponent_, EvalToEvalLarge(i), EvalToEvalLarge(i), 1, n_empties_);
+      assert(GetEvaluation(i).ProbGreaterEqual() > 0 &&
+             GetEvaluation(i).ProbGreaterEqual() < 1);
+    }
+    leaf_eval_ = 4;
   }
 
  protected:

@@ -205,19 +205,6 @@ class BookTreeNode : public TreeNode {
     return (BookTreeNode*) TreeNode::BestChild(eval_goal, n_thread_multiplier);
   }
 
-  void SetLeafNeverSolved() {
-    assert(weak_lower_ = kMinEval + 1);
-    assert(weak_upper_ = kMaxEval - 1);
-    lower_ = -64;
-    upper_ = 64;
-    for (int i = weak_lower_; i <= weak_upper_; i += 2) {
-      MutableEvaluation(i)->SetLeaf(player_, opponent_, EvalToEvalLarge(i), EvalToEvalLarge(i), 1, n_empties_);
-      assert(GetEvaluation(i).ProbGreaterEqual() > 0 &&
-             GetEvaluation(i).ProbGreaterEqual() < 1);
-    }
-    leaf_eval_ = 4;
-  }
-
   int NFathers() const {
     return n_fathers_;
   }

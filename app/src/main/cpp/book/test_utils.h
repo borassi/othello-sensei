@@ -89,7 +89,7 @@ std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
   int weak_lower = std::min(upper - 1, -(int) ((rand() % 32) * 2 + 1));
   int weak_upper = std::max(lower + 1, weak_lower + ((rand() % 20) * 2));
   int eval = EvalToEvalLarge(lower) + rand() % (EvalToEvalLarge(upper) - EvalToEvalLarge(lower) + 1);
-  int n_visited = rand() % 2000 + 1;
+  int n_visited = rand() % 100 + 1;
   t->Reset(b.Player(), b.Opponent(), /*depth=*/ 4, /*evaluator=*/rand() % 20,
            /*leafeval=*/eval, /*eval_depth=*/4, weak_lower, weak_upper);
   // To test serializing / deserializing cases where the log derivative needs
