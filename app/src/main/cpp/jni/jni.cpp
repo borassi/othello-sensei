@@ -24,7 +24,7 @@
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
-#include "../utils/assets.h"
+#include "../utils/files.h"
 #include <jni.h>
 
 constexpr int kNumEvaluators = 60;

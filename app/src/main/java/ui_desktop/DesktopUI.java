@@ -49,7 +49,6 @@ import javax.swing.SpinnerModel;
 
 import board.Board;
 import constants.Constants;
-import helpers.FileAccessor;
 
 import javax.swing.JLabel;
 import javax.swing.JTextArea;

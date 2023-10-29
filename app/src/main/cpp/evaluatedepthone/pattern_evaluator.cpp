@@ -15,7 +15,7 @@
  */
 
 #include "pattern_evaluator.h"
-#include "../utils/assets.h"
+#include "../utils/files.h"
 
 void PatternEvaluator::Setup(BitPattern player, BitPattern opponent) {
   memset(patterns_, 0, sizeof(patterns_));
@@ -219,7 +219,5 @@ EvalLarge PatternEvaluator::Evaluate() const {
 
 
 EvalType LoadEvals(std::string filepath) {
-  std::unique_ptr<Asset> evals_asset = GetAsset(filepath);
-  std::vector<int8_t> file_content = evals_asset->ReadAll<int8_t>();
-  return file_content;
+  return ReadFile<int8_t>(filepath);
 }

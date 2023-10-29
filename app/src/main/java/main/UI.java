@@ -17,7 +17,6 @@ package main;
 import java.util.ArrayList;
 
 import board.Board;
-import helpers.FileAccessor;
 import thor.Game;
 import ui_desktop.CaseAnnotations;
 

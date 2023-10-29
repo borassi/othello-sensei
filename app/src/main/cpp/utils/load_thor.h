@@ -18,17 +18,17 @@
 #define OTHELLO_SENSEI_LOAD_THOR_H
 
 #include "../board/bitpattern.h"
-#include "assets.h"
+#include "files.h"
 
-std::vector<std::vector<Square>> GetGames(std::string file) {
-  auto asset = GetAsset(file);
-  auto length = asset->GetLength();
+std::vector<std::vector<Square>> GetGames(std::string filename) {
+  std::fstream file = std::fstream(filename, std::ios::in | std::ios::binary);
+  auto length = FileLength(file);
   std::vector<std::vector<Square>> result;
-  asset->Seek(16);
-  while (asset->Tellg() < length) {
+  file.seekg(16);
+  while (file.tellg() < length) {
     std::vector<Square> moves(60);
-    asset->Seek(asset->Tellg() + 8);
-    asset->Read((char*) &moves[0], 60);
+    file.seekg(8, std::ios::cur);
+    file.read((char*) &moves[0], 60);
     for (int i = 0; i < 60; ++i) {
       if (moves[i] != 0) {
         assert(moves[i] >= 11 && moves[i] <= 88);

@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import board.Board;
 import constants.Constants;
 import evaluateposition.Status;
-import helpers.FileAccessor;
 
 public class JNI {
   private long pointer;

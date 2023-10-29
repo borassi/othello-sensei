@@ -285,7 +285,7 @@ class Book {
     return const_cast<ValueFile&>(GetValueFile(node));
   }
 
-  void UpdateSizes(Asset* file);
+  void UpdateSizes(std::fstream& file);
 
   std::vector<BookNode> MissingChildren(const Board& b, const std::vector<BookNode*>& children);
 
@@ -295,6 +295,9 @@ class Book {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);
   }
   std::string IndexFilename() const { return folder_ + "/index.sen"; }
+  std::fstream IndexFile() const {
+    return std::fstream(IndexFilename(), std::ios::binary | std::ios::out | std::ios::in);
+  }
 
   HashMapIndex PowerAfterHashMapSize() const {
     return 1ULL << (sizeof(HashMapIndex) * 8 - __builtin_clzll(hash_map_size_ - 1));
@@ -306,9 +309,9 @@ class Book {
 
   HashMapIndex RepositionHash(HashMapIndex board_hash) const;
 
-  std::pair<std::unique_ptr<Asset>, HashMapNode> Find(BitPattern player, BitPattern opponent) const;
+  std::pair<std::fstream, HashMapNode> Find(BitPattern player, BitPattern opponent) const;
 
-  void Resize(Asset* file, std::vector<HashMapNode> add_elements);
+  void Resize(std::fstream& file, std::vector<HashMapNode> add_elements);
 };
 
 template<int version>
@@ -325,14 +328,15 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
   for (const auto& [offset, serialized] : roots_file_) {
     roots_.insert(Board::Deserialize(serialized.begin()));
   }
-  auto index_file = GetAsset(IndexFilename());
-  index_file->CreateIfNotExists();
-  if (index_file->GetLength() < kOffset) {
-    index_file.reset();
+  CreateFileIfNotExists(IndexFilename());
+  auto index_file = IndexFile();
+  if (FileLength(index_file) < kOffset) {
+    index_file.close();
+    ResetFile(IndexFilename());
     Clean();
   } else {
-    index_file->Read((char*) &hash_map_size_, sizeof(hash_map_size_));
-    index_file->Read((char*) &book_size_, sizeof(book_size_));
+    index_file.read((char*) &hash_map_size_, sizeof(hash_map_size_));
+    index_file.read((char*) &book_size_, sizeof(book_size_));
   }
 }
 
@@ -427,10 +431,10 @@ void Book<version>::Commit(bool verbose) {
     Commit(*node);
   }
   modified_nodes_.clear();
-  auto file = GetAsset(IndexFilename());
-  UpdateSizes(file.get());
+  auto file = IndexFile();
+  UpdateSizes(file);
   assert(modified_nodes_.empty());
-  file.reset();
+  file.close();
   if (verbose) {
     std::cout << " Done\n" << std::flush;
   }
@@ -462,14 +466,14 @@ void Book<version>::Commit(const BookNode& node) {
   auto size = to_store.size();
   auto position = value_files_[HashMapNode::SizeToPosition(to_store.size())].Add(to_store);
   HashMapNode to_be_stored(size, position);
-  if (file->Tellg() < OffsetToFilePosition(hash_map_size_)) {
-    file->Write((char*) &to_be_stored, sizeof(HashMapNode));
-    Resize(file.get(), {});
+  if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
+    file.write((char*) &to_be_stored, sizeof(HashMapNode));
+    Resize(file, {});
   } else {
-    Resize(file.get(), {to_be_stored});
+    Resize(file, {to_be_stored});
   }
   // So that the asserts below work.
-  file.reset();
+  file.close();
   assert(Get(node.ToBoard()));
   assert(!Find(node.Player(), node.Opponent()).second.IsEmpty());
   assert(IsSizeOK());
@@ -477,16 +481,16 @@ void Book<version>::Commit(const BookNode& node) {
 
 template<int version>
 bool Book<version>::IsSizeOK() {
-  auto index_file = GetAsset(IndexFilename());
-  if (OffsetToFilePosition(hash_map_size_) != index_file->GetLength()) {
-    std::cout << "Wrong hash map size " << OffsetToFilePosition(hash_map_size_) << ". Should be " << index_file->GetLength() << "\n";
+  auto index_file = IndexFile();
+  if (OffsetToFilePosition(hash_map_size_) != FileLength(index_file)) {
+    std::cout << "Wrong hash map size " << OffsetToFilePosition(hash_map_size_) << ". Should be " << FileLength(index_file) << "\n";
     return false;
   }
   HashMapNode node;
   HashMapIndex num_elements = 0;
-  index_file->Seek(kOffset);
+  index_file.seekg(kOffset);
   for (HashMapIndex hash = 0; hash < hash_map_size_; ++hash) {
-    index_file->Read((char*) &node, sizeof(HashMapNode));
+    index_file.read((char*) &node, sizeof(HashMapNode));
     if (!node.IsEmpty()) {
       ++num_elements;
     }
@@ -500,7 +504,7 @@ bool Book<version>::IsSizeOK() {
 
 template<int version>
 void Book<version>::Print(int start, int end) {
-  auto index_file = GetAsset(IndexFilename());
+  auto index_file = IndexFile();
   int size = index_file->GetLength();
   HashMapNode node;
   if (end == -1) {
@@ -528,12 +532,12 @@ void Book<version>::Clean() {
   }
   roots_file_.Clean();
   roots_.clear();
-  auto file = GetAsset(IndexFilename());
+  auto file = IndexFile();
   hash_map_size_ = kInitialHashMapSize;
   book_size_ = 0;
-  UpdateSizes(file.get());
+  UpdateSizes(file);
   std::vector<HashMapNode> nodes(kInitialHashMapSize);
-  file->Write((char*) &nodes[0], kInitialHashMapSize * sizeof(HashMapNode));
+  file.write((char*) &nodes[0], kInitialHashMapSize * sizeof(HashMapNode));
   modified_nodes_.clear();
 }
 
@@ -545,10 +549,10 @@ const ValueFile& Book<version>::GetValueFile(const HashMapNode& node) const {
 }
 
 template<int version>
-void Book<version>::UpdateSizes(Asset* file) {
-  file->Seek(0);
-  file->Write((char*) &hash_map_size_, sizeof(hash_map_size_));
-  file->Write((char*) &book_size_, sizeof(book_size_));
+void Book<version>::UpdateSizes(std::fstream& file) {
+  file.seekp(0);
+  file.write((char*) &hash_map_size_, sizeof(hash_map_size_));
+  file.write((char*) &book_size_, sizeof(book_size_));
 }
 
 template<int version>
@@ -562,39 +566,41 @@ HashMapIndex Book<version>::RepositionHash(HashMapIndex board_hash) const {
 }
 
 template<int version>
-std::pair<std::unique_ptr<Asset>, HashMapNode> Book<version>::Find(BitPattern player, BitPattern opponent) const {
+std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitPattern opponent) const {
   Board unique = Board(player, opponent).Unique();
   player = unique.Player();
   opponent = unique.Opponent();
   auto hash = RepositionHash(HashFull(player, opponent));
-  auto file = GetAsset(IndexFilename());
-  assert(file->Exists());
-  file->Seek(OffsetToFilePosition(hash));
+  assert(std::fstream(IndexFilename(), std::ios::in).is_open());
+  auto file = IndexFile();
+  file.seekg(OffsetToFilePosition(hash));
   HashMapNode node;
 
   while (true) {
-    file->Read((char*) &node, sizeof(HashMapNode));
+    file.read((char*) &node, sizeof(HashMapNode));
     if (node.IsEmpty()) {
-      file->Seek((unsigned long long) file->Tellg() - sizeof(HashMapNode));
+      file.seekg((unsigned long long) file.tellg() - sizeof(HashMapNode));
+      file.seekp(file.tellg());
       return std::make_pair(std::move(file), node);
     }
     std::vector<char> v = GetValueFile(node).Get(node.Offset());
     Board b = Board::Deserialize(v.begin());
     assert(b == b.Unique());
     if (b.Player() == player && b.Opponent() == opponent) {
-      file->Seek((unsigned) file->Tellg() - sizeof(HashMapNode));
+      file.seekg((unsigned) file.tellg() - sizeof(HashMapNode));
+      file.seekp(file.tellg());
       return std::make_pair(std::move(file), node);
     }
 
-    if (file->Tellg() == OffsetToFilePosition(hash_map_size_)) {
-      file->Seek(file->Tellg());
+    if (file.tellg() == OffsetToFilePosition(hash_map_size_)) {
+      file.seekp(file.tellg());
       return std::make_pair(std::move(file), HashMapNode());
     }
   }
 }
 
 template<int version>
-void Book<version>::Resize(Asset* file, std::vector<HashMapNode> add_elements) {
+void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elements) {
   HashMapNode node_to_move;
   HashMapNode empty_node;
 
@@ -602,10 +608,10 @@ void Book<version>::Resize(Asset* file, std::vector<HashMapNode> add_elements) {
   while (book_size_ > 0.4 * hash_map_size_ || extra_buffer > 0) {
     int current_buffer = 0;
     for (HashMapIndex invalidated = RepositionHash(hash_map_size_); true; ++invalidated) {
-      file->Seek(OffsetToFilePosition(invalidated));
-      file->Read((char*) &node_to_move, sizeof(node_to_move));
-      file->Seek(OffsetToFilePosition(invalidated));
-      file->Write((char*) &empty_node, sizeof(empty_node));
+      file.seekg(OffsetToFilePosition(invalidated));
+      file.read((char*) &node_to_move, sizeof(node_to_move));
+      file.seekp(OffsetToFilePosition(invalidated));
+      file.write((char*) &empty_node, sizeof(empty_node));
       if (node_to_move.IsEmpty()) {
         break;
       }
@@ -613,8 +619,8 @@ void Book<version>::Resize(Asset* file, std::vector<HashMapNode> add_elements) {
       ++current_buffer;
     }
     extra_buffer = std::max(current_buffer, extra_buffer);
-    file->Seek(file->GetLength());
-    file->Write((char*) &empty_node, sizeof(empty_node));
+    file.seekp(0, std::ios::end);
+    file.write((char*) &empty_node, sizeof(empty_node));
     ++hash_map_size_;
     --extra_buffer;
   }
@@ -624,13 +630,13 @@ void Book<version>::Resize(Asset* file, std::vector<HashMapNode> add_elements) {
     Board board = Board::Deserialize(v.begin());
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
     HashMapNode board_in_position;
-    file->Seek(OffsetToFilePosition(hash));
-    file->Read((char*) &board_in_position, sizeof(board_in_position));
+    file.seekg(OffsetToFilePosition(hash));
+    file.read((char*) &board_in_position, sizeof(board_in_position));
     while (!board_in_position.IsEmpty()) {
-      file->Read((char*) &board_in_position, sizeof(board_in_position));
+      file.read((char*) &board_in_position, sizeof(board_in_position));
     }
-    file->Seek((u_int64_t) file->Tellg() - sizeof(HashMapNode));
-    file->Write((char*) &node_to_move, sizeof(node_to_move));
+    file.seekp((u_int64_t) file.tellg() - sizeof(HashMapNode));
+    file.write((char*) &node_to_move, sizeof(node_to_move));
   }
 }
 

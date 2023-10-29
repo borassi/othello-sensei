@@ -21,7 +21,7 @@ add_library(
 target_link_libraries(
         value_file
         LINK_PRIVATE
-        assets
+        files
 )
 
 add_executable(
@@ -162,7 +162,7 @@ add_executable(
 target_link_libraries(
         expand_book_thor_main
         LINK_PRIVATE
-        assets
+        files
         board
         book
         book_tree_node

@@ -24,7 +24,7 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
-#include "../utils/assets.h"
+#include "../utils/files.h"
 #include "../utils/misc.h"
 #include "../utils/load_thor.h"
 #include "../utils/parse_flags.h"
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
 
   ExpandBookThorMain expander(filepath);
   for (int year = start_year; year >= end_year; --year) {
-    auto games = GetGames(kAssetFilepath + std::string("thor/WTH_" + std::to_string(year) + ".wtb"));
+    auto games = GetGames(kAssetFilepath + std::string("/thor/WTH_" + std::to_string(year) + ".wtb"));
     for (int i = year == start_year ? start_game : 0; i < games.size(); ++i) {
       const auto& game = games[i];
       expander.AddGame(game, n_descendants_children, n_descendants_solve, max_error);

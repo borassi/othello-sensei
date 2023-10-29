@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "../utils/assets.h"
+#include "../utils/files.h"
 
 typedef u_int32_t BookFileOffset;
 typedef int ValueFileSize;
@@ -43,8 +43,7 @@ class ValueFile {
  public:
   ValueFile(std::string filename, ValueFileSize size) : filename_(filename), size_(size) {
     assert(size >= kMinValueFileSize);
-    auto asset = GetAsset();
-    asset->CreateIfNotExists();
+    CreateFileIfNotExists(filename_);
     if (Elements() == 0) {
       Clean();
     }
@@ -59,17 +58,18 @@ class ValueFile {
   std::vector<char> Get(BookFileOffset offset) const;
 
   void Clean() {
-    auto asset = GetAsset();
-    asset->CreateOrReset();
-    SetAsEmpty(0, 0, asset.get());
+    ResetFile(filename_);
+    auto file = GetFile();
+    SetAsEmpty(0, 0, file);
   }
 
   void Remove() {
-    GetAsset()->Remove();
+    remove(filename_.c_str());
   }
 
   BookFileOffset Elements() const {
-    return GetAsset()->GetLength() / size_;
+    auto file = GetFile();
+    return FileLength(file) / size_;
   }
 
   void Print();
@@ -113,9 +113,9 @@ class ValueFile {
     void ToNextNonEmpty() {
       auto& [offset, value] = current_;
       while (offset == next_empty_ && offset < elements_) {
-        auto file = file_->GetAsset();
-        file->Seek(next_empty_);
-        file->Read((char*) &next_empty_, sizeof(next_empty_));
+        auto file = file_->GetFile();
+        file.seekg(next_empty_);
+        file.read((char*) &next_empty_, sizeof(next_empty_));
         ++offset;
       }
       if (offset < elements_) {
@@ -134,7 +134,7 @@ class ValueFile {
   Iterator begin() { return Iterator(this, 0); }
   Iterator end() { return Iterator(this, Elements()); }
 
-  std::unique_ptr<Asset> GetAsset() const;
+  std::fstream GetFile() const;
 
  private:
   std::string filename_;
@@ -144,9 +144,9 @@ class ValueFile {
     return filename_;
   }
 
-  std::vector<char> Get(BookFileOffset offset, Asset* asset) const;
-  void Seek(BookFileOffset offset, Asset* asset) const;
-  void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, Asset* asset);
+  std::vector<char> Get(BookFileOffset offset, std::fstream& file) const;
+  void Seek(BookFileOffset offset, std::fstream& file) const;
+  void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream& file);
 };
 
 #endif //OTHELLOSENSEI_VALUEFILE_H

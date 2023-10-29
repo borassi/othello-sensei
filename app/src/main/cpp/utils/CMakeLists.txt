@@ -13,14 +13,14 @@
 # limitations under the License.
 
 add_library(
-        assets
-        assets.h
-        assets.cpp
+        files
+        files.h
+        files.cpp
 )
 
 IF(ANDROID)
 target_link_libraries(
-        assets
+        files
         android
         log
 )
@@ -153,7 +153,7 @@ add_library(
 target_link_libraries(
         load_thor
         LINK_PRIVATE
-        assets
+        files
 )
 
 target_link_libraries(

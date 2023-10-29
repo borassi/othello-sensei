@@ -51,7 +51,7 @@ add_library(
 target_link_libraries(
         pattern_evaluator
         LINK_PUBLIC
-        assets
+        files
         bitpattern
         board
         evaluator_depth_one_base

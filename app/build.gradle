@@ -49,11 +49,23 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            externalNativeBuild {
+                ndkBuild {
+                    arguments "BUILD_TYPE=release"
+                }
+            }
+        }
+        debug {
+            externalNativeBuild {
+                ndkBuild {
+                    arguments "BUILD_TYPE=debug"
+                }
+            }
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_9
-        targetCompatibility JavaVersion.VERSION_1_9
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     externalNativeBuild {
         cmake {

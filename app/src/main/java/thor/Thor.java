@@ -30,7 +30,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import board.Board;
-import helpers.FileAccessor;
 import jni.JNI;
 
 public class Thor {
