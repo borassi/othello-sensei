@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();
       evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, false);
-      auto result = evaluator->GetFirstPosition();
+      auto result = evaluator->GetFirstPosition().value();
       auto lower = result.Lower();
       auto upper = result.Upper();
       node->SetLower(lower);
@@ -133,11 +133,12 @@ int main(int argc, char* argv[]) {
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300);
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) evaluator->GetFirstPosition().RemainingWork(alpha, beta));
+        auto result = evaluator->GetFirstPosition().value();
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) result.RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300);
-        children.push_back(evaluator->GetFirstPosition());
-        n_visited += evaluator->GetFirstPosition().GetNVisited();
+        children.push_back(result);
+        n_visited += result.GetNVisited();
       }
       book.AddChildren(node->ToBoard(), children);
     }

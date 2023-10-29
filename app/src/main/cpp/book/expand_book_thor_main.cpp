@@ -73,7 +73,7 @@ class ExpandBookThorMain {
       std::cout << "Solving\n";
       auto evaluator = evaluators_[0].get();
       evaluator->Evaluate(father_in_book->Player(), father_in_book->Opponent(), -63, 63, 5 * n_descendants_solve, 600, false);
-      auto result = evaluator->GetFirstPosition();
+      auto result = evaluator->GetFirstPosition().value();
       auto lower = result.Lower();
       auto upper = result.Upper();
       father_in_book->SetLower(lower);
@@ -94,8 +94,8 @@ class ExpandBookThorMain {
         auto evaluator = evaluators_[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children, 600);
-        children.push_back(evaluator->GetFirstPosition());
-        n_visited += evaluator->GetFirstPosition().GetNVisited();
+        children.push_back(evaluator->GetFirstPosition().value());
+        n_visited += evaluator->GetFirstPosition().value().GetNVisited();
       }
       book_.AddChildren(father_in_book->ToBoard(), children);
     }

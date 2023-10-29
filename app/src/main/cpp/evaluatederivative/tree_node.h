@@ -632,9 +632,9 @@ class TreeNode : public Node {
       return this;
     }
     assert(!IsLeafNoLock());
-    assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
-    // If another thread has already solved this node.
-    if (Node::IsSolved(eval_goal, eval_goal, false)) {
+    // If another thread has already solved this node, or if the weak lower /
+    // upper changed.
+    if (eval_goal < weak_lower_ || eval_goal > weak_upper_ || Node::IsSolved(eval_goal, eval_goal, false)) {
       return nullptr;
     }
     double best_child_value = -INFINITY;

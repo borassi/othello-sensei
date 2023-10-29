@@ -259,8 +259,8 @@ class EvaluatorDerivative {
     }
   }
 
-  Node GetFirstPosition() const {
-    return *first_position_;
+  std::optional<Node> GetFirstPosition() const {
+    return first_position_ ? std::optional<Node>(*first_position_) : std::nullopt;
   }
 
   Status GetStatus() { return status_; }

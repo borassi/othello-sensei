@@ -40,9 +40,9 @@ public class CaseAnnotations {
     } else {
       evalFormatter = "%+.2f";
     }
-    String result = String.format(evalFormatter, -node.getEval());
+    String result = String.format(evalFormatter, Math.round(-node.getEval() * 100) / 100.0);
     if (doubleEval) {
-      result += "\n" + String.format(evalFormatter, -node.getLeafEval());
+      result += "\n" + String.format(evalFormatter, Math.round(-node.getLeafEval() * 100) / 100.0);
     }
     return result;
   }

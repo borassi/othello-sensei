@@ -350,15 +350,16 @@ public class Main implements Runnable {
     double best = Double.NEGATIVE_INFINITY;
     ArrayList<Integer> bestMove = new ArrayList<>();
 
-    for (Map.Entry<Integer, Node> entry : getNextPositions().entrySet()) {
-      double eval = -entry.getValue().getEval() / 100.0;
-      int move = entry.getKey();
+    Map<Integer, Node> nextPositions = getNextPositions();
+    for (Map.Entry<Integer, Node> entry : nextPositions.entrySet()) {
+      double eval = -entry.getValue().getEval();
       if (eval > best) {
         best = eval;
-        bestMove.clear();
-        bestMove.add(move);
-      } else if (eval == best) {
-        bestMove.add(move);
+      }
+    }
+    for (Map.Entry<Integer, Node> entry : nextPositions.entrySet()) {
+      if (-entry.getValue().getEval() > best - 0.1) {
+        bestMove.add(entry.getKey());
       }
     }
     return bestMove;
@@ -410,9 +411,8 @@ public class Main implements Runnable {
   }
 
   private Node getStoredBoard(long player, long opponent) {
-    Node node = null;
     if (readBook()) {
-      node = EVALUATOR.getFromBook(player, opponent);
+      Node node = EVALUATOR.getFromBook(player, opponent);
       if (node != null) {
         return node;
       }

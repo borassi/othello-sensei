@@ -54,11 +54,13 @@ std::vector<Node> TreeNode::Fathers() {
 
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
   auto guard = WriteLock();
-  assert(depth_ > 0);  // Otherwise, the first position might lock the evaluator and viceversa.
   assert(lower % 16 == 0);
   assert(upper % 16 == 0);
   assert(IsLeafNoLock());
   assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
+  // NOTE: If depth == 0, we exploit that evaluator.GetWeakLowerUpper() does not
+  // need locks. Otherwise, the evaluator would lock again this position and
+  // get stuck.
   auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(depth_);
 
   leaf_eval_ = std::min(upper, std::max(lower, leaf_eval_));

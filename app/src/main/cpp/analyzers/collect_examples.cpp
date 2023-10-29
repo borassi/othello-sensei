@@ -139,18 +139,19 @@ int main(int argc, char* argv[]) {
       }
       tree_node_supplier.Reset();
       evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, false);
-      double real_eval = evaluator.GetFirstPosition().GetEval();
-      double perc_lower = evaluator.GetFirstPosition().GetPercentileUpper(0.5F);
-      double solve_probability_lower = evaluator.GetFirstPosition().SolveProbabilityLower(-63);
-      double perc_upper = evaluator.GetFirstPosition().GetPercentileLower(0.5F);
-      double solve_probability_upper = evaluator.GetFirstPosition().SolveProbabilityUpper(63);
+      auto first_position = evaluator.GetFirstPosition().value();
+      double real_eval = first_position.GetEval();
+      double perc_lower = first_position.GetPercentileUpper(0.5F);
+      double solve_probability_lower = first_position.SolveProbabilityLower(-63);
+      double perc_upper = first_position.GetPercentileLower(0.5F);
+      double solve_probability_upper = first_position.SolveProbabilityUpper(63);
       std::stringstream result;
       int step = b.NEmpties() > 28 ? 3 : 1;
       for (int i = -63 + (rand() % step) * 2; i <= 63; i += 2 * step) {
         tree_node_supplier.Reset();
         hash_map.Reset();
         evaluator.Evaluate(b.Player(), b.Opponent(), i, i, 1000000000000L, 20, false);
-        auto first_position = evaluator.GetFirstPosition();
+        auto first_position = evaluator.GetFirstPosition().value();
         result
             << b.Player() << " " << b.Opponent() << " " << b.NEmpties()
             << " " << real_eval << " " << perc_lower << " " << solve_probability_lower << " "

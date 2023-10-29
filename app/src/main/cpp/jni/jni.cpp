@@ -142,7 +142,10 @@ class JNIWrapper {
   NVisited TotalVisited() const {
     NVisited visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
-      visited += evaluator_derivative_[i]->GetFirstPosition().GetNVisited();
+      auto first_position = evaluator_derivative_[i]->GetFirstPosition();
+      if (first_position) {
+        visited += first_position->GetNVisited();
+      }
     }
     return visited;
   }
@@ -156,7 +159,10 @@ class JNIWrapper {
     }
     for (int i = 0; i < last_boards_.size(); ++i) {
       EvaluatorDerivative* evaluator = evaluator_derivative_[i].get();
-      visited += evaluator->GetFirstPosition().GetNVisited();
+      auto first_position = evaluator_derivative_[i]->GetFirstPosition();
+      if (first_position) {
+        visited += first_position->GetNVisited();
+      }
       switch (evaluator->GetStatus()) {
         case NONE:
         case RUNNING:
@@ -219,8 +225,8 @@ class JNIWrapper {
     Board unique = Board(player, opponent).Unique();
     for (int i = 0; i < last_boards_.size(); ++i) {
       const auto& evaluator = evaluator_derivative_[i];
-      Node first_position = evaluator->GetFirstPosition();
-      if (first_position.ToBoard().Unique() == unique) {
+      auto first_position = evaluator->GetFirstPosition();
+      if (first_position && first_position->ToBoard().Unique() == unique) {
         return NodeToJava(first_position, env);
       }
       for (Board b : unique.AllTranspositions()) {
@@ -292,7 +298,7 @@ class JNIWrapper {
     children.reserve(last_boards_.size());
     NVisited n_visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
-      Node child = evaluator_derivative_[i]->GetFirstPosition();
+      Node child = evaluator_derivative_[i]->GetFirstPosition().value();
       children.push_back(child);
       n_visited += child.GetNVisited();
     }
