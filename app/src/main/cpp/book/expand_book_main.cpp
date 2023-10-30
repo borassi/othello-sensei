@@ -135,10 +135,11 @@ int main(int argc, char* argv[]) {
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300, n_threads);
-        auto result = evaluator->GetFirstPosition().value();
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) result.RemainingWork(alpha, beta));
+        auto early_result = evaluator->GetFirstPosition().value();
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) early_result.RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300, n_threads);
+        auto result = evaluator->GetFirstPosition().value();
         children.push_back(result);
         n_visited += result.GetNVisited();
       }
