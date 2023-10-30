@@ -367,6 +367,7 @@ class EvaluatorDerivative {
     }
     assert((lower_ - kMinEval) % 2 == 1);
     assert((upper_ - kMinEval) % 2 == 1);
+    assert(lower_ <= upper_);
     assert(kMinEval <= lower_ && lower_ <= kMaxEval);
     assert(kMinEval <= upper_ && upper_ <= kMaxEval);
     assert(weak_lower_ >= lower_ && weak_upper_ <= upper_);
@@ -377,6 +378,7 @@ class EvaluatorDerivative {
 
       new_weak_lower = std::max(lower_, new_weak_lower);
       new_weak_upper = std::min(upper_, new_weak_upper);
+      assert(new_weak_lower <= new_weak_upper);
       weak_lower_ = new_weak_lower;
       weak_upper_ = new_weak_upper;
 

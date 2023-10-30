@@ -73,7 +73,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   private Menu menu;
   private Task task = Task.SHOW_EVALS;
   private String notes = "";
-  private final static String VERSION = "1";
+  private final static String VERSION = "2";
   private final static String VERSION_FILE = "/version.txt";
   private String localFolderPath;
 

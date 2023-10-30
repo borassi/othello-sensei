@@ -738,12 +738,13 @@ class TreeNode : public Node {
 
   std::tuple<Eval, Eval, Eval, Eval> ExpectedWeakLowerUpper() const {
     auto guard = ReadLock();
+    Eval expected_weak_lower = std::min(upper_ - 1, std::max(lower_ + 1, (int) weak_lower_));
+    Eval expected_weak_upper = std::max(lower_ + 1, std::min(upper_ - 1, (int) weak_upper_));
+    assert(expected_weak_lower <= expected_weak_upper);
 
-    Eval expected_weak_lower = std::max(lower_ + 1, (int) weak_lower_);
-    Eval expected_weak_upper = std::min(upper_ - 1, (int) weak_upper_);
-
-    if (weak_lower_ - 2 > lower_ && weak_lower_ < upper_ && ProbGreaterEqual(weak_lower_) < 1 - kZeroPercForWeak) {
-      expected_weak_lower = weak_lower_ - 2;
+    // NOTE: expected_weak_lower < upper_, no need to check it here.
+    if (expected_weak_lower - 2 > lower_ && expected_weak_lower >= weak_lower_ && expected_weak_lower <= weak_upper_ && ProbGreaterEqual(expected_weak_lower) < 1 - kZeroPercForWeak) {
+      expected_weak_lower -= 2;
     } else {
       for (int i = expected_weak_lower + 2; i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
         if (ProbGreaterEqual(i) < 0.99) {
@@ -752,8 +753,8 @@ class TreeNode : public Node {
         }
       }
     }
-    if (weak_upper_ + 2 < upper_ && weak_upper_ > lower_ && ProbGreaterEqual(weak_upper_) > kZeroPercForWeak) {
-      expected_weak_upper = weak_upper_ + 2;
+    if (expected_weak_upper + 2 < upper_ && expected_weak_upper >= weak_lower_ && expected_weak_upper <= weak_upper_ && ProbGreaterEqual(expected_weak_upper) > kZeroPercForWeak) {
+      expected_weak_upper += 2;
     } else {
       for (int i = expected_weak_upper - 2; i >= std::max(lower_ + 1, (int) weak_lower_); i -= 2) {
         if (ProbGreaterEqual(i) > 0.01) {
