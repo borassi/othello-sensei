@@ -901,22 +901,25 @@ class TreeNode : public Node {
 
   bool IsUnderAnalyzed(const TreeNode& father, int father_eval_goal) const {
     NVisited father_visited = father.GetNVisited();
-    float final_visited = 0.00005 * (father_visited + father.Node::RemainingWork(father_eval_goal, father_eval_goal));
-    float current_visited;
-    if (leaf_eval_ < -father.leaf_eval_ + 2 * 8) {
-      current_visited = 0.01 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 4 * 8) {
-      current_visited = 0.005 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 6 * 8) {
-      current_visited = 0.002 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 8 * 8) {
-      current_visited = 0.001 * father_visited;
-    } else if (leaf_eval_ < -father.leaf_eval_ + 16 * 8) {
-      current_visited = 0.00005 * father_visited;
-    } else {
-      current_visited = 0.00001 * father_visited;
+    double remaining_work = father.Node::RemainingWork(father_eval_goal, father_eval_goal);
+    if (remaining_work < 100000) {
+      return false;
     }
-    return GetNVisited() < std::min(current_visited, final_visited);
+//    float final_visited = 0.00005 * (father_visited + father.Node::RemainingWork(father_eval_goal, father_eval_goal));
+//    float current_visited;
+    if (leaf_eval_ < -father.leaf_eval_ + 2 * 8) {
+      return rand() % 200 == 0;
+    } else if (leaf_eval_ < -father.leaf_eval_ + 4 * 8) {
+      return rand() % 400 == 0;
+    } else if (leaf_eval_ < -father.leaf_eval_ + 6 * 8) {
+      return rand() % 800 == 0;
+    } else if (leaf_eval_ < -father.leaf_eval_ + 8 * 8) {
+      return rand() % 1000 == 0;
+    } else if (leaf_eval_ < -father.leaf_eval_ + 16 * 8) {
+      return rand() % 20000 == 0;
+    } else {
+      return rand() % 100000 == 0;
+    }
   }
 
   double GetValue(
@@ -924,12 +927,7 @@ class TreeNode : public Node {
     const Evaluation& eval = GetEvaluation(eval_goal);
     const Evaluation& father_eval = father.GetEvaluation(-eval_goal);
 
-//    if (IsUnderAnalyzed(father, -eval_goal)) {
-//      return
-//          -2 * kLogDerivativeMinusInf
-//          + eval.LogDerivative(father_eval)
-//          - leaf_eval_ / (double) (kMaxEvalLarge - kMinEvalLarge);
-//    }
+//    double result = IsUnderAnalyzed(father, -eval_goal) ? -2 * kLogDerivativeMinusInf : 0;
     if (father_eval.ProbGreaterEqual() < 0.99) {
       return
           eval.LogDerivative(father_eval)
