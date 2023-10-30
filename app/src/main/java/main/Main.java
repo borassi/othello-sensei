@@ -253,7 +253,7 @@ public class Main implements Runnable {
       return;
     }
     startTime = System.currentTimeMillis();
-    EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 100, (float) ui.delta(), ui.approx());
+    EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 100, (float) ui.delta(), ui.nThreads(), ui.approx());
     if (ui.wantThorGames()) {
       ui.setThorGames(board, thor.getGames(board));
     }
@@ -261,7 +261,7 @@ public class Main implements Runnable {
       if (!isMatch) {
         showMCTSEvaluations();
       }
-      EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta(), ui.approx());
+      EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta(), ui.nThreads(), ui.approx());
     }
     if (writeBook() && ui.delta() > 0 && firstPosition.equals(new Board())) {
       EVALUATOR.addToBook(board, oldBoards);

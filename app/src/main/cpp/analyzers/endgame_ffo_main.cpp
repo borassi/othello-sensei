@@ -37,14 +37,15 @@ int main(int argc, char* argv[]) {
   HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
-  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()), n_threads);
+  EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()));
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   eval too_early     deepen   next\n";
+  srand(42);
   //  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval       last5  vquick  quick1  quick2   moves    pass   nodes \n";
   for (int i = start; i <= end; i++) {
     Board b = GetIthBoard(i);
     ElapsedTime t;
     tree_node_supplier.Reset();
-    evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 1200, approx);
+    evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 1200, n_threads, approx);
     double time = t.Get();
     auto first_position = evaluator.GetFirstPosition().value();
     if (parse_flags.GetBoolFlagOrDefault("show_evals", false)) {

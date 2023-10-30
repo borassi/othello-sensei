@@ -38,6 +38,7 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 
 constexpr bool kUseTranspositions = true;
+constexpr int kMaxNumThreads = 255;
 
 using namespace std::chrono_literals;
 
@@ -197,12 +198,12 @@ class EvaluatorThread {
 
 class EvaluatorDerivative {
  public:
-  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap<kBitHashMap>* hash_map, EvaluatorFactory evaluator_depth_one, int n_threads, u_int8_t index = 0) :
+  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap<kBitHashMap>* hash_map, EvaluatorFactory evaluator_depth_one, u_int8_t index = 0) :
       threads_(),
       tree_node_supplier_(tree_node_supplier),
       first_position_(nullptr),
       index_(index) {
-    for (int i = 0; i < n_threads; ++i) {
+    for (int i = 0; i <= kMaxNumThreads; ++i) {
       threads_.push_back(std::make_shared<EvaluatorThread>(hash_map, evaluator_depth_one, this));
     }
   }
@@ -216,19 +217,20 @@ class EvaluatorDerivative {
     return evalEffect - log(board->GetNVisited()) / log(2);
   }
 
-  void ContinueEvaluate(NVisited max_n_visited, double max_time) {
+  void ContinueEvaluate(NVisited max_n_visited, double max_time, int n_threads) {
     max_time_ = max_time;
     elapsed_time_ = ElapsedTime();
     start_visited_ = first_position_->GetNVisited();
     max_n_visited_ = start_visited_ + max_n_visited;
     just_started_ = true;
     status_ = RUNNING;
-    Run();
+    Run(n_threads);
   }
 
   void Evaluate(
       BitPattern player, BitPattern opponent, Eval lower, Eval upper,
-      NVisited max_n_visited, double max_time, bool approx = false) {
+      NVisited max_n_visited, double max_time, int n_threads,
+      bool approx = false) {
     assert((lower - kMinEval) % 2 == 1);
     assert((upper - kMinEval) % 2 == 1);
     assert(kMinEval <= lower && lower <= kMaxEval);
@@ -250,7 +252,7 @@ class EvaluatorDerivative {
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
     best_advancement_ = 0;
     is_updating_weak_lower_upper_.clear();
-    ContinueEvaluate(max_n_visited, max_time);
+    ContinueEvaluate(max_n_visited, max_time, n_threads);
   }
 
   void Stop() {
@@ -305,14 +307,15 @@ class EvaluatorDerivative {
   std::atomic_flag is_updating_weak_lower_upper_;
   double best_advancement_;
 
-  void Run() {
+  void Run(int n_threads) {
+    assert(n_threads <= kMaxNumThreads);
     std::vector<std::future<void>> futures;
     futures.push_back(std::async(std::launch::deferred, &EvaluatorThread::Run, threads_[0].get()));
-    for (int i = 1; i < threads_.size(); ++i) {
+    for (int i = 1; i < n_threads; ++i) {
       std::this_thread::sleep_for(1ms);
       futures.push_back(std::async(std::launch::async, &EvaluatorThread::Run, threads_[i].get()));
     }
-    for (int i = 0; i < threads_.size(); ++i) {
+    for (int i = 0; i < n_threads; ++i) {
       futures[i].get();
     }
   }

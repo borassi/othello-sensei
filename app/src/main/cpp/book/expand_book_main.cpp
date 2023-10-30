@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = 50 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
   NVisited n_descendants_solve = 4 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
+  int n_threads = parse_flags.GetBoolFlagOrDefault("n_threads", std::thread::hardware_concurrency());
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
@@ -52,7 +53,6 @@ int main(int argc, char* argv[]) {
     evaluators[i] = std::make_unique<EvaluatorDerivative>(
         &tree_node_supplier, &hash_map,
         PatternEvaluator::Factory(evals.data()),
-        std::thread::hardware_concurrency(),
         static_cast<u_int8_t>(i));
   }
   if (!book.Get(Board(start_line))) {
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     if (node->RemainingWork(alpha, beta) < n_descendants_solve) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();
-      evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, false);
+      evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, n_threads, false);
       auto result = evaluator->GetFirstPosition().value();
       auto lower = result.Lower();
       auto upper = result.Upper();
@@ -132,11 +132,11 @@ int main(int argc, char* argv[]) {
       for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(node->ToBoard())) {
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
-            child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300);
+            child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300, n_threads);
         auto result = evaluator->GetFirstPosition().value();
         auto remaining_work = std::max((NVisited) 1000, (NVisited) result.RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
-            std::min(n_descendants_children, (NVisited) remaining_work / 30), 300);
+            std::min(n_descendants_children, (NVisited) remaining_work / 30), 300, n_threads);
         children.push_back(result);
         n_visited += result.GetNVisited();
       }

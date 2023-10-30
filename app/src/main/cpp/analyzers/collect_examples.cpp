@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
         }
       }
       tree_node_supplier.Reset();
-      evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, false);
+      evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, 1, false);
       auto first_position = evaluator.GetFirstPosition().value();
       double real_eval = first_position.GetEval();
       double perc_lower = first_position.GetPercentileUpper(0.5F);
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
       for (int i = -63 + (rand() % step) * 2; i <= 63; i += 2 * step) {
         tree_node_supplier.Reset();
         hash_map.Reset();
-        evaluator.Evaluate(b.Player(), b.Opponent(), i, i, 1000000000000L, 20, false);
+        evaluator.Evaluate(b.Player(), b.Opponent(), i, i, 1000000000000L, 20, 1, false);
         auto first_position = evaluator.GetFirstPosition().value();
         result
             << b.Player() << " " << b.Opponent() << " " << b.NEmpties()

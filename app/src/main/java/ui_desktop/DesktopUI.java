@@ -113,6 +113,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JCheckBox thorActive;
   private final ThorGamesWindow thorGamesWindow;
   private final JSpinner error;
+  private final JLabel nThreadsLabel;
+  private final JTextField nThreads;
   private final TreeMap<String, UseBook> useBookValues = new TreeMap<String, UseBook>() {{
       put("Do not use the book", UseBook.DO_NOT_USE);
       put("Read from book, do not write", UseBook.READ_ONLY);
@@ -166,6 +168,9 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     error = new JSpinner(new SpinnerNumberModel(15, 5, 80, 1));
     useBookSpinner = new JSpinner(new SpinnerListModel(new ArrayList<>(useBookValues.keySet())));
     useBookSpinner.setValue("Read from book, do not write");
+    nThreadsLabel = new JLabel("Threads:");
+    nThreads = new JTextField();
+    nThreads.setText("" + Runtime.getRuntime().availableProcessors());
 
     commands.add(newGame);
     commands.add(playBlackMoves);
@@ -179,6 +184,8 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(setFirstPosition);
     commands.add(resetFirstPosition);
     commands.add(empties);
+    commands.add(nThreadsLabel);
+    commands.add(nThreads);
 
     main = new Main(this);
 
@@ -474,6 +481,16 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public boolean approx() { return approx.isSelected(); }
+
+  @Override
+  public int nThreads() {
+    try {
+      return Integer.parseInt(nThreads.getText());
+    } catch (NumberFormatException e) {
+      nThreads.setText("" + Runtime.getRuntime().availableProcessors());
+    }
+    return Integer.parseInt(nThreads.getText());
+  }
 
   public static short roundEval(double eval) {
     return (short) Math.max(-63, Math.min(63, Math.round((eval + 64) / 2) * 2 - 63));

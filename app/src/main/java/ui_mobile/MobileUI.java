@@ -320,6 +320,11 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
+  public int nThreads() {
+    return Runtime.getRuntime().availableProcessors();
+  }
+
+  @Override
   public void setAnnotations(CaseAnnotations annotations, int move) {
     BoardView boardView = findViewById(R.id.board);
     boardView.setAnnotations(annotations, move);

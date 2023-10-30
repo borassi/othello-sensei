@@ -43,12 +43,11 @@ class ExpandBookThorMain {
       evaluators_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
           PatternEvaluator::Factory(evals_.data()),
-          std::thread::hardware_concurrency(),
           static_cast<u_int8_t>(i));
     }
   }
 
-  void AddChildrenToBook(const std::vector<Board>& ancestors, const Board& father, NVisited n_descendants_children, NVisited n_descendants_solve) {
+  void AddChildrenToBook(const std::vector<Board>& ancestors, const Board& father, NVisited n_descendants_children, NVisited n_descendants_solve, int n_threads) {
     std::vector<Book<>::BookNode*> ancestors_in_book;
 
     for (const Board& ancestor : ancestors) {
@@ -72,7 +71,7 @@ class ExpandBookThorMain {
     if (father_in_book->RemainingWork(-63, 63) < n_descendants_solve) {
       std::cout << "Solving\n";
       auto evaluator = evaluators_[0].get();
-      evaluator->Evaluate(father_in_book->Player(), father_in_book->Opponent(), -63, 63, 5 * n_descendants_solve, 600, false);
+      evaluator->Evaluate(father_in_book->Player(), father_in_book->Opponent(), -63, 63, 5 * n_descendants_solve, 600, n_threads, false);
       auto result = evaluator->GetFirstPosition().value();
       auto lower = result.Lower();
       auto upper = result.Upper();
@@ -93,7 +92,7 @@ class ExpandBookThorMain {
       for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(father_in_book->ToBoard())) {
         auto evaluator = evaluators_[++i].get();
         evaluator->Evaluate(
-            child.Player(), child.Opponent(), -63, 63, n_descendants_children, 600);
+            child.Player(), child.Opponent(), -63, 63, n_descendants_children, 600, n_threads);
         children.push_back(evaluator->GetFirstPosition().value());
         n_visited += evaluator->GetFirstPosition().value().GetNVisited();
       }
@@ -103,7 +102,7 @@ class ExpandBookThorMain {
     book_.Commit();
   }
 
-  void AddGame(std::vector<Square> game, NVisited n_descendants_children, NVisited n_descendants_solve, double max_error) {
+  void AddGame(std::vector<Square> game, NVisited n_descendants_children, NVisited n_descendants_solve, double max_error, int n_threads) {
     Board b;
     Board old_b;
     std::vector<Board> old_boards;
@@ -129,7 +128,7 @@ class ExpandBookThorMain {
         break;
       }
       if (b_in_book.value().IsLeaf()) {
-        AddChildrenToBook(old_boards, b, n_descendants_children, n_descendants_solve);
+        AddChildrenToBook(old_boards, b, n_descendants_children, n_descendants_solve, n_threads);
       }
       if (HaveToPass(b.Player(), b.Opponent())) {
         old_boards.push_back(b);
@@ -137,7 +136,7 @@ class ExpandBookThorMain {
         auto old_b_in_book = book_.Get(old_b).value();
         auto b_in_book = book_.Get(b);
         if (b_in_book.value().IsLeaf()) {
-          AddChildrenToBook(old_boards, b, n_descendants_children, n_descendants_solve);
+          AddChildrenToBook(old_boards, b, n_descendants_children, n_descendants_solve, n_threads);
         }
         old_b = b;
       }
@@ -157,6 +156,7 @@ int main(int argc, char* argv[]) {
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = parse_flags.GetIntFlagOrDefault("n_descendants_children", 50 * 1000 * 1000UL);
   NVisited n_descendants_solve = parse_flags.GetIntFlagOrDefault("n_descendants_solve",  2 * 1000 * 1000 * 1000UL);
+  NVisited n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
 
   int start_year = parse_flags.GetIntFlagOrDefault("start_year",  2023);
   int end_year = parse_flags.GetIntFlagOrDefault("end_year",  1977);
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
     auto games = GetGames(kAssetFilepath + std::string("/thor/WTH_" + std::to_string(year) + ".wtb"));
     for (int i = year == start_year ? start_game : 0; i < games.size(); ++i) {
       const auto& game = games[i];
-      expander.AddGame(game, n_descendants_children, n_descendants_solve, max_error);
+      expander.AddGame(game, n_descendants_children, n_descendants_solve, max_error, n_threads);
       std::cout << "\n\n\nDONE GAME " << i << "/" << games.size() << " OF YEAR " << year << ".\n\n\n";
     }
   }

@@ -50,4 +50,5 @@ public interface UI {
   UseBook useBook();
   double getError();
   boolean approx();
+  int nThreads();
 }

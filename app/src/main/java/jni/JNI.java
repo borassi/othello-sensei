@@ -49,7 +49,8 @@ public class JNI {
 
   public native void evaluate(
       ArrayList<Board> boards, int lower,
-    int upper, long maxNVisited, int maxTimeMillis, float gap, boolean approx);
+      int upper, long maxNVisited, int maxTimeMillis, float gap, int n_threads,
+      boolean approx);
 
   public native void empty();
   public native void stop();
