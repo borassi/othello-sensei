@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = 50 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_children", 200 * 1000 * 1000UL);
   NVisited n_descendants_solve = 4 * 1000 * 1000 * 1000UL; //parse_flags.GetIntFlagOrDefault("n_descendants_solve",  5 * 1000 * 1000 * 1000UL);
-  int n_threads = parse_flags.GetBoolFlagOrDefault("n_threads", std::thread::hardware_concurrency());
+  int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
