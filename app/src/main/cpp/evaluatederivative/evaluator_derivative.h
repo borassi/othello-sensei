@@ -38,7 +38,6 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 
 constexpr bool kUseTranspositions = true;
-constexpr int kMaxNumThreads = 255;
 
 using namespace std::chrono_literals;
 
@@ -202,10 +201,10 @@ class EvaluatorDerivative {
       threads_(),
       tree_node_supplier_(tree_node_supplier),
       first_position_(nullptr),
-      index_(index) {
-    for (int i = 0; i <= kMaxNumThreads; ++i) {
-      threads_.push_back(std::make_shared<EvaluatorThread>(hash_map, evaluator_depth_one, this));
-    }
+      index_(index),
+      evaluator_depth_one_(evaluator_depth_one),
+      hash_map_(hash_map) {
+    threads_.push_back(std::make_unique<EvaluatorThread>(hash_map, evaluator_depth_one, this));
   }
 
   double Progress(float gap) {
@@ -295,7 +294,7 @@ class EvaluatorDerivative {
   std::atomic_int8_t weak_lower_;
   std::atomic_int8_t weak_upper_;
   Status status_ = SOLVED;
-  std::vector<std::shared_ptr<EvaluatorThread>> threads_;
+  std::vector<std::unique_ptr<EvaluatorThread>> threads_;
   ElapsedTime elapsed_time_;
   NVisited start_visited_;
   std::atomic_bool just_started_;
@@ -306,10 +305,14 @@ class EvaluatorDerivative {
   std::atomic_int n_thread_multiplier_;
   std::atomic_flag is_updating_weak_lower_upper_;
   double best_advancement_;
+  EvaluatorFactory evaluator_depth_one_;
+  HashMap<kBitHashMap>* hash_map_;
 
   void Run(int n_threads) {
-    assert(n_threads <= kMaxNumThreads);
     std::vector<std::future<void>> futures;
+    while (threads_.size() <= n_threads) {
+      threads_.push_back(std::make_unique<EvaluatorThread>(hash_map_, evaluator_depth_one_, this));
+    }
     futures.push_back(std::async(std::launch::deferred, &EvaluatorThread::Run, threads_[0].get()));
     for (int i = 1; i < n_threads; ++i) {
       std::this_thread::sleep_for(1ms);
