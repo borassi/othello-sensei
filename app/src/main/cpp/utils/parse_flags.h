@@ -57,6 +57,14 @@ class ParseFlags {
       return default_value;
     }
   }
+  long long GetLongLongFlag(const std::string& name) { return stoull(GetFlag(name)); }
+  long long GetLongLongFlagOrDefault(const std::string& name, long long default_value) {
+    if (flags_.count(name)) {
+      return GetLongLongFlag(name);
+    } else {
+      return default_value;
+    }
+  }
   bool GetBoolFlag(const std::string& name) {
     std::string flag = GetFlag(name);
     if (flag == "" || flag == "true" || flag == "True" || flag == "TRUE") {

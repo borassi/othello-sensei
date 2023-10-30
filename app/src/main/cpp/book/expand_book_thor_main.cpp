@@ -154,8 +154,8 @@ class ExpandBookThorMain {
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  NVisited n_descendants_children = parse_flags.GetIntFlagOrDefault("n_descendants_children", 50 * 1000 * 1000UL);
-  NVisited n_descendants_solve = parse_flags.GetIntFlagOrDefault("n_descendants_solve",  2 * 1000 * 1000 * 1000UL);
+  NVisited n_descendants_children = parse_flags.GetLongLongFlagOrDefault("n_descendants_children", 50 * 1000 * 1000LL);
+  NVisited n_descendants_solve = parse_flags.GetLongLongFlagOrDefault("n_descendants_solve",  2 * 1000 * 1000 * 1000LL);
   NVisited n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
 
   int start_year = parse_flags.GetIntFlagOrDefault("start_year",  2023);

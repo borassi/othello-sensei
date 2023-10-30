@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
   std::string start_line = parse_flags.GetFlagOrDefault("start", "");
 //  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
-  NVisited n_descendants_children = parse_flags.GetIntFlagOrDefault("n_descendants_children", 50 * 1000 * 1000UL);
-  NVisited n_descendants_solve = parse_flags.GetIntFlagOrDefault("n_descendants_solve",  4 * 1000 * 1000 * 1000UL);
+  NVisited n_descendants_children = parse_flags.GetLongLongFlagOrDefault("n_descendants_children", 50 * 1000 * 1000LL);
+  NVisited n_descendants_solve = parse_flags.GetLongLongFlagOrDefault("n_descendants_solve",  4 * 1000 * 1000 * 1000LL);
   int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
@@ -99,14 +99,16 @@ int main(int argc, char* argv[]) {
 
     auto leaf = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, last_eval_goal, start_line_in_book).value();
     last_eval_goal = eval_goal;
-    std::cout
-        << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
     bool solved = false;
     int alpha = leaf.Alpha();
     int beta = leaf.Beta();
     auto node = leaf.Leaf();
+    auto remaining_work = node->RemainingWork(alpha, beta);
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
-    if (node->RemainingWork(alpha, beta) < n_descendants_solve) {
+    std::cout
+        << "Remaining work:        " << PrettyPrintDouble(remaining_work) << "\n"
+        << "Board:\n" << Indent(leaf.Leaf()->ToBoard().ToString(), "                       ");
+    if (remaining_work < n_descendants_solve) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();
       evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, n_threads, false);
