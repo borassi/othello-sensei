@@ -169,6 +169,10 @@ add_library(
         load_thor.h
 )
 
+set_target_properties(
+        load_thor PROPERTIES LINKER_LANGUAGE CXX
+)
+
 target_link_libraries(
         load_thor
         LINK_PRIVATE
