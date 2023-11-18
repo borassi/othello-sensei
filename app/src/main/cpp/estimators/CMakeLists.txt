@@ -30,6 +30,7 @@ set_target_properties(
         endgame_time PROPERTIES LINKER_LANGUAGE CXX
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         endgame_time_test
         ../estimators/endgame_time_test.cpp
@@ -44,6 +45,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         win_probability
@@ -57,6 +59,7 @@ target_link_libraries(
         functions
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         win_probability_test
         win_probability_test.cpp
@@ -71,3 +74,4 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()

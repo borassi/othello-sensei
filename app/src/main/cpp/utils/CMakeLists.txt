@@ -34,6 +34,7 @@ set_target_properties(
         functions PROPERTIES LINKER_LANGUAGE CXX
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         functions_test
         functions_test.cpp
@@ -47,6 +48,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         random
@@ -56,6 +58,7 @@ set_target_properties(
         random PROPERTIES LINKER_LANGUAGE CXX
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         random_test
         random_test.cpp
@@ -69,6 +72,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         misc
@@ -76,6 +80,7 @@ add_library(
         misc.cpp
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         misc_test
         misc_test.cpp
@@ -89,6 +94,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         parse_flags
@@ -96,6 +102,7 @@ add_library(
         parse_flags.cpp
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         parse_flags_test
         parse_flags_test.cpp
@@ -109,6 +116,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         load_training_set
@@ -140,6 +148,7 @@ add_library(
         serializable_boolean_vector.cpp
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         serializable_boolean_vector_test
         serializable_boolean_vector_test.cpp
@@ -153,6 +162,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         load_thor

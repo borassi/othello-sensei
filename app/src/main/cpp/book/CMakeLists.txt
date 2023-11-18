@@ -24,6 +24,7 @@ target_link_libraries(
         files
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         value_file_test
         value_file_test.cpp
@@ -38,6 +39,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         book
@@ -54,6 +56,7 @@ target_link_libraries(
         value_file
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         book_test
         book_test.cpp
@@ -71,6 +74,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         test_utils
@@ -106,6 +110,7 @@ target_link_libraries(
         value_file
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         book_tree_node_test
         book_tree_node_test.cpp
@@ -123,6 +128,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_executable(
         merge_books_main

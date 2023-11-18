@@ -25,6 +25,7 @@ target_link_libraries(
         board
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         pattern_test
         pattern_test.cpp
@@ -41,6 +42,7 @@ target_link_libraries(
         gmock
         -no-pie
 )
+ENDIF()
 
 add_library(
         pattern_evaluator
@@ -57,6 +59,7 @@ target_link_libraries(
         evaluator_depth_one_base
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         pattern_evaluator_test
         pattern_evaluator_test.cpp
@@ -74,6 +77,7 @@ target_link_libraries(
         gmock
         -no-pie
 )
+ENDIF()
 
 add_library(
         evaluator_depth_one_base
@@ -96,6 +100,7 @@ target_link_libraries(
         evaluator_depth_one_base
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         test_evaluator_depth_one_test
         test_evaluator_depth_one_test.cpp
@@ -111,6 +116,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         train_pattern_evaluator
@@ -126,6 +132,7 @@ target_link_libraries(
         pattern
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         train_pattern_evaluator_test
         train_pattern_evaluator_test.cpp
@@ -140,6 +147,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_executable(
         train_pattern_evaluator_main

@@ -33,6 +33,7 @@ IF(${__BMI2__})
     )
 ENDIF()
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         hash_map_test
         hash_map_test.cpp
@@ -47,3 +48,4 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()

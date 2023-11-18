@@ -28,6 +28,7 @@ target_link_libraries( # Specifies the target library.
         stable
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         evaluator_last_moves_test
         evaluator_last_moves_test.cpp
@@ -43,6 +44,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         evaluator_alpha_beta
@@ -62,6 +64,7 @@ target_link_libraries( # Specifies the target library.
         hash_map
         stable)
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         evaluator_alpha_beta_test
         evaluator_alpha_beta_test.cpp
@@ -79,6 +82,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         test_evaluator
@@ -93,6 +97,7 @@ target_link_libraries(
         get_moves
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         test_evaluator_test
         test_evaluator_test.cpp
@@ -108,3 +113,4 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()

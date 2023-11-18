@@ -35,6 +35,7 @@ target_compile_options(
         -fconstexpr-steps=100000000
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         prob_combiners_test
         prob_combiners_test.cpp
@@ -49,6 +50,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         evaluation
@@ -66,6 +68,7 @@ target_link_libraries( # Specifies the target library.
         prob_combiners
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         evaluation_test
         evaluation_test.cpp
@@ -79,6 +82,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         tree_node
@@ -98,6 +102,7 @@ target_link_libraries( # Specifies the target library.
         serializable_boolean_vector
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         tree_node_test
         tree_node_test.cpp
@@ -112,6 +117,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         evaluator_derivative
@@ -132,6 +138,7 @@ target_link_libraries( # Specifies the target library.
         evaluator_depth_one_base
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         evaluator_derivative_test
         evaluator_derivative_test.cpp
@@ -149,3 +156,4 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()

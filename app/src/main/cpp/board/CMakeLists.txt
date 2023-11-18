@@ -18,6 +18,7 @@ add_library(
         bitpattern.cpp
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         bitpattern_test
         bitpattern_test.cpp
@@ -32,6 +33,7 @@ target_link_libraries(
         gmock
         -no-pie
 )
+ENDIF()
 
 add_library(
         board
@@ -46,6 +48,7 @@ target_link_libraries(
         get_flip
         get_moves)
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         board_test
         board_test.cpp
@@ -61,6 +64,7 @@ target_link_libraries(
         gmock
         -no-pie
 )
+ENDIF()
 
 add_library(
         get_flip
@@ -78,6 +82,7 @@ IF(${__BMI2__})
     )
 ENDIF()
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         get_flip_test
         get_flip_test.cpp
@@ -92,6 +97,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_executable(
         get_flip_profile
@@ -127,6 +133,7 @@ target_link_libraries(
         get_flip
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         get_moves_test
         get_moves_test.cpp
@@ -144,6 +151,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         stable
@@ -172,6 +180,7 @@ IF(${__BMI2__})
     )
 ENDIF()
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         stable_test
         stable_test.cpp
@@ -186,3 +195,4 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
