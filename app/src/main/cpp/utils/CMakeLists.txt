@@ -145,6 +145,15 @@ add_executable(
         serializable_boolean_vector_test.cpp
 )
 
+target_link_libraries(
+        serializable_boolean_vector_test
+        LINK_PRIVATE
+        serializable_boolean_vector
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
+
 add_library(
         load_thor
         load_thor.h
@@ -154,13 +163,4 @@ target_link_libraries(
         load_thor
         LINK_PRIVATE
         files
-)
-
-target_link_libraries(
-        serializable_boolean_vector_test
-        LINK_PRIVATE
-        serializable_boolean_vector
-        GTest::gtest
-        GTest::gtest_main
-        -no-pie
 )

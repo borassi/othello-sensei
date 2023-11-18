@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#include <variant>
 #include "serializable_boolean_vector.h"
 
 TEST(SerializableBooleanVector, Works) {

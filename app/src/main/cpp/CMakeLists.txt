@@ -38,19 +38,24 @@ ENDIF()
 IF(NOT DEFINED PROFILE)
     SET(PROFILE FALSE)
 ENDIF()
+IF(NOT DEFINED ENABLE_TEST)
+    SET(ENABLE_TEST CMAKE_VERSION VERSION_LESS 3.13)
+ENDIF()
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pthread -fPIC")
 SET(CMAKE_CXX_STANDARD 23)
 
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    DOWNLOAD_EXTRACT_TIMESTAMP
-    URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+IF(ENABLE_TEST)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        DOWNLOAD_EXTRACT_TIMESTAMP
+        URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+ENDIF()
 
 SET(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
 SET(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
