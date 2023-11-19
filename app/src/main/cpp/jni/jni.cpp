@@ -618,5 +618,5 @@ Java_jni_JNI_lookupThorPositions(
 }
 
 #ifdef __cplusplus
-};
+}
 #endif
