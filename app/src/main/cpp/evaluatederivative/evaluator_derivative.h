@@ -411,16 +411,19 @@ class EvaluatorDerivative {
   }
 
   void UpdateNThreadMultiplierSuccess() {
-    n_thread_multiplier_ -= 100;
+    n_thread_multiplier_ -= 500;
     n_thread_multiplier_ = std::max(n_thread_multiplier_.load(), 1000);
   }
 
   void UpdateNThreadMultiplierFail() {
-    n_thread_multiplier_ += 2000;
+    n_thread_multiplier_ += 10000;
     n_thread_multiplier_ = std::min(n_thread_multiplier_.load(), 40000000);
   }
 
   float NThreadMultiplier() {
+    if (rand() % 1000 == 0) {
+      std::cout << n_thread_multiplier_ << "\n";
+    }
     return n_thread_multiplier_ / 1000.0;
   }
 };
