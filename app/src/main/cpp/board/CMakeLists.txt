@@ -166,11 +166,19 @@ target_link_libraries(
         get_flip
 )
 
-target_compile_options(
-        stable
-        PUBLIC
-        -fconstexpr-steps=1000000000
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(
+            stable
+            PUBLIC
+            -fconstexpr-steps=100000000
+    )
+ELSE()
+    target_compile_options(
+            stable
+            PUBLIC
+            -fconstexpr-ops-limit=1000000000
+    )
+ENDIF()
 
 IF(${__BMI2__})
     target_compile_options(

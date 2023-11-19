@@ -29,11 +29,19 @@ target_link_libraries(
         misc
 )
 
-target_compile_options(
-        prob_combiners
-        PUBLIC
-        -fconstexpr-steps=100000000
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(
+            prob_combiners
+            PUBLIC
+            -fconstexpr-steps=100000000
+    )
+ELSE()
+    target_compile_options(
+            prob_combiners
+            PUBLIC
+            -fconstexpr-ops-limit=1000000000
+    )
+ENDIF()
 
 IF(ENABLE_GOOGLETEST)
 add_executable(

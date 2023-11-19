@@ -105,7 +105,7 @@ inline double GaussianCDF(double x, double mean, double stddev) {
   return GaussianCDF((x - mean) / stddev);
 }
 
-constexpr double ProbabilityExplicit(Square depth, Square empties, EvalLarge delta) {
+inline double ProbabilityExplicit(Square depth, Square empties, EvalLarge delta) {
   return 1 - GaussianCDF(delta, 0, 8 * std::max(3.0F, kErrors[depth][empties]));
 }
 
@@ -130,11 +130,11 @@ struct WinProbabilityData {
 
 const WinProbabilityData kWinProbability;
 
-constexpr double ByteToProbability(Probability byte) {
+inline double ByteToProbability(Probability byte) {
   return kWinProbability.byte_to_probability[byte];
 }
 
-constexpr Probability WinProbability(Square depth, Square n_empties, EvalLarge goal, EvalLarge eval) {
+inline Probability WinProbability(Square depth, Square n_empties, EvalLarge goal, EvalLarge eval) {
   return kWinProbability.win_probability[DataToCDFOffset(depth, n_empties, goal - eval)];
 }
 

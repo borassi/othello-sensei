@@ -57,7 +57,7 @@ class EvaluatedBoard {
 
   friend istream& operator>>(istream& is, EvaluatedBoard& board);
 
-  constexpr bool operator==(const EvaluatedBoard& other) const {
+  bool operator==(const EvaluatedBoard& other) const {
     return GetEval() == other.GetEval() && GetPlayer() == other.GetPlayer() &&
         GetOpponent() == other.GetOpponent();
   }

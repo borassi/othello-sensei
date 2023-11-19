@@ -50,7 +50,10 @@ TEST(EvaluationTest, DeltaToCDFOffset) {
       for (Square empties = 0; empties < 64; ++empties) {
         int offset = DataToCDFOffset(depth, empties, delta);
         ASSERT_LT(offset, kMaxCDFOffset);
-        const auto& [actual_depth, actual_empties, actual_delta] = CDFOffsetToDepthEmptiesEval(offset);
+        const auto actual = CDFOffsetToDepthEmptiesEval(offset);
+        const auto& actual_depth = std::get<0>(actual);
+        const auto& actual_empties = std::get<1>(actual);
+        const auto& actual_delta = std::get<2>(actual);
         ASSERT_EQ(actual_depth, depth)
             << (int) depth << " " << (int) actual_depth << "\n"
             << (int) delta << " " << (int) actual_delta << "\n"

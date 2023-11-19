@@ -393,7 +393,7 @@ struct ProofDisproofNumberData {
 
 const ProofDisproofNumberData kProofDisproofNumberData;
 
-constexpr float ByteToProofNumber(PN byte) {
+inline float ByteToProofNumber(PN byte) {
   return kProofDisproofNumberData.byte_to_proof_number[byte];
 }
 

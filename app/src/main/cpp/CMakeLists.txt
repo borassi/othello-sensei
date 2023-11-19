@@ -27,9 +27,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 # Declares and names the project.
 
-SET(CMAKE_C_COMPILER clang)
-SET(CMAKE_CPP_COMPILER /usr/bin/clang++-13)
-
 project("othellosensei" CXX)
 
 IF(NOT DEFINED ANDROID)
@@ -46,6 +43,8 @@ ELSE()
     MESSAGE("WARNING: disabled googletest because CMake version ${CMAKE_VERSION} is too old")
 ENDIF()
 
+MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
+
 SET(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_FLAGS "-std=c++1y ${CMAKE_CXX_FLAGS} -pthread -fPIC")
 
@@ -60,9 +59,6 @@ IF(ENABLE_GOOGLETEST)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 ENDIF()
-
-SET(CMAKE_C_COMPILER clang CACHE STRING "C compiler" FORCE)
-SET(CMAKE_CXX_COMPILER clang++ CACHE STRING "C++ compiler" FORCE)
 
 IF(ANDROID)
     find_library(log-lib JNI_LIBRARIES)

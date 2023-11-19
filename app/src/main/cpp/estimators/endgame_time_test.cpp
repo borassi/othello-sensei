@@ -53,7 +53,10 @@ TEST(EvaluationTest, DataToProofNumberOffset) {
       for (EvalLarge delta = -128; delta <= 128; ++delta) {
         int offset = DataToProofNumberOffset(empties, moves, delta);
         ASSERT_LT(offset, kMaxProofNumberOffset);
-        const auto& [actual_empties, actual_moves, actual_delta] = ProofNumberOffsetToEmptiesMovesEval(offset);
+        const auto actual = ProofNumberOffsetToEmptiesMovesEval(offset);
+        const auto& actual_empties = std::get<0>(actual);
+        const auto& actual_moves = std::get<1>(actual);
+        const auto& actual_delta = std::get<2>(actual);
         ASSERT_EQ(actual_moves, moves)
             << (int) empties << " " << (int) actual_empties << "\n"
             << (int) moves << " " << (int) actual_moves << "\n"
