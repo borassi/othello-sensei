@@ -412,20 +412,20 @@ class EvaluatorDerivative {
 
   void UpdateNThreadMultiplierSuccess() {
     if (n_thread_multiplier_ > 2000 * threads_.size()) {
-      n_thread_multiplier_ -= 100 * threads_.size();
+      n_thread_multiplier_ -= 800 * threads_.size();
     }
   }
 
   void UpdateNThreadMultiplierFail() {
-    if (n_thread_multiplier_ < 4000000000UL - 80000 * threads_.size()) {
+    if (n_thread_multiplier_ < 40000000000UL - 80000 * threads_.size()) {
       n_thread_multiplier_ += 4000 * threads_.size();
     }
   }
 
   float NThreadMultiplier() {
-    if (rand() % 1000 == 0) {
-      std::cout << n_thread_multiplier_ << "\n";
-    }
+//    if (rand() % 1000 == 0) {
+//      std::cout << n_thread_multiplier_ << "\n";
+//    }
     return n_thread_multiplier_ / 1000.0;
   }
 };
