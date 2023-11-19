@@ -411,8 +411,8 @@ class EvaluatorDerivative {
   }
 
   void UpdateNThreadMultiplierSuccess() {
-    if (n_thread_multiplier_ > 2000 * threads_.size()) {
-      n_thread_multiplier_ -= 800 * threads_.size();
+    if (n_thread_multiplier_ > 40000 * threads_.size()) {
+      n_thread_multiplier_ -= 2000 * threads_.size();
     }
   }
 

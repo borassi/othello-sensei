@@ -51,7 +51,6 @@ void EvaluatorThread::Run() {
     if (!leaf_opt) {
       stats_.Add(1, NEXT_POSITION_FAIL);
       evaluator_->UpdateNThreadMultiplierFail();
-      std::this_thread::sleep_for(1ms);
       continue;
     }
     stats_.Add(1, NEXT_POSITION_SUCCESS);
