@@ -49,6 +49,7 @@ import java.util.Locale;
 import board.Board;
 
 import constants.Constants;
+import jni.ThorGame;
 import main.Main;
 import thor.Game;
 import jni.JNI;
@@ -73,9 +74,10 @@ public class MobileUI extends AppCompatActivity implements UI {
   private Menu menu;
   private Task task = Task.SHOW_EVALS;
   private String notes = "";
-  private final static String VERSION = "2";
+  private final static String VERSION = "3";
   private final static String VERSION_FILE = "/version.txt";
   private String localFolderPath;
+  private static ArrayList<String> thorPlayers;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +95,11 @@ public class MobileUI extends AppCompatActivity implements UI {
     extraInfo = findViewById(R.id.empties);
     main = new Main(this);
     main.newGame();
+    thorPlayers = main.getThorPlayers();
+  }
+
+  protected static ArrayList<String> getThorPlayers() {
+    return thorPlayers;
   }
 
   private static void deleteDirectoryRecursively(File dir) {
@@ -221,9 +228,9 @@ public class MobileUI extends AppCompatActivity implements UI {
         String player = data.getStringExtra("player");
         String color = data.getStringExtra("color");
         if (color.equals("Black")) {
-          main.thorLookup(new HashSet<>(Arrays.asList(player)), new HashSet<>(), new HashSet<>());
+          main.thorLookup(Arrays.asList(player), new ArrayList<>(), new ArrayList<>());
         } else {
-          main.thorLookup(new HashSet<>(), new HashSet<>(Arrays.asList(player)), new HashSet<>());
+          main.thorLookup(new ArrayList<>(), Arrays.asList(player), new ArrayList<>());
         }
         wantThor = true;
       } else {
@@ -262,20 +269,13 @@ public class MobileUI extends AppCompatActivity implements UI {
     });
   }
 
+  public void setThorGames(ArrayList<ThorGame> games, int square) {
+    boardView.setThorGames(games, square);
+  }
+
   @Override
-  public void setThorGames(Board b, ArrayList<Game> games) {
-    String text = "Found " + games.size() + " games:\n";
-    int i = 0;
-    for (Game g : games) {
-      text += String.format(Locale.US, "%-20s %-20s %4d %-2s\n", g.black(), g.white(),
-          g.year(),
-          g.moves().substring((60 - board.getEmptySquares()) * 2,
-              (60 - board.getEmptySquares()) * 2 + 2));
-      if (i++ > 30) {
-        break;
-      }
-    }
-    setExtraInfoText(text, 14);
+  public void updateThorGamesWindow(String content) {
+    setExtraInfoText(content, 14);
   }
 
   @Override

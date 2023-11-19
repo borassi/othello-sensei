@@ -22,6 +22,8 @@ import javax.swing.JFrame;
 import javax.swing.JTextArea;
 
 import board.Board;
+import jni.ThorGame;
+import jni.ThorGameWithMove;
 import thor.Game;
 
 public class ThorGamesWindow extends JFrame {
@@ -40,22 +42,7 @@ public class ThorGamesWindow extends JFrame {
     return new Dimension(800, 800);
   }
 
-  public void setGames(Board board, ArrayList<Game> games) {
-    String text = "Found " + games.size() + " games:\n";
-    games.sort((g1, g2) -> {
-      if (g1.year() < g2.year()) {
-        return 1;
-      } else if (g1.year() > g2.year()) {
-        return -1;
-      }
-      return g1.toString().compareTo(g2.toString());
-    });
-    for (Game g : games) {
-      text += String.format(Locale.US, "%-20s %-20s %-26s %4d %-2s\n", g.black(), g.white(),
-          g.tournament(),
-          g.year(),
-          g.moves().substring((60 - board.getEmptySquares()) * 2, (60 - board.getEmptySquares()) * 2 + 2));
-    }
-    this.thorGamesText.setText(text);
+  public void setGames(String content) {
+    this.thorGamesText.setText(content);
   }
 }

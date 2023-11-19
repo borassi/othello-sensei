@@ -25,10 +25,12 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import bitpattern.BitPattern;
 import board.Board;
+import jni.ThorGame;
 import ui_desktop.CaseAnnotations;
 
 public class BoardView extends View {
@@ -41,6 +43,7 @@ public class BoardView extends View {
   private Board board = new Board();
   private boolean blackTurn = false;
   private CaseAnnotations[][] annotations;
+  private ArrayList<ArrayList<ThorGame>> thorGames;
   private final RectF[][] caseBorders;
   private boolean wantThor = false;
 
@@ -81,6 +84,14 @@ public class BoardView extends View {
 
   public void resetAnnotations() {
     this.annotations = new CaseAnnotations[8][8];
+    this.thorGames = new ArrayList<>();
+    for (int i = 0; i < 64; ++i) {
+      this.thorGames.add(null);
+    }
+  }
+
+  public void setThorGames(ArrayList<ThorGame> thorGames, int square) {
+    this.thorGames.set(square, thorGames);
   }
 
   @Override
@@ -121,19 +132,22 @@ public class BoardView extends View {
   }
 
   public void drawAnnotations(Canvas canvas) {
-    for (int i = 0; i < 8; ++i) {
-      for (int j = 0; j < 8; ++j) {
-        drawAnnotation(canvas, this.annotations[i][j], i * cellSize,
-            j * cellSize);
-      }
+    for (int c = 0; c < 64; ++c) {
+      int x = BitPattern.getX(c);
+      int y = BitPattern.getY(c);
+      drawAnnotation(
+          canvas,
+          this.annotations[x][y],
+          this.thorGames.get(c),
+          x * cellSize, y * cellSize);
     }
   }
 
-  public void drawAnnotation(Canvas canvas, CaseAnnotations annotation, int x, int y) {
+  public void drawAnnotation(Canvas canvas, CaseAnnotations annotation, ArrayList<ThorGame> thorGames, int x, int y) {
     if (annotation == null || annotation.node == null) {
       return;
     }
-    String lines = annotation.getLines(false);
+    String lines = annotation.getLines(false, thorGames);
 
     Paint paint = new Paint();
     paint.setColor(annotation.isBestMove ? Color.RED : Color.BLACK);

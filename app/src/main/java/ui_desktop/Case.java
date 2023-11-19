@@ -22,8 +22,11 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 
 import javax.swing.JPanel;
+
+import jni.ThorGame;
 
 public class Case extends JPanel implements MouseListener, ComponentListener {
   private static final long serialVersionUID = 1L;
@@ -48,6 +51,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
    * The annotations to be printed in this case (first line).
    */
   private String annotations = "";
+  private ArrayList<ThorGame> thorGames;
   /**
    * The color of the annotations.
    */
@@ -63,6 +67,7 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
   public Case(DesktopUI ui, int move) {
     this.move = move;
     this.ui = ui;
+    this.thorGames = null;
     super.addMouseListener(this);
     setState('-');
   }
@@ -73,6 +78,24 @@ public class Case extends JPanel implements MouseListener, ComponentListener {
    */
   public void setAnnotations(String annotations) {
     this.annotations = annotations;
+  }
+
+  /**
+   * Sets the thor games of this case.
+   * @param thorGames the new games.
+   */
+  public void setThorGames(ArrayList<ThorGame> thorGames) {
+    this.thorGames = thorGames;
+  }
+  /**
+   * Gets the thor games of this case.
+   * @return the games.
+   */
+  public ArrayList<ThorGame> getThorGames() { return thorGames; }
+
+  public void resetAnnotations() {
+    annotations = "";
+    thorGames = null;
   }
 
   /**

@@ -210,6 +210,12 @@ TEST(BitPattern, MoveToSquare) {
   EXPECT_EQ(MoveToSquare("a1"), 63);
 }
 
+TEST(BitPattern, SquareToMove) {
+  for (int i = 0; i < 64; ++i) {
+    ASSERT_EQ(i, MoveToSquare(SquareToMove(i)));
+  }
+}
+
 TEST(BitPattern, VerticalMirror) {
   BitPattern p = ParsePattern("XX------"
                               "------XX"

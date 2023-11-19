@@ -76,3 +76,9 @@ std::string Indent(const std::string& s, const std::string& characters) {
       except_last, std::regex("\n"), "\n" + characters)
       + s.substr(s.size() - 1, s.size());
 }
+
+short GetCurrentYear() {
+  std::time_t t = std::time(nullptr);
+  std::tm* const time = std::localtime(&t);
+  return 1900 + time->tm_year;
+}

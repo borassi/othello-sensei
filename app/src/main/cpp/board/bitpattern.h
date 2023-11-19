@@ -289,6 +289,10 @@ inline Square MoveToSquare(std::string move) {
   return ('h' - move[0]) + ('8' - move[1]) * 8;
 }
 
+static std::string SquareToMove(Square move) {
+  return std::string(1, 'h' - (move % 8)) + std::to_string(8 - move / 8);
+}
+
 constexpr BitPattern VerticalMirror(BitPattern p) {
 	p = ((p >>  8) & 0x00FF00FF00FF00FFULL) | ((p <<  8) & 0xFF00FF00FF00FF00ULL);
 	p = ((p >> 16) & 0x0000FFFF0000FFFFULL) | ((p << 16) & 0xFFFF0000FFFF0000ULL);

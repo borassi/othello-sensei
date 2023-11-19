@@ -60,12 +60,12 @@ target_link_libraries(
 )
 
 add_executable(
-        thor
-        thor.cpp
+        thor_main
+        thor_main.cpp
 )
 
 target_link_libraries(
-        thor
+        thor_main
         LINK_PUBLIC
         bitpattern
         evaluator_alpha_beta

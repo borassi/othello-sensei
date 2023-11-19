@@ -21,13 +21,14 @@ add_library(
 target_link_libraries( # Specifies the target library.
         jni
         LINK_PUBLIC
-        files
         book
-        tree_node
-        pattern_evaluator
         evaluator_alpha_beta
         evaluator_derivative
+        files
         hash_map
+        pattern_evaluator
+        thor
+        tree_node
         ${JNI_LIBRARIES}
         -fPIC
 )

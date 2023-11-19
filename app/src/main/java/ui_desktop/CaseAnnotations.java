@@ -13,23 +13,20 @@
 // limitations under the License.
 package ui_desktop;
 
+import java.util.ArrayList;
+
 import jni.JNI;
 import jni.Node;
+import jni.ThorGame;
 
 public class CaseAnnotations {
   public final Node father;
   public final Node node;
   public final boolean isBestMove;
-  public final int thorGames;
 
   public CaseAnnotations(Node father, Node treeNode, boolean isBestMove) {
-    this(father, treeNode, -1, isBestMove);
-  }
-
-  public CaseAnnotations(Node father, Node treeNode, int thorGames, boolean isBestMove) {
     this.node = treeNode;
     this.isBestMove = isBestMove;
-    this.thorGames = thorGames;
     this.father = father;
   }
 
@@ -62,14 +59,14 @@ public class CaseAnnotations {
 //  }
 
   public String getLines() {
-    return getLines(true);
+    return getLines(true, null);
   }
 
-  public String getLines(boolean doubleEval) {
+  public String getLines(boolean doubleEval, ArrayList<ThorGame> thorGames) {
     int lower = node.getPercentileLower() - 1;
     int upper = node.getPercentileUpper() + 1;
     String rows;
-    if (thorGames < 0) {
+    if (thorGames == null) {
       rows = evalLine(doubleEval) + "\n"
           + JNI.prettyPrintDouble(node.getDescendants()) + "\n";
       if (lower == upper) {
@@ -80,7 +77,7 @@ public class CaseAnnotations {
       }
       return rows;
     } else {
-      return (thorGames == 0 ? "" : thorGames) + "\n" +
+      return (thorGames.size() == 0 ? "" : thorGames.size()) + "\n" +
           evalLine(doubleEval) + "\n"
           + JNI.prettyPrintDouble(node.getDescendants());
     }

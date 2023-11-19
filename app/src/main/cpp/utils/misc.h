@@ -105,13 +105,23 @@ bool Contains(std::vector<T> v, T elem) {
   return std::find(v.begin(), v.end(), elem) != v.end();
 }
 
-template<typename K, typename V>
-V GetOrDefault(const std::unordered_map<K, V>& map, K key, V default_value) {
+template<template <typename...> class Map, typename K, typename V>
+V GetOrDefault(const Map<K, V>& map, K key, V default_value) {
   auto iter = map.find(key);
   if (iter != map.end()) {
     return iter->second;
   }
   return default_value;
+}
+
+template<template <typename...> class Map, typename K, typename V>
+bool Contains(const Map<K, V>& map, K key) {
+  return map.find(key) != map.end();
+}
+
+template<template <typename...> class Set, typename K>
+bool Contains(const Set<K>& set, K key) {
+  return set.find(key) != set.end();
 }
 
 struct PairHash {
@@ -120,6 +130,8 @@ struct PairHash {
       return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
   }
 };
+
+short GetCurrentYear();
 
 std::string PrettyPrintDouble(double d);
 

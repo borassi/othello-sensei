@@ -17,6 +17,8 @@
 #include <gtest/gtest.h>
 #include <math.h>
 #include <limits>
+#include <unordered_map>
+#include <unordered_set>
 #include "misc.h"
 
 TEST(ConstexprMath, Log) {
@@ -48,9 +50,25 @@ TEST(Misc, GetOrDefault) {
   std::unordered_map<std::string, int> map;
   map["luke"] = 1;
   map["vader"] = 2;
-  EXPECT_EQ(1, (GetOrDefault<std::string, int>(map, "luke", 10)));
-  EXPECT_EQ(2, (GetOrDefault<std::string, int>(map, "vader", 10)));
-  EXPECT_EQ(10, (GetOrDefault<std::string, int>(map, "leila", 10)));
+  EXPECT_EQ(1, (GetOrDefault(map, std::string("luke"), 10)));
+  EXPECT_EQ(2, (GetOrDefault(map, std::string("vader"), 10)));
+  EXPECT_EQ(10, (GetOrDefault(map, std::string("leila"), 10)));
+}
+
+TEST(Misc, ContainsMap) {
+  std::unordered_map<std::string, int> map;
+  map["luke"] = 1;
+  map["vader"] = 2;
+  EXPECT_TRUE(Contains(map, std::string("luke")));
+  EXPECT_FALSE(Contains(map, std::string("leila")));
+}
+
+TEST(Misc, ContainsSet) {
+  std::unordered_set<std::string> set;
+  set.insert("luke");
+  set.insert("vader");
+  EXPECT_TRUE(Contains(set, std::string("luke")));
+  EXPECT_FALSE(Contains(set, std::string("leila")));
 }
 
 TEST(Misc, PrettyPrintDouble) {

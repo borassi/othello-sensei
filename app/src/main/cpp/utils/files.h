@@ -45,10 +45,13 @@ FileOffset FileLength(std::fstream& file);
 template<typename T>
 std::vector<T> ReadFile(std::string filename) {
   std::fstream file = std::fstream(filename, std::ios::in | std::ios::binary);
+  if (!file.is_open()) {
+    return {};
+  }
   std::vector<T> result;
   FileOffset length = FileLength(file);
   result.resize(length * sizeof(char) / sizeof(T));
-  file.read((char*) &result[0], length);
+  file.read((char*) result.data(), length);
   return result;
 }
 

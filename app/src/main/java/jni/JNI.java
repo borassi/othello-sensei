@@ -14,10 +14,13 @@
 package jni;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import board.Board;
 import constants.Constants;
 import evaluateposition.Status;
+import thor.Game;
 
 public class JNI {
   private long pointer;
@@ -26,11 +29,11 @@ public class JNI {
     return pointer;
   }
 
-  public JNI(String evalFile, String bookFolder) {
+  public JNI(String evalFile, String bookFolder, String thorFolder) {
     pointer = 0;
-    create(evalFile, bookFolder);
+    create(evalFile, bookFolder, thorFolder);
   }
-  public native void create(String evalFile, String bookFolder);
+  public native void create(String evalFile, String bookFolder, String thorFolder);
 
   @Override
   protected native void finalize();
@@ -78,4 +81,9 @@ public class JNI {
   public static boolean isGameOver(Board b) {
     return haveToPass(b) && haveToPass(b.move(0));
   }
+
+  public native ArrayList<String> getThorPlayers();
+  public native ArrayList<String> getThorTournaments();
+  public native void lookupThorPositions(List<String> black, List<String> white, List<String> tournaments);
+  public native ArrayList<ThorGame> getThorGames(Board b);
 }

@@ -20,8 +20,10 @@ import bitpattern.PositionIJ;
 import board.Board;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -33,6 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import jni.JNI;
 import jni.Node;
+import jni.ThorGame;
+import jni.ThorGameWithMove;
 import thor.Game;
 import thor.Thor;
 import ui_desktop.CaseAnnotations;
@@ -64,32 +68,31 @@ public class Main implements Runnable {
   private long startTime;
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
-  private static Thor thor;
   private boolean canComputeError;
   private UI.UseBook useBook;
+  private final int MAX_THOR_GAMES = 100;
 
   /**
    * Creates a new UI and sets the initial position.
    */
   public Main(UI ui) {
     Main.ui = ui;
-    thor = new Thor(ui.thorFolder());
-    EVALUATOR = new JNI(ui.evalFile(), ui.bookFolder());
+    EVALUATOR = new JNI(ui.evalFile(), ui.bookFolder(), ui.thorFolder());
     resetFirstPosition();
     useBook = ui.useBook();
     setFirstPosition(new Board(), true);//"e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
   }
 
-  public SortedSet<String> getThorTournaments() {
-    return thor.getTournaments();
+  public ArrayList<String> getThorTournaments() {
+    return EVALUATOR.getThorTournaments();
   }
 
-  public static SortedSet<String> getThorPlayers() {
-    return thor.getPlayers();
+  public ArrayList<String> getThorPlayers() {
+    return EVALUATOR.getThorPlayers();
   }
 
-  public void thorLookup(Set<String> black, Set<String> white, Set<String> tournaments) {
-    thor.lookupPositions(black, white, tournaments);
+  public void thorLookup(List<String> black, List<String> white, List<String> tournaments) {
+    EVALUATOR.lookupThorPositions(black, white, tournaments);
   }
 
   /**
@@ -124,34 +127,6 @@ public class Main implements Runnable {
       while (!JNI.isGameOver(board)) {
         run();
         playMoveIfPossible(this.findMoveToPlay(error));
-      }
-      for (Position oldPosition : oldPositions) {
-        System.out.print(oldPosition.error + " ");
-      }
-      System.out.println();
-      newGame();
-    }
-  }
-
-  public void analyzeThorGames() {
-    for (int i = 0; i < 100; ++i) {
-      HashSet<String> players = new HashSet<String>(
-          Arrays.asList(new String[]{
-              "Borassi Michele", "Berg Matthias", "Marconi Francesco", "Di Mattei Alessandr",
-              "Takanashi Yusuke", "Aunchulee Piyanat", "Juigner Arthur", "Kashiwabara Takuji",
-              "Leader Imre", "Eklund Oskar", "Tastet Marc", "Sperandio Roberto", "Makkonen Olli",
-              "Pihlajapuro Lari", "Pihlajapuro Katie"
-          }));
-      thor.lookupPositions(players, new HashSet<>(), new HashSet<>());
-      ArrayList<Game> games = thor.getGames(new Board());
-      Game game = games.get((int) (Math.random() * games.size()));
-      byte[] moves = game.movesByte();
-      if (moves.length != 60) {
-        continue;
-      }
-      for (byte move : moves) {
-        run();
-        this.playMoveIfPossible((move / 10 - 1) * 8 + (move % 10 - 1));
       }
       for (Position oldPosition : oldPositions) {
         System.out.print(oldPosition.error + " ");
@@ -230,6 +205,38 @@ public class Main implements Runnable {
     return boards;
   }
 
+  public String thorGamesToString(List<ThorGameWithMove> games, int numGames) {
+    String result = "Showing " + games.size() + " of " + numGames + " games:\n";
+    for (ThorGameWithMove game : games) {
+      result += game.toString() + "\n";
+    }
+    return result;
+  }
+
+  public void setThorGames(Board board) {
+    ArrayList<ThorGameWithMove> allThorGames = new ArrayList<>();
+    int numGames = 0;
+    for (Board child : JNI.children(board)) {
+      ArrayList<ThorGame> currentGames = EVALUATOR.getThorGames(child);
+      int move = moveFromBoard(board, child);
+      ui.setThorGames(currentGames, move);
+      numGames += currentGames.size();
+      int i = 0;
+      for (ThorGame game : currentGames) {
+        allThorGames.add(new ThorGameWithMove(game, (byte) move));
+        if (i++ >= MAX_THOR_GAMES) {
+          break;
+        }
+      }
+    }
+    allThorGames.sort(Comparator
+        .comparing((ThorGameWithMove g)->g.game().year()).reversed()
+        .thenComparing((ThorGameWithMove g)->g.game().tournament()));
+    ui.updateThorGamesWindow(thorGamesToString(
+        allThorGames.subList(0, Math.min(allThorGames.size(), MAX_THOR_GAMES)),
+        numGames));
+  }
+
   @Override
   public void run() {
     waitingTasks.getAndAdd(-1);
@@ -247,6 +254,10 @@ public class Main implements Runnable {
     }
     oldBoards.add(board.deepCopy());
 
+    if (ui.wantThorGames()) {
+      setThorGames(board);
+    }
+
     ArrayList<Board> boards = getBoards();
     if (boards.isEmpty()) {
       showMCTSEvaluations();
@@ -254,9 +265,6 @@ public class Main implements Runnable {
     }
     startTime = System.currentTimeMillis();
     EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 100, (float) ui.delta(), ui.nThreads(), ui.approx());
-    if (ui.wantThorGames()) {
-      ui.setThorGames(board, thor.getGames(board));
-    }
     while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
       if (!isMatch) {
         showMCTSEvaluations();
@@ -433,7 +441,6 @@ public class Main implements Runnable {
 
   private void showMCTSEvaluations() {
     ArrayList<Integer> bestMove = this.findBestMoves();
-    boolean hasThor = thor.getNumGames(board) > 0;
     Node father = getStoredBoard(board);
     for (Board child : JNI.children(board)) {
       Node childStored = getStoredBoard(child);
@@ -443,7 +450,6 @@ public class Main implements Runnable {
         annotations = new CaseAnnotations(
             father,
             childStored,
-            hasThor ? thor.getNumGames(child) : -1,
             bestMove.contains(move));
         ui.setAnnotations(annotations, move);
       }

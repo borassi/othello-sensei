@@ -35,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.TreeMap;
 
@@ -59,9 +60,9 @@ import javax.swing.event.ChangeEvent;
 
 import jni.JNI;
 import jni.Node;
+import jni.ThorGame;
 import main.Main;
 import main.UI;
-import thor.Game;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
 
@@ -217,13 +218,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     commands.add(lower);
     commands.add(upper);
     commands.add(error);
-    extras = new JTextArea();
-    extras.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-    commands.add(extras);
-    commands.add(new JLabel("Current position eval:"));
-    extrasPosition = new JTextArea();
-    extrasPosition.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-    commands.add(extrasPosition);
 
     JLabel thorBlackLabel = new JLabel("Thor black player:");
     commands.add(thorBlackLabel);
@@ -261,11 +255,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     lookupThor = new JButton("Lookup Thor");
     lookupThor.addMouseListener(new MouseAdapter() {
       public void mousePressed(MouseEvent me) {
-        HashSet<String> black = new HashSet<>(Arrays.asList(thorBlackAll.getText().split("\n")));
+        ArrayList<String> black = new ArrayList<>(Arrays.asList(thorBlackAll.getText().split("\n")));
         black.remove("");
-        HashSet<String> white = new HashSet<>(Arrays.asList(thorWhiteAll.getText().split("\n")));
+        ArrayList<String> white = new ArrayList<>(Arrays.asList(thorWhiteAll.getText().split("\n")));
         white.remove("");
-        main.thorLookup(black, white, new HashSet<>());
+        main.thorLookup(black, white, new ArrayList<>());
         thorActive.setSelected(true);
       }
     });
@@ -274,6 +268,14 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     thorActive = new JCheckBox("Thor mode");
     thorActive.addChangeListener((ChangeEvent e) -> thorGamesWindow.setVisible(thorActive.isSelected()));
     commands.add(thorActive);
+
+    extras = new JTextArea();
+    extras.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    commands.add(extras);
+    commands.add(new JLabel("Current position eval:"));
+    extrasPosition = new JTextArea();
+    extrasPosition.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    commands.add(extrasPosition);
 
     setFirstPosition.addMouseListener(new MouseAdapter() {
       public void mousePressed(MouseEvent me) {
@@ -316,7 +318,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     int x = BitPattern.getX(move);
     int y = BitPattern.getY(move);
     cases[x][y].setFontSizes(new double[] {0.25, 0.16});
-    cases[x][y].setAnnotations(annotations.getLines());
+    cases[x][y].setAnnotations(annotations.getLines(true, cases[x][y].getThorGames()));
     cases[x][y].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
     cases[x][y].repaint();
   }
@@ -360,11 +362,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       } else if (prob == 0) {
         rows.append(JNI.prettyPrintDouble(board.proofNumber(evalGoal)));
       } else {
-//        if (annotations.father != null) {
-//          rows.append(JNI.prettyPrintDouble(annotations.father.childLogDerivative(board, -evalGoal)));
-//        } else {
-          rows.append(JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
-//        }
+        rows.append(JNI.prettyPrintDouble(board.maxLogDerivative(evalGoal)));
       }
     }
 
@@ -393,7 +391,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
           continue;
         }
         cases[i][j].setState(board.getCase(i, j, blackTurn));
-        cases[i][j].setAnnotations("");
+        cases[i][j].resetAnnotations();
         cases[i][j].update(cases[i][j].getGraphics());
       }
     }
@@ -452,8 +450,13 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   }
 
   @Override
-  public void setThorGames(Board b, ArrayList<Game> thorGames) {
-    thorGamesWindow.setGames(b, thorGames);
+  public void setThorGames(ArrayList<ThorGame> thorGames, int square) {
+    cases[BitPattern.getX(square)][BitPattern.getY(square)].setThorGames(thorGames);
+  }
+
+  @Override
+  public void updateThorGamesWindow(String content) {
+    thorGamesWindow.setGames(content);
   }
 
   @Override

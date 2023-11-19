@@ -24,8 +24,8 @@
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
+#include "../thor/thor.h"
 #include "../utils/files.h"
-#include <jni.h>
 
 constexpr int kNumEvaluators = 60;
 
@@ -47,10 +47,65 @@ Board BoardToCPP(JNIEnv* env, jobject board) {
   };
 }
 
+JNIEXPORT jbyteArray JNICALL Java_Test_returnArray(JNIEnv *env, jobject This)
+{
+        jbyte a[] = {1,2,3,4,5,6};
+        jbyteArray ret = env->NewByteArray(6);
+        env->SetByteArrayRegion (ret, 0, 6, a);
+        return ret;
+}
+
+jobject ThorGameToJava(JNIEnv* env, const Game& game) {
+    jclass ThorGameJava = env->FindClass("jni/ThorGame");
+    jbyteArray moves = env->NewByteArray(60);
+    env->SetByteArrayRegion (moves, 0, 60, (jbyte*) game.MovesByte().data());
+    return env->NewObject(
+        ThorGameJava,
+        env->GetMethodID(ThorGameJava, "<init>",
+                         "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BSS)V"),
+        env->NewStringUTF(game.Black().c_str()),
+        env->NewStringUTF(game.White().c_str()),
+        env->NewStringUTF(game.Tournament().c_str()),
+        moves,
+        game.Year(),
+        game.Score());
+}
+
+template<class T, class U>
+jobject VectorToArrayList(JNIEnv* env, const std::vector<U>& v, T(*convert)(JNIEnv* env, const U&)) {
+  auto java_util_ArrayList = static_cast<jclass>(env->NewGlobalRef
+      (env->FindClass("java/util/ArrayList")));
+  jmethodID java_util_ArrayList_ = env->GetMethodID(java_util_ArrayList, "<init>", "()V");
+  jmethodID java_util_ArrayList_add = env->GetMethodID(java_util_ArrayList, "add", "(Ljava/lang/Object;)Z");
+  jobject result = env->NewObject(java_util_ArrayList, java_util_ArrayList_);
+  for (const U& element : v) {
+    env->CallBooleanMethod(result, java_util_ArrayList_add, convert(env, element));
+  }
+  return result;
+}
+
+template<class T, class U>
+std::unordered_set<U> ListToSet(JNIEnv* env, jobject l, U(*convert)(JNIEnv* env, const T&)) {
+  jclass java_util_List = env->FindClass("java/util/List");
+  // retrieve the size and the get method
+  jmethodID java_util_List_size = env->GetMethodID(java_util_List, "size", "()I");
+  jmethodID java_util_List_get = env->GetMethodID(java_util_List, "get", "(I)Ljava/lang/Object;");
+  std::unordered_set<U> result;
+  int size = env->CallIntMethod(l, java_util_List_size);
+  result.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    result.insert(convert(env, (T) env->CallObjectMethod(l, java_util_List_get, i)));
+  }
+  return result;
+}
+
 class JNIWrapper {
  public:
 
-  JNIWrapper(std::string evals_filepath, std::string book_filepath) :
+  JNIWrapper(
+      const std::string& evals_filepath,
+      const std::string& book_filepath,
+      const std::string& thor_filepath) :
       evals_(LoadEvals(evals_filepath)),
       hash_map_(),
       tree_node_supplier_(),
@@ -58,7 +113,8 @@ class JNIWrapper {
       last_gap_(-1),
       stopping_(false),
       reset_(true),
-      book_(book_filepath) {
+      book_(book_filepath),
+      thor_(thor_filepath) {
     for (int i = 0; i < kNumEvaluators; ++i) {
       evaluator_derivative_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
@@ -315,6 +371,25 @@ class JNIWrapper {
     book_.Commit();
   }
 
+  std::vector<std::string> GetThorPlayers() {
+    return thor_.Players();
+  }
+
+  std::vector<std::string> GetThorTournaments() {
+    return thor_.Tournaments();
+  }
+
+  void LookupThorPositions(
+      std::unordered_set<std::string> black,
+      std::unordered_set<std::string> white,
+      std::unordered_set<std::string> tournaments) {
+    thor_.LookupPositions(black, white, tournaments);
+  }
+
+  std::vector<Game> GetThorGames(const Board& b) {
+    return thor_.GetGames(b);
+  }
+
  private:
   Book<> book_;
   EvalType evals_;
@@ -325,6 +400,7 @@ class JNIWrapper {
   float last_gap_;
   bool stopping_;
   bool reset_;
+  Thor thor_;
 };
 
 #ifdef __cplusplus
@@ -337,13 +413,14 @@ JNIWrapper* JNIFromJava(JNIEnv* env, jobject obj) {
   return (JNIWrapper*) env->CallLongMethod(obj, mid);
 }
 
-JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jstring evalFile, jstring bookFolder) {
+JNIEXPORT void JNICALL Java_jni_JNI_create(JNIEnv* env, jobject obj, jstring evalFile, jstring bookFolder, jstring thorFolder) {
   jclass jni = env->FindClass("jni/JNI");
   jmethodID setup = env->GetMethodID(jni, "setup", "(J)V");
   jboolean isCopy;
   const char* eval_file = (env)->GetStringUTFChars(evalFile, &isCopy);
   const char* book_folder = (env)->GetStringUTFChars(bookFolder, &isCopy);
-  env->CallVoidMethod(obj, setup, (jlong) new JNIWrapper(eval_file, book_folder));
+  const char* thor_folder = (env)->GetStringUTFChars(thorFolder, &isCopy);
+  env->CallVoidMethod(obj, setup, (jlong) new JNIWrapper(eval_file, book_folder, thor_folder));
 }
 
 TreeNode* TreeNodeFromJava(JNIEnv* env, jobject tree_node_java) {
@@ -489,8 +566,55 @@ Java_jni_JNI_uniqueChildren(JNIEnv *env, jclass clazz, jobject board) {
 }
 
 JNIEXPORT jstring JNICALL
-Java_jni_JNI_prettyPrintDouble(JNIEnv *env, jclass clazz, jdouble d) {
+Java_jni_JNI_prettyPrintDouble(JNIEnv* env, jclass clazz, jdouble d) {
   return env->NewStringUTF(PrettyPrintDouble(d).c_str());
+}
+
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_getThorPlayers(JNIEnv* env, jobject thiz) {
+  return VectorToArrayList<jstring, std::string>(
+      env,
+      JNIFromJava(env, thiz)->GetThorPlayers(),
+      [](JNIEnv* env, const std::string& s) {
+        return env->NewStringUTF(s.c_str());
+      });
+}
+
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_getThorTournaments(JNIEnv *env, jobject thiz) {
+    return VectorToArrayList<jstring, std::string>(
+      env,
+      JNIFromJava(env, thiz)->GetThorTournaments(),
+      [](JNIEnv* env, const std::string& s) {
+        return env->NewStringUTF(s.c_str());
+      });
+}
+
+JNIEXPORT jobject JNICALL
+Java_jni_JNI_getThorGames(JNIEnv *env, jobject thiz, jobject b) {
+  return VectorToArrayList<jobject, Game>(
+      env,
+      JNIFromJava(env, thiz)->GetThorGames(BoardToCPP(env, b)),
+      &ThorGameToJava);
+}
+
+JNIEXPORT void JNICALL
+Java_jni_JNI_lookupThorPositions(
+    JNIEnv *env,
+    jobject thiz,
+    jobject black,
+    jobject white,
+    jobject tournaments) {
+  auto conversion = [](JNIEnv *env, const jstring& s) {
+    auto c_string = env->GetStringUTFChars(s, NULL);
+    std::string result(c_string);
+    env->ReleaseStringUTFChars(s, c_string);
+    return result;
+  };
+  JNIFromJava(env, thiz)->LookupThorPositions(
+      ListToSet<jstring, std::string>(env, black, conversion),
+      ListToSet<jstring, std::string>(env, white, conversion),
+      ListToSet<jstring, std::string>(env, tournaments, conversion));
 }
 
 #ifdef __cplusplus

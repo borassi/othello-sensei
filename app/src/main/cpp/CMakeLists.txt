@@ -66,6 +66,8 @@ ELSE()
     find_package(JNI REQUIRED)
 ENDIF()
 
+find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
+
 include_directories( ${JNI_INCLUDE_DIRS} )
 
 SET(
@@ -88,6 +90,7 @@ add_subdirectory(evaluatealphabeta)
 add_subdirectory(evaluatedepthone)
 add_subdirectory(evaluatederivative)
 add_subdirectory(hashmap)
+add_subdirectory(thor)
 add_subdirectory(utils)
 add_subdirectory(jni)
 

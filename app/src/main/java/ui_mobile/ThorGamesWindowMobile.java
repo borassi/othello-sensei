@@ -59,7 +59,7 @@ public class ThorGamesWindowMobile extends AppCompatActivity {
   void updateListOfPlayers() {
     String text = player.getText().toString();
     ArrayList<String> currentPlayers = new ArrayList<>();
-    for (String player : Main.getThorPlayers()) {
+    for (String player : MobileUI.getThorPlayers()) {
       if (player.startsWith(text)) {
         currentPlayers.add(player);
       }
