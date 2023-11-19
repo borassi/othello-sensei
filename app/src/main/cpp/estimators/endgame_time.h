@@ -362,7 +362,7 @@ struct ProofDisproofNumberData {
   double byte_to_proof_number[kProofNumberStep + 1];
 
   ProofDisproofNumberData() : proof_number(), disproof_number(), byte_to_proof_number() {
-    for (Square empties = 0; empties <= 63; ++empties) {
+    for (int empties = 0; empties <= 63; ++empties) {
       for (Square moves = 0; moves <= 15; ++moves) {
         for (EvalLarge delta = -128; delta <= 128; ++delta) {
           int offset = DataToProofNumberOffset(empties, moves, delta);
