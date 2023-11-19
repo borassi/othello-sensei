@@ -112,7 +112,14 @@ struct CombineProb {
 class Evaluation {
  public:
   static const CombineProb kCombineProb;
-  bool operator==(const Evaluation& other) const = default;
+  bool operator==(const Evaluation& other) const {
+    return
+        prob_greater_equal_ == other.prob_greater_equal_
+        && proof_number_ == other.proof_number_
+        && disproof_number_ == other.disproof_number_
+        && max_log_derivative_ == other.max_log_derivative_;
+  }
+  bool operator!=(const Evaluation& other) const { return !operator==(other); }
   float ProofNumber() const { return ByteToProofNumber(proof_number_); }
   float DisproofNumber() const { return ByteToProofNumber(disproof_number_); }
   int MaxLogDerivative() const { return max_log_derivative_; }
@@ -267,9 +274,9 @@ class Evaluation {
     disproof_number_ = disproof_number;
     max_log_derivative_ = max_log_derivative;
   }
-  Probability prob_greater_equal_;
 
  private:
+  Probability prob_greater_equal_;
   PN proof_number_;
   PN disproof_number_;
   int max_log_derivative_;

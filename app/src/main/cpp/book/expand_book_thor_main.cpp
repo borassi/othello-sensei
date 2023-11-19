@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <filesystem>
+#include <experimental/filesystem>
 #include <limits>
 
 #include "book.h"
@@ -29,7 +29,7 @@
 #include "../utils/load_thor.h"
 #include "../utils/parse_flags.h"
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 
 class ExpandBookThorMain {
  public:
@@ -53,9 +53,10 @@ class ExpandBookThorMain {
     for (const Board& ancestor : ancestors) {
       auto ancestor_in_book = book_.Mutable(ancestor);
       assert(ancestor_in_book);
-      ancestors_in_book.push_back(ancestor_in_book.value());
+      ancestors_in_book.push_back(ancestor_in_book);
     }
-    Book<>::BookNode* father_in_book = book_.Mutable(father).value();
+    auto father_in_book = book_.Mutable(father);
+    assert(father_in_book);
     ancestors_in_book.push_back(father_in_book);
     if (father_in_book->Node::IsSolved()) {
       std::cout << "Solved the position!\n";
@@ -72,7 +73,9 @@ class ExpandBookThorMain {
       std::cout << "Solving\n";
       auto evaluator = evaluators_[0].get();
       evaluator->Evaluate(father_in_book->Player(), father_in_book->Opponent(), -63, 63, 5 * n_descendants_solve, 600, n_threads, false);
-      auto result = evaluator->GetFirstPosition().value();
+      auto result_ptr = evaluator->GetFirstPosition();
+      assert(result_ptr);
+      auto result = *result_ptr;
       auto lower = result.Lower();
       auto upper = result.Upper();
       father_in_book->SetLower(lower);
@@ -89,12 +92,15 @@ class ExpandBookThorMain {
       std::cout << "Adding children\n";
       std::vector<Node> children;
       int i = 0;
-      for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(father_in_book->ToBoard())) {
+      for (auto child_flip : GetUniqueNextBoardsWithPass(father_in_book->ToBoard())) {
+        auto child = child_flip.first;
         auto evaluator = evaluators_[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children, 600, n_threads);
-        children.push_back(evaluator->GetFirstPosition().value());
-        n_visited += evaluator->GetFirstPosition().value().GetNVisited();
+        auto first_position = evaluator->GetFirstPosition();
+        assert(first_position);
+        children.push_back(*first_position);
+        n_visited += first_position->GetNVisited();
       }
       book_.AddChildren(father_in_book->ToBoard(), children);
     }
@@ -114,28 +120,36 @@ class ExpandBookThorMain {
       }
       old_boards.push_back(b);
       b.PlayMove(GetFlip(move, b.Player(), b.Opponent()));
-      auto old_b_in_book = book_.Get(old_b).value();
-      auto b_in_book = book_.Get(b);
-      if (old_b_in_book.IsSolved() || b_in_book.value().IsSolved()) {
+      auto old_b_in_book_ptr = book_.Get(old_b);
+      assert(old_b_in_book_ptr);
+      auto old_b_in_book = *old_b_in_book_ptr;
+      auto b_in_book_ptr = book_.Get(b);
+      assert(b_in_book_ptr);
+      auto b_in_book = *b_in_book_ptr;
+      if (old_b_in_book.IsSolved() || b_in_book.IsSolved()) {
         std::cout << "Solved!\n";
         break;
       }
-      error += old_b_in_book.GetEval() - (-b_in_book.value().GetEval());
+      error += old_b_in_book.GetEval() - (-b_in_book.GetEval());
       old_b = b;
       std::cout << "Error = " << error << "\n";
       if (error > max_error) {
         std::cout << "Stopping, error too large\n";
         break;
       }
-      if (b_in_book.value().IsLeaf()) {
+      if (b_in_book.IsLeaf()) {
         AddChildrenToBook(old_boards, b, n_descendants_children, n_descendants_solve, n_threads);
       }
       if (HaveToPass(b.Player(), b.Opponent())) {
         old_boards.push_back(b);
         b.PlayMove(0);
-        auto old_b_in_book = book_.Get(old_b).value();
-        auto b_in_book = book_.Get(b);
-        if (b_in_book.value().IsLeaf()) {
+        auto old_b_in_book_ptr = book_.Get(old_b);
+        assert(old_b_in_book_ptr);
+        auto old_b_in_book = *old_b_in_book_ptr;
+        auto b_in_book_ptr = book_.Get(b);
+        assert(b_in_book_ptr);
+        auto b_in_book = *b_in_book_ptr;
+        if (b_in_book.IsLeaf()) {
           AddChildrenToBook(old_boards, b, n_descendants_children, n_descendants_solve, n_threads);
         }
         old_b = b;

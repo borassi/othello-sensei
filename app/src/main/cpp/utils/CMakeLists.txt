@@ -18,6 +18,11 @@ add_library(
         files.cpp
 )
 
+target_link_libraries(
+        files
+        stdc++fs
+)
+
 IF(ANDROID)
 target_link_libraries(
         files

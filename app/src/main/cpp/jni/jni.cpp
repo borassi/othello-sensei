@@ -86,7 +86,7 @@ class JNIWrapper {
         );
   }
 
-  static jobject NodeToJava(std::optional<Node> n, JNIEnv* env) {
+  static jobject NodeToJava(Node* n, JNIEnv* env) {
     if (!n) {
       return NULL;
     }
@@ -211,26 +211,27 @@ class JNIWrapper {
   }
 
   jobject GetFirstPosition(JNIEnv* env) {
-    return NodeToJava(evaluator_derivative_[0]->GetFirstPosition(), env);
+    auto board = evaluator_derivative_[0]->GetFirstPosition();
+    return NodeToJava(board.get(), env);
   }
 
   jobject GetFromBook(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    return NodeToJava(book_.Get(player, opponent), env);
+    auto board = book_.Get(player, opponent);
+    return NodeToJava(board.get(), env);
   }
 
   jobject Get(JNIEnv* env, BitPattern player, BitPattern opponent) {
-    std::optional<Node> node = std::nullopt;
     Board unique = Board(player, opponent).Unique();
     for (int i = 0; i < last_boards_.size(); ++i) {
       const auto& evaluator = evaluator_derivative_[i];
       auto first_position = evaluator->GetFirstPosition();
       if (first_position && first_position->ToBoard().Unique() == unique) {
-        return NodeToJava(first_position, env);
+        return NodeToJava(first_position.get(), env);
       }
       for (Board b : unique.AllTranspositions()) {
         auto node = tree_node_supplier_.Get(b.Player(), b.Opponent(), evaluator->Index());
         if (node) {
-          return NodeToJava(node, env);
+          return NodeToJava(node.get(), env);
         }
       }
     }
@@ -289,21 +290,24 @@ class JNIWrapper {
 
   void AddToBook(const Board& father, const std::vector<Board>& parents) {
     auto father_node = book_.Get(father);
-    if (!father_node || !father_node.value().IsLeaf()) {
+    if (!father_node || !father_node->IsLeaf()) {
       return;
     }
     std::vector<Node> children;
     children.reserve(last_boards_.size());
     NVisited n_visited = 0;
     for (int i = 0; i < last_boards_.size(); ++i) {
-      Node child = evaluator_derivative_[i]->GetFirstPosition().value();
-      children.push_back(child);
-      n_visited += child.GetNVisited();
+      auto child = evaluator_derivative_[i]->GetFirstPosition();
+      assert(child);
+      children.push_back(*child);
+      n_visited += child->GetNVisited();
     }
     std::vector<Book<>::BookNode*> parents_node;
 
     for (auto parent : parents) {
-      parents_node.push_back(book_.Mutable(parent).value());
+      auto parent_in_book = book_.Mutable(parent);
+      assert(parent_in_book);
+      parents_node.push_back(parent_in_book);
     }
     auto leaf = LeafToUpdate<Book<>::BookNode>::Leaf(parents_node);
     book_.AddChildren(father, children);

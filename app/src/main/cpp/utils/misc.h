@@ -107,7 +107,8 @@ bool Contains(std::vector<T> v, T elem) {
 
 template<typename K, typename V>
 V GetOrDefault(const std::unordered_map<K, V>& map, K key, V default_value) {
-  if (auto iter = map.find(key); iter != map.end()) {
+  auto iter = map.find(key);
+  if (iter != map.end()) {
     return iter->second;
   }
   return default_value;

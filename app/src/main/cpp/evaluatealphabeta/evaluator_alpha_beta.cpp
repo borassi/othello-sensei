@@ -55,7 +55,7 @@ constexpr int MoveIteratorOffset(int depth, bool solve, bool unlikely) {
 
 void MoveIteratorVeryQuick::Setup(
     BitPattern player, BitPattern opponent,
-    BitPattern last_flip, int upper, const std::optional<HashMapEntry>& entry,
+    BitPattern last_flip, int upper, HashMapEntry* const entry,
     EvaluatorDepthOneBase* evaluator_depth_one) {
   player_ = player;
   opponent_ = opponent;
@@ -96,7 +96,7 @@ MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) :
 template<bool very_quick>
 void MoveIteratorQuick<very_quick>::Setup(
     BitPattern player, BitPattern opponent,
-    BitPattern last_flip, int upper, const std::optional<HashMapEntry>& entry,
+    BitPattern last_flip, int upper, HashMapEntry* const entry,
     EvaluatorDepthOneBase* evaluator_depth_one) {
   player_ = player;
   opponent_ = opponent;
@@ -142,7 +142,7 @@ BitPattern MoveIteratorQuick<very_quick>::NextFlip() {
 
 void MoveIteratorEval::Setup(
     BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
-    const std::optional<HashMapEntry>& entry,
+    HashMapEntry* const entry,
     EvaluatorDepthOneBase* evaluator_depth_one_base) {
   BitPattern empties = ~(player | opponent);
   BitPattern candidate_moves = Neighbors(opponent) & empties;
@@ -437,7 +437,8 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       return stability_cutoff_upper;
     }
   }
-  std::optional<HashMapEntry> hash_entry = std::nullopt;
+
+  std::unique_ptr<HashMapEntry> hash_entry = nullptr;
   if (UseHashMap(depth, solve)) {
     hash_entry = hash_map_->Get(player, opponent);
     if (hash_entry && hash_entry->depth >= depth) {
@@ -456,7 +457,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
   bool unlikely = stability_cutoff_upper < lower + 120 || depth_zero_eval < lower - 40;
   MoveIteratorBase* moves =
       move_iterators_[MoveIteratorOffset(depth, solve, unlikely && depth <= 13)].get();
-  moves->Setup(player, opponent, last_flip, upper, hash_entry, evaluator_depth_one_.get());
+  moves->Setup(player, opponent, last_flip, upper, hash_entry.get(), evaluator_depth_one_.get());
   double to_be_visited = 0;
   double already_visited = stats_.GetAll();
   bool try_early_filter = depth > 13 && solve && depth_zero_eval < upper - 32;

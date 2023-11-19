@@ -25,8 +25,7 @@ constexpr int kSerializedBoardSize = 13;
 typedef std::vector<char> SerializedBoard;
 
 class Board {
-
-public:
+ public:
   Board(BitPattern player, BitPattern opponent) : player_(player), opponent_(opponent) {}
   Board(const std::string& board, bool player_black);
   Board(const std::string& sequence, std::vector<Board>* previous = nullptr);
@@ -76,6 +75,7 @@ public:
   bool operator==(const Board& rhs) const {
     return Player() == rhs.Player() && Opponent() == rhs.Opponent();
   }
+  bool operator!=(const Board& rhs) const { return !operator==(rhs); }
   std::vector<Board> AllTranspositions() const {
     auto players = AllBitPatternTranspositions(player_);
     auto opponents = AllBitPatternTranspositions(opponent_);
@@ -146,6 +146,7 @@ public:
   }
 
   std::string ToString() const;
+
 private:
   BitPattern player_;
   BitPattern opponent_;

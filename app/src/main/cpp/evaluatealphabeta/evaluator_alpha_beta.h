@@ -135,7 +135,7 @@ class MoveIteratorBase {
   MoveIteratorBase(Stats* stats) : stats_(stats) {}
   virtual void Setup(
       BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
-      const std::optional<HashMapEntry>& entry,
+      HashMapEntry* const entry,
       EvaluatorDepthOneBase* evaluator_depth_one) = 0;
   virtual BitPattern NextFlip() = 0;
 
@@ -147,7 +147,7 @@ class MoveIteratorVeryQuick : public MoveIteratorBase {
  public:
   MoveIteratorVeryQuick(Stats* stats) : MoveIteratorBase(stats) {}
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, const std::optional<HashMapEntry>& entry,
+             int upper, HashMapEntry* const entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -162,7 +162,7 @@ class MoveIteratorQuick : public MoveIteratorBase {
  public:
   MoveIteratorQuick(Stats* stats);
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, const std::optional<HashMapEntry>& entry,
+             int upper, HashMapEntry* const entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -180,7 +180,7 @@ class MoveIteratorEval : public MoveIteratorBase {
   MoveIteratorEval(Stats* stats) : MoveIteratorBase(stats), moves_() {};
 
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, const std::optional<HashMapEntry>& entry,
+             int upper, HashMapEntry* const entry,
              EvaluatorDepthOneBase* evaluator_depth_one_base) override;
 
   virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) = 0;

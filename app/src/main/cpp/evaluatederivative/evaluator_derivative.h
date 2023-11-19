@@ -26,7 +26,6 @@
 #include <functional>
 #include <future>
 #include <limits>
-#include <optional>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -81,16 +80,16 @@ class TreeNodeSupplier {
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
   }
-  std::optional<Node> Get(const Board& b, u_int8_t evaluator_index) const {
+  std::unique_ptr<Node> Get(const Board& b, u_int8_t evaluator_index) const {
     return Get(b.Player(), b.Opponent(), evaluator_index);
   }
 
-  std::optional<Node> Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
+  std::unique_ptr<Node> Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
     TreeNode* tree_node = Mutable(player, opponent, evaluator_index);
     if (tree_node) {
-      return *tree_node;
+      return std::make_unique<Node>(*tree_node);
     } else {
-      return std::nullopt;
+      return nullptr;
     }
   }
 
@@ -260,8 +259,8 @@ class EvaluatorDerivative {
     }
   }
 
-  std::optional<Node> GetFirstPosition() const {
-    return first_position_ ? std::optional<Node>(*first_position_) : std::nullopt;
+  std::unique_ptr<Node> GetFirstPosition() const {
+    return first_position_ ? std::make_unique<Node>(*first_position_) : nullptr;
   }
 
   Status GetStatus() { return status_; }
@@ -373,8 +372,11 @@ class EvaluatorDerivative {
     assert(weak_lower_ >= lower_ && weak_upper_ <= upper_);
     bool extended = true;
     while (extended) {
-      auto [weak_lower, weak_upper, new_weak_lower, new_weak_upper] =
-          first_position_->ExpectedWeakLowerUpper();
+      auto quadruple = first_position_->ExpectedWeakLowerUpper();
+      auto weak_lower = std::get<0>(quadruple);
+      auto weak_upper = std::get<1>(quadruple);
+      auto new_weak_lower = std::get<2>(quadruple);
+      auto new_weak_upper = std::get<3>(quadruple);
 
       new_weak_lower = std::max(lower_, new_weak_lower);
       new_weak_upper = std::min(upper_, new_weak_upper);

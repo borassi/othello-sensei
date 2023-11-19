@@ -58,7 +58,10 @@ class HashMapNode {
   BookFileOffset Offset() const { return offset_; }
   int Size() const { return ByteToSize(size_byte_); }
   bool IsEmpty() const { return size_byte_ == 0; }
-  bool operator==(const HashMapNode& other) const = default;
+  bool operator==(const HashMapNode& other) const {
+    return size_byte_ == other.size_byte_ && offset_ == other.offset_;
+  }
+  bool operator!=(const HashMapNode& other) const { return !operator==(other); }
 
   int GetValueFilePosition() const { return SizeByteToPosition(size_byte_); }
   static int SizeToPosition(int size) { return SizeByteToPosition(SizeToByte(size)); }
@@ -82,13 +85,13 @@ class Book {
   Book(const std::string& folder);
 
   // TODO: Remove code duplication between Get and Mutable.
-  std::optional<Node> Get(const Board& b) const;
+  std::unique_ptr<Node> Get(const Board& b) const;
 
-  std::optional<Node> Get(BitPattern player, BitPattern opponent) const {
+  std::unique_ptr<Node> Get(BitPattern player, BitPattern opponent) const {
     return Get(Board(player, opponent));
   }
 
-  std::optional<BookNode*> Mutable(const Board& b) {
+  BookNode* Mutable(const Board& b) {
     Board unique = b.Unique();
     auto iterator = modified_nodes_.find(unique);
     if (iterator != modified_nodes_.end()) {
@@ -101,7 +104,7 @@ class Book {
       iterator = modified_nodes_.insert(std::make_pair(unique, std::move(node))).first;
       return iterator->second.get();
     }
-    return std::nullopt;
+    return nullptr;
   }
 
   BookNode* Add(const TreeNode& node);
@@ -146,7 +149,7 @@ class Book {
       const Node& node = stack_.back();
       if (node.IsLeaf()) {
         return {node, LEAF};
-      } else if (visited_.contains(node.ToBoard())) {
+      } else if (visited_.find(node.ToBoard()) != visited_.end()) {
         return {node, LAST_VISIT};
       } else {
         return {node, FIRST_VISIT};
@@ -187,14 +190,15 @@ class Book {
         // Finished iteration.
         return;
       }
-      auto next = book_.Get(roots_[next_root_++]).value();
-      stack_.push_back(next);
+      auto next = book_.Get(roots_[next_root_++]);
+      assert(next);
+      stack_.push_back(*next);
     }
 
     void ToNext() {
       Node node = stack_.back();
       Board b = node.ToBoard();
-      bool visited = visited_.contains(b);
+      bool visited = visited_.find(b) != visited_.end();
       visited_.insert(b);
       if (visited || node.IsLeaf()) {
         stack_.pop_back();
@@ -202,9 +206,11 @@ class Book {
           ToNextRoot();
         }
       } else {
-        for (auto [child, unused] : GetUniqueNextBoardsWithPass(b)) {
-          if (!visited_.contains(child)) {
-            stack_.push_back(book_.Get(child).value());
+        for (auto child_board : GetUniqueNextBoardsWithPass(b)) {
+          if (visited_.find(child_board.first) == visited_.end()) {
+            auto child_in_book = book_.Get(child_board.first);
+            assert(child_in_book);
+            stack_.push_back(*child_in_book);
           }
         }
       }
@@ -224,10 +230,11 @@ class Book {
         roots_.insert(unique);
       }
     }
-    for (auto [other_node, other_node_type] : other_book) {
-      std::optional<BookNode*> my_node_opt = Mutable(other_node.ToBoard());
-      if (my_node_opt) {
-        BookNode* my_node = *my_node_opt;
+    for (auto other_node_and_type : other_book) {
+      auto other_node = other_node_and_type.first;
+      auto other_node_type = other_node_and_type.second;
+      BookNode* my_node = Mutable(other_node.ToBoard());
+      if (my_node) {
         if (other_node_type == LEAF || other_node_type == FIRST_VISIT) {
           my_node->AddDescendants(other_node.GetNVisited());
           my_node->lower_ = MaxEval(my_node->lower_, other_node.Lower());
@@ -315,7 +322,7 @@ class Book {
 };
 
 template<int version>
-std::atomic_int Book<version>::received_signal_ = NSIG;
+std::atomic_int Book<version>::received_signal_(NSIG);
 
 template<int version>
 Book<version>::Book(const std::string& folder) : folder_(folder), value_files_(), roots_file_(folder + "/roots.val", kSerializedBoardSize), roots_() {
@@ -325,7 +332,8 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
     value_files_.push_back(ValueFile(filename, size));
   }
 
-  for (const auto& [offset, serialized] : roots_file_) {
+  for (const auto& offset_serialized : roots_file_) {
+    const auto& serialized = offset_serialized.second;
     roots_.insert(Board::Deserialize(serialized.begin()));
   }
   CreateFileIfNotExists(IndexFilename());
@@ -342,16 +350,15 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
 
 template<int version>
 void Book<version>::AddChildren(const Board& father_board, const std::vector<Node>& children) {
-  auto father_opt = Mutable(father_board);
-  assert(father_opt);
-  Book<version>::BookNode* father = father_opt.value();
+  Book<version>::BookNode* father = Mutable(father_board);
+  assert(father);
   assert(father->IsLeaf());
   father->is_leaf_ = false;
   std::vector<TreeNode*> children_in_book;
 
-  for (const auto& [board, unused_move] : GetUniqueNextBoardsWithPass(father->ToBoard())) {
-    Book<version>::BookNode* child_in_book = nullptr;
-    auto child_in_book_opt = Mutable(board);
+  for (const auto& board_move : GetUniqueNextBoardsWithPass(father->ToBoard())) {
+    auto board = board_move.first;
+    Book<version>::BookNode* child_in_book = Mutable(board);
     const Node* new_child = nullptr;
     for (const Node& child : children) {
       if (child.ToBoard().Unique() == board) {
@@ -359,8 +366,7 @@ void Book<version>::AddChildren(const Board& father_board, const std::vector<Nod
         break;
       }
     }
-    if (child_in_book_opt) {
-      child_in_book = child_in_book_opt.value();
+    if (child_in_book) {
       if (new_child != nullptr) {
         child_in_book->AddDescendants(new_child->GetNVisited());
       }
@@ -389,25 +395,25 @@ template<int version>
 typename Book<version>::BookNode* Book<version>::AddNoRootsUpdate(const TreeNode& node) {
   Board unique = node.ToBoard().Unique();
   assert(!Get(unique));
-  auto [iterator, inserted] = modified_nodes_.try_emplace(unique, std::make_unique<BookNode>(this, node));
-  iterator->second->is_leaf_ = true;
-  assert(inserted);
-  return iterator->second.get();
+  auto iterator_inserted = modified_nodes_.emplace(unique, std::make_unique<BookNode>(this, node));
+  iterator_inserted.first->second->is_leaf_ = true;
+  assert(iterator_inserted.second);
+  return iterator_inserted.first->second.get();
 }
 
 template<int version>
-std::optional<Node> Book<version>::Get(const Board& b) const {
+std::unique_ptr<Node> Book<version>::Get(const Board& b) const {
   Board unique = b.Unique();
   auto iterator = modified_nodes_.find(unique);
   if (iterator != modified_nodes_.end()) {
-    return Node(*iterator->second);
+    return std::make_unique<Node>(*iterator->second);
   }
   HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
   if (!node.IsEmpty()) {
     std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
-    return Node::Deserialize(serialized, version, nullptr);
+    return std::make_unique<Node>(Node::Deserialize(serialized, version, nullptr));
   }
-  return std::nullopt;
+  return nullptr;
 }
 
 template<int version>
@@ -424,11 +430,11 @@ void Book<version>::Commit(bool verbose) {
     assert(b == b.Unique());
     roots_file_.Add(b.Serialize());
   }
-  for (const auto& [board, node] : modified_nodes_) {
+  for (const auto& board_node : modified_nodes_) {
     if (verbose) {
       std::cout << "." << std::flush;
     }
-    Commit(*node);
+    Commit(*board_node.second);
   }
   modified_nodes_.clear();
   auto file = IndexFile();
@@ -449,7 +455,9 @@ void Book<version>::Commit(bool verbose) {
 
 template<int version>
 void Book<version>::Commit(const BookNode& node) {
-  auto [file, hash_map_node] = Find(node.Player(), node.Opponent());
+  auto file_hash_map_node = Find(node.Player(), node.Opponent());
+  auto& file = file_hash_map_node.first;
+  auto& hash_map_node = file_hash_map_node.second;
   Board b = node.ToBoard();
 
   if (!hash_map_node.IsEmpty()) {
@@ -457,7 +465,7 @@ void Book<version>::Commit(const BookNode& node) {
     std::unique_ptr<BookNode> removed_node = BookNode::Deserialize(this, removed);
     assert(node.NFathers() >= removed_node->NFathers());
     assert(b == removed_node->ToBoard());
-    assert (roots_.contains(b) == !node.HasFathers());
+    assert ((roots_.find(b) != roots_.end()) == !node.HasFathers());
   } else {
     ++book_size_;
   }

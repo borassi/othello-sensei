@@ -53,7 +53,7 @@ std::vector<Node> TreeNode::Fathers() {
 }
 
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
-  auto guard = WriteLock();
+  std::lock_guard<std::mutex> guard(mutex_);
   assert(lower % 16 == 0);
   assert(upper % 16 == 0);
   assert(IsLeafNoLock());
@@ -61,7 +61,7 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   // NOTE: If depth == 0, we exploit that evaluator.GetWeakLowerUpper() does not
   // need locks. Otherwise, the evaluator would lock again this position and
   // get stuck.
-  auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(depth_);
+  auto weak_lower_upper = evaluator.GetWeakLowerUpper(depth_);
 
   leaf_eval_ = std::min(upper, std::max(lower, leaf_eval_));
   Eval lower_small = EvalLargeToEvalRound(lower);
@@ -70,21 +70,21 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   upper_ = MinEval(upper_, upper_small);
   assert(lower_ <= 64);
   assert(upper_ >= -64);
-  SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower, weak_upper);
+  SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower_upper.first, weak_lower_upper.second);
 }
 
 void TreeNode::Reset(
     BitPattern player, BitPattern opponent, int depth, EvalLarge leaf_eval,
     Square eval_depth, EvaluatorDerivative* evaluator) {
-  auto guard = WriteLock();
-  auto [weak_lower, weak_upper] = evaluator->GetWeakLowerUpper(depth);
-  ResetNoLock(player, opponent, depth, evaluator->Index(), leaf_eval, eval_depth, weak_lower, weak_upper);
+  std::lock_guard<std::mutex> guard(mutex_);
+  auto weak_lower_upper = evaluator->GetWeakLowerUpper(depth);
+  ResetNoLock(player, opponent, depth, evaluator->Index(), leaf_eval, eval_depth, weak_lower_upper.first, weak_lower_upper.second);
 }
 
 void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
                      u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
                      Eval weak_lower, Eval weak_upper) {
-  auto guard = WriteLock();
+  std::lock_guard<std::mutex> guard(mutex_);
   ResetNoLock(player, opponent, depth, evaluator, leaf_eval, eval_depth, weak_lower, weak_upper);
 }
 

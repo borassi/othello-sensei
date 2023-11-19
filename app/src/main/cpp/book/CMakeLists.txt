@@ -37,6 +37,7 @@ target_link_libraries(
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
+        stdc++fs
         -no-pie
 )
 ENDIF()
@@ -158,6 +159,7 @@ target_link_libraries(
         misc
         parse_flags
         pattern_evaluator
+        stdc++fs
 )
 
 add_executable(
@@ -175,8 +177,9 @@ target_link_libraries(
         evaluator_alpha_beta
         evaluator_derivative
         hash_map
+        load_thor
         misc
         parse_flags
         pattern_evaluator
-        load_thor
+        stdc++fs
 )

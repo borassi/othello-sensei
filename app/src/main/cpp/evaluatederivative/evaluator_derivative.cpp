@@ -131,7 +131,9 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     stats_.Merge(cur_stats);
     cur_n_visited = cur_stats.GetAll();
     n_visited += cur_n_visited;
-    auto [child, newly_inserted] = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, depth);
+    auto child_newly_inserted = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, depth);
+    auto child = child_newly_inserted.first;
+    auto newly_inserted = child_newly_inserted.second;
     children.push_back(child);
 //    child->SetLeafIfInvalid(eval, depth, *evaluator_);
     child->AddDescendants(n_visited);

@@ -227,8 +227,8 @@ class BookTreeNode : public TreeNode {
     for (int i = 0; i < n_children_; ++i) {
       TreeNode* child = children_[i];
       bool found = false;
-      for (auto& [next_board, unused_move] : next_boards) {
-        if (child->ToBoard() == next_board) {
+      for (auto& next_board_move : next_boards) {
+        if (child->ToBoard() == next_board_move.first) {
           assert(!found);  // If it's true, there is a duplicate in the flips.
           found = true;
         }
@@ -249,10 +249,12 @@ class BookTreeNode : public TreeNode {
   void GetFathersFromBook(const std::vector<CompressedFlip>& father_flips) {
     assert(n_fathers_ == 0);
     for (CompressedFlip father_flip : father_flips) {
-      auto [move, flip] = DeserializeFlip(father_flip);
-      std::optional<BookTreeNode<Book, version>*> father_opt =
+      auto move_flip = DeserializeFlip(father_flip);
+      auto move = move_flip.first;
+      auto flip = move_flip.second;
+      BookTreeNode<Book, version>* father =
           book_->Mutable(Board(opponent_ & ~flip, (player_ | flip) & ~(1ULL << move)));
-      auto father = father_opt.value();
+      assert(father);
       father->GetChildrenFromBook();
     }
   }
@@ -266,9 +268,10 @@ class BookTreeNode : public TreeNode {
     // GetFathersFromBook calling GetChildrenFromBook.
     n_children_ = 255;
     std::vector<TreeNode*> children;
-    for (const auto& [child_board, unused_move] : GetUniqueNextBoardsWithPass(ToBoard())) {
-      auto child = book_->Mutable(child_board);
-      children.push_back((TreeNode*) child.value());
+    for (const auto& child_board_move : GetUniqueNextBoardsWithPass(ToBoard())) {
+      auto child = book_->Mutable(child_board_move.first);
+      assert(child);
+      children.push_back((TreeNode*) child);
     }
     SetChildrenNoLock(children);
   }

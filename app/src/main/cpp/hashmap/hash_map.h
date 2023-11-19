@@ -33,8 +33,6 @@ struct HashMapEntry {
   DepthValue depth;
   Square best_move;
   Square second_best_move;
-
-  bool operator==(const HashMapEntry& other) const = default;
 };
 
 struct HashMapEntryWithBusy {
@@ -82,7 +80,9 @@ class HashMap {
   }
 
   void Reset() {
-    HashMapEntry empty { .player = 0, .opponent = 0 };
+    HashMapEntry empty;
+    empty.player = 0;
+    empty.opponent = 0;
     for (int i = 0; i < size; ++i) {
       hash_map_[i].entry = empty;
       hash_map_[i].busy = false;
@@ -91,19 +91,19 @@ class HashMap {
 
   // NOTE: We cannot just return a reference because another thread might
   // invalidate it. We need to copy it.
-  std::optional<HashMapEntry> Get(BitPattern player, BitPattern opponent) {
+  std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) {
     auto& entry_with_busy = hash_map_[Hash(player, opponent)];
     bool expected = false;
     if (!entry_with_busy.busy.compare_exchange_strong(expected, true)) {
-      return std::nullopt;
+      return nullptr;
     }
     if (entry_with_busy.entry.player != player || entry_with_busy.entry.opponent != opponent) {
       entry_with_busy.busy = false;
-      return std::nullopt;
+      return nullptr;
     }
     HashMapEntry entry = entry_with_busy.entry;
     entry_with_busy.busy = false;
-    return entry;
+    return std::make_unique<HashMapEntry>(entry);
   }
 
   bool IsAllFree() {

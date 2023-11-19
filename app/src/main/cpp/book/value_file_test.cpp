@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <experimental/filesystem>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include "value_file.h"
@@ -57,8 +58,8 @@ TEST(ValueFile, Reopen) {
 }
 
 TEST(ValueFile, NotExistingDir) {
-  auto path = std::filesystem::path(kTempFile);
-  std::filesystem::remove_all(path.remove_filename());
+  auto path = std::experimental::filesystem::path(kTempFile);
+  std::experimental::filesystem::remove_all(path.remove_filename());
   ValueFile value_file(kTempFile, 5);
   EXPECT_EQ(value_file.Elements(), 1);
   value_file.Remove();

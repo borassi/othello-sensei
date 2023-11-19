@@ -65,7 +65,7 @@ TEST(SerializableBooleanVector, PushBackUnsignedInt) {
 TEST(SerializableBooleanVector, Randomized) {
   for (int i = 0; i < 5000; ++i) {
     int size = rand() % 500;
-    std::vector<std::variant<bool, std::pair<uint32_t, int>>> expected;
+    std::vector<std::pair<uint32_t, int>> expected;
     SerializableBooleanVector actual;
     int total_size = 0;
     for (int j = 0; j < size; ++j) {
@@ -77,7 +77,7 @@ TEST(SerializableBooleanVector, Randomized) {
         total_size += size;
       } else {
         bool next = rand() % 2;
-        expected.push_back(next);
+        expected.push_back(std::make_pair(next, 1));
         actual.PushBack(next);
         ++total_size;
       }
@@ -88,18 +88,11 @@ TEST(SerializableBooleanVector, Randomized) {
     ASSERT_EQ(total_size, deserialized.Size());
     int actual_index = 0;
     for (int j = 0; j < expected.size(); ++j) {
-      if (expected[j].index() == 0) {
-        bool value = std::get<0>(expected[j]);
-        ASSERT_EQ(value, actual.Get(actual_index)) << i << " " << j << " " << value << " " << actual.Get(actual_index);
-        ASSERT_EQ(value, deserialized.Get(actual_index));
-        ++actual_index;
-      } else {
-        uint32_t value = std::get<1>(expected[j]).first;
-        int size = std::get<1>(expected[j]).second;
-        ASSERT_EQ(value, actual.Get(actual_index, size)) << i << " " << j << " " << value << " " << size << " " << actual.Get(actual_index, size);
-        ASSERT_EQ(value, deserialized.Get(actual_index, size));
-        actual_index += size;
-      }
+      uint32_t value = expected[j].first;
+      int size = expected[j].second;
+      ASSERT_EQ(value, actual.Get(actual_index, size)) << i << " " << j << " " << value << " " << size << " " << actual.Get(actual_index, size);
+      ASSERT_EQ(value, deserialized.Get(actual_index, size));
+      actual_index += size;
     }
   }
 }

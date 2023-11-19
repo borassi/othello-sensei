@@ -49,21 +49,25 @@ class TestBook {
 
   TestBookTreeNode* Add(const TreeNode& node) {
     Board unique = node.ToBoard().Unique();
-    auto& it = (*(nodes_.try_emplace(unique, this, node).first)).second;
+    auto& it = (*(
+        nodes_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(unique),
+            std::forward_as_tuple(this, node)).first)).second;
     it.is_leaf_ = true;
     return &it;
   }
-  std::optional<Node> Get(const Board& b) {
+  std::unique_ptr<Node> Get(const Board& b) {
     auto it = nodes_.find(b.Unique());
     if (it == nodes_.end()) {
-      return std::nullopt;
+      return nullptr;
     }
-    return Node(it->second);
+    return std::make_unique<Node>(it->second);
   }
-  std::optional<TestBookTreeNode*> Mutable(const Board& b) {
+  TestBookTreeNode* Mutable(const Board& b) {
     auto it = nodes_.find(b.Unique());
     if (it == nodes_.end()) {
-      return std::nullopt;
+      return nullptr;
     }
     return &(it->second);
   }
@@ -146,7 +150,7 @@ Book<version> BookWithPositions(
     const std::unordered_map<Board, int>& evals = {},
     const std::unordered_set<std::pair<Board, Board>, PairHash>& skip = {},
     const std::unordered_map<Board, int>& visited = {}) {
-  Book book(kTempDir);
+  Book<> book(kTempDir);
   book.Clean();
 
   auto first_line = lines[0];
@@ -156,12 +160,14 @@ Book<version> BookWithPositions(
     NVisited total_visited = 0;
     std::vector<typename Book<version>::BookNode*> parents;
     for (int i = first_line.length(); i <= line.length(); i += 2) {
-      parents.push_back(book.Mutable(line.substr(0, i)).value());
+      auto node = book.Mutable(line.substr(0, i));
+      assert(node);
+      parents.push_back(node);
     }
     std::vector<Node> children;
     Board father = Board(line);
     for (Board child : GetNextBoardsWithPass(father)) {
-      if (skip.contains(std::make_pair(father, child))) {
+      if (skip.find(std::make_pair(father, child)) != skip.end()) {
         continue;
       }
       int eval = GetOrDefault(evals, child, 41);
@@ -265,7 +271,8 @@ BookTreeNode<Book, kBookVersion>* LargestTreeNode(Book& book, int max_fathers = 
       // To avoid that the father has incompatible lower/upper wrt children.
       father->SetLeafNeverSolved();
       std::vector<Node> children = {result};
-      for (auto [b, unused] : GetUniqueNextBoardsWithPass(father_board)) {
+      for (auto b_move : GetUniqueNextBoardsWithPass(father_board)) {
+        auto b = b_move.first;
         if (b == result->ToBoard()) {
           continue;
         }

@@ -32,7 +32,7 @@ class Collector {
   Collector(int to_collect) : to_collect_(to_collect), total_(0), collected_(), seen_() {}
 
   void AddBoard(const Board& b) {
-    if (seen_.contains(b)) {
+    if (seen_.find(b) != seen_.end()) {
       return;
     }
     ++total_;
@@ -139,7 +139,9 @@ int main(int argc, char* argv[]) {
       }
       tree_node_supplier.Reset();
       evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 300, 1, false);
-      auto first_position = evaluator.GetFirstPosition().value();
+      auto first_position_ptr = evaluator.GetFirstPosition();
+      assert(first_position_ptr);
+      auto first_position = *first_position_ptr;
       double real_eval = first_position.GetEval();
       double perc_lower = first_position.GetPercentileUpper(0.5F);
       double solve_probability_lower = first_position.SolveProbabilityLower(-63);
@@ -151,7 +153,9 @@ int main(int argc, char* argv[]) {
         tree_node_supplier.Reset();
         hash_map.Reset();
         evaluator.Evaluate(b.Player(), b.Opponent(), i, i, 1000000000000L, 20, 1, false);
-        auto first_position = evaluator.GetFirstPosition().value();
+        auto first_position_ptr = evaluator.GetFirstPosition();
+        assert(first_position_ptr);
+        auto first_position = *first_position_ptr;
         result
             << b.Player() << " " << b.Opponent() << " " << b.NEmpties()
             << " " << real_eval << " " << perc_lower << " " << solve_probability_lower << " "

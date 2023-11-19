@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -560,14 +561,14 @@ class TreeNode : public Node {
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
 
   bool IsLeaf() const override {
-    ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     return IsLeafNoLock();
   }
 
   // Locks a leaf by setting n_threads_working_ = 1. If n_threads_working_ > 0,
   // the lock fails. We should never have n_threads_working_ > 1 for a leaf.
   bool TryLockLeaf(Eval solved_lower, Eval solved_upper) {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     // Some other thread has added this node's children or solved this node
     // before locking it.
     if (!IsLeafNoLock() || Node::IsSolved(solved_lower, solved_upper, false)) {
@@ -591,12 +592,12 @@ class TreeNode : public Node {
   }
 
   void UpdateFather() {
-    auto guard = WriteLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     UpdateFatherNoLock();
   }
 
   std::vector<Node> GetChildren() {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     std::vector<Node> children;
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
@@ -607,7 +608,7 @@ class TreeNode : public Node {
   }
 
   void SetChildren(std::vector<TreeNode*> children) {
-    auto guard = WriteLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     SetChildrenNoLock(children);
   }
 
@@ -627,7 +628,7 @@ class TreeNode : public Node {
   }
 
   TreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     if (IsLeafNoLock()) {
       return this;
     }
@@ -644,7 +645,7 @@ class TreeNode : public Node {
     int child_eval_goal = -eval_goal;
     for (auto iter = start; iter != end; ++iter) {
       TreeNode* child = *iter;
-      auto guard = child->ReadLock();
+      std::lock_guard<std::mutex> guard(child->mutex_);
       if (child_eval_goal <= child->lower_ || child_eval_goal >= child->upper_ ||
           child_eval_goal < child->weak_lower_ || child_eval_goal > child->weak_upper_) {
         continue;
@@ -671,7 +672,7 @@ class TreeNode : public Node {
 
   void ExtendEval(Eval weak_lower, Eval weak_upper) {
     {
-      auto guard = WriteLock();
+      std::lock_guard<std::mutex> guard(mutex_);
       if (weak_lower >= weak_lower_ && weak_upper <= weak_upper_) {
         return;
       }
@@ -684,7 +685,7 @@ class TreeNode : public Node {
       children_[i]->ExtendEval(-weak_upper, -weak_lower);
     }
     {
-      auto guard = WriteLock();
+      std::lock_guard<std::mutex> guard(mutex_);
       weak_lower_ = weak_lower;
       weak_upper_ = weak_upper;
       EnlargeEvaluations();
@@ -692,44 +693,44 @@ class TreeNode : public Node {
   }
 
   template<class T>
-  std::optional<LeafToUpdate<T>> AsLeaf(int last_eval_goal) {
-    auto guard = ReadLock();
+  std::unique_ptr<LeafToUpdate<T>> AsLeaf(int last_eval_goal) {
+    std::lock_guard<std::mutex> guard(mutex_);
     auto eval_goal = NextPositionEvalGoal(0, 1, Node::SolveProbability(-63, 63) > 0.05 ? kLessThenMinEval : last_eval_goal);
     if (eval_goal == kLessThenMinEval) {
-      return std::nullopt;
+      return nullptr;
     }
-    return AsLeafNoLock<T>(eval_goal);
+    return std::make_unique<LeafToUpdate<T>>(AsLeafNoLock<T>(eval_goal));
   }
 
   template<class T>
   LeafToUpdate<T> AsLeafWithGoal(Eval eval_goal) {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     return AsLeafNoLock<T>(eval_goal);
   }
 
   template<class T>
   void UpdateAlphaBeta(LeafToUpdate<T>* leaf) {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     UpdateAlphaBetaNoLock(leaf);
   }
 
   double SolveProbability(Eval lower, Eval upper) const override {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     return Node::SolveProbability(lower, upper);
   }
 
   bool IsSolved(Eval lower, Eval upper, bool approx) const override {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     return Node::IsSolved(lower, upper, approx);
   }
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     return Node::ToBeSolved(lower, upper, num_tree_nodes, total_visited);
   }
 
   double RemainingWork(Eval lower, Eval upper) const {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     if (Node::IsSolved(lower, upper, false)) {
       return 0;
     }
@@ -737,7 +738,7 @@ class TreeNode : public Node {
   }
 
   std::tuple<Eval, Eval, Eval, Eval> ExpectedWeakLowerUpper() const {
-    auto guard = ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     Eval expected_weak_lower = std::min(upper_ - 1, std::max(lower_ + 1, (int) weak_lower_));
     Eval expected_weak_upper = std::max(lower_ + 1, std::min(upper_ - 1, (int) weak_upper_));
     assert(expected_weak_lower <= expected_weak_upper);
@@ -781,7 +782,7 @@ class TreeNode : public Node {
   }
 
   double Advancement(Eval lower, Eval upper) const override {
-    ReadLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     return Node::Advancement(lower, upper);
   }
 
@@ -859,14 +860,6 @@ class TreeNode : public Node {
     }
   }
 
-  std::lock_guard<std::mutex> ReadLock() const {
-    return std::lock_guard<std::mutex>{mutex_};
-  }
-
-  std::lock_guard<std::mutex> WriteLock() const {
-    return std::lock_guard<std::mutex>{mutex_};
-  }
-
   virtual void ResetNoLock(
       BitPattern player, BitPattern opponent, int depth,
       u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
@@ -940,7 +933,7 @@ class TreeNode : public Node {
   }
 
   virtual void UpdateWithChild(const TreeNode& child) {
-    auto child_guard = child.ReadLock();
+    std::lock_guard<std::mutex> child_guard(child.mutex_);
     // We cannot check the upper, because we are currently updating it.
     assert(leaf_eval_ >= EvalToEvalLarge(lower_));
     assert(child.leaf_eval_ >= EvalToEvalLarge(child.lower_) && child.leaf_eval_ <= EvalToEvalLarge(child.upper_));
@@ -964,7 +957,7 @@ class TreeNode : public Node {
   }
 
   void AddFather(TreeNode* father) {
-    auto guard = WriteLock();
+    std::lock_guard<std::mutex> guard(mutex_);
     if (n_fathers_ == 0) {
       fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
     } else {
@@ -1031,25 +1024,25 @@ std::ostream& operator<<(std::ostream& stream, const Node& b);
 template<class Node>
 class LeafToUpdate {
  public:
-  static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal) {
+  static std::unique_ptr<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal) {
     auto leaf = node->template AsLeaf<Node>(last_eval_goal);
-    if (leaf == std::nullopt) {
-      return std::nullopt;
+    if (leaf == nullptr) {
+      return nullptr;
     }
     return BestDescendant(*leaf, n_thread_multiplier);
   }
 
-  static std::optional<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal, const std::vector<Node*>& parents) {
-    std::optional<LeafToUpdate> leaf_opt = BestDescendant(node, n_thread_multiplier, last_eval_goal);
+  static std::unique_ptr<LeafToUpdate> BestDescendant(Node* node, float n_thread_multiplier, int last_eval_goal, const std::vector<Node*>& parents) {
+    std::unique_ptr<LeafToUpdate> leaf_opt = BestDescendant(node, n_thread_multiplier, last_eval_goal);
     if (!leaf_opt) {
-      return std::nullopt;
+      return nullptr;
     }
     LeafToUpdate leaf = *leaf_opt;
     leaf.parents_.insert(leaf.parents_.begin(), parents.begin(), parents.end());
     for (auto parent : parents) {
       parent->IncreaseNThreadsWorking();
     }
-    return leaf;
+    return std::make_unique<LeafToUpdate>(leaf);
   }
 
   static LeafToUpdate Leaf(std::vector<Node*> sequence) {
@@ -1064,24 +1057,24 @@ class LeafToUpdate {
     return leaf;
   }
 
-  static std::optional<LeafToUpdate> BestDescendant(LeafToUpdate& result, float n_thread_multiplier) {
+  static std::unique_ptr<LeafToUpdate> BestDescendant(LeafToUpdate& result, float n_thread_multiplier) {
     while (true) {
       Node* best_child = result.leaf_->BestChild(result.eval_goal_, n_thread_multiplier);
       if (best_child == nullptr) {
         for (Node* node : result.parents_) {
           node->DecreaseNThreadsWorking();
         }
-        return std::nullopt;
+        return nullptr;
       } else if (best_child == result.leaf_) {
         // This means that result.leaf_ is a leaf.
         if (result.leaf_->TryLockLeaf(result.Alpha(), result.Beta())) {
           assert(!result.leaf_->IsSolved(result.Alpha(), result.Beta(), false));
-          return result;
+          return std::make_unique<LeafToUpdate<Node>>(result);
         } else {
           for (Node* node : result.parents_) {
             node->DecreaseNThreadsWorking();
           }
-          return std::nullopt;
+          return nullptr;
         }
       }
       result.ToChild(best_child, 0);
@@ -1095,7 +1088,16 @@ class LeafToUpdate {
   const std::vector<Node*>& Parents() const { return parents_; }
   Node* Leaf() const { return leaf_; }
 
-  bool operator==(const LeafToUpdate& other) const = default;
+  bool operator==(const LeafToUpdate& other) const {
+    return
+        leaf_ == other.leaf_
+        && parents_ == other.parents_
+        && eval_goal_ == other.eval_goal_
+        && alpha_ == other.alpha_
+        && beta_ == other.beta_
+        && loss_ == other.loss_;
+  }
+  bool operator!=(const LeafToUpdate& other) const { return !operator==(other); }
 
   void Finalize(NVisited n_visited) {
     leaf_->AddDescendants(n_visited);

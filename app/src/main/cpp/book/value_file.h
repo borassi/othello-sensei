@@ -105,13 +105,24 @@ class ValueFile {
       return tmp;
     }
 
-    bool operator==(const Iterator& other) const = default;
-    bool operator!=(const Iterator& other) const = default;
+    bool operator==(const Iterator& other) const {
+      return
+          elements_ == other.elements_
+          && current_ == other.current_
+          && file_ == other.file_
+          && next_empty_ == other.next_empty_;
+    }
+    bool operator!=(const Iterator& other) const { return !operator==(other); }
 
    private:
+    ValueFileSize elements_;
+    std::pair<int, std::vector<char>> current_;
+    ValueFile* file_;
+    ValueFileSize next_empty_;
 
     void ToNextNonEmpty() {
-      auto& [offset, value] = current_;
+      auto& offset = current_.first;
+      auto& value = current_.second;
       while (offset == next_empty_ && offset < elements_) {
         auto file = file_->GetFile();
         file.seekg(next_empty_);
@@ -124,11 +135,6 @@ class ValueFile {
         value.clear();
       }
     }
-
-    ValueFileSize elements_;
-    std::pair<int, std::vector<char>> current_;
-    ValueFile* file_;
-    ValueFileSize next_empty_;
   };
 
   Iterator begin() { return Iterator(this, 0); }

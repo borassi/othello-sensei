@@ -36,13 +36,13 @@ void FillAndTestHashMap(HashMap<5>& hash_map, int thread_num) {
     hash_map.Update(i * 2, 1, i % 4, i % 8 + (thread_num - 10) * 8, kMinEvalLarge, kMaxEvalLarge, thread_num, 0);
     auto entry = hash_map.Get(i * 2, 1);
     if (entry) {
-      CheckCorrect(entry.value(), i * 2, 1);
+      CheckCorrect(*entry, i * 2, 1);
     }
     int j = rand() % i;
     for (int check : {i, rand() % i, rand() % 10000}) {
       auto entry = hash_map.Get(check * 2, 1);
       if (entry) {
-        CheckCorrect(entry.value(), check * 2, 1);
+        CheckCorrect(*entry, check * 2, 1);
       }
     }
   }

@@ -47,7 +47,9 @@ int main(int argc, char* argv[]) {
     tree_node_supplier.Reset();
     evaluator.Evaluate(b.Player(), b.Opponent(), -63, 63, 1000000000000L, 1200, n_threads, approx);
     double time = t.Get();
-    auto first_position = evaluator.GetFirstPosition().value();
+    auto first_position_ptr = evaluator.GetFirstPosition();
+    assert(first_position_ptr);
+    auto first_position = *first_position_ptr;
     if (parse_flags.GetBoolFlagOrDefault("show_evals", false)) {
       for (int k = -63; k <= 63; k += 2) {
         std::cout << std::setprecision(0) << k << " " << first_position.ProofNumber(k) << " " <<

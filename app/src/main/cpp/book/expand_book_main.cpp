@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <filesystem>
+#include <experimental/filesystem>
 #include <limits>
 
 #include "book.h"
@@ -25,10 +25,9 @@
 #include "../utils/misc.h"
 #include "../utils/parse_flags.h"
 
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 
 // TODO: Fix proof / disproof number at end.
-// TODO: Empty the n_descendants to parallelize over multiple computers.
 // TODO: Test Google cloud.
 
 int main(int argc, char* argv[]) {
@@ -44,7 +43,7 @@ int main(int argc, char* argv[]) {
   if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
     fs::create_directory(filepath);
   }
-  Book book(filepath);
+  Book<> book(filepath);
   HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
@@ -75,12 +74,13 @@ int main(int argc, char* argv[]) {
     for (const Board& start_line_board : start_line_boards) {
       auto board_in_book = book.Mutable(start_line_board);
       if (board_in_book) {
-        start_line_in_book.push_back(board_in_book.value());
+        start_line_in_book.push_back(board_in_book);
       } else {
         start_line_in_book.clear();
       }
     }
-    Book<>::BookNode* start = book.Mutable(start_board).value();
+    Book<>::BookNode* start = book.Mutable(start_board);
+    assert(start);
     if (start->Node::IsSolved()) {
       std::cout << "Solved the position!\n";
       break;
@@ -97,7 +97,9 @@ int main(int argc, char* argv[]) {
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
-    auto leaf = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, last_eval_goal, start_line_in_book).value();
+    auto leaf_ptr = LeafToUpdate<Book<>::BookNode>::BestDescendant(start, 0, last_eval_goal, start_line_in_book);
+    assert(leaf_ptr);
+    auto leaf = *leaf_ptr;
     last_eval_goal = eval_goal;
     bool solved = false;
     int alpha = leaf.Alpha();
@@ -112,7 +114,9 @@ int main(int argc, char* argv[]) {
       std::cout << "Solving with alpha=" << alpha << " beta=" << beta << "\n";
       auto evaluator = evaluators[0].get();
       evaluator->Evaluate(node->Player(), node->Opponent(), alpha, beta, 5 * n_descendants_solve, 240, n_threads, false);
-      auto result = evaluator->GetFirstPosition().value();
+      auto result_ptr = evaluator->GetFirstPosition();
+      assert(result_ptr);
+      auto result = *result_ptr;
       auto lower = result.Lower();
       auto upper = result.Upper();
       node->SetLower(lower);
@@ -131,17 +135,20 @@ int main(int argc, char* argv[]) {
       std::cout << "Adding children\n";
       std::vector<Node> children;
       int i = 0;
-      for (auto [child, unused_flip] : GetUniqueNextBoardsWithPass(node->ToBoard())) {
+      for (auto child_flip : GetUniqueNextBoardsWithPass(node->ToBoard())) {
+        auto child = child_flip.first;
         auto evaluator = evaluators[++i].get();
         evaluator->Evaluate(
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300, n_threads);
-        auto early_result = evaluator->GetFirstPosition().value();
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) early_result.RemainingWork(alpha, beta));
+        auto early_result = evaluator->GetFirstPosition();
+        assert(early_result);
+        auto remaining_work = std::max((NVisited) 1000, (NVisited) early_result->RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300, n_threads);
-        auto result = evaluator->GetFirstPosition().value();
-        children.push_back(result);
-        n_visited += result.GetNVisited();
+        auto result = evaluator->GetFirstPosition();
+        assert(result);
+        children.push_back(*result);
+        n_visited += result->GetNVisited();
       }
       book.AddChildren(node->ToBoard(), children);
     }
