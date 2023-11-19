@@ -32,48 +32,6 @@ void PatternEvaluator::Setup(BitPattern player, BitPattern opponent) {
   }
 }
 
-template<int multiplier>
-void PatternEvaluator::Update(BitPattern square, BitPattern flip) {
-  assert(__builtin_popcountll(square) == 1);
-  empties_ -= multiplier;
-  const UpdatePatterns& p = kFeatures.square_to_update_patterns[__builtin_ctzll(square)];
-  switch (p.num_patterns) {
-    case 8:
-      patterns_[p.pattern[7].pattern_number] += multiplier * p.pattern[7].delta;
-    case 7:
-      patterns_[p.pattern[6].pattern_number] += multiplier * p.pattern[6].delta;
-    case 6:
-      patterns_[p.pattern[5].pattern_number] += multiplier * p.pattern[5].delta;
-    case 5:
-      patterns_[p.pattern[4].pattern_number] += multiplier * p.pattern[4].delta;
-    case 4:
-      patterns_[p.pattern[3].pattern_number] += multiplier * p.pattern[3].delta;
-    case 3:
-      patterns_[p.pattern[2].pattern_number] += multiplier * p.pattern[2].delta;
-      patterns_[p.pattern[1].pattern_number] += multiplier * p.pattern[1].delta;
-      patterns_[p.pattern[0].pattern_number] += multiplier * p.pattern[0].delta;
-  }
-  FOR_EACH_SET_BIT(flip & ~square, remaining) {
-    const UpdatePatterns& p = kFeatures.square_to_update_patterns[__builtin_ctzll(remaining)];
-    switch (p.num_patterns) {
-      case 8:
-        patterns_[p.pattern[7].pattern_number] += multiplier * p.pattern[7].delta_double;
-      case 7:
-        patterns_[p.pattern[6].pattern_number] += multiplier * p.pattern[6].delta_double;
-      case 6:
-        patterns_[p.pattern[5].pattern_number] += multiplier * p.pattern[5].delta_double;
-      case 5:
-        patterns_[p.pattern[4].pattern_number] += multiplier * p.pattern[4].delta_double;
-      case 4:
-        patterns_[p.pattern[3].pattern_number] += multiplier * p.pattern[3].delta_double;
-      case 3:
-        patterns_[p.pattern[2].pattern_number] += multiplier * p.pattern[2].delta_double;
-        patterns_[p.pattern[1].pattern_number] += multiplier * p.pattern[1].delta_double;
-        patterns_[p.pattern[0].pattern_number] += multiplier * p.pattern[0].delta_double;
-    }
-  }
-}
-
 void PatternEvaluator::Invert() {
   for (int i = 0; i < kNumPatterns; ++i) {
     patterns_[i] = kFeatures.max_pattern_value[i] - patterns_[i];
