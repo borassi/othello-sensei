@@ -114,7 +114,9 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     // Example:
     //      +4
     // -4   +0   +10
-    if (remaining_work > 20000000 ||
+    if (node->Depth() <= 2 && remaining_work > 100000000) {
+      depth = 6;
+    } else if (remaining_work > 20000000 ||
         (delta < 16 * 8 && remaining_work > 10000000) ||
         (delta < 8 * 8 && remaining_work > 2000000)) {
       depth = 4;
@@ -131,7 +133,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     stats_.Merge(cur_stats);
     cur_n_visited = cur_stats.GetAll();
     n_visited += cur_n_visited;
-    auto child_newly_inserted = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, depth);
+    auto child_newly_inserted = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, std::min(4, depth));
     auto child = child_newly_inserted.first;
     auto newly_inserted = child_newly_inserted.second;
     children.push_back(child);
