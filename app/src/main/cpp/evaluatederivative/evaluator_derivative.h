@@ -301,7 +301,7 @@ class EvaluatorDerivative {
   TreeNodeSupplier* tree_node_supplier_;
   TreeNode* first_position_;
   u_int8_t index_;
-  std::atomic_int n_thread_multiplier_;
+  std::atomic_uint64_t n_thread_multiplier_;
   std::atomic_flag is_updating_weak_lower_upper_;
   double best_advancement_;
   EvaluatorFactory evaluator_depth_one_;
@@ -412,12 +412,12 @@ class EvaluatorDerivative {
 
   void UpdateNThreadMultiplierSuccess() {
     n_thread_multiplier_ -= 500;
-    n_thread_multiplier_ = std::max(n_thread_multiplier_.load(), 1000);
+    n_thread_multiplier_ = std::max(n_thread_multiplier_.load(), 1000UL);
   }
 
   void UpdateNThreadMultiplierFail() {
     n_thread_multiplier_ += 10000;
-    n_thread_multiplier_ = std::min(n_thread_multiplier_.load(), 40000000);
+    n_thread_multiplier_ = std::min(n_thread_multiplier_.load(), 4000000000UL);
   }
 
   float NThreadMultiplier() {
