@@ -19,7 +19,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <concepts>
 #include <float.h>
 #include <functional>
 #include <iomanip>

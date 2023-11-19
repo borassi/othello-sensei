@@ -58,7 +58,7 @@ constexpr int DataToProofNumberOffset(Square empties, Square moves, int eval_del
   assert(empties >= 0);
   assert(eval_delta <= 128);
   assert(eval_delta >= -128);
-  return empties | (moves << 6) | (eval_delta - 2 * kMinEval) << 10;
+  return (int) empties | ((int) moves << 6) | (eval_delta - 2 * kMinEval) << 10;
 }
 
 constexpr std::tuple<Square, Square, int> ProofNumberOffsetToEmptiesMovesEval(int cdf_offset) {

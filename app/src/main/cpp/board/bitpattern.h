@@ -27,12 +27,12 @@
 
 typedef int8_t Eval;
 typedef int EvalLarge;
-typedef u_int64_t BitPattern;
-typedef u_int8_t Square;
-typedef u_int8_t DepthValue;
-typedef u_int16_t MoveShift;
-typedef u_int8_t LastRow;
-typedef u_int64_t NVisited;
+typedef uint64_t BitPattern;
+typedef uint8_t Square;
+typedef uint8_t DepthValue;
+typedef uint16_t MoveShift;
+typedef uint8_t LastRow;
+typedef uint64_t NVisited;
 
 constexpr Eval kLessThenMinEval = -66;
 constexpr Square kNoSquare = 255;
