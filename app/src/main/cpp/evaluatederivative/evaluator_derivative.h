@@ -243,7 +243,7 @@ class EvaluatorDerivative {
     weak_lower_ = lower_;
     weak_upper_ = upper_;
     num_tree_nodes_ = 0;
-    n_thread_multiplier_ = 1000;
+    n_thread_multiplier_ = 100000 * n_threads;
     first_position_ = AddTreeNode(player, opponent, 0, 0, 1).first;
     auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
@@ -417,7 +417,7 @@ class EvaluatorDerivative {
 
   void UpdateNThreadMultiplierFail() {
     n_thread_multiplier_ += 2000;
-    n_thread_multiplier_ = std::min(n_thread_multiplier_.load(), 1000000);
+    n_thread_multiplier_ = std::min(n_thread_multiplier_.load(), 40000000);
   }
 
   float NThreadMultiplier() {
