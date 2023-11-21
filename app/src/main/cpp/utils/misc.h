@@ -119,11 +119,6 @@ bool Contains(const Map<K, V>& map, K key) {
   return map.find(key) != map.end();
 }
 
-template<template <typename...> class Set, typename K>
-bool Contains(const Set<K>& set, K key) {
-  return set.find(key) != set.end();
-}
-
 struct PairHash {
   template<class T1, class T2>
   std::size_t operator() (const std::pair<T1, T2>& pair) const {

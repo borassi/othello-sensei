@@ -33,11 +33,11 @@ add_executable(
 target_link_libraries(
         value_file_test
         LINK_PRIVATE
+        files
         value_file
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
-        stdc++fs
         -no-pie
 )
 ENDIF()
@@ -54,6 +54,7 @@ target_link_libraries(
         bitpattern
         board
         book_tree_node
+        files
         value_file
 )
 
@@ -155,11 +156,11 @@ target_link_libraries(
         book_tree_node
         evaluator_alpha_beta
         evaluator_derivative
+        files
         hash_map
         misc
         parse_flags
         pattern_evaluator
-        stdc++fs
 )
 
 add_executable(
@@ -181,5 +182,4 @@ target_link_libraries(
         misc
         parse_flags
         pattern_evaluator
-        stdc++fs
 )

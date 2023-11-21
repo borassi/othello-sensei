@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <experimental/filesystem>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "../utils/files.h"
 #include "value_file.h"
 
 const std::string kTempFile = "app/testdata/tmp/value_file_test/value_file_test.val";
@@ -58,8 +58,7 @@ TEST(ValueFile, Reopen) {
 }
 
 TEST(ValueFile, NotExistingDir) {
-  auto path = std::experimental::filesystem::path(kTempFile);
-  std::experimental::filesystem::remove_all(path.remove_filename());
+  fs::remove_all(fs::path(kTempFile).remove_filename());
   ValueFile value_file(kTempFile, 5);
   EXPECT_EQ(value_file.Elements(), 1);
   value_file.Remove();

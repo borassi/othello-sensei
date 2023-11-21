@@ -17,11 +17,11 @@ add_library(
         files.h
         files.cpp
 )
-
-target_link_libraries(
-        files
-        stdc++fs
-)
+#
+#target_link_libraries(
+#        files
+#        stdc++fs
+#)
 
 IF(ANDROID)
 target_link_libraries(

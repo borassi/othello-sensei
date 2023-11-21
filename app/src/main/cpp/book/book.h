@@ -340,7 +340,7 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
   auto index_file = IndexFile();
   if (FileLength(index_file) < kOffset) {
     index_file.close();
-    ResetFile(IndexFilename());
+    CreateEmptyFileWithDirectories(IndexFilename());
     Clean();
   } else {
     index_file.read((char*) &hash_map_size_, sizeof(hash_map_size_));

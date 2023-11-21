@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -58,7 +57,7 @@ class ValueFile {
   std::vector<char> Get(BookFileOffset offset) const;
 
   void Clean() {
-    ResetFile(filename_);
+    CreateEmptyFileWithDirectories(filename_);
     auto file = GetFile();
     SetAsEmpty(0, 0, file);
   }

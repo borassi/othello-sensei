@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <experimental/filesystem>
 #include <limits>
 
 #include "book.h"
@@ -22,10 +21,9 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
+#include "../utils/files.h"
 #include "../utils/misc.h"
 #include "../utils/parse_flags.h"
-
-namespace fs = std::experimental::filesystem;
 
 // TODO: Fix proof / disproof number at end.
 // TODO: Test Google cloud.
@@ -40,9 +38,7 @@ int main(int argc, char* argv[]) {
   int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
-  if (!fs::is_directory(filepath) || !fs::exists(filepath)) {
-    fs::create_directory(filepath);
-  }
+  fs::create_directories(filepath);
   Book<> book(filepath);
   HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();

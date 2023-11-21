@@ -25,6 +25,7 @@
 #endif
 
 #include <assert.h>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -36,9 +37,11 @@ constexpr char kAssetFilepath[] = "app/src/main/assets";
 
 typedef long FileOffset;
 
-void ResetFile(std::string filepath);
+namespace fs = ::std::filesystem;
 
-void CreateFileIfNotExists(std::string filepath);
+void CreateEmptyFileWithDirectories(const std::string& filepath);
+
+void CreateFileIfNotExists(const std::string& filepath);
 
 FileOffset FileLength(std::fstream& file);
 

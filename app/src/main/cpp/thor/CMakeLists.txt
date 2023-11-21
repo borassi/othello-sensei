@@ -67,6 +67,7 @@ add_executable(
 target_link_libraries(
         thor_test
         LINK_PRIVATE
+        files
         thor
         thor_test_utils
         GTest::gmock

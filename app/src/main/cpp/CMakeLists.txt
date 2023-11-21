@@ -45,8 +45,8 @@ ENDIF()
 
 MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-SET(CMAKE_CXX_STANDARD 14)
-SET(CMAKE_CXX_FLAGS "-std=c++1y ${CMAKE_CXX_FLAGS} -pthread -fPIC")
+SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC")
 
 IF(ENABLE_GOOGLETEST)
     INCLUDE(FetchContent)
@@ -66,7 +66,7 @@ ELSE()
     find_package(JNI REQUIRED)
 ENDIF()
 
-find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
+#find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
 
 include_directories( ${JNI_INCLUDE_DIRS} )
 

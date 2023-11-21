@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include <experimental/filesystem>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <string>
 
+#include "../utils/files.h"
 #include "thor.h"
 #include "thor_test_utils.h"
 
@@ -36,7 +36,7 @@ void WriteHeader(std::ofstream& file) {
 
 class ThorTest : public testing::Test {
   void SetUp() override {
-    std::experimental::filesystem::create_directories(kTempFolder);
+    fs::create_directories(kTempFolder);
     std::ofstream thor_games(kTempFolder + "/WTH_2023.wtb", std::ios::binary);
     std::ofstream thor_players(kTempFolder + "/WTH.JOU", std::ios::binary);
     std::ofstream thor_tournaments(kTempFolder + "/WTH.TRN", std::ios::binary);
@@ -64,7 +64,7 @@ class ThorTest : public testing::Test {
   }
 
   void TearDown() override {
-    std::experimental::filesystem::remove_all(kTempFolder);
+    fs::remove_all(kTempFolder);
   }
 };
 

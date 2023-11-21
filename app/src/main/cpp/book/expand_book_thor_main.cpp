@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <experimental/filesystem>
 #include <limits>
 
 #include "book.h"
@@ -28,8 +27,6 @@
 #include "../utils/misc.h"
 #include "../utils/load_thor.h"
 #include "../utils/parse_flags.h"
-
-namespace fs = std::experimental::filesystem;
 
 class ExpandBookThorMain {
  public:
