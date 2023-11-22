@@ -24,7 +24,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
+import android.graphics.Rect;
 import android.os.Bundle;
+import android.text.TextPaint;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -46,12 +48,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 
+import bitpattern.PositionIJ;
 import board.Board;
 
 import constants.Constants;
 import jni.ThorGame;
+import jni.ThorGameWithMove;
 import main.Main;
-import thor.Game;
 import jni.JNI;
 import ui_desktop.CaseAnnotations;
 import main.UI;
@@ -261,9 +264,29 @@ public class MobileUI extends AppCompatActivity implements UI {
     return wantThor;
   }
 
-  public void setExtraInfoText(final String text, final int size) {
+  private String getLongestLine(final String text) {
+    String result = "";
+    for (String line : text.split("\n")) {
+      if (line.length() > result.length()) {
+        result = line;
+      }
+    }
+    return result;
+  }
+  
+  public void setExtraInfoText(final String text) {
     runOnUiThread(() -> {
-      extraInfo.setTextSize(size);
+      double widthLimit = (extraInfo.getWidth() - extraInfo.getPaddingLeft() - extraInfo.getPaddingRight()) * 0.9;
+      String longestLine = getLongestLine(text);
+      for (int i = 50; i > 1; --i) {
+        extraInfo.setTextSize(i);
+        TextPaint paint = extraInfo.getPaint();
+        Rect bounds = new Rect();
+        paint.getTextBounds(longestLine, 0, longestLine.length(), bounds);
+        if (bounds.right - bounds.left < widthLimit) {
+          break;
+        }
+      }
       extraInfo.setText(text);
       extraInfo.invalidate();
     });
@@ -274,8 +297,28 @@ public class MobileUI extends AppCompatActivity implements UI {
   }
 
   @Override
-  public void updateThorGamesWindow(String content) {
-    setExtraInfoText(content, 14);
+  public void updateThorGamesWindow(ArrayList<ThorGameWithMove> games) {
+    int numGames = Math.min(30, games.size());
+    String content = "Showing " + numGames + " of " + games.size() + " games:\n";
+    for (int i = 0; i < numGames; ++i) {
+      ThorGameWithMove gameMove = games.get(i);
+      ThorGame game = gameMove.game();
+
+      content += String.format(
+          "%2s %d %20s %2d - %2d %-20s\n",
+          new PositionIJ(gameMove.move()).toString(), game.year(), game.black(),
+          game.blackScore(), 64 - game.blackScore(), game.white(),
+          game.tournament());
+    }
+//    this.thorGamesText.setText(content);
+//    String content = "";
+//    for (ThorGame game : games) {
+//      content += String.format(
+//          "%d %20s %2d-%2d %-20s %s", game.year(), game.black(),
+//          game.blackScore(), 64 - game.blackScore(), game.white(),
+//          game.tournament());
+//    }
+    setExtraInfoText(content);
   }
 
   @Override
@@ -351,7 +394,7 @@ public class MobileUI extends AppCompatActivity implements UI {
         board.getEmptySquares(),
         JNI.prettyPrintDouble(nVisited),
         JNI.prettyPrintDouble(nVisited * 1000.0 / milliseconds));
-    setExtraInfoText(text, 26);
+    setExtraInfoText(text);
   }
 
   @Override

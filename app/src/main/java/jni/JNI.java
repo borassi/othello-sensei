@@ -20,7 +20,6 @@ import java.util.Set;
 import board.Board;
 import constants.Constants;
 import evaluateposition.Status;
-import thor.Game;
 
 public class JNI {
   private long pointer;

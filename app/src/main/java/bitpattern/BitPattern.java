@@ -420,7 +420,7 @@ public class BitPattern {
       MAIN_DIAG7_BIT_PATTERN >>> -mainDiagShift;
   }
 
-  public final static int getX(int move) { return 7 - move / 8; }
-  public final static int getY(int move) { return 7 - move % 8; }
+  public final static int getX(int move) { return 7 - move % 8; }
+  public final static int getY(int move) { return 7 - move / 8; }
 
 }

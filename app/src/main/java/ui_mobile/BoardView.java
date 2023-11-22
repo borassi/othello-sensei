@@ -42,9 +42,9 @@ public class BoardView extends View {
   private int cellSize;
   private Board board = new Board();
   private boolean blackTurn = false;
-  private CaseAnnotations[][] annotations;
+  private CaseAnnotations[] annotations;
   private ArrayList<ArrayList<ThorGame>> thorGames;
-  private final RectF[][] caseBorders;
+  private final RectF[] caseBorders;
   private boolean wantThor = false;
 
   public BoardView(Context context, AttributeSet attrs) {
@@ -62,15 +62,13 @@ public class BoardView extends View {
     fillWhite = new Paint();
     fillWhite.setColor(Color.WHITE);
     fillWhite.setStyle(Paint.Style.FILL);
-    caseBorders = new RectF[8][8];
-    for (int i = 0; i < 8; ++i) {
-      Arrays.fill(caseBorders[i], new RectF());
-    }
+    caseBorders = new RectF[64];
+    Arrays.fill(caseBorders, new RectF());
     setOnTouchListener((v, event) -> {
       if (event.getAction() != MotionEvent.ACTION_DOWN){
         return false;
       }
-      int move = 8 * (7 - (int) (event.getX() / cellSize)) + (7-(int) (event.getY() / cellSize));
+      int move = (7 - (int) (event.getX() / cellSize)) + 8 * (7-(int) (event.getY() / cellSize));
       main.getMove(move);
       v.performClick();
       return true;
@@ -79,11 +77,11 @@ public class BoardView extends View {
   }
 
   public void setAnnotations(CaseAnnotations annotations, int move) {
-    this.annotations[BitPattern.getX(move)][BitPattern.getY(move)] = annotations;
+    this.annotations[move] = annotations;
   }
 
   public void resetAnnotations() {
-    this.annotations = new CaseAnnotations[8][8];
+    this.annotations = new CaseAnnotations[64];
     this.thorGames = new ArrayList<>();
     for (int i = 0; i < 64; ++i) {
       this.thorGames.add(null);
@@ -97,22 +95,22 @@ public class BoardView extends View {
   @Override
   protected void onDraw(Canvas canvas) {
     cellSize = getWidth() / 8;
-    for (int i = 0; i < 8; ++i) {
-      for (int j = 0; j < 8; ++j) {
-        RectF rect = caseBorders[i][j];
-        rect.set(i * cellSize, j * cellSize,
-            (i+1) * cellSize - 1, (j+1) * cellSize - 1);
-        canvas.drawRect(rect, fillGreen);
-        canvas.drawRect(rect, drawBlack);
-        switch (board.getCase(i, j, blackTurn)) {
-          case 'X':
-            canvas.drawOval(rect, fillBlack);
-            break;
-          case 'O':
-            canvas.drawOval(rect, fillWhite);
-            canvas.drawOval(rect, drawBlack);
-            break;
-        }
+    for (int i = 0; i < 64; ++i) {
+      RectF rect = caseBorders[i];
+      int x = BitPattern.getX(i);
+      int y = BitPattern.getY(i);
+      rect.set(x * cellSize, y * cellSize,
+          (x +1) * cellSize - 1, (y +1) * cellSize - 1);
+      canvas.drawRect(rect, fillGreen);
+      canvas.drawRect(rect, drawBlack);
+      switch (board.getCase(i, blackTurn)) {
+        case 'X':
+          canvas.drawOval(rect, fillBlack);
+          break;
+        case 'O':
+          canvas.drawOval(rect, fillWhite);
+          canvas.drawOval(rect, drawBlack);
+          break;
       }
     }
     drawAnnotations(canvas);
@@ -137,7 +135,7 @@ public class BoardView extends View {
       int y = BitPattern.getY(c);
       drawAnnotation(
           canvas,
-          this.annotations[x][y],
+          this.annotations[c],
           this.thorGames.get(c),
           x * cellSize, y * cellSize);
     }

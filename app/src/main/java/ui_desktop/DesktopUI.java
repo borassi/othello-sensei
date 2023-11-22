@@ -61,13 +61,14 @@ import javax.swing.event.ChangeEvent;
 import jni.JNI;
 import jni.Node;
 import jni.ThorGame;
+import jni.ThorGameWithMove;
 import main.Main;
 import main.UI;
 
 public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   private static final long serialVersionUID = 1L;
-  private final Case[][] cases = new Case[8][8];
+  private final Case[] cases = new Case[64];
   private final JPanel casesContainer = new JPanel(new GridLayout(0, 8)) {
     /**
      * Needed to silence a warning.
@@ -138,15 +139,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     casesContainer.setLayout(new GridLayout(0, 8));
 
     for (int i = 0; i < 64; i++) {
-      int x = BitPattern.getX(i);
-      int y = BitPattern.getY(i);
-
-      cases[x][y] = new Case(this, i);
+      cases[i] = new Case(this, i);
     }
-    for (int x = 0; x < 8; ++x) {
-      for (int y = 0; y < 8; ++y) {
-        casesContainer.add(cases[x][y]);
-      }
+    for (int i = 63; i >= 0; --i) {
+      casesContainer.add(cases[i]);
     }
 
     JPanel boardConstrain = new JPanel(new GridBagLayout());
@@ -315,12 +311,11 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     return (int) error.getValue();
   }
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
-    int x = BitPattern.getX(move);
-    int y = BitPattern.getY(move);
-    cases[x][y].setFontSizes(new double[] {0.25, 0.16});
-    cases[x][y].setAnnotations(annotations.getLines(true, cases[x][y].getThorGames()));
-    cases[x][y].setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
-    cases[x][y].repaint();
+    Case curCase = cases[move];
+    curCase.setFontSizes(new double[] {0.25, 0.16});
+    curCase.setAnnotations(annotations.getLines(true, curCase.getThorGames()));
+    curCase.setAnnotationsColor(annotations.isBestMove ? new Color(210, 30, 30) : Color.BLACK);
+    curCase.repaint();
   }
 
   private void setAnnotationsDebug(CaseAnnotations annotations, int move) {
@@ -366,34 +361,27 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       }
     }
 
-    int x = BitPattern.getX(move);
-    int y = BitPattern.getY(move);
-    cases[x][y].setFontSizes(new double[] {0.125});
-    cases[x][y].setAnnotations(rows.toString());
-    cases[x][y].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
+    cases[move].setFontSizes(new double[] {0.125});
+    cases[move].setAnnotations(rows.toString());
+    cases[move].setAnnotationsColor(annotations.isBestMove ? Color.RED : Color.BLACK);
   }
 
   public void repaint() {
-    for (Case[] row : cases) {
-      for (Case c : row) {
-        c.repaint();
-      }
+    for (Case c : cases) {
+      c.repaint();
     }
   }
 
-
   @Override
   public void setCases(Board board, boolean blackTurn) {
-    for (int i = 0; i < 8; i++) {
-      for (int j = 0; j < 8; j++) {
-        if (cases[i][j].getState() == board.getCase(i, j, blackTurn) &&
-                "".equals(cases[i][j].getAnnotations())) {
-          continue;
-        }
-        cases[i][j].setState(board.getCase(i, j, blackTurn));
-        cases[i][j].resetAnnotations();
-        cases[i][j].update(cases[i][j].getGraphics());
+    for (int i = 0; i < 64; i++) {
+      if (cases[i].getState() == board.getCase(i, blackTurn) &&
+              "".equals(cases[i].getAnnotations())) {
+        continue;
       }
+      cases[i].setState(board.getCase(i, blackTurn));
+      cases[i].resetAnnotations();
+      cases[i].update(cases[i].getGraphics());
     }
     if (lastBlackTurn != blackTurn) {
       lastBlackTurn = blackTurn;
@@ -451,12 +439,12 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public void setThorGames(ArrayList<ThorGame> thorGames, int square) {
-    cases[BitPattern.getX(square)][BitPattern.getY(square)].setThorGames(thorGames);
+    cases[square].setThorGames(thorGames);
   }
 
   @Override
-  public void updateThorGamesWindow(String content) {
-    thorGamesWindow.setGames(content);
+  public void updateThorGamesWindow(ArrayList<ThorGameWithMove> games) {
+    thorGamesWindow.setGames(games);
   }
 
   @Override

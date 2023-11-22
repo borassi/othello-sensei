@@ -37,8 +37,6 @@ import jni.JNI;
 import jni.Node;
 import jni.ThorGame;
 import jni.ThorGameWithMove;
-import thor.Game;
-import thor.Thor;
 import ui_desktop.CaseAnnotations;
 
 /**
@@ -232,9 +230,7 @@ public class Main implements Runnable {
     allThorGames.sort(Comparator
         .comparing((ThorGameWithMove g)->g.game().year()).reversed()
         .thenComparing((ThorGameWithMove g)->g.game().tournament()));
-    ui.updateThorGamesWindow(thorGamesToString(
-        allThorGames.subList(0, Math.min(allThorGames.size(), MAX_THOR_GAMES)),
-        numGames));
+    ui.updateThorGamesWindow(allThorGames);
   }
 
   @Override

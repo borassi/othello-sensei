@@ -43,6 +43,7 @@ std::vector<std::string> Thor::Tournaments() const {
       result.push_back(tournament);
     }
   }
+  std::sort(result.begin(), result.end());
   return result;
 }
 
@@ -56,6 +57,7 @@ std::vector<std::string> Thor::Players() const {
       }
     }
   }
+  std::sort(result.begin(), result.end());
   return result;
 }
 

@@ -284,7 +284,19 @@ public class Board implements Serializable {
     }
     return '-';
   }
-  
+
+  public char getCase(int square, boolean blackTurn) {
+    if (square < 0 || square > 63) {
+      return '?';
+    }
+    if ((player & 1L << square) != 0) {
+      return blackTurn ? 'X' : 'O';
+    }
+    if ((opponent & 1L << square) != 0) {
+      return blackTurn ? 'O' : 'X';
+    }
+    return '-';
+  }
   /**
    * Computes the color of the disk at the given coordinates.
    * @param coordinates the coordinates

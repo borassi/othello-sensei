@@ -21,10 +21,10 @@ import java.util.Locale;
 import javax.swing.JFrame;
 import javax.swing.JTextArea;
 
+import bitpattern.PositionIJ;
 import board.Board;
 import jni.ThorGame;
 import jni.ThorGameWithMove;
-import thor.Game;
 
 public class ThorGamesWindow extends JFrame {
   private final JTextArea thorGamesText;
@@ -42,7 +42,20 @@ public class ThorGamesWindow extends JFrame {
     return new Dimension(800, 800);
   }
 
-  public void setGames(String content) {
+  public void setGames(ArrayList<ThorGameWithMove> games) {
+    int numGames = Math.min(100, games.size());
+    String content = "Showing " + numGames + " of " + games.size() + " games:\n";
+
+    for (int i = 0; i < numGames; ++i) {
+      ThorGameWithMove gameMove = games.get(i);
+      ThorGame game = gameMove.game();
+
+      content += String.format(
+          "%2s %d %20s %2d - %2d %-20s\n",
+          new PositionIJ(gameMove.move()).toString(), game.year(), game.black(),
+          game.blackScore(), 64 - game.blackScore(), game.white(),
+          game.tournament());
+    }
     this.thorGamesText.setText(content);
   }
 }

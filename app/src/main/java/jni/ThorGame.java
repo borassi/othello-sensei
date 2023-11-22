@@ -36,8 +36,4 @@ public class ThorGame {
   public byte[] moves() { return moves; }
   public short year() { return year; }
   public short blackScore() { return blackScore; }
-
-  public String toString() {
-    return String.format("%d %20s %2d - %2d %-20s (%s)", year, black, blackScore, 64 - blackScore, white, tournament);
-  }
 }

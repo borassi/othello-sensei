@@ -15,12 +15,10 @@
 package main;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import board.Board;
 import jni.ThorGame;
 import jni.ThorGameWithMove;
-import thor.Game;
 import ui_desktop.CaseAnnotations;
 
 /**
@@ -46,7 +44,7 @@ public interface UI {
   void repaint();
   boolean wantThorGames();
   void setThorGames(ArrayList<ThorGame> games, int square);
-  void updateThorGamesWindow(String content);
+  void updateThorGamesWindow(ArrayList<ThorGameWithMove> games);
   String evalFile();
   String thorFolder();
   String bookFolder();
