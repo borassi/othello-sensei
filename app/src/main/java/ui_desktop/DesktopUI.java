@@ -14,8 +14,6 @@
 
 package ui_desktop;
 
-import bitpattern.BitPattern;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -34,8 +32,6 @@ import java.awt.event.MouseEvent;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.TreeMap;
 
@@ -117,10 +113,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
   private final JSpinner error;
   private final JLabel nThreadsLabel;
   private final JTextField nThreads;
-  private final TreeMap<String, UseBook> useBookValues = new TreeMap<String, UseBook>() {{
-      put("Do not use the book", UseBook.DO_NOT_USE);
-      put("Read from book, do not write", UseBook.READ_ONLY);
-      put("Read and write to book", UseBook.READ_WRITE);
+  private final TreeMap<String, Main.UseBook> useBookValues = new TreeMap<String, Main.UseBook>() {{
+      put("Do not use the book", Main.UseBook.DO_NOT_USE);
+      put("Read from book, do not write", Main.UseBook.READ_ONLY);
+      put("Read and write to book", Main.UseBook.READ_WRITE);
   }};
 
   private final String ASSET_FILEPATH = "app/src/main/assets";
@@ -296,6 +292,24 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     } else if (SwingUtilities.isRightMouseButton(e)) {
       main.undo();
     }
+    if (active()) {
+      main.evaluate(runParameters());
+    }
+  }
+
+  public Main.RunParameters runParameters() {
+    return new Main.RunParameters(
+        useBookValues.get(useBookSpinner.getValue()),
+        Double.parseDouble(delta.getText()),
+        nThreads(),
+        approx.isSelected(),
+        (int) error.getValue(),
+        (int) lower.getValue() * 100,
+        (int) upper.getValue() * 100,
+        maxVisited(),
+        playBlackMoves.isSelected(),
+        playWhiteMoves.isSelected(),
+        this.thorActive.isSelected());
   }
 
   @Override
@@ -306,10 +320,7 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
       setAnnotationsLarge(annotations, move);
     }
   }
-  @Override
-  public double getError() {
-    return (int) error.getValue();
-  }
+
   private void setAnnotationsLarge(CaseAnnotations annotations, int move) {
     Case curCase = cases[move];
     curCase.setFontSizes(new double[] {0.25, 0.16});
@@ -392,17 +403,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     empties.setText("Empties: " + board.getEmptySquares());
   }
 
-  @Override
-  public boolean playBlackMoves() {
-    return playBlackMoves.isSelected();
-  }
-
-  @Override
-  public boolean playWhiteMoves() {
-    return playWhiteMoves.isSelected();
-  }
-
-  @Override
   public long maxVisited() {
     try {
       return Long.parseLong(depth.getText());
@@ -426,16 +426,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
   @Override
   public void componentShown(ComponentEvent e) {}
-
-  @Override
-  public double delta() {
-    return Double.parseDouble(delta.getText());
-  }
-
-  @Override
-  public boolean wantThorGames() {
-    return this.thorActive.isSelected();
-  }
 
   @Override
   public void setThorGames(ArrayList<ThorGame> thorGames, int square) {
@@ -462,18 +452,10 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
     return Paths.get(ASSET_FILEPATH, "pattern_evaluator.dat").toString();
   }
 
-  @Override
   public boolean active() {
     return active.isSelected();
   }
 
-  @Override
-  public UseBook useBook() { return useBookValues.get(useBookSpinner.getValue()); }
-
-  @Override
-  public boolean approx() { return approx.isSelected(); }
-
-  @Override
   public int nThreads() {
     try {
       return Integer.parseInt(nThreads.getText());
@@ -513,16 +495,6 @@ public class DesktopUI extends JFrame implements ComponentListener, UI {
 
     String tmp = firstPositionText.toString();
     SwingUtilities.invokeLater(() -> extrasPosition.setText(tmp));
-  }
-
-  @Override
-  public int lower() {
-    return (int) lower.getValue() * 100;
-  }
-
-  @Override
-  public int upper() {
-    return (int) upper.getValue() * 100;
   }
 
   public static void main(String[] args) {

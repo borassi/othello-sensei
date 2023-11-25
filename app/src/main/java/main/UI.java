@@ -26,31 +26,14 @@ import ui_desktop.CaseAnnotations;
  * @author michele
  */
 public interface UI {
-  enum UseBook {
-    DO_NOT_USE,
-    READ_ONLY,
-    READ_WRITE
-  }
   void setCases(Board board, boolean blackTurn);
   void setAnnotations(CaseAnnotations annotations, int move);
   void setExtras(long nVisited, double milliseconds, CaseAnnotations annotations,
                  double errorBlack, double errorWhite);
-  boolean playBlackMoves();
-  boolean playWhiteMoves();
-  long maxVisited();
-  double delta();
-  int lower();
-  int upper();
   void repaint();
-  boolean wantThorGames();
   void setThorGames(ArrayList<ThorGame> games, int square);
   void updateThorGamesWindow(ArrayList<ThorGameWithMove> games);
   String evalFile();
   String thorFolder();
   String bookFolder();
-  boolean active();
-  UseBook useBook();
-  double getError();
-  boolean approx();
-  int nThreads();
 }

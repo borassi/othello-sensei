@@ -19,14 +19,10 @@ import java.util.ArrayList;
 import bitpattern.PositionIJ;
 import board.Board;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,15 +41,74 @@ import ui_desktop.CaseAnnotations;
  * Connects the board and the evaluation with the UI.
  */
 public class Main implements Runnable {
+  public enum UseBook {
+    DO_NOT_USE,
+    READ_ONLY,
+    READ_WRITE
+  }
+  public static class RunParameters {
+    final UseBook useBook;
+    final double delta;
+    final int nThreads;
+    final boolean approx;
+    final double error;
+    final int lower;
+    final int upper;
+    final long maxNVisited;
+    final boolean playBlackMoves;
+    final boolean playWhiteMoves;
+    final boolean wantThorGames;
+    public RunParameters() {
+      this.useBook = UseBook.DO_NOT_USE;
+      this.delta = 0;
+      this.nThreads = 1;
+      this.approx = false;
+      this.error = 0;
+      this.lower = -6300;
+      this.upper = 6300;
+      this.maxNVisited = 1;
+      this.playBlackMoves = false;
+      this.playWhiteMoves = false;
+      this.wantThorGames = false;
+    }
+
+    public RunParameters(UseBook useBook, double delta, int nThreads, boolean approx, double error, int lower, int upper, long maxNVisited, boolean playBlackMoves, boolean playWhiteMoves, boolean wantThorGames) {
+      this.useBook = useBook;
+      this.delta = delta;
+      this.nThreads = nThreads;
+      this.approx = approx;
+      this.error = error;
+      this.lower = lower;
+      this.upper = upper;
+      this.maxNVisited = maxNVisited;
+      this.playBlackMoves = playBlackMoves;
+      this.playWhiteMoves = playWhiteMoves;
+      this.wantThorGames = wantThorGames;
+    }
+
+    private boolean writeBook() {
+      return useBook == UseBook.READ_WRITE;
+    }
+
+    private boolean readBook() {
+    return useBook != UseBook.DO_NOT_USE;
+  }
+
+    private boolean isSenseiTurn(boolean blackTurn) {
+      return (blackTurn && playBlackMoves) || (!blackTurn && playWhiteMoves);
+    }
+  }
   private class Position {
     Board board;
     boolean blackTurn;
     double error;
+    boolean senseiPlayed;
 
-    public Position(Board board, boolean blackTurn, double error) {
+    public Position(Board board, boolean blackTurn, double error, boolean senseiPlayed) {
       this.board = board;
       this.blackTurn = blackTurn;
       this.error = error;
+      this.senseiPlayed = senseiPlayed;
     }
   }
   Board board;
@@ -67,8 +122,9 @@ public class Main implements Runnable {
   private static UI ui;
   private final AtomicInteger waitingTasks = new AtomicInteger(0);
   private boolean canComputeError;
-  private UI.UseBook useBook;
   private final int MAX_THOR_GAMES = 100;
+  RunParameters runParameters = new RunParameters();
+  RunParameters newRunParameters;
 
   /**
    * Creates a new UI and sets the initial position.
@@ -77,8 +133,7 @@ public class Main implements Runnable {
     Main.ui = ui;
     EVALUATOR = new JNI(ui.evalFile(), ui.bookFolder(), ui.thorFolder());
     resetFirstPosition();
-    useBook = ui.useBook();
-    setFirstPosition(new Board(), true);//"e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2"), true);
+    setFirstPosition(new Board(), true);
   }
 
   public ArrayList<String> getThorTournaments() {
@@ -101,7 +156,6 @@ public class Main implements Runnable {
   public void play(int move) {
     stop();
     playMoveIfPossible(move);
-    evaluate();
   }
 
   public void setFirstPosition(Board board, boolean blackTurn) {
@@ -124,7 +178,7 @@ public class Main implements Runnable {
     for (int i = 0; i < 20; ++i) {
       while (!JNI.isGameOver(board)) {
         run();
-        playMoveIfPossible(this.findMoveToPlay(error));
+        playMoveIfPossible(this.findMoveToPlay());
       }
       for (Position oldPosition : oldPositions) {
         System.out.print(oldPosition.error + " ");
@@ -154,24 +208,21 @@ public class Main implements Runnable {
     setBoard(JNI.getEndgameBoard(n), true);
   }
 
-  public boolean isSenseiTurn() {
-    return (blackTurn && ui.playBlackMoves()) || (!blackTurn && ui.playWhiteMoves());
-  }
-
   /**
    * Undoes a move, if possible.
    */
   public void undo() {
     stop();
-    boolean firstUndo = true;
-    while ((firstUndo || isSenseiTurn()) && oldPositions.size() > 0) {
-      Position position = oldPositions.remove(oldPositions.size() - 1);
-      board = position.board;
-      blackTurn = position.blackTurn;
-      ui.setCases(board, blackTurn);
-      firstUndo = false;
+    if (oldPositions.size() == 0) {
+      return;
     }
-    evaluate();
+    Position position = oldPositions.remove(oldPositions.size() - 1);
+    while (position.senseiPlayed && oldPositions.size() > 0) {
+      position = oldPositions.remove(oldPositions.size() - 1);
+    }
+    board = position.board;
+    blackTurn = position.blackTurn;
+    ui.setCases(board, blackTurn);
   }
   
   public void newGame() {
@@ -189,13 +240,13 @@ public class Main implements Runnable {
 
   public ArrayList<Board> getBoards() {
     ArrayList<Board> boards = new ArrayList<>();
-    if (ui.delta() == 0) {
-      if (!readBook() || EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
+    if (runParameters.delta == 0) {
+      if (!runParameters.readBook() || EVALUATOR.getFromBook(board.getPlayer(), board.getOpponent()) == null) {
         boards.add(board);
       }
     } else {
       for (Board child : JNI.uniqueChildren(board)) {
-        if (!readBook() || EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
+        if (!runParameters.readBook() || EVALUATOR.getFromBook(child.getPlayer(), child.getOpponent()) == null) {
           boards.add(child);
         }
       }
@@ -233,50 +284,54 @@ public class Main implements Runnable {
     ui.updateThorGamesWindow(allThorGames);
   }
 
+  public void evaluate(ArrayList<Board> boards) {
+    startTime = System.currentTimeMillis();
+    EVALUATOR.evaluate(boards, runParameters.lower, runParameters.upper, runParameters.maxNVisited, 100, (float) runParameters.delta, runParameters.nThreads, runParameters.approx);
+    while (!EVALUATOR.finished(runParameters.maxNVisited)) {
+      if (!(runParameters.playBlackMoves || runParameters.playWhiteMoves)) {
+        showMCTSEvaluations();
+      }
+      EVALUATOR.evaluate(boards, runParameters.lower, runParameters.upper, runParameters.maxNVisited, 1000, (float) runParameters.delta, runParameters.nThreads, runParameters.approx);
+    }
+    if (runParameters.writeBook() && runParameters.delta > 0 && firstPosition.equals(new Board())) {
+      ArrayList<Board> oldBoards = new ArrayList<>();
+      for (Position oldPosition : this.oldPositions) {
+        oldBoards.add(oldPosition.board.deepCopy());
+      }
+      oldBoards.add(board.deepCopy());
+      EVALUATOR.addToBook(board, oldBoards);
+    }
+  }
+
   @Override
   public void run() {
+    runParameters = newRunParameters;
     waitingTasks.getAndAdd(-1);
     Board board = this.board.deepCopy();
     if (JNI.isGameOver(board)) {
       return;
     }
-    useBook = ui.useBook();
-    canComputeError = ui.delta() > 0;
-    boolean mustPlay = this.isSenseiTurn();
-    boolean isMatch = ui.playBlackMoves() || ui.playWhiteMoves();
-    ArrayList<Board> oldBoards = new ArrayList<>();
-    for (Position oldPosition : this.oldPositions) {
-      oldBoards.add(oldPosition.board.deepCopy());
-    }
-    oldBoards.add(board.deepCopy());
+    boolean isMatch = runParameters.playBlackMoves || runParameters.playWhiteMoves;
 
-    if (ui.wantThorGames()) {
+    if (runParameters.wantThorGames) {
       setThorGames(board);
     }
 
-    ArrayList<Board> boards = getBoards();
-    if (boards.isEmpty()) {
-      showMCTSEvaluations();
-      return;
-    }
-    startTime = System.currentTimeMillis();
-    EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 100, (float) ui.delta(), ui.nThreads(), ui.approx());
-    while (ui.active() && !EVALUATOR.finished(ui.maxVisited())) {
-      if (!isMatch) {
+    boolean needToEvaluate = true;
+    while (needToEvaluate) {
+      ArrayList<Board> boards = getBoards();
+      if (!boards.isEmpty()) {
+        evaluate(boards);
+      }
+
+      if (runParameters.isSenseiTurn(blackTurn)) {
+        this.playMoveIfPossible(findMoveToPlay());
+      } else if (waitingTasks.get() == 0 && !isMatch) {
         showMCTSEvaluations();
       }
-      EVALUATOR.evaluate(boards, ui.lower(), ui.upper(), ui.maxVisited(), 1000, (float) ui.delta(), ui.nThreads(), ui.approx());
+      needToEvaluate = runParameters.isSenseiTurn(blackTurn);
+      setExtras();
     }
-    if (writeBook() && ui.delta() > 0 && firstPosition.equals(new Board())) {
-      EVALUATOR.addToBook(board, oldBoards);
-    }
-    if (mustPlay) {
-      double tmp = ui.getError();
-      this.play(findMoveToPlay(tmp));
-    } else if (waitingTasks.get() == 0 && !isMatch) {
-      showMCTSEvaluations();
-    }
-    setExtras();
   }
   
   /**
@@ -295,7 +350,7 @@ public class Main implements Runnable {
       return;
     }
     double error = getError(move);
-    oldPositions.add(new Position(board, blackTurn, error));
+    oldPositions.add(new Position(board, blackTurn, error, runParameters.isSenseiTurn(blackTurn)));
 
     if (JNI.haveToPass(newBoard) && !JNI.isGameOver(newBoard)) {
       board = newBoard.move(0);
@@ -304,7 +359,6 @@ public class Main implements Runnable {
       blackTurn = !blackTurn;
     }
     ui.setCases(board, blackTurn);
-    canComputeError = false;
   }
   
   private int moveFromBoard(Board father, Board child) {
@@ -329,7 +383,8 @@ public class Main implements Runnable {
     return -1 / lambda * Math.log(Math.random());
   }
 
-  int findMoveToPlay(double error) {
+  int findMoveToPlay() {
+    double error = runParameters.error;
     assert(error > 5 && error < 80);
     int currentMove = 60 - board.getEmptySquares();
     double moveMultiplier = 0.06 * currentMove / 1.235;
@@ -340,7 +395,7 @@ public class Main implements Runnable {
     double base = 1 + 8.12 * Math.pow(error * moveMultiplier, -0.825);
     int move = -1;
     for (Map.Entry<Integer, Node> entry : getNextPositions().entrySet()) {
-      double eval = -entry.getValue().getEval() / 100.0;
+      double eval = -entry.getValue().getEval();
       double score = generateExponential(Math.pow(base, eval));
       if (score < bestScore) {
         bestScore = score;
@@ -373,9 +428,6 @@ public class Main implements Runnable {
     if (board.equals(new Board())) {
       return 0;
     }
-    if (!canComputeError) {
-      return Double.NEGATIVE_INFINITY;
-    }
     double bestEval = Double.NEGATIVE_INFINITY;
     HashMap<Integer, Node> nextPositions = getNextPositions();
     if (!nextPositions.containsKey(move)) {
@@ -388,24 +440,14 @@ public class Main implements Runnable {
 
     return bestEval - (-nextPositions.get(move).getEval());
   }
-
-  private boolean writeBook() {
-    return useBook == UI.UseBook.READ_WRITE;
-  }
-
-  private boolean readBook() {
-    return useBook != UI.UseBook.DO_NOT_USE;
-  }
   
-  private void evaluate() {
-    if (!ui.active()) {
-      return;
-    }
-    if (ui.maxVisited() <= 0) {
+  public void evaluate(RunParameters parameters) {
+    if (parameters.maxNVisited <= 0) {
       showMCTSEvaluations();
       return;
     }
     if (waitingTasks.compareAndSet(0, 1)) {
+      this.newRunParameters = parameters;
       EXECUTOR.submit(this);
     }
   }
@@ -415,7 +457,7 @@ public class Main implements Runnable {
   }
 
   private Node getStoredBoard(long player, long opponent) {
-    if (readBook()) {
+    if (runParameters.readBook()) {
       Node node = EVALUATOR.getFromBook(player, opponent);
       if (node != null) {
         return node;

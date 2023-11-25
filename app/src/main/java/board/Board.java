@@ -22,12 +22,8 @@ import jni.JNI;
 
 import java.util.ArrayList;
 
-public class Board implements Serializable {
+public class Board {
 
-  /**
-   * Needed to implement Serializable
-   */
-  private static final long serialVersionUID = 1L;
   /**
    * The disks of the current player, as a sequence of bit.
    * If the disk in position (i,j) is of the current player,
@@ -71,7 +67,7 @@ public class Board implements Serializable {
   public Board deepCopy() {
     return new Board(player, opponent);
   }
-  
+
   @Override
   public boolean equals(Object otherBoard) {
     if (!Board.class.isAssignableFrom(otherBoard.getClass())) {
@@ -80,16 +76,12 @@ public class Board implements Serializable {
     final Board other = (Board) otherBoard;
     return player == other.player && opponent == other.opponent;
   }
-  
-  public static int hash(long player, long opponent) {
-    player = (player ^ (player >>> 32));
-    opponent = (opponent ^ (opponent >>> 32));
-    return (int) (player ^ (opponent << 3)) & Integer.MAX_VALUE;
-  }
 
   @Override
   public int hashCode() {
-    return hash(player, opponent);
+    long playerHash = (player ^ (player >>> 32));
+    long opponentHash = (opponent ^ (opponent >>> 32));
+    return (int) (playerHash ^ (opponentHash << 3)) & Integer.MAX_VALUE;
   }
   
   /**
@@ -147,12 +139,12 @@ public class Board implements Serializable {
     player = blackTurn ? black : white;
     opponent = blackTurn ? white : black;
   }
-  
+
   public String toString(boolean blackTurn) {
     String boardString = "";
     long black = blackTurn ? player : opponent;
     long white = blackTurn ? opponent : player;
-    
+
     for (int i = 0; i < 64; i++) {
       if (black >>> 63 == 1) {
         boardString += "X";
@@ -169,82 +161,12 @@ public class Board implements Serializable {
     }
     return boardString;
   }
-  
+
   @Override
   public String toString() {
     return toString(true);
   }
-  
-  public Board[] allTranspositions() {
-    return allTranspositions(this);
-  }
-  
-  public final static Board[] allTranspositions(Board b) {
-    Board result[] = new Board[8];
-    for (int i = 0; i < 8; i++) {
-      result[i] = new Board(0, 0);
-    }
-    allTranspositions(b.getPlayer(), b.getOpponent(), result);
-    return result;
-  }
-  
-  public final static void allTranspositions(Board b, Board result[]) {
-    allTranspositions(b.player, b.opponent, result);
-  }
-  /**
-   * @param player the player
-   * @param opponent the opponent
-   * @param result an array used to store the output
-   */
-  public final static void allTranspositions(long player, long opponent, Board result[]) {
-    int j = 4;
-    for (int i = 0; i < 4; i++) {
-      result[i].player = player;
-      result[i].opponent = opponent;
-      player = BitPattern.horizontalMirror(player);
-      opponent = BitPattern.horizontalMirror(opponent);
-      result[j].player = player;
-      result[j++].opponent = opponent;
-      player = BitPattern.transpose(player);
-      opponent = BitPattern.transpose(opponent);
-    }
-  }
 
-  public final static Board[] allRotations(Board orig) {
-    Board r2 = new Board(0, 0);
-    Board r3 = new Board(0, 0);
-    Board r4 = new Board(0, 0);
-    
-    allRotations(orig, r2, r3, r4);
-    return new Board[] {orig, r2, r3, r4};
-  }  
-  /**
-   * Computes all rotation of the board.
-   */
-  public final static void allRotations(
-      Board r1, Board r2, Board r3, Board r4) {    
-    long player = r1.player;
-    long opponent = r1.opponent;
-    player = BitPattern.verticalMirror(player);
-    opponent = BitPattern.verticalMirror(opponent);
-    player = BitPattern.transpose(player);
-    opponent = BitPattern.transpose(opponent);
-    r2.player = player;
-    r2.opponent = opponent;
-    player = BitPattern.verticalMirror(player);
-    opponent = BitPattern.verticalMirror(opponent);
-    player = BitPattern.transpose(player);
-    opponent = BitPattern.transpose(opponent);
-    r3.player = player;
-    r3.opponent = opponent;
-    player = BitPattern.verticalMirror(player);
-    opponent = BitPattern.verticalMirror(opponent);
-    player = BitPattern.transpose(player);
-    opponent = BitPattern.transpose(opponent);
-    r4.player = player;
-    r4.opponent = opponent;
-  }
-  
   /**
    * Returns the board after a move.
    * @param move a long whose bitwise expansion is '1' on the case where
@@ -264,27 +186,6 @@ public class Board implements Serializable {
     return JNI.move(this, new PositionIJ(move).toMove());
   }
 
-  /**
-   * Computes the color of the disk at the given coordinates.
-   * The coordinates are integers from 0 to 7 for rows and columns.
-   * @param row the row
-   * @param column the column
-   * @param blackTurn if black is going to move
-   * @return the color of the disk, 'O' for white, 'X' for black, '-' for empty.
-   */
-  public char getCase(int row, int column, boolean blackTurn) {
-    if (row < 0 || row > 7 || column < 0 || column > 7) {
-      return '?';
-    }
-    if (((player << (row * 8 + column)) & 1L << 63) == 1L << 63) {
-      return blackTurn ? 'X' : 'O';
-    }
-    if (((opponent << (row * 8 + column)) & 1L << 63) == 1L << 63) {
-      return blackTurn ? 'O' : 'X';
-    }
-    return '-';
-  }
-
   public char getCase(int square, boolean blackTurn) {
     if (square < 0 || square > 63) {
       return '?';
@@ -296,46 +197,6 @@ public class Board implements Serializable {
       return blackTurn ? 'O' : 'X';
     }
     return '-';
-  }
-  /**
-   * Computes the color of the disk at the given coordinates.
-   * @param coordinates the coordinates
-   * @return the color of the disk, 'O' for white, 'X' for black, '-' for empty.
-   */
-  public char getCase(String coordinates, boolean blackTurn) {
-    return getCase(coordinates.charAt(0) - 'a', coordinates.charAt(1) - '1', blackTurn);
-  }
-  
-
-  /**
-   * Changes the disk at the given coordinates to the value provided.
-   * @param coordinates the coordinates
-   * @param value the color of the disk, 'O' for white, 'X' for black, '-' for empty.
-   */
-  void setCase(String coordinates, char value, boolean blackTurn) {
-    int j = coordinates.charAt(0) - 'a';
-    int i = coordinates.charAt(1) - '1';
-    setCase(i, j, value, blackTurn);
-  }
-  
-  /**
-   * Changes the disk at the given coordinates to the value provided.
-   * @param i the row (from 0 to 7)
-   * @param j the column (from 0 to 7)
-   * @param value the color of the disk, 'O' for white, 'X' for black, '-' for empty.
-   */
-  void setCase(int i, int j, char value, boolean blackTurn) {
-    long bitmask = BitPattern.moveToBit(i, j);
-    if (value == '-') {
-      player = player & ~bitmask;
-      opponent = opponent & ~bitmask;
-    } else if ((value == 'X' && blackTurn) || (value == 'O' && !blackTurn)) {
-      player = player | bitmask;
-      opponent = opponent & ~bitmask;
-    } else {
-      player = player & ~bitmask;
-      opponent = opponent | bitmask;      
-    }
   }
   
   public int getPlayerDisks() {
@@ -353,34 +214,5 @@ public class Board implements Serializable {
   public int getFullSquares() {
     return Long.bitCount(player | opponent);
   }
-  
-  public static String randomBoardString(double percBlack, double percWhite) {
-    String boardString = "";
-    for (int j = 0; j < 64; j++) {
-      double rand = Math.random();
-      if (rand < percBlack) {
-        boardString += "X";
-      } else if (rand < percBlack + percWhite) {
-        boardString += "O";
-      } else {
-        boardString += "-";
-      }
-      if (j % 8 == 7) {
-        boardString += "\n";
-      }
-    }
-    return boardString;
-  }
 
-  public static Board randomBoard(double percBlack, double percWhite) {
-    return new Board(randomBoardString(percBlack, percWhite), Math.random() > 0.5);
-  }
-
-  public static Board randomBoard() {
-    double percBlack = Math.random();
-    double percWhite = Math.random();
-    double tot = percBlack + percWhite + Math.random();
-
-    return new Board(randomBoardString(percBlack / tot, percWhite / tot), Math.random() > 0.5);
-  }
 }

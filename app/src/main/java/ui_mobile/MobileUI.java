@@ -77,7 +77,7 @@ public class MobileUI extends AppCompatActivity implements UI {
   private Menu menu;
   private Task task = Task.SHOW_EVALS;
   private String notes = "";
-  private final static String VERSION = "3";
+  private final static String VERSION = "4";
   private final static String VERSION_FILE = "/version.txt";
   private String localFolderPath;
   private static ArrayList<String> thorPlayers;
@@ -187,6 +187,7 @@ public class MobileUI extends AppCompatActivity implements UI {
       return true;
     } else if (itemId == R.id.undo) {
       main.undo();
+      main.evaluate(runParameters());
       return true;
     } else if (itemId == R.id.stop) {
       main.stop();
@@ -242,8 +243,18 @@ public class MobileUI extends AppCompatActivity implements UI {
     }
   }
 
+  public Main.RunParameters runParameters() {
+    return new Main.RunParameters(
+        useBook(), delta(), nThreads(), false, getError(), -6300,
+        6300, maxVisited(), task == Task.PLAY_BLACK,
+        task == Task.PLAY_WHITE, wantThor);
+  }
+
   public void getMove(int move) {
     main.play(move);
+    if (active()) {
+      main.evaluate(runParameters());
+    }
   }
 
   @Override
@@ -257,11 +268,6 @@ public class MobileUI extends AppCompatActivity implements UI {
   @Override
   public void repaint() {
     boardView.invalidate();
-  }
-
-  @Override
-  public boolean wantThorGames() {
-    return wantThor;
   }
 
   private String getLongestLine(final String text) {
@@ -336,33 +342,24 @@ public class MobileUI extends AppCompatActivity implements UI {
     return Paths.get(localFolderPath, "book").toString();
   }
 
-  @Override
   public boolean active() {
     return task != Task.INACTIVE;
   }
 
-  @Override
-  public UseBook useBook() {
+  public Main.UseBook useBook() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     if (preferences.getBoolean("use_book", false)) {
-      return UseBook.READ_ONLY;
+      return Main.UseBook.READ_ONLY;
     } else {
-      return UseBook.DO_NOT_USE;
+      return Main.UseBook.DO_NOT_USE;
     }
   }
 
-  @Override
   public double getError() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     return Double.parseDouble(preferences.getString("error_when_playing", getResources().getString(R.string.error_when_playing_default)));
   }
 
-  @Override
-  public boolean approx() {
-    return false;
-  }
-
-  @Override
   public int nThreads() {
     return Runtime.getRuntime().availableProcessors();
   }
@@ -397,17 +394,6 @@ public class MobileUI extends AppCompatActivity implements UI {
     setExtraInfoText(text);
   }
 
-  @Override
-  public boolean playBlackMoves() {
-    return task == Task.PLAY_BLACK;
-  }
-
-  @Override
-  public boolean playWhiteMoves() {
-    return task == Task.PLAY_WHITE;
-  }
-
-  @Override
   public long maxVisited() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     if (task == Task.PLAY_BLACK || task == Task.PLAY_WHITE) {
@@ -421,20 +407,9 @@ public class MobileUI extends AppCompatActivity implements UI {
     }
   }
 
-  @Override
   public double delta() {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     return Double.parseDouble(preferences.getString("delta_moves", getResources().getString(R.string.delta_moves_default)));
-  }
-
-  @Override
-  public int lower() {
-    return -6300;
-  }
-
-  @Override
-  public int upper() {
-    return 6300;
   }
 
   private void copyNotes() {
