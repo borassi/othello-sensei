@@ -1,0 +1,7 @@
+LIBRARY api
+EXPORTS
+    add
+    capitalize
+    MainInit
+    MainDestroy
+    MainNewGame

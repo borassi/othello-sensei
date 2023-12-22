@@ -1,0 +1,93 @@
+/*
+ * Copyright 2023 Michele Borassi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "stdbool.h"
+
+#include "../utils/types.h"
+
+#ifndef OTHELLO_SENSEI_BINDINGS_H
+#define OTHELLO_SENSEI_BINDINGS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef WIN32
+   #define EXPORT __declspec(dllexport)
+#else
+   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#endif
+
+struct BoardUpdate {
+  BitPattern player;
+  BitPattern opponent;
+  bool black_turn;
+};
+
+struct MoveAnnotations {
+  Square square;
+  bool book;
+  double eval;
+  double leaf_eval;
+  Eval lower;
+  Eval upper;
+  Eval weak_lower;
+  Eval weak_upper;
+  NVisited descendants;
+};
+
+struct Annotations {
+  NVisited positions;
+  double seconds;
+  NVisited missing;
+  struct MoveAnnotations moves[64];
+  int num_moves;
+  bool finished;
+};
+
+typedef void (*SetBoard)(struct BoardUpdate);
+typedef void (*UpdateAnnotations)(struct Annotations);
+
+EXPORT
+void* MainInit(char* evals_filepath, char* book_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
+
+EXPORT
+void MainDelete(void* ptr);
+
+EXPORT
+void NewGame(void* ptr);
+
+EXPORT
+void PlayMove(void* ptr, int square);
+
+EXPORT
+void Undo(void* ptr);
+
+EXPORT
+void Redo(void* ptr);
+
+EXPORT
+void Evaluate(void* ptr, int lower, int upper, NVisited max_positions, double max_time, double delta, int n_threads, bool approx);
+
+EXPORT
+struct MoveAnnotations* GetAnnotations(void* ptr);
+
+EXPORT
+void Stop(void* ptr);
+
+#ifdef __cplusplus
+}
+#endif
+#endif // OTHELLO_SENSEI_BINDINGS_H
