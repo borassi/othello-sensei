@@ -29,12 +29,6 @@ different subsets of the board to define patterns:
 *	some "edge-based" pattern: a list of patterns describing the edge, of which
   we always choose the outermost.
 
-We also include some other features:
-*	An approximation of
-  [parity](http://www.soongsky.com/othello/en/strategy/parity.php).
-*	An approximation of
-  [stable disks](http://www.soongsky.com/othello/en/strategy/stable.php).
-
 Then, we use linear regression to evaluate a position using these features.
 
 ### Evaluating at larger depths

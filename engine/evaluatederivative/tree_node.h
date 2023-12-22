@@ -676,7 +676,9 @@ class TreeNode : public Node {
         return;
       }
       if (IsLeafNoLock()) {
-        SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower, weak_upper);
+        SetLeafNoLock(leaf_eval_, eval_depth_,
+                      std::min(weak_lower_, weak_lower),
+                      std::max(weak_upper_, weak_upper));
         return;
       }
     }
