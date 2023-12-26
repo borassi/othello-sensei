@@ -84,7 +84,7 @@ class Node {
       depth_(other.depth_),
       eval_depth_(other.eval_depth_),
       evaluator_(other.evaluator_) {
-    EnlargeEvaluationsInternal();
+    EnlargeEvaluations();
     for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
       *MutableEvaluation(i) = other.GetEvaluation(i);
     }
@@ -133,7 +133,7 @@ class Node {
     Eval first_0 = (Eval) serialized[i++];
     n.is_leaf_ = (bool) serialized[i++];
 
-    n.EnlargeEvaluationsInternal();
+    n.EnlargeEvaluations();
 
     for (int eval = last_1 + 2; eval <= first_0 - 2; eval += 2) {
       Probability prob = serialized[i++];
@@ -272,13 +272,13 @@ class Node {
 
   virtual double SolveProbabilityUpper(Eval upper) const {
     auto goal = MinEval(GetPercentileLower(0.5F), upper);
-    assert(goal >= weak_lower_);
     if (goal > upper_ || goal < lower_) {
       // Goal > upper: Prob(goal - 2) > 0.5; Prob(goal) = 0.
       // Goal < lower: Only possibility: upper < lower_. We already proved that
       // it's >= upper, so nothing else to do here.
       return 0;
     }
+    assert(goal >= weak_lower_);
     // This can rarely happen when we are in dire need of updating the eval.
     // Only happens with multiple threads.
     if (goal > weak_upper_) {
@@ -289,11 +289,11 @@ class Node {
 
   virtual double SolveProbabilityLower(Eval lower) const {
     auto goal = MaxEval(GetPercentileUpper(0.5F), lower);
-    assert(goal <= weak_upper_);
     if (goal < lower_ || goal > upper_) {
       // Same as SolveProbabilityUpper.
       return 0;
     }
+    assert(goal <= weak_upper_);
     // This can rarely happen when we are in dire need of updating the eval.
     // Only happens with multiple threads.
     if (goal < weak_lower_) {
@@ -343,7 +343,7 @@ class Node {
     return (eval - min_evaluation_) >> 1;
   }
 
-  void EnlargeEvaluationsInternal() {
+  void EnlargeEvaluations() {
     min_evaluation_ = weak_lower_;
     int desired_size = ToEvaluationIndex(weak_upper_) + 1;
     if (evaluations_) {
@@ -543,19 +543,12 @@ class TreeNode : public Node {
     }
   }
 
-  virtual void Reset(BitPattern player, BitPattern opponent, int depth,
-                     EvalLarge leaf_eval, Square eval_depth,
-                     EvaluatorDerivative* evaluator);
-
-  virtual void Reset(Board b, int depth,
-                     u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
-                     Eval weak_lower, Eval weak_upper) {
-    Reset(b.Player(), b.Opponent(), depth, evaluator, leaf_eval, eval_depth, weak_lower, weak_upper);
+  virtual void Reset(Board b, int depth, uint8_t evaluator) {
+    Reset(b.Player(), b.Opponent(), depth, evaluator);
   }
 
   virtual void Reset(BitPattern player, BitPattern opponent, int depth,
-                     u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
-                     Eval weak_lower, Eval weak_upper);
+                     uint8_t evaluator);
 
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
 
@@ -604,6 +597,13 @@ class TreeNode : public Node {
       children.push_back(**child);
     }
     return children;
+  }
+
+  void SetChildren(std::vector<TreeNode*> children, const EvaluatorDerivative& evaluator);
+
+  bool HasLeafEval() {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
   void SetChildren(std::vector<TreeNode*> children) {
@@ -670,27 +670,10 @@ class TreeNode : public Node {
   }
 
   void ExtendEval(Eval weak_lower, Eval weak_upper) {
-    {
-      std::lock_guard<std::mutex> guard(mutex_);
-      if (weak_lower >= weak_lower_ && weak_upper <= weak_upper_) {
-        return;
-      }
-      if (IsLeafNoLock()) {
-        SetLeafNoLock(leaf_eval_, eval_depth_,
-                      std::min(weak_lower_, weak_lower),
-                      std::max(weak_upper_, weak_upper));
-        return;
-      }
-    }
-    for (int i = 0; i < n_children_; ++i) {
-      children_[i]->ExtendEval(-weak_upper, -weak_lower);
-    }
-    {
-      std::lock_guard<std::mutex> guard(mutex_);
-      weak_lower_ = weak_lower;
-      weak_upper_ = weak_upper;
-      assert(weak_lower_ <= weak_upper_);
-      EnlargeEvaluations();
+    extend_eval_failed_ = false;
+    ExtendEvalInternal(weak_lower, weak_upper);
+    if (extend_eval_failed_) {
+      ExtendEval(weak_lower, weak_upper);
     }
   }
 
@@ -803,6 +786,28 @@ class TreeNode : public Node {
     leaf_eval_ = 4;
   }
 
+  virtual void SetLeafEval(EvalLarge leaf_eval, Square eval_depth) {
+    std::lock_guard<std::mutex> guard(mutex_);
+    assert(IsLeafNoLock());
+    assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
+    assert(eval_depth > 0 && eval_depth <= 4);
+
+    eval_depth_ = eval_depth;
+    leaf_eval_ = std::max(
+        EvalToEvalLarge(lower_), std::min(EvalToEvalLarge(upper_), leaf_eval));
+    assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
+  }
+
+  void UpdateLeafWeakLowerUpper(Eval weak_lower, Eval weak_upper) {
+    assert(IsLeafNoLock());
+    assert(weak_lower <= weak_upper);
+    weak_lower_ = weak_lower;
+    weak_upper_ = weak_upper;
+    EnlargeEvaluations();
+    UpdateLeafEvaluations();
+    assert(min_evaluation_ <= weak_lower_);
+  }
+
  protected:
   mutable std::mutex mutex_;
   TreeNode** children_;
@@ -810,6 +815,31 @@ class TreeNode : public Node {
   u_int32_t n_fathers_;
   Square n_children_;
   std::atomic_uint8_t n_threads_working_;
+  static std::atomic_bool extend_eval_failed_;
+
+  void ExtendEvalInternal(Eval weak_lower, Eval weak_upper) {
+    {
+      std::lock_guard<std::mutex> guard(mutex_);
+      if (weak_lower >= weak_lower_ && weak_upper <= weak_upper_) {
+        return;
+      }
+      if (IsLeafNoLock()) {
+        UpdateLeafWeakLowerUpper(weak_lower, weak_upper);
+        return;
+      }
+    }
+    for (int i = 0; i < n_children_; ++i) {
+      children_[i]->ExtendEvalInternal(-weak_upper, -weak_lower);
+    }
+    {
+      std::lock_guard<std::mutex> guard(mutex_);
+      weak_lower_ = weak_lower;
+      weak_upper_ = weak_upper;
+      assert(weak_lower_ <= weak_upper_);
+      EnlargeEvaluations();
+      UpdateFatherNoLock();
+    }
+  }
 
   void UpdateLeafEvaluations() {
     assert(IsLeafNoLock());
@@ -838,35 +868,8 @@ class TreeNode : public Node {
     return leaf;
   }
 
-  virtual void SetLeafNoLock(EvalLarge leaf_eval, Square depth, Eval weak_lower, Eval weak_upper) {
-    assert(IsLeafNoLock());
-    assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
-    assert(depth > 0 && depth <= 4);
-    assert(weak_lower <= weak_upper);
-
-    eval_depth_ = depth;
-    leaf_eval_ = std::max(
-        EvalToEvalLarge(lower_), std::min(EvalToEvalLarge(upper_), leaf_eval));
-    weak_lower_ = weak_lower;
-    weak_upper_ = weak_upper;
-    EnlargeEvaluations();
-    assert(leaf_eval_ >= EvalToEvalLarge(lower_) && leaf_eval_ <= EvalToEvalLarge(upper_));
-    assert(min_evaluation_ <= weak_lower_);
-  }
-
-  void EnlargeEvaluations() {
-    EnlargeEvaluationsInternal();
-    if (!IsLeafNoLock()) {
-      UpdateFatherNoLock();
-    } else {
-      UpdateLeafEvaluations();
-    }
-  }
-
   virtual void ResetNoLock(
-      BitPattern player, BitPattern opponent, int depth,
-      u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
-      Eval weak_lower, Eval weak_upper);
+      BitPattern player, BitPattern opponent, int depth, uint8_t evaluator);
 
   void UpdateFatherNoLock() {
     assert((weak_lower_ - kMinEval) % 2 == 1);

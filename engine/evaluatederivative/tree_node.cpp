@@ -18,6 +18,8 @@
 #include "tree_node.h"
 #include "evaluator_derivative.h"
 
+std::atomic_bool TreeNode::extend_eval_failed_(false);
+
 std::ostream& operator<<(std::ostream& stream, const Node& b) {
   Board board = b.ToBoard();
   stream << b.Player() << " " << b.Opponent() << ": " << b.LeafEval()
@@ -70,28 +72,17 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   upper_ = MinEval(upper_, upper_small);
   assert(lower_ <= 64);
   assert(upper_ >= -64);
-  SetLeafNoLock(leaf_eval_, eval_depth_, weak_lower_upper.first, weak_lower_upper.second);
-}
-
-void TreeNode::Reset(
-    BitPattern player, BitPattern opponent, int depth, EvalLarge leaf_eval,
-    Square eval_depth, EvaluatorDerivative* evaluator) {
-  std::lock_guard<std::mutex> guard(mutex_);
-  auto weak_lower_upper = evaluator->GetWeakLowerUpper(depth);
-  ResetNoLock(player, opponent, depth, evaluator->Index(), leaf_eval, eval_depth, weak_lower_upper.first, weak_lower_upper.second);
+  UpdateLeafWeakLowerUpper(weak_lower_upper.first, weak_lower_upper.second);
 }
 
 void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
-                     u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
-                     Eval weak_lower, Eval weak_upper) {
+                     u_int8_t evaluator) {
   std::lock_guard<std::mutex> guard(mutex_);
-  ResetNoLock(player, opponent, depth, evaluator, leaf_eval, eval_depth, weak_lower, weak_upper);
+  ResetNoLock(player, opponent, depth, evaluator);
 }
 
 void TreeNode::ResetNoLock(
-    BitPattern player, BitPattern opponent, int depth,
-    u_int8_t evaluator, EvalLarge leaf_eval, Square eval_depth,
-    Eval weak_lower, Eval weak_upper) {
+    BitPattern player, BitPattern opponent, int depth, u_int8_t evaluator) {
   if (evaluations_ != nullptr) {
     free(evaluations_);
     evaluations_ = nullptr;
@@ -121,7 +112,33 @@ void TreeNode::ResetNoLock(
 
   n_threads_working_ = 0;
   descendants_ = 0;
-  SetLeafNoLock(leaf_eval, eval_depth, weak_lower, weak_upper);
+
+  leaf_eval_ = kLessThenMinEvalLarge;
+}
+
+void TreeNode::SetChildren(std::vector<TreeNode*> children, const EvaluatorDerivative& evaluator) {
+  std::lock_guard<std::mutex> guard(mutex_);
+  auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(Depth());
+  for (TreeNode* child : children) {
+    std::lock_guard<std::mutex> guard(child->mutex_);
+    if (child->IsLeafNoLock()) {
+      child->UpdateLeafWeakLowerUpper(-weak_upper, -weak_lower);
+    } else {
+      // This fixes a weird edge case where ExtendEval fails:
+      // 1. We ExtendEval on a leaf N.
+      // 2. We run AddChildren on N (this function), and 'child' is internal,
+      //    not yet updated (NOW).
+      // In this case, we set a flag to ensure the caller knows this failed.
+      // This is thread-safe because we are keeping the lock on 'child', which
+      // means that we set the flag before ExtendEval finishes (because it needs
+      // to update 'child' before finishing).
+      if (child->weak_lower_ > -weak_upper || child->weak_upper_ < -weak_lower) {
+        extend_eval_failed_ = true;
+      }
+    }
+  }
+  SetChildrenNoLock(children);
+
 }
 
 double Node::RemainingWork(Eval lower, Eval upper) const {

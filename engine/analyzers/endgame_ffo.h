@@ -85,6 +85,7 @@ constexpr char const* kPositions[] = {
       "----X-----OOX----XXXXX---OXXOX---OOXXOX---OOOOO---XOOX-------X-- X", // 63
       "-XXXXX----OOOX--XXXOO-X---XOOO---XXOOO--XX-OOO------------------ O", // 64
       "---------------------------OX------XO--------------------------- X", // 65
+      "-------------X----XXXX----XXOX----XOOX----XXXX------------------ X", // 66
       "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOO X",
 };
 

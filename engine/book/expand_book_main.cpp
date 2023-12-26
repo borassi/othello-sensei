@@ -56,7 +56,9 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     std::unique_ptr<TreeNode> t(new TreeNode());
-    t->Reset(Board(start_line), 1, 0, 0, 1, -63, 63);
+    t->Reset(Board(start_line), 1, 0);
+    t->SetLeafEval(0, 1);
+    t->UpdateLeafWeakLowerUpper(-63, 63);
     t->AddDescendants(1);
     book.Add(*t);
   }

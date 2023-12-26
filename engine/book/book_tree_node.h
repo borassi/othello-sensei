@@ -49,7 +49,7 @@ class BookTreeNode : public TreeNode {
     min_evaluation_ = -63;
     weak_lower_ = -63;
     weak_upper_ = 63;
-    EnlargeEvaluationsInternal();
+    EnlargeEvaluations();
 
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       if (i < node.WeakLower()) {
@@ -193,7 +193,7 @@ class BookTreeNode : public TreeNode {
     return children_ + n_children_;
   }
 
-  void SetLeafNoLock(EvalLarge leaf_eval, Square depth, Eval weak_lower, Eval weak_upper) override {
+  void SetLeafEval(EvalLarge leaf_eval, Square depth) override {
     throw std::logic_error("Cannot update leaf eval in book node.");
   }
 

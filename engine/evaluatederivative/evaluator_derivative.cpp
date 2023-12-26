@@ -20,10 +20,7 @@
 #include "tree_node.h"
 
 std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
-    BitPattern player, BitPattern opponent, Square depth,
-    EvalLarge leaf_eval,
-    Square eval_depth, EvaluatorDerivative* evaluator) {
-  auto evaluator_index = evaluator->Index();
+    BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index) {
   if (kUseTranspositions) {
     TreeNode* node = Mutable(player, opponent, evaluator_index);
     if (node != nullptr) {
@@ -34,7 +31,7 @@ std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
   int node_id = num_nodes_++;
   assert(node_id < kDerivativeEvaluatorSize);
   TreeNode& node = tree_nodes_[node_id];
-  node.Reset(player, opponent, depth, leaf_eval, eval_depth, evaluator);
+  node.Reset(player, opponent, depth, evaluator_index);
   AddToHashMap(player, opponent, evaluator_index, node_id);
   return std::make_pair(&node, true);
 }
@@ -106,44 +103,45 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
     if (flip != 0) {
       evaluator_depth_one_->Update(square, flip);
     }
-    EvalLarge eval;
-    EvalLarge quick_eval = evaluator_depth_one_->Evaluate();
-    EvalLarge delta = abs(quick_eval - child_eval_goal);
-//      int expected_error = 8 * kErrors[child_n_empties];
-    // Example:
-    //      +4
-    // -4   +0   +10
-    if (node->Depth() > 0 && node->Depth() <= 2 && remaining_work > 100000000) {
-      depth = 5;
-    } else if (remaining_work > 20000000 ||
-        (delta < 16 * 8 && remaining_work > 10000000) ||
-        (delta < 8 * 8 && remaining_work > 2000000)) {
-      depth = 4;
-    } else if (remaining_work > 4000000 ||
-        (delta < 16 * 8 && remaining_work > 2000000) ||
-        (delta < 8 * 8)) {
-      depth = 3;
-    } else {
-      depth = 2;
+    auto [child, newly_inserted] = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1);
+    if (newly_inserted || !child->HasLeafEval()) {
+      EvalLarge eval;
+      EvalLarge quick_eval = evaluator_depth_one_->Evaluate();
+      EvalLarge delta = abs(quick_eval - child_eval_goal);
+  //      int expected_error = 8 * kErrors[child_n_empties];
+      // Example:
+      //      +4
+      // -4   +0   +10
+      if (node->Depth() > 0 && node->Depth() <= 2 && remaining_work > 100000000) {
+        depth = 5;
+      } else if (remaining_work > 20000000 ||
+          (delta < 16 * 8 && remaining_work > 10000000) ||
+          (delta < 8 * 8 && remaining_work > 2000000)) {
+        depth = 4;
+      } else if (remaining_work > 4000000 ||
+          (delta < 16 * 8 && remaining_work > 2000000) ||
+          (delta < 8 * 8)) {
+        depth = 3;
+      } else {
+        depth = 2;
+      }
+      NVisited cur_n_visited;
+      eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
+      const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
+      stats_.Merge(cur_stats);
+      cur_n_visited = cur_stats.GetAll();
+      n_visited += cur_n_visited;
+      child->SetLeafEval(eval, std::min(4, depth));
+      child->AddDescendants(n_visited);
     }
-    NVisited cur_n_visited;
-    eval = evaluator_alpha_beta_.Evaluate(new_player, new_opponent, depth, kMinEvalLarge, kMaxEvalLarge);
-    const Stats& cur_stats = evaluator_alpha_beta_.GetStats();
-    stats_.Merge(cur_stats);
-    cur_n_visited = cur_stats.GetAll();
-    n_visited += cur_n_visited;
-    auto child_newly_inserted = evaluator_->AddTreeNode(new_player, new_opponent, node->Depth() + 1, eval, std::min(4, depth));
-    auto child = child_newly_inserted.first;
-    auto newly_inserted = child_newly_inserted.second;
     children.push_back(child);
 //    child->SetLeafIfInvalid(eval, depth, *evaluator_);
-    child->AddDescendants(n_visited);
     if (flip != 0) {
       evaluator_depth_one_->UndoUpdate(square, flip);
     }
   }
   assert(children.size() == moves.size());
-  node->SetChildren(children);
+  node->SetChildren(children, *evaluator_);
   assert(!node->IsLeaf());
   assert((node->WeakLower() - kMinEval) % 2 == 1);
   return n_visited;

@@ -81,7 +81,9 @@ class TestBook {
 
 std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
   std::shared_ptr<TreeNode> t(new TreeNode());
-  t->Reset(b.Player(), b.Opponent(), 4, 0, EvalToEvalLarge(leaf_eval), 4, weak_lower, weak_upper);
+  t->Reset(b.Player(), b.Opponent(), 4, 0);
+  t->SetLeafEval(EvalToEvalLarge(leaf_eval), 4);
+  t->UpdateLeafWeakLowerUpper(weak_lower, weak_upper);
   t->AddDescendants(n_visited);
   return t;
 }
@@ -94,8 +96,10 @@ std::shared_ptr<TreeNode> RandomTestTreeNode(Board b) {
   int weak_upper = std::max(lower + 1, weak_lower + ((rand() % 20) * 2));
   int eval = EvalToEvalLarge(lower) + rand() % (EvalToEvalLarge(upper) - EvalToEvalLarge(lower) + 1);
   int n_visited = rand() % 100 + 1;
-  t->Reset(b.Player(), b.Opponent(), /*depth=*/ 4, /*evaluator=*/rand() % 20,
-           /*leafeval=*/eval, /*eval_depth=*/4, weak_lower, weak_upper);
+  t->Reset(b.Player(), b.Opponent(), /*depth=*/ 4, /*evaluator=*/rand() % 20);
+  t->SetLeafEval(eval, 4);
+  t->UpdateLeafWeakLowerUpper(weak_lower, weak_upper);
+
   // To test serializing / deserializing cases where the log derivative needs
   // > 2 bytes.
   for (int i = std::max(lower + 1, weak_lower); i < std::min(upper - 1, weak_upper); i += 2) {

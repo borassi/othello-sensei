@@ -111,9 +111,7 @@ class TreeNodeSupplier {
   }
 
   std::pair<TreeNode*, bool> AddTreeNode(
-      BitPattern player, BitPattern opponent, Square depth,
-      EvalLarge leaf_eval,
-      Square eval_depth, EvaluatorDerivative* evaluator);
+      BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index);
 
  private:
   TreeNode* tree_nodes_;
@@ -244,7 +242,11 @@ class EvaluatorDerivative {
     weak_upper_ = upper_;
     num_tree_nodes_ = 0;
     n_thread_multiplier_ = 10000L * n_threads * n_threads;
-    first_position_ = AddTreeNode(player, opponent, 0, 0, 1).first;
+    auto [first_position, just_added] = AddTreeNode(player, opponent, 0);
+    assert(just_added);
+    first_position_ = first_position;
+    first_position_->SetLeafEval(0, 1);
+    first_position_->UpdateLeafWeakLowerUpper(weak_lower_, weak_upper_);
     auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
     ElapsedTime t;
@@ -386,14 +388,21 @@ class EvaluatorDerivative {
       new_weak_lower = std::max(lower_, new_weak_lower);
       new_weak_upper = std::min(upper_, new_weak_upper);
       assert(new_weak_lower <= new_weak_upper);
-      weak_lower_ = new_weak_lower;
-      weak_upper_ = new_weak_upper;
 
-      if (new_weak_lower < weak_lower || new_weak_upper > weak_upper) {
-        first_position_->ExtendEval(weak_lower_, weak_upper_);
+      if (new_weak_lower < weak_lower) {
+        weak_lower_ = new_weak_lower;
+      } else if (new_weak_upper > weak_upper) {
+        weak_upper_ = new_weak_upper;
       } else {
+        weak_lower_ = new_weak_lower;
+        weak_upper_ = new_weak_upper;
         extended = false;
       }
+      if (extended) {
+        first_position_->ExtendEval(weak_lower_, weak_upper_);
+      }
+      assert(first_position_->Lower() > -64 || first_position_->WeakLower() <= weak_lower_);
+      assert(first_position_->Upper() < 64 || first_position_->WeakUpper() >= weak_upper_);
     }
     is_updating_weak_lower_upper_.clear();
   }
@@ -406,10 +415,8 @@ class EvaluatorDerivative {
   }
 
   std::pair<TreeNode*, bool> AddTreeNode(
-      BitPattern player, BitPattern opponent, Square depth,
-      EvalLarge leaf_eval, Square eval_depth) {
-    auto pair = tree_node_supplier_->AddTreeNode(
-        player, opponent, depth, leaf_eval, eval_depth, this);
+      BitPattern player, BitPattern opponent, Square depth) {
+    auto pair = tree_node_supplier_->AddTreeNode(player, opponent, depth, Index());
     // Add 1 if it's a new node, 0 otherwise.
     num_tree_nodes_ += pair.second;
     return pair;
