@@ -722,7 +722,7 @@ class TreeNode : public Node {
     return Node::RemainingWork(lower, upper);
   }
 
-  std::tuple<Eval, Eval, Eval, Eval> ExpectedWeakLowerUpper() const {
+  std::pair<Eval, Eval> ExpectedWeakLowerUpper() const {
     std::lock_guard<std::mutex> guard(mutex_);
     Eval expected_weak_lower = std::min(upper_ - 1, std::max(lower_ + 1, (int) weak_lower_));
     Eval expected_weak_upper = std::max(lower_ + 1, std::min(upper_ - 1, (int) weak_upper_));
@@ -749,7 +749,7 @@ class TreeNode : public Node {
         }
       }
     }
-    return std::make_tuple(weak_lower_, weak_upper_, expected_weak_lower, expected_weak_upper);
+    return {expected_weak_lower, expected_weak_upper};
   }
 
   void IncreaseNThreadsWorking() {
@@ -817,10 +817,12 @@ class TreeNode : public Node {
   std::atomic_uint8_t n_threads_working_;
   static std::atomic_bool extend_eval_failed_;
 
+  friend std::ostream& operator<<(std::ostream& stream, const TreeNode& n);
+
   void ExtendEvalInternal(Eval weak_lower, Eval weak_upper) {
     {
       std::lock_guard<std::mutex> guard(mutex_);
-      if (weak_lower >= weak_lower_ && weak_upper <= weak_upper_) {
+      if (weak_lower >= weak_lower_ && weak_upper <= weak_upper_ && n_threads_working_ == 0) {
         return;
       }
       if (IsLeafNoLock()) {
@@ -1107,13 +1109,13 @@ class LeafToUpdate {
   bool operator!=(const LeafToUpdate& other) const { return !operator==(other); }
 
   void Finalize(NVisited n_visited) {
+    leaf_->UpdateFathers();
     leaf_->AddDescendants(n_visited);
     leaf_->DecreaseNThreadsWorking();
     for (auto parent : Parents()) {
       parent->AddDescendants(n_visited);
       parent->DecreaseNThreadsWorking();
     }
-    leaf_->UpdateFathers();
   }
 
  protected:

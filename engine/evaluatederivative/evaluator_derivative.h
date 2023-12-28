@@ -379,19 +379,15 @@ class EvaluatorDerivative {
     assert(weak_lower_ >= lower_ && weak_upper_ <= upper_);
     bool extended = true;
     while (extended) {
-      auto quadruple = first_position_->ExpectedWeakLowerUpper();
-      auto weak_lower = std::get<0>(quadruple);
-      auto weak_upper = std::get<1>(quadruple);
-      auto new_weak_lower = std::get<2>(quadruple);
-      auto new_weak_upper = std::get<3>(quadruple);
+      auto [new_weak_lower, new_weak_upper] = first_position_->ExpectedWeakLowerUpper();
 
       new_weak_lower = std::max(lower_, new_weak_lower);
       new_weak_upper = std::min(upper_, new_weak_upper);
       assert(new_weak_lower <= new_weak_upper);
 
-      if (new_weak_lower < weak_lower) {
+      if (new_weak_lower < weak_lower_) {
         weak_lower_ = new_weak_lower;
-      } else if (new_weak_upper > weak_upper) {
+      } else if (new_weak_upper > weak_upper_) {
         weak_upper_ = new_weak_upper;
       } else {
         weak_lower_ = new_weak_lower;

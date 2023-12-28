@@ -46,6 +46,12 @@ std::ostream& operator<<(std::ostream& stream, const Node& b) {
   return stream;
 }
 
+std::ostream& operator<<(std::ostream& stream, const TreeNode& n) {
+  std::lock_guard<std::mutex> guard(n.mutex_);
+  stream << (Node) n;
+  return stream;
+}
+
 std::vector<Node> TreeNode::Fathers() {
   std::vector<Node> result;
   for (int i = 0; i < n_fathers_; ++i) {
