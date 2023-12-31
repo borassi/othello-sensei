@@ -22,7 +22,6 @@
 #endif
 
 #include <iostream>
-#include <regex>
 #include <string>
 #include "bitpattern.h"
 
