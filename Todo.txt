@@ -1,6 +1,6 @@
 Make the app usable:
-- P0 EASY Make it work on Android.
 - P0 EASY Match the size of the widgets.
+- P0 EASY Errors.
 
 Match the features of the current app
 - P0 MED Settings.
@@ -27,9 +27,10 @@ Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
 
 Extra features:
+- P1 EASY Horizontal layout.
 - P2 HARD Analyze a game.
-- P2 MED Save games.
-- P2 MED Save and load the state.
+- P2 EASY Save games.
+- P2 EASY Save and load the state.
 - P2 HARD How easy / hard a position is.
 - P3 HARD Expand book on Google Cloud.
 - P3 MED Customize which evaluations are shown in the square (missing positions? CI?).
