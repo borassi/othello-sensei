@@ -41,7 +41,7 @@ class Case extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                       Text(
-                          "${eval < 0 ? '' : '+'}${eval.toStringAsFixed(2)}",
+                          "${eval < 0 ? '-' : '+'}${eval.abs().toStringAsFixed(2)}",
                           style: TextStyle(
                               fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize,
                               fontWeight: FontWeight.bold,

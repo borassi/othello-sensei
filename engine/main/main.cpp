@@ -36,6 +36,34 @@ void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book
 }
 } // anonymous_namespace
 
+void BoardToEvaluate::EvaluateBook() {
+  auto board_in_book = book_->Get(unique_);
+  if (board_in_book) {
+    for (auto* annotation : annotations_) {
+      MoveAnnotationsSet(*annotation, *board_in_book, true);
+    }
+    state_ = STATE_FINISHED;
+  }
+}
+
+void BoardToEvaluate::Evaluate(
+    int lower, int upper, NVisited max_positions, double max_time,
+    int n_threads, bool approx) {
+  if (state_ == STATE_NOT_STARTED) {
+    evaluator_.Evaluate(
+        unique_.Player(), unique_.Opponent(), lower, upper, max_positions, max_time, n_threads, approx);
+    state_ = STATE_STARTED;
+  } else {
+    evaluator_.ContinueEvaluate(max_positions, max_time, n_threads);
+  }
+  for (MoveAnnotations* annotation : annotations_) {
+    MoveAnnotationsSet(*annotation, *evaluator_.GetFirstPosition(), false);
+  }
+  if (evaluator_.GetStatus() == SOLVED) {
+    state_ = STATE_FINISHED;
+  }
+}
+
 Main::Main(
     const std::string& evals_filepath,
     const std::string& book_filepath,
@@ -46,11 +74,14 @@ Main::Main(
   set_board_(set_board),
   update_annotations_(update_annotations),
   hash_map_(),
+  boards_to_evaluate_(),
+  num_boards_to_evaluate_(0),
   tree_node_supplier_(),
   current_thread_(0),
   current_future_(nullptr) {
   for (int i = 0; i < kNumEvaluators; ++i) {
-    evaluators_[i] = std::make_unique<EvaluatorDerivative>(
+    boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
+        &book_,
         &tree_node_supplier_, &hash_map_,
         PatternEvaluator::Factory(evals_.data()),
         static_cast<u_int8_t>(i));
@@ -61,18 +92,44 @@ Main::Main(
 // This runs in the main thread, so that we cannot update the output afterwards.
 void Main::Stop() {
   ++current_thread_;
-  for (auto& [board, evaluator_annotations] : last_boards_) {
-    evaluator_annotations.first->Stop();
+  for (int i = 0; i < num_boards_to_evaluate_; ++i) {
+    boards_to_evaluate_[i]->Stop();
   }
 }
 
-bool NeedNewMoveAnnotations(Square move, const Annotations& annotations, const std::vector<int>& positions) {
-  for (int i = 0; i < annotations.num_moves; ++i) {
-    if (annotations.moves[i].square == move) {
-      return false;
+void Main::UpdateBoardsToEvaluate() {
+  const Board& board = states_[current_state_].GetBoard();
+  auto moves = GetAllMovesWithPass(board.Player(), board.Opponent());
+  bool finished = true;
+
+  num_boards_to_evaluate_ = 0;
+  annotations_.num_moves = 0;
+
+  for (const auto& flip : moves) {
+    Board next = board.Next(flip);
+    Board unique = next.Unique();
+    Square move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
+
+    // Create or get the BoardToEvaluate.
+    BoardToEvaluate* board_to_evaluate;
+    bool found = false;
+    for (int i = 0; i < num_boards_to_evaluate_; ++i) {
+      BoardToEvaluate* b = boards_to_evaluate_[i].get();
+      if (b->Unique() == unique) {
+        found = true;
+        break;
+      }
     }
+    if (!found) {
+      board_to_evaluate = boards_to_evaluate_[num_boards_to_evaluate_++].get();
+      board_to_evaluate->Reset(unique);
+    }
+
+    // Add the current move.
+    MoveAnnotations& annotation = annotations_.moves[annotations_.num_moves++];
+    annotation.square = move;
+    board_to_evaluate->AddAnnotation(&annotation);
   }
-  return true;
 }
 
 void Main::EvaluateThread(
@@ -82,57 +139,34 @@ void Main::EvaluateThread(
   if (last_future) {
     last_future->get();
   }
+  if (current_thread != current_thread_) {
+    return;
+  }
   if (reset_.exchange(false)) {
-    tree_node_supplier_.Reset();
-    annotations_.num_moves = 0;
-    last_boards_.clear();
     time_ = ElapsedTime();
+    tree_node_supplier_.Reset();
+    UpdateBoardsToEvaluate();
+
+    for (int i = 0; i < num_boards_to_evaluate_; ++i) {
+      boards_to_evaluate_[i]->EvaluateBook();
+    }
   }
 
-  const Board& board = states_[current_state_].GetBoard();
-  auto moves = GetAllMovesWithPass(board.Player(), board.Opponent());
-  bool finished = true;
-
-  for (const auto& flip : moves) {
-    Board next = board.Next(flip);
-    auto board_in_book = book_.Get(next);
-    Board unique = next.Unique();
-    Square move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
-    auto [iter, inserted] = last_boards_.insert({unique, {evaluators_[last_boards_.size()].get(), {}}});
-    auto& [evaluator, move_indices] = iter->second;
-
-    if (NeedNewMoveAnnotations(move, annotations_, move_indices)) {
-      int index = annotations_.num_moves++;
-      MoveAnnotations& annotation = annotations_.moves[index];
-      annotation.square = move;
-      move_indices.push_back(index);
+  int steps = num_boards_to_evaluate_;
+  for (int i = 0; i < steps; ++i) {
+    auto board_to_evaluate = NextBoardToEvaluate(delta);
+    if (!board_to_evaluate) {
+      RunUpdateAnnotations(current_thread, true);
+      return;
     }
+    board_to_evaluate->Evaluate(lower, upper, max_positions, max_time / steps, n_threads, approx);
+  }
+  RunUpdateAnnotations(current_thread, false);
+}
 
-    if (board_in_book) {
-      for (int index : move_indices) {
-        MoveAnnotationsSet(annotations_.moves[index], *board_in_book, true);
-      }
-      continue;
-    }
-
-    if (inserted) {
-      evaluator->Evaluate(
-          unique.Player(), unique.Opponent(), lower, upper, max_positions, max_time / moves.size(), n_threads, approx);
-    } else {
-      evaluator->ContinueEvaluate(max_positions, max_time / moves.size(), n_threads);
-    }
-
-    if (current_thread != current_thread_) {
-      break;
-    }
-    for (int index : move_indices) {
-      MoveAnnotationsSet(
-          annotations_.moves[index],
-          *evaluator->GetFirstPosition(),
-          false
-      );
-    }
-    finished = finished && (evaluator->GetStatus() == SOLVED);
+void Main::RunUpdateAnnotations(int current_thread, bool finished) {
+  if (current_thread != current_thread_) {
+    return;
   }
   annotations_.seconds = time_.Get();
   annotations_.positions = 0;
@@ -140,9 +174,7 @@ void Main::EvaluateThread(
     annotations_.positions += annotations_.moves[i].descendants;
   }
   annotations_.finished = finished;
-  if (current_thread == current_thread_) {
-    update_annotations_(annotations_);
-  }
+  update_annotations_(annotations_);
 }
 
 void Main::BoardChanged() {

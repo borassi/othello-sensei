@@ -81,7 +81,6 @@ class _HomePageState extends State<HomePage> {
 
   void _evaluateInternal(double time) async {
     final double? delta = (await GlobalState.preferences).getDouble('delta');
-    print('Delta is ${delta ?? 0}');
     ffiEngine.Evaluate(main, -63, 63, 1000000000, time, delta ?? 0, 12, false);
   }
 

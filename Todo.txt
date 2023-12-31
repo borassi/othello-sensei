@@ -1,5 +1,4 @@
 Make the app usable:
-- P0 EASY Evaluate better moves for longer
 - P0 EASY Make it work on Android.
 - P0 EASY Match the size of the widgets.
 

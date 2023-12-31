@@ -64,6 +64,73 @@ class State {
   bool black_turn_;
 };
 
+enum BoardToEvaluateState {
+  STATE_NOT_STARTED = 0,
+  STATE_STARTED = 1,
+  STATE_FINISHED = 2,
+};
+
+class BoardToEvaluate {
+ public:
+  BoardToEvaluate(
+      Book<>* book,
+      TreeNodeSupplier* tree_node_supplier,
+      HashMap<kBitHashMap>* hash_map,
+      EvaluatorFactory evaluator_depth_one_factory,
+      u_int8_t index) :
+      book_(book),
+      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
+
+  void Reset(Board unique) {
+    unique_ = unique;
+    annotations_.clear();
+    state_ = STATE_NOT_STARTED;
+  }
+
+  bool HasMove(Square s) const {
+    for (auto* annotation : annotations_) {
+      if (annotation->square == s) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void AddAnnotation(MoveAnnotations* annotation) {
+    annotations_.push_back(annotation);
+  }
+
+  void EvaluateBook();
+
+  void Evaluate(
+      int lower, int upper, NVisited max_positions, double max_time,
+      int n_threads, bool approx);
+
+  void Stop() { evaluator_.Stop(); }
+
+  BoardToEvaluateState State() const { return state_; }
+
+  const Board& Unique() const { return unique_; }
+
+  double Priority(double delta) const {
+    if (State() == STATE_FINISHED) {
+      return -std::numeric_limits<double>::infinity();
+    } else if (State() == STATE_NOT_STARTED) {
+      return std::numeric_limits<double>::infinity();
+    }
+    auto first_position = evaluator_.GetFirstPosition();
+    assert(first_position);
+    return pow(2, -first_position->GetEval() / delta) / first_position->GetNVisited();
+  }
+
+ private:
+  Board unique_;
+  EvaluatorDerivative evaluator_;
+  std::vector<MoveAnnotations*> annotations_;
+  BoardToEvaluateState state_;
+  Book<>* book_;
+};
+
 class Main {
  public:
   Main(const std::string& evals_filepath, const std::string& book_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
@@ -128,9 +195,9 @@ class Main {
   EvalType evals_;
   HashMap<kBitHashMap> hash_map_;
   TreeNodeSupplier tree_node_supplier_;
-  std::array<std::unique_ptr<EvaluatorDerivative>, kNumEvaluators> evaluators_;
+  std::array<std::unique_ptr<BoardToEvaluate>, kNumEvaluators> boards_to_evaluate_;
+  int num_boards_to_evaluate_;
 
-  std::unordered_map<Board, std::pair<EvaluatorDerivative*, std::vector<int>>> last_boards_;
   Annotations annotations_;
   ElapsedTime time_;
 
@@ -142,10 +209,29 @@ class Main {
 
   void BoardChanged();
 
+  void UpdateBoardsToEvaluate();
+
+  BoardToEvaluate* NextBoardToEvaluate(double delta) {
+    double highestPriority = -std::numeric_limits<double>::infinity();
+    BoardToEvaluate* result = nullptr;
+
+    for (int i = 0; i < num_boards_to_evaluate_; ++i) {
+      BoardToEvaluate* b = boards_to_evaluate_[i].get();
+      double priority = b->Priority(delta);
+      if (priority > highestPriority) {
+        highestPriority = priority;
+        result = b;
+      }
+    }
+    return result;
+  }
+
   void EvaluateThread(
       int lower, int upper, NVisited max_positions, double max_time,
       double delta, int n_threads, bool approx, int current_thread,
       std::shared_ptr<std::future<void>> last_future);
+
+  void RunUpdateAnnotations(int current_thread, bool finished);
 };
 
 #endif // OTHELLO_SENSEI_MAIN_H

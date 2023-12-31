@@ -6,6 +6,13 @@ import 'package:flutter/services.dart';
 
 import '../state.dart';
 
+void setDelta(String newDelta) async {
+  if (newDelta == "") {
+    return;
+  }
+  (await GlobalState.preferences).setDouble('delta', double.parse(newDelta));
+}
+
 class EvalParameters extends StatelessWidget {
   const EvalParameters({super.key});
 
@@ -19,7 +26,7 @@ class EvalParameters extends StatelessWidget {
             inputFormatters: <TextInputFormatter>[
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'), replacementString: "")
             ],
-            onChanged: (String newDelta) async { await (await GlobalState.preferences).setDouble('delta', double.parse(newDelta)); },
+            onChanged: setDelta,
           ),
           TextField(
             decoration: InputDecoration(labelText: "Positions when evaluating"),
