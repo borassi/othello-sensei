@@ -23,9 +23,10 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-  final void Function() stop;
+  final void Function() newGame;
   final void Function() undo;
   final void Function() redo;
+  final void Function() stop;
   final void Function() openSettings;
 
   static const Map<ActionWhenPlay, Icon> actionToIcon = {
@@ -35,14 +36,14 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
       ActionWhenPlay.none: Icon(Icons.notifications_off_outlined),
   };
 
-  const SenseiAppBar(this.undo, this.redo, this.stop, this.openSettings, {super.key});
+  const SenseiAppBar(this.newGame, this.undo, this.redo, this.stop, this.openSettings, {super.key});
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        title: Text("Othello Sensei"),
+        title: Text("Sensei"),
         actions: <Widget>[
           ListenableBuilder(
               listenable: GlobalState.actionWhenPlay,
@@ -51,6 +52,11 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 tooltip: "Change action",
                 onPressed: GlobalState.actionWhenPlay.rotateActions,
               )
+          ),
+          IconButton(
+            icon: const Icon(Icons.home),
+            tooltip: 'New game',
+            onPressed: newGame,
           ),
           IconButton(
             icon: const Icon(Icons.stop_rounded),

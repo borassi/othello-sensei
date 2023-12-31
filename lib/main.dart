@@ -28,7 +28,9 @@ import 'package:othello_sensei_flutter/widgets/disk_count.dart';
 import 'package:othello_sensei_flutter/widgets/eval_parameters.dart';
 import 'package:othello_sensei_flutter/widgets/evaluate_stats.dart';
 import 'package:othello_sensei_flutter/widgets/settings.dart';
+import 'package:path/path.dart';
 
+import 'files.dart';
 import 'widgets/board.dart';
 import 'ffi_engine.dart';
 
@@ -44,48 +46,46 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final String title = "Othello Sensei";
-  late final Pointer<Void> main;
   final StreamController<bool> evaluateStreamController;
 
   _HomePageState() :
       evaluateStreamController = StreamController() {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
-    main = ffiEngine.MainInit(
-        "assets/pattern_evaluator.dat".toNativeUtf8().cast<Char>(),
-        "assets/book".toNativeUtf8().cast<Char>(),
+
+    GlobalState.ffiMain = GlobalState.getFFIMain(
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
   }
 
   @override
-  void free() {
-    ffiEngine.MainDelete(main);
+  void free() async {
+    ffiEngine.MainDelete(await GlobalState.ffiMain);
   }
 
-  void newGame() {
-    ffiEngine.NewGame(main);
+  void newGame() async {
+    ffiEngine.NewGame(await GlobalState.ffiMain);
     evaluate();
   }
 
-  void playMove(int i) {
-    ffiEngine.PlayMove(main, i);
+  void playMove(int i) async {
+    ffiEngine.PlayMove(await GlobalState.ffiMain, i);
     evaluate();
   }
 
-  void redo() {
-    ffiEngine.Redo(main);
+  void redo() async {
+    ffiEngine.Redo(await GlobalState.ffiMain);
     evaluate();
   }
 
-  void undo() {
-    ffiEngine.Undo(main);
+  void undo() async {
+    ffiEngine.Undo(await GlobalState.ffiMain);
     evaluate();
   }
 
   void stop() async {
-    ffiEngine.Stop(main);
+    ffiEngine.Stop(await GlobalState.ffiMain);
   }
 
   void evaluate() async {
@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
 
   void _evaluateInternal(double time) async {
     final double? delta = (await GlobalState.preferences).getDouble('delta');
-    ffiEngine.Evaluate(main, -63, 63, 1000000000, time, delta ?? 0, 12, false);
+    ffiEngine.Evaluate(await GlobalState.ffiMain, -63, 63, 1000000000, time, delta ?? 0, 12, false);
   }
 
   void setBoard(BoardUpdate boardUpdate) {
@@ -151,10 +151,10 @@ class _HomePageState extends State<HomePage> {
       );
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Othello Sensei',
+      title: 'Sensei',
       theme: theme,
       home: Scaffold(
-        appBar: SenseiAppBar(undo, redo, stop, () => runApp(const SettingsPage())),
+        appBar: SenseiAppBar(newGame, undo, redo, stop, () => runApp(const SettingsPage())),
         body: Flex(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,

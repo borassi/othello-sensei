@@ -15,11 +15,18 @@
  *
  */
 
+import 'dart:ffi';
+
+import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:othello_sensei_flutter/utils.dart';
+import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ffi_bridge.dart';
 import 'ffi_engine.dart';
+import 'files.dart';
+import 'main.dart';
 
 enum ActionWhenPlay {
   playBlack,
@@ -48,6 +55,19 @@ class GlobalState {
   static List<AnnotationState> annotations = List.generate(64, (index) => AnnotationState());
   static var globalAnnotations = GlobalAnnotationState();
   static final Future<SharedPreferences> preferences = SharedPreferences.getInstance();
+  static late final Future<Pointer<Void>> ffiMain;
+
+  static Future<Pointer<Void>> getFFIMain(
+      Pointer<NativeFunction<SetBoardFunction>> setBoardCallback,
+      Pointer<NativeFunction<UpdateAnnotationsFunction>> setAnnotationsCallback) async {
+    await copyAssetsToLocalPath();
+    var localAssetPathVar = await localAssetPath();
+    return ffiEngine.MainInit(
+        join(localAssetPathVar, "pattern_evaluator.dat").toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, "book").toNativeUtf8().cast<Char>(),
+        setBoardCallback,
+        setAnnotationsCallback);
+  }
 }
 
 class BoardState with ChangeNotifier {
