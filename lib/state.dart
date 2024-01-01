@@ -60,7 +60,7 @@ class GlobalState {
   static Future<Pointer<Void>> getFFIMain(
       Pointer<NativeFunction<SetBoardFunction>> setBoardCallback,
       Pointer<NativeFunction<UpdateAnnotationsFunction>> setAnnotationsCallback) async {
-    await copyAssetsToLocalPath();
+    await maybeCopyAssetsToLocalPath();
     var localAssetPathVar = await localAssetPath();
     return ffiEngine.MainInit(
         join(localAssetPathVar, "pattern_evaluator.dat").toNativeUtf8().cast<Char>(),

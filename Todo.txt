@@ -1,5 +1,4 @@
 Make the app usable:
-- P0 EASY Avoid copying assets every time.
 - P1 EASY Missing positions.
 - P1 EASY Errors.
 
