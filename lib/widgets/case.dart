@@ -16,8 +16,8 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei_flutter/state.dart';
-import 'package:othello_sensei_flutter/utils.dart';
+import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/utils.dart';
 
 import '../ffi_engine.dart';
 

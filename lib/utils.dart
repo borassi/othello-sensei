@@ -15,7 +15,23 @@
  *
  */
 
+import 'dart:async';
 import 'dart:math';
+
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1)}";
+  }
+}
+
+extension FutureExtension<T> on Future<T> {
+  /// Checks if the future has returned a value, using a Completer.
+  bool isCompleted() {
+    final completer = Completer<T>();
+    then(completer.complete).catchError(completer.completeError);
+    return completer.isCompleted;
+  }
+}
 
 String prettyPrintDouble(double d) {
   if (d == double.infinity) {
@@ -50,4 +66,16 @@ String prettyPrintDouble(double d) {
     return "${rescaledD.toStringAsFixed(1)}$suffix";
   }
   return "${rescaledD.toStringAsFixed(0)}$suffix";
+}
+
+String camelCaseToSpaces(String s) {
+  final exp = RegExp('([A-Z]+)');
+  String result = s.replaceAllMapped(exp, (m) {
+    String? g = m.group(0);
+    if (g == null) {
+      return '';
+    }
+    return ' ${g}';
+  });
+  return result.capitalize();
 }

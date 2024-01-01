@@ -1,5 +1,5 @@
-name: othello_sensei_flutter
-description: "A new Flutter project."
+name: othello_sensei
+description: "A program to play Othello and analyze your games."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -40,6 +40,8 @@ dependencies:
   cupertino_setting_control: ^1.1.0
   path_provider: ^2.1.1
   path: ^1.8.3
+  flutter_settings_ui: ^3.0.0
+  card_settings: ^3.5.0
 
 dev_dependencies:
   flutter_test:

@@ -1,25 +1,27 @@
 /*
  * Copyright (c) 2023. Michele Borassi
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
  */
 
+import 'dart:convert';
 import 'dart:ffi';
+import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
-import 'package:othello_sensei_flutter/utils.dart';
+import 'package:othello_sensei/utils.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,17 +56,18 @@ class GlobalState {
   static var squareSize = SquareSizeState();
   static List<AnnotationState> annotations = List.generate(64, (index) => AnnotationState());
   static var globalAnnotations = GlobalAnnotationState();
-  static final Future<SharedPreferences> preferences = SharedPreferences.getInstance();
-  static late final Future<Pointer<Void>> ffiMain;
+  static late final PreferencesState preferences;
+  static late final Pointer<Void> ffiMain;
 
-  static Future<Pointer<Void>> getFFIMain(
+  static Future<void> init(
       Pointer<NativeFunction<SetBoardFunction>> setBoardCallback,
       Pointer<NativeFunction<UpdateAnnotationsFunction>> setAnnotationsCallback) async {
     await maybeCopyAssetsToLocalPath();
     var localAssetPathVar = await localAssetPath();
-    return ffiEngine.MainInit(
-        join(localAssetPathVar, "pattern_evaluator.dat").toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, "book").toNativeUtf8().cast<Char>(),
+    preferences = await PreferencesState.create();
+    ffiMain = ffiEngine.MainInit(
+        join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
         setBoardCallback,
         setAnnotationsCallback);
   }
@@ -131,6 +134,72 @@ class AnnotationState with ChangeNotifier {
     this.annotations = annotations;
     this.bestEval = bestEval;
     notifyListeners();
+  }
+}
+
+class PreferencesState with ChangeNotifier {
+  final Map<String, dynamic> defaultPreferences = {
+    'Number of threads': Platform.numberOfProcessors,
+    'Positions when evaluating': 1000000000000,
+    'Positions when playing': 50000000,
+    'Seconds until first evaluation': 0.1,
+    'Seconds between evaluations': 1.0,
+    'Delta': 6.0,
+    'Approximate': false,
+    'Lower': -63,
+    'Upper': 63,
+  };
+  late final SharedPreferences _preferences;
+
+  PreferencesState._initialize(this._preferences);
+
+  static Future<PreferencesState> create() async {
+    var preferences = await SharedPreferences.getInstance();
+    return PreferencesState._initialize(preferences);
+  }
+
+  dynamic get(String name) {
+    _checkPreferenceName(name);
+    return _preferences.get(name) ?? defaultPreferences[name];
+  }
+
+  Future<void> set(String name, dynamic value) async {
+    await _set(name, value);
+    notifyListeners();
+  }
+
+  void reset() async {
+    for (var entry in defaultPreferences.entries) {
+      await _set(entry.key, entry.value);
+    }
+    notifyListeners();
+  }
+
+  Future<void> _set(String name, dynamic value) async {
+    _checkPreferenceName(name);
+    if (value == null) {
+      return;
+    }
+    switch (value.runtimeType) {
+      case bool:
+        await _preferences.setBool(name, value);
+      case int:
+        await _preferences.setInt(name, value);
+      case double:
+        await _preferences.setDouble(name, value);
+      case String:
+        await _preferences.setString(name, value);
+      case const (List<String>):
+        await _preferences.setStringList(name, value);
+      default:
+        throw Exception('Invalid preference type ${value.runtimeType} for value ${value}');
+    }
+  }
+
+  void _checkPreferenceName(String name) {
+    if (!defaultPreferences.containsKey(name)) {
+      throw Exception('Invalid preference name ${name}');
+    }
   }
 }
 

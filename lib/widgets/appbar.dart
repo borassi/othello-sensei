@@ -16,7 +16,40 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei_flutter/state.dart';
+import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/widgets/settings.dart';
+
+import '../utils.dart';
+
+enum MenuItem {
+  save,
+  open,
+  loadThor,
+  setFirstPosition,
+  resetFirstPosition,
+  settings
+}
+
+void handleMenuItem(BuildContext context, MenuItem item) {
+  switch (item) {
+    case MenuItem.save:
+      return;
+    case MenuItem.open:
+      return;
+    case MenuItem.loadThor:
+      return;
+    case MenuItem.setFirstPosition:
+      return;
+    case MenuItem.resetFirstPosition:
+      return;
+    case MenuItem.settings:
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const Settings()),
+      );
+      return;
+  }
+}
 
 class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
@@ -27,7 +60,6 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   final void Function() undo;
   final void Function() redo;
   final void Function() stop;
-  final void Function() openSettings;
 
   static const Map<ActionWhenPlay, Icon> actionToIcon = {
       ActionWhenPlay.playBlack: Icon(Icons.circle),
@@ -36,7 +68,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
       ActionWhenPlay.none: Icon(Icons.notifications_off_outlined),
   };
 
-  const SenseiAppBar(this.newGame, this.undo, this.redo, this.stop, this.openSettings, {super.key});
+  const SenseiAppBar(this.newGame, this.undo, this.redo, this.stop, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +105,12 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
             tooltip: 'Redo',
             onPressed: redo,
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: openSettings,
+          PopupMenuButton<MenuItem>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (MenuItem i) { handleMenuItem(context, i); },
+            itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
+              return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
+            }).toList()
           ),
         ]
       );

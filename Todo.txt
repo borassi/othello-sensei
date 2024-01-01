@@ -3,7 +3,6 @@ Make the app usable:
 - P1 EASY Errors.
 
 Match the features of the current app
-- P0 MED Settings.
 - P1 MED Thor.
 - P2 EASY Change number of threads.
 - P2 MED Play.
@@ -27,7 +26,6 @@ Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
 
 Extra features:
-- P1 MED Improve the UI.
 - P2 HARD Analyze a game.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.

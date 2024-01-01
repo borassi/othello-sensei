@@ -16,7 +16,7 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei_flutter/widgets/fixed_width_widget.dart';
+import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 
 import '../state.dart';
 import 'case.dart';

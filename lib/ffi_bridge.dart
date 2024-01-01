@@ -18,7 +18,7 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:othello_sensei_flutter/ffi_engine.dart';
+import 'package:othello_sensei/ffi_engine.dart';
 
 final FFIEngine ffiEngine = FFIEngine(
   Platform.isMacOS || Platform.isIOS ? DynamicLibrary.process() // macos and ios

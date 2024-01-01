@@ -19,15 +19,12 @@ import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:othello_sensei_flutter/widgets/fixed_width_widget.dart';
+import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 
 import '../state.dart';
 
-void setDelta(String newDelta) async {
-  if (newDelta == "") {
-    return;
-  }
-  (await GlobalState.preferences).setDouble('delta', double.parse(newDelta));
+void setDelta(String? newDelta) async {
+  GlobalState.preferences.set('Delta', newDelta == null ? null : double.parse(newDelta));
 }
 
 class ParametersTextField extends StatelessWidget {
@@ -49,6 +46,7 @@ class ParametersTextField extends StatelessWidget {
       style: Theme.of(context).textTheme.bodyMedium!,
       inputFormatters: <TextInputFormatter>[formatter],
       onChanged: onChanged,
+      controller: TextEditingController(text: GlobalState.preferences.get(labelText).toString()),
     );
   }
 
@@ -59,24 +57,27 @@ class EvalParameters extends FixedWidthWidget {
 
   @override
   Widget buildChild(BuildContext context) {
-    return Column(
-        children: [
-          ParametersTextField(
-            "Delta",
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'), replacementString: ""),
-            setDelta,
-          ),
-          ParametersTextField(
-            "Positions when evaluating",
-            FilteringTextInputFormatter.digitsOnly,
-            null,
-          ),
-          ParametersTextField(
-            "Positions when playing",
-            FilteringTextInputFormatter.digitsOnly,
-            null,
-          ),
-        ]
+    return ListenableBuilder(
+        listenable: GlobalState.preferences,
+        builder: (BuildContext context, Widget? widget) => Column(
+          children: [
+            ParametersTextField(
+              "Delta",
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'), replacementString: ""),
+              setDelta,
+            ),
+            ParametersTextField(
+              "Positions when evaluating",
+              FilteringTextInputFormatter.digitsOnly,
+              null,
+            ),
+            ParametersTextField(
+              "Positions when playing",
+              FilteringTextInputFormatter.digitsOnly,
+              null,
+            ),
+          ]
+        )
     );
   }
 }

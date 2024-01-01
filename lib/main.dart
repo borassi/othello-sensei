@@ -21,43 +21,52 @@ import 'dart:math';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
-import 'package:othello_sensei_flutter/ffi_bridge.dart';
-import 'package:othello_sensei_flutter/widgets/appbar.dart';
-import 'package:othello_sensei_flutter/state.dart';
-import 'package:othello_sensei_flutter/widgets/disk_count.dart';
-import 'package:othello_sensei_flutter/widgets/eval_parameters.dart';
-import 'package:othello_sensei_flutter/widgets/evaluate_stats.dart';
-import 'package:othello_sensei_flutter/widgets/settings.dart';
-import 'package:path/path.dart';
+import 'package:othello_sensei/ffi_bridge.dart';
+import 'package:othello_sensei/widgets/appbar.dart';
+import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/widgets/disk_count.dart';
+import 'package:othello_sensei/widgets/eval_parameters.dart';
+import 'package:othello_sensei/widgets/evaluate_stats.dart';
 
-import 'files.dart';
 import 'widgets/board.dart';
 import 'ffi_engine.dart';
 
-void main() async {
-  runApp(HomePage());
-}
-
-class HomePage extends StatefulWidget {
-
-  @override
-  State<StatefulWidget> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final String title = "Othello Sensei";
-  final StreamController<bool> evaluateStreamController;
-
-  _HomePageState() :
-      evaluateStreamController = StreamController() {
-    NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
-    NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
-
-    GlobalState.ffiMain = GlobalState.getFFIMain(
-        setBoardCallback.nativeFunction,
-        setAnnotationsCallback.nativeFunction
-    );
+void setBoard(BoardUpdate boardUpdate) {
+  for (int i = 0; i < 64; ++i) {
+    GlobalState.annotations[i].clear();
   }
+  GlobalState.board.setState(boardUpdate);
+}
+
+void updateAnnotations(Main main, Annotations annotations) {
+  var bestEval = double.negativeInfinity;
+  for (int i = 0; i < annotations.num_moves; ++i) {
+    MoveAnnotations move = annotations.moves[i];
+    bestEval = max(bestEval, -move.eval);
+  }
+  for (int i = 0; i < annotations.num_moves; ++i) {
+    MoveAnnotations move = annotations.moves[i];
+    GlobalState.annotations[move.square].setState(move, bestEval);
+  }
+  GlobalState.globalAnnotations.setState(annotations);
+  if (!annotations.finished) {
+    main.evaluate(isFirst: false);
+  }
+}
+
+void main() async {
+  var main = Main();
+  NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
+  NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener((Annotations annotations) => updateAnnotations(main, annotations));
+  GlobalState.init(
+    setBoardCallback.nativeFunction,
+    setAnnotationsCallback.nativeFunction
+  );
+  runApp(main);
+}
+
+class Main extends StatelessWidget {
+  final String title = "Othello Sensei";
 
   @override
   void free() async {
@@ -88,39 +97,20 @@ class _HomePageState extends State<HomePage> {
     ffiEngine.Stop(await GlobalState.ffiMain);
   }
 
-  void evaluate() async {
+  void evaluate({bool isFirst = true}) async {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
       return;
     }
-    _evaluateInternal(0.1);
-  }
-
-  void _evaluateInternal(double time) async {
-    final double? delta = (await GlobalState.preferences).getDouble('delta');
-    ffiEngine.Evaluate(await GlobalState.ffiMain, -63, 63, 1000000000, time, delta ?? 0, 12, false);
-  }
-
-  void setBoard(BoardUpdate boardUpdate) {
-    for (int i = 0; i < 64; ++i) {
-      GlobalState.annotations[i].clear();
-    }
-    GlobalState.board.setState(boardUpdate);
-  }
-
-  void updateAnnotations(Annotations annotations) {
-    var bestEval = double.negativeInfinity;
-    for (int i = 0; i < annotations.num_moves; ++i) {
-      MoveAnnotations move = annotations.moves[i];
-      bestEval = max(bestEval, -move.eval);
-    }
-    for (int i = 0; i < annotations.num_moves; ++i) {
-      MoveAnnotations move = annotations.moves[i];
-      GlobalState.annotations[move.square].setState(move, bestEval);
-    }
-    GlobalState.globalAnnotations.setState(annotations);
-    if (!annotations.finished) {
-      _evaluateInternal(1);
-    }
+    ffiEngine.Evaluate(
+        await GlobalState.ffiMain,
+        GlobalState.preferences.get('Lower'),
+        GlobalState.preferences.get('Upper'),
+        GlobalState.preferences.get('Positions when evaluating'),
+        isFirst ? GlobalState.preferences.get('Seconds until first evaluation') : GlobalState.preferences.get('Seconds between evaluations'),
+        GlobalState.preferences.get('Delta'),
+        GlobalState.preferences.get('Number of threads'),
+        GlobalState.preferences.get('Approximate')
+    );
   }
 
   @override
@@ -133,10 +123,6 @@ class _HomePageState extends State<HomePage> {
     var size = max(verticalSize, horizontalSize);
     var squareSize = (size / 8.5).floorToDouble();
 
-    // final ColorScheme colorScheme = ColorScheme.fromSeed(
-    //   brightness: MediaQuery.platformBrightnessOf(context),
-    //   seedColor: Colors.green,
-    // );
     var theme = ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
@@ -154,7 +140,7 @@ class _HomePageState extends State<HomePage> {
       title: 'Sensei',
       theme: theme,
       home: Scaffold(
-        appBar: SenseiAppBar(newGame, undo, redo, stop, () => runApp(const SettingsPage())),
+        appBar: SenseiAppBar(newGame, undo, redo, stop),
         body: Flex(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -166,7 +152,9 @@ class _HomePageState extends State<HomePage> {
                   width: vertical ? 8 * squareSize : null,
                   height: vertical ? null : 8 * squareSize,
                   child: DefaultTextStyle.merge(
-                      style: theme.textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium,
+                    child: Align(
+                      alignment: Alignment.center,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -180,6 +168,7 @@ class _HomePageState extends State<HomePage> {
                           Spacer(),
                         ]
                       )
+                    )
                   )
                 )
             ),
