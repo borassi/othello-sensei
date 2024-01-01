@@ -27,13 +27,16 @@ Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
 
 Extra features:
-- P1 EASY Horizontal layout.
+- P1 MED Improve the UI.
 - P2 HARD Analyze a game.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.
 - P2 HARD How easy / hard a position is.
+- P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
+- P2 MED User chooses widgets.
+- P2 MED Tabs with different widgets.
+- P3 EASY Horizontal layout.
 - P3 HARD Expand book on Google Cloud.
-- P3 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P3 HARD Choose which widgets to show.
 - P3 EASY Show stats from various moves.
 - P4 HARD Get board state from pictures.
