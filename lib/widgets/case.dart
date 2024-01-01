@@ -58,7 +58,7 @@ class Case extends StatelessWidget {
                       Text(
                           "${eval < 0 ? '-' : '+'}${eval.abs().toStringAsFixed(2)}",
                           style: TextStyle(
-                              fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize,
+                              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
                               fontWeight: FontWeight.bold,
                               height: 1,
                               color: color
@@ -68,7 +68,6 @@ class Case extends StatelessWidget {
                           prettyPrintDouble(annotation.descendants.toDouble()),
                           style: TextStyle(
                               fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                              height: 1.5,
                               color: color
                           ),
                       ),

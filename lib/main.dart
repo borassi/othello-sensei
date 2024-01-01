@@ -127,8 +127,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     var height = MediaQuery.of(context).size.height - (MediaQuery.of(context).padding.top + kToolbarHeight);
     var width = MediaQuery.of(context).size.width;
-    var verticalSize = min(width, 8 / 13 * height);
-    var horizontalSize = min(height, 8 / 13 * width);
+    var verticalSize = min(width, 8 / 16 * height);
+    var horizontalSize = min(height, 8 / 12 * width);
     var vertical = verticalSize > horizontalSize;
     var size = max(verticalSize, horizontalSize);
     var squareSize = (size / 8.5).floorToDouble();
@@ -143,9 +143,9 @@ class _HomePageState extends State<HomePage> {
           onSecondaryContainer: const Color(0xffeedd33),
           brightness: Brightness.dark),
         textTheme: TextTheme(
-          bodyLarge: TextStyle(fontSize: squareSize / 3.3),
+          bodyLarge: TextStyle(fontSize: squareSize / 2.3),
           bodyMedium: TextStyle(fontSize: squareSize / 3.3),
-          bodySmall: TextStyle(fontSize: squareSize / 7),
+          bodySmall: TextStyle(fontSize: squareSize / 5.5),
         ),
         useMaterial3: true,
       );
@@ -171,9 +171,13 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          Spacer(),
                           DiskCount(squareSize),
-                          EvaluateStats(),
-                          const EvalParameters()
+                          Spacer(),
+                          EvaluateStats(squareSize),
+                          Spacer(),
+                          EvalParameters(squareSize),
+                          Spacer(),
                         ]
                       )
                   )

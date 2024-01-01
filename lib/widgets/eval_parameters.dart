@@ -19,6 +19,7 @@ import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:othello_sensei_flutter/widgets/fixed_width_widget.dart';
 
 import '../state.dart';
 
@@ -29,35 +30,52 @@ void setDelta(String newDelta) async {
   (await GlobalState.preferences).setDouble('delta', double.parse(newDelta));
 }
 
-class EvalParameters extends StatelessWidget {
-  const EvalParameters({super.key});
+class ParametersTextField extends StatelessWidget {
+  final String labelText;
+  final TextInputFormatter formatter;
+  @override
+  final void Function(String)? onChanged;
+
+  const ParametersTextField(this.labelText, this.formatter, this.onChanged, {super.key});
 
   @override
   Widget build(BuildContext context) {
+    return TextField(
+      decoration: InputDecoration(
+        labelText: labelText,
+        labelStyle: Theme.of(context).textTheme.bodySmall!,
+      ),
+      keyboardType: TextInputType.number,
+      style: Theme.of(context).textTheme.bodyMedium!,
+      inputFormatters: <TextInputFormatter>[formatter],
+      onChanged: onChanged,
+    );
+  }
+
+}
+
+class EvalParameters extends FixedWidthWidget {
+  const EvalParameters(super.squareSize, {super.key});
+
+  @override
+  Widget buildChild(BuildContext context) {
     return Column(
         children: [
-          TextField(
-            decoration: InputDecoration(labelText: "Delta"),
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'), replacementString: "")
-            ],
-            onChanged: setDelta,
+          ParametersTextField(
+            "Delta",
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'), replacementString: ""),
+            setDelta,
           ),
-          TextField(
-            decoration: InputDecoration(labelText: "Positions when evaluating"),
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly
-            ], // Only numbers can be entered
+          ParametersTextField(
+            "Positions when evaluating",
+            FilteringTextInputFormatter.digitsOnly,
+            null,
           ),
-          TextField(
-            decoration: InputDecoration(labelText: "Positions when playing"),
-            keyboardType: TextInputType.number,
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly
-            ], // Only numbers can be entered
-          )
+          ParametersTextField(
+            "Positions when playing",
+            FilteringTextInputFormatter.digitsOnly,
+            null,
+          ),
         ]
     );
   }

@@ -1,6 +1,7 @@
 Make the app usable:
-- P0 EASY Match the size of the widgets.
-- P0 EASY Errors.
+- P0 EASY Avoid copying assets every time.
+- P1 EASY Missing positions.
+- P1 EASY Errors.
 
 Match the features of the current app
 - P0 MED Settings.

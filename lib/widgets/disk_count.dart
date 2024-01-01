@@ -16,6 +16,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei_flutter/widgets/fixed_width_widget.dart';
 
 import '../state.dart';
 import 'board.dart';
@@ -51,13 +52,11 @@ Widget getCase(BuildContext context, CaseState state, double squareSize) {
   );
 }
 
-class DiskCount extends StatelessWidget {
-  final double squareSize;
-
-  const DiskCount(this.squareSize, {super.key});
+class DiskCount extends FixedWidthWidget {
+  const DiskCount(super.squareSize, {super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildChild(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.board,
       builder: (BuildContext context, Widget? widget) => Row(
@@ -69,7 +68,7 @@ class DiskCount extends StatelessWidget {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Error:"),
+                    Text("Error", style: Theme.of(context).textTheme.bodySmall),
                     ListenableBuilder(
                       listenable: GlobalState.globalAnnotations,
                       builder: (BuildContext context, Widget? widget) => Text(
@@ -85,7 +84,7 @@ class DiskCount extends StatelessWidget {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text("Error"),
+                    Text("Error", style: Theme.of(context).textTheme.bodySmall),
                     ListenableBuilder(
                       listenable: GlobalState.globalAnnotations,
                       builder: (BuildContext context, Widget? widget) => Text(

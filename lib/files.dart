@@ -33,7 +33,6 @@ Future<String> localAssetPath() async {
 
 Future<void> copyAssetsToLocalPath() async {
   final currentAssetPath = await localPath();
-  print('Path: $currentAssetPath');
   final manifestContent = await rootBundle.loadString('AssetManifest.json');
   final Map<String, dynamic> manifestMap = json.decode(manifestContent);
   for (var path in manifestMap.keys) {

@@ -16,55 +16,51 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei_flutter/widgets/fixed_width_widget.dart';
 
 import '../state.dart';
 import 'case.dart';
 
-class EvaluateStats extends StatelessWidget {
+TableRow getRow(String name, ListenableBuilder listenable) {
+  return TableRow(
+    children: <Widget>[
+      TableCell(child: Text(name)),
+      TableCell(
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: listenable
+        ),
+      ),
+    ]
+  );
+}
+
+class EvaluateStats extends FixedWidthWidget {
+  const EvaluateStats(super.squareSize, {super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildChild(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.globalAnnotations,
       builder: (BuildContext context, Widget? widget) => Table(
         columnWidths: const <int, TableColumnWidth>{
           0: IntrinsicColumnWidth(),
-          1: IntrinsicColumnWidth(),
+          1: FlexColumnWidth(),
         },
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+
         children: <TableRow>[
-          TableRow(
-            children: <Widget>[
-              const TableCell(child: Text("Positions"),),
-              TableCell(child: TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositions)),
-            ],
-          ),
-          TableRow(
-            children: <Widget>[
-              const TableCell(child: Text("Time"),),
-              TableCell(child: TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getTimeString)),
-            ],
-          ),
-          TableRow(
-            children: <Widget>[
-              const TableCell(child: Text("Positions / sec:"),),
-              TableCell(child: TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositionsPerSec)),
-            ],
-          ),
-          const TableRow(
-            children: <Widget>[
-              TableCell(child: Text("Missing"),),
-              TableCell(child: Text("200T"),),
-            ],
-          ),
-          TableRow(
-            children: <Widget>[
-              const TableCell(child: Text("Empties"),),
-              TableCell(
-                child: TextListenable(listenable: GlobalState.board, textFunction: () => "${GlobalState.board.emptySquares()}"),
-              ),
-            ],
-          )
+          // TableRow(
+          //   children: <Widget>[
+          //     const TableCell(child: Text("Positions / second:"),),
+          //     TableCell(child: TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositionsPerSec)),
+          //   ],
+          // ),
+          getRow("Positions", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositions)),
+          getRow("Seconds", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getTimeString)),
+          getRow("Positions / second:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositionsPerSec)),
+          getRow("Missing:", TextAnnotationListenable(textFunction: () => "200T")),
+          getRow("Empties:", TextListenable(listenable: GlobalState.board, textFunction: () => "${GlobalState.board.emptySquares()}")),
         ],
       )
     );
