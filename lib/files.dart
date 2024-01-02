@@ -17,6 +17,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -24,6 +25,7 @@ import 'package:path_provider/path_provider.dart';
 const String assetVersion = "0";
 
 Future<String> localPath() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final directory = await getApplicationSupportDirectory();
   return directory.path;
 }
@@ -52,7 +54,11 @@ Future<void> copyAssetsToLocalPath() async {
 }
 
 Future<void> maybeCopyAssetsToLocalPath() async {
-  if (File(await versionFilePath()).readAsStringSync() != assetVersion) {
+  String storedAssetVersion = '';
+  try {
+    storedAssetVersion = File(await versionFilePath()).readAsStringSync();
+  } on PathNotFoundException {}
+  if (assetVersion != storedAssetVersion) {
     copyAssetsToLocalPath();
   }
 }

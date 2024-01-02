@@ -46,15 +46,28 @@ struct MoveAnnotations {
   Eval weak_lower;
   Eval weak_upper;
   NVisited descendants;
+  NVisited missing;
 };
 
 struct Annotations {
   NVisited positions;
+  NVisited positions_calculated;
   double seconds;
   NVisited missing;
   struct MoveAnnotations moves[64];
   int num_moves;
   bool finished;
+};
+
+struct EvaluateParams {
+  int lower;
+  int upper;
+  NVisited max_positions;
+  double max_time;
+  int n_threads;
+  double delta;
+  bool approx;
+  bool use_book;
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
@@ -79,7 +92,7 @@ EXPORT
 void Redo(void* ptr);
 
 EXPORT
-void Evaluate(void* ptr, int lower, int upper, NVisited max_positions, double max_time, double delta, int n_threads, bool approx);
+void Evaluate(void* ptr, const struct EvaluateParams* const params);
 
 EXPORT
 struct MoveAnnotations* GetAnnotations(void* ptr);

@@ -32,6 +32,7 @@ void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book
   annotation.weak_lower = node.WeakLower();
   annotation.weak_upper = node.WeakUpper();
   annotation.descendants = node.GetNVisited();
+  annotation.missing = node.IsSolved() ? 0 : node.RemainingWork(-63, 63);
   annotation.book = book;
 }
 } // anonymous_namespace
@@ -46,15 +47,17 @@ void BoardToEvaluate::EvaluateBook() {
   }
 }
 
-void BoardToEvaluate::Evaluate(
-    int lower, int upper, NVisited max_positions, double max_time,
-    int n_threads, bool approx) {
+void BoardToEvaluate::Evaluate(EvaluateParams params, int steps) {
+  double current_max_time = params.max_time / steps;
   if (state_ == STATE_NOT_STARTED) {
     evaluator_.Evaluate(
-        unique_.Player(), unique_.Opponent(), lower, upper, max_positions, max_time, n_threads, approx);
+        unique_.Player(), unique_.Opponent(), params.lower, params.upper,
+        params.max_positions, current_max_time, params.n_threads,
+        params.approx);
     state_ = STATE_STARTED;
   } else {
-    evaluator_.ContinueEvaluate(max_positions, max_time, n_threads);
+    evaluator_.ContinueEvaluate(params.max_positions, current_max_time,
+                                params.n_threads);
   }
   for (MoveAnnotations* annotation : annotations_) {
     MoveAnnotationsSet(*annotation, *evaluator_.GetFirstPosition(), false);
@@ -133,8 +136,7 @@ void Main::UpdateBoardsToEvaluate() {
 }
 
 void Main::EvaluateThread(
-    int lower, int upper, NVisited max_positions, double max_time, double delta,
-    int n_threads, bool approx, int current_thread,
+    const EvaluateParams& params, int current_thread,
     std::shared_ptr<std::future<void>> last_future) {
   if (last_future) {
     last_future->get();
@@ -147,19 +149,21 @@ void Main::EvaluateThread(
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate();
 
-    for (int i = 0; i < num_boards_to_evaluate_; ++i) {
-      boards_to_evaluate_[i]->EvaluateBook();
+    if (params.use_book) {
+      for (int i = 0; i < num_boards_to_evaluate_; ++i) {
+        boards_to_evaluate_[i]->EvaluateBook();
+      }
     }
   }
 
   int steps = num_boards_to_evaluate_;
   for (int i = 0; i < steps; ++i) {
-    auto board_to_evaluate = NextBoardToEvaluate(delta);
+    auto board_to_evaluate = NextBoardToEvaluate(params.delta);
     if (!board_to_evaluate) {
       RunUpdateAnnotations(current_thread, true);
       return;
     }
-    board_to_evaluate->Evaluate(lower, upper, max_positions, max_time / steps, n_threads, approx);
+    board_to_evaluate->Evaluate(params, steps);
   }
   RunUpdateAnnotations(current_thread, false);
 }
@@ -170,8 +174,15 @@ void Main::RunUpdateAnnotations(int current_thread, bool finished) {
   }
   annotations_.seconds = time_.Get();
   annotations_.positions = 0;
+  annotations_.positions_calculated = 0;
+  annotations_.missing = 0;
   for (int i = 0; i < annotations_.num_moves; ++i) {
-    annotations_.positions += annotations_.moves[i].descendants;
+    auto& move = annotations_.moves[i];
+    annotations_.positions += move.descendants;
+    if (!move.book) {
+      annotations_.positions_calculated += move.descendants;
+    }
+    annotations_.missing += move.missing;
   }
   annotations_.finished = finished;
   update_annotations_(annotations_);

@@ -116,33 +116,20 @@ class FFIEngine {
 
   void Evaluate(
     ffi.Pointer<ffi.Void> ptr,
-    int lower,
-    int upper,
-    int max_positions,
-    double max_time,
-    double delta,
-    int n_threads,
-    bool approx,
+    ffi.Pointer<EvaluateParams> params,
   ) {
     return _Evaluate(
       ptr,
-      lower,
-      upper,
-      max_positions,
-      max_time,
-      delta,
-      n_threads,
-      approx,
+      params,
     );
   }
 
   late final _EvaluatePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int, ffi.Int, NVisited,
-              ffi.Double, ffi.Double, ffi.Int, ffi.Bool)>>('Evaluate');
+          ffi.Void Function(
+              ffi.Pointer<ffi.Void>, ffi.Pointer<EvaluateParams>)>>('Evaluate');
   late final _Evaluate = _EvaluatePtr.asFunction<
-      void Function(
-          ffi.Pointer<ffi.Void>, int, int, int, double, double, int, bool)>();
+      void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<EvaluateParams>)>();
 
   ffi.Pointer<MoveAnnotations> GetAnnotations(
     ffi.Pointer<ffi.Void> ptr,
@@ -215,6 +202,9 @@ final class MoveAnnotations extends ffi.Struct {
 
   @NVisited()
   external int descendants;
+
+  @NVisited()
+  external int missing;
 }
 
 typedef Square = ffi.Uint8;
@@ -227,6 +217,9 @@ typedef DartNVisited = int;
 final class Annotations extends ffi.Struct {
   @NVisited()
   external int positions;
+
+  @NVisited()
+  external int positions_calculated;
 
   @ffi.Double()
   external double seconds;
@@ -242,6 +235,32 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Bool()
   external bool finished;
+}
+
+final class EvaluateParams extends ffi.Struct {
+  @ffi.Int()
+  external int lower;
+
+  @ffi.Int()
+  external int upper;
+
+  @NVisited()
+  external int max_positions;
+
+  @ffi.Double()
+  external double max_time;
+
+  @ffi.Int()
+  external int n_threads;
+
+  @ffi.Double()
+  external double delta;
+
+  @ffi.Bool()
+  external bool approx;
+
+  @ffi.Bool()
+  external bool use_book;
 }
 
 typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;

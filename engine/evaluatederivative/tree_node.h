@@ -446,7 +446,7 @@ class Node {
     return upper_ <= lower || lower_ >= upper || lower_ == upper_ || (approx && SolveProbabilityNoLock(lower, upper) < 0.05);
   }
 
-  bool IsSolved() {
+  bool IsSolved() const {
     return IsSolved(-63, 63, false);
   }
 

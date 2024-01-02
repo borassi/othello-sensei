@@ -102,9 +102,7 @@ class BoardToEvaluate {
 
   void EvaluateBook();
 
-  void Evaluate(
-      int lower, int upper, NVisited max_positions, double max_time,
-      int n_threads, bool approx);
+  void Evaluate(EvaluateParams params, int steps);
 
   void Stop() { evaluator_.Stop(); }
 
@@ -175,12 +173,11 @@ class Main {
 
   void Stop();
 
-  void Evaluate(int lower, int upper, NVisited max_positions, double max_time, double delta, int n_threads, bool approx) {
+  void Evaluate(const EvaluateParams& params) {
     Stop();
     current_future_ = std::make_shared<std::future<void>>(std::async(
-        std::launch::async, &Main::EvaluateThread, this, lower, upper,
-        max_positions, max_time, delta, n_threads, approx, current_thread_.load(),
-        current_future_));
+        std::launch::async, &Main::EvaluateThread, this, params,
+        current_thread_.load(), current_future_));
   }
 
  private:
@@ -227,8 +224,7 @@ class Main {
   }
 
   void EvaluateThread(
-      int lower, int upper, NVisited max_positions, double max_time,
-      double delta, int n_threads, bool approx, int current_thread,
+      const EvaluateParams& params, int current_thread,
       std::shared_ptr<std::future<void>> last_future);
 
   void RunUpdateAnnotations(int current_thread, bool finished);

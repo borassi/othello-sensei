@@ -1,12 +1,32 @@
-Make the app usable:
-- P1 EASY Missing positions.
-- P1 EASY Errors.
+Small details
+- P2 TINY Do not show seconds when all moves are in book.
+- P2 TINY App name and icon.
+- P2 EASY Fix time when clicking stop.
+- P3 EASY First time installation.
+- P3 ???? Free memory on hot reload.
 
 Match the features of the current app
 - P1 MED Thor.
-- P2 EASY Change number of threads.
 - P2 MED Play.
 - P3 HARD Study and repeat openings.
+
+Extra features:
+- P1 EASY Show stats from various moves.
+- P1 HARD Errors + Analyze a game.
+- P2 EASY Dots.
+- P2 EASY Save games.
+- P2 EASY Save and load the state.
+- P2 HARD How easy / hard a position is.
+- P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
+- P2 MED Tabs with different widgets.
+- P2 MED Share opening book in Google Drive.
+- P2 TINY Customize delta to highlight a move.
+- P3 EASY Icons disappear from the bar.
+- P3 EASY Horizontal layout.
+- P3 HARD Expand book on Google Cloud.
+- P3 HARD Choose which widgets to show.
+- P4 HARD Get board state from pictures.
+- P5 HARD Get sequence from board state.
 
 Make the app distributable
 - P3 MED Make it work on iOS.
@@ -24,18 +44,3 @@ Simplify development (match the Java app)
 
 Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
-
-Extra features:
-- P2 HARD Analyze a game.
-- P2 EASY Save games.
-- P2 EASY Save and load the state.
-- P2 HARD How easy / hard a position is.
-- P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
-- P2 MED User chooses widgets.
-- P2 MED Tabs with different widgets.
-- P3 EASY Horizontal layout.
-- P3 HARD Expand book on Google Cloud.
-- P3 HARD Choose which widgets to show.
-- P3 EASY Show stats from various moves.
-- P4 HARD Get board state from pictures.
-- P5 HARD Get sequence from board state.

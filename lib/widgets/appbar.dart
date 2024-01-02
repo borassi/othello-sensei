@@ -43,9 +43,10 @@ void handleMenuItem(BuildContext context, MenuItem item) {
     case MenuItem.resetFirstPosition:
       return;
     case MenuItem.settings:
+      GlobalState.main.stop();
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const Settings()),
+        MaterialPageRoute(builder: (context) => Settings()),
       );
       return;
   }

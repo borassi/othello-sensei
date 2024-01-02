@@ -15,8 +15,9 @@
  *
  */
 
-import 'dart:async';
 import 'dart:math';
+
+import 'package:flutter/services.dart';
 
 extension StringExtension on String {
   String capitalize() {
@@ -24,16 +25,48 @@ extension StringExtension on String {
   }
 }
 
-extension FutureExtension<T> on Future<T> {
-  /// Checks if the future has returned a value, using a Completer.
-  bool isCompleted() {
-    final completer = Completer<T>();
-    then(completer.complete).catchError(completer.completeError);
-    return completer.isCompleted;
+// Taken from https://en.wikipedia.org/wiki/Hamming_weight.
+int bitCount(int x) {
+  const m1  = 0x5555555555555555; //binary: 0101...
+  const m2  = 0x3333333333333333; //binary: 00110011..
+  const m4  = 0x0f0f0f0f0f0f0f0f; //binary:  4 zeros,  4 ones ...
+  const h01 = 0x0101010101010101;
+
+  x -= (x >> 1) & m1;             //put count of each 2 bits into those 2 bits
+  x = (x & m2) + ((x >> 2) & m2); //put count of each 4 bits into those 4 bits
+  x = (x + (x >> 4)) & m4;        //put count of each 8 bits into those 8 bits
+  return (x * h01) >> 56;  //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ...
+}
+
+class IntInputFormatter implements TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    try {
+      int.parse(newValue.text);
+    } on FormatException {
+      return oldValue;
+    }
+    return newValue;
   }
 }
 
-String prettyPrintDouble(double d) {
+class DoubleInputFormatter implements TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    try {
+      double.parse(newValue.text);
+    } on FormatException {
+      return oldValue;
+    }
+    return newValue;
+  }
+}
+
+String prettyPrintDouble(double? value) {
+  if (value == null) {
+    return '-';
+  }
+  double d = value!;
   if (d == double.infinity) {
     return "+Inf";
   } else if (d == -double.infinity) {

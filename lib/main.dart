@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-import 'dart:async';
 import 'dart:ffi';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:ffi/ffi.dart';
@@ -38,7 +36,7 @@ void setBoard(BoardUpdate boardUpdate) {
   GlobalState.board.setState(boardUpdate);
 }
 
-void updateAnnotations(Main main, Annotations annotations) {
+void updateAnnotations(Annotations annotations) {
   var bestEval = double.negativeInfinity;
   for (int i = 0; i < annotations.num_moves; ++i) {
     MoveAnnotations move = annotations.moves[i];
@@ -50,74 +48,59 @@ void updateAnnotations(Main main, Annotations annotations) {
   }
   GlobalState.globalAnnotations.setState(annotations);
   if (!annotations.finished) {
-    main.evaluate(isFirst: false);
+    GlobalState.main.evaluate(isFirst: false);
   }
 }
 
 void main() async {
-  var main = Main();
-  NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
-  NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener((Annotations annotations) => updateAnnotations(main, annotations));
-  GlobalState.init(
-    setBoardCallback.nativeFunction,
-    setAnnotationsCallback.nativeFunction
-  );
-  runApp(main);
+  await GlobalState.init();
+  runApp(GlobalState.main);
 }
 
 class Main extends StatelessWidget {
   final String title = "Othello Sensei";
 
-  @override
-  void free() async {
-    ffiEngine.MainDelete(await GlobalState.ffiMain);
-  }
+  const Main({super.key});
 
   void newGame() async {
-    ffiEngine.NewGame(await GlobalState.ffiMain);
+    ffiEngine.NewGame(GlobalState.ffiMain);
     evaluate();
   }
 
-  void playMove(int i) async {
-    ffiEngine.PlayMove(await GlobalState.ffiMain, i);
+  void playMove(int i) {
+    ffiEngine.PlayMove(GlobalState.ffiMain, i);
     evaluate();
   }
 
-  void redo() async {
-    ffiEngine.Redo(await GlobalState.ffiMain);
+  void redo() {
+    ffiEngine.Redo(GlobalState.ffiMain);
     evaluate();
   }
 
-  void undo() async {
-    ffiEngine.Undo(await GlobalState.ffiMain);
+  void undo() {
+    ffiEngine.Undo(GlobalState.ffiMain);
     evaluate();
   }
 
-  void stop() async {
-    ffiEngine.Stop(await GlobalState.ffiMain);
+  void stop() {
+    ffiEngine.Stop(GlobalState.ffiMain);
   }
 
-  void evaluate({bool isFirst = true}) async {
+  void evaluate({bool isFirst = true}) {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
       return;
     }
-    ffiEngine.Evaluate(
-        await GlobalState.ffiMain,
-        GlobalState.preferences.get('Lower'),
-        GlobalState.preferences.get('Upper'),
-        GlobalState.preferences.get('Positions when evaluating'),
-        isFirst ? GlobalState.preferences.get('Seconds until first evaluation') : GlobalState.preferences.get('Seconds between evaluations'),
-        GlobalState.preferences.get('Delta'),
-        GlobalState.preferences.get('Number of threads'),
-        GlobalState.preferences.get('Approximate')
-    );
+    var params = malloc<EvaluateParams>();
+    GlobalState.preferences.fillEvaluateParams(params.ref, isFirst);
+    ffiEngine.Evaluate(GlobalState.ffiMain!, params);
+    malloc.free(params);
   }
 
   @override
   Widget build(BuildContext context) {
     var height = MediaQuery.of(context).size.height - (MediaQuery.of(context).padding.top + kToolbarHeight);
     var width = MediaQuery.of(context).size.width;
-    var verticalSize = min(width, 8 / 16 * height);
+    var verticalSize = min(width, 8 / 14 * height);
     var horizontalSize = min(height, 8 / 12 * width);
     var vertical = verticalSize > horizontalSize;
     var size = max(verticalSize, horizontalSize);

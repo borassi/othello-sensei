@@ -11,4 +11,7 @@ local.properties
 keystore.properties
 /gradle/wrapper/*
 /.idea/
+.idea
 .flutter-plugins*
+.gdb_history
+

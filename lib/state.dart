@@ -37,19 +37,6 @@ enum ActionWhenPlay {
   none,
 }
 
-// Taken from https://en.wikipedia.org/wiki/Hamming_weight.
-int bitCount(int x) {
-  const m1  = 0x5555555555555555; //binary: 0101...
-  const m2  = 0x3333333333333333; //binary: 00110011..
-  const m4  = 0x0f0f0f0f0f0f0f0f; //binary:  4 zeros,  4 ones ...
-  const h01 = 0x0101010101010101;
-
-  x -= (x >> 1) & m1;             //put count of each 2 bits into those 2 bits
-  x = (x & m2) + ((x >> 2) & m2); //put count of each 4 bits into those 4 bits
-  x = (x + (x >> 4)) & m4;        //put count of each 8 bits into those 8 bits
-  return (x * h01) >> 56;  //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ...
-}
-
 class GlobalState {
   static var board = BoardState();
   static var actionWhenPlay = ActionWhenPlayState();
@@ -57,19 +44,20 @@ class GlobalState {
   static List<AnnotationState> annotations = List.generate(64, (index) => AnnotationState());
   static var globalAnnotations = GlobalAnnotationState();
   static late final PreferencesState preferences;
-  static late final Pointer<Void> ffiMain;
+  static late Pointer<Void> ffiMain;
+  static final Main main = Main();
 
-  static Future<void> init(
-      Pointer<NativeFunction<SetBoardFunction>> setBoardCallback,
-      Pointer<NativeFunction<UpdateAnnotationsFunction>> setAnnotationsCallback) async {
+  static Future<void> init() async {
+    NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
+    NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     await maybeCopyAssetsToLocalPath();
     var localAssetPathVar = await localAssetPath();
     preferences = await PreferencesState.create();
     ffiMain = ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
-        setBoardCallback,
-        setAnnotationsCallback);
+        setBoardCallback.nativeFunction,
+        setAnnotationsCallback.nativeFunction);
   }
 }
 
@@ -145,6 +133,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Delta': 6.0,
+    'Use book': true,
     'Approximate': false,
     'Lower': -63,
     'Upper': 63,
@@ -163,19 +152,34 @@ class PreferencesState with ChangeNotifier {
     return _preferences.get(name) ?? defaultPreferences[name];
   }
 
-  Future<void> set(String name, dynamic value) async {
-    await _set(name, value);
-    notifyListeners();
+  void fillEvaluateParams(EvaluateParams params, bool isFirst) {
+    params.lower = get('Lower');
+    params.upper = get('Upper');
+    params.max_positions = get('Positions when evaluating');
+    params.max_time = isFirst ? get('Seconds until first evaluation') : get('Seconds between evaluations');
+    params.delta = get('Delta');
+    params.n_threads = get('Number of threads');
+    params.approx = get('Approximate');
+    params.use_book = get('Use book');
   }
 
-  void reset() async {
-    for (var entry in defaultPreferences.entries) {
-      await _set(entry.key, entry.value);
+  Future<void> setAll(Map<String, dynamic> newValues) async {
+    for (var entry in newValues.entries) {
+      await setNoUpdate(entry.key, entry.value);
     }
     notifyListeners();
   }
 
-  Future<void> _set(String name, dynamic value) async {
+  Future<void> set(String name, dynamic value) async {
+    await setNoUpdate(name, value);
+    notifyListeners();
+  }
+
+  void reset() async {
+    setAll(defaultPreferences);
+  }
+
+  Future<void> setNoUpdate(String name, dynamic value) async {
     _checkPreferenceName(name);
     if (value == null) {
       return;
@@ -204,29 +208,43 @@ class PreferencesState with ChangeNotifier {
 }
 
 class GlobalAnnotationState with ChangeNotifier {
-  double seconds = -1;
-  int positions = -1;
+  Annotations? annotations = null;
 
   void reset() {
-    seconds = double.negativeInfinity;
+    annotations = null;
   }
 
   void setState(Annotations annotations) {
-    seconds = annotations.seconds;
-    positions = annotations.positions;
+    this.annotations = annotations;
     notifyListeners();
   }
 
-  String? getPositions() {
-    return positions == -1 ? null : prettyPrintDouble(positions.toDouble());
+  String getPositions() {
+    if (annotations == null) {
+      return '-';
+    }
+    return prettyPrintDouble(annotations!.positions.toDouble());
   }
 
-  String? getPositionsPerSec() {
-    return positions == -1 ? null : prettyPrintDouble(positions / seconds);
+  String getPositionsPerSec() {
+    if (annotations == null || annotations!.positions_calculated == 0) {
+      return '-';
+    }
+    return prettyPrintDouble(annotations!.positions_calculated / annotations!.seconds);
   }
 
-  String? getTimeString() {
-    return positions == -1 ? null : seconds.toStringAsFixed(1);
+  String getTimeString() {
+    if (annotations == null) {
+      return '-';
+    }
+    return annotations!.seconds.toStringAsFixed(1);
+  }
+
+  String getMissing() {
+    if (annotations == null) {
+      return '-';
+    }
+    return prettyPrintDouble(annotations!.missing.toDouble());
   }
 }
 

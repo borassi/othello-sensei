@@ -31,8 +31,8 @@ void Undo(void* ptr) { return static_cast<Main*>(ptr)->Undo(); }
 
 void Redo(void* ptr) { return static_cast<Main*>(ptr)->Redo(); }
 
-void Evaluate(void* ptr, int lower, int upper, NVisited max_positions, double max_time, double delta, int n_threads, bool approx) {
-  static_cast<Main*>(ptr)->Evaluate(lower, upper, max_positions, max_time, delta, n_threads, approx);
+void Evaluate(void* ptr, const struct EvaluateParams* const params) {
+  static_cast<Main*>(ptr)->Evaluate(*params);
 }
 
 void Stop(void* ptr) { static_cast<Main*>(ptr)->Stop(); }

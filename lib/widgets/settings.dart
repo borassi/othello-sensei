@@ -16,25 +16,38 @@
  */
 
 import 'package:card_settings/card_settings.dart';
-import 'package:card_settings/widgets/card_settings_panel.dart';
-import 'package:card_settings/widgets/card_settings_widget.dart';
-import 'package:card_settings/widgets/information_fields/card_settings_header.dart';
-import 'package:card_settings/widgets/numeric_fields/card_settings_double.dart';
-import 'package:card_settings/widgets/numeric_fields/card_settings_int.dart';
-import 'package:card_settings/widgets/numeric_fields/card_settings_switch.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../state.dart';
+import '../utils.dart';
 
-CardSettingsWidget getCardSettings(String key, BuildContext context) {
+class SettingsLocalState with ChangeNotifier {
+  Map<String, dynamic> updates;
+
+  SettingsLocalState() : updates = <String, dynamic>{};
+
+  int version = 0;
+
+  void reset() {
+    print('Reset');
+    updates.clear();
+    ++version;
+    notifyListeners();
+  }
+}
+
+CardSettingsWidget getCardSettings(String key, BuildContext context, SettingsLocalState state) {
   var value = GlobalState.preferences.get(key);
   onChanged(newValue) async {
-    await GlobalState.preferences.set(key, newValue);
+    state.updates[key] = newValue;
   };
+  var settingsKey = '${key.toString()}: ${state.version}';
+  // print(settingsKey);
   switch (value.runtimeType) {
     case bool:
       return CardSettingsSwitch(
-        key: Key(value.toString()),
+        key: Key(settingsKey),
         label: key,
         labelWidth: 200,
         trueLabel: '',
@@ -44,26 +57,44 @@ CardSettingsWidget getCardSettings(String key, BuildContext context) {
         contentAlign: TextAlign.right,
       );
     case int:
-      return CardSettingsInt(
-        key: Key(value.toString()),
+      return CardSettingsText(
+        key: Key(settingsKey),
         label: key,
         labelWidth: 200,
-        initialValue: value,
-        onChanged: onChanged,
+        maxLength: 20,
+        initialValue: value.toString(),
+        onChanged: (String? newValue) {
+          if (newValue != null) {
+            onChanged(int.parse(newValue!));
+          }
+        },
         contentAlign: TextAlign.right,
+        keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
+        inputFormatters: [
+          IntInputFormatter()
+        ],
       );
     case double:
-      return CardSettingsDouble(
-        key: Key(value.toString()),
+      return CardSettingsText(
+        key: Key(settingsKey),
         label: key,
         labelWidth: 200,
-        initialValue: value,
-        onChanged: onChanged,
+        initialValue: value.toString(),
+        onChanged: (String? newValue) {
+          if (newValue != null) {
+            onChanged(double.parse(newValue!));
+          }
+        },
         contentAlign: TextAlign.right,
+        keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
+        inputFormatters: [
+          DoubleInputFormatter()
+          // FilteringTextInputFormatter.deny(RegExp(r'(?<!(\.\d+))\.')),
+        ],
       );
     case String:
       return CardSettingsText(
-        key: Key(value.toString()),
+        key: Key(settingsKey),
         label: key,
         labelWidth: 200,
         initialValue: value,
@@ -76,7 +107,9 @@ CardSettingsWidget getCardSettings(String key, BuildContext context) {
 }
 
 class Settings extends StatelessWidget {
-  const Settings({super.key});
+  Settings({super.key}) : _state = SettingsLocalState();
+
+  SettingsLocalState _state;
 
   static const _evalPreferences = [
     'Number of threads',
@@ -85,44 +118,66 @@ class Settings extends StatelessWidget {
     'Seconds until first evaluation',
     'Seconds between evaluations',
     'Delta',
+    'Use book'
   ];
+
+  @override
+  void close() {
+    print('Setting preferences!');
+    GlobalState.preferences.setAll(_state.updates);
+  }
 
   @override
   Widget build(BuildContext context) {
     var nerdPreferences = GlobalState.preferences.defaultPreferences.keys.toSet();
     nerdPreferences.removeAll(_evalPreferences);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            ListenableBuilder(
-              listenable: GlobalState.preferences,
-              builder: (BuildContext context, Widget? widget) => CardSettings.sectioned(
-                children: <CardSettingsSection>[
-                  CardSettingsSection(
-                    header: CardSettingsHeader(
-                      label: 'Evaluation',
+    return PopScope(
+      onPopInvoked: (bool didPop) {
+        print('Pop invoked!');
+        print(_state.updates);
+        GlobalState.preferences.setAll(_state.updates);
+      },
+        // onPop: () async {
+        //    Navigator.pop(context, false);
+        //    return false;
+        // },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              ListenableBuilder(
+                listenable: _state,
+                builder: (BuildContext context, Widget? widget) => CardSettings.sectioned(
+                  children: <CardSettingsSection>[
+                    CardSettingsSection(
+                      header: CardSettingsHeader(
+                        label: 'Evaluation',
+                      ),
+                      children: _evalPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
                     ),
-                    children: _evalPreferences.map((s) { return getCardSettings(s, context); }).toList()
-                  ),
-                  CardSettingsSection(
-                    header: CardSettingsHeader(label: 'Stuff for nerds'),
-                    children: nerdPreferences.map((s) { return getCardSettings(s, context); }).toList()
-                  ),
-                ],
+                    CardSettingsSection(
+                      header: CardSettingsHeader(label: 'Stuff for nerds'),
+                      children: nerdPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
+                    ),
+                  ],
+                ),
               ),
-            ),
-            TextButton(
-              onPressed: () { GlobalState.preferences.reset(); },
-              child: const Text('Reset'),
-            )
-          ],
+              TextButton(
+                onPressed: () { _state.reset(); },
+                child: const Text('Reset to previous values'),
+              ),
+              TextButton(
+                onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
+                child: const Text('Reset to app defaults'),
+              )
+            ],
+          )
         )
       )
     );
