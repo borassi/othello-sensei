@@ -32,28 +32,46 @@ class Board extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var board = GlobalState.board;
-    var result = ListenableBuilder(
+    var colorScheme = Theme.of(context).colorScheme;
+
+    return ListenableBuilder(
       listenable: GlobalState.board,
       builder: (BuildContext context, Widget? widget) =>
         Container(
           height: size,
           width: size,
           alignment: Alignment.center,
-          child: Container(
-            alignment: Alignment.center,
-            child: Table(
-              defaultColumnWidth: FixedColumnWidth(squareSize),
-              children: List.generate(8, (x) => TableRow(
-                children: List.generate(8, (y) {
-                  var index = 8 * x + y;
-                  return Case(getState(index, board), index, squareSize, () => playMove(8*x + y), undo);
-                })
-              ))
-            )
+          child: Stack(
+            children: <Widget>[
+              Container(
+                alignment: Alignment.center,
+                child: Table(
+                  defaultColumnWidth: FixedColumnWidth(squareSize),
+                  children: List.generate(8, (x) => TableRow(
+                    children: List.generate(8, (y) {
+                      var index = 8 * x + y;
+                      return Case(getState(index, board), index, squareSize, () => playMove(8*x + y), undo);
+                    })
+                  ))
+                )
+              )
+            ] +
+            List.generate(4, (index) => Positioned(
+              left: (2 - 0.1) * squareSize + (size - 8 * squareSize) / 2 + (index % 2) * 4 * squareSize,
+              top: (2 - 0.1) * squareSize + (size - 8 * squareSize) / 2 + (index ~/ 2) * 4 * squareSize,
+              child:
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.background,
+                  shape: BoxShape.circle,
+                ),
+                width: squareSize * 0.2,
+                height: squareSize * 0.2,
+              )
+            ))
           )
         )
     );
-    return result;
   }
 }
 

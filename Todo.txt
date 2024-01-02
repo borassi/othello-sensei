@@ -1,6 +1,5 @@
 Small details
 - P2 TINY Do not show seconds when all moves are in book.
-- P2 TINY App name and icon.
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
 - P3 ???? Free memory on hot reload.
@@ -13,7 +12,6 @@ Match the features of the current app
 Extra features:
 - P1 EASY Show stats from various moves.
 - P1 HARD Errors + Analyze a game.
-- P2 EASY Dots.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.
 - P2 HARD How easy / hard a position is.

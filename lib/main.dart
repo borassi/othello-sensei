@@ -104,7 +104,7 @@ class Main extends StatelessWidget {
     var horizontalSize = min(height, 8 / 12 * width);
     var vertical = verticalSize > horizontalSize;
     var size = max(verticalSize, horizontalSize);
-    var squareSize = (size / 8.5).floorToDouble();
+    var squareSize = (size / 8.5 / 2).floorToDouble() * 2;
 
     var theme = ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -146,8 +146,6 @@ class Main extends StatelessWidget {
                           DiskCount(squareSize),
                           Spacer(),
                           EvaluateStats(squareSize),
-                          Spacer(),
-                          EvalParameters(squareSize),
                           Spacer(),
                         ]
                       )

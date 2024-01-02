@@ -35,9 +35,8 @@ class Case extends StatelessWidget {
   final double squareSize;
   const Case(this.state, this.index, this.squareSize, this.playMove, this.undo, {super.key});
 
-  static const Color diskBorder = Color(0xff1a1c19);
-  static const Color diskBlack = Color(0xff1a1c19);
-  static const Color diskWhite = Color(0xfffcfdf6);
+  static const Color diskBlack = Color(0xff191919);
+  static const Color diskWhite = Color(0xfff9f9f9);
 
   Widget showAnnotations(ColorScheme colorScheme) {
     var annotations = GlobalState.annotations[index];
@@ -87,17 +86,14 @@ class Case extends StatelessWidget {
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
     Color fill;
-    Color border;
     switch (state) {
       case CaseState.empty:
         return null;
       case CaseState.black:
         fill = diskBlack;
-        border = diskBorder;
         break;
       case CaseState.white:
         fill = diskWhite;
-        border = diskBorder;
         break;
     }
     return Transform.scale(
@@ -106,7 +102,6 @@ class Case extends StatelessWidget {
           decoration: BoxDecoration(
               color: fill,
               shape: BoxShape.circle,
-              border: Border.all(width: 1, color: border)
           ),
         )
     );
