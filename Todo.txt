@@ -3,6 +3,7 @@ Small details
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
 - P3 ???? Free memory on hot reload.
+- P3 EASY Back button undo instead of quit.
 
 Match the features of the current app
 - P1 MED Thor.
@@ -12,6 +13,7 @@ Match the features of the current app
 Extra features:
 - P1 EASY Show stats from various moves.
 - P1 HARD Errors + Analyze a game.
+- P2 MED Share game from Othello Quest.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.
 - P2 HARD How easy / hard a position is.

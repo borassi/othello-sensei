@@ -157,6 +157,8 @@ void Main::EvaluateThread(
   }
 
   int steps = num_boards_to_evaluate_;
+  // We finish if num_boards_to_evaluate_ == 0, or if we cannot get another
+  // board to work on.
   for (int i = 0; i < steps; ++i) {
     auto board_to_evaluate = NextBoardToEvaluate(params.delta);
     if (!board_to_evaluate) {
@@ -165,7 +167,7 @@ void Main::EvaluateThread(
     }
     board_to_evaluate->Evaluate(params, steps);
   }
-  RunUpdateAnnotations(current_thread, false);
+  RunUpdateAnnotations(current_thread, num_boards_to_evaluate_ == 0);
 }
 
 void Main::RunUpdateAnnotations(int current_thread, bool finished) {
