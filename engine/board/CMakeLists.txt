@@ -210,3 +210,35 @@ target_link_libraries(
         -no-pie
 )
 ENDIF()
+
+add_library(
+        sequence
+        sequence.h
+        sequence.cpp
+)
+
+#target_link_libraries(
+#        sequence
+#        LINK_PUBLIC
+#        board
+#        files
+#        game
+#        get_flip
+#        get_moves
+#        misc
+#)
+
+add_executable(
+        sequence_test
+        sequence_test.cpp
+)
+
+target_link_libraries(
+        sequence_test
+        LINK_PRIVATE
+        sequence
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
