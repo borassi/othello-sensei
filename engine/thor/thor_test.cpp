@@ -22,65 +22,141 @@
 #include "thor.h"
 #include "thor_test_utils.h"
 
-const std::string kTempFolder = "app/testdata/tmp/thor";
-
+using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
-
-void WriteHeader(std::ofstream& file) {
-  std::vector<char> to_write(10, 0);
-  short year = 2023;
-  file.write(to_write.data(), 10);
-  file.write((char*) &year, 2);
-  file.write(to_write.data(), 4);
-}
 
 class ThorTest : public testing::Test {
   void SetUp() override {
-    fs::create_directories(kTempFolder);
-    std::ofstream thor_games(kTempFolder + "/WTH_2023.wtb", std::ios::binary);
-    std::ofstream thor_players(kTempFolder + "/WTH.JOU", std::ios::binary);
-    std::ofstream thor_tournaments(kTempFolder + "/WTH.TRN", std::ios::binary);
+    fs::create_directories(kThorTestData + "/Thor");
+    fs::create_directories(kThorTestData + "/PlayOK");
+    std::ofstream thor_games_2022_file(kThorTestData + "/Thor/WTH_2022.wtb", std::ios::binary);
+    std::ofstream thor_games_2023_file(kThorTestData + "/Thor/WTH_2023.wtb", std::ios::binary);
+    std::ofstream thor_players_file(kThorTestData + "/Thor/WTH.JOU", std::ios::binary);
+    std::ofstream thor_tournaments_file(kThorTestData + "/Thor/WTH.TRN", std::ios::binary);
 
-    WriteHeader(thor_games);
-    WriteHeader(thor_players);
-    WriteHeader(thor_tournaments);
+    std::ofstream playok_games_file(kThorTestData + "/PlayOK/PLAYOK_2023.wtb", std::ios::binary);
+    std::ofstream playok_players_file(kThorTestData + "/PlayOK/WTH.JOU", std::ios::binary);
+    std::ofstream playok_tournaments_file(kThorTestData + "/PlayOK/WTH.TRN", std::ios::binary);
 
-    std::vector<std::string> players = {"player0", "player1", "player_with_20_chars"};
-    std::vector<std::string> tournaments = {"tournament0", "tournament1"};
-
-    for (const std::string& s : players) {
-      std::string padded = PadString(s, 20);
-      thor_players.write(padded.c_str(), 20);
-    }
-    for (const std::string& s : tournaments) {
-      std::string padded = PadString(s, 26);
-      thor_tournaments.write(padded.c_str(), 26);
+    WriteHeader(thor_games_2022_file, 2022);
+    for (auto file : {&thor_games_2023_file, &thor_players_file,
+                      &thor_tournaments_file, &playok_games_file,
+                      &playok_players_file, &playok_tournaments_file}) {
+      WriteHeader(*file, 2023);
     }
 
-    std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
-    std::vector<char> stored_game = StoredGame(1, 2, 1, 2, 2, moves);
+    std::vector<std::string> thor_players = {"player0", "player1", "player_with_20_chars"};
+    std::vector<std::string> thor_tournaments = {"tournament0", "tournament1"};
 
-    thor_games.write(stored_game.data(), stored_game.size());
+    std::vector<std::string> playok_players = {"vader", "luke"};
+    std::vector<std::string> playok_tournaments = {"bespin_open", "endor_championships"};
+
+    for (auto [file, values, size] : {
+        std::tuple<std::ofstream*, std::vector<std::string>, int>{&thor_players_file, thor_players, 20},
+        std::tuple<std::ofstream*, std::vector<std::string>, int>{&thor_tournaments_file, thor_tournaments, 26},
+        std::tuple<std::ofstream*, std::vector<std::string>, int>{&playok_players_file, playok_players, 20},
+        std::tuple<std::ofstream*, std::vector<std::string>, int>{&playok_tournaments_file, playok_tournaments, 26}}) {
+      for (const std::string& s : values) {
+        std::string padded = PadString(s, size);
+        file->write(padded.c_str(), size);
+      }
+    }
+
+    std::vector<std::string> games_2022 = {
+      "e6f6"
+    };
+    std::vector<std::string> games_2023 = {
+      "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1",
+      "e6f4d3c4c3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1",
+      "d3c3c4c5d6f4f3e3",
+      "d3c3c4e3d2",
+      "e6f4c3c4c5c6",
+      "e6d6c5f6f5e3"
+    };
+
+    for (int year = 2023; year >= 2022; year--) {
+      auto& games = year == 2022 ? games_2022 : games_2023;
+      auto& file = year == 2022 ? thor_games_2022_file : thor_games_2023_file;
+      for (int i = 0; i < games.size(); ++i) {
+        std::vector<char> game = StoredGame(i % thor_tournaments.size(), i % thor_players.size(), (i+1) % thor_players.size(), 12, -4, games[i]);
+        file.write(game.data(), game.size());
+      }
+    }
+    for (int i = 0; i < games_2023.size(); ++i) {
+      std::vector<char> game = StoredGame(i % playok_tournaments.size(), i % playok_players.size(), (i+1) % playok_players.size(), 12, -4, games_2023[i]);
+      playok_games_file.write(game.data(), game.size());
+    }
   }
 
   void TearDown() override {
-    fs::remove_all(kTempFolder);
+    fs::remove_all(kThorTestData);
   }
+
+ protected:
+  std::vector<Game> games_;
 };
 
-TEST_F(ThorTest, Basic) {
-  Thor thor(kTempFolder);
-  thor.LookupPositions({"player_with_20_chars"}, {"player1"}, {});
-  EXPECT_THAT(thor.Tournaments(), UnorderedElementsAre("tournament1"));
-  EXPECT_THAT(thor.Players(), UnorderedElementsAre("player1", "player_with_20_chars"));
-  EXPECT_EQ(thor.GetNumGames(Board("e6f4c3c4d3")), 1);
-  std::vector<Game> games = thor.GetGames(Board("e6f4c3c4d3"));
-  EXPECT_EQ(games.size(), 1);
-  Game game = games[0];
-  EXPECT_EQ(game.Year(), 2023);
-  EXPECT_EQ(game.Moves(), "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1");
+TEST_F(ThorTest, Metadata) {
+  Thor thor(kThorTestData);
+  EXPECT_THAT(thor.Sources(), UnorderedElementsAre("Thor", "PlayOK"));
+  EXPECT_THAT(thor.Tournaments(), UnorderedElementsAre(
+      Pair("Thor", std::vector<std::string>{"tournament0", "tournament1"}),
+      Pair("PlayOK", std::vector<std::string>{"bespin_open", "endor_championships"})));
+  EXPECT_THAT(thor.Players(), UnorderedElementsAre(
+      Pair("Thor", UnorderedElementsAre("player0", "player1", "player_with_20_chars")),
+      Pair("PlayOK", UnorderedElementsAre("luke", "vader"))));
 }
 
-TEST(Thor, Thor) {
-  Thor thor("app/src/main/assets/thor");
+TEST_F(ThorTest, SingleSource) {
+  fs::remove_all(kThorTestData + "/PlayOK");
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames("Thor", Sequence("e6"));
+  EXPECT_EQ(games.num_games, 7);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(
+      Pair(34, 3), Pair(18, 3), Pair(20, 1)
+  ));
 }
+
+TEST_F(ThorTest, Rotations) {
+  fs::remove_all(kThorTestData + "/PlayOK");
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames("Thor", Sequence("d3c3c4e3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
+}
+
+TEST_F(ThorTest, ManyFiles) {
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames("Thor", Sequence("d3c3c4e3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
+  games = thor.GetGames("PlayOK", Sequence("d3c3c4e3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
+}
+
+TEST_F(ThorTest, Save) {
+  Thor thor1(kThorTestData);
+  thor1.SaveAll();
+  // TODO: Verify that we actually don't recompute anything.
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames("Thor", Sequence("d3c3c4e3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
+  games = thor.GetGames("PlayOK", Sequence("d3c3c4e3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
+}
+//
+//TEST_F(ThorTest, Transpositions) {
+//  Thor thor(kThorTestData);
+//  auto [n_games, games] = source.GetGames(Sequence("e6f4c3c4d3"));
+//  EXPECT_EQ(n_games, 2);
+//  EXPECT_THAT(games, UnorderedElementsAre(&source.AllGames()[1], &source.AllGames()[2]))
+//      << source.AllGames()[1] << "\n" << source.AllGames()[2] << "\n";
+//}
+
+//TEST(Thor, Thor) {
+//  Thor thor("assets/thor");
+//  thor.LookupPositions({}, {}, {});
+//}

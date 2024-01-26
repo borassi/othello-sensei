@@ -30,6 +30,22 @@ extern "C" {
    #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
+struct ThorSourceMetadata {
+  const char* name;
+  const char** players;
+  int num_players;
+  const char** tournaments;
+  int num_tournaments;
+  int* selected_blacks;
+  int* selected_whites;
+  int* selected_tournaments;
+};
+
+struct ThorMetadata {
+  struct ThorSourceMetadata** sources;
+  int num_sources;
+};
+
 struct BoardUpdate {
   BitPattern player;
   BitPattern opponent;
@@ -47,6 +63,17 @@ struct MoveAnnotations {
   Eval weak_upper;
   NVisited descendants;
   NVisited missing;
+  unsigned int num_thor_games;
+  double thor_winning_percentage;
+};
+
+struct ThorGame {
+  char* player;
+  char* opponent;
+  char* tournament;
+  Square* moves;
+  int score;
+  int year;
 };
 
 struct Annotations {
@@ -57,6 +84,16 @@ struct Annotations {
   struct MoveAnnotations moves[64];
   int num_moves;
   bool finished;
+  unsigned int num_thor_games;
+  struct ThorGame* example_thor_games;
+  unsigned int num_example_thor_games;
+};
+
+struct ThorParams {
+  bool use_thor;
+  int max_games;
+  int start_year;
+  int end_year;
 };
 
 struct EvaluateParams {
@@ -68,16 +105,23 @@ struct EvaluateParams {
   double delta;
   bool approx;
   bool use_book;
+  struct ThorParams thor_filters;
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
 typedef void (*UpdateAnnotations)(struct Annotations);
 
 EXPORT
-void* MainInit(char* evals_filepath, char* book_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
+void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
+
+EXPORT
+struct ThorMetadata MainGetThorMetadata(void* ptr);
 
 EXPORT
 void MainDelete(void* ptr);
+
+EXPORT
+struct EvaluateParams* MainGetEvaluateParams(void* ptr);
 
 EXPORT
 void NewGame(void* ptr);
@@ -92,7 +136,7 @@ EXPORT
 void Redo(void* ptr);
 
 EXPORT
-void Evaluate(void* ptr, const struct EvaluateParams* const params);
+void Evaluate(void* ptr);
 
 EXPORT
 struct MoveAnnotations* GetAnnotations(void* ptr);

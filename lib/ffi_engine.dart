@@ -23,12 +23,14 @@ class FFIEngine {
   ffi.Pointer<ffi.Void> MainInit(
     ffi.Pointer<ffi.Char> evals_filepath,
     ffi.Pointer<ffi.Char> book_filepath,
+    ffi.Pointer<ffi.Char> thor_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
   ) {
     return _MainInit(
       evals_filepath,
       book_filepath,
+      thor_filepath,
       set_board,
       update_annotations,
     );
@@ -36,11 +38,33 @@ class FFIEngine {
 
   late final _MainInitPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.Char>,
-              ffi.Pointer<ffi.Char>, SetBoard, UpdateAnnotations)>>('MainInit');
+          ffi.Pointer<ffi.Void> Function(
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              SetBoard,
+              UpdateAnnotations)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
-      ffi.Pointer<ffi.Void> Function(ffi.Pointer<ffi.Char>,
-          ffi.Pointer<ffi.Char>, SetBoard, UpdateAnnotations)>();
+      ffi.Pointer<ffi.Void> Function(
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
+          SetBoard,
+          UpdateAnnotations)>();
+
+  ThorMetadata MainGetThorMetadata(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _MainGetThorMetadata(
+      ptr,
+    );
+  }
+
+  late final _MainGetThorMetadataPtr =
+      _lookup<ffi.NativeFunction<ThorMetadata Function(ffi.Pointer<ffi.Void>)>>(
+          'MainGetThorMetadata');
+  late final _MainGetThorMetadata = _MainGetThorMetadataPtr.asFunction<
+      ThorMetadata Function(ffi.Pointer<ffi.Void>)>();
 
   void MainDelete(
     ffi.Pointer<ffi.Void> ptr,
@@ -55,6 +79,21 @@ class FFIEngine {
           'MainDelete');
   late final _MainDelete =
       _MainDeletePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  ffi.Pointer<EvaluateParams> MainGetEvaluateParams(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _MainGetEvaluateParams(
+      ptr,
+    );
+  }
+
+  late final _MainGetEvaluateParamsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<EvaluateParams> Function(
+              ffi.Pointer<ffi.Void>)>>('MainGetEvaluateParams');
+  late final _MainGetEvaluateParams = _MainGetEvaluateParamsPtr.asFunction<
+      ffi.Pointer<EvaluateParams> Function(ffi.Pointer<ffi.Void>)>();
 
   void NewGame(
     ffi.Pointer<ffi.Void> ptr,
@@ -116,20 +155,17 @@ class FFIEngine {
 
   void Evaluate(
     ffi.Pointer<ffi.Void> ptr,
-    ffi.Pointer<EvaluateParams> params,
   ) {
     return _Evaluate(
       ptr,
-      params,
     );
   }
 
-  late final _EvaluatePtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Void Function(
-              ffi.Pointer<ffi.Void>, ffi.Pointer<EvaluateParams>)>>('Evaluate');
-  late final _Evaluate = _EvaluatePtr.asFunction<
-      void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<EvaluateParams>)>();
+  late final _EvaluatePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'Evaluate');
+  late final _Evaluate =
+      _EvaluatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   ffi.Pointer<MoveAnnotations> GetAnnotations(
     ffi.Pointer<ffi.Void> ptr,
@@ -159,6 +195,33 @@ class FFIEngine {
           'Stop');
   late final _Stop =
       _StopPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+}
+
+final class ThorSourceMetadata extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> name;
+
+  external ffi.Pointer<ffi.Pointer<ffi.Char>> players;
+
+  @ffi.Int()
+  external int num_players;
+
+  external ffi.Pointer<ffi.Pointer<ffi.Char>> tournaments;
+
+  @ffi.Int()
+  external int num_tournaments;
+
+  external ffi.Pointer<ffi.Int> selected_blacks;
+
+  external ffi.Pointer<ffi.Int> selected_whites;
+
+  external ffi.Pointer<ffi.Int> selected_tournaments;
+}
+
+final class ThorMetadata extends ffi.Struct {
+  external ffi.Pointer<ffi.Pointer<ThorSourceMetadata>> sources;
+
+  @ffi.Int()
+  external int num_sources;
 }
 
 final class BoardUpdate extends ffi.Struct {
@@ -205,6 +268,12 @@ final class MoveAnnotations extends ffi.Struct {
 
   @NVisited()
   external int missing;
+
+  @ffi.UnsignedInt()
+  external int num_thor_games;
+
+  @ffi.Double()
+  external double thor_winning_percentage;
 }
 
 typedef Square = ffi.Uint8;
@@ -213,6 +282,22 @@ typedef Eval = ffi.Int8;
 typedef DartEval = int;
 typedef NVisited = ffi.Uint64;
 typedef DartNVisited = int;
+
+final class ThorGame extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> player;
+
+  external ffi.Pointer<ffi.Char> opponent;
+
+  external ffi.Pointer<ffi.Char> tournament;
+
+  external ffi.Pointer<Square> moves;
+
+  @ffi.Int()
+  external int score;
+
+  @ffi.Int()
+  external int year;
+}
 
 final class Annotations extends ffi.Struct {
   @NVisited()
@@ -235,6 +320,28 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Bool()
   external bool finished;
+
+  @ffi.UnsignedInt()
+  external int num_thor_games;
+
+  external ffi.Pointer<ThorGame> example_thor_games;
+
+  @ffi.UnsignedInt()
+  external int num_example_thor_games;
+}
+
+final class ThorParams extends ffi.Struct {
+  @ffi.Bool()
+  external bool use_thor;
+
+  @ffi.Int()
+  external int max_games;
+
+  @ffi.Int()
+  external int start_year;
+
+  @ffi.Int()
+  external int end_year;
 }
 
 final class EvaluateParams extends ffi.Struct {
@@ -261,6 +368,8 @@ final class EvaluateParams extends ffi.Struct {
 
   @ffi.Bool()
   external bool use_book;
+
+  external ThorParams thor_filters;
 }
 
 typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;

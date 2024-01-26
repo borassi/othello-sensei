@@ -105,6 +105,11 @@ bool Contains(std::vector<T> v, T elem) {
   return std::find(v.begin(), v.end(), elem) != v.end();
 }
 
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v) {
+  seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+}
+
 template<template <typename...> class Map, typename K, typename V>
 V GetOrDefault(const Map<K, V>& map, K key, V default_value) {
   auto iter = map.find(key);
@@ -125,6 +130,14 @@ struct PairHash {
       return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
   }
 };
+
+std::string LeftStrip(const std::string& s);
+
+std::string RightStrip(const std::string& s);
+
+std::vector<std::string> Split(const std::string& s, char c, bool strip = true);
+
+std::string ToLower(const std::string& s);
 
 short GetCurrentYear();
 

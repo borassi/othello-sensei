@@ -95,6 +95,7 @@ target_link_libraries(
         misc_test
         LINK_PUBLIC
         misc
+        GTest::gmock
         GTest::gtest
         GTest::gtest_main
         -no-pie

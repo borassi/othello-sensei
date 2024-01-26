@@ -44,6 +44,6 @@ TEST(Game, Load) {
   EXPECT_EQ(game.White(), "player1");
   EXPECT_EQ(game.Tournament(), "tournament1");
   EXPECT_EQ(game.Score(), 2);
-  EXPECT_EQ(game.Moves(), moves);
+  EXPECT_EQ(game.Moves(), Sequence(moves));
 }
 

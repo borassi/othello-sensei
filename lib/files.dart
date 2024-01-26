@@ -22,7 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String assetVersion = "0";
+const String assetVersion = "1";
 
 Future<String> localPath() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +59,6 @@ Future<void> maybeCopyAssetsToLocalPath() async {
     storedAssetVersion = File(await versionFilePath()).readAsStringSync();
   } on PathNotFoundException {}
   if (assetVersion != storedAssetVersion) {
-    copyAssetsToLocalPath();
+    await copyAssetsToLocalPath();
   }
 }

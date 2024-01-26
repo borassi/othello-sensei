@@ -123,7 +123,6 @@ class Settings extends StatelessWidget {
 
   @override
   void close() {
-    print('Setting preferences!');
     GlobalState.preferences.setAll(_state.updates);
   }
 
@@ -134,14 +133,8 @@ class Settings extends StatelessWidget {
 
     return PopScope(
       onPopInvoked: (bool didPop) {
-        print('Pop invoked!');
-        print(_state.updates);
         GlobalState.preferences.setAll(_state.updates);
       },
-        // onPop: () async {
-        //    Navigator.pop(context, false);
-        //    return false;
-        // },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Settings'),

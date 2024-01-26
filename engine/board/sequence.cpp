@@ -13,3 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "sequence.h"
+
+Sequence::Sequence(const std::string& moves) : moves_(moves.size() / 2) {
+  assert(moves.size() % 2 == 0);
+  assert(moves.size() <= 120);
+  for (int i = 0; i < moves.length(); i += 2) {
+    moves_[i / 2] = MoveToSquare(moves.substr(i, 2));
+  }
+}
+
+void Sequence::ToCanonicalFirstMoveInplace() {
+  if (moves_.size() == 0 || moves_[0] == 19) {
+    return;
+  } else if (moves_[0] == 26) {
+    for (int i = 0; i < moves_.size(); ++i) {
+      moves_[i] = Diag9MirrorMove(moves_[i]);
+    }
+  } else if (moves_[0] == 37) {
+    for (int i = 0; i < moves_.size(); ++i) {
+      moves_[i] = Diag7MirrorMove(moves_[i]);
+    }
+  } else if (moves_[0] == 44) {
+    for (int i = 0; i < moves_.size(); ++i) {
+      moves_[i] = Rotate180Move(moves_[i]);
+    }
+  } else {
+    assert(false);
+  }
+  assert(moves_[0] == 19);
+}
+
+void Sequence::ToCanonicalDiagonalInplace() {
+  if (moves_.size() < 4 || moves_[0] != 19 || moves_[1] != 18 || moves_[2] != 26 || moves_[3] != 34) {
+    return;
+  }
+  for (int i = 0; i < moves_.size(); ++i) {
+    moves_[i] = Diag9MirrorMove(moves_[i]);
+  }
+  moves_[0] = 19;
+  moves_[1] = 18;
+  moves_[2] = 26;
+  assert(moves_[3] == 20);
+}
+
+std::ostream& operator<<(std::ostream& stream, const Sequence& s) {
+  stream << s.ToString();
+  return stream;
+}

@@ -27,6 +27,13 @@ add_library(
         game.cpp
 )
 
+target_link_libraries(
+        game
+        LINK_PRIVATE
+        board
+        sequence
+)
+
 add_executable(
         game_test
         game_test.cpp
@@ -74,4 +81,48 @@ target_link_libraries(
         GTest::gtest
         GTest::gtest_main
         -no-pie
+)
+
+add_library(
+        source
+        source.h
+        source.cpp
+)
+
+target_link_libraries(
+        source
+        LINK_PUBLIC
+        files
+        game
+        sequence
+)
+
+add_executable(
+        source_test
+        source_test.cpp
+)
+
+target_link_libraries(
+        source_test
+        LINK_PRIVATE
+        files
+        sequence
+        source
+        thor_test_utils
+        GTest::gmock
+        GTest::gtest
+        GTest::gtest_main
+        -no-pie
+)
+
+add_executable(
+        thor_create_extra_files
+        thor_create_extra_files.cpp
+)
+
+target_link_libraries(
+        thor_create_extra_files
+        LINK_PUBLIC
+        parse_flags
+        thor
 )

@@ -17,65 +17,109 @@
 #ifndef OTHELLO_SENSEI_THOR_H
 #define OTHELLO_SENSEI_THOR_H
 
-// Copyright 2023 Michele Borassi
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-#include <fstream>
-#include <map>
-#include <unordered_set>
-
-#include "game.h"
-#include "../board/board.h"
-#include "../board/get_flip.h"
-#include "../board/get_moves.h"
+#include "source.h"
 #include "../utils/files.h"
-#include "../utils/misc.h"
-
-const std::vector<std::string> sources = {"WTH", "PLAYOK", "QUEST"};
 
 class Thor {
  public:
-  Thor(std::string folder);
+  Thor(const std::string& folder) : folder_(folder), sources_() {
+    for (const auto& entry : fs::directory_iterator(folder)) {
+      if (!entry.is_directory()) {
+        continue;
+      }
+      sources_.insert({fs::path(entry).filename(), std::make_unique<Source>(entry.path())});
+    }
+    if (fs::exists(CanonicalizerPath())) {
+      LoadCanonicalizer();
+    } else {
+      ComputeCanonicalizer();
+    }
+  }
 
-  std::vector<std::string> Tournaments() const;
+  std::vector<std::string> Sources() const {
+    std::vector<std::string> result;
+    for (const auto& [name, _] : sources_) {
+      result.push_back(name);
+    }
+    return result;
+  }
 
-  std::vector<std::string> Players() const;
+  std::unordered_map<std::string, const std::vector<std::string>&> Players() const {
+    std::unordered_map<std::string, const std::vector<std::string>&> result;
+    for (const auto& [name, source] : sources_) {
+      result.insert({name, source->Players()});
+    }
+    return result;
+  }
 
-  void LookupPositions(std::unordered_set<std::string> black, std::unordered_set<std::string> white, std::unordered_set<std::string> tournaments);
+  std::unordered_map<std::string, const std::vector<std::string>&> Tournaments() const {
+    std::unordered_map<std::string, const std::vector<std::string>&> result;
+    for (const auto& [name, source] : sources_) {
+      result.insert({name, source->Tournaments()});
+    }
+    return result;
+  }
 
-  std::vector<Game> GetGames(const Board& child) const;
+  GamesList GetGames(
+      const std::string& source,
+      const Sequence& sequence,
+      int max_games = INT_MAX,
+      std::vector<std::string> blacks = {},
+      std::vector<std::string> whites = {},
+      std::vector<std::string> tournaments = {},
+      short start_year = SHRT_MIN,
+      short end_year = SHRT_MAX) {
+    const Sequence& canonical = sequence.ToCanonicalGame();
+    GamesList games;
 
-  int GetNumGames(const Board& child) {
-    return GetGames(child).size();
+    for (const Sequence& equivalent : canonicalizer_.AllEquivalentSequences(canonical)) {
+      GamesList new_games = sources_[source]->GetGames(canonical, max_games, blacks, whites, tournaments, start_year, end_year);
+      new_games.Rotate(sequence);
+      games.Merge(new_games);
+    }
+    return games;
+  }
+
+  std::string CanonicalizerPath() {
+    return folder_ + "/sequence_canonicalizer.bin";
+  }
+
+  void SaveCanonicalizer() {
+    std::ofstream file(CanonicalizerPath(), std::ios::binary);
+    std::vector<char> serialized = canonicalizer_.Serialize();
+    file.write((char*) serialized.data(), serialized.size() * sizeof(Square));
+  }
+
+  void SaveAll() {
+    SaveCanonicalizer();
+    for (const auto& [_, source] : sources_) {
+      source->SaveSortedGames();
+    }
   }
 
  private:
-  std::vector<Game> games_;
-  std::unordered_map<Board, std::vector<Game>> games_for_position_;
-  std::unordered_map<std::string, std::vector<std::string>> players_for_source_;
-  std::unordered_map<std::string, std::vector<std::string>> tournaments_for_source_;
+  std::string folder_;
+  std::unordered_map<std::string, std::unique_ptr<Source>> sources_;
+  SequenceCanonicalizer canonicalizer_;
 
-  void AddGameToPosition(Board b, Game game) {
-    if (!Contains(games_for_position_, b)) {
-      games_for_position_[b] = std::vector<Game>();
-    }
-    games_for_position_[b].push_back(game);
+  void LoadCanonicalizer() {
+    std::ifstream file(CanonicalizerPath(), std::ios::binary);
+    canonicalizer_.Load(ReadFile<char>(CanonicalizerPath()));
   }
 
-  std::vector<std::string> LoadListFromFile(const std::string& filepath, int size);
+  virtual void ComputeCanonicalizer() {
+    ElapsedTime t;
+    int k = 0;
+    std::vector<Sequence> all_sequences;
 
-  void LoadGames(const std::string& filepath, const std::vector<std::string>& players, const std::vector<std::string>& tournaments);
+    for (const auto& [_, source] : sources_) {
+      for (const Game& game : source->AllGames()) {
+        all_sequences.push_back(game.Moves());
+      }
+    }
+    canonicalizer_.AddAll(all_sequences);
+  }
+
 };
 
 #endif //OTHELLO_SENSEI_THOR_H

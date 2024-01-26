@@ -31,4 +31,5 @@ target_link_libraries( # Specifies the target library.
         get_moves
         misc
         pattern_evaluator
+        thor
 )

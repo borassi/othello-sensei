@@ -19,6 +19,8 @@
 
 #include <list>
 
+#include "bindings.h"
+
 #include "../board/board.h"
 #include "../board/get_flip.h"
 #include "../board/get_moves.h"
@@ -26,16 +28,17 @@
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatederivative/tree_node.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
-#include "bindings.h"
+#include "../thor/thor.h"
 #include "../utils/misc.h"
 
 class State {
  public:
-  State(Board board, bool black_turn) : board_(board), black_turn_(black_turn) {}
-  State() : State(Board(), true) {}
+  State(Square move, Board board, bool black_turn) : move_(move), board_(board), black_turn_(black_turn) {}
+  State() : State(kNoSquare, Board(), true) {}
 
   const Board& GetBoard() const { return board_; }
   bool GetBlackTurn() const { return black_turn_; }
+  Square Move() const { return move_; }
 
   std::optional<State> ToNextState(int square) const {
     if (!board_.IsEmpty(square)) {
@@ -56,10 +59,11 @@ class State {
       new_black_turn = !black_turn_;
     }
 
-    return State(new_board, new_black_turn);
+    return State(square, new_board, new_black_turn);
   }
 
  private:
+  Square move_;
   Board board_;
   bool black_turn_;
 };
@@ -74,6 +78,7 @@ class BoardToEvaluate {
  public:
   BoardToEvaluate(
       Book<>* book,
+      Thor* thor,
       TreeNodeSupplier* tree_node_supplier,
       HashMap<kBitHashMap>* hash_map,
       EvaluatorFactory evaluator_depth_one_factory,
@@ -98,6 +103,16 @@ class BoardToEvaluate {
 
   void AddAnnotation(MoveAnnotations* annotation) {
     annotations_.push_back(annotation);
+  }
+
+  void UpdateWithThor(std::unordered_map<Square, int> next_moves) {
+    int num_thor_games = 0;
+    for (MoveAnnotations* annotation : annotations_) {
+      num_thor_games += next_moves[annotation->square];
+    }
+    for (MoveAnnotations* annotation : annotations_) {
+      annotation->num_thor_games = num_thor_games;
+    }
   }
 
   void EvaluateBook();
@@ -129,13 +144,55 @@ class BoardToEvaluate {
   Book<>* book_;
 };
 
+class ThorSourceMetadataExtended {
+ public:
+  ThorSourceMetadataExtended(const ThorSourceMetadataExtended&) = delete;
+  ThorSourceMetadataExtended(const std::string& name, const std::vector<std::string>& players, const std::vector<std::string>& tournaments) : name_(name) {
+    players_.reserve(players.size());
+    for (const std::string& player : players) {
+      players_.push_back(player.c_str());
+      selected_blacks_.push_back(-1);
+      selected_whites_.push_back(-1);
+    }
+    tournaments_.reserve(tournaments.size());
+    for (const std::string& tournament : tournaments) {
+      tournaments_.push_back(tournament.c_str());
+      selected_tournaments_.push_back(-1);
+    }
+    thor_source_metadata_.name = name_.c_str();
+    thor_source_metadata_.players = players_.data();
+    thor_source_metadata_.num_players = players_.size();
+    thor_source_metadata_.tournaments = tournaments_.data();
+    thor_source_metadata_.num_tournaments = tournaments_.size();
+    thor_source_metadata_.selected_blacks = selected_blacks_.data();
+    thor_source_metadata_.selected_whites = selected_whites_.data();
+    thor_source_metadata_.selected_tournaments = selected_tournaments_.data();
+  }
+
+  ThorSourceMetadata* GetThorSourceMetadata() { return &thor_source_metadata_; }
+
+ private:
+  ThorSourceMetadata thor_source_metadata_;
+  std::string name_;
+  std::vector<const char*> players_;
+  std::vector<const char*> tournaments_;
+  std::vector<int> selected_blacks_;
+  std::vector<int> selected_whites_;
+  std::vector<int> selected_tournaments_;
+};
+
 class Main {
  public:
-  Main(const std::string& evals_filepath, const std::string& book_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
+  Main(
+      const std::string& evals_filepath,
+      const std::string& book_filepath,
+      const std::string& thor_filepath,
+      SetBoard set_board,
+      UpdateAnnotations update_annotations);
 
   void NewGame() {
     Stop();
-    states_ = {{Board(), true}};
+    states_ = {State()};
     current_state_ = 0;
     BoardChanged();
   }
@@ -173,12 +230,18 @@ class Main {
 
   void Stop();
 
-  void Evaluate(const EvaluateParams& params) {
+  void Evaluate() {
     Stop();
     current_future_ = std::make_shared<std::future<void>>(std::async(
-        std::launch::async, &Main::EvaluateThread, this, params,
+        std::launch::async, &Main::EvaluateThread, this,
         current_thread_.load(), current_future_));
   }
+
+  const ThorMetadata& GetThorMetadata() const {
+    return thor_metadata_;
+  }
+
+  EvaluateParams& GetEvaluateParams() { return evaluate_params_; }
 
  private:
   static constexpr int kNumEvaluators = 60;
@@ -204,6 +267,14 @@ class Main {
 
   Book<kBookVersion> book_;
 
+  std::vector<std::unique_ptr<ThorSourceMetadataExtended>> thor_sources_metadata_extended_;
+  std::vector<ThorSourceMetadata*> thor_sources_metadata_;
+  ThorMetadata thor_metadata_;
+
+  Thor thor_;
+
+  EvaluateParams evaluate_params_;
+
   void BoardChanged();
 
   void UpdateBoardsToEvaluate();
@@ -224,10 +295,20 @@ class Main {
   }
 
   void EvaluateThread(
-      const EvaluateParams& params, int current_thread,
-      std::shared_ptr<std::future<void>> last_future);
+      int current_thread, std::shared_ptr<std::future<void>> last_future);
 
   void RunUpdateAnnotations(int current_thread, bool finished);
+
+  Sequence GetSequence() {
+    if (states_[0].GetBoard() != Board()) {
+      return Sequence();
+    }
+    std::vector<Square> moves;
+    for (int i = 1; i <= current_state_; ++i) {
+      moves.push_back(states_[i].Move());
+    }
+    return Sequence(moves);
+  }
 };
 
 #endif // OTHELLO_SENSEI_MAIN_H

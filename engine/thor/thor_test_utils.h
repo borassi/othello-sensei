@@ -17,6 +17,10 @@
 #ifndef OTHELLO_SENSEI_THOR_TEST_UTILS_H
 #define OTHELLO_SENSEI_THOR_TEST_UTILS_H
 
+#include <fstream>
+#include <string>
+const std::string kThorTestData = "tmp/testdata/thor";
+
 char StringToThorSquare(std::string square) {
   char value = (square[0] - 'a' + 1) + 10 * (square[1] - '0');
   assert(value / 10 >= 1 && value / 10 <= 8);
@@ -32,7 +36,7 @@ std::vector<char> StoredGame(int tournament, int black, int white, int score, in
   result.insert(result.end(), {(char) score, (char) theoretical});
 
   for (int i = 0; i < 60; ++i) {
-    if (moves.length() < 2 * i) {
+    if (moves.length() <= 2 * i) {
       result.push_back(0);
     } else {
       result.push_back(StringToThorSquare(moves.substr(2 * i, 2)));
@@ -47,6 +51,13 @@ std::string PadString(const std::string& to_pad, int length) {
     result += '\0';
   }
   return result;
+}
+
+void WriteHeader(std::ofstream& file, short year) {
+  std::vector<char> to_write(10, 0);
+  file.write(to_write.data(), 10);
+  file.write((char*) &year, 2);
+  file.write(to_write.data(), 4);
 }
 
 #endif //OTHELLO_SENSEI_THOR_TEST_UTILS_H

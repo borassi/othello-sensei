@@ -23,22 +23,7 @@
 #include <string>
 
 #include "../board/board.h"
-
-struct ThorSquareToSquare {
-  Square square[256];
-
-  constexpr ThorSquareToSquare() : square() {
-    for (int i = 0; i < 256; ++i) {
-      if (i % 10 >= 1 && i % 10 <= 8 && i / 10 >= 1 && i / 10 <= 8) {
-        square[i] = (8 - i % 10) + 8 * (8 - i / 10);
-      } else {
-        square[i] = kNoSquare;
-      }
-    }
-  }
-};
-
-constexpr ThorSquareToSquare kThorSquareToSquare;
+#include "../board/sequence.h"
 
 class Game {
  public:
@@ -47,10 +32,9 @@ class Game {
       white_(&players[(buffer[offset + 4] & 0xff) | ((buffer[offset + 5] & 0xff) << 8)]),
       year_(year),
       tournament_(&tournaments[(buffer[offset] & 0xff) | ((buffer[offset + 1] & 0xff) << 8)]),
-      score_(buffer[offset + 6]) {
-    for (int i = 0; i < 60; ++i) {
-      moves_[i] = kThorSquareToSquare.square[buffer[offset + 8 + i]];
-    }
+      score_(buffer[offset + 6]),
+      moves_(Sequence::FromThor((Square*) buffer + offset + 8)) {
+    moves_.ToCanonicalGameInplace();
   }
 
   std::string Black() const { return *black_; }
@@ -59,14 +43,28 @@ class Game {
   short Year() const { return year_; }
   Eval Score() const { return score_; }
 
-  const std::array<uint8_t, 60>& MovesByte() const { return moves_; }
-
-  std::string Moves() const;
+  const Sequence& Moves() const { return moves_; }
+  Square Move(Square i) const { return moves_.Move(i); }
 
   std::string ToString() const;
 
+  inline bool operator<(const Game& rhs) const {
+    return ToTuple() < rhs.ToTuple();
+  }
+  inline bool operator>(const Game& rhs) const { return rhs < *this; }
+  inline bool operator<=(const Game& rhs) const { return !(*this > rhs); }
+  inline bool operator>=(const Game& rhs) const { return !(*this < rhs); }
+  inline bool operator==(const Game& rhs) const {
+    return !(*this > rhs) && !(*this < rhs);
+  }
+  inline bool operator!=(const Game& rhs) const { return !(*this == rhs); }
+
+  std::tuple<Sequence, std::string, std::string, std::string, short, Eval> ToTuple() const {
+    return std::tie(moves_, *black_, *white_, *tournament_, year_, score_);
+  }
+
  private:
-  std::array<uint8_t, 60> moves_;
+  Sequence moves_;
   const std::string* black_;
   const std::string* white_;
   const std::string* tournament_;
@@ -74,6 +72,23 @@ class Game {
   Eval score_;
 };
 
+namespace std {
+  template<>
+  struct hash<Game> {
+    std::size_t operator()(const Game& g) const {
+      std::tuple<Sequence, std::string, std::string, std::string, short, Eval> tuple = g.ToTuple();
+      assert(tuple_size<decltype(tuple)>::value == 6);
+      std::size_t hash = std::hash<Sequence>()(std::get<0>(tuple));
+      hash ^= std::hash<std::string>()(std::get<1>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash ^= std::hash<std::string>()(std::get<2>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash ^= std::hash<std::string>()(std::get<3>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash ^= std::hash<short>()(std::get<4>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash ^= std::hash<Eval>()(std::get<5>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      return hash;
+    }
+  };
+}
 
+std::ostream& operator<<(std::ostream& stream, const Game& s);
 
 #endif // OTHELLO_SENSEI_GAME_H

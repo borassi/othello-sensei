@@ -82,3 +82,52 @@ short GetCurrentYear() {
   std::tm* const time = std::localtime(&t);
   return 1900 + time->tm_year;
 }
+
+std::string LeftStrip(const std::string& s) {
+  std::string result = s;
+  result.erase(
+      result.begin(),
+      std::find_if(
+          result.begin(),
+          result.end(),
+          [](unsigned char c) { return !std::isspace(c); }
+      )
+  );
+  return result;
+}
+
+std::string RightStrip(const std::string& s) {
+  std::string result = s;
+  result.erase(
+      std::find_if(
+          result.rbegin(),
+          result.rend(),
+          [](unsigned char c) { return !std::isspace(c); }
+      ).base(),
+      result.end()
+  );
+  return result;
+}
+
+std::string ToLower(const std::string& s) {
+  std::string result = s;
+  std::transform(result.begin(), result.end(), result.begin(),
+    [](unsigned char c){ return std::tolower(c); });
+  return result;
+}
+
+std::vector<std::string> Split(const std::string& s, char c, bool strip) {
+  std::stringstream stream(s);
+  std::string segment;
+  std::vector<std::string> result;
+
+  while(std::getline(stream, segment, c)) {
+    if (strip) {
+      segment = LeftStrip(RightStrip(segment));
+    }
+    if (!segment.empty()) {
+      result.push_back(segment);
+    }
+  }
+  return result;
+}

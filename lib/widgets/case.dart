@@ -47,6 +47,11 @@ class Case extends StatelessWidget {
     var eval = -annotation.eval;
     var color = eval > annotations.bestEval - 1 ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
+    var mainLineText = "${eval < 0 ? '-' : '+'}${eval.abs().toStringAsFixed(2)}";
+    if (GlobalState.globalAnnotations.getNumThorGames() > 0) {
+      mainLineText = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
+    }
+
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           return Center(
@@ -55,7 +60,7 @@ class Case extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                       Text(
-                          "${eval < 0 ? '-' : '+'}${eval.abs().toStringAsFixed(2)}",
+                          mainLineText,
                           style: TextStyle(
                               fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
                               fontWeight: FontWeight.bold,

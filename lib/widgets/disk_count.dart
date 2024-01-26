@@ -22,18 +22,14 @@ import '../state.dart';
 import 'board.dart';
 import 'case.dart';
 
-Widget getCase(BuildContext context, CaseState state, double squareSize) {
-  var textColor = state == CaseState.black ? Colors.white : Colors.black;
-  var text = state == CaseState.black ?
-      "${GlobalState.board.blackDisks()}" :
-      state == CaseState.white ?
-          "${GlobalState.board.whiteDisks()}" :
-          "${GlobalState.board.emptySquares()}";
+Widget getCase(BuildContext context, bool black, double squareSize) {
+  var textColor = black ? Colors.white : Colors.black;
+  var text = black ? "${GlobalState.board.blackDisks()}" : "${GlobalState.board.whiteDisks()}";
   return Stack(
       alignment: Alignment.center,
       children: [
         Case(
-          state,
+          black ? CaseState.black : CaseState.white,
           255,
           squareSize,
           () => {},
@@ -52,52 +48,51 @@ Widget getCase(BuildContext context, CaseState state, double squareSize) {
   );
 }
 
-class DiskCount extends FixedWidthWidget {
-  const DiskCount(super.squareSize, {super.key});
+class DiskCount extends StatelessWidget {
+  final double squareSize;
+  final bool black;
+
+  const DiskCount(this.squareSize, this.black, {key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: GlobalState.board,
+      builder: (BuildContext context, Widget? widget) => getCase(context, black, squareSize)
+    );
+  }
+}
+
+class DiskCountWithError extends FixedWidthWidget {
+  DiskCountWithError(super.squareSize, {super.key});
+
+  Widget widget(BuildContext context, bool black) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text("Error", style: Theme.of(context).textTheme.bodySmall),
+        ListenableBuilder(
+          listenable: GlobalState.globalAnnotations,
+          builder: (BuildContext context, Widget? widget) => Text(
+              "12", style: Theme.of(context).textTheme.bodyLarge!
+          )
+        )
+      ]
+    );
+  }
 
   @override
   Widget buildChild(BuildContext context) {
-    return ListenableBuilder(
-      listenable: GlobalState.board,
-      builder: (BuildContext context, Widget? widget) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          getCase(context, CaseState.black, squareSize),
-          ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: squareSize),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Error", style: Theme.of(context).textTheme.bodySmall),
-                    ListenableBuilder(
-                      listenable: GlobalState.globalAnnotations,
-                      builder: (BuildContext context, Widget? widget) => Text(
-                          "12", style: Theme.of(context).textTheme.bodyLarge!
-                      )
-                    )
-                  ]
-              )
-          ),
-          Spacer(),
-          ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: squareSize),
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text("Error", style: Theme.of(context).textTheme.bodySmall),
-                    ListenableBuilder(
-                      listenable: GlobalState.globalAnnotations,
-                      builder: (BuildContext context, Widget? widget) => Text(
-                          "12", style: Theme.of(context).textTheme.bodyLarge!
-                      )
-                    )
-                  ]
-              )
-          ),
-          // getCase(CaseState.empty, squareSize),
-          getCase(context, CaseState.white, squareSize)
-        ]
-      )
+    List<Widget> widgets = [];
+    widgets.add(DiskCount(squareSize, true));
+    widgets.add(widget(context, true));
+    widgets.add(const Spacer());
+    widgets.add(widget(context, false));
+    widgets.add(DiskCount(squareSize, false));
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: widgets
     );
   }
 }

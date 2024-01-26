@@ -15,11 +15,14 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <math.h>
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include "misc.h"
+
+using ::testing::ElementsAre;
 
 TEST(ConstexprMath, Log) {
   for (double x : {1E-30, 0.000001, 0.01, 0.5, 1.0, 1.5, 2.0, 10.0, 10000.0, 100000000.0, std::numeric_limits<double>::infinity()}) {
@@ -92,4 +95,28 @@ TEST(Misc, PrettyPrintDouble) {
 
 TEST(Misc, Indent) {
   EXPECT_EQ(Indent("abc\ndef\n", "  "), "  abc\n  def\n");
+}
+
+TEST(Misc, LeftStrip) {
+  EXPECT_EQ(LeftStrip("  \n\tabc"), "abc");
+  EXPECT_EQ(LeftStrip("  \n\tabc "), "abc ");
+  EXPECT_EQ(LeftStrip("  \n\ta b c "), "a b c ");
+  EXPECT_EQ(LeftStrip("\n\t  a b c "), "a b c ");
+}
+
+TEST(Misc, RightStrip) {
+  EXPECT_EQ(RightStrip("abc  \n\t"), "abc");
+  EXPECT_EQ(RightStrip(" abc  \n\t"), " abc");
+  EXPECT_EQ(RightStrip(" a b c  \n\t"), " a b c");
+  EXPECT_EQ(RightStrip(" a b c \n\t "), " a b c");
+}
+
+TEST(Misc, ToLower) {
+  EXPECT_EQ(ToLower("AB.c D \n\t"), "ab.c d \n\t");
+}
+
+TEST(Misc, Split) {
+  EXPECT_THAT(Split("abc  , def  ", ',', true), ElementsAre("abc", "def"));
+  EXPECT_THAT(Split("abc  , def  ,", ',', true), ElementsAre("abc", "def"));
+  EXPECT_THAT(Split(",abc  , def  ,", ',', true), ElementsAre("abc", "def"));
 }

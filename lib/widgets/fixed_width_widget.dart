@@ -25,7 +25,7 @@ abstract class FixedWidthWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 4 * squareSize,
+      width: 5 * squareSize,
       child: buildChild(context),
     );
   }

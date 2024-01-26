@@ -217,16 +217,15 @@ add_library(
         sequence.cpp
 )
 
-#target_link_libraries(
-#        sequence
-#        LINK_PUBLIC
-#        board
-#        files
-#        game
-#        get_flip
-#        get_moves
-#        misc
-#)
+target_link_libraries(
+        sequence
+        LINK_PRIVATE
+        bitpattern
+        board
+        get_flip
+        get_moves
+        misc
+)
 
 add_executable(
         sequence_test

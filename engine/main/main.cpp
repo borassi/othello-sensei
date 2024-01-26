@@ -70,10 +70,12 @@ void BoardToEvaluate::Evaluate(EvaluateParams params, int steps) {
 Main::Main(
     const std::string& evals_filepath,
     const std::string& book_filepath,
+    const std::string& thor_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations) :
   evals_(LoadEvals(evals_filepath)),
   book_(book_filepath),
+  thor_(thor_filepath),
   set_board_(set_board),
   update_annotations_(update_annotations),
   hash_map_(),
@@ -85,11 +87,26 @@ Main::Main(
   for (int i = 0; i < kNumEvaluators; ++i) {
     boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
         &book_,
+        &thor_,
         &tree_node_supplier_, &hash_map_,
         PatternEvaluator::Factory(evals_.data()),
         static_cast<u_int8_t>(i));
   }
   NewGame();
+  auto players = thor_.Players();
+  auto tournaments = thor_.Tournaments();
+  assert(players.size() == tournaments.size());
+
+  thor_sources_metadata_.reserve(players.size());
+  for (const auto& [source_name, source_players] : players) {
+    const auto& source_tournaments = tournaments.at(source_name);
+
+    thor_sources_metadata_extended_.push_back(
+        std::make_unique<ThorSourceMetadataExtended>(source_name, source_players, source_tournaments));
+    thor_sources_metadata_.push_back(thor_sources_metadata_extended_.back()->GetThorSourceMetadata());
+  }
+  thor_metadata_.sources = thor_sources_metadata_.data();
+  thor_metadata_.num_sources = thor_sources_metadata_.size();
 }
 
 // This runs in the main thread, so that we cannot update the output afterwards.
@@ -135,8 +152,18 @@ void Main::UpdateBoardsToEvaluate() {
   }
 }
 
+bool IncludeAllSources(ThorMetadata thor_metadata) {
+  for (int i = 0; i < thor_metadata.num_sources; ++i) {
+    const ThorSourceMetadata& source = *thor_metadata.sources[i];
+    if (source.selected_blacks[0] >= 0 || source.selected_whites[0] >= 0 || source.selected_tournaments[0] >= 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void Main::EvaluateThread(
-    const EvaluateParams& params, int current_thread,
+    int current_thread,
     std::shared_ptr<std::future<void>> last_future) {
   if (last_future) {
     last_future->get();
@@ -144,16 +171,61 @@ void Main::EvaluateThread(
   if (current_thread != current_thread_) {
     return;
   }
+  const EvaluateParams& params = evaluate_params_;
   if (reset_.exchange(false)) {
     time_ = ElapsedTime();
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate();
 
+    std::cout << "Updated boards " << time_.Get() << "\n" << std::flush;
     if (params.use_book) {
       for (int i = 0; i < num_boards_to_evaluate_; ++i) {
         boards_to_evaluate_[i]->EvaluateBook();
       }
     }
+    std::cout << "Updated book " << time_.Get() << "\n" << std::flush;
+    if (params.thor_filters.use_thor) {
+      auto filters = params.thor_filters;
+      const Sequence& sequence = GetSequence();
+      GamesList games;
+
+      bool include_all_sources = IncludeAllSources(thor_metadata_);
+      for (int i = 0; i < thor_metadata_.num_sources; ++i) {
+        const ThorSourceMetadata& source = *thor_metadata_.sources[i];
+        std::vector<std::string> blacks;
+        std::vector<std::string> whites;
+        std::vector<std::string> tournaments;
+
+        std::cout << source.name << "\n";
+        for (int i = 0; source.selected_blacks[i] >= 0; ++i) {
+          blacks.push_back(source.players[source.selected_blacks[i]]);
+        }
+        for (int i = 0; source.selected_whites[i] >= 0; ++i) {
+          whites.push_back(source.players[source.selected_whites[i]]);
+        }
+        for (int i = 0; source.selected_tournaments[i] >= 0; ++i) {
+          tournaments.push_back(source.tournaments[source.selected_tournaments[i]]);
+        }
+
+        if (include_all_sources || !blacks.empty() || !whites.empty() || !tournaments.empty()) {
+          games.Merge(thor_.GetGames(
+              source.name, sequence, filters.max_games, blacks, whites,
+              tournaments, filters.start_year, filters.end_year));
+        }
+      }
+
+      annotations_.num_thor_games = games.num_games;
+      annotations_.num_example_thor_games = games.examples.size();
+      // TODO: annotations_.example_thor_games = ;
+
+      for (int i = 0; i < num_boards_to_evaluate_; ++i) {
+        boards_to_evaluate_[i]->UpdateWithThor(games.next_moves);
+      }
+    } else {
+      annotations_.num_thor_games = 0;
+      annotations_.num_example_thor_games = 0;
+    }
+    std::cout << "Updated Thor " << time_.Get() << "\n" << std::flush;
   }
 
   int steps = num_boards_to_evaluate_;

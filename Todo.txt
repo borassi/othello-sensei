@@ -5,8 +5,15 @@ Small details
 - P3 ???? Free memory on hot reload.
 - P3 EASY Back button undo instead of quit.
 
+Thor
+- P0 Show the games.
+- P0 Better evaluation.
+- P1 Use only one source.
+- P1 Decide which evaluations to show.
+- P1 Winning percentages.
+- P2 Optimize the speed.
+
 Match the features of the current app
-- P1 MED Thor.
 - P2 MED Play.
 - P3 HARD Study and repeat openings.
 

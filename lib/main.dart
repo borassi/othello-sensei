@@ -23,8 +23,9 @@ import 'package:othello_sensei/ffi_bridge.dart';
 import 'package:othello_sensei/widgets/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets/disk_count.dart';
-import 'package:othello_sensei/widgets/eval_parameters.dart';
+import 'package:othello_sensei/widgets/disk_count_with_thor.dart';
 import 'package:othello_sensei/widgets/evaluate_stats.dart';
+import 'package:othello_sensei/widgets/thor_games_visualizer.dart';
 
 import 'widgets/board.dart';
 import 'ffi_engine.dart';
@@ -59,6 +60,7 @@ void main() async {
 
 class Main extends StatelessWidget {
   final String title = "Othello Sensei";
+  static const tabName = ['Evaluate', 'Archive'];
 
   const Main({super.key});
 
@@ -90,10 +92,9 @@ class Main extends StatelessWidget {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
       return;
     }
-    var params = malloc<EvaluateParams>();
+    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain!);
     GlobalState.preferences.fillEvaluateParams(params.ref, isFirst);
-    ffiEngine.Evaluate(GlobalState.ffiMain!, params);
-    malloc.free(params);
+    ffiEngine.Evaluate(GlobalState.ffiMain!);
   }
 
   @override
@@ -101,7 +102,7 @@ class Main extends StatelessWidget {
     var height = MediaQuery.of(context).size.height - (MediaQuery.of(context).padding.top + kToolbarHeight);
     var width = MediaQuery.of(context).size.width;
     var verticalSize = min(width, 8 / 14 * height);
-    var horizontalSize = min(height, 8 / 12 * width);
+    var horizontalSize = min(height, 8 / 13 * width);
     var vertical = verticalSize > horizontalSize;
     var size = max(verticalSize, horizontalSize);
     var squareSize = (size / 8.5 / 2).floorToDouble() * 2;
@@ -118,11 +119,42 @@ class Main extends StatelessWidget {
         ),
         useMaterial3: true,
       );
+
+    var evaluateContent = Align(
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(height: 0.25 * squareSize),
+          DiskCountWithError(squareSize),
+          Spacer(),
+          EvaluateStats(squareSize),
+          Spacer(),
+        ]
+      )
+    );
+
+    var thorContent = Align(
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(height: 0.25 * squareSize),
+          DiskCountsWithThor(squareSize),
+          Spacer(),
+          ThorGamesVisualizer(),
+          Spacer(),
+        ]
+      )
+    );
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Sensei',
       theme: theme,
       home: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: SenseiAppBar(newGame, undo, redo, stop),
         body: Flex(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -130,28 +162,27 @@ class Main extends StatelessWidget {
           direction: vertical ? Axis.vertical : Axis.horizontal,
           children: [
             Board(size, squareSize, playMove, undo),
-            Flexible(
-                child: SizedBox(
-                  width: vertical ? 8 * squareSize : null,
-                  height: vertical ? null : 8 * squareSize,
-                  child: DefaultTextStyle.merge(
-                    style: theme.textTheme.bodyMedium,
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Spacer(),
-                          DiskCount(squareSize),
-                          Spacer(),
-                          EvaluateStats(squareSize),
-                          Spacer(),
-                        ]
-                      )
-                    )
-                  )
-                )
+            SizedBox(
+              width: vertical ? width : width - horizontalSize,
+              height: vertical ? height - verticalSize : height,
+              child: DefaultTabController(
+                length: 2,
+                initialIndex: GlobalState.preferences.get('Tab'),
+                child: Scaffold(
+                  bottomNavigationBar: TabBar(
+                    tabs: List.generate(2, (index) => Text(tabName[index])),
+                    onTap: (int index) {
+                      GlobalState.preferences.set('Tab', index);
+                    },
+                  ),
+                  body: TabBarView(
+                    children: [
+                      evaluateContent,
+                      thorContent,
+                    ],
+                  ),
+                ),
+              ),
             ),
           ]
         )
