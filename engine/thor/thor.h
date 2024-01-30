@@ -71,6 +71,7 @@ class Thor {
       short end_year = SHRT_MAX) {
     const Sequence& canonical = sequence.ToCanonicalGame();
     GamesList games;
+    games.max_games = max_games;
 
     for (const Sequence& equivalent : canonicalizer_.AllEquivalentSequences(canonical)) {
       GamesList new_games = sources_[source]->GetGames(canonical, max_games, blacks, whites, tournaments, start_year, end_year);

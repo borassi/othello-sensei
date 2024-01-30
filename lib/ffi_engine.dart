@@ -284,13 +284,17 @@ typedef NVisited = ffi.Uint64;
 typedef DartNVisited = int;
 
 final class ThorGame extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> player;
+  external ffi.Pointer<ffi.Char> black;
 
-  external ffi.Pointer<ffi.Char> opponent;
+  external ffi.Pointer<ffi.Char> white;
 
   external ffi.Pointer<ffi.Char> tournament;
 
-  external ffi.Pointer<Square> moves;
+  @ffi.Array.multi([60])
+  external ffi.Array<Square> moves;
+
+  @ffi.Int()
+  external int moves_played;
 
   @ffi.Int()
   external int score;

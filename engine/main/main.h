@@ -190,6 +190,8 @@ class Main {
       SetBoard set_board,
       UpdateAnnotations update_annotations);
 
+  ~Main() { free(annotations_.example_thor_games); }
+
   void NewGame() {
     Stop();
     states_ = {State()};

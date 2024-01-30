@@ -68,10 +68,11 @@ struct MoveAnnotations {
 };
 
 struct ThorGame {
-  char* player;
-  char* opponent;
-  char* tournament;
-  Square* moves;
+  const char* black;
+  const char* white;
+  const char* tournament;
+  Square moves[60];
+  int moves_played;
   int score;
   int year;
 };

@@ -49,8 +49,8 @@ class Board extends StatelessWidget {
                   defaultColumnWidth: FixedColumnWidth(squareSize),
                   children: List.generate(8, (x) => TableRow(
                     children: List.generate(8, (y) {
-                      var index = 8 * x + y;
-                      return Case(getState(index, board), index, squareSize, () => playMove(8*x + y), undo);
+                      var index = 63 - 8 * x - y;
+                      return Case(getState(index, board), index, squareSize, () => playMove(index), undo);
                     })
                   ))
                 )

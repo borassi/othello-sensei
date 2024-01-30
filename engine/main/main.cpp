@@ -35,6 +35,19 @@ void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book
   annotation.missing = node.IsSolved() ? 0 : node.RemainingWork(-63, 63);
   annotation.book = book;
 }
+
+void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
+  thor_game.black = game.BlackC();
+  thor_game.white = game.WhiteC();
+  thor_game.tournament = game.TournamentC();
+  thor_game.score = game.Score();
+  thor_game.year = game.Year();
+  int transposition = sequence.GetTransposition(game.Moves().Subsequence(sequence.Size()));
+  for (int i = 0; i < 60; ++i) {
+    thor_game.moves[i] = TransposeMove(game.Moves().Moves()[i], transposition);
+  }
+  thor_game.moves_played = sequence.Size();
+}
 } // anonymous_namespace
 
 void BoardToEvaluate::EvaluateBook() {
@@ -107,6 +120,8 @@ Main::Main(
   }
   thor_metadata_.sources = thor_sources_metadata_.data();
   thor_metadata_.num_sources = thor_sources_metadata_.size();
+
+  annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
 }
 
 // This runs in the main thread, so that we cannot update the output afterwards.
@@ -177,17 +192,16 @@ void Main::EvaluateThread(
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate();
 
-    std::cout << "Updated boards " << time_.Get() << "\n" << std::flush;
     if (params.use_book) {
       for (int i = 0; i < num_boards_to_evaluate_; ++i) {
         boards_to_evaluate_[i]->EvaluateBook();
       }
     }
-    std::cout << "Updated book " << time_.Get() << "\n" << std::flush;
     if (params.thor_filters.use_thor) {
       auto filters = params.thor_filters;
       const Sequence& sequence = GetSequence();
       GamesList games;
+      games.max_games = filters.max_games;
 
       bool include_all_sources = IncludeAllSources(thor_metadata_);
       for (int i = 0; i < thor_metadata_.num_sources; ++i) {
@@ -196,7 +210,6 @@ void Main::EvaluateThread(
         std::vector<std::string> whites;
         std::vector<std::string> tournaments;
 
-        std::cout << source.name << "\n";
         for (int i = 0; source.selected_blacks[i] >= 0; ++i) {
           blacks.push_back(source.players[source.selected_blacks[i]]);
         }
@@ -216,7 +229,10 @@ void Main::EvaluateThread(
 
       annotations_.num_thor_games = games.num_games;
       annotations_.num_example_thor_games = games.examples.size();
-      // TODO: annotations_.example_thor_games = ;
+      annotations_.example_thor_games = (ThorGame*) realloc(annotations_.example_thor_games, annotations_.num_example_thor_games * sizeof(ThorGame));
+      for (int i = 0; i < annotations_.num_example_thor_games; ++i) {
+        ThorGameSet(*games.examples[i], annotations_.example_thor_games[i], sequence);
+      }
 
       for (int i = 0; i < num_boards_to_evaluate_; ++i) {
         boards_to_evaluate_[i]->UpdateWithThor(games.next_moves);
@@ -225,7 +241,6 @@ void Main::EvaluateThread(
       annotations_.num_thor_games = 0;
       annotations_.num_example_thor_games = 0;
     }
-    std::cout << "Updated Thor " << time_.Get() << "\n" << std::flush;
   }
 
   int steps = num_boards_to_evaluate_;

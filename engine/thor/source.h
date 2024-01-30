@@ -71,7 +71,7 @@ struct GamesList {
   void Merge(const GamesList& other) {
     num_games += other.num_games;
     examples.insert(examples.end(), other.examples.begin(), other.examples.end());
-    std::sort(examples.begin(), examples.end(), [](const Game* g1, const Game* g2) { return g1->Year() < g2->Year(); });
+    std::stable_sort(examples.begin(), examples.end(), [](const Game* g1, const Game* g2) { return g1->Year() > g2->Year(); });
     if (examples.size() > max_games) {
       examples.resize(max_games);
     }

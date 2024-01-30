@@ -143,9 +143,7 @@ class Main extends StatelessWidget {
         children: [
           SizedBox(height: 0.25 * squareSize),
           DiskCountsWithThor(squareSize),
-          Spacer(),
-          ThorGamesVisualizer(),
-          Spacer(),
+          Expanded(child: ThorGamesVisualizer(squareSize)),
         ]
       )
     );

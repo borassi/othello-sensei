@@ -40,6 +40,9 @@ class Game {
   std::string Black() const { return *black_; }
   std::string White() const { return *white_; }
   std::string Tournament() const { return *tournament_; }
+  const char* BlackC() const { return black_->c_str(); }
+  const char* WhiteC() const { return white_->c_str(); }
+  const char* TournamentC() const { return tournament_->c_str(); }
   short Year() const { return year_; }
   Eval Score() const { return score_; }
 
