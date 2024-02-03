@@ -31,22 +31,43 @@
 #include "../thor/thor.h"
 #include "../utils/misc.h"
 
+constexpr Square kStartingPositionMove = 64;
+
 class State {
  public:
-  State(Square move, Board board, bool black_turn) : move_(move), board_(board), black_turn_(black_turn) {}
-  State() : State(kNoSquare, Board(), true) {}
+  State() : move_(kNoSquare) {}
 
-  const Board& GetBoard() const { return board_; }
-  bool GetBlackTurn() const { return black_turn_; }
-  Square Move() const { return move_; }
+  void Unset() { move_ = kNoSquare; }
 
-  std::optional<State> ToNextState(int square) const {
+  void Set(Square move, Board board, bool black_turn) {
+    move_ = move;
+    board_ = board;
+    black_turn_ = black_turn;
+  }
+
+  bool IsSet() const { return move_ != kNoSquare; }
+
+  const Board& GetBoard() const {
+    assert(IsSet());
+    return board_;
+  }
+  bool GetBlackTurn() const {
+    assert(IsSet());
+    return black_turn_;
+  }
+  Square Move() const {
+    assert(IsSet());
+    return move_;
+  }
+
+  bool SetNextState(int square, State& next_state) const {
+    assert(IsSet());
     if (!board_.IsEmpty(square)) {
-      return std::nullopt;
+      return false;
     }
     BitPattern flip = GetFlip(square, board_.Player(), board_.Opponent());
     if (!flip) {
-      return std::nullopt;
+      return false;
     }
 
     Board new_board = board_.Next(flip);
@@ -59,7 +80,8 @@ class State {
       new_black_turn = !black_turn_;
     }
 
-    return State(square, new_board, new_black_turn);
+    next_state.Set(square, new_board, new_black_turn);
+    return true;
   }
 
  private:
@@ -72,6 +94,7 @@ enum BoardToEvaluateState {
   STATE_NOT_STARTED = 0,
   STATE_STARTED = 1,
   STATE_FINISHED = 2,
+  STATE_STOPPED = 3,
 };
 
 class BoardToEvaluate {
@@ -119,14 +142,14 @@ class BoardToEvaluate {
 
   void Evaluate(EvaluateParams params, int steps);
 
-  void Stop() { evaluator_.Stop(); }
+  void Stop() { evaluator_.Stop(); state_ = STATE_STOPPED; }
 
   BoardToEvaluateState State() const { return state_; }
 
   const Board& Unique() const { return unique_; }
 
   double Priority(double delta) const {
-    if (State() == STATE_FINISHED) {
+    if (State() == STATE_FINISHED || State() == STATE_STOPPED) {
       return -std::numeric_limits<double>::infinity();
     } else if (State() == STATE_NOT_STARTED) {
       return std::numeric_limits<double>::infinity();
@@ -190,30 +213,34 @@ class Main {
       SetBoard set_board,
       UpdateAnnotations update_annotations);
 
-  ~Main() { free(annotations_.example_thor_games); }
+  ~Main() {
+    for (int i = 0; i < annotations_.size(); ++i) {
+      free(annotations_[i].example_thor_games);
+    }
+  }
 
   void NewGame() {
     Stop();
-    states_ = {State()};
+    states_[0].Set(kStartingPositionMove, Board(), true);
+    states_[1].Unset();
     current_state_ = 0;
     BoardChanged();
   }
 
   void PlayMove(Square square) {
     const State& state = states_[current_state_];
-    auto next_state = state.ToNextState(square);
-    if (!next_state) {
+    bool valid = state.SetNextState(square, states_[current_state_ + 1]);
+    if (!valid) {
       return;
     }
     Stop();
     ++current_state_;
-    states_.erase(states_.begin() + current_state_, states_.end());
-    states_.push_back(next_state.value());
+    states_[current_state_ + 1].Unset();
     BoardChanged();
   }
 
   void Redo() {
-    if (current_state_ == states_.size() - 1) {
+    if (!states_[current_state_ + 1].IsSet()) {
       return;
     }
     Stop();
@@ -233,10 +260,11 @@ class Main {
   void Stop();
 
   void Evaluate() {
-    Stop();
+    ++current_thread_;
     current_future_ = std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Main::EvaluateThread, this,
-        current_thread_.load(), current_future_));
+        current_thread_.load(), current_state_, states_[current_state_].Move(),
+        states_[current_state_].GetBlackTurn(), current_future_));
   }
 
   const ThorMetadata& GetThorMetadata() const {
@@ -252,7 +280,7 @@ class Main {
   SetBoard set_board_;
   UpdateAnnotations update_annotations_;
 
-  std::vector<State> states_;
+  State states_[64];
   int current_state_;
 
   std::unique_ptr<EvalType> evals_;
@@ -261,7 +289,7 @@ class Main {
   std::array<std::unique_ptr<BoardToEvaluate>, kNumEvaluators> boards_to_evaluate_;
   int num_boards_to_evaluate_;
 
-  Annotations annotations_;
+  std::array<Annotations, 64> annotations_;
   ElapsedTime time_;
 
   std::atomic_uint32_t current_thread_;
@@ -281,6 +309,8 @@ class Main {
   void BoardChanged();
 
   void UpdateBoardsToEvaluate();
+
+  void UpdateFatherAnnotations(int state);
 
   BoardToEvaluate* NextBoardToEvaluate(double delta) {
     double highestPriority = -std::numeric_limits<double>::infinity();
@@ -323,14 +353,13 @@ class Main {
     }
     thor_metadata_.sources = thor_sources_metadata_.data();
     thor_metadata_.num_sources = thor_sources_metadata_.size();
-
-    annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
   }
 
   void EvaluateThread(
-      int current_thread, std::shared_ptr<std::future<void>> last_future);
+      int current_thread, int current_state, Square move, bool black_turn,
+      std::shared_ptr<std::future<void>> last_future);
 
-  void RunUpdateAnnotations(int current_thread, bool finished);
+  void RunUpdateAnnotations(int current_thread, int current_state, bool finished);
 
   Sequence GetSequence() {
     if (states_[0].GetBoard() != Board()) {

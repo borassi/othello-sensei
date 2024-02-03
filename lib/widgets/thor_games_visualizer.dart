@@ -89,8 +89,8 @@ class ThorGamesVisualizer extends FixedWidthWidget {
                     3: FlexColumnWidth(2),
                   },
                   children: List.generate(
-                    GlobalState.globalAnnotations!.annotations!.num_example_thor_games,
-                    (i) => getRow(context, GlobalState.globalAnnotations.annotations!.example_thor_games.elementAt(i).ref)
+                    GlobalState.globalAnnotations!.annotations()!.num_example_thor_games,
+                    (i) => getRow(context, GlobalState.globalAnnotations.annotations()!.example_thor_games.elementAt(i).ref)
                   ),
                 )
               ),

@@ -68,13 +68,14 @@ class DiskCountWithError extends FixedWidthWidget {
 
   Widget widget(BuildContext context, bool black) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: black ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
         Text("Error", style: Theme.of(context).textTheme.bodySmall),
         ListenableBuilder(
           listenable: GlobalState.globalAnnotations,
           builder: (BuildContext context, Widget? widget) => Text(
-              "12", style: Theme.of(context).textTheme.bodyLarge!
+              GlobalState.globalAnnotations.getError(black).toStringAsFixed(2),
+              style: Theme.of(context).textTheme.bodyMedium!
           )
         )
       ]
@@ -85,9 +86,11 @@ class DiskCountWithError extends FixedWidthWidget {
   Widget buildChild(BuildContext context) {
     List<Widget> widgets = [];
     widgets.add(DiskCount(squareSize, true));
+    widgets.add(SizedBox(width: 0.25 * squareSize));
     widgets.add(widget(context, true));
     widgets.add(const Spacer());
     widgets.add(widget(context, false));
+    widgets.add(SizedBox(width: 0.25 * squareSize));
     widgets.add(DiskCount(squareSize, false));
 
     return Row(

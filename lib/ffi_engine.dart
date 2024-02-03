@@ -332,6 +332,18 @@ final class Annotations extends ffi.Struct {
 
   @ffi.UnsignedInt()
   external int num_example_thor_games;
+
+  @ffi.Double()
+  external double eval;
+
+  @Square()
+  external int move;
+
+  @ffi.Bool()
+  external bool black_turn;
+
+  @ffi.Bool()
+  external bool valid;
 }
 
 final class ThorParams extends ffi.Struct {
@@ -381,5 +393,5 @@ typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
-typedef UpdateAnnotationsFunction = ffi.Void Function(Annotations);
-typedef DartUpdateAnnotationsFunction = void Function(Annotations);
+typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Pointer<Annotations>);
+typedef DartUpdateAnnotationsFunction = void Function(ffi.Pointer<Annotations>);

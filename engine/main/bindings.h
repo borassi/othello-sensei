@@ -88,6 +88,10 @@ struct Annotations {
   unsigned int num_thor_games;
   struct ThorGame* example_thor_games;
   unsigned int num_example_thor_games;
+  double eval;
+  Square move;
+  bool black_turn;
+  bool valid;
 };
 
 struct ThorParams {
@@ -110,7 +114,7 @@ struct EvaluateParams {
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
-typedef void (*UpdateAnnotations)(struct Annotations);
+typedef void (*UpdateAnnotations)(struct Annotations*);
 
 EXPORT
 void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);

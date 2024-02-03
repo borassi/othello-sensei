@@ -37,17 +37,17 @@ void setBoard(BoardUpdate boardUpdate) {
   GlobalState.board.setState(boardUpdate);
 }
 
-void updateAnnotations(Annotations annotations) {
-  var bestEval = double.negativeInfinity;
+int currentMove() {
+  return 60 - GlobalState.board.emptySquares();
+}
+
+void updateAnnotations(Pointer<Annotations> allAnnotations) {
+  Annotations annotations = allAnnotations[currentMove()];
   for (int i = 0; i < annotations.num_moves; ++i) {
     MoveAnnotations move = annotations.moves[i];
-    bestEval = max(bestEval, -move.eval);
+    GlobalState.annotations[move.square].setState(move, annotations.eval);
   }
-  for (int i = 0; i < annotations.num_moves; ++i) {
-    MoveAnnotations move = annotations.moves[i];
-    GlobalState.annotations[move.square].setState(move, bestEval);
-  }
-  GlobalState.globalAnnotations.setState(annotations);
+  GlobalState.globalAnnotations.setState(allAnnotations);
   if (!annotations.finished) {
     GlobalState.main.evaluate(isFirst: false);
   }

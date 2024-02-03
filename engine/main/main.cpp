@@ -48,6 +48,22 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
   }
   thor_game.moves_played = sequence.Size();
 }
+
+void CalculateGlobalAnnotations(Annotations& annotations) {
+  annotations.positions = 0;
+  annotations.positions_calculated = 0;
+  annotations.missing = 0;
+  annotations.eval = -66;
+  for (int i = 0; i < annotations.num_moves; ++i) {
+    auto& move = annotations.moves[i];
+    annotations.eval = std::max(annotations.eval, -move.eval);
+    annotations.positions += move.descendants;
+    if (!move.book) {
+      annotations.positions_calculated += move.descendants;
+    }
+    annotations.missing += move.missing;
+  }
+}
 } // anonymous_namespace
 
 void BoardToEvaluate::EvaluateBook() {
@@ -96,6 +112,9 @@ Main::Main(
         std::launch::async, &Main::InitializeEvaluator, this, evals_filepath,
         book_filepath, thor_filepath
     ))) {
+  for (int i = 0; i < annotations_.size(); ++i) {
+    annotations_[i].example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
+  }
   NewGame();
 }
 
@@ -108,12 +127,14 @@ void Main::Stop() {
 }
 
 void Main::UpdateBoardsToEvaluate() {
-  const Board& board = states_[current_state_].GetBoard();
+  State& state = states_[current_state_];
+  const Board& board = state.GetBoard();
   auto moves = GetAllMovesWithPass(board.Player(), board.Opponent());
   bool finished = true;
+  Annotations& annotations = annotations_[current_state_];
 
   num_boards_to_evaluate_ = 0;
-  annotations_.num_moves = 0;
+  annotations.num_moves = 0;
 
   for (const auto& flip : moves) {
     Board next = board.Next(flip);
@@ -136,7 +157,7 @@ void Main::UpdateBoardsToEvaluate() {
     }
 
     // Add the current move.
-    MoveAnnotations& annotation = annotations_.moves[annotations_.num_moves++];
+    MoveAnnotations& annotation = annotations.moves[annotations.num_moves++];
     annotation.square = move;
     board_to_evaluate->AddAnnotation(&annotation);
   }
@@ -153,8 +174,11 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
 }
 
 void Main::EvaluateThread(
-    int current_thread,
+    int current_thread, int current_state, Square move, bool black_turn,
     std::shared_ptr<std::future<void>> last_future) {
+  Annotations& annotations = annotations_[current_state];
+  annotations.black_turn = black_turn;
+  annotations.move = move;
   last_future->get();
   if (current_thread != current_thread_) {
     return;
@@ -164,6 +188,7 @@ void Main::EvaluateThread(
     time_ = ElapsedTime();
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate();
+    annotations.valid = false;
 
     if (params.use_book) {
       for (int i = 0; i < num_boards_to_evaluate_; ++i) {
@@ -200,19 +225,19 @@ void Main::EvaluateThread(
         }
       }
 
-      annotations_.num_thor_games = games.num_games;
-      annotations_.num_example_thor_games = games.examples.size();
-      annotations_.example_thor_games = (ThorGame*) realloc(annotations_.example_thor_games, annotations_.num_example_thor_games * sizeof(ThorGame));
-      for (int i = 0; i < annotations_.num_example_thor_games; ++i) {
-        ThorGameSet(*games.examples[i], annotations_.example_thor_games[i], sequence);
+      annotations.num_thor_games = games.num_games;
+      annotations.num_example_thor_games = games.examples.size();
+      annotations.example_thor_games = (ThorGame*) realloc(annotations.example_thor_games, annotations.num_example_thor_games * sizeof(ThorGame));
+      for (int i = 0; i < annotations.num_example_thor_games; ++i) {
+        ThorGameSet(*games.examples[i], annotations.example_thor_games[i], sequence);
       }
 
       for (int i = 0; i < num_boards_to_evaluate_; ++i) {
         boards_to_evaluate_[i]->UpdateWithThor(games.next_moves);
       }
     } else {
-      annotations_.num_thor_games = 0;
-      annotations_.num_example_thor_games = 0;
+      annotations.num_thor_games = 0;
+      annotations.num_example_thor_games = 0;
     }
   }
 
@@ -222,32 +247,45 @@ void Main::EvaluateThread(
   for (int i = 0; i < steps; ++i) {
     auto board_to_evaluate = NextBoardToEvaluate(params.delta);
     if (!board_to_evaluate) {
-      RunUpdateAnnotations(current_thread, true);
+      RunUpdateAnnotations(current_thread, current_state, true);
       return;
     }
     board_to_evaluate->Evaluate(params, steps);
   }
-  RunUpdateAnnotations(current_thread, num_boards_to_evaluate_ == 0);
+  RunUpdateAnnotations(current_thread, current_state, num_boards_to_evaluate_ == 0);
 }
 
-void Main::RunUpdateAnnotations(int current_thread, bool finished) {
+void Main::RunUpdateAnnotations(int current_thread, int current_state, bool finished) {
+  Annotations& annotations = annotations_[current_state];
   if (current_thread != current_thread_) {
     return;
   }
-  annotations_.seconds = time_.Get();
-  annotations_.positions = 0;
-  annotations_.positions_calculated = 0;
-  annotations_.missing = 0;
-  for (int i = 0; i < annotations_.num_moves; ++i) {
-    auto& move = annotations_.moves[i];
-    annotations_.positions += move.descendants;
-    if (!move.book) {
-      annotations_.positions_calculated += move.descendants;
-    }
-    annotations_.missing += move.missing;
+  annotations.seconds = time_.Get();
+  annotations.finished = finished;
+  CalculateGlobalAnnotations(annotations);
+  if (current_state_ > 0) {
+    UpdateFatherAnnotations(current_state - 1);
   }
-  annotations_.finished = finished;
-  update_annotations_(annotations_);
+  annotations.valid = true;
+  update_annotations_(annotations_.data());
+}
+
+void Main::UpdateFatherAnnotations(int state) {
+  assert(state >= 0 && state < annotations_.size() - 1);
+  Annotations& annotations = annotations_[state];
+  const Annotations& next_annotations = annotations_[state + 1];
+  for (int i = 0; i < annotations.num_moves; ++i) {
+    MoveAnnotations& move_annotations = annotations.moves[i];
+    if (move_annotations.square == next_annotations.move) {
+      move_annotations.eval = next_annotations.eval;
+      break;
+    }
+  }
+  double old_eval = annotations.eval;
+  CalculateGlobalAnnotations(annotations);
+  if (annotations.eval != old_eval && state > 0) {
+    UpdateFatherAnnotations(state - 1);
+  }
 }
 
 void Main::BoardChanged() {

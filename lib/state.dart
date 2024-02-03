@@ -60,6 +60,7 @@ class GlobalState {
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
+    main.newGame();
   }
 }
 
@@ -220,50 +221,69 @@ class PreferencesState with ChangeNotifier {
 }
 
 class GlobalAnnotationState with ChangeNotifier {
-  Annotations? annotations = null;
+  Pointer<Annotations>? allAnnotations;
 
   void reset() {
-    annotations = null;
+    allAnnotations = null;
   }
 
   int getNumThorGames() {
-    if (annotations == null) {
+    if (allAnnotations == null) {
       return 0;
     }
-    return annotations!.num_thor_games;
+    return allAnnotations![currentMove()].num_thor_games;
   }
 
-  void setState(Annotations annotations) {
-    this.annotations = annotations;
+  Annotations annotations() { return allAnnotations![currentMove()]; }
+
+  void setState(Pointer<Annotations> allAnnotations) {
+    this.allAnnotations = allAnnotations;
     notifyListeners();
   }
 
+  double getError(bool black) {
+    if (allAnnotations == null) {
+      return double.nan;
+    }
+    double result = 0;
+    for (int i = 1; i < currentMove() + 1; ++i) {
+      if (!allAnnotations![i].valid || !allAnnotations![i-1].valid) {
+        return double.nan;
+      }
+      if (black == allAnnotations![i].black_turn) {
+        continue;
+      }
+      result += allAnnotations![i].eval - (-allAnnotations![i-1].eval);
+    }
+    return result;
+  }
+
   String getPositions() {
-    if (annotations == null) {
+    if (allAnnotations == null) {
       return '-';
     }
-    return prettyPrintDouble(annotations!.positions.toDouble());
+    return prettyPrintDouble(annotations().positions.toDouble());
   }
 
   String getPositionsPerSec() {
-    if (annotations == null || annotations!.positions_calculated == 0) {
+    if (allAnnotations == null || annotations().positions_calculated == 0) {
       return '-';
     }
-    return prettyPrintDouble(annotations!.positions_calculated / annotations!.seconds);
+    return prettyPrintDouble(annotations().positions_calculated / annotations().seconds);
   }
 
   String getTimeString() {
-    if (annotations == null) {
+    if (allAnnotations == null) {
       return '-';
     }
-    return annotations!.seconds.toStringAsFixed(1);
+    return annotations().seconds.toStringAsFixed(1);
   }
 
   String getMissing() {
-    if (annotations == null) {
+    if (allAnnotations == null) {
       return '-';
     }
-    return prettyPrintDouble(annotations!.missing.toDouble());
+    return prettyPrintDouble(annotations().missing.toDouble());
   }
 }
 

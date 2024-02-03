@@ -1,4 +1,5 @@
 Small details
+- P0 MED Fix the Main to avoid race conditions.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
@@ -16,9 +17,10 @@ Match the features of the current app
 - P3 HARD Study and repeat openings.
 
 Extra features:
-- P1 HARD Errors + Analyze a game.
-- P2 EASY Show stats from various moves.
+- P1 EASY Show graph.
+- P1 HARD Analyze a game.
 - P2 MED Share game from Othello Quest.
+- P2 EASY Show stats from various moves.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.
 - P2 HARD How easy / hard a position is.
@@ -28,6 +30,7 @@ Extra features:
 - P2 TINY Customize delta to highlight a move.
 - P3 EASY Icons disappear from the bar.
 - P3 EASY Horizontal layout.
+- P3 MED Manually set the board.
 - P3 HARD Expand book on Google Cloud.
 - P3 HARD Choose which widgets to show.
 - P4 HARD Get board state from pictures.
