@@ -133,7 +133,6 @@ class Source {
     } else {
       ComputeSortedGames();
     }
-    std::cout << "After sorting games " << t.Get() << "\n" << std::flush;
   }
 
   const std::vector<std::string>& Tournaments() const { return tournaments_; }

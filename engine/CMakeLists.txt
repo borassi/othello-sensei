@@ -29,10 +29,6 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("othellosensei" CXX)
 
-if (POLICY CMP0048)
-  cmake_policy(SET CMP0048 OLD)
-endif (POLICY CMP0048)
-
 IF(NOT DEFINED ANDROID)
     SET(ANDROID TRUE)
 ENDIF()

@@ -25,14 +25,15 @@ import 'case.dart';
 
 class ThorFiltersWidget extends StatelessWidget {
   double squareSize;
+  ThorMetadataState thorMetadata;
 
-  ThorFiltersWidget(this.squareSize, {super.key}) {}
+  ThorFiltersWidget(this.squareSize, {super.key}) : thorMetadata = ThorMetadataState() {}
 
   Widget playerSearch(BuildContext context, bool black) {
     var fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
     return Expanded(
       child: DropdownSearch<String>.multiSelection(
-        items: GlobalState.thorMetadata.playerStringToIndex.keys.toList(),
+        items: thorMetadata.playerStringToIndex.keys.toList(),
         popupProps: PopupPropsMultiSelection.menu(
           showSearchBox: true,
           fit: FlexFit.loose,
@@ -49,18 +50,15 @@ class ThorFiltersWidget extends StatelessWidget {
           icon: Icon(Icons.clear, size: fontSize),
           isVisible: true
         ),
-        // dropdownBuilder: (BuildContext context, List<String> selected) {
-        //   return Text(selected.join('\n'), style: TextStyle(fontSize: fontSize));
-        // },
         dropdownButtonProps: DropdownButtonProps(
           icon: Icon(Icons.arrow_drop_down, size: fontSize),
           isVisible: true
         ),
         onChanged: (List<String> elements) {
           if (black) {
-            GlobalState.thorMetadata.setBlack(elements);
+            thorMetadata.setBlack(elements);
           } else {
-            GlobalState.thorMetadata.setWhite(elements);
+            thorMetadata.setWhite(elements);
           }
         },
       )
@@ -69,9 +67,6 @@ class ThorFiltersWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // onPopInvoked: (bool didPop) {
-      //   GlobalState.preferences.setAll(_state.updates);
-      // },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Thor filters'),

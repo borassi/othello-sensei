@@ -3,6 +3,8 @@
 gradlew
 .DS_Store
 assets/book*
+assets/thor/PlayOK
+assets/thor/OthelloQuest
 build
 /captures
 .externalNativeBuild

@@ -15,12 +15,7 @@
  *
  */
 
-import 'dart:ffi';
-
-import 'package:dropdown_search/dropdown_search.dart';
-import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/ffi_bridge.dart';
 import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 import 'package:othello_sensei/widgets/thor_filters.dart';
 

@@ -86,42 +86,17 @@ Main::Main(
     const std::string& thor_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations) :
-  evals_(LoadEvals(evals_filepath)),
-  book_(book_filepath),
-  thor_(thor_filepath),
-  set_board_(set_board),
-  update_annotations_(update_annotations),
-  hash_map_(),
-  boards_to_evaluate_(),
-  num_boards_to_evaluate_(0),
-  tree_node_supplier_(),
-  current_thread_(0),
-  current_future_(nullptr) {
-  for (int i = 0; i < kNumEvaluators; ++i) {
-    boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
-        &book_,
-        &thor_,
-        &tree_node_supplier_, &hash_map_,
-        PatternEvaluator::Factory(evals_.data()),
-        static_cast<u_int8_t>(i));
-  }
+    set_board_(set_board),
+    update_annotations_(update_annotations),
+    hash_map_(),
+    boards_to_evaluate_(),
+    num_boards_to_evaluate_(0),
+    tree_node_supplier_(),
+    current_future_(std::make_shared<std::future<void>>(std::async(
+        std::launch::async, &Main::InitializeEvaluator, this, evals_filepath,
+        book_filepath, thor_filepath
+    ))) {
   NewGame();
-  auto players = thor_.Players();
-  auto tournaments = thor_.Tournaments();
-  assert(players.size() == tournaments.size());
-
-  thor_sources_metadata_.reserve(players.size());
-  for (const auto& [source_name, source_players] : players) {
-    const auto& source_tournaments = tournaments.at(source_name);
-
-    thor_sources_metadata_extended_.push_back(
-        std::make_unique<ThorSourceMetadataExtended>(source_name, source_players, source_tournaments));
-    thor_sources_metadata_.push_back(thor_sources_metadata_extended_.back()->GetThorSourceMetadata());
-  }
-  thor_metadata_.sources = thor_sources_metadata_.data();
-  thor_metadata_.num_sources = thor_sources_metadata_.size();
-
-  annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
 }
 
 // This runs in the main thread, so that we cannot update the output afterwards.
@@ -180,9 +155,7 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
 void Main::EvaluateThread(
     int current_thread,
     std::shared_ptr<std::future<void>> last_future) {
-  if (last_future) {
-    last_future->get();
-  }
+  last_future->get();
   if (current_thread != current_thread_) {
     return;
   }
@@ -221,7 +194,7 @@ void Main::EvaluateThread(
         }
 
         if (include_all_sources || !blacks.empty() || !whites.empty() || !tournaments.empty()) {
-          games.Merge(thor_.GetGames(
+          games.Merge(thor_->GetGames(
               source.name, sequence, filters.max_games, blacks, whites,
               tournaments, filters.start_year, filters.end_year));
         }

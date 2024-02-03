@@ -46,16 +46,13 @@ class GlobalState {
   static late final PreferencesState preferences;
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
-  static late ThorMetadataState thorMetadata;
 
   static Future<void> init() async {
     await maybeCopyAssetsToLocalPath();
-    print('Copied!');
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     var localAssetPathVar = await localAssetPath();
     preferences = await PreferencesState.create();
-    print('MainInit!');
     ffiMain = ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
@@ -63,8 +60,6 @@ class GlobalState {
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
-    thorMetadata = ThorMetadataState(ffiEngine.MainGetThorMetadata(ffiMain));
-    print('DoneMainInit!');
   }
 }
 
@@ -282,7 +277,7 @@ class ThorMetadataState {
   ThorMetadata thorMetadata;
   Map<String, SourcePlayerIndex> playerStringToIndex;
 
-  ThorMetadataState(this.thorMetadata) : playerStringToIndex = {} {
+  ThorMetadataState() : thorMetadata = ffiEngine.MainGetThorMetadata(GlobalState.ffiMain), playerStringToIndex = {} {
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     for (int i = 0; i < thorMetadata.num_sources; ++i) {
       ThorSourceMetadata source = thorMetadata.sources.elementAt(i).value.ref;

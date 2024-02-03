@@ -1,5 +1,4 @@
 Small details
-- P1 EASY Better loading time by offloading to threads.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
@@ -7,9 +6,10 @@ Small details
 - P3 EASY Back button undo instead of quit.
 
 Thor
-- P1 Use only one source.
-- P1 Winning percentages.
-- P2 Decide which evaluations to show.
+- P2 EASY Use only one source.
+- P2 MED Winning percentages.
+- P3 EASY Filter by tournament / year
+- P4 ???? Avoid blocking when loading Thor window too soon.
 
 Match the features of the current app
 - P2 MED Play.

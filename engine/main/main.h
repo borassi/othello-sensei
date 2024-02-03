@@ -240,6 +240,7 @@ class Main {
   }
 
   const ThorMetadata& GetThorMetadata() const {
+    current_future_->get();
     return thor_metadata_;
   }
 
@@ -254,7 +255,7 @@ class Main {
   std::vector<State> states_;
   int current_state_;
 
-  EvalType evals_;
+  std::unique_ptr<EvalType> evals_;
   HashMap<kBitHashMap> hash_map_;
   TreeNodeSupplier tree_node_supplier_;
   std::array<std::unique_ptr<BoardToEvaluate>, kNumEvaluators> boards_to_evaluate_;
@@ -267,13 +268,13 @@ class Main {
   std::shared_ptr<std::future<void>> current_future_;
   std::atomic_bool reset_;
 
-  Book<kBookVersion> book_;
+  std::unique_ptr<Book<kBookVersion>> book_;
 
   std::vector<std::unique_ptr<ThorSourceMetadataExtended>> thor_sources_metadata_extended_;
   std::vector<ThorSourceMetadata*> thor_sources_metadata_;
   ThorMetadata thor_metadata_;
 
-  Thor thor_;
+  std::unique_ptr<Thor> thor_;
 
   EvaluateParams evaluate_params_;
 
@@ -294,6 +295,36 @@ class Main {
       }
     }
     return result;
+  }
+
+  void InitializeEvaluator(const std::string& evals_filepath, const std::string& book_filepath, const std::string& thor_filepath) {
+    evals_ = std::make_unique<EvalType>(LoadEvals(evals_filepath));
+    book_ = std::make_unique<Book<kBookVersion>>(book_filepath);
+    thor_ = std::make_unique<Thor>(thor_filepath);
+    for (int i = 0; i < kNumEvaluators; ++i) {
+      boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
+          book_.get(),
+          thor_.get(),
+          &tree_node_supplier_, &hash_map_,
+          PatternEvaluator::Factory(evals_->data()),
+          static_cast<u_int8_t>(i));
+    }
+    auto players = thor_->Players();
+    auto tournaments = thor_->Tournaments();
+    assert(players.size() == tournaments.size());
+
+    thor_sources_metadata_.reserve(players.size());
+    for (const auto& [source_name, source_players] : players) {
+      const auto& source_tournaments = tournaments.at(source_name);
+
+      thor_sources_metadata_extended_.push_back(
+          std::make_unique<ThorSourceMetadataExtended>(source_name, source_players, source_tournaments));
+      thor_sources_metadata_.push_back(thor_sources_metadata_extended_.back()->GetThorSourceMetadata());
+    }
+    thor_metadata_.sources = thor_sources_metadata_.data();
+    thor_metadata_.num_sources = thor_sources_metadata_.size();
+
+    annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
   }
 
   void EvaluateThread(
