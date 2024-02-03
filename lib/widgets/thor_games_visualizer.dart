@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import '../ffi_engine.dart';
 import '../state.dart';
 import '../utils.dart';
+import 'fixed_width_widget.dart';
 
 TableRow getRow(BuildContext context, ThorGame game) {
   return TableRow(
@@ -55,13 +56,12 @@ TableRow getRow(BuildContext context, ThorGame game) {
   );
 }
 
-class ThorGamesVisualizer extends StatelessWidget {
-  final double squareSize;
+class ThorGamesVisualizer extends FixedWidthWidget {
 
-  const ThorGamesVisualizer(this.squareSize, {super.key});
+  const ThorGamesVisualizer(super.squareSize, {super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildChild(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.globalAnnotations,
       builder: (BuildContext context, Widget? widget) {
@@ -69,7 +69,6 @@ class ThorGamesVisualizer extends StatelessWidget {
           return Table();
         }
         var fontWidth = Theme.of(context).textTheme.bodySmall!.fontSize! * 0.5;
-        var textHeight = Theme.of(context).textTheme.bodySmall!.fontSize! * 2;
         return Column(
           children: [
             SizedBox(height: 0.25 * squareSize),
@@ -84,10 +83,10 @@ class ThorGamesVisualizer extends StatelessWidget {
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                   // dataRowMaxHeight: 2 * textHeight,
                   columnWidths: {
-                    0: FixedColumnWidth(4 * fontWidth),
-                    1: FixedColumnWidth(6 * fontWidth),
-                    2: FixedColumnWidth(20 * fontWidth),
-                    3: FixedColumnWidth(6 * fontWidth),
+                    0: FlexColumnWidth(2),
+                    1: FlexColumnWidth(4),
+                    2: FlexColumnWidth(20),
+                    3: FlexColumnWidth(2),
                   },
                   children: List.generate(
                     GlobalState.globalAnnotations!.annotations!.num_example_thor_games,

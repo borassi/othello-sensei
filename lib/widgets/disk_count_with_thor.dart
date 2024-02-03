@@ -64,24 +64,28 @@ class DiskCountsWithThor extends FixedWidthWidget {
 
   @override
   Widget buildChild(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        DiskCount(squareSize, true),
-        Expanded(
-          child: TextButton(
-            onPressed: () {
-              GlobalState.main.stop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
-              );
-            },
-            child: const Text('Filters'),
-          )
-        ),
-        DiskCount(squareSize, false)
-      ]
+    return SizedBox(
+      height: squareSize,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DiskCount(squareSize, true),
+          Expanded(
+            child: TextButton(
+              onPressed: () {
+                GlobalState.main.stop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
+                );
+              },
+              child: Text('Filters', style: Theme.of(context).textTheme.bodyMedium!),
+            )
+          ),
+          DiskCount(squareSize, false)
+        ]
+      )
     );
   }
 }

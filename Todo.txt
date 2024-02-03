@@ -1,4 +1,5 @@
 Small details
+- P1 EASY Better loading time by offloading to threads.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
@@ -6,20 +7,17 @@ Small details
 - P3 EASY Back button undo instead of quit.
 
 Thor
-- P0 Show the games.
-- P0 Better evaluation.
 - P1 Use only one source.
-- P1 Decide which evaluations to show.
 - P1 Winning percentages.
-- P2 Optimize the speed.
+- P2 Decide which evaluations to show.
 
 Match the features of the current app
 - P2 MED Play.
 - P3 HARD Study and repeat openings.
 
 Extra features:
-- P1 EASY Show stats from various moves.
 - P1 HARD Errors + Analyze a game.
+- P2 EASY Show stats from various moves.
 - P2 MED Share game from Othello Quest.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.
