@@ -138,6 +138,9 @@ EXPORT
 void Undo(void* ptr);
 
 EXPORT
+void SetCurrentMove(void* ptr, int current_move);
+
+EXPORT
 void Redo(void* ptr);
 
 EXPORT

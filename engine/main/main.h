@@ -235,26 +235,28 @@ class Main {
     }
     Stop();
     ++current_state_;
-    states_[current_state_ + 1].Unset();
+    for (int i = current_state_ + 1; states_[i].IsSet(); ++i) {
+      states_[i].Unset();
+      annotations_[i].valid = false;
+    }
+    BoardChanged();
+  }
+
+  void SetCurrentMove(int current_move) {
+    if (current_move < 0 || current_move >= states_.size() || !states_[current_move].IsSet()) {
+      return;
+    }
+    Stop();
+    current_state_ = current_move;
     BoardChanged();
   }
 
   void Redo() {
-    if (!states_[current_state_ + 1].IsSet()) {
-      return;
-    }
-    Stop();
-    ++current_state_;
-    BoardChanged();
+    SetCurrentMove(current_state_ + 1);
   }
 
   void Undo() {
-    if (current_state_ == 0) {
-      return;
-    }
-    Stop();
-    --current_state_;
-    BoardChanged();
+    SetCurrentMove(current_state_ - 1);
   }
 
   void Stop();
@@ -280,7 +282,7 @@ class Main {
   SetBoard set_board_;
   UpdateAnnotations update_annotations_;
 
-  State states_[64];
+  std::array<State, 64> states_;
   int current_state_;
 
   std::unique_ptr<EvalType> evals_;

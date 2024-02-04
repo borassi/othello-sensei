@@ -17,7 +17,6 @@
 import 'dart:ffi';
 import 'dart:math';
 
-import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/ffi_bridge.dart';
 import 'package:othello_sensei/widgets/appbar.dart';
@@ -25,6 +24,7 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets/disk_count.dart';
 import 'package:othello_sensei/widgets/disk_count_with_thor.dart';
 import 'package:othello_sensei/widgets/evaluate_stats.dart';
+import 'package:othello_sensei/widgets/score_graph.dart';
 import 'package:othello_sensei/widgets/thor_games_visualizer.dart';
 
 import 'widgets/board.dart';
@@ -84,6 +84,11 @@ class Main extends StatelessWidget {
     evaluate();
   }
 
+  void setCurrentMove(int current_move) {
+    ffiEngine.SetCurrentMove(GlobalState.ffiMain, current_move);
+    evaluate();
+  }
+
   void stop() {
     ffiEngine.Stop(GlobalState.ffiMain);
   }
@@ -111,6 +116,8 @@ class Main extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
           onSecondaryContainer: const Color(0xffeedd33),
+          surface: const Color(0xff191919),
+          surfaceVariant: const Color(0xfff9f9f9),
           brightness: Brightness.dark),
         textTheme: TextTheme(
           bodyLarge: TextStyle(fontSize: squareSize / 2.3),
@@ -128,9 +135,11 @@ class Main extends StatelessWidget {
         children: [
           SizedBox(height: 0.25 * squareSize),
           DiskCountWithError(squareSize),
-          Spacer(),
+          SizedBox(height: 0.25 * squareSize),
+          Expanded(child: ScoreGraph(squareSize)),
+          SizedBox(height: 0.25 * squareSize),
           EvaluateStats(squareSize),
-          Spacer(),
+          SizedBox(height: 0.25 * squareSize),
         ]
       )
     );

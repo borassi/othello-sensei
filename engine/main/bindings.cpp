@@ -35,6 +35,8 @@ void PlayMove(void* ptr, int square) { static_cast<Main*>(ptr)->PlayMove(square)
 
 void Undo(void* ptr) { static_cast<Main*>(ptr)->Undo(); }
 
+void SetCurrentMove(void* ptr, int square) { static_cast<Main*>(ptr)->SetCurrentMove(square); }
+
 void Redo(void* ptr) { static_cast<Main*>(ptr)->Redo(); }
 
 void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }

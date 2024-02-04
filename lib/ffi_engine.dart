@@ -139,6 +139,22 @@ class FFIEngine {
   late final _Undo =
       _UndoPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
+  void SetCurrentMove(
+    ffi.Pointer<ffi.Void> ptr,
+    int current_move,
+  ) {
+    return _SetCurrentMove(
+      ptr,
+      current_move,
+    );
+  }
+
+  late final _SetCurrentMovePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('SetCurrentMove');
+  late final _SetCurrentMove = _SetCurrentMovePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, int)>();
+
   void Redo(
     ffi.Pointer<ffi.Void> ptr,
   ) {

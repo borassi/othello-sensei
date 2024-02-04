@@ -113,6 +113,7 @@ Main::Main(
         book_filepath, thor_filepath
     ))) {
   for (int i = 0; i < annotations_.size(); ++i) {
+    annotations_[i].valid = false;
     annotations_[i].example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
   }
   NewGame();
@@ -277,7 +278,7 @@ void Main::UpdateFatherAnnotations(int state) {
   for (int i = 0; i < annotations.num_moves; ++i) {
     MoveAnnotations& move_annotations = annotations.moves[i];
     if (move_annotations.square == next_annotations.move) {
-      move_annotations.eval = next_annotations.eval;
+      move_annotations.eval = (annotations.black_turn == next_annotations.black_turn ? -1 : 1) * next_annotations.eval;
       break;
     }
   }

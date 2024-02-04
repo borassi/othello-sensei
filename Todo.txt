@@ -1,5 +1,7 @@
-Small details
+Usability / bugs
 - P0 MED Fix the Main to avoid race conditions.
+- P1 MED Fail safe when evaluations are not there.
+- P1 MED Cleanup and restructure Flutter code.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
@@ -17,8 +19,7 @@ Match the features of the current app
 - P3 HARD Study and repeat openings.
 
 Extra features:
-- P1 EASY Show graph.
-- P1 HARD Analyze a game.
+- P1 MED Analyze a game.
 - P2 MED Share game from Othello Quest.
 - P2 EASY Show stats from various moves.
 - P2 EASY Save games.

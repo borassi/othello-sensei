@@ -35,9 +35,6 @@ class Case extends StatelessWidget {
   final double squareSize;
   const Case(this.state, this.index, this.squareSize, this.playMove, this.undo, {super.key});
 
-  static const Color diskBlack = Color(0xff191919);
-  static const Color diskWhite = Color(0xfff9f9f9);
-
   Widget showAnnotations(ColorScheme colorScheme) {
     var annotations = GlobalState.annotations[index];
     if (annotations.annotations == null || annotations.annotations!.square == 255) {
@@ -94,10 +91,10 @@ class Case extends StatelessWidget {
       case CaseState.empty:
         return null;
       case CaseState.black:
-        fill = diskBlack;
+        fill = colorScheme.surface;
         break;
       case CaseState.white:
-        fill = diskWhite;
+        fill = colorScheme.surfaceVariant;
         break;
     }
     return Transform.scale(

@@ -39,6 +39,7 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   select_searchable_list: ^0.1.05
   dropdown_search: ^5.0.6
+  fl_chart: ^0.66.1
 
 dev_dependencies:
   flutter_test:

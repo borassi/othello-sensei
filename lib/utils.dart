@@ -118,3 +118,11 @@ String moveToString(int move) {
   assert(move <= 63);
   return '${String.fromCharCode((7 - move % 8) + "a".codeUnitAt(0))}${8 - move ~/ 8}';
 }
+
+T maxIgnoreNaN<T extends num>(T x, T y) {
+  return x.isNaN ? y : (y.isNaN ? x : max(x, y));
+}
+
+T minIgnoreNaN<T extends num>(T x, T y) {
+  return x.isNaN ? y : (y.isNaN ? x : min(x, y));
+}

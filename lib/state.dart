@@ -241,6 +241,17 @@ class GlobalAnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
+  double getScoreAtMove(int move) {
+    if (allAnnotations == null || !allAnnotations![move].valid) {
+      return double.nan;
+    }
+    return allAnnotations![move].black_turn ? allAnnotations![move].eval : -allAnnotations![move].eval;
+  }
+
+  List<double> getAllScores() {
+    return List.generate(60, (i) => getScoreAtMove(i));
+  }
+
   double getError(bool black) {
     if (allAnnotations == null) {
       return double.nan;
@@ -253,7 +264,7 @@ class GlobalAnnotationState with ChangeNotifier {
       if (black == allAnnotations![i].black_turn) {
         continue;
       }
-      result += allAnnotations![i].eval - (-allAnnotations![i-1].eval);
+      result += allAnnotations![i].eval + (allAnnotations![i-1].black_turn == allAnnotations![i].black_turn ? -1 : 1) * allAnnotations![i-1].eval;
     }
     return result;
   }
