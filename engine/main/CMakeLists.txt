@@ -13,10 +13,14 @@
 # limitations under the License.
 
 add_library(
-        main
-        SHARED
+        bindings
         bindings.h
         bindings.cpp
+)
+
+add_library(
+        main
+        SHARED
         main.h
         main.cpp
 )
@@ -24,6 +28,7 @@ add_library(
 target_link_libraries( # Specifies the target library.
         main
         LINK_PUBLIC
+        bindings
         board
         book
         evaluator_derivative
@@ -32,4 +37,18 @@ target_link_libraries( # Specifies the target library.
         misc
         pattern_evaluator
         thor
+)
+
+add_library(
+        ui
+        SHARED
+        ui.h
+        ui.cpp
+)
+
+target_link_libraries( # Specifies the target library.
+        ui
+        LINK_PUBLIC
+        bindings
+        main
 )

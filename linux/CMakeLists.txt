@@ -124,7 +124,7 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
 endforeach(bundled_library)
 
 add_subdirectory("./engine")
-install(FILES ${PROJECT_BINARY_DIR}/engine/main/libmain.so DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+install(FILES ${PROJECT_BINARY_DIR}/engine/main/libui.so DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
 
 # TODO: Understand why this fails.
 ## Copy the native assets provided by the build.dart from all packages.

@@ -107,5 +107,7 @@ ffigen:
   headers:
     entry-points:
       - 'engine/main/bindings.h'
+      - 'engine/main/ui.h'
     include-directives:
       - 'engine/main/bindings.h'
+      - 'engine/main/ui.h'

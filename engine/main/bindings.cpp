@@ -13,32 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "bindings.h"
-#include "main.h"
-
-void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations) {
-  return new Main(evals_filepath, book_filepath, thor_filepath, set_board, update_annotations);
-}
-
-ThorMetadata MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
-
-void MainDelete(void* ptr) { delete static_cast<Main*>(ptr); }
-
-struct EvaluateParams* MainGetEvaluateParams(void* ptr) {
-  return &static_cast<Main*>(ptr)->GetEvaluateParams();
-}
-
-void NewGame(void* ptr) { static_cast<Main*>(ptr)->NewGame(); }
-
-void PlayMove(void* ptr, int square) { static_cast<Main*>(ptr)->PlayMove(square); }
-
-void Undo(void* ptr) { static_cast<Main*>(ptr)->Undo(); }
-
-void SetCurrentMove(void* ptr, int square) { static_cast<Main*>(ptr)->SetCurrentMove(square); }
-
-void Redo(void* ptr) { static_cast<Main*>(ptr)->Redo(); }
-
-void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
-
-void Stop(void* ptr) { static_cast<Main*>(ptr)->Stop(); }

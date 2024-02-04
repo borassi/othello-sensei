@@ -116,42 +116,6 @@ struct EvaluateParams {
 typedef void (*SetBoard)(struct BoardUpdate);
 typedef void (*UpdateAnnotations)(struct Annotations*);
 
-EXPORT
-void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
-
-EXPORT
-struct ThorMetadata MainGetThorMetadata(void* ptr);
-
-EXPORT
-void MainDelete(void* ptr);
-
-EXPORT
-struct EvaluateParams* MainGetEvaluateParams(void* ptr);
-
-EXPORT
-void NewGame(void* ptr);
-
-EXPORT
-void PlayMove(void* ptr, int square);
-
-EXPORT
-void Undo(void* ptr);
-
-EXPORT
-void SetCurrentMove(void* ptr, int current_move);
-
-EXPORT
-void Redo(void* ptr);
-
-EXPORT
-void Evaluate(void* ptr);
-
-EXPORT
-struct MoveAnnotations* GetAnnotations(void* ptr);
-
-EXPORT
-void Stop(void* ptr);
-
 #ifdef __cplusplus
 }
 #endif
