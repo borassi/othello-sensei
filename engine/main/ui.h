@@ -35,7 +35,7 @@ EXPORT
 void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
 
 EXPORT
-struct ThorMetadata MainGetThorMetadata(void* ptr);
+struct ThorMetadata* MainGetThorMetadata(void* ptr);
 
 EXPORT
 void MainDelete(void* ptr);

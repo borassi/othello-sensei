@@ -21,7 +21,7 @@ void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, S
   return new Main(evals_filepath, book_filepath, thor_filepath, set_board, update_annotations);
 }
 
-ThorMetadata MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
+ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
 
 void MainDelete(void* ptr) { delete static_cast<Main*>(ptr); }
 

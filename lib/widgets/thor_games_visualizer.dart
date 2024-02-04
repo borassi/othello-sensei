@@ -17,7 +17,6 @@
 
 
 import 'dart:ffi';
-import 'dart:ui';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
@@ -82,14 +81,14 @@ class ThorGamesVisualizer extends FixedWidthWidget {
                   ),
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                   // dataRowMaxHeight: 2 * textHeight,
-                  columnWidths: {
+                  columnWidths: const {
                     0: FlexColumnWidth(2),
                     1: FlexColumnWidth(4),
                     2: FlexColumnWidth(20),
                     3: FlexColumnWidth(2),
                   },
                   children: List.generate(
-                    GlobalState.globalAnnotations!.annotations()!.num_example_thor_games,
+                    GlobalState.globalAnnotations!.annotations()?.num_example_thor_games ?? 0,
                     (i) => getRow(context, GlobalState.globalAnnotations.annotations()!.example_thor_games.elementAt(i).ref)
                   ),
                 )

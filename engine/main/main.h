@@ -116,7 +116,6 @@ class Main {
     ++current_state_;
     for (int i = current_state_ + 1; states_[i].IsSet(); ++i) {
       states_[i].Unset();
-//      annotations_[i].valid = false; TODO.
     }
     BoardChanged();
   }
@@ -147,7 +146,7 @@ class Main {
                   current_state.GetBlackTurn(), evaluate_params_);
   }
 
-  const ThorMetadata& GetThorMetadata() const {
+  ThorMetadata* GetThorMetadata() {
     return engine_.GetThorMetadata();
   }
 

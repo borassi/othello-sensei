@@ -46,6 +46,7 @@ class GlobalState {
   static late final PreferencesState preferences;
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
+  static ThorMetadataState? thorMetadataOrNull = null;
 
   static Future<void> init() async {
     await maybeCopyAssetsToLocalPath();
@@ -61,6 +62,10 @@ class GlobalState {
         setAnnotationsCallback.nativeFunction
     );
     main.newGame();
+  }
+  static ThorMetadataState get thorMetadata {
+    thorMetadataOrNull ??= ThorMetadataState();
+    return thorMetadataOrNull!;
   }
 }
 
@@ -234,7 +239,12 @@ class GlobalAnnotationState with ChangeNotifier {
     return allAnnotations![currentMove()].num_thor_games;
   }
 
-  Annotations annotations() { return allAnnotations![currentMove()]; }
+  Annotations? annotations() {
+    if (allAnnotations == null) {
+      return null;
+    }
+    return allAnnotations![currentMove()];
+  }
 
   void setState(Pointer<Annotations> allAnnotations) {
     this.allAnnotations = allAnnotations;
@@ -273,28 +283,28 @@ class GlobalAnnotationState with ChangeNotifier {
     if (allAnnotations == null) {
       return '-';
     }
-    return prettyPrintDouble(annotations().positions.toDouble());
+    return prettyPrintDouble(annotations()!.positions.toDouble());
   }
 
   String getPositionsPerSec() {
-    if (allAnnotations == null || annotations().positions_calculated == 0) {
+    if (allAnnotations == null || annotations()!.positions_calculated == 0) {
       return '-';
     }
-    return prettyPrintDouble(annotations().positions_calculated / annotations().seconds);
+    return prettyPrintDouble(annotations()!.positions_calculated / annotations()!.seconds);
   }
 
   String getTimeString() {
     if (allAnnotations == null) {
       return '-';
     }
-    return annotations().seconds.toStringAsFixed(1);
+    return annotations()!.seconds.toStringAsFixed(1);
   }
 
   String getMissing() {
     if (allAnnotations == null) {
       return '-';
     }
-    return prettyPrintDouble(annotations().missing.toDouble());
+    return prettyPrintDouble(annotations()!.missing.toDouble());
   }
 }
 
@@ -305,13 +315,13 @@ class SourcePlayerIndex {
 }
 
 class ThorMetadataState {
-  ThorMetadata thorMetadata;
+  Pointer<ThorMetadata> thorMetadata;
   Map<String, SourcePlayerIndex> playerStringToIndex;
 
   ThorMetadataState() : thorMetadata = ffiEngine.MainGetThorMetadata(GlobalState.ffiMain), playerStringToIndex = {} {
     var playerToSources = <String, List<SourcePlayerIndex>>{};
-    for (int i = 0; i < thorMetadata.num_sources; ++i) {
-      ThorSourceMetadata source = thorMetadata.sources.elementAt(i).value.ref;
+    for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
+      ThorSourceMetadata source = thorMetadata.ref.sources.elementAt(i).value.ref;
       for (int j = 0; j < source.num_players; ++j) {
         String player = source.players.elementAt(j).value.cast<Utf8>().toDartString();
         if (!playerToSources.containsKey(player)) {
@@ -328,7 +338,7 @@ class ThorMetadataState {
         playerStringToIndex[player] = indices[0];
       } else {
         for (var index in indices) {
-          var playerString = '$player / ${thorMetadata.sources[index.sourceIndex].ref.name.cast<Utf8>().toDartString()}';
+          var playerString = '$player / ${thorMetadata.ref.sources[index.sourceIndex].ref.name.cast<Utf8>().toDartString()}';
           playerStringToIndex[playerString] = index;
         }
       }
@@ -336,29 +346,29 @@ class ThorMetadataState {
   }
 
   void setBlack(List<String> elements) {
-    List<int> nextIndex = List.generate(thorMetadata.num_sources, (index) => 0);
+    List<int> nextIndex = List.generate(thorMetadata.ref.num_sources, (index) => 0);
 
     for (var element in elements) {
       var index = playerStringToIndex[element]!;
       var sourceIndex = index.sourceIndex;
-      thorMetadata.sources[sourceIndex].ref.selected_blacks[nextIndex[sourceIndex]++] = index.playerIndex;
+      thorMetadata.ref.sources[sourceIndex].ref.selected_blacks[nextIndex[sourceIndex]++] = index.playerIndex;
     }
 
-    for (int i = 0; i < thorMetadata.num_sources; ++i) {
-      thorMetadata.sources[i].ref.selected_blacks[nextIndex[i]] = -1;
+    for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
+      thorMetadata.ref.sources[i].ref.selected_blacks[nextIndex[i]] = -1;
     }
   }
   void setWhite(List<String> elements) {
-    List<int> nextIndex = List.generate(thorMetadata.num_sources, (index) => 0);
+    List<int> nextIndex = List.generate(thorMetadata.ref.num_sources, (index) => 0);
 
     for (var element in elements) {
       var index = playerStringToIndex[element]!;
       var sourceIndex = index.sourceIndex;
-      thorMetadata.sources[sourceIndex].ref.selected_whites[nextIndex[sourceIndex]++] = index.playerIndex;
+      thorMetadata.ref.sources[sourceIndex].ref.selected_whites[nextIndex[sourceIndex]++] = index.playerIndex;
     }
 
-    for (int i = 0; i < thorMetadata.num_sources; ++i) {
-      thorMetadata.sources[i].ref.selected_whites[nextIndex[i]] = -1;
+    for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
+      thorMetadata.ref.sources[i].ref.selected_whites[nextIndex[i]] = -1;
     }
   }
 }

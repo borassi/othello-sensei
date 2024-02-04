@@ -25,15 +25,16 @@ import 'case.dart';
 
 class ThorFiltersWidget extends StatelessWidget {
   double squareSize;
-  ThorMetadataState thorMetadata;
 
-  ThorFiltersWidget(this.squareSize, {super.key}) : thorMetadata = ThorMetadataState() {}
+  ThorFiltersWidget(this.squareSize, {super.key});
 
   Widget playerSearch(BuildContext context, bool black) {
     var fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
+    var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
+    players.sort();
     return Expanded(
       child: DropdownSearch<String>.multiSelection(
-        items: thorMetadata.playerStringToIndex.keys.toList(),
+        items: players,
         popupProps: PopupPropsMultiSelection.menu(
           showSearchBox: true,
           fit: FlexFit.loose,
@@ -56,9 +57,9 @@ class ThorFiltersWidget extends StatelessWidget {
         ),
         onChanged: (List<String> elements) {
           if (black) {
-            thorMetadata.setBlack(elements);
+            GlobalState.thorMetadata.setBlack(elements);
           } else {
-            thorMetadata.setWhite(elements);
+            GlobalState.thorMetadata.setWhite(elements);
           }
         },
       )

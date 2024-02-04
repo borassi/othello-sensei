@@ -52,7 +52,7 @@ class FFIEngine {
           SetBoard,
           UpdateAnnotations)>();
 
-  ThorMetadata MainGetThorMetadata(
+  ffi.Pointer<ThorMetadata> MainGetThorMetadata(
     ffi.Pointer<ffi.Void> ptr,
   ) {
     return _MainGetThorMetadata(
@@ -60,11 +60,12 @@ class FFIEngine {
     );
   }
 
-  late final _MainGetThorMetadataPtr =
-      _lookup<ffi.NativeFunction<ThorMetadata Function(ffi.Pointer<ffi.Void>)>>(
-          'MainGetThorMetadata');
+  late final _MainGetThorMetadataPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ThorMetadata> Function(
+              ffi.Pointer<ffi.Void>)>>('MainGetThorMetadata');
   late final _MainGetThorMetadata = _MainGetThorMetadataPtr.asFunction<
-      ThorMetadata Function(ffi.Pointer<ffi.Void>)>();
+      ffi.Pointer<ThorMetadata> Function(ffi.Pointer<ffi.Void>)>();
 
   void MainDelete(
     ffi.Pointer<ffi.Void> ptr,

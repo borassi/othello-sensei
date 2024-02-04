@@ -177,9 +177,10 @@ class Engine {
 
   void Stop();
 
-  const ThorMetadata& GetThorMetadata() const {
-    current_future_->get();
-    return thor_metadata_;
+  ThorMetadata* GetThorMetadata() {
+    Stop();
+    current_future_->wait();
+    return &thor_metadata_;
   }
 
  private:

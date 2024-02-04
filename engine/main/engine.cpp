@@ -110,6 +110,7 @@ Engine::Engine(
     tree_node_supplier_(),
     last_offset_(-1),
     last_black_turn_(true),
+    current_thread_(0),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
         book_filepath, thor_filepath

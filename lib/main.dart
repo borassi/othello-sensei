@@ -177,7 +177,7 @@ class Main extends StatelessWidget {
                 initialIndex: GlobalState.preferences.get('Tab'),
                 child: Scaffold(
                   bottomNavigationBar: TabBar(
-                    tabs: List.generate(2, (index) => Text(tabName[index])),
+                    tabs: List.generate(2, (index) => Tab(text: tabName[index])),
                     onTap: (int index) {
                       GlobalState.preferences.set('Tab', index);
                     },
