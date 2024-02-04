@@ -19,6 +19,27 @@ add_library(
 )
 
 add_library(
+        engine
+        SHARED
+        engine.h
+        engine.cpp
+)
+
+target_link_libraries( # Specifies the target library.
+        engine
+        LINK_PUBLIC
+        bindings
+        board
+        book
+        evaluator_derivative
+        get_flip
+        get_moves
+        misc
+        pattern_evaluator
+        thor
+)
+
+add_library(
         main
         SHARED
         main.h
@@ -31,6 +52,7 @@ target_link_libraries( # Specifies the target library.
         bindings
         board
         book
+        engine
         evaluator_derivative
         get_flip
         get_moves

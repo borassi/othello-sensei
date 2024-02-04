@@ -1,6 +1,4 @@
 Usability / bugs
-- P0 MED Fix the Main to avoid race conditions.
-- P1 MED Fail safe when evaluations are not there.
 - P1 MED Cleanup and restructure Flutter code.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
