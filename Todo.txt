@@ -1,5 +1,4 @@
 Usability / bugs
-- P0 ???? Fix 2 different lines in archive.
 - P0 ???? Fix deadlock when changing evaluations.
 - P1 MED Reduce delay of the first evaluation.
 - P1 EASY Larger graph.

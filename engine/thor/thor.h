@@ -74,7 +74,7 @@ class Thor {
     games.max_games = max_games;
 
     for (const Sequence& equivalent : canonicalizer_.AllEquivalentSequences(canonical)) {
-      GamesList new_games = sources_[source]->GetGames(canonical, max_games, blacks, whites, tournaments, start_year, end_year);
+      GamesList new_games = sources_[source]->GetGames(equivalent, max_games, blacks, whites, tournaments, start_year, end_year);
       new_games.Rotate(sequence);
       games.Merge(new_games);
     }

@@ -22,7 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String assetVersion = "1";
+const String assetVersion = "2";
 
 Future<String> localPath() async {
   WidgetsFlutterBinding.ensureInitialized();

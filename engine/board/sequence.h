@@ -291,7 +291,6 @@ class SequenceCanonicalizer {
   }
 
   void Load(const std::vector<char>& serialized) {
-    ElapsedTime t;
     const char* it = serialized.data();
     while (it < serialized.data() + serialized.size()) {
       Board board = *((Board*) it);
@@ -306,6 +305,7 @@ class SequenceCanonicalizer {
         sequences.push_back(Sequence((Square*) it, size));
         it += size;
       }
+      board_to_sequences_[board] = std::unordered_set<Sequence>(sequences.begin(), sequences.end());
     }
   }
 
@@ -352,7 +352,7 @@ class SequenceCanonicalizer {
       }
       std::vector<Sequence> result;
       for (const Sequence& replacement : sequences_it->second) {
-        auto copy = sequence;
+        Sequence copy = sequence;
         auto transposition = copy.Subsequence(replacement.Size()).GetTransposition(replacement);
         if (transposition != 0) {
           copy = copy.AllTranspositions()[transposition];

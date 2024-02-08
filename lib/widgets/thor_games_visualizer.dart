@@ -64,13 +64,14 @@ class ThorGamesVisualizer extends FixedWidthWidget {
     return ListenableBuilder(
       listenable: GlobalState.globalAnnotations,
       builder: (BuildContext context, Widget? widget) {
-        if (GlobalState.globalAnnotations!.annotations == null) {
+        if (GlobalState.globalAnnotations == null || GlobalState.globalAnnotations!.annotations() == null) {
           return Table();
         }
-        var fontWidth = Theme.of(context).textTheme.bodySmall!.fontSize! * 0.5;
+        var annotations = GlobalState.globalAnnotations!.annotations()!;
         return Column(
           children: [
             SizedBox(height: 0.25 * squareSize),
+            Text('Showing ${annotations.num_example_thor_games} / ${annotations.num_thor_games} games', style: Theme.of(context).textTheme.bodySmall),
             Expanded(
               child: SingleChildScrollView(
                 child: Table(
@@ -88,8 +89,8 @@ class ThorGamesVisualizer extends FixedWidthWidget {
                     3: FlexColumnWidth(2),
                   },
                   children: List.generate(
-                    GlobalState.globalAnnotations!.annotations()?.num_example_thor_games ?? 0,
-                    (i) => getRow(context, GlobalState.globalAnnotations.annotations()!.example_thor_games.elementAt(i).ref)
+                    annotations.num_example_thor_games,
+                    (i) => getRow(context, annotations.example_thor_games.elementAt(i).ref)
                   ),
                 )
               ),
