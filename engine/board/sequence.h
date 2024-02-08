@@ -78,6 +78,8 @@ class Sequence {
 
   Sequence(const std::vector<Square>& moves) : Sequence(moves.data(), moves.size()) {}
 
+  Sequence(const Sequence& sequence) : Sequence(sequence.Moves()) {}
+
   static Sequence FromThor(Square* moves) {
     Sequence result(0);
     result.moves_.resize(60);
@@ -162,6 +164,7 @@ class Sequence {
     Board b;
     std::vector<Board> result = {b};
     for (auto move : moves_) {
+      assert(move >= 0 && move < 64);
       auto flip = GetFlip(move, b.Player(), b.Opponent());
       if (flip == 0) {
         throw InvalidSequenceException();
@@ -224,7 +227,7 @@ class Sequence {
     return stream.str();
   }
 
-  uint8_t GetTransposition(Sequence goal) const {
+  uint8_t GetTransposition(const Sequence& goal) const {
     Board goal_board = goal.ToBoard();
     Board board = ToBoard();
     if (goal_board == board) {

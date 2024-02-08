@@ -63,7 +63,8 @@ class ThorSourceTest : public testing::Test {
       "d3c3c4c5d6f4f3e3",
       "d3c3c4e3d2",
       "e6f4c3c4c5c6c7",
-      "e6d6c5f6f5e3"
+      "e6d6c5f6f5e3",
+      ""
     };
     std::vector<Sequence> sequences;
 

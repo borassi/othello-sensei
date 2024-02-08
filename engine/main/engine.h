@@ -238,10 +238,10 @@ class Engine {
     return result;
   }
 
+  // NOTE: Pass variables by value, to avoid concurrent modifications.
   void Run(
       int current_thread, std::shared_ptr<std::future<void>> last_future,
-      const Sequence& sequence, Board board, bool black_turn,
-      const EvaluateParams& params);
+      Sequence sequence, Board board, bool black_turn, EvaluateParams params);
 
   void RunUpdateAnnotations(int current_thread, int current_state, bool finished);
 };

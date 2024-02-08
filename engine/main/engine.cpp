@@ -42,9 +42,12 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
   thor_game.tournament = game.TournamentC();
   thor_game.score = game.Score();
   thor_game.year = game.Year();
-  int transposition = sequence.GetTransposition(game.Moves().Subsequence(sequence.Size()));
+  auto game_sequence = game.Moves().Subsequence(sequence.Size());
+  assert(game.Moves().Size() >= sequence.Size());
+  int transposition = sequence.GetTransposition(game_sequence);
   for (int i = 0; i < 60; ++i) {
-    thor_game.moves[i] = TransposeMove(game.Moves().Moves()[i], transposition);
+    thor_game.moves[i] = TransposeMove(game.Moves().Move(i), transposition);
+    assert(thor_game.moves[i] == kNoSquare || (thor_game.moves[i] >= 0 && thor_game.moves[i] <= 63));
   }
   thor_game.moves_played = sequence.Size();
 }
@@ -236,6 +239,7 @@ void Engine::EvaluateThor(const Sequence& sequence, const EvaluateParams& params
   annotations.num_example_thor_games = games.examples.size();
   annotations.example_thor_games = (ThorGame*) realloc(annotations.example_thor_games, annotations.num_example_thor_games * sizeof(ThorGame));
   for (int i = 0; i < annotations.num_example_thor_games; ++i) {
+    assert(games.examples[i]->Moves().Size() >= sequence.Size());
     ThorGameSet(*games.examples[i], annotations.example_thor_games[i], sequence);
   }
 
@@ -244,10 +248,11 @@ void Engine::EvaluateThor(const Sequence& sequence, const EvaluateParams& params
   }
 }
 
+// NOTE: Pass variables by value, to avoid concurrent modifications.
 void Engine::Run(
     int current_thread, std::shared_ptr<std::future<void>> last_future,
-    const Sequence& sequence, Board board, bool black_turn,
-    const EvaluateParams& params) {
+    const Sequence sequence, Board board, bool black_turn,
+    EvaluateParams params) {
   int annotations_offset = 60 - board.NEmpties();
   last_future->get();
   Annotations& annotations = annotations_[annotations_offset];
@@ -284,11 +289,13 @@ void Engine::Run(
       annotations.num_example_thor_games = 0;
     }
   }
+  if (num_boards_to_evaluate_ == 0) {
+    return;
+  }
 
   int steps = num_boards_to_evaluate_;
-  bool finished = num_boards_to_evaluate_ == 0;
-  // We finish if num_boards_to_evaluate_ == 0, or if we cannot get another
-  // board to work on.
+  bool finished = false;
+  // We finish if we cannot get another board to work on.
   for (int i = 0; i < steps; ++i) {
     auto board_to_evaluate = NextBoardToEvaluate(params.delta);
     if (!board_to_evaluate) {

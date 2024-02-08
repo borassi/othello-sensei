@@ -29,6 +29,16 @@ TEST(Sequence, MoveMirror) {
   }
 }
 
+TEST(Sequence, Comparisons) {
+  ASSERT_LT(Sequence("e6f4d3c4"), Sequence("e6f4c3c4"));
+  ASSERT_LE(Sequence("e6f4d3c4"), Sequence("e6f4c3c4"));
+  ASSERT_GT(Sequence("e6f4"), Sequence("e6f4d3"));
+  ASSERT_LE(Sequence("e6f4"), Sequence("e6f4"));
+  ASSERT_GE(Sequence("e6f4"), Sequence("e6f4"));
+  ASSERT_FALSE(Sequence("") < Sequence(""));
+  ASSERT_FALSE(Sequence("") > Sequence(""));
+}
+
 TEST(Sequence, Sequence) {
   Sequence sequence1("e6f4c3c4d3");
   Sequence sequence2("f5d6c3d3c4");

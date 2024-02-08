@@ -37,16 +37,16 @@ struct cmpGameAndSequence {
     // this sequence, upper_bound is after.
     auto size = std::min(g->Moves().Size(), s.second.Size());
     return
-        std::forward_as_tuple(f(g), g->Moves().Subsequence(size), size) <
-        std::forward_as_tuple(s.first, s.second.Subsequence(size), s.second.Size());
+        std::forward_as_tuple(f(g), g->Moves().Subsequence(size), s.second.Size()) <
+        std::forward_as_tuple(s.first, s.second.Subsequence(size), size);
   }
   bool operator()(const std::pair<T, Sequence>& s, const Game* g) {
     // NOTE: We take the minimum so that lower_bound is before everything with
     // this sequence, upper_bound is after.
     auto size = std::min(g->Moves().Size(), s.second.Size());
     return
-        std::forward_as_tuple(f(g), g->Moves().Subsequence(size), size) >
-        std::forward_as_tuple(s.first, s.second.Subsequence(size), s.second.Size());
+        std::forward_as_tuple(f(g), g->Moves().Subsequence(size), s.second.Size()) >
+        std::forward_as_tuple(s.first, s.second.Subsequence(size), size);
   }
 };
 
@@ -218,9 +218,10 @@ class Source {
         }
         for (auto it = interval.start; it != interval.end; ) {
           Square next_move = (*it)->Move(sequence_size);
+          Sequence next_sequence = (*it)->Moves().Subsequence(sequence_size + (next_move == kNoSquare ? 0 : 1));
           auto next_it = std::upper_bound(
               it, interval.end,
-              std::pair<short, Sequence>{(*it)->Year(), (*it)->Moves().Subsequence(sequence_size + 1)},
+              std::pair<short, Sequence>{(*it)->Year(), next_sequence},
               cmpByYear());
           result.next_moves[next_move] += next_it - it;
           it = next_it;

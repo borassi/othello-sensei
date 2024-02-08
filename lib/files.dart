@@ -42,7 +42,10 @@ Future<void> copyAssetsToLocalPath() async {
   final currentAssetPath = await localPath();
   final manifestContent = await rootBundle.loadString('AssetManifest.json');
   final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-  Directory(await localAssetPath()).deleteSync(recursive: true);
+  var directory = Directory(await localAssetPath());
+  if (directory.existsSync()) {
+    directory.deleteSync(recursive: true);
+  }
   for (var path in manifestMap.keys) {
     var destinationPath = join(currentAssetPath, path);
     var destinationDirName = dirname(destinationPath);

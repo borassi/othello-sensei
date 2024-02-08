@@ -114,6 +114,9 @@ String camelCaseToSpaces(String s) {
 }
 
 String moveToString(int move) {
+  if (move == 255) {
+    return '--';
+  }
   assert(move >= 0);
   assert(move <= 63);
   return '${String.fromCharCode((7 - move % 8) + "a".codeUnitAt(0))}${8 - move ~/ 8}';
