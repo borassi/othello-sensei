@@ -151,7 +151,9 @@ double Node::RemainingWork(Eval lower, Eval upper) const {
   assert((lower - kMinEval) % 2 == 1);
   assert((upper - kMinEval) % 2 == 1);
   assert(n_empties_ >= 0 && n_empties_ <= 60);
-  assert(!Node::IsSolved(lower, upper, false));
+  if (Node::IsSolved(lower, upper, false)) {
+    return 0;
+  }
   Eval weak_lower = MaxEval(lower_ + 1, weak_lower_);
   Eval weak_upper = MinEval(upper_ - 1, weak_upper_);
   lower = MaxEval(lower, weak_lower);

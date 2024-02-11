@@ -27,6 +27,51 @@ enum CaseState {
   empty
 }
 
+String formatProb(double prob) {
+  return '${(100 * prob).toStringAsFixed(0)}%';
+}
+
+String getRemaining(double prob, double proof) {
+  if (prob > 0.01) {
+    return formatProb(prob);
+  } else if (proof != 0) {
+    return prettyPrintDouble(proof);
+  } else {
+    return '-';
+  }
+}
+
+class AnnotationRow extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+
+  const AnnotationRow({required this.text, required this.style, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var texts = text.split(' ');
+    if (texts.length == 1) {
+      return Text(text, style: style);
+    } else {
+      assert(texts.length == 2);
+      return Row(
+        children: [
+          Expanded(
+            child: Center(
+              child: Text(texts[0], style: style)
+            )
+          ),
+          Expanded(
+            child: Center(
+              child: Text(texts[1], style: style)
+            )
+          ),
+        ]
+      );
+    }
+  }
+}
+
 class Case extends StatelessWidget {
   final CaseState state;
   final Function playMove;
@@ -40,12 +85,22 @@ class Case extends StatelessWidget {
       return const Text("");
     }
     var annotation = annotations.annotations!;
-    var eval = -annotation.eval;
-    var color = eval > annotations.bestEval - 1 ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
+    var eval = -annotations.getEval();
+    var bestEval = GlobalState.globalAnnotations.getEval();
+    var color = eval > bestEval - 1 ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
-    var evalText = "${eval < 0 ? '-' : '+'}${eval.abs().toStringAsFixed(2)}";
-    var thorText = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
-    var isThor = GlobalState.globalAnnotations.getNumThorGames() > 0;
+    String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';
+    String line1;
+    String line2;
+    String line3 = prettyPrintDouble(annotation.descendants.toDouble());
+
+    if (GlobalState.globalAnnotations.getNumThorGames() > 0) {
+      line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
+      line2 = evalText;
+    } else {
+      line1 = evalText;
+      line2 = "${getRemaining(annotation.prob_upper_eval, annotation.disproof_number_upper)} ${getRemaining(annotation.prob_lower_eval, annotation.proof_number_lower)}";
+    }
 
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -55,7 +110,7 @@ class Case extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                       Text(
-                          isThor ? thorText : evalText,
+                          line1,
                           style: TextStyle(
                               fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
                               fontWeight: FontWeight.bold,
@@ -63,15 +118,16 @@ class Case extends StatelessWidget {
                               color: color
                           ),
                       ),
-                      Text(
-                          isThor ? evalText : "[${annotation.lower}, ${annotation.upper}]",
+                      SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
+                      AnnotationRow(
+                          text: line2,
                           style: TextStyle(
                               fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
                               color: color
                           ),
                       ),
-                      Text(
-                          prettyPrintDouble(annotation.descendants.toDouble()),
+                      AnnotationRow(
+                          text: line3,
                           style: TextStyle(
                               fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
                               color: color,

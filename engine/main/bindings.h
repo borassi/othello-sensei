@@ -57,6 +57,11 @@ struct MoveAnnotations {
   bool book;
   double eval;
   double leaf_eval;
+  int median_eval;
+  double prob_lower_eval;
+  double prob_upper_eval;
+  double proof_number_lower;
+  double disproof_number_upper;
   Eval lower;
   Eval upper;
   Eval weak_lower;
@@ -89,6 +94,7 @@ struct Annotations {
   struct ThorGame* example_thor_games;
   unsigned int num_example_thor_games;
   double eval;
+  int median_eval;
   Square move;
   bool black_turn;
   bool valid;

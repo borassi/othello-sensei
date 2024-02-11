@@ -27,6 +27,11 @@ void MoveAnnotationsReset(MoveAnnotations& annotation) {
 void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book) {
   annotation.eval = node.GetEval();
   annotation.leaf_eval = node.LeafEval();
+  annotation.median_eval = node.GetPercentileLower(0.5) - 1;
+  annotation.prob_lower_eval = node.SolveProbabilityLower(-63);
+  annotation.prob_upper_eval = node.SolveProbabilityUpper(63);
+  annotation.proof_number_lower = node.RemainingWork(-63, annotation.median_eval - 1);
+  annotation.disproof_number_upper = node.RemainingWork(annotation.median_eval + 1, 63);
   annotation.lower = node.Lower();
   annotation.upper = node.Upper();
   annotation.weak_lower = node.WeakLower();
@@ -56,10 +61,12 @@ void CalculateGlobalAnnotations(Annotations& annotations) {
   annotations.positions = 0;
   annotations.positions_calculated = 0;
   annotations.missing = 0;
-  annotations.eval = -66;
+  annotations.eval = kLessThenMinEval;
+  annotations.median_eval = kLessThenMinEval;
   for (int i = 0; i < annotations.num_moves; ++i) {
     auto& move = annotations.moves[i];
     annotations.eval = std::max(annotations.eval, -move.eval);
+    annotations.median_eval = std::max(annotations.median_eval, -move.median_eval);
     annotations.positions += move.descendants;
     if (!move.book) {
       annotations.positions_calculated += move.descendants;
@@ -293,12 +300,12 @@ void Engine::Run(
     return;
   }
 
-  int steps = num_boards_to_evaluate_;
+  int steps = num_boards_to_evaluate_ + 1;
   bool finished = false;
   // We finish if we cannot get another board to work on.
   for (int i = 0; i < steps; ++i) {
     auto board_to_evaluate = NextBoardToEvaluate(params.delta);
-    if (!board_to_evaluate) {
+    if (!board_to_evaluate || (current_thread_ != current_thread && board_to_evaluate->State() != STATE_NOT_STARTED)) {
       finished = true;
       break;
     }

@@ -16,11 +16,8 @@
  */
 
 import 'dart:core';
-import 'dart:ffi';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/ffi/ffi_bridge.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
@@ -30,7 +27,6 @@ import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 
 import '../widgets_board/board.dart';
-import '../ffi/ffi_engine.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 
@@ -59,7 +55,7 @@ class AppTheme extends StatelessWidget {
           data: theme.copyWith(
             textTheme: TextTheme(
               bodyLarge: TextStyle(fontSize: squareSize / 2.4),
-              bodyMedium: TextStyle(fontSize: squareSize / 3.5),
+              bodyMedium: TextStyle(fontSize: squareSize / 3.2),
               bodySmall: TextStyle(fontSize: squareSize / 6.5),
             ),
           ),

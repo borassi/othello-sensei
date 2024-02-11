@@ -37,7 +37,6 @@ enum BoardToEvaluateState {
   STATE_NOT_STARTED = 0,
   STATE_STARTED = 1,
   STATE_FINISHED = 2,
-  STATE_STOPPED = 3,
 };
 
 class BoardToEvaluate {
@@ -88,7 +87,6 @@ class BoardToEvaluate {
   void Stop() {
     if (stoppable_.load()) {
       evaluator_.Stop();
-      state_ = STATE_STOPPED;
     }
   }
 
@@ -97,7 +95,7 @@ class BoardToEvaluate {
   const Board& Unique() const { return unique_; }
 
   double Priority(double delta) const {
-    if (State() == STATE_FINISHED || State() == STATE_STOPPED) {
+    if (State() == STATE_FINISHED) {
       return -std::numeric_limits<double>::infinity();
     } else if (State() == STATE_NOT_STARTED) {
       return std::numeric_limits<double>::infinity();
@@ -169,7 +167,6 @@ class Engine {
 
   void Start(const Sequence& sequence, const Board& board, bool black_turn,
              const EvaluateParams& params) {
-    Stop();
     current_future_ = std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Run, this, current_thread_.load(),
         current_future_, sequence, board, black_turn, params));

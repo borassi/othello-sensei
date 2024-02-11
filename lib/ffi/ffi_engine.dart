@@ -268,6 +268,21 @@ final class MoveAnnotations extends ffi.Struct {
   @ffi.Double()
   external double leaf_eval;
 
+  @ffi.Int()
+  external int median_eval;
+
+  @ffi.Double()
+  external double prob_lower_eval;
+
+  @ffi.Double()
+  external double prob_upper_eval;
+
+  @ffi.Double()
+  external double proof_number_lower;
+
+  @ffi.Double()
+  external double disproof_number_upper;
+
   @Eval()
   external int lower;
 
@@ -352,6 +367,9 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Double()
   external double eval;
+
+  @ffi.Int()
+  external int median_eval;
 
   @Square()
   external int move;

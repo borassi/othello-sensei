@@ -716,9 +716,6 @@ class TreeNode : public Node {
 
   double RemainingWork(Eval lower, Eval upper) const {
     std::lock_guard<std::mutex> guard(mutex_);
-    if (Node::IsSolved(lower, upper, false)) {
-      return 0;
-    }
     return Node::RemainingWork(lower, upper);
   }
 
@@ -907,8 +904,7 @@ class TreeNode : public Node {
     if (remaining_work < 100000) {
       return false;
     }
-//    float final_visited = 0.00005 * (father_visited + father.Node::RemainingWork(father_eval_goal, father_eval_goal));
-//    float current_visited;
+
     if (leaf_eval_ < -father.leaf_eval_ + 2 * 8) {
       return rand() % 200 == 0;
     } else if (leaf_eval_ < -father.leaf_eval_ + 4 * 8) {

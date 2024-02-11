@@ -52,7 +52,7 @@ void updateAnnotations(Pointer<Annotations> allAnnotations) {
   Annotations annotations = allAnnotations[currentMove()];
   for (int i = 0; i < annotations.num_moves; ++i) {
     MoveAnnotations move = annotations.moves[i];
-    GlobalState.annotations[move.square].setState(move, annotations.eval);
+    GlobalState.annotations[move.square].setState(move);
   }
   GlobalState.globalAnnotations.setState(allAnnotations);
   if (!annotations.finished) {
@@ -180,17 +180,19 @@ class SquareSizeState with ChangeNotifier {
 
 class AnnotationState with ChangeNotifier {
   MoveAnnotations? annotations;
-  double bestEval = double.negativeInfinity;
 
   void clear() {
     annotations = null;
     notifyListeners();
   }
 
-  void setState(MoveAnnotations annotations, double bestEval) {
+  void setState(MoveAnnotations annotations) {
     this.annotations = annotations;
-    this.bestEval = bestEval;
     notifyListeners();
+  }
+
+  double getEval() {
+    return GlobalState.preferences.get('Round evaluations') ? annotations!.median_eval.toDouble() : annotations!.eval;
   }
 }
 
@@ -202,6 +204,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Delta': 6.0,
+    'Round evaluations': false,
     'Use book': true,
     'Approximate': false,
     'Lower': -63,
@@ -316,7 +319,7 @@ class GlobalAnnotationState with ChangeNotifier {
     if (allAnnotations == null || !allAnnotations![move].valid) {
       return double.nan;
     }
-    return allAnnotations![move].black_turn ? allAnnotations![move].eval : -allAnnotations![move].eval;
+    return (allAnnotations![move].black_turn ? 1 : -1) * getEval(move: move);
   }
 
   List<double> getAllScores() {
@@ -335,7 +338,7 @@ class GlobalAnnotationState with ChangeNotifier {
       if (black == allAnnotations![i].black_turn) {
         continue;
       }
-      result += allAnnotations![i].eval + (allAnnotations![i-1].black_turn == allAnnotations![i].black_turn ? -1 : 1) * allAnnotations![i-1].eval;
+      result += getEval(move: i) + (allAnnotations![i-1].black_turn == allAnnotations![i].black_turn ? -1 : 1) * getEval(move: i-1);
     }
     return result;
   }
@@ -366,6 +369,11 @@ class GlobalAnnotationState with ChangeNotifier {
       return '-';
     }
     return prettyPrintDouble(annotations()!.missing.toDouble());
+  }
+
+  double getEval({int? move}) {
+    var annotations = allAnnotations![move ?? currentMove()]!;
+    return GlobalState.preferences.get('Round evaluations') ? annotations.median_eval.toDouble() : annotations.eval;
   }
 }
 

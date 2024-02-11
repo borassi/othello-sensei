@@ -18,6 +18,7 @@
 import 'dart:math';
 
 import 'package:flutter/services.dart';
+import 'package:othello_sensei/state.dart';
 
 extension StringExtension on String {
   String capitalize() {
@@ -128,4 +129,8 @@ T maxIgnoreNaN<T extends num>(T x, T y) {
 
 T minIgnoreNaN<T extends num>(T x, T y) {
   return x.isNaN ? y : (y.isNaN ? x : min(x, y));
+}
+
+String formatEval(double eval) {
+  return eval.toStringAsFixed(GlobalState.preferences.get("Round evaluations") ? 0 : 2);
 }

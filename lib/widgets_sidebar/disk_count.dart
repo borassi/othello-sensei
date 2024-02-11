@@ -17,6 +17,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../utils.dart';
 import '../widgets_spacers/margins.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
@@ -71,8 +72,8 @@ class DiskCountWithError extends StatelessWidget {
         ListenableBuilder(
           listenable: GlobalState.globalAnnotations,
           builder: (BuildContext context, Widget? widget) => Text(
-              GlobalState.globalAnnotations.getError(black).toStringAsFixed(2),
-              style: Theme.of(context).textTheme.bodyLarge
+            formatEval(GlobalState.globalAnnotations.getError(black)),
+            style: Theme.of(context).textTheme.bodyLarge
           )
         )
       ]

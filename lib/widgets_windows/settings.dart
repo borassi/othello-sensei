@@ -30,7 +30,6 @@ class SettingsLocalState with ChangeNotifier {
   int version = 0;
 
   void reset() {
-    print('Reset');
     updates.clear();
     ++version;
     notifyListeners();
@@ -118,7 +117,8 @@ class Settings extends StatelessWidget {
     'Seconds until first evaluation',
     'Seconds between evaluations',
     'Delta',
-    'Use book'
+    'Use book',
+    'Round evaluations',
   ];
 
   @override
