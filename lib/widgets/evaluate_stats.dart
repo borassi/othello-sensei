@@ -36,7 +36,7 @@ TableRow getRow(String name, ListenableBuilder listenable) {
 }
 
 class EvaluateStats extends FixedWidthWidget {
-  const EvaluateStats(super.squareSize, {super.key});
+  const EvaluateStats({super.key});
 
   @override
   Widget buildChild(BuildContext context) {

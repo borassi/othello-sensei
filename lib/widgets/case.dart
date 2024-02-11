@@ -20,6 +20,7 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
 import '../ffi_engine.dart';
+import '../main.dart';
 
 enum CaseState {
   black,
@@ -32,8 +33,7 @@ class Case extends StatelessWidget {
   final Function playMove;
   final Function undo;
   final int index;
-  final double squareSize;
-  const Case(this.state, this.index, this.squareSize, this.playMove, this.undo, {super.key});
+  const Case(this.state, this.index, this.playMove, this.undo, {super.key});
 
   Widget showAnnotations(ColorScheme colorScheme) {
     var annotations = GlobalState.annotations[index];
@@ -110,6 +110,7 @@ class Case extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     var colorScheme = Theme.of(context).colorScheme;
     List<Widget> children = [
       Container(
@@ -142,9 +143,9 @@ class Case extends StatelessWidget {
     }
 
     return SizedBox(
-        width: squareSize,
-        height: squareSize,
-        child: Stack(children: children)
+      width: squareSize,
+      height: squareSize,
+      child: Stack(children: children)
     );
   }
 }

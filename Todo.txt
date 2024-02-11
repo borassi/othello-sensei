@@ -1,5 +1,4 @@
 Usability / bugs
-- P1 EASY Larger graph.
 - P1 MED Cleanup and restructure Flutter code.
 - P2 MED Reduce delay of the first evaluation.
 - P2 TINY Do not show seconds when all moves are in book.

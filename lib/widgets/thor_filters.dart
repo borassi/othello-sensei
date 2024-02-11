@@ -79,13 +79,13 @@ class ThorFiltersWidget extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Case(CaseState.black, 255, squareSize, () => {}, () => {}),
+                  Case(CaseState.black, 255, () => {}, () => {}),
                   playerSearch(context, true),
                 ]
               ),
               Row(
                 children: [
-                  Case(CaseState.white, 255, squareSize, () => {}, () => {}),
+                  Case(CaseState.white, 255, () => {}, () => {}),
                   playerSearch(context, false),
                 ]
               ),

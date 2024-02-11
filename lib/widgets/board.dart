@@ -16,49 +16,40 @@
  */
 
 import 'package:flutter/material.dart';
+import '../main.dart';
 import '../state.dart';
 import 'case.dart';
 
 class Board extends StatelessWidget {
-  final double size;
-  final double squareSize;
   final Function playMove;
   final Function undo;
 
-  Board(this.size, this.squareSize, this.playMove, this.undo, {super.key}) {
-    assert(squareSize * 8 <= size);
-  }
+  Board(this.playMove, this.undo, {super.key});
 
   @override
   Widget build(BuildContext context) {
     var board = GlobalState.board;
     var colorScheme = Theme.of(context).colorScheme;
-
-    return ListenableBuilder(
-      listenable: GlobalState.board,
-      builder: (BuildContext context, Widget? widget) =>
-        Container(
-          height: size,
-          width: size,
-          alignment: Alignment.center,
-          child: Stack(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+        return ListenableBuilder(
+          listenable: GlobalState.board,
+          builder: (BuildContext context, Widget? widget) => Stack(
             children: <Widget>[
-              Container(
-                alignment: Alignment.center,
-                child: Table(
-                  defaultColumnWidth: FixedColumnWidth(squareSize),
-                  children: List.generate(8, (x) => TableRow(
-                    children: List.generate(8, (y) {
-                      var index = 63 - 8 * x - y;
-                      return Case(getState(index, board), index, squareSize, () => playMove(index), undo);
-                    })
-                  ))
-                )
+              Table(
+                defaultColumnWidth: FixedColumnWidth(squareSize),
+                children: List.generate(8, (x) => TableRow(
+                  children: List.generate(8, (y) {
+                    var index = 63 - 8 * x - y;
+                    return Case(getState(index, board), index, () => playMove(index), undo);
+                  })
+                ))
               )
             ] +
             List.generate(4, (index) => Positioned(
-              left: (2 - 0.1) * squareSize + (size - 8 * squareSize) / 2 + (index % 2) * 4 * squareSize,
-              top: (2 - 0.1) * squareSize + (size - 8 * squareSize) / 2 + (index ~/ 2) * 4 * squareSize,
+              left: (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
+              top: (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
               child:
               Container(
                 decoration: BoxDecoration(
@@ -70,7 +61,8 @@ class Board extends StatelessWidget {
               )
             ))
           )
-        )
+        );
+      }
     );
   }
 }

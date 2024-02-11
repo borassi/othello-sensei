@@ -18,11 +18,12 @@
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 
+import '../main.dart';
 import '../state.dart';
 import 'board.dart';
 import 'case.dart';
 
-Widget getCase(BuildContext context, bool black, double squareSize) {
+Widget getCase(BuildContext context, bool black) {
   var textColor = black ? Colors.white : Colors.black;
   var text = black ? "${GlobalState.board.blackDisks()}" : "${GlobalState.board.whiteDisks()}";
   return Stack(
@@ -31,7 +32,6 @@ Widget getCase(BuildContext context, bool black, double squareSize) {
         Case(
           black ? CaseState.black : CaseState.white,
           255,
-          squareSize,
           () => {},
           () => {},
         ),
@@ -49,22 +49,21 @@ Widget getCase(BuildContext context, bool black, double squareSize) {
 }
 
 class DiskCount extends StatelessWidget {
-  final double squareSize;
   final bool black;
 
-  const DiskCount(this.squareSize, this.black, {key});
+  const DiskCount(this.black, {key});
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.board,
-      builder: (BuildContext context, Widget? widget) => getCase(context, black, squareSize)
+      builder: (BuildContext context, Widget? widget) => getCase(context, black)
     );
   }
 }
 
 class DiskCountWithError extends FixedWidthWidget {
-  DiskCountWithError(super.squareSize, {super.key});
+  const DiskCountWithError({super.key});
 
   Widget widget(BuildContext context, bool black) {
     return Column(
@@ -75,7 +74,7 @@ class DiskCountWithError extends FixedWidthWidget {
           listenable: GlobalState.globalAnnotations,
           builder: (BuildContext context, Widget? widget) => Text(
               GlobalState.globalAnnotations.getError(black).toStringAsFixed(2),
-              style: Theme.of(context).textTheme.bodyMedium!
+              style: Theme.of(context).textTheme.bodyLarge
           )
         )
       ]
@@ -84,18 +83,14 @@ class DiskCountWithError extends FixedWidthWidget {
 
   @override
   Widget buildChild(BuildContext context) {
-    List<Widget> widgets = [];
-    widgets.add(DiskCount(squareSize, true));
-    widgets.add(SizedBox(width: 0.25 * squareSize));
-    widgets.add(widget(context, true));
-    widgets.add(const Spacer());
-    widgets.add(widget(context, false));
-    widgets.add(SizedBox(width: 0.25 * squareSize));
-    widgets.add(DiskCount(squareSize, false));
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: widgets
+    return HorizontalFlexWithMargins(
+      children: [
+        const DiskCount(true),
+        widget(context, true),
+        const Spacer(),
+        widget(context, false),
+        const DiskCount(false),
+      ]
     );
   }
 }

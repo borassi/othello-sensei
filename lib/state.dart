@@ -259,7 +259,7 @@ class GlobalAnnotationState with ChangeNotifier {
   }
 
   List<double> getAllScores() {
-    return List.generate(60, (i) => getScoreAtMove(i));
+    return List.generate(61, (i) => getScoreAtMove(i));
   }
 
   double getError(bool black) {

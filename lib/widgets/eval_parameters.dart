@@ -53,7 +53,7 @@ class ParametersTextField extends StatelessWidget {
 }
 
 class EvalParameters extends FixedWidthWidget {
-  const EvalParameters(super.squareSize, {super.key});
+  const EvalParameters({super.key});
 
   @override
   Widget buildChild(BuildContext context) {

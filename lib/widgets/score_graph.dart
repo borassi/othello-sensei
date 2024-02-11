@@ -25,10 +25,11 @@ import '../utils.dart';
 import 'fixed_width_widget.dart';
 
 class ScoreGraph extends FixedWidthWidget {
-  const ScoreGraph(super.squareSize, {super.key});
+  const ScoreGraph({super.key});
 
-  BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double maxY, double width) {
+  BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY) {
     var score = scores[x];
+    var barWidth = width / 61;
     if (score.isNaN) {
       return BarChartGroupData(
         x: x,
@@ -36,13 +37,14 @@ class ScoreGraph extends FixedWidthWidget {
           BarChartRodData(
             fromY: 0,
             toY: 0,
+            width: barWidth,
             color: standardColor,
           )
         ]
       );
     }
-    var fromY = (score > 0 ? -1 : 1) * 0.02 * maxY;
-    var toY =  score + (score > 0 ? 1 : -1) * 0.02 * maxY;
+    // Want fromY / (barWidth / 2) = (2 * maxY) / height
+    var fromY = (score > 0 ? -1 : 1) * barWidth / 2 * (2 * maxY) / height;
     return BarChartGroupData(
       x: x,
       barsSpace: 0,
@@ -50,8 +52,8 @@ class ScoreGraph extends FixedWidthWidget {
       barRods: [
         BarChartRodData(
           fromY: fromY,
-          toY: toY,
-          width: width,
+          toY: score,
+          width: barWidth,
           color: x == currentMove() ? highlightColor : standardColor,
         ),
         BarChartRodData(
@@ -67,65 +69,70 @@ class ScoreGraph extends FixedWidthWidget {
   Widget buildChild(BuildContext context) {
     var highlightColor = Theme.of(context).colorScheme.onSecondaryContainer;
     var standardColor = Theme.of(context).colorScheme.onPrimaryContainer;
-    return ListenableBuilder(
-      listenable: GlobalState.globalAnnotations,
-      builder: (BuildContext context, Widget? widget) {
-        var scores = GlobalState.globalAnnotations.getAllScores();
-        var maxY = maxIgnoreNaN(scores.reduce(maxIgnoreNaN), -scores.reduce(minIgnoreNaN));
-        maxY = maxIgnoreNaN(10, (maxY / 10).ceilToDouble() * 10) + 1;
-        var horizontalLinesSpace = (maxY - 1) / 2;
-        var columnWidth = (5 * squareSize - Theme.of(context).textTheme.bodySmall!.fontSize! * 2) / 60;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) => ListenableBuilder(
+        listenable: GlobalState.globalAnnotations,
+        builder: (BuildContext context, Widget? widget) {
+          var scores = GlobalState.globalAnnotations.getAllScores();
+          var maxY = maxIgnoreNaN(scores.reduce(maxIgnoreNaN), -scores.reduce(minIgnoreNaN));
+          maxY = maxIgnoreNaN(10, (maxY / 10).ceilToDouble() * 10) + 1;
+          var horizontalLinesSpace = (maxY - 1) / 2;
+          var textSpace = Theme.of(context).textTheme.bodySmall!.fontSize! * 2;
+          var width = (constraints.maxWidth - textSpace);
+          var height = constraints.maxHeight;
 
-        return BarChart(
-          swapAnimationDuration: Duration(seconds: 0),
-          BarChartData(
-            barTouchData: BarTouchData(
-              handleBuiltInTouches: false,
-              touchCallback: (FlTouchEvent event, barTouchResponse) {
-                if (barTouchResponse == null ||
-                    barTouchResponse.spot == null ||
-                    !(event is FlTapUpEvent || event is FlPanEndEvent)) {
-                  return;
-                }
-                GlobalState.main.setCurrentMove(barTouchResponse!.spot!.spot.x.toInt());
-              },
-            ),
-            alignment: BarChartAlignment.spaceBetween,
-            titlesData: FlTitlesData(
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  interval: horizontalLinesSpace,
-                  getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? Text('') : Align(
-                    alignment: Alignment.center,
-                    child: Text(x.toStringAsFixed(0), style: Theme.of(context).textTheme.bodySmall!)
+          return BarChart(
+            swapAnimationDuration: const Duration(seconds: 0),
+            BarChartData(
+              barTouchData: BarTouchData(
+                handleBuiltInTouches: false,
+                touchCallback: (FlTouchEvent event, barTouchResponse) {
+                  if (barTouchResponse == null ||
+                      barTouchResponse.spot == null ||
+                      !(event is FlTapUpEvent || event is FlPanEndEvent)) {
+                    return;
+                  }
+                  GlobalState.main.setCurrentMove(barTouchResponse!.spot!.spot.x.toInt());
+                },
+              ),
+              alignment: BarChartAlignment.spaceEvenly,
+
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: horizontalLinesSpace,
+                    getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? const Text('') : Align(
+                      alignment: Alignment.center,
+                      child: Text(x.toStringAsFixed(0), style: Theme.of(context).textTheme.bodySmall!)
+                    ),
+                    reservedSize: textSpace,
+                  )
+                ),
+                rightTitles: AxisTitles(),
+                topTitles: AxisTitles(),
+                bottomTitles: AxisTitles(),
+              ),
+              maxY: maxY,
+              minY: -maxY,
+              baselineY: 0,
+              borderData: FlBorderData(show: false),
+              gridData: const FlGridData(show: false),
+              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY)),
+              extraLinesData: ExtraLinesData(
+                horizontalLines: List.generate(
+                  5, (i) => HorizontalLine(
+                    y: (i - 2) * horizontalLinesSpace,
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    dashArray: i == 2 ? null : [1, 3],
+                    strokeWidth: 1,
                   ),
-                  reservedSize: Theme.of(context).textTheme.bodySmall!.fontSize! * 2,
                 )
               ),
-              rightTitles: AxisTitles(),
-              topTitles: AxisTitles(),
-              bottomTitles: AxisTitles(),
             ),
-            maxY: maxY,
-            minY: -maxY,
-            baselineY: 0,
-            borderData: FlBorderData(show: false),
-            gridData: const FlGridData(show: false),
-            barGroups: List.generate(60, (i) => generateGroupData(i, scores, highlightColor, standardColor, maxY, columnWidth)),
-            extraLinesData: ExtraLinesData(
-              horizontalLines: List.generate(
-                5, (i) => HorizontalLine(
-                  y: (i - 2) * horizontalLinesSpace,
-                  color: Theme.of(context).colorScheme.surfaceVariant,
-                  dashArray: i == 2 ? null : [1, 3],
-                  strokeWidth: 1,
-                ),
-              )
-            ),
-          ),
-        );
-      }
+          );
+        }
+      )
     );
   }
 }

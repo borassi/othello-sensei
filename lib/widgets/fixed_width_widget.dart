@@ -16,18 +16,15 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/main.dart';
 
 abstract class FixedWidthWidget extends StatelessWidget {
-  final double squareSize;
 
-  const FixedWidthWidget(this.squareSize, {super.key});
+  const FixedWidthWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 5 * squareSize,
-      child: buildChild(context),
-    );
+    return buildChild(context);
   }
 
   Widget buildChild(BuildContext context);

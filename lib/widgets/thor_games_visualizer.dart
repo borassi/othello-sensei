@@ -57,7 +57,7 @@ TableRow getRow(BuildContext context, ThorGame game) {
 
 class ThorGamesVisualizer extends FixedWidthWidget {
 
-  const ThorGamesVisualizer(super.squareSize, {super.key});
+  const ThorGamesVisualizer({super.key});
 
   @override
   Widget buildChild(BuildContext context) {
@@ -70,7 +70,6 @@ class ThorGamesVisualizer extends FixedWidthWidget {
         var annotations = GlobalState.globalAnnotations!.annotations()!;
         return Column(
           children: [
-            SizedBox(height: 0.25 * squareSize),
             Text('Showing ${annotations.num_example_thor_games} / ${annotations.num_thor_games} games', style: Theme.of(context).textTheme.bodySmall),
             Expanded(
               child: SingleChildScrollView(
@@ -95,7 +94,6 @@ class ThorGamesVisualizer extends FixedWidthWidget {
                 )
               ),
             ),
-            SizedBox(height: 0.25 * squareSize),
           ]
         );
       }

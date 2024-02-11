@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'dart:core';
 import 'dart:ffi';
 import 'dart:math';
 
@@ -56,6 +57,180 @@ void updateAnnotations(Pointer<Annotations> allAnnotations) {
 void main() async {
   await GlobalState.init();
   runApp(GlobalState.main);
+}
+
+enum FlexWithMarginsDirection {
+  vertical,
+  horizontal,
+  asAppMain,
+  inverseAppMain,
+}
+
+class Margin extends StatelessWidget {
+  const Margin({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    return SizedBox(height: margin, width: margin);
+  }
+}
+
+class FlexWithMargins extends StatelessWidget {
+  FlexWithMarginsDirection direction;
+  List<Widget> children;
+  CrossAxisAlignment crossAxisAlignment;
+
+  FlexWithMargins({
+    super.key,
+    required this.direction,
+    required this.children,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
+  });
+
+  Axis getDirection(BuildContext context) {
+    switch (direction) {
+      case FlexWithMarginsDirection.vertical:
+        return Axis.vertical;
+      case FlexWithMarginsDirection.horizontal:
+        return Axis.horizontal;
+      case FlexWithMarginsDirection.asAppMain:
+        return Theme.of(context).extension<AppSizes>()!.vertical! ? Axis.vertical : Axis.horizontal;
+      case FlexWithMarginsDirection.inverseAppMain:
+        return Theme.of(context).extension<AppSizes>()!.vertical! ? Axis.horizontal : Axis.vertical;
+    }
+  }
+
+  bool isSpacerWidget(Widget widget) {
+    return widget is Margin || widget is Spacer;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var finalWidgets = <Widget>[];
+    for (int i = 0; i < children.length; ++i) {
+      finalWidgets.add(children[i]);
+      if (i+1 < children.length && !isSpacerWidget(children[i]) && !isSpacerWidget(children[i+1])) {
+        finalWidgets.add(const Margin());
+      }
+    }
+
+    return Flex(
+      crossAxisAlignment: crossAxisAlignment,
+      direction: getDirection(context),
+      children: finalWidgets,
+    );
+  }
+}
+
+class HorizontalFlexWithMargins extends FlexWithMargins {
+  HorizontalFlexWithMargins({super.key, required super.children}) :
+      super(direction: FlexWithMarginsDirection.horizontal);
+}
+
+class VerticalFlexWithMargins extends FlexWithMargins {
+  VerticalFlexWithMargins({super.key, required super.children}) :
+      super(direction: FlexWithMarginsDirection.vertical);
+}
+
+class AppSizes extends ThemeExtension<AppSizes> {
+  double height;
+  double width;
+  bool? vertical;
+  double? squareSize;
+  double? sizeBarWidth;
+  double? sizeBarHeight;
+  double? margin;
+
+  AppSizes(this.height, this.width) {
+    var verticalBoardSize = min(width, 8 / 14 * height);
+    var horizontalBoardSize = min(height, 8 / 13 * width);
+    vertical = verticalBoardSize > horizontalBoardSize;
+    var boardSize = max(verticalBoardSize, horizontalBoardSize);
+    squareSize = (boardSize! / 8.5);
+    margin = (boardSize! - 8 * squareSize!) / 2;
+    sizeBarWidth = (vertical! ? boardSize! - 2 * margin! : width - boardSize! - margin!);
+    sizeBarHeight = (vertical! ? height - boardSize! : height);
+  }
+
+  @override
+  AppSizes copyWith({double? height, double? width}) {
+    return AppSizes(height ?? this.height, width ?? this.width);
+  }
+
+  @override
+  AppSizes lerp(AppSizes? other, double t) {
+    if (other is! AppSizes) {
+      return this;
+    }
+    return AppSizes(height * t + other.height * (1-t), width * t + other.width * (1-t));
+  }
+}
+
+class AppTheme extends StatelessWidget {
+  Widget child;
+
+  AppTheme({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var theme = Theme.of(context).copyWith(
+          extensions: <ThemeExtension<AppSizes>>[
+            AppSizes(constraints.maxHeight, constraints.maxWidth)
+          ],
+        );
+
+        var squareSize = theme.extension<AppSizes>()!.squareSize!;
+        return Theme(
+          data: theme.copyWith(
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(fontSize: squareSize / 2.4),
+              bodyMedium: TextStyle(fontSize: squareSize / 3.5),
+              bodySmall: TextStyle(fontSize: squareSize / 6.5),
+            ),
+          ),
+          child: child
+        );
+      }
+    );
+  }
+}
+
+class MainContent extends StatelessWidget {
+  Widget board;
+  Widget sidebar;
+  MainContent(this.board, this.sidebar, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var vertical = Theme.of(context).extension<AppSizes>()!.vertical!;
+    return FlexWithMargins(
+      direction: FlexWithMarginsDirection.asAppMain,
+      children: [
+        const Margin(),
+        SizedBox(
+          child: FlexWithMargins(
+            direction: FlexWithMarginsDirection.inverseAppMain,
+            children: [const Margin(), const Spacer(), board, const Spacer(), const Margin()],
+          )
+        ),
+        Expanded(
+          child: FlexWithMargins(
+            direction: FlexWithMarginsDirection.inverseAppMain,
+            children: [
+              const Margin(),
+              Expanded(child: FlexWithMargins(
+                direction: FlexWithMarginsDirection.horizontal,
+                children: [Expanded(child: sidebar), const Margin()],
+              ))
+            ]
+          ),
+        )
+      ]
+    );
+  }
 }
 
 class Main extends StatelessWidget {
@@ -104,94 +279,57 @@ class Main extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var height = MediaQuery.of(context).size.height - (MediaQuery.of(context).padding.top + kToolbarHeight);
-    var width = MediaQuery.of(context).size.width;
-    var verticalSize = min(width, 8 / 14 * height);
-    var horizontalSize = min(height, 8 / 13 * width);
-    var vertical = verticalSize > horizontalSize;
-    var size = max(verticalSize, horizontalSize);
-    var squareSize = (size / 8.5 / 2).floorToDouble() * 2;
+    var evaluateContent = VerticalFlexWithMargins(
+      children: const [
+        DiskCountWithError(),
+        Expanded(child: ScoreGraph()),
+        EvaluateStats(),
+      ],
+    );
 
-    var theme = ThemeData(
+    var thorContent = VerticalFlexWithMargins(
+      children: [
+        DiskCountsWithThor(),
+        const Expanded(child: ThorGamesVisualizer()),
+      ]
+    );
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Sensei',
+      theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
           onSecondaryContainer: const Color(0xffeedd33),
           surface: const Color(0xff191919),
           surfaceVariant: const Color(0xfff9f9f9),
           brightness: Brightness.dark),
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(fontSize: squareSize / 2.3),
-          bodyMedium: TextStyle(fontSize: squareSize / 3.3),
-          bodySmall: TextStyle(fontSize: squareSize / 5.5),
-        ),
         useMaterial3: true,
-      );
-
-    var evaluateContent = Align(
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(height: 0.25 * squareSize),
-          DiskCountWithError(squareSize),
-          SizedBox(height: 0.25 * squareSize),
-          Expanded(child: ScoreGraph(squareSize)),
-          SizedBox(height: 0.25 * squareSize),
-          EvaluateStats(squareSize),
-          SizedBox(height: 0.25 * squareSize),
-        ]
-      )
-    );
-
-    var thorContent = Align(
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(height: 0.25 * squareSize),
-          DiskCountsWithThor(squareSize),
-          Expanded(child: ThorGamesVisualizer(squareSize)),
-        ]
-      )
-    );
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Sensei',
-      theme: theme,
+      ),
       home: Scaffold(
-        resizeToAvoidBottomInset: false,
+        // resizeToAvoidBottomInset: false,
         appBar: SenseiAppBar(newGame, undo, redo, stop),
-        body: Flex(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          direction: vertical ? Axis.vertical : Axis.horizontal,
-          children: [
-            Board(size, squareSize, playMove, undo),
-            SizedBox(
-              width: vertical ? width : width - horizontalSize,
-              height: vertical ? height - verticalSize : height,
-              child: DefaultTabController(
-                length: 2,
-                initialIndex: GlobalState.preferences.get('Tab'),
-                child: Scaffold(
-                  bottomNavigationBar: TabBar(
-                    tabs: List.generate(2, (index) => Tab(text: tabName[index])),
-                    onTap: (int index) {
-                      GlobalState.preferences.set('Tab', index);
-                    },
-                  ),
-                  body: TabBarView(
-                    children: [
-                      evaluateContent,
-                      thorContent,
-                    ],
-                  ),
+        body: AppTheme(
+          child: MainContent(
+            Board(playMove, undo),
+            DefaultTabController(
+              length: 2,
+              initialIndex: GlobalState.preferences.get('Tab'),
+              child: Scaffold(
+                bottomNavigationBar: TabBar(
+                  tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                  onTap: (int index) {
+                    GlobalState.preferences.set('Tab', index);
+                  },
+                ),
+                body: TabBarView(
+                  children: [
+                    evaluateContent,
+                    thorContent,
+                  ],
                 ),
               ),
             ),
-          ]
+          )
         )
       )
     );

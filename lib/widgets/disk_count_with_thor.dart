@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 import 'package:othello_sensei/widgets/thor_filters.dart';
 
+import '../main.dart';
 import '../state.dart';
 import 'board.dart';
 import 'case.dart';
@@ -37,7 +38,6 @@ Widget getCase(BuildContext context, CaseState state, double squareSize) {
         Case(
           state,
           255,
-          squareSize,
           () => {},
           () => {},
         ),
@@ -55,17 +55,18 @@ Widget getCase(BuildContext context, CaseState state, double squareSize) {
 }
 
 class DiskCountsWithThor extends FixedWidthWidget {
-  DiskCountsWithThor(super.squareSize);
+  DiskCountsWithThor();
 
   @override
   Widget buildChild(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     return SizedBox(
       height: squareSize,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DiskCount(squareSize, true),
+          DiskCount(true),
           Expanded(
             child: TextButton(
               onPressed: () {
@@ -78,7 +79,7 @@ class DiskCountsWithThor extends FixedWidthWidget {
               child: Text('Filters', style: Theme.of(context).textTheme.bodyMedium!),
             )
           ),
-          DiskCount(squareSize, false)
+          DiskCount(false)
         ]
       )
     );
