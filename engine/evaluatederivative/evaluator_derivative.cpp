@@ -43,6 +43,7 @@ void EvaluatorThread::Run() {
   TreeNode* first_position = evaluator_->first_position_;
   int last_eval_goal = kLessThenMinEval;
   while (!evaluator_->CheckFinished()) {
+    evaluator_->UpdateWeakLowerUpper();
     auto leaf_opt = TreeNodeLeafToUpdate::BestDescendant(
         first_position, evaluator_->NThreadMultiplier(), last_eval_goal);
     if (!leaf_opt) {
@@ -63,7 +64,6 @@ void EvaluatorThread::Run() {
       n_visited = AddChildren(leaf);
     }
     leaf.Finalize(n_visited);
-    evaluator_->UpdateWeakLowerUpper();
     evaluator_->just_started_ = false;
   }
 }

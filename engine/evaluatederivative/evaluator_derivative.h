@@ -327,6 +327,7 @@ class EvaluatorDerivative {
     for (int i = 0; i < n_threads; ++i) {
       futures[i].get();
     }
+    UpdateWeakLowerUpper();
   }
 
   bool CheckFinished() {

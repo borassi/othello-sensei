@@ -41,8 +41,8 @@ class ScoreGraph extends FixedWidthWidget {
         ]
       );
     }
-    var fromY = score > 0 ? -0.5 : 0.5;
-    var toY = score > 0 ? score + 0.5 : score - 0.5;
+    var fromY = (score > 0 ? -1 : 1) * 0.02 * maxY;
+    var toY =  score + (score > 0 ? 1 : -1) * 0.02 * maxY;
     return BarChartGroupData(
       x: x,
       barsSpace: 0,
@@ -72,7 +72,7 @@ class ScoreGraph extends FixedWidthWidget {
       builder: (BuildContext context, Widget? widget) {
         var scores = GlobalState.globalAnnotations.getAllScores();
         var maxY = maxIgnoreNaN(scores.reduce(maxIgnoreNaN), -scores.reduce(minIgnoreNaN));
-        maxY = maxIgnoreNaN(20, (maxY / 10).ceilToDouble() * 10) + 1;
+        maxY = maxIgnoreNaN(10, (maxY / 10).ceilToDouble() * 10) + 1;
         var horizontalLinesSpace = (maxY - 1) / 2;
         var columnWidth = (5 * squareSize - Theme.of(context).textTheme.bodySmall!.fontSize! * 2) / 60;
 
@@ -116,7 +116,7 @@ class ScoreGraph extends FixedWidthWidget {
             extraLinesData: ExtraLinesData(
               horizontalLines: List.generate(
                 5, (i) => HorizontalLine(
-                  y: (i - 2) * horizontalLinesSpace - 0.1,
+                  y: (i - 2) * horizontalLinesSpace,
                   color: Theme.of(context).colorScheme.surfaceVariant,
                   dashArray: i == 2 ? null : [1, 3],
                   strokeWidth: 1,

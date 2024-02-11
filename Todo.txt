@@ -1,8 +1,7 @@
 Usability / bugs
-- P0 ???? Fix deadlock when changing evaluations.
-- P1 MED Reduce delay of the first evaluation.
 - P1 EASY Larger graph.
 - P1 MED Cleanup and restructure Flutter code.
+- P2 MED Reduce delay of the first evaluation.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
 - P3 EASY First time installation.
@@ -22,6 +21,8 @@ Match the features of the current app
 Extra features:
 - P1 MED Analyze a game.
 - P1 MED Share game from Othello Quest.
+- P1 MED Remember opening book for player.
+- P2 HARD Extend opening book considering all moves.
 - P2 EASY Show stats from various moves.
 - P2 EASY Save games.
 - P2 EASY Save and load the state.
