@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright (c) 2023-2024. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 
-import '../main.dart';
+import '../widgets_spacers/margins.dart';
 import '../state.dart';
-import 'board.dart';
-import 'case.dart';
+import '../widgets_board/case.dart';
 
 Widget getCase(BuildContext context, bool black) {
   var textColor = black ? Colors.white : Colors.black;
@@ -62,7 +60,7 @@ class DiskCount extends StatelessWidget {
   }
 }
 
-class DiskCountWithError extends FixedWidthWidget {
+class DiskCountWithError extends StatelessWidget {
   const DiskCountWithError({super.key});
 
   Widget widget(BuildContext context, bool black) {
@@ -82,7 +80,7 @@ class DiskCountWithError extends FixedWidthWidget {
   }
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     return HorizontalFlexWithMargins(
       children: [
         const DiskCount(true),

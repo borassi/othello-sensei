@@ -1,8 +1,10 @@
 Usability / bugs
-- P1 MED Cleanup and restructure Flutter code.
-- P2 MED Reduce delay of the first evaluation.
+- P1 EASY Show better move metadata.
+- P1 EASY Go forward in the graph.
+- P1 EASY Last move in the graph.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
+- P2 MED Reduce delay of the first evaluation.
 - P3 EASY First time installation.
 - P3 ???? Free memory on hot reload.
 - P3 EASY Back button undo instead of quit.

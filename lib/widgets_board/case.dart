@@ -19,8 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
-import '../ffi_engine.dart';
-import '../main.dart';
+import '../widgets_spacers/app_sizes.dart';
 
 enum CaseState {
   black,

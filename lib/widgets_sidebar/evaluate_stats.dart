@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright (c) 2023-2024. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/widgets/fixed_width_widget.dart';
 
 import '../state.dart';
-import 'case.dart';
 
 TableRow getRow(String name, ListenableBuilder listenable) {
   return TableRow(
@@ -35,11 +33,11 @@ TableRow getRow(String name, ListenableBuilder listenable) {
   );
 }
 
-class EvaluateStats extends FixedWidthWidget {
+class EvaluateStats extends StatelessWidget {
   const EvaluateStats({super.key});
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.globalAnnotations,
       builder: (BuildContext context, Widget? widget) => Table(

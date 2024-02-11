@@ -17,7 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/state.dart';
-import 'package:othello_sensei/widgets/settings.dart';
+import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../utils.dart';
 
@@ -43,7 +43,7 @@ void handleMenuItem(BuildContext context, MenuItem item) {
     case MenuItem.resetFirstPosition:
       return;
     case MenuItem.settings:
-      GlobalState.main.stop();
+      GlobalState.stop();
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => Settings()),
@@ -57,11 +57,6 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-  final void Function() newGame;
-  final void Function() undo;
-  final void Function() redo;
-  final void Function() stop;
-
   static const Map<ActionWhenPlay, Icon> actionToIcon = {
       ActionWhenPlay.playBlack: Icon(Icons.circle),
       ActionWhenPlay.playWhite: Icon(Icons.circle_outlined),
@@ -69,14 +64,14 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
       ActionWhenPlay.none: Icon(Icons.notifications_off_outlined),
   };
 
-  const SenseiAppBar(this.newGame, this.undo, this.redo, this.stop, {super.key});
+  const SenseiAppBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        title: Text("Sensei"),
+        title: const Text("Sensei"),
         actions: <Widget>[
           ListenableBuilder(
               listenable: GlobalState.actionWhenPlay,
@@ -86,25 +81,25 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onPressed: GlobalState.actionWhenPlay.rotateActions,
               )
           ),
-          IconButton(
-            icon: const Icon(Icons.home),
+          const IconButton(
+            icon: Icon(Icons.home),
             tooltip: 'New game',
-            onPressed: newGame,
+            onPressed: GlobalState.newGame,
           ),
-          IconButton(
-            icon: const Icon(Icons.stop_rounded),
+          const IconButton(
+            icon: Icon(Icons.stop_rounded),
             tooltip: 'Stop',
-            onPressed: stop,
+            onPressed: GlobalState.stop,
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_left_rounded),
+          const IconButton(
+            icon: Icon(Icons.chevron_left_rounded),
             tooltip: 'Undo',
-            onPressed: undo,
+            onPressed: GlobalState.undo,
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right_rounded),
+          const IconButton(
+            icon: Icon(Icons.chevron_right_rounded),
             tooltip: 'Redo',
-            onPressed: redo,
+            onPressed: GlobalState.redo,
           ),
           PopupMenuButton<MenuItem>(
             icon: const Icon(Icons.more_vert_rounded),

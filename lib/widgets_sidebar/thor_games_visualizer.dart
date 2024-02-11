@@ -21,10 +21,9 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 
-import '../ffi_engine.dart';
+import '../ffi/ffi_engine.dart';
 import '../state.dart';
 import '../utils.dart';
-import 'fixed_width_widget.dart';
 
 TableRow getRow(BuildContext context, ThorGame game) {
   return TableRow(
@@ -55,12 +54,12 @@ TableRow getRow(BuildContext context, ThorGame game) {
   );
 }
 
-class ThorGamesVisualizer extends FixedWidthWidget {
+class ThorGamesVisualizer extends StatelessWidget {
 
   const ThorGamesVisualizer({super.key});
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.globalAnnotations,
       builder: (BuildContext context, Widget? widget) {

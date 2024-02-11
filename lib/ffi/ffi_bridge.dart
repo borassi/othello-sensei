@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright (c) 2023-2024. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:othello_sensei/ffi_engine.dart';
+import 'package:othello_sensei/ffi/ffi_engine.dart';
 
 final FFIEngine ffiEngine = FFIEngine(
   Platform.isMacOS || Platform.isIOS ? DynamicLibrary.process() // macos and ios

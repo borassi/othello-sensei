@@ -16,15 +16,12 @@
  */
 
 import 'package:flutter/material.dart';
-import '../main.dart';
+import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
 import 'case.dart';
 
 class Board extends StatelessWidget {
-  final Function playMove;
-  final Function undo;
-
-  Board(this.playMove, this.undo, {super.key});
+  const Board({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +39,7 @@ class Board extends StatelessWidget {
                 children: List.generate(8, (x) => TableRow(
                   children: List.generate(8, (y) {
                     var index = 63 - 8 * x - y;
-                    return Case(getState(index, board), index, () => playMove(index), undo);
+                    return Case(getState(index, board), index, () => GlobalState.playMove(index), GlobalState.undo);
                   })
                 ))
               )

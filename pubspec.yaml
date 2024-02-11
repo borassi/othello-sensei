@@ -103,7 +103,7 @@ flutter:
 ffigen:
   name: 'FFIEngine'
   description: 'Binding to the C++ engine'
-  output: 'lib/ffi_engine.dart'
+  output: 'lib/ffi/ffi_engine.dart'
   headers:
     entry-points:
       - 'engine/main/bindings.h'

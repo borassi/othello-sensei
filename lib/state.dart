@@ -25,16 +25,39 @@ import 'package:othello_sensei/utils.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'ffi_bridge.dart';
-import 'ffi_engine.dart';
+import 'ffi/ffi_bridge.dart';
+import 'ffi/ffi_engine.dart';
 import 'files.dart';
-import 'main.dart';
+import 'widgets_windows/main.dart';
 
 enum ActionWhenPlay {
   playBlack,
   playWhite,
   eval,
   none,
+}
+
+void setBoard(BoardUpdate boardUpdate) {
+  for (int i = 0; i < 64; ++i) {
+    GlobalState.annotations[i].clear();
+  }
+  GlobalState.board.setState(boardUpdate);
+}
+
+int currentMove() {
+  return 60 - GlobalState.board.emptySquares();
+}
+
+void updateAnnotations(Pointer<Annotations> allAnnotations) {
+  Annotations annotations = allAnnotations[currentMove()];
+  for (int i = 0; i < annotations.num_moves; ++i) {
+    MoveAnnotations move = annotations.moves[i];
+    GlobalState.annotations[move.square].setState(move, annotations.eval);
+  }
+  GlobalState.globalAnnotations.setState(allAnnotations);
+  if (!annotations.finished) {
+    GlobalState.evaluate(isFirst: false);
+  }
 }
 
 class GlobalState {
@@ -61,11 +84,49 @@ class GlobalState {
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
-    main.newGame();
+    newGame();
   }
   static ThorMetadataState get thorMetadata {
     thorMetadataOrNull ??= ThorMetadataState();
     return thorMetadataOrNull!;
+  }
+
+  static void newGame() async {
+    ffiEngine.NewGame(GlobalState.ffiMain);
+    evaluate();
+  }
+
+  static void playMove(int i) {
+    ffiEngine.PlayMove(GlobalState.ffiMain, i);
+    evaluate();
+  }
+
+  static void redo() {
+    ffiEngine.Redo(GlobalState.ffiMain);
+    evaluate();
+  }
+
+  static void undo() {
+    ffiEngine.Undo(GlobalState.ffiMain);
+    evaluate();
+  }
+
+  static void setCurrentMove(int current_move) {
+    ffiEngine.SetCurrentMove(GlobalState.ffiMain, current_move);
+    evaluate();
+  }
+
+  static void stop() {
+    ffiEngine.Stop(GlobalState.ffiMain);
+  }
+
+  static void evaluate({bool isFirst = true}) {
+    if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
+      return;
+    }
+    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain!);
+    GlobalState.preferences.fillEvaluateParams(params.ref, isFirst);
+    ffiEngine.Evaluate(GlobalState.ffiMain!);
   }
 }
 

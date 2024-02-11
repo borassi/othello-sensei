@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright (c) 2023-2024. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/widgets/fixed_width_widget.dart';
-import 'package:othello_sensei/widgets/thor_filters.dart';
+import 'package:othello_sensei/widgets_windows/thor_filters.dart';
 
-import '../main.dart';
+import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
-import 'board.dart';
-import 'case.dart';
+import '../widgets_board/case.dart';
 import 'disk_count.dart';
 
 Widget getCase(BuildContext context, CaseState state, double squareSize) {
@@ -54,11 +52,11 @@ Widget getCase(BuildContext context, CaseState state, double squareSize) {
   );
 }
 
-class DiskCountsWithThor extends FixedWidthWidget {
-  DiskCountsWithThor();
+class DiskCountsWithThor extends StatelessWidget {
+  DiskCountsWithThor({super.key});
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     return SizedBox(
       height: squareSize,
@@ -70,7 +68,7 @@ class DiskCountsWithThor extends FixedWidthWidget {
           Expanded(
             child: TextButton(
               onPressed: () {
-                GlobalState.main.stop();
+                GlobalState.stop();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),

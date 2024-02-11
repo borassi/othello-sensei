@@ -1,0 +1,172 @@
+/*
+ * Copyright (c) 2024. Michele Borassi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+import 'dart:core';
+import 'dart:ffi';
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:othello_sensei/ffi/ffi_bridge.dart';
+import 'package:othello_sensei/widgets_windows/appbar.dart';
+import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
+import 'package:othello_sensei/widgets_sidebar/disk_count_with_thor.dart';
+import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
+import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
+import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
+
+import '../widgets_board/board.dart';
+import '../ffi/ffi_engine.dart';
+import '../widgets_spacers/app_sizes.dart';
+import '../widgets_spacers/margins.dart';
+
+void main() async {
+  await GlobalState.init();
+  runApp(GlobalState.main);
+}
+
+class AppTheme extends StatelessWidget {
+  Widget child;
+
+  AppTheme({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var theme = Theme.of(context).copyWith(
+          extensions: <ThemeExtension<AppSizes>>[
+            AppSizes(constraints.maxHeight, constraints.maxWidth)
+          ],
+        );
+
+        var squareSize = theme.extension<AppSizes>()!.squareSize!;
+        return Theme(
+          data: theme.copyWith(
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(fontSize: squareSize / 2.4),
+              bodyMedium: TextStyle(fontSize: squareSize / 3.5),
+              bodySmall: TextStyle(fontSize: squareSize / 6.5),
+            ),
+          ),
+          child: child
+        );
+      }
+    );
+  }
+}
+
+class MainContent extends StatelessWidget {
+  Widget board;
+  Widget sidebar;
+  MainContent(this.board, this.sidebar, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var vertical = Theme.of(context).extension<AppSizes>()!.vertical!;
+    return FlexWithMargins(
+      direction: FlexWithMarginsDirection.asAppMain,
+      children: [
+        const Margin(),
+        SizedBox(
+          child: FlexWithMargins(
+            direction: FlexWithMarginsDirection.inverseAppMain,
+            children: [const Margin(), const Spacer(), board, const Spacer(), const Margin()],
+          )
+        ),
+        Expanded(
+          child: FlexWithMargins(
+            direction: FlexWithMarginsDirection.inverseAppMain,
+            children: [
+              const Margin(),
+              Expanded(child: FlexWithMargins(
+                direction: FlexWithMarginsDirection.horizontal,
+                children: [Expanded(child: sidebar), const Margin()],
+              ))
+            ]
+          ),
+        )
+      ]
+    );
+  }
+}
+
+class Main extends StatelessWidget {
+  final String title = "Othello Sensei";
+  static const tabName = ['Evaluate', 'Archive'];
+
+  const Main({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var evaluateContent = VerticalFlexWithMargins(
+      children: const [
+        DiskCountWithError(),
+        Expanded(child: ScoreGraph()),
+        EvaluateStats(),
+      ],
+    );
+
+    var thorContent = VerticalFlexWithMargins(
+      children: [
+        DiskCountsWithThor(),
+        const Expanded(child: ThorGamesVisualizer()),
+      ]
+    );
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Sensei',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          onSecondaryContainer: const Color(0xffeedd33),
+          surface: const Color(0xff191919),
+          surfaceVariant: const Color(0xfff9f9f9),
+          brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
+      home: Scaffold(
+        // resizeToAvoidBottomInset: false,
+        appBar: const SenseiAppBar(),
+        body: AppTheme(
+          child: MainContent(
+            Board(),
+            DefaultTabController(
+              length: 2,
+              initialIndex: GlobalState.preferences.get('Tab'),
+              child: Scaffold(
+                bottomNavigationBar: TabBar(
+                  tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                  onTap: (int index) {
+                    GlobalState.preferences.set('Tab', index);
+                  },
+                ),
+                body: TabBarView(
+                  children: [
+                    evaluateContent,
+                    thorContent,
+                  ],
+                ),
+              ),
+            ),
+          )
+        )
+      )
+    );
+  }
+
+}
