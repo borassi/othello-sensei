@@ -30,8 +30,8 @@ void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book
   annotation.median_eval = node.GetPercentileLower(0.5) - 1;
   annotation.prob_lower_eval = node.SolveProbabilityLower(-63);
   annotation.prob_upper_eval = node.SolveProbabilityUpper(63);
-  annotation.proof_number_lower = node.RemainingWork(-63, annotation.median_eval - 1);
-  annotation.disproof_number_upper = node.RemainingWork(annotation.median_eval + 1, 63);
+  annotation.proof_number_lower = annotation.median_eval == -64 ? 0 : node.RemainingWork(-63, annotation.median_eval - 1);
+  annotation.disproof_number_upper = annotation.median_eval == 64 ? 0 : node.RemainingWork(annotation.median_eval + 1, 63);
   annotation.lower = node.Lower();
   annotation.upper = node.Upper();
   annotation.weak_lower = node.WeakLower();
