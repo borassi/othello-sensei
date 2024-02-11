@@ -32,6 +32,12 @@
 #include "../thor/thor.h"
 #include "../utils/misc.h"
 
+enum SetNextStateResult {
+  INVALID_MOVE,
+  SAME_STATE,
+  DIFFERENT_STATE,
+};
+
 class State {
  public:
   State() : move_(kNoSquare) {}
@@ -59,14 +65,14 @@ class State {
     return move_;
   }
 
-  bool SetNextState(int square, State& next_state) const {
+  SetNextStateResult SetNextState(Square move, State& next_state) const {
     assert(IsSet());
-    if (!board_.IsEmpty(square)) {
-      return false;
+    if (!board_.IsEmpty(move)) {
+      return INVALID_MOVE;
     }
-    BitPattern flip = GetFlip(square, board_.Player(), board_.Opponent());
+    BitPattern flip = GetFlip(move, board_.Player(), board_.Opponent());
     if (!flip) {
-      return false;
+      return INVALID_MOVE;
     }
 
     Board new_board = board_.Next(flip);
@@ -78,9 +84,11 @@ class State {
     } else {
       new_black_turn = !black_turn_;
     }
-
-    next_state.Set(square, new_board, new_black_turn);
-    return true;
+    if (next_state.IsSet() && next_state.move_ == move) {
+      return SAME_STATE;
+    }
+    next_state.Set(move, new_board, new_black_turn);
+    return DIFFERENT_STATE;
   }
 
  private:
@@ -108,14 +116,16 @@ class Main {
 
   void PlayMove(Square square) {
     const State& state = states_[current_state_];
-    bool valid = state.SetNextState(square, states_[current_state_ + 1]);
-    if (!valid) {
+    SetNextStateResult result = state.SetNextState(square, states_[current_state_ + 1]);
+    if (result == INVALID_MOVE) {
       return;
     }
     Stop();
     ++current_state_;
-    for (int i = current_state_ + 1; states_[i].IsSet(); ++i) {
-      states_[i].Unset();
+    if (result == DIFFERENT_STATE) {
+      for (int i = current_state_ + 1; states_[i].IsSet(); ++i) {
+        states_[i].Unset();
+      }
     }
     BoardChanged();
   }

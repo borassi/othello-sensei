@@ -57,7 +57,17 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
   thor_game.moves_played = sequence.Size();
 }
 
-void CalculateGlobalAnnotations(Annotations& annotations) {
+void SetGlobalAnnotationsGameOver(Eval score, Annotations& annotations) {
+  annotations.positions = 0;
+  annotations.positions_calculated = 0;
+  annotations.missing = 0;
+  annotations.eval = score;
+  annotations.median_eval = score;
+  annotations.num_moves = 0;
+  annotations.valid = true;
+}
+
+void SetGlobalAnnotations(Annotations& annotations) {
   annotations.positions = 0;
   annotations.positions_calculated = 0;
   annotations.missing = 0;
@@ -73,6 +83,7 @@ void CalculateGlobalAnnotations(Annotations& annotations) {
     }
     annotations.missing += move.missing;
   }
+  annotations.valid = true;
 }
 } // anonymous_namespace
 
@@ -289,38 +300,33 @@ void Engine::Run(
         boards_to_evaluate_[i]->EvaluateBook();
       }
     }
-    if (params.thor_filters.use_thor) {
-      EvaluateThor(sequence, params, annotations);
-    } else {
-      annotations.num_thor_games = 0;
-      annotations.num_example_thor_games = 0;
-    }
+    EvaluateThor(sequence, params, annotations);
   }
   if (num_boards_to_evaluate_ == 0) {
-    return;
-  }
-
-  int steps = num_boards_to_evaluate_ + 1;
-  bool finished = false;
-  // We finish if we cannot get another board to work on.
-  for (int i = 0; i < steps; ++i) {
-    auto board_to_evaluate = NextBoardToEvaluate(params.delta);
-    if (!board_to_evaluate || (current_thread_ != current_thread && board_to_evaluate->State() != STATE_NOT_STARTED)) {
-      finished = true;
-      break;
+    SetGlobalAnnotationsGameOver(GetEvaluationGameOver(board.Player(), board.Opponent()), annotations);
+    annotations.finished = true;
+  } else {
+    int steps = num_boards_to_evaluate_;
+    bool finished = false;
+    // We finish if we cannot get another board to work on.
+    for (int i = 0; i < steps; ++i) {
+      auto board_to_evaluate = NextBoardToEvaluate(params.delta);
+      if (!board_to_evaluate || (current_thread_ != current_thread && board_to_evaluate->State() != STATE_NOT_STARTED)) {
+        finished = true;
+        break;
+      }
+      board_to_evaluate->Evaluate(params, steps);
     }
-    board_to_evaluate->Evaluate(params, steps);
+    annotations.seconds = time_.Get();
+    SetGlobalAnnotations(annotations);
+    annotations.finished = finished || current_thread_ != current_thread;
   }
-  annotations.seconds = time_.Get();
-  annotations.finished = finished;
-  CalculateGlobalAnnotations(annotations);
   if (annotations_[annotations_offset + 1].valid) {
     UpdateFatherAnnotations(annotations_offset);
   }
   if (annotations_offset > 0) {
     UpdateFatherAnnotations(annotations_offset-1);
   }
-  annotations.valid = true;
   if (current_thread == current_thread_) {
     update_annotations_(annotations_.data());
   }
@@ -338,7 +344,7 @@ void Engine::UpdateFatherAnnotations(int annotations_offset) {
     }
   }
   double old_eval = annotations.eval;
-  CalculateGlobalAnnotations(annotations);
+  SetGlobalAnnotations(annotations);
   if (annotations.eval != old_eval && annotations_offset > 0) {
     UpdateFatherAnnotations(annotations_offset - 1);
   }

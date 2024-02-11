@@ -69,7 +69,7 @@ class GlobalState {
   static late final PreferencesState preferences;
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
-  static ThorMetadataState? thorMetadataOrNull = null;
+  static ThorMetadataState? thorMetadataOrNull;
 
   static Future<void> init() async {
     await maybeCopyAssetsToLocalPath();
@@ -234,15 +234,9 @@ class PreferencesState with ChangeNotifier {
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');
     params.use_book = get('Use book');
-
-    if (Main.tabName[get('Tab')] == 'Archive') {
-      params.thor_filters.use_thor = true;
-      params.thor_filters.max_games = 100;
-      params.thor_filters.start_year = 1000;
-      params.thor_filters.end_year = 3000;
-    } else {
-      params.thor_filters.use_thor = false;
-    }
+    params.thor_filters.max_games = 100;
+    params.thor_filters.start_year = 1000;
+    params.thor_filters.end_year = 3000;
   }
 
   Future<void> setAll(Map<String, dynamic> newValues) async {

@@ -101,7 +101,6 @@ struct Annotations {
 };
 
 struct ThorParams {
-  bool use_thor;
   int max_games;
   int start_year;
   int end_year;

@@ -1,6 +1,4 @@
 Usability / bugs
-- P1 EASY Go forward in the graph.
-- P1 EASY Last move in the graph.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
 - P2 MED Reduce delay of the first evaluation.

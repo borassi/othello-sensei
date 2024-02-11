@@ -67,7 +67,7 @@ String prettyPrintDouble(double? value) {
   if (value == null) {
     return '-';
   }
-  double d = value!;
+  double d = value;
   if (d == double.infinity) {
     return "+Inf";
   } else if (d == -double.infinity) {
@@ -109,7 +109,7 @@ String camelCaseToSpaces(String s) {
     if (g == null) {
       return '';
     }
-    return ' ${g}';
+    return ' $g';
   });
   return result.capitalize();
 }

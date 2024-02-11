@@ -20,6 +20,7 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
 import '../widgets_spacers/app_sizes.dart';
+import '../widgets_windows/main.dart';
 
 enum CaseState {
   black,
@@ -94,7 +95,7 @@ class Case extends StatelessWidget {
     String line2;
     String line3 = prettyPrintDouble(annotation.descendants.toDouble());
 
-    if (GlobalState.globalAnnotations.getNumThorGames() > 0) {
+    if (Main.tabName[GlobalState.preferences.get('Tab')] == 'Archive') {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
       line2 = evalText;
     } else {

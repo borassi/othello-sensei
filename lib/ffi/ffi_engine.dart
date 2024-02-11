@@ -382,9 +382,6 @@ final class Annotations extends ffi.Struct {
 }
 
 final class ThorParams extends ffi.Struct {
-  @ffi.Bool()
-  external bool use_thor;
-
   @ffi.Int()
   external int max_games;
 

@@ -73,7 +73,6 @@ class MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var vertical = Theme.of(context).extension<AppSizes>()!.vertical!;
     return FlexWithMargins(
       direction: FlexWithMarginsDirection.asAppMain,
       children: [
@@ -140,7 +139,7 @@ class Main extends StatelessWidget {
         appBar: const SenseiAppBar(),
         body: AppTheme(
           child: MainContent(
-            Board(),
+            const Board(),
             DefaultTabController(
               length: 2,
               initialIndex: GlobalState.preferences.get('Tab'),
@@ -149,6 +148,7 @@ class Main extends StatelessWidget {
                   tabs: List.generate(2, (index) => Tab(text: tabName[index])),
                   onTap: (int index) {
                     GlobalState.preferences.set('Tab', index);
+                    GlobalState.evaluate();
                   },
                 ),
                 body: TabBarView(
