@@ -54,8 +54,8 @@ class AppTheme extends StatelessWidget {
         return Theme(
           data: theme.copyWith(
             textTheme: TextTheme(
-              bodyLarge: TextStyle(fontSize: squareSize / 2.4),
-              bodyMedium: TextStyle(fontSize: squareSize / 3.2),
+              bodyLarge: TextStyle(fontSize: squareSize / 2.1),
+              bodyMedium: TextStyle(fontSize: squareSize / 3.5),
               bodySmall: TextStyle(fontSize: squareSize / 6.5),
             ),
           ),

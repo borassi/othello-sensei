@@ -1,5 +1,6 @@
 Usability / bugs
 - P2 TINY Do not show seconds when all moves are in book.
+- P2 MED Show more reasonable evaluations when going back.
 - P2 EASY Fix time when clicking stop.
 - P2 MED Reduce delay of the first evaluation.
 - P3 EASY First time installation.
@@ -7,6 +8,7 @@ Usability / bugs
 - P3 EASY Back button undo instead of quit.
 
 Thor
+- P2 TINY Add tournament.
 - P2 EASY Use only one source.
 - P2 MED Winning percentages.
 - P3 EASY Filter by tournament / year
@@ -19,7 +21,7 @@ Match the features of the current app
 Extra features:
 - P1 MED Analyze a game.
 - P1 MED Share game from Othello Quest.
-- P1 MED Remember opening book for player.
+- P1 HARD Remember opening book for player.
 - P2 HARD Extend opening book considering all moves.
 - P2 EASY Show stats from various moves.
 - P2 EASY Save games.
