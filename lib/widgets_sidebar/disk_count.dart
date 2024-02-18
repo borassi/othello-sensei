@@ -71,10 +71,13 @@ class DiskCountWithError extends StatelessWidget {
         Text("Error", style: Theme.of(context).textTheme.bodySmall),
         ListenableBuilder(
           listenable: GlobalState.globalAnnotations,
-          builder: (BuildContext context, Widget? widget) => Text(
-            formatEval(GlobalState.globalAnnotations.getError(black)),
-            style: Theme.of(context).textTheme.bodyLarge
-          )
+          builder: (BuildContext context, Widget? widget) {
+            var (errorBlack, errorWhite) = GlobalState.globalAnnotations.getErrors();
+            return Text(
+              formatEval(black ? errorBlack : errorWhite),
+              style: Theme.of(context).textTheme.bodyLarge
+            );
+          }
         )
       ]
     );

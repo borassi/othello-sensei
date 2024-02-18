@@ -213,6 +213,8 @@ class EvaluatorDerivative {
     return evalEffect - log(board->GetNVisited()) / log(2);
   }
 
+  double GetElapsedTime() const { return previous_elapsed_time + elapsed_time_.Get(); }
+
   void ContinueEvaluate(NVisited max_n_visited, double max_time, int n_threads) {
     max_time_ = max_time;
     elapsed_time_ = ElapsedTime();
@@ -221,6 +223,7 @@ class EvaluatorDerivative {
     just_started_ = true;
     status_ = RUNNING;
     Run(n_threads);
+    previous_elapsed_time += elapsed_time_.Get();
   }
 
   void Evaluate(
@@ -241,6 +244,7 @@ class EvaluatorDerivative {
     weak_lower_ = lower_;
     weak_upper_ = upper_;
     num_tree_nodes_ = 0;
+    previous_elapsed_time = 0;
     n_thread_multiplier_ = 10000L * n_threads * n_threads;
     auto [first_position, just_added] = AddTreeNode(player, opponent, 0);
     assert(just_added);
@@ -249,7 +253,6 @@ class EvaluatorDerivative {
     first_position_->UpdateLeafWeakLowerUpper(weak_lower_, weak_upper_);
     auto leaf = TreeNodeLeafToUpdate::BestDescendant(first_position_, NThreadMultiplier(), kLessThenMinEval);
     assert(leaf);
-    ElapsedTime t;
     leaf->Finalize(threads_[0]->AddChildren(*leaf));
     best_advancement_ = 0;
     is_updating_weak_lower_upper_.clear();
@@ -313,6 +316,7 @@ class EvaluatorDerivative {
   double best_advancement_;
   EvaluatorFactory evaluator_depth_one_;
   HashMap<kBitHashMap>* hash_map_;
+  double previous_elapsed_time;
 
   void Run(int n_threads) {
     std::vector<std::future<void>> futures;

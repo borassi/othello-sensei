@@ -15,7 +15,6 @@
  *
  */
 
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 
@@ -48,14 +47,12 @@ int currentMove() {
   return 60 - GlobalState.board.emptySquares();
 }
 
-void updateAnnotations(Pointer<Annotations> allAnnotations) {
-  Annotations annotations = allAnnotations[currentMove()];
-  for (int i = 0; i < annotations.num_moves; ++i) {
-    MoveAnnotations move = annotations.moves[i];
-    GlobalState.annotations[move.square].setState(move);
+void updateAnnotations(Pointer<Annotations> annotations, Pointer<Annotations> startingAnnotations) {
+  GlobalState.globalAnnotations.setState(annotations, startingAnnotations);
+  for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
+    GlobalState.annotations[child.ref.move].setState(child.ref);
   }
-  GlobalState.globalAnnotations.setState(allAnnotations);
-  if (!annotations.finished) {
+  if (!annotations.ref.finished) {
     GlobalState.evaluate(isFirst: false);
   }
 }
@@ -124,9 +121,9 @@ class GlobalState {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
       return;
     }
-    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain!);
+    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain);
     GlobalState.preferences.fillEvaluateParams(params.ref, isFirst);
-    ffiEngine.Evaluate(GlobalState.ffiMain!);
+    ffiEngine.Evaluate(GlobalState.ffiMain);
   }
 }
 
@@ -179,14 +176,14 @@ class SquareSizeState with ChangeNotifier {
 }
 
 class AnnotationState with ChangeNotifier {
-  MoveAnnotations? annotations;
+  Annotations? annotations;
 
   void clear() {
     annotations = null;
     notifyListeners();
   }
 
-  void setState(MoveAnnotations annotations) {
+  void setState(Annotations annotations) {
     this.annotations = annotations;
     notifyListeners();
   }
@@ -284,90 +281,87 @@ class PreferencesState with ChangeNotifier {
 }
 
 class GlobalAnnotationState with ChangeNotifier {
-  Pointer<Annotations>? allAnnotations;
+  Pointer<Annotations>? annotations;
+  Pointer<Annotations>? startAnnotations;
 
   void reset() {
-    allAnnotations = null;
+    annotations = null;
   }
 
   int getNumThorGames() {
-    if (allAnnotations == null) {
+    if (annotations == null) {
       return 0;
     }
-    return allAnnotations![currentMove()].num_thor_games;
+    return annotations![currentMove()].num_thor_games;
   }
 
-  Annotations? annotations() {
-    if (allAnnotations == null) {
-      return null;
-    }
-    return allAnnotations![currentMove()];
-  }
-
-  void setState(Pointer<Annotations> allAnnotations) {
-    this.allAnnotations = allAnnotations;
+  void setState(Pointer<Annotations> annotations, Pointer<Annotations> startAnnotations) {
+    this.annotations = annotations;
+    this.startAnnotations = startAnnotations;
     notifyListeners();
   }
 
-  double getScoreAtMove(int move) {
-    if (allAnnotations == null || !allAnnotations![move].valid) {
-      return double.nan;
-    }
-    return (allAnnotations![move].black_turn ? 1 : -1) * getEval(move: move);
-  }
-
   List<double> getAllScores() {
-    return List.generate(61, (i) => getScoreAtMove(i));
+    var annotation = startAnnotations;
+    var scores = <double>[];
+    while (annotation != null && annotation != nullptr) {
+      if (annotation.ref.first_child == nullptr &&
+          annotation.ref.provenance != AnnotationsProvenance.GAME_OVER) {
+        break;
+      }
+      scores.add((annotation.ref.black_turn ? 1 : -1) * getEval(annotation: annotation.ref));
+      annotation = annotation.ref.first_child;
+    }
+    return scores;
   }
 
-  double getError(bool black) {
-    if (allAnnotations == null) {
-      return double.nan;
-    }
-    double result = 0;
-    for (int i = 1; i < currentMove() + 1; ++i) {
-      if (!allAnnotations![i].valid || !allAnnotations![i-1].valid) {
-        return double.nan;
+  (double, double) getErrors() {
+    var errorBlack = 0.0;
+    var errorWhite = 0.0;
+    var allScores = getAllScores();
+    var move = currentMove();
+    for (int i = 1; i <= move; ++i) {
+      var error = allScores[i] - allScores[i-1];
+      if (error > 0) {
+        errorWhite += error;
+      } else {
+        errorBlack += -error;
       }
-      if (black == allAnnotations![i].black_turn) {
-        continue;
-      }
-      result += getEval(move: i) + (allAnnotations![i-1].black_turn == allAnnotations![i].black_turn ? -1 : 1) * getEval(move: i-1);
     }
-    return result;
+    return (errorBlack, errorWhite);
   }
 
   String getPositions() {
-    if (allAnnotations == null) {
+    if (annotations == null) {
       return '-';
     }
-    return prettyPrintDouble(annotations()!.positions.toDouble());
+    return prettyPrintDouble(annotations!.ref.descendants.toDouble());
   }
 
   String getPositionsPerSec() {
-    if (allAnnotations == null || annotations()!.positions_calculated == 0) {
+    if (annotations == null || annotations!.ref.descendants_no_book == 0) {
       return '-';
     }
-    return prettyPrintDouble(annotations()!.positions_calculated / annotations()!.seconds);
+    return prettyPrintDouble(annotations!.ref.descendants_no_book / annotations!.ref.seconds);
   }
 
   String getTimeString() {
-    if (allAnnotations == null) {
+    if (annotations == null) {
       return '-';
     }
-    return annotations()!.seconds.toStringAsFixed(1);
+    return annotations!.ref.seconds.toStringAsFixed(1);
   }
 
   String getMissing() {
-    if (allAnnotations == null) {
+    if (annotations == null) {
       return '-';
     }
-    return prettyPrintDouble(annotations()!.missing.toDouble());
+    return prettyPrintDouble(annotations!.ref.missing.toDouble());
   }
 
-  double getEval({int? move}) {
-    var annotations = allAnnotations![move ?? currentMove()]!;
-    return GlobalState.preferences.get('Round evaluations') ? annotations.median_eval.toDouble() : annotations.eval;
+  double getEval({Annotations? annotation}) {
+    annotation = annotation ?? annotations!.ref;
+    return GlobalState.preferences.get('Round evaluations') ? annotation.median_eval.toDouble() : annotation.eval;
   }
 }
 

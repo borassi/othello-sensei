@@ -52,26 +52,6 @@ struct BoardUpdate {
   bool black_turn;
 };
 
-struct MoveAnnotations {
-  Square square;
-  bool book;
-  double eval;
-  double leaf_eval;
-  int median_eval;
-  double prob_lower_eval;
-  double prob_upper_eval;
-  double proof_number_lower;
-  double disproof_number_upper;
-  Eval lower;
-  Eval upper;
-  Eval weak_lower;
-  Eval weak_upper;
-  NVisited descendants;
-  NVisited missing;
-  unsigned int num_thor_games;
-  double thor_winning_percentage;
-};
-
 struct ThorGame {
   const char* black;
   const char* white;
@@ -82,22 +62,45 @@ struct ThorGame {
   int year;
 };
 
+enum AnnotationsProvenance {
+  EVALUATE,
+  BOOK,
+  CHILD_EVALUATE,
+  GAME_OVER,
+};
+
 struct Annotations {
-  NVisited positions;
-  NVisited positions_calculated;
+  // Filled when defining the annotation.
+  Square move;
+  bool black_turn;
+  struct Annotations* father;
+  struct Annotations* first_child;
+  struct Annotations* next_sibling;
+  bool derived;  // If true, ignore it for time and descendants.
+  bool valid;
+  // Filled when evaluating this position.
+  double eval;
+  double leaf_eval;
+  int median_eval;
+  enum AnnotationsProvenance provenance;
   double seconds;
-  NVisited missing;
-  struct MoveAnnotations moves[64];
-  int num_moves;
+  double prob_lower_eval;
+  double prob_upper_eval;
+  double proof_number_lower;
+  double disproof_number_upper;
+  Eval lower;
+  Eval upper;
+  Eval weak_lower;
+  Eval weak_upper;
+  NVisited descendants;
+  NVisited descendants_no_book;
+  double missing;
   bool finished;
+  // Filled when reading Thor.
   unsigned int num_thor_games;
   struct ThorGame* example_thor_games;
   unsigned int num_example_thor_games;
-  double eval;
-  int median_eval;
-  Square move;
-  bool black_turn;
-  bool valid;
+  double thor_winning_percentage;
 };
 
 struct ThorParams {
@@ -119,7 +122,7 @@ struct EvaluateParams {
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
-typedef void (*UpdateAnnotations)(struct Annotations*);
+typedef void (*UpdateAnnotations)(struct Annotations*, struct Annotations*);
 
 #ifdef __cplusplus
 }

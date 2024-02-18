@@ -18,16 +18,18 @@
 #include "bindings.h"
 
 namespace {
-void MoveAnnotationsReset(MoveAnnotations& annotation) {
-  annotation.square = kNoSquare;
+void AnnotationsReset(Annotations& annotation) {
+  annotation.move = kNoSquare;
   annotation.lower = kLessThenMinEval;
   annotation.upper = kLessThenMinEval;
 }
 
-void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book) {
+void AnnotationsSet(Annotations& annotation, const Node& node, bool book, double seconds) {
   annotation.eval = node.GetEval();
   annotation.leaf_eval = node.LeafEval();
   annotation.median_eval = node.GetPercentileLower(0.5) - 1;
+  annotation.provenance = book ? BOOK : EVALUATE;
+  annotation.seconds = seconds;
   annotation.prob_lower_eval = node.SolveProbabilityLower(-63);
   annotation.prob_upper_eval = node.SolveProbabilityUpper(63);
   annotation.proof_number_lower = annotation.median_eval == -64 ? 0 : node.RemainingWork(-63, annotation.median_eval - 1);
@@ -37,8 +39,9 @@ void MoveAnnotationsSet(MoveAnnotations& annotation, const Node& node, bool book
   annotation.weak_lower = node.WeakLower();
   annotation.weak_upper = node.WeakUpper();
   annotation.descendants = node.GetNVisited();
+  annotation.descendants_no_book = book ? 0 : annotation.descendants;
   annotation.missing = node.IsSolved() ? 0 : node.RemainingWork(-63, 63);
-  annotation.book = book;
+  annotation.finished = book || node.IsSolved();
 }
 
 void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
@@ -57,33 +60,77 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
   thor_game.moves_played = sequence.Size();
 }
 
-void SetGlobalAnnotationsGameOver(Eval score, Annotations& annotations) {
-  annotations.positions = 0;
-  annotations.positions_calculated = 0;
-  annotations.missing = 0;
-  annotations.eval = score;
-  annotations.median_eval = score;
-  annotations.num_moves = 0;
-  annotations.valid = true;
+void SetAnnotationsGameOver(Eval score, Annotations& annotation) {
+  annotation.eval = score;
+  annotation.leaf_eval = score;
+  annotation.median_eval = score;
+  annotation.provenance = GAME_OVER;
+  annotation.seconds = 0;
+  annotation.prob_lower_eval = 0;
+  annotation.prob_upper_eval = 0;
+  annotation.proof_number_lower = 0;
+  annotation.disproof_number_upper = 0;
+  annotation.lower = score;
+  annotation.upper = score;
+  annotation.weak_lower = score;
+  annotation.weak_upper = 0;
+  annotation.descendants = 0;
+  annotation.descendants_no_book = 0;
+  annotation.finished = true;
 }
 
-void SetGlobalAnnotations(Annotations& annotations) {
-  annotations.positions = 0;
-  annotations.positions_calculated = 0;
-  annotations.missing = 0;
-  annotations.eval = kLessThenMinEval;
-  annotations.median_eval = kLessThenMinEval;
-  for (int i = 0; i < annotations.num_moves; ++i) {
-    auto& move = annotations.moves[i];
-    annotations.eval = std::max(annotations.eval, -move.eval);
-    annotations.median_eval = std::max(annotations.median_eval, -move.median_eval);
-    annotations.positions += move.descendants;
-    if (!move.book) {
-      annotations.positions_calculated += move.descendants;
+void SetFatherAnnotations(Annotations& annotation) {
+  annotation.eval = kLessThenMinEval;
+  annotation.leaf_eval = kLessThenMinEval;
+  annotation.median_eval = kLessThenMinEval;
+  annotation.provenance = CHILD_EVALUATE;
+  annotation.seconds = 0;
+//  annotation.prob_lower_eval = 0;
+//  annotation.prob_upper_eval = 0;
+//  annotation.proof_number_lower = 0;
+//  annotation.disproof_number_upper = 0;
+  annotation.lower = kLessThenMinEval;
+  annotation.upper = kLessThenMinEval;
+//  annotation.weak_lower = score;
+//  annotation.weak_upper = 0;
+  annotation.descendants = 0;
+  annotation.descendants_no_book = 0;
+  annotation.finished = true;
+
+  for (Annotations* child = annotation.first_child; child != nullptr; child = child->next_sibling) {
+    annotation.eval = std::max(annotation.eval, -child->eval);
+    annotation.median_eval = std::max(annotation.median_eval, -child->median_eval);
+    annotation.leaf_eval = std::max(annotation.leaf_eval, -child->leaf_eval);
+    annotation.lower = MaxEval(annotation.lower, -child->upper);
+    annotation.upper = MaxEval(annotation.upper, -child->lower);
+    if (!child->derived) {
+      annotation.seconds += child->seconds;
+      annotation.descendants += child->descendants;
+      annotation.descendants_no_book += child->descendants_no_book;
     }
-    annotations.missing += move.missing;
+    annotation.finished = annotation.finished && child->finished;
   }
-  annotations.valid = true;
+  annotation.valid = true;
+  if (annotation.father != nullptr) {
+    SetFatherAnnotations(*annotation.father);
+  }
+}
+
+void MoveAnnotationToStart(Annotations* to_be_moved) {
+  Annotations* father = to_be_moved->father;
+  if (father == nullptr || father->first_child == to_be_moved) {
+    return;
+  }
+  assert(father->first_child != nullptr);
+  Annotations* previous_sibling;
+  for (previous_sibling = father->first_child;
+       previous_sibling->next_sibling != to_be_moved;
+       previous_sibling = previous_sibling->next_sibling) {
+    assert(previous_sibling->next_sibling != nullptr);
+  }
+  previous_sibling->next_sibling = to_be_moved->next_sibling;
+  to_be_moved->next_sibling = father->first_child;
+  father->first_child = to_be_moved;
 }
 } // anonymous_namespace
 
@@ -91,7 +138,7 @@ void BoardToEvaluate::EvaluateBook() {
   auto board_in_book = book_->Get(unique_);
   if (board_in_book) {
     for (auto* annotation : annotations_) {
-      MoveAnnotationsSet(*annotation, *board_in_book, true);
+      AnnotationsSet(*annotation, *board_in_book, true, 0);
     }
     state_ = STATE_FINISHED;
   }
@@ -111,8 +158,8 @@ void BoardToEvaluate::Evaluate(EvaluateParams params, int steps) {
     evaluator_.ContinueEvaluate(params.max_positions, current_max_time,
                                 params.n_threads);
   }
-  for (MoveAnnotations* annotation : annotations_) {
-    MoveAnnotationsSet(*annotation, *evaluator_.GetFirstPosition(), false);
+  for (Annotations* annotation : annotations_) {
+    AnnotationsSet(*annotation, *evaluator_.GetFirstPosition(), false, evaluator_.GetElapsedTime());
   }
   if (evaluator_.GetStatus() == SOLVED) {
     state_ = STATE_FINISHED;
@@ -131,6 +178,7 @@ Engine::Engine(
     tree_node_supplier_(),
     last_offset_(-1),
     last_black_turn_(true),
+    annotations_(new Annotations()),
     current_thread_(0),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
@@ -144,10 +192,6 @@ void Engine::Initialize(
   evals_ = std::make_unique<EvalType>(LoadEvals(evals_filepath));
   book_ = std::make_unique<Book<kBookVersion>>(book_filepath);
   thor_ = std::make_unique<Thor>(thor_filepath);
-  for (int i = 0; i < annotations_.size(); ++i) {
-    annotations_[i].valid = false;
-    annotations_[i].example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
-  }
   for (int i = 0; i < kNumEvaluators; ++i) {
     boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
         book_.get(),
@@ -156,6 +200,13 @@ void Engine::Initialize(
         PatternEvaluator::Factory(evals_->data()),
         static_cast<u_int8_t>(i));
   }
+
+  annotations_->move = kStartingPositionMove;
+  annotations_->black_turn = true;
+  annotations_->father = nullptr;
+  annotations_->first_child = nullptr;
+  annotations_->next_sibling = nullptr;
+
   auto players = thor_->Players();
   auto tournaments = thor_->Tournaments();
   assert(players.size() == tournaments.size());
@@ -172,6 +223,13 @@ void Engine::Initialize(
   thor_metadata_.num_sources = thor_sources_metadata_.size();
 }
 
+void Engine::CleanAnnotations(const Sequence& sequence) {
+  Stop();
+  current_future_ = std::make_shared<std::future<void>>(std::async(
+      std::launch::async, &Engine::CleanAnnotationsInternal, this,
+      sequence, current_future_));
+}
+
 // This runs in the main thread, so that we cannot update the output afterwards.
 void Engine::Stop() {
   ++current_thread_;
@@ -185,7 +243,6 @@ void Engine::UpdateBoardsToEvaluate(const Board& board, Annotations& annotations
   bool finished = true;
 
   num_boards_to_evaluate_ = 0;
-  annotations.num_moves = 0;
 
   for (const auto& flip : moves) {
     Board next = board.Next(flip);
@@ -198,6 +255,7 @@ void Engine::UpdateBoardsToEvaluate(const Board& board, Annotations& annotations
     for (int i = 0; i < num_boards_to_evaluate_; ++i) {
       BoardToEvaluate* b = boards_to_evaluate_[i].get();
       if (b->Unique() == unique) {
+        board_to_evaluate = b;
         found = true;
         break;
       }
@@ -208,9 +266,18 @@ void Engine::UpdateBoardsToEvaluate(const Board& board, Annotations& annotations
     }
 
     // Add the current move.
-    MoveAnnotations& annotation = annotations.moves[annotations.num_moves++];
-    annotation.square = move;
-    board_to_evaluate->AddAnnotation(&annotation);
+    Annotations* correct_child = nullptr;
+    for (Annotations* child = annotations.first_child;
+         child != nullptr;
+         child = child->next_sibling) {
+      if (child->move == move) {
+        correct_child = child;
+      }
+    }
+    if (!correct_child) {
+      correct_child = CreateAnnotation(move, found, !annotations.black_turn, annotations);
+    }
+    board_to_evaluate->AddAnnotation(correct_child);
   }
 }
 
@@ -273,8 +340,8 @@ void Engine::Run(
     EvaluateParams params) {
   int annotations_offset = 60 - board.NEmpties();
   last_future->get();
-  Annotations& annotations = annotations_[annotations_offset];
-  if (current_thread != current_thread_ && annotations.valid) {
+  Annotations* annotations = GetAnnotation(sequence).value();
+  if (current_thread != current_thread_ && annotations->valid) {
     return;
   }
   if (board != last_board_ || annotations_offset != last_offset_ ||
@@ -284,27 +351,17 @@ void Engine::Run(
     last_black_turn_ = black_turn;
     time_ = ElapsedTime();
     tree_node_supplier_.Reset();
-    Square move = sequence.Size() > 0 ? sequence.LastMove() : kStartingPositionMove;
-    if (annotations.move != move || annotations.black_turn != black_turn) {
-      annotations.move = move;
-      annotations.black_turn = black_turn;
-      for (int i = annotations_offset+1; annotations_[i].valid; ++i) {
-        annotations_[i].valid = false;
-      }
-    }
-    UpdateBoardsToEvaluate(board, annotations);
-    annotations.valid = false;
+    UpdateBoardsToEvaluate(board, *annotations);
 
     if (params.use_book) {
       for (int i = 0; i < num_boards_to_evaluate_; ++i) {
         boards_to_evaluate_[i]->EvaluateBook();
       }
     }
-    EvaluateThor(sequence, params, annotations);
+    EvaluateThor(sequence, params, *annotations);
   }
   if (num_boards_to_evaluate_ == 0) {
-    SetGlobalAnnotationsGameOver(GetEvaluationGameOver(board.Player(), board.Opponent()), annotations);
-    annotations.finished = true;
+    SetAnnotationsGameOver(GetEvaluationGameOver(board.Player(), board.Opponent()), *annotations);
   } else {
     int steps = num_boards_to_evaluate_;
     bool finished = false;
@@ -317,35 +374,30 @@ void Engine::Run(
       }
       board_to_evaluate->Evaluate(params, steps);
     }
-    annotations.seconds = time_.Get();
-    SetGlobalAnnotations(annotations);
-    annotations.finished = finished || current_thread_ != current_thread;
+    annotations->finished = annotations->finished || current_thread_ != current_thread;
   }
-  if (annotations_[annotations_offset + 1].valid) {
-    UpdateFatherAnnotations(annotations_offset);
-  }
-  if (annotations_offset > 0) {
-    UpdateFatherAnnotations(annotations_offset-1);
-  }
+  MoveAnnotationToStart(annotations);
+  SetFatherAnnotations(*annotations);
+
   if (current_thread == current_thread_) {
-    update_annotations_(annotations_.data());
+    update_annotations_(annotations, StartingAnnotation());
   }
 }
 
-void Engine::UpdateFatherAnnotations(int annotations_offset) {
-  assert(annotations_offset >= 0 && annotations_offset < annotations_.size() - 1);
-  Annotations& annotations = annotations_[annotations_offset];
-  const Annotations& next_annotations = annotations_[annotations_offset + 1];
-  for (int i = 0; i < annotations.num_moves; ++i) {
-    MoveAnnotations& move_annotations = annotations.moves[i];
-    if (move_annotations.square == next_annotations.move) {
-      move_annotations.eval = (annotations.black_turn == next_annotations.black_turn ? -1 : 1) * next_annotations.eval;
-      break;
-    }
-  }
-  double old_eval = annotations.eval;
-  SetGlobalAnnotations(annotations);
-  if (annotations.eval != old_eval && annotations_offset > 0) {
-    UpdateFatherAnnotations(annotations_offset - 1);
-  }
-}
+//void Engine::UpdateFatherAnnotations(int annotations_offset) {
+//  assert(annotations_offset >= 0 && annotations_offset < annotations_.size() - 1);
+//  Annotations& annotations = annotations_[annotations_offset];
+//  const Annotations& next_annotations = annotations_[annotations_offset + 1];
+//  for (int i = 0; i < annotations.num_moves; ++i) {
+//    MoveAnnotations& move_annotations = annotations.moves[i];
+//    if (move_annotations.square == next_annotations.move) {
+//      move_annotations.eval = (annotations.black_turn == next_annotations.black_turn ? -1 : 1) * next_annotations.eval;
+//      break;
+//    }
+//  }
+//  double old_eval = annotations.eval;
+//  SetGlobalAnnotations(annotations);
+//  if (annotations.eval != old_eval && annotations_offset > 0) {
+//    UpdateFatherAnnotations(annotations_offset - 1);
+//  }
+//}

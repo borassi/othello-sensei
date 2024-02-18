@@ -82,7 +82,7 @@ class Case extends StatelessWidget {
 
   Widget showAnnotations(ColorScheme colorScheme) {
     var annotations = GlobalState.annotations[index];
-    if (annotations.annotations == null || annotations.annotations!.square == 255) {
+    if (annotations.annotations == null || annotations.annotations!.move == 255) {
       return const Text("");
     }
     var annotation = annotations.annotations!;

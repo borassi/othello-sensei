@@ -57,25 +57,25 @@ class BoardToEvaluate {
     state_ = STATE_NOT_STARTED;
   }
 
-  bool HasMove(Square s) const {
+  bool HasMove(Square move) const {
     for (auto* annotation : annotations_) {
-      if (annotation->square == s) {
+      if (annotation->move == move) {
         return true;
       }
     }
     return false;
   }
 
-  void AddAnnotation(MoveAnnotations* annotation) {
+  void AddAnnotation(Annotations* annotation) {
     annotations_.push_back(annotation);
   }
 
   void UpdateWithThor(std::unordered_map<Square, int> next_moves) {
     int num_thor_games = 0;
-    for (MoveAnnotations* annotation : annotations_) {
-      num_thor_games += next_moves[annotation->square];
+    for (Annotations* annotation : annotations_) {
+      num_thor_games += next_moves[annotation->move];
     }
-    for (MoveAnnotations* annotation : annotations_) {
+    for (Annotations* annotation : annotations_) {
       annotation->num_thor_games = num_thor_games;
     }
   }
@@ -109,7 +109,7 @@ class BoardToEvaluate {
   std::atomic_bool stoppable_;
   Board unique_;
   EvaluatorDerivative evaluator_;
-  std::vector<MoveAnnotations*> annotations_;
+  std::vector<Annotations*> annotations_;
   BoardToEvaluateState state_;
   Book<>* book_;
 };
@@ -160,10 +160,11 @@ class Engine {
       UpdateAnnotations update_annotations);
 
   ~Engine() {
-    for (int i = 0; i < annotations_.size(); ++i) {
-      free(annotations_[i].example_thor_games);
-    }
+    CleanAnnotations(Sequence());
+    free(annotations_);
   }
+
+  void CleanAnnotations(const Sequence& sequence);
 
   void Start(const Sequence& sequence, const Board& board, bool black_turn,
              const EvaluateParams& params) {
@@ -191,7 +192,7 @@ class Engine {
   std::array<std::unique_ptr<BoardToEvaluate>, kNumEvaluators> boards_to_evaluate_;
   int num_boards_to_evaluate_;
 
-  std::array<Annotations, 64> annotations_;
+  Annotations* annotations_;
   ElapsedTime time_;
 
   std::atomic_uint32_t current_thread_;
@@ -216,6 +217,23 @@ class Engine {
       const std::string& book_filepath,
       const std::string& thor_filepath);
 
+  void CleanAnnotationsRecursive(Annotations& annotation) {
+    for (Annotations* child = annotation.first_child;
+         child != nullptr;
+         child = child->next_sibling) {
+      CleanAnnotationsRecursive(*child);
+      delete(child);
+    }
+    annotation.first_child = nullptr;
+  }
+
+  void CleanAnnotationsInternal(
+      const Sequence& sequence,
+      std::shared_ptr<std::future<void>> last_future) {
+    last_future->get();
+    CleanAnnotationsRecursive(*GetAnnotation(sequence).value());
+  }
+
   void UpdateBoardsToEvaluate(const Board& board, Annotations& annotations);
 
   void UpdateFatherAnnotations(int state);
@@ -233,6 +251,42 @@ class Engine {
       }
     }
     return result;
+  }
+
+  Annotations* StartingAnnotation() {
+    return annotations_;
+  }
+
+  Annotations* CreateAnnotation(Square move, bool derived, bool black_turn, Annotations& father) {
+    Annotations* annotation = new Annotations();
+    annotation->move = move;
+    annotation->black_turn = black_turn;
+    annotation->next_sibling = father.first_child;
+    annotation->father = &father;
+    annotation->first_child = nullptr;
+    annotation->derived = derived;
+    annotation->valid = false;
+    father.first_child = annotation;
+
+    return annotation;
+  }
+
+  std::optional<Annotations*> GetAnnotation(const Sequence& sequence) {
+    Annotations* annotation = StartingAnnotation();
+    for (const Square move : sequence.Moves()) {
+      bool found = false;
+      for (Annotations* child = annotation->first_child; child != nullptr; child = child->next_sibling) {
+        if (child->move == move) {
+          annotation = child;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return std::nullopt;
+      }
+    }
+    return annotation;
   }
 
   // NOTE: Pass variables by value, to avoid concurrent modifications.

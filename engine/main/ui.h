@@ -62,9 +62,6 @@ EXPORT
 void Evaluate(void* ptr);
 
 EXPORT
-struct MoveAnnotations* GetAnnotations(void* ptr);
-
-EXPORT
 void Stop(void* ptr);
 
 #ifdef __cplusplus

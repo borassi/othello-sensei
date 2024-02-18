@@ -184,21 +184,6 @@ class FFIEngine {
   late final _Evaluate =
       _EvaluatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
-  ffi.Pointer<MoveAnnotations> GetAnnotations(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _GetAnnotations(
-      ptr,
-    );
-  }
-
-  late final _GetAnnotationsPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<MoveAnnotations> Function(
-              ffi.Pointer<ffi.Void>)>>('GetAnnotations');
-  late final _GetAnnotations = _GetAnnotationsPtr.asFunction<
-      ffi.Pointer<MoveAnnotations> Function(ffi.Pointer<ffi.Void>)>();
-
   void Stop(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -255,12 +240,54 @@ final class BoardUpdate extends ffi.Struct {
 typedef BitPattern = ffi.Uint64;
 typedef DartBitPattern = int;
 
-final class MoveAnnotations extends ffi.Struct {
+final class ThorGame extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> black;
+
+  external ffi.Pointer<ffi.Char> white;
+
+  external ffi.Pointer<ffi.Char> tournament;
+
+  @ffi.Array.multi([60])
+  external ffi.Array<Square> moves;
+
+  @ffi.Int()
+  external int moves_played;
+
+  @ffi.Int()
+  external int score;
+
+  @ffi.Int()
+  external int year;
+}
+
+typedef Square = ffi.Uint8;
+typedef DartSquare = int;
+
+abstract class AnnotationsProvenance {
+  static const int EVALUATE = 0;
+  static const int BOOK = 1;
+  static const int CHILD_EVALUATE = 2;
+  static const int GAME_OVER = 3;
+}
+
+final class Annotations extends ffi.Struct {
   @Square()
-  external int square;
+  external int move;
 
   @ffi.Bool()
-  external bool book;
+  external bool black_turn;
+
+  external ffi.Pointer<Annotations> father;
+
+  external ffi.Pointer<Annotations> first_child;
+
+  external ffi.Pointer<Annotations> next_sibling;
+
+  @ffi.Bool()
+  external bool derived;
+
+  @ffi.Bool()
+  external bool valid;
 
   @ffi.Double()
   external double eval;
@@ -270,6 +297,12 @@ final class MoveAnnotations extends ffi.Struct {
 
   @ffi.Int()
   external int median_eval;
+
+  @ffi.Int32()
+  external int provenance;
+
+  @ffi.Double()
+  external double seconds;
 
   @ffi.Double()
   external double prob_lower_eval;
@@ -299,60 +332,10 @@ final class MoveAnnotations extends ffi.Struct {
   external int descendants;
 
   @NVisited()
-  external int missing;
-
-  @ffi.UnsignedInt()
-  external int num_thor_games;
+  external int descendants_no_book;
 
   @ffi.Double()
-  external double thor_winning_percentage;
-}
-
-typedef Square = ffi.Uint8;
-typedef DartSquare = int;
-typedef Eval = ffi.Int8;
-typedef DartEval = int;
-typedef NVisited = ffi.Uint64;
-typedef DartNVisited = int;
-
-final class ThorGame extends ffi.Struct {
-  external ffi.Pointer<ffi.Char> black;
-
-  external ffi.Pointer<ffi.Char> white;
-
-  external ffi.Pointer<ffi.Char> tournament;
-
-  @ffi.Array.multi([60])
-  external ffi.Array<Square> moves;
-
-  @ffi.Int()
-  external int moves_played;
-
-  @ffi.Int()
-  external int score;
-
-  @ffi.Int()
-  external int year;
-}
-
-final class Annotations extends ffi.Struct {
-  @NVisited()
-  external int positions;
-
-  @NVisited()
-  external int positions_calculated;
-
-  @ffi.Double()
-  external double seconds;
-
-  @NVisited()
-  external int missing;
-
-  @ffi.Array.multi([64])
-  external ffi.Array<MoveAnnotations> moves;
-
-  @ffi.Int()
-  external int num_moves;
+  external double missing;
 
   @ffi.Bool()
   external bool finished;
@@ -366,20 +349,13 @@ final class Annotations extends ffi.Struct {
   external int num_example_thor_games;
 
   @ffi.Double()
-  external double eval;
-
-  @ffi.Int()
-  external int median_eval;
-
-  @Square()
-  external int move;
-
-  @ffi.Bool()
-  external bool black_turn;
-
-  @ffi.Bool()
-  external bool valid;
+  external double thor_winning_percentage;
 }
+
+typedef Eval = ffi.Int8;
+typedef DartEval = int;
+typedef NVisited = ffi.Uint64;
+typedef DartNVisited = int;
 
 final class ThorParams extends ffi.Struct {
   @ffi.Int()
@@ -425,5 +401,7 @@ typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
-typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Pointer<Annotations>);
-typedef DartUpdateAnnotationsFunction = void Function(ffi.Pointer<Annotations>);
+typedef UpdateAnnotationsFunction = ffi.Void Function(
+    ffi.Pointer<Annotations>, ffi.Pointer<Annotations>);
+typedef DartUpdateAnnotationsFunction = void Function(
+    ffi.Pointer<Annotations>, ffi.Pointer<Annotations>);

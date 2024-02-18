@@ -23,7 +23,7 @@
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
 
-double ElapsedTime::Get() {
+double ElapsedTime::Get() const {
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = end - start_;
   return diff.count();

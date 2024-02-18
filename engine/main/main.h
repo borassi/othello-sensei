@@ -111,6 +111,7 @@ class Main {
     states_[0].Set(kStartingPositionMove, Board(), true);
     states_[1].Unset();
     current_state_ = 0;
+    engine_.CleanAnnotations(Sequence());
     BoardChanged();
   }
 

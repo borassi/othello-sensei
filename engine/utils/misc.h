@@ -30,7 +30,7 @@
 class ElapsedTime {
  public:
   ElapsedTime();
-  double Get();
+  double Get() const;
 
  private:
   std::chrono::time_point<std::chrono::system_clock> start_;

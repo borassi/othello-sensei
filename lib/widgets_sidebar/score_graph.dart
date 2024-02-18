@@ -18,7 +18,6 @@
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/widgets_windows/main.dart';
 
 import '../state.dart';
 import '../utils.dart';
@@ -27,9 +26,8 @@ class ScoreGraph extends StatelessWidget {
   const ScoreGraph({super.key});
 
   BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY) {
-    var score = scores[x];
     var barWidth = width / 61;
-    if (score.isNaN) {
+    if (x >= scores.length || scores[x].isNaN) {
       return BarChartGroupData(
         x: x,
         barRods: [
@@ -42,6 +40,7 @@ class ScoreGraph extends StatelessWidget {
         ]
       );
     }
+    var score = scores[x];
     // Want fromY / (barWidth / 2) = (2 * maxY) / height
     var fromY = (score > 0 ? -1 : 1) * barWidth / 2 * (2 * maxY) / height;
     return BarChartGroupData(
@@ -73,9 +72,8 @@ class ScoreGraph extends StatelessWidget {
         listenable: GlobalState.globalAnnotations,
         builder: (BuildContext context, Widget? widget) {
           var scores = GlobalState.globalAnnotations.getAllScores();
-          var maxY = maxIgnoreNaN(scores.reduce(maxIgnoreNaN), -scores.reduce(minIgnoreNaN));
-          maxY = maxIgnoreNaN(10, (maxY / 10).ceilToDouble() * 10) + 1;
-          var horizontalLinesSpace = (maxY - 1) / 2;
+          var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
+          var horizontalLinesSpace = maxY / 2;
           var textSpace = Theme.of(context).textTheme.bodySmall!.fontSize! * 2;
           var width = (constraints.maxWidth - textSpace);
           var height = constraints.maxHeight;
@@ -91,7 +89,7 @@ class ScoreGraph extends StatelessWidget {
                       !(event is FlTapUpEvent || event is FlPanEndEvent)) {
                     return;
                   }
-                  GlobalState.setCurrentMove(barTouchResponse!.spot!.spot.x.toInt());
+                  GlobalState.setCurrentMove(barTouchResponse.spot!.spot.x.toInt());
                 },
               ),
               alignment: BarChartAlignment.spaceEvenly,
@@ -112,12 +110,12 @@ class ScoreGraph extends StatelessWidget {
                 topTitles: AxisTitles(),
                 bottomTitles: AxisTitles(),
               ),
-              maxY: maxY,
-              minY: -maxY,
+              maxY: maxY + 1,
+              minY: -maxY - 1,
               baselineY: 0,
               borderData: FlBorderData(show: false),
               gridData: const FlGridData(show: false),
-              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY)),
+              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY + 1)),
               extraLinesData: ExtraLinesData(
                 extraLinesOnTop: false,
                 horizontalLines: List.generate(
