@@ -29,6 +29,7 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+
 #include "tree_node.h"
 #include "../constants.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
@@ -402,8 +403,7 @@ class EvaluatorDerivative {
       if (extended) {
         first_position_->ExtendEval(weak_lower_, weak_upper_);
       }
-      assert(first_position_->Lower() > -64 || first_position_->WeakLower() <= weak_lower_);
-      assert(first_position_->Upper() < 64 || first_position_->WeakUpper() >= weak_upper_);
+      assert(first_position_->WeakLowerUpperContains(weak_lower_, weak_upper_));
     }
     is_updating_weak_lower_upper_.clear();
   }

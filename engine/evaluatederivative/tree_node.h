@@ -677,6 +677,11 @@ class TreeNode : public Node {
     }
   }
 
+  bool WeakLowerUpperContains(Eval weak_lower, Eval weak_upper) {
+    std::lock_guard<std::mutex> guard(mutex_);
+    return weak_lower_ <= weak_lower && weak_upper <= weak_upper_;
+  }
+
   template<class T>
   std::unique_ptr<LeafToUpdate<T>> AsLeaf(int last_eval_goal) {
     std::lock_guard<std::mutex> guard(mutex_);

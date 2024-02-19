@@ -138,6 +138,8 @@ void TreeNode::SetChildren(std::vector<TreeNode*> children, const EvaluatorDeriv
       // This is thread-safe because we are keeping the lock on 'child', which
       // means that we set the flag before ExtendEval finishes (because it needs
       // to update 'child' before finishing).
+      // NOTE: We cannot rerun the ExtendEval in EvaluatorDerivative, because we
+      // don't know if the error propagated to the first position.
       if (child->weak_lower_ > -weak_upper || child->weak_upper_ < -weak_lower) {
         extend_eval_failed_ = true;
       }

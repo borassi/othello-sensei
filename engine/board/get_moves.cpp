@@ -64,6 +64,10 @@ bool HaveToPass(BitPattern player, BitPattern opponent) {
   return GetMoves(player, opponent) == 0;
 }
 
+bool HaveToPass(const Board& board) {
+  return HaveToPass(board.Player(), board.Opponent());
+}
+
 std::vector<Board> GetNextBoardsWithPass(BitPattern player,
                                          BitPattern opponent) {
   std::vector<Board> result;

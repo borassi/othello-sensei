@@ -92,6 +92,8 @@ inline int GetNMoves(BitPattern player, BitPattern opponent) noexcept {
 
 bool HaveToPass(BitPattern player, BitPattern opponent);
 
+bool HaveToPass(const Board& board);
+
 BitPattern GetMovesBasic(BitPattern player, BitPattern opponent);
 
 std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent);
