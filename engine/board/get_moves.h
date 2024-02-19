@@ -94,6 +94,8 @@ bool HaveToPass(BitPattern player, BitPattern opponent);
 
 bool HaveToPass(const Board& board);
 
+bool IsGameOver(const Board& board);
+
 BitPattern GetMovesBasic(BitPattern player, BitPattern opponent);
 
 std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent);

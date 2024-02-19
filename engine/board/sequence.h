@@ -243,6 +243,10 @@ class Sequence {
     throw std::invalid_argument("This should never happen. Wrong rotation.");
   }
 
+  void AddMove(Square move) { moves_.push_back(move); }
+
+  void RemoveLastMove() { moves_.pop_back(); }
+
  private:
   Sequence(int length) : moves_(length) {}
 

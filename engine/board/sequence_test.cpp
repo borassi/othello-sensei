@@ -39,6 +39,21 @@ TEST(Sequence, Comparisons) {
   ASSERT_FALSE(Sequence("") > Sequence(""));
 }
 
+TEST(Sequence, AddMove) {
+  Sequence sequence;
+  sequence.AddMove(19);
+  EXPECT_EQ(sequence, Sequence("e6"));
+
+  sequence.AddMove(34);
+  EXPECT_EQ(sequence, Sequence("e6f4"));
+
+  sequence.RemoveLastMove();
+  EXPECT_EQ(sequence, Sequence("e6"));
+
+  sequence.RemoveLastMove();
+  EXPECT_EQ(sequence, Sequence());
+}
+
 TEST(Sequence, Sequence) {
   Sequence sequence1("e6f4c3c4d3");
   Sequence sequence2("f5d6c3d3c4");

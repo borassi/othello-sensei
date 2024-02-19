@@ -68,6 +68,10 @@ bool HaveToPass(const Board& board) {
   return HaveToPass(board.Player(), board.Opponent());
 }
 
+bool IsGameOver(const Board& board) {
+  return HaveToPass(board.Player(), board.Opponent()) && HaveToPass(board.Opponent(), board.Player());
+}
+
 std::vector<Board> GetNextBoardsWithPass(BitPattern player,
                                          BitPattern opponent) {
   std::vector<Board> result;

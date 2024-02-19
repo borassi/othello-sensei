@@ -141,6 +141,7 @@ void TreeNode::SetChildren(std::vector<TreeNode*> children, const EvaluatorDeriv
       // NOTE: We cannot rerun the ExtendEval in EvaluatorDerivative, because we
       // don't know if the error propagated to the first position.
       if (child->weak_lower_ > -weak_upper || child->weak_upper_ < -weak_lower) {
+        std::cout << "Extend eval failed!\n";
         extend_eval_failed_ = true;
       }
     }

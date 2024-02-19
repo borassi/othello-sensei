@@ -670,11 +670,10 @@ class TreeNode : public Node {
   }
 
   void ExtendEval(Eval weak_lower, Eval weak_upper) {
-    extend_eval_failed_ = false;
-    ExtendEvalInternal(weak_lower, weak_upper);
-    if (extend_eval_failed_) {
-      ExtendEval(weak_lower, weak_upper);
-    }
+    do {
+      extend_eval_failed_ = false;
+      ExtendEvalInternal(weak_lower, weak_upper);
+    } while (extend_eval_failed_);
   }
 
   bool WeakLowerUpperContains(Eval weak_lower, Eval weak_upper) {
@@ -824,9 +823,11 @@ class TreeNode : public Node {
   void ExtendEvalInternal(Eval weak_lower, Eval weak_upper) {
     {
       std::lock_guard<std::mutex> guard(mutex_);
-      if (weak_lower >= weak_lower_ && weak_upper <= weak_upper_ && n_threads_working_ == 0) {
-        return;
-      }
+      // NOTE: We cannot return if weak_lower_, weak_upper_ of this node are OK,
+      // because there might be a thread working on this node's descendants with
+      // old weak_lower, weak_upper. And we cannot check that n_threads_working
+      // is 0, because the thread might have gotten to this node's descendants
+      // through a transposition.
       if (IsLeafNoLock()) {
         UpdateLeafWeakLowerUpper(weak_lower, weak_upper);
         return;
