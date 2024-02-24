@@ -73,16 +73,18 @@ struct Annotations {
   // Filled when defining the annotation.
   Square move;
   bool black_turn;
+  int depth;
   struct Annotations* father;
   struct Annotations* first_child;
   struct Annotations* next_sibling;
-  bool derived;  // If true, ignore it for time and descendants.
+  struct Annotations* next_state_played;
   bool valid;
   // Filled when evaluating this position.
   double eval;
   double leaf_eval;
   int median_eval;
   enum AnnotationsProvenance provenance;
+  bool derived;  // If true, ignore it for time and descendants.
   double seconds;
   double prob_lower_eval;
   double prob_upper_eval;

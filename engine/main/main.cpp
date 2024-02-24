@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2024 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,13 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
   return true;
 }
 
-void Main::BoardChanged() {
-  const State& state = states_[current_state_];
-  const Board& board = state.GetBoard();
-  set_board_({board.Player(), board.Opponent(), state.GetBlackTurn()});
+void Main::ToState(State* new_state) {
+  if (!new_state) {
+    return;
+  }
+  Stop();
+  current_state_ = new_state;
+  current_state_->SetNextStates();
+  const Board& board = current_state_->GetBoard();
+  set_board_({board.Player(), board.Opponent(), current_state_->GetBlackTurn()});
 }

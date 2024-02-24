@@ -78,6 +78,9 @@ class Sequence {
 
   Sequence(const std::vector<Square>& moves) : Sequence(moves.data(), moves.size()) {}
 
+  template <typename Iterator>
+  Sequence(Iterator begin, Iterator end) : moves_(begin, end) {}
+
   Sequence(const Sequence& sequence) : Sequence(sequence.Moves()) {}
 
   static Sequence FromThor(Square* moves) {
@@ -95,11 +98,8 @@ class Sequence {
   }
 
   Sequence Subsequence(int size) const {
-    std::vector<Square> new_moves(moves_.begin(), moves_.end());
-    while (new_moves.size() < size) {
-      new_moves.push_back(kNoSquare);
-    }
-    return Sequence(new_moves.data(), size);
+    assert(size <= Size());
+    return Sequence(moves_.data(), size);
   }
 
   Square LastMove() const { return moves_.back(); }

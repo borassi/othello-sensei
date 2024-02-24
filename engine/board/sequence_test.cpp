@@ -167,6 +167,7 @@ TEST(Sequence, FromThor) {
 
 TEST(Sequence, Subsequence) {
   Sequence sequence("e6f4c3c4d3");
+  EXPECT_EQ(sequence.Subsequence(0), Sequence());
   EXPECT_EQ(sequence.Subsequence(4), Sequence("e6f4c3c4"));
   EXPECT_EQ(sequence.Subsequence(5), Sequence("e6f4c3c4d3"));
 }

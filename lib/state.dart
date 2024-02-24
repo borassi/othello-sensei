@@ -44,7 +44,10 @@ void setBoard(BoardUpdate boardUpdate) {
 }
 
 int currentMove() {
-  return 60 - GlobalState.board.emptySquares();
+  if (GlobalState.globalAnnotations.annotations == null) {
+    return 0;
+  }
+  return GlobalState.globalAnnotations.annotations!.ref.depth;
 }
 
 void updateAnnotations(Pointer<Annotations> annotations, Pointer<Annotations> startingAnnotations) {
@@ -60,7 +63,6 @@ void updateAnnotations(Pointer<Annotations> annotations, Pointer<Annotations> st
 class GlobalState {
   static var board = BoardState();
   static var actionWhenPlay = ActionWhenPlayState();
-  static var squareSize = SquareSizeState();
   static List<AnnotationState> annotations = List.generate(64, (index) => AnnotationState());
   static var globalAnnotations = GlobalAnnotationState();
   static late final PreferencesState preferences;
@@ -164,17 +166,6 @@ class ActionWhenPlayState with ChangeNotifier {
   }
 }
 
-class SquareSizeState with ChangeNotifier {
-  int squareSize;
-
-  SquareSizeState() : squareSize = 100;
-
-  void updateSquareSize(int newSquareSize) {
-    squareSize = newSquareSize;
-    notifyListeners();
-  }
-}
-
 class AnnotationState with ChangeNotifier {
   Annotations? annotations;
 
@@ -189,7 +180,7 @@ class AnnotationState with ChangeNotifier {
   }
 
   double getEval() {
-    return GlobalState.preferences.get('Round evaluations') ? annotations!.median_eval.toDouble() : annotations!.eval;
+    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn);
   }
 }
 
@@ -305,12 +296,8 @@ class GlobalAnnotationState with ChangeNotifier {
     var annotation = startAnnotations;
     var scores = <double>[];
     while (annotation != null && annotation != nullptr) {
-      if (annotation.ref.first_child == nullptr &&
-          annotation.ref.provenance != AnnotationsProvenance.GAME_OVER) {
-        break;
-      }
-      scores.add((annotation.ref.black_turn ? 1 : -1) * getEval(annotation: annotation.ref));
-      annotation = annotation.ref.first_child;
+      scores.add(getEvalFromAnnotations(annotation.ref, true));
+      annotation = annotation.ref.next_state_played;
     }
     return scores;
   }
@@ -357,11 +344,6 @@ class GlobalAnnotationState with ChangeNotifier {
       return '-';
     }
     return prettyPrintDouble(annotations!.ref.missing.toDouble());
-  }
-
-  double getEval({Annotations? annotation}) {
-    annotation = annotation ?? annotations!.ref;
-    return GlobalState.preferences.get('Round evaluations') ? annotation.median_eval.toDouble() : annotation.eval;
   }
 }
 

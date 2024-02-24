@@ -27,10 +27,21 @@
 constexpr int kPlayerLength = 20;
 constexpr int kTournamentLength = 26;
 
+// Compare by:
+// - The value of f(g);
+// - The sequence of f(g) (if f(g1) is a subsequence of f(g2), g1 > g2).
+// - The game itself (just to break ties).
+//
+// When comparing a game and a sequence, they are equal if the sequence is a
+// substring of the game (so that lower_bound is the first game with this
+// sequence, upper_bound is the last).
 template<class T, T f(const Game*)>
 struct cmpGameAndSequence {
   bool operator()(const Game* g1, const Game* g2) {
-    return std::forward_as_tuple(f(g1), *g1) < std::forward_as_tuple(f(g2), *g2);
+    auto size = std::min(g1->Moves().Size(), g2->Moves().Size());
+    return
+        std::forward_as_tuple(f(g1), g1->Moves().Subsequence(size), g2->Moves().Size(), *g1) <
+        std::forward_as_tuple(f(g2), g2->Moves().Subsequence(size), g1->Moves().Size(), *g2);
   }
   bool operator()(const Game* g, const std::pair<T, Sequence>& s) {
     // NOTE: We take the minimum so that lower_bound is before everything with
@@ -84,6 +95,7 @@ struct GamesList {
     if (num_games == 0) {
       return;
     }
+    assert(examples[0]->Moves().Size() >= target.Size());
     int transposition = target.GetTransposition(examples[0]->Moves().Subsequence(target.Size()));
     if (transposition == 0) {
       return;
@@ -217,7 +229,10 @@ class Source {
           assert(result.examples.size() == max_games);
         }
         for (auto it = interval.start; it != interval.end; ) {
-          Square next_move = (*it)->Move(sequence_size);
+          Square next_move = sequence_size < (*it)->Moves().Size() + 1 ? (*it)->Move(sequence_size) : kNoSquare;
+          // If it=e6f4c3, and sequence_size=2, next_sequence will be e6f4c4.
+          // If it=e6f4 and sequence_size=2, next_sequence will be e6f4, so that
+          // next_it becomes equal to interval.end.
           Sequence next_sequence = (*it)->Moves().Subsequence(sequence_size + (next_move == kNoSquare ? 0 : 1));
           auto next_it = std::upper_bound(
               it, interval.end,

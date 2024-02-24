@@ -57,6 +57,7 @@ class ScoreGraph extends StatelessWidget {
         BarChartRodData(
           fromY: -maxY,
           toY: maxY,
+          width: barWidth,
           color: Colors.transparent,
         ),
       ],

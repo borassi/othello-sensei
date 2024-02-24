@@ -20,6 +20,8 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 
+import 'ffi/ffi_engine.dart';
+
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${substring(1)}";
@@ -136,4 +138,9 @@ String formatEval(double eval) {
     return '-';
   }
   return eval.toStringAsFixed(GlobalState.preferences.get("Round evaluations") ? 0 : 2);
+}
+
+double getEvalFromAnnotations(Annotations annotation, bool black) {
+  return (annotation.black_turn == black ? 1 : -1) * (
+      GlobalState.preferences.get('Round evaluations') ? annotation.median_eval.toDouble() : annotation.eval);
 }

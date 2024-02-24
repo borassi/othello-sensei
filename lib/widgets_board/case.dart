@@ -15,6 +15,8 @@
  *
  */
 
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
@@ -86,8 +88,10 @@ class Case extends StatelessWidget {
       return const Text("");
     }
     var annotation = annotations.annotations!;
-    var eval = -annotations.getEval();
-    var bestEval = GlobalState.globalAnnotations.getEval();
+    var eval = annotations.getEval();
+    var bestEval = getEvalFromAnnotations(
+        GlobalState.globalAnnotations.annotations!.ref,
+        GlobalState.globalAnnotations.annotations!.ref.black_turn);
     var color = eval > bestEval - 1 ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
     String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';

@@ -36,7 +36,23 @@ target_link_libraries( # Specifies the target library.
         get_moves
         misc
         pattern_evaluator
+        state
         thor
+)
+
+add_library(
+        state
+        SHARED
+        state.h
+        state.cpp
+)
+
+target_link_libraries( # Specifies the target library.
+        state
+        LINK_PUBLIC
+        bindings
+        board
+        sequence
 )
 
 add_library(
@@ -58,6 +74,7 @@ target_link_libraries( # Specifies the target library.
         get_moves
         misc
         pattern_evaluator
+        state
         thor
 )
 

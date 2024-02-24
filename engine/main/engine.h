@@ -20,6 +20,7 @@
 #include <list>
 
 #include "bindings.h"
+#include "state.h"
 
 #include "../board/board.h"
 #include "../board/get_flip.h"
@@ -159,18 +160,11 @@ class Engine {
       const std::string& thor_filepath,
       UpdateAnnotations update_annotations);
 
-  ~Engine() {
-    CleanAnnotations(Sequence());
-    free(annotations_);
-  }
-
-  void CleanAnnotations(const Sequence& sequence);
-
-  void Start(const Sequence& sequence, const Board& board, bool black_turn,
+  void Start(State* current_state, std::shared_ptr<State>& first_state,
              const EvaluateParams& params) {
     current_future_ = std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Run, this, current_thread_.load(),
-        current_future_, sequence, board, black_turn, params));
+        current_future_, current_state, first_state, params));
   }
 
   void Stop();
@@ -192,7 +186,6 @@ class Engine {
   std::array<std::unique_ptr<BoardToEvaluate>, kNumEvaluators> boards_to_evaluate_;
   int num_boards_to_evaluate_;
 
-  Annotations* annotations_;
   ElapsedTime time_;
 
   std::atomic_uint32_t current_thread_;
@@ -206,37 +199,17 @@ class Engine {
 
   std::unique_ptr<Thor> thor_;
 
-  Board last_board_;
-  int last_offset_;
-  bool last_black_turn_;
+  std::shared_ptr<State> last_first_state_;
+  State* last_state_;
 
-  void EvaluateThor(const Sequence& sequence, const EvaluateParams& params, Annotations& annotations);
+  void EvaluateThor(const EvaluateParams& params, State& state);
 
   void Initialize(
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath);
 
-  void CleanAnnotationsRecursive(Annotations& annotation) {
-    for (Annotations* child = annotation.first_child;
-         child != nullptr;
-         child = child->next_sibling) {
-      CleanAnnotationsRecursive(*child);
-      delete(child);
-    }
-    annotation.first_child = nullptr;
-  }
-
-  void CleanAnnotationsInternal(
-      const Sequence& sequence,
-      std::shared_ptr<std::future<void>> last_future) {
-    last_future->get();
-    CleanAnnotationsRecursive(*GetAnnotation(sequence).value());
-  }
-
-  void UpdateBoardsToEvaluate(const Board& board, Annotations& annotations);
-
-  void UpdateFatherAnnotations(int state);
+  void UpdateBoardsToEvaluate(const State& state);
 
   BoardToEvaluate* NextBoardToEvaluate(double delta) {
     double highestPriority = -std::numeric_limits<double>::infinity();
@@ -253,46 +226,11 @@ class Engine {
     return result;
   }
 
-  Annotations* StartingAnnotation() {
-    return annotations_;
-  }
-
-  Annotations* CreateAnnotation(Square move, bool derived, bool black_turn, Annotations& father) {
-    Annotations* annotation = new Annotations();
-    annotation->move = move;
-    annotation->black_turn = black_turn;
-    annotation->next_sibling = father.first_child;
-    annotation->father = &father;
-    annotation->first_child = nullptr;
-    annotation->derived = derived;
-    annotation->valid = false;
-    father.first_child = annotation;
-
-    return annotation;
-  }
-
-  std::optional<Annotations*> GetAnnotation(const Sequence& sequence) {
-    Annotations* annotation = StartingAnnotation();
-    for (const Square move : sequence.Moves()) {
-      bool found = false;
-      for (Annotations* child = annotation->first_child; child != nullptr; child = child->next_sibling) {
-        if (child->move == move) {
-          annotation = child;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        return std::nullopt;
-      }
-    }
-    return annotation;
-  }
-
   // NOTE: Pass variables by value, to avoid concurrent modifications.
   void Run(
       int current_thread, std::shared_ptr<std::future<void>> last_future,
-      Sequence sequence, Board board, bool black_turn, EvaluateParams params);
+      State* current_state, std::shared_ptr<State> first_state,
+      EvaluateParams params);
 
   void RunUpdateAnnotations(int current_thread, int current_state, bool finished);
 };

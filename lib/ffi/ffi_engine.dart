@@ -277,14 +277,16 @@ final class Annotations extends ffi.Struct {
   @ffi.Bool()
   external bool black_turn;
 
+  @ffi.Int()
+  external int depth;
+
   external ffi.Pointer<Annotations> father;
 
   external ffi.Pointer<Annotations> first_child;
 
   external ffi.Pointer<Annotations> next_sibling;
 
-  @ffi.Bool()
-  external bool derived;
+  external ffi.Pointer<Annotations> next_state_played;
 
   @ffi.Bool()
   external bool valid;
@@ -300,6 +302,9 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Int32()
   external int provenance;
+
+  @ffi.Bool()
+  external bool derived;
 
   @ffi.Double()
   external double seconds;
