@@ -52,6 +52,14 @@ class State : public Annotations {
   bool GetBlackTurn() const { return black_turn; }
   Square Move() const { return move; }
   int Depth() const { return depth; }
+  bool HasValidChildren() const {
+    for (State* child = first_child_.get(); child != nullptr; child = child->next_sibling_.get()) {
+      if (!child->valid) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   State* NextState(Square move);
 

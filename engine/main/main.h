@@ -67,6 +67,25 @@ class Main {
 
   void Stop();
 
+  char* GetSequence() {
+    std::string sequence = current_state_->GetSequence().ToString();
+    char* result = (char*) malloc(sizeof(sequence) + 1);
+    strcpy(result, sequence.c_str());
+    return result;
+  }
+
+  bool SetSequence(const std::string& sequence) {
+    Sequence moves = Sequence::ParseFromString(sequence);
+    if (moves.Size() == 0) {
+      return false;
+    }
+    NewGame();
+    for (Square move : moves.Moves()) {
+      PlayMove(move);
+    }
+    return true;
+  }
+
   void Evaluate() {
     engine_.Start(current_state_, first_state_, evaluate_params_);
   }

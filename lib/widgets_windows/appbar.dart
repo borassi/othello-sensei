@@ -16,31 +16,25 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../utils.dart';
 
 enum MenuItem {
-  save,
-  open,
-  loadThor,
-  setFirstPosition,
-  resetFirstPosition,
+  copy,
+  paste,
   settings
 }
 
-void handleMenuItem(BuildContext context, MenuItem item) {
+void handleMenuItem(BuildContext context, MenuItem item) async {
   switch (item) {
-    case MenuItem.save:
+    case MenuItem.copy:
+      await copy();
       return;
-    case MenuItem.open:
-      return;
-    case MenuItem.loadThor:
-      return;
-    case MenuItem.setFirstPosition:
-      return;
-    case MenuItem.resetFirstPosition:
+    case MenuItem.paste:
+      await pasteOrError(context);
       return;
     case MenuItem.settings:
       GlobalState.stop();

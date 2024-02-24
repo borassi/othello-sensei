@@ -33,6 +33,13 @@ void NewGame(void* ptr) { static_cast<Main*>(ptr)->NewGame(); }
 
 void PlayMove(void* ptr, int square) { static_cast<Main*>(ptr)->PlayMove(square); }
 
+bool SetSequence(void* ptr, char* sequence) {
+  std::string sequence_string(sequence);
+  return static_cast<Main*>(ptr)->SetSequence(sequence_string);
+}
+
+char* GetSequence(void* ptr) { return static_cast<Main*>(ptr)->GetSequence(); }
+
 void Undo(void* ptr) { static_cast<Main*>(ptr)->Undo(); }
 
 void SetCurrentMove(void* ptr, int square) { static_cast<Main*>(ptr)->SetCurrentMove(square); }

@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,6 +59,36 @@ void updateAnnotations(Pointer<Annotations> annotations, Pointer<Annotations> st
   if (!annotations.ref.finished) {
     GlobalState.evaluate(isFirst: false);
   }
+}
+
+Future<void> copy() async {
+  Pointer<Char> sequence = ffiEngine.GetSequence(GlobalState.ffiMain);
+  Clipboard.setData(ClipboardData(text: sequence.cast<Utf8>().toDartString()));
+  malloc.free(sequence);
+}
+
+Future<bool> paste() async {
+  String? game = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+  if (game == null) {
+    return false;
+  }
+  var gameC = game!.toNativeUtf8().cast<Char>();
+  return ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+}
+
+Future<void> pasteOrError(BuildContext context) async {
+  bool success = await paste();
+  if (!success && context.mounted) {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) {
+        return const AlertDialog(
+          title: Text('The clipboard does not contain a game!'),
+        );
+      },
+    );
+  };
+  GlobalState.evaluate();
 }
 
 class GlobalState {
@@ -302,20 +333,24 @@ class GlobalAnnotationState with ChangeNotifier {
     return scores;
   }
 
-  (double, double) getErrors() {
+  (double, double, bool) getErrors() {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
     var allScores = getAllScores();
-    var move = currentMove();
-    for (int i = 1; i <= move; ++i) {
-      var error = allScores[i] - allScores[i-1];
-      if (error > 0) {
+    var oldScore = 0.0;
+    var hasNaN = false;
+    for (double score in allScores) {
+      var error = score - oldScore;
+      if (error.isNaN) {
+        hasNaN = true;
+      } else if (error > 0) {
         errorWhite += error;
       } else {
         errorBlack += -error;
       }
+      oldScore = score;
     }
-    return (errorBlack, errorWhite);
+    return (errorBlack, errorWhite, hasNaN);
   }
 
   String getPositions() {

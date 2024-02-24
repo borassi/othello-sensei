@@ -126,6 +126,38 @@ class FFIEngine {
   late final _PlayMove =
       _PlayMovePtr.asFunction<void Function(ffi.Pointer<ffi.Void>, int)>();
 
+  bool SetSequence(
+    ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<ffi.Char> sequence,
+  ) {
+    return _SetSequence(
+      ptr,
+      sequence,
+    );
+  }
+
+  late final _SetSequencePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Bool Function(
+              ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>>('SetSequence');
+  late final _SetSequence = _SetSequencePtr.asFunction<
+      bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>();
+
+  ffi.Pointer<ffi.Char> GetSequence(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _GetSequence(
+      ptr,
+    );
+  }
+
+  late final _GetSequencePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.Void>)>>('GetSequence');
+  late final _GetSequence = _GetSequencePtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>)>();
+
   void Undo(
     ffi.Pointer<ffi.Void> ptr,
   ) {

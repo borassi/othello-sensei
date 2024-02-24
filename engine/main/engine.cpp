@@ -42,6 +42,7 @@ void AnnotationsSet(Annotations& annotation, const Node& node, bool book, double
   annotation.descendants_no_book = book ? 0 : annotation.descendants;
   annotation.missing = node.IsSolved() ? 0 : node.RemainingWork(-63, 63);
   annotation.finished = book || node.IsSolved();
+  annotation.valid = true;
 }
 
 void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
@@ -78,6 +79,7 @@ void SetAnnotationsGameOver(State& state) {
   state.descendants = 0;
   state.descendants_no_book = 0;
   state.finished = true;
+  state.valid = true;
 }
 
 void SetFatherAnnotations(Annotations& annotation) {
@@ -101,6 +103,7 @@ void SetFatherAnnotations(Annotations& annotation) {
   annotation.descendants = 0;
   annotation.descendants_no_book = 0;
   annotation.finished = true;
+  annotation.valid = true;
 
   for (Annotations* child = annotation.first_child; child != nullptr; child = child->next_sibling) {
     int eval_sign = child->black_turn == annotation.black_turn ? 1 : -1;
@@ -115,8 +118,8 @@ void SetFatherAnnotations(Annotations& annotation) {
       annotation.descendants_no_book += child->descendants_no_book;
     }
     annotation.finished = annotation.finished && child->finished;
+    annotation.valid = annotation.valid && child->valid;
   }
-  annotation.valid = true;
   if (annotation.father != nullptr) {
     SetFatherAnnotations(*annotation.father);
   }
@@ -301,7 +304,7 @@ void Engine::Run(
     EvaluateParams params) {
   last_future->get();
   assert(current_state);
-  if (current_thread != current_thread_ && current_state->valid) {
+  if (current_thread != current_thread_ && current_state->valid && current_state->HasValidChildren()) {
     return;
   }
   if (last_state_ != current_state || last_first_state_ != first_state) {

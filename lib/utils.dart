@@ -141,6 +141,9 @@ String formatEval(double eval) {
 }
 
 double getEvalFromAnnotations(Annotations annotation, bool black) {
+  if (!annotation.valid) {
+    return double.nan;
+  }
   return (annotation.black_turn == black ? 1 : -1) * (
       GlobalState.preferences.get('Round evaluations') ? annotation.median_eval.toDouble() : annotation.eval);
 }

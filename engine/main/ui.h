@@ -50,6 +50,12 @@ EXPORT
 void PlayMove(void* ptr, int square);
 
 EXPORT
+bool SetSequence(void* ptr, char* sequence);
+
+EXPORT
+char* GetSequence(void* ptr);
+
+EXPORT
 void Undo(void* ptr);
 
 EXPORT

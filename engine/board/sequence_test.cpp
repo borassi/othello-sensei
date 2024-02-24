@@ -160,6 +160,15 @@ TEST(Sequence, ToCanonicalGame) {
   }
 }
 
+TEST(Sequence, ParseFromString) {
+  EXPECT_EQ(Sequence::ParseFromString("e6f4"), Sequence("e6f4"));
+  EXPECT_EQ(Sequence::ParseFromString("0. abcdt 78"), Sequence(""));
+  EXPECT_EQ(Sequence::ParseFromString("1. e6 2. f4"), Sequence("e6f4"));
+  EXPECT_EQ(Sequence::ParseFromString("1. e6 2. f4\n3.c3"), Sequence("e6f4c3"));
+  EXPECT_EQ(Sequence::ParseFromString("e6 f4 a1 \n3.c3"), Sequence("e6f4c3"));
+  EXPECT_EQ(Sequence::ParseFromString("e6 f4 e6 \n3.c3"), Sequence("e6f4c3"));
+}
+
 TEST(Sequence, FromThor) {
   Square sequence[60] = {65, 46, 33, 43, 34};
   EXPECT_EQ(Sequence::FromThor(sequence), Sequence("e6f4c3c4d3"));

@@ -29,6 +29,7 @@ import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 import '../widgets_board/board.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import 'keyboard_listener.dart';
 
 void main() async {
   await GlobalState.init();
@@ -134,31 +135,33 @@ class Main extends StatelessWidget {
           brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      home: Scaffold(
-        // resizeToAvoidBottomInset: false,
-        appBar: const SenseiAppBar(),
-        body: AppTheme(
-          child: MainContent(
-            const Board(),
-            DefaultTabController(
-              length: 2,
-              initialIndex: GlobalState.preferences.get('Tab'),
-              child: Scaffold(
-                bottomNavigationBar: TabBar(
-                  tabs: List.generate(2, (index) => Tab(text: tabName[index])),
-                  onTap: (int index) {
-                    GlobalState.preferences.set('Tab', index);
-                    GlobalState.evaluate();
-                  },
-                ),
-                body: TabBarView(
-                  children: [
-                    evaluateContent,
-                    thorContent,
-                  ],
+      home: MyKeyboardListener(
+        child: Scaffold(
+          // resizeToAvoidBottomInset: false,
+          appBar: const SenseiAppBar(),
+          body: AppTheme(
+            child: MainContent(
+              const Board(),
+              DefaultTabController(
+                length: 2,
+                initialIndex: GlobalState.preferences.get('Tab'),
+                child: Scaffold(
+                  bottomNavigationBar: TabBar(
+                    tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                    onTap: (int index) {
+                      GlobalState.preferences.set('Tab', index);
+                      GlobalState.evaluate();
+                    },
+                  ),
+                  body: TabBarView(
+                    children: [
+                      evaluateContent,
+                      thorContent,
+                    ],
+                  ),
                 ),
               ),
-            ),
+            )
           )
         )
       )

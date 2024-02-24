@@ -22,6 +22,7 @@
 #include <map>
 #include <optional>
 #include <ostream>
+#include <regex>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
@@ -82,6 +83,32 @@ class Sequence {
   Sequence(Iterator begin, Iterator end) : moves_(begin, end) {}
 
   Sequence(const Sequence& sequence) : Sequence(sequence.Moves()) {}
+
+  static Sequence ParseFromString(std::string string) {
+      std::vector<Square> result;
+    Board b;
+    std::regex move_regex ("[a-h][1-8]");
+
+    for (std::sregex_iterator iter(string.begin(), string.end(), move_regex);
+         iter != std::sregex_iterator();
+         ++iter) {
+      Square move = MoveToSquare((*iter)[0]);
+      assert(move >= 0 && move < 64);
+      if (((1ULL << move) & b.Empties()) == 0) {
+        continue;
+      }
+      auto flip = GetFlip(move, b.Player(), b.Opponent());
+      if (flip == 0) {
+        continue;
+      }
+      b.PlayMove(flip);
+      if (HaveToPass(b.Player(), b.Opponent())) {
+        b.PlayMove(0);
+      }
+      result.push_back(move);
+    }
+    return Sequence(result);
+  }
 
   static Sequence FromThor(Square* moves) {
     Sequence result(0);
