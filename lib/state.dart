@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
 import 'package:path/path.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ffi/ffi_bridge.dart';
@@ -91,6 +92,14 @@ Future<void> pasteOrError(BuildContext context) async {
   GlobalState.evaluate();
 }
 
+void ReceiveOthelloQuestEvent(List<SharedMediaFile> event) {
+  if (event.length != 1 || event[0].mimeType != "message/rfc822") {
+    return;
+  }
+  var game = event[0].path.toNativeUtf8().cast<Char>();
+  ffiEngine.SetSequence(GlobalState.ffiMain, game);
+}
+
 class GlobalState {
   static var board = BoardState();
   static var actionWhenPlay = ActionWhenPlayState();
@@ -115,6 +124,8 @@ class GlobalState {
         setAnnotationsCallback.nativeFunction
     );
     newGame();
+    ReceiveSharingIntent.getInitialMedia().then(ReceiveOthelloQuestEvent);
+    ReceiveSharingIntent.getMediaStream().listen(ReceiveOthelloQuestEvent);
   }
   static ThorMetadataState get thorMetadata {
     thorMetadataOrNull ??= ThorMetadataState();

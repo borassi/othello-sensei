@@ -23,7 +23,6 @@ Match the features of the current app
 
 Extra features:
 - P1 MED Analyze a game.
-- P1 MED Share game from Othello Quest.
 - P1 HARD Remember opening book for player.
 - P2 HARD Extend opening book considering all moves.
 - P2 EASY Show stats from various moves.
@@ -33,6 +32,7 @@ Extra features:
 - P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P2 MED Tabs with different widgets.
 - P2 MED Share opening book in Google Drive.
+- P2 MED Lookup URL in Othello Quest.
 - P2 TINY Customize delta to highlight a move.
 - P3 EASY Icons disappear from the bar.
 - P3 EASY Horizontal layout.
@@ -44,6 +44,7 @@ Extra features:
 
 Make the app distributable
 - P3 MED Make it work on iOS.
+- P4 EASY Make sharing from Othello Quest possible on iOS.
 - P4 MED Make it work on Mac.
 - P5 EASY Add documentation on how to run it.
 
