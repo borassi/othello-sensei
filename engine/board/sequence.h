@@ -85,7 +85,8 @@ class Sequence {
   Sequence(const Sequence& sequence) : Sequence(sequence.Moves()) {}
 
   static Sequence ParseFromString(std::string string) {
-      std::vector<Square> result;
+    string = ToLower(string);
+    std::vector<Square> result;
     Board b;
     std::regex move_regex ("[a-h][1-8]");
 

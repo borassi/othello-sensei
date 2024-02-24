@@ -167,6 +167,7 @@ TEST(Sequence, ParseFromString) {
   EXPECT_EQ(Sequence::ParseFromString("1. e6 2. f4\n3.c3"), Sequence("e6f4c3"));
   EXPECT_EQ(Sequence::ParseFromString("e6 f4 a1 \n3.c3"), Sequence("e6f4c3"));
   EXPECT_EQ(Sequence::ParseFromString("e6 f4 e6 \n3.c3"), Sequence("e6f4c3"));
+  EXPECT_EQ(Sequence::ParseFromString("E6 F4 e6 \n3.c3"), Sequence("e6f4c3"));
 }
 
 TEST(Sequence, FromThor) {
