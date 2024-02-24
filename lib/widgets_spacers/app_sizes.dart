@@ -31,7 +31,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
 
   AppSizes(this.height, this.width) {
     var verticalBoardSize = min(width, 8 / 14 * height);
-    var horizontalBoardSize = min(height, 8 / 13 * width);
+    var horizontalBoardSize = min(height, 8 / 14 * width);
     vertical = verticalBoardSize > horizontalBoardSize;
     var boardSize = max(verticalBoardSize, horizontalBoardSize);
     squareSize = (boardSize! / 8.5);

@@ -27,30 +27,24 @@ class ScoreGraph extends StatelessWidget {
 
   BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY) {
     var barWidth = width / 61;
-    if (x >= scores.length || scores[x].isNaN) {
-      return BarChartGroupData(
-        x: x,
-        barRods: [
-          BarChartRodData(
-            fromY: 0,
-            toY: 0,
-            width: barWidth,
-            color: standardColor,
-          )
-        ]
-      );
+    var score = x >= scores.length ? double.nan : scores[x];
+    double fromY;
+    double toY;
+    if (score.isNaN) {
+      fromY = 0;
+      toY = 0;
+    } else {
+      // Want fromY / (barWidth / 2) = (2 * maxY) / height
+      fromY = (score > 0 ? -1 : 1) * barWidth / 2 * (2 * maxY) / height;
+      toY = score;
     }
-    var score = scores[x];
-    // Want fromY / (barWidth / 2) = (2 * maxY) / height
-    var fromY = (score > 0 ? -1 : 1) * barWidth / 2 * (2 * maxY) / height;
     return BarChartGroupData(
       x: x,
-      barsSpace: 0,
       groupVertically: true,
       barRods: [
         BarChartRodData(
           fromY: fromY,
-          toY: score,
+          toY: toY,
           width: barWidth,
           color: x == currentMove() ? highlightColor : standardColor,
         ),

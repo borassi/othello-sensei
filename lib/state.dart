@@ -124,8 +124,10 @@ class GlobalState {
         setAnnotationsCallback.nativeFunction
     );
     newGame();
-    ReceiveSharingIntent.getInitialMedia().then(ReceiveOthelloQuestEvent);
-    ReceiveSharingIntent.getMediaStream().listen(ReceiveOthelloQuestEvent);
+    if (Platform.isAndroid || Platform.isIOS) {
+      ReceiveSharingIntent.getInitialMedia().then(ReceiveOthelloQuestEvent);
+      ReceiveSharingIntent.getMediaStream().listen(ReceiveOthelloQuestEvent);
+    }
   }
   static ThorMetadataState get thorMetadata {
     thorMetadataOrNull ??= ThorMetadataState();

@@ -75,7 +75,7 @@ class DiskCountWithError extends StatelessWidget {
             var (errorBlack, errorWhite, hasNaN) = GlobalState.globalAnnotations.getErrors();
             return Text(
               (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite),
-              style: Theme.of(context).textTheme.bodyMedium
+              style: Theme.of(context).textTheme.bodyLarge
             );
           }
         )
