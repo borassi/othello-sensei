@@ -43,6 +43,7 @@ class State : public Annotations {
     SetNextStatePlayed(nullptr);
     this->depth = depth;
     valid = false;
+    derived = false;
   }
   ~State() { free(example_thor_games); }
   State(const State&) = delete;

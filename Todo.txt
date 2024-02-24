@@ -1,6 +1,5 @@
 Usability / bugs
 - P0 EASY What if we delete first_state before we're done with the update?
-- P0 EASY Check seconds.
 - P2 EASY Unify SetBoard and SetAnnotations.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 MED Show more reasonable evaluations when going back.

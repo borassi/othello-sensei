@@ -239,6 +239,8 @@ void Engine::UpdateBoardsToEvaluate(const State& state) {
     if (!found) {
       board_to_evaluate = boards_to_evaluate_[num_boards_to_evaluate_++].get();
       board_to_evaluate->Reset(unique);
+    } else {
+      child->derived = true;
     }
     board_to_evaluate->AddAnnotation((Annotations*) child);
   }
