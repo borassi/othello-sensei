@@ -20,6 +20,8 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../widgets_board/case.dart';
+import '../widgets_spacers/margins.dart';
+import 'main.dart';
 
 
 
@@ -74,22 +76,30 @@ class ThorFiltersWidget extends StatelessWidget {
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Case(CaseState.black, 255, () => {}, () => {}),
-                  playerSearch(context, true),
-                ]
-              ),
-              Row(
-                children: [
-                  Case(CaseState.white, 255, () => {}, () => {}),
-                  playerSearch(context, false),
-                ]
-              ),
-            ],
+        body: AppTheme(
+          child: SingleChildScrollView(
+            child: ColumnWithMargins(
+              children: [
+                const Margin(),
+                RowWithMargins(
+                  children: [
+                    const Margin(),
+                    Case(CaseState.black, 255, () => {}, () => {}),
+                    playerSearch(context, true),
+                    const Margin(),
+                  ]
+                ),
+                RowWithMargins(
+                  children: [
+                    const Margin(),
+                    Case(CaseState.white, 255, () => {}, () => {}),
+                    playerSearch(context, false),
+                    const Margin(),
+                  ]
+                ),
+                const Margin(),
+              ],
+            )
           )
         )
       )

@@ -48,4 +48,10 @@ void Redo(void* ptr) { static_cast<Main*>(ptr)->Redo(); }
 
 void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
 
+void Analyze(void* ptr) { static_cast<Main*>(ptr)->Analyze(); }
+
 void Stop(void* ptr) { static_cast<Main*>(ptr)->Stop(); }
+
+Annotations* GetCurrentAnnotations(void* ptr, int current_thread) { return static_cast<Main*>(ptr)->GetCurrentAnnotations(current_thread); }
+
+Annotations* GetStartAnnotations(void* ptr, int current_thread) { return static_cast<Main*>(ptr)->GetStartAnnotations(current_thread); }

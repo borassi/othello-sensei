@@ -216,6 +216,54 @@ class FFIEngine {
   late final _Evaluate =
       _EvaluatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
+  void Analyze(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _Analyze(
+      ptr,
+    );
+  }
+
+  late final _AnalyzePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'Analyze');
+  late final _Analyze =
+      _AnalyzePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  ffi.Pointer<Annotations> GetCurrentAnnotations(
+    ffi.Pointer<ffi.Void> ptr,
+    int current_thread,
+  ) {
+    return _GetCurrentAnnotations(
+      ptr,
+      current_thread,
+    );
+  }
+
+  late final _GetCurrentAnnotationsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<Annotations> Function(
+              ffi.Pointer<ffi.Void>, ffi.Int)>>('GetCurrentAnnotations');
+  late final _GetCurrentAnnotations = _GetCurrentAnnotationsPtr.asFunction<
+      ffi.Pointer<Annotations> Function(ffi.Pointer<ffi.Void>, int)>();
+
+  ffi.Pointer<Annotations> GetStartAnnotations(
+    ffi.Pointer<ffi.Void> ptr,
+    int current_thread,
+  ) {
+    return _GetStartAnnotations(
+      ptr,
+      current_thread,
+    );
+  }
+
+  late final _GetStartAnnotationsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<Annotations> Function(
+              ffi.Pointer<ffi.Void>, ffi.Int)>>('GetStartAnnotations');
+  late final _GetStartAnnotations = _GetStartAnnotationsPtr.asFunction<
+      ffi.Pointer<Annotations> Function(ffi.Pointer<ffi.Void>, int)>();
+
   void Stop(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -320,6 +368,8 @@ final class Annotations extends ffi.Struct {
 
   external ffi.Pointer<Annotations> next_state_played;
 
+  external ffi.Pointer<Annotations> next_state_in_analysis;
+
   @ffi.Bool()
   external bool valid;
 
@@ -377,6 +427,9 @@ final class Annotations extends ffi.Struct {
   @ffi.Bool()
   external bool finished;
 
+  @ffi.Bool()
+  external bool analyzed;
+
   @ffi.UnsignedInt()
   external int num_thor_games;
 
@@ -416,7 +469,13 @@ final class EvaluateParams extends ffi.Struct {
   external int max_positions;
 
   @ffi.Double()
-  external double max_time;
+  external double max_time_first_eval;
+
+  @ffi.Double()
+  external double max_time_next_evals;
+
+  @ffi.Double()
+  external double max_time_analysis;
 
   @ffi.Int()
   external int n_threads;
@@ -438,7 +497,5 @@ typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
-typedef UpdateAnnotationsFunction = ffi.Void Function(
-    ffi.Pointer<Annotations>, ffi.Pointer<Annotations>);
-typedef DartUpdateAnnotationsFunction = void Function(
-    ffi.Pointer<Annotations>, ffi.Pointer<Annotations>);
+typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Int);
+typedef DartUpdateAnnotationsFunction = void Function(int);

@@ -41,7 +41,7 @@ void AnnotationsSet(Annotations& annotation, const Node& node, bool book, double
   annotation.descendants = node.GetNVisited();
   annotation.descendants_no_book = book ? 0 : annotation.descendants;
   annotation.missing = node.IsSolved() ? 0 : node.RemainingWork(-63, 63);
-  annotation.finished = book || node.IsSolved();
+  annotation.finished |= book || node.IsSolved();
   annotation.valid = true;
 }
 
@@ -82,46 +82,49 @@ void SetAnnotationsGameOver(State& state) {
   state.valid = true;
 }
 
-void SetFatherAnnotations(Annotations& annotation) {
-  if (annotation.provenance == GAME_OVER) {
-    SetFatherAnnotations(*annotation.father);
+void SetFatherAnnotations(State& state) {
+  if (state.provenance == GAME_OVER || !state.HasValidChildren()) {
+    if (state.father) {
+      SetFatherAnnotations(*((State*) state.father));
+    }
     return;
   }
-  annotation.eval = kLessThenMinEval;
-  annotation.leaf_eval = kLessThenMinEval;
-  annotation.median_eval = kLessThenMinEval;
-  annotation.provenance = CHILD_EVALUATE;
-  annotation.seconds = 0;
+  state.eval = kLessThenMinEval;
+  state.leaf_eval = kLessThenMinEval;
+  state.median_eval = kLessThenMinEval;
+  state.provenance = CHILD_EVALUATE;
+  state.seconds = 0;
 //  annotation.prob_lower_eval = 0;
 //  annotation.prob_upper_eval = 0;
 //  annotation.proof_number_lower = 0;
 //  annotation.disproof_number_upper = 0;
-  annotation.lower = kLessThenMinEval;
-  annotation.upper = kLessThenMinEval;
+  state.lower = kLessThenMinEval;
+  state.upper = kLessThenMinEval;
 //  annotation.weak_lower = score;
 //  annotation.weak_upper = 0;
-  annotation.descendants = 0;
-  annotation.descendants_no_book = 0;
-  annotation.finished = true;
-  annotation.valid = true;
+  state.descendants = 0;
+  state.descendants_no_book = 0;
+  bool finished = true;
+  state.valid = true;
 
-  for (Annotations* child = annotation.first_child; child != nullptr; child = child->next_sibling) {
-    int eval_sign = child->black_turn == annotation.black_turn ? 1 : -1;
-    annotation.eval = std::max(annotation.eval, eval_sign * child->eval);
-    annotation.median_eval = std::max(annotation.median_eval, eval_sign * child->median_eval);
-    annotation.leaf_eval = std::max(annotation.leaf_eval, eval_sign * child->leaf_eval);
-    annotation.lower = MaxEval(annotation.lower, eval_sign * eval_sign == 1 ? child->lower : child->upper);
-    annotation.upper = MaxEval(annotation.upper, eval_sign * eval_sign == 1 ? child->upper : child->lower);
+  for (State* child = (State*) state.first_child; child != nullptr; child = (State*) child->next_sibling) {
+    int eval_sign = child->black_turn == state.black_turn ? 1 : -1;
+    state.eval = std::max(state.eval, eval_sign * child->eval);
+    state.median_eval = std::max(state.median_eval, eval_sign * child->median_eval);
+    state.leaf_eval = std::max(state.leaf_eval, eval_sign * child->leaf_eval);
+    state.lower = MaxEval(state.lower, eval_sign * eval_sign == 1 ? child->lower : child->upper);
+    state.upper = MaxEval(state.upper, eval_sign * eval_sign == 1 ? child->upper : child->lower);
     if (!child->derived) {
-      annotation.seconds += child->seconds;
-      annotation.descendants += child->descendants;
-      annotation.descendants_no_book += child->descendants_no_book;
+      state.seconds += child->seconds;
+      state.descendants += child->descendants;
+      state.descendants_no_book += child->descendants_no_book;
     }
-    annotation.finished = annotation.finished && child->finished;
-    annotation.valid = annotation.valid && child->valid;
+    finished = finished && child->finished;
+    state.valid = state.valid && child->valid;
   }
-  if (annotation.father != nullptr) {
-    SetFatherAnnotations(*annotation.father);
+  state.finished = finished;
+  if (state.father) {
+    SetFatherAnnotations(*((State*) state.father));
   }
 }
 } // anonymous_namespace
@@ -137,8 +140,8 @@ void BoardToEvaluate::EvaluateBook() {
 }
 
 void BoardToEvaluate::Evaluate(EvaluateParams params, int steps) {
-  double current_max_time = params.max_time / steps;
   if (state_ == STATE_NOT_STARTED) {
+    double current_max_time = params.max_time_first_eval / 2 / steps;
     stoppable_ = false;
     evaluator_.Evaluate(
         unique_.Player(), unique_.Opponent(), params.lower, params.upper,
@@ -147,8 +150,7 @@ void BoardToEvaluate::Evaluate(EvaluateParams params, int steps) {
     state_ = STATE_STARTED;
   } else {
     stoppable_ = true;
-    evaluator_.ContinueEvaluate(params.max_positions, current_max_time,
-                                params.n_threads);
+    evaluator_.ContinueEvaluate(params.max_positions, 0.1, params.n_threads);
   }
   for (Annotations* annotation : annotations_) {
     AnnotationsSet(*annotation, *evaluator_.GetFirstPosition(), false, evaluator_.GetElapsedTime());
@@ -309,7 +311,17 @@ void Engine::Run(
   if (current_thread != current_thread_ && current_state->valid && current_state->HasValidChildren()) {
     return;
   }
+  AnalyzePosition(current_thread, current_state, first_state, params, false);
+}
+
+void Engine::AnalyzePosition(
+    int current_thread, State* current_state,
+    const std::shared_ptr<State>& first_state,
+    const EvaluateParams& params, bool in_analysis) {
+  ElapsedTime t;
+  bool first_eval = false;
   if (last_state_ != current_state || last_first_state_ != first_state) {
+    first_eval = true;
     last_state_ = current_state;
     last_first_state_ = first_state;
     time_ = ElapsedTime();
@@ -326,21 +338,48 @@ void Engine::Run(
   if (num_boards_to_evaluate_ == 0) {
     Board board = current_state->GetBoard();
     SetAnnotationsGameOver(*current_state);
-  } else {
+  } else if (!current_state->analyzed) {
     int steps = num_boards_to_evaluate_;
     // We finish if we cannot get another board to work on.
-    for (int i = 0; i < steps; ++i) {
+    double max_time;
+    if (first_eval) {
+      max_time = params.max_time_first_eval;
+    } else if (in_analysis) {
+      max_time = params.max_time_analysis;
+    } else {
+      max_time = params.max_time_next_evals;
+    }
+    while (true) {
       auto board_to_evaluate = NextBoardToEvaluate(params.delta);
-      if (!board_to_evaluate || (current_thread_ != current_thread && board_to_evaluate->State() != STATE_NOT_STARTED)) {
+      if (!board_to_evaluate ||
+          (current_thread_ != current_thread && (board_to_evaluate->State() != STATE_NOT_STARTED || in_analysis)) ||
+          (board_to_evaluate->State() != STATE_NOT_STARTED && t.Get() > max_time)
+         ) {
         break;
       }
       board_to_evaluate->Evaluate(params, steps);
     }
   }
   SetFatherAnnotations(*current_state);
+  current_state->analyzed |= in_analysis;
 
   if (current_thread == current_thread_) {
-    // TODO: what if we delete first_state before we're done with the update?
-    update_annotations_(current_state, first_state.get());
+    update_annotations_(current_thread);
+  }
+}
+
+void Engine::RunAnalysis(
+    int current_thread, std::shared_ptr<std::future<void>> last_future,
+    std::shared_ptr<State> first_state, EvaluateParams params) {
+  last_future->get();
+  if (current_thread != current_thread_) {
+    return;
+  }
+  for (State* state = first_state.get(); state != nullptr; state = (State*) state->next_state_in_analysis) {
+    AnalyzePosition(current_thread, state, first_state, params, false);
+    AnalyzePosition(current_thread, state, first_state, params, true);
+    if (current_thread != current_thread_) {
+      return;
+    }
   }
 }

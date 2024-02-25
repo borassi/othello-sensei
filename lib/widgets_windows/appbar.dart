@@ -25,6 +25,7 @@ import '../utils.dart';
 enum MenuItem {
   copy,
   paste,
+  analyze,
   settings
 }
 
@@ -35,6 +36,9 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.paste:
       await pasteOrError(context);
+      return;
+    case MenuItem.analyze:
+      analyze();
       return;
     case MenuItem.settings:
       GlobalState.stop();

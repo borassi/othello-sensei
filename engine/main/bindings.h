@@ -78,6 +78,7 @@ struct Annotations {
   struct Annotations* first_child;
   struct Annotations* next_sibling;
   struct Annotations* next_state_played;
+  struct Annotations* next_state_in_analysis;
   bool valid;
   // Filled when evaluating this position.
   double eval;
@@ -98,6 +99,7 @@ struct Annotations {
   NVisited descendants_no_book;
   double missing;
   bool finished;
+  bool analyzed;
   // Filled when reading Thor.
   unsigned int num_thor_games;
   struct ThorGame* example_thor_games;
@@ -115,7 +117,9 @@ struct EvaluateParams {
   int lower;
   int upper;
   NVisited max_positions;
-  double max_time;
+  double max_time_first_eval;
+  double max_time_next_evals;
+  double max_time_analysis;
   int n_threads;
   double delta;
   bool approx;
@@ -124,7 +128,7 @@ struct EvaluateParams {
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
-typedef void (*UpdateAnnotations)(struct Annotations*, struct Annotations*);
+typedef void (*UpdateAnnotations)(int);
 
 #ifdef __cplusplus
 }

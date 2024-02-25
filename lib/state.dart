@@ -52,19 +52,25 @@ int currentMove() {
   return GlobalState.globalAnnotations.annotations!.ref.depth;
 }
 
-void updateAnnotations(Pointer<Annotations> annotations, Pointer<Annotations> startingAnnotations) {
-  GlobalState.globalAnnotations.setState(annotations, startingAnnotations);
+void updateAnnotations(int currentThread) {
+  Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
+  Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
+  if (annotations == nullptr || startAnnotations == nullptr) {
+    return;
+  }
+  GlobalState.globalAnnotations.setState(annotations, startAnnotations);
   for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
     GlobalState.annotations[child.ref.move].setState(child.ref);
   }
-  if (!annotations.ref.finished) {
-    GlobalState.evaluate(isFirst: false);
+  if (!annotations.ref.finished && !annotations.ref.analyzed) {
+    GlobalState.evaluate(type: EvaluateType.subsequent);
   }
 }
 
 Future<void> copy() async {
   Pointer<Char> sequence = ffiEngine.GetSequence(GlobalState.ffiMain);
-  Clipboard.setData(ClipboardData(text: sequence.cast<Utf8>().toDartString()));
+  var s = sequence.cast<Utf8>().toDartString();
+  Clipboard.setData(ClipboardData(text: s));
   malloc.free(sequence);
 }
 
@@ -89,15 +95,29 @@ Future<void> pasteOrError(BuildContext context) async {
       },
     );
   };
-  GlobalState.evaluate();
+  if (GlobalState.preferences.get("Analyze on paste")) {
+    analyze();
+  } else {
+    GlobalState.evaluate();
+  }
 }
 
-void ReceiveOthelloQuestEvent(List<SharedMediaFile> event) {
+void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
   if (event.length != 1 || event[0].mimeType != "message/rfc822") {
     return;
   }
   var game = event[0].path.toNativeUtf8().cast<Char>();
   ffiEngine.SetSequence(GlobalState.ffiMain, game);
+  if (GlobalState.preferences.get("Analyze on import")) {
+    analyze();
+  } else {
+    GlobalState.evaluate();
+  }
+}
+
+void analyze() {
+  GlobalState.preferences.fillEvaluateParams(EvaluateType.analysis);
+  ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
 class GlobalState {
@@ -125,8 +145,8 @@ class GlobalState {
     );
     newGame();
     if (Platform.isAndroid || Platform.isIOS) {
-      ReceiveSharingIntent.getInitialMedia().then(ReceiveOthelloQuestEvent);
-      ReceiveSharingIntent.getMediaStream().listen(ReceiveOthelloQuestEvent);
+      ReceiveSharingIntent.getInitialMedia().then(receiveOthelloQuestEvent);
+      ReceiveSharingIntent.getMediaStream().listen(receiveOthelloQuestEvent);
     }
   }
   static ThorMetadataState get thorMetadata {
@@ -163,12 +183,11 @@ class GlobalState {
     ffiEngine.Stop(GlobalState.ffiMain);
   }
 
-  static void evaluate({bool isFirst = true}) {
+  static void evaluate({EvaluateType type = EvaluateType.first}) {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
       return;
     }
-    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain);
-    GlobalState.preferences.fillEvaluateParams(params.ref, isFirst);
+    GlobalState.preferences.fillEvaluateParams(type);
     ffiEngine.Evaluate(GlobalState.ffiMain);
   }
 }
@@ -228,6 +247,12 @@ class AnnotationState with ChangeNotifier {
   }
 }
 
+enum EvaluateType {
+  first,
+  subsequent,
+  analysis,
+}
+
 class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Number of threads': Platform.numberOfProcessors,
@@ -238,10 +263,13 @@ class PreferencesState with ChangeNotifier {
     'Delta': 6.0,
     'Round evaluations': false,
     'Use book': true,
+    'Seconds/position in game analysis': 2.0,
+    'Analyze on paste': true,
+    'Analyze on import': true,
     'Approximate': false,
     'Lower': -63,
     'Upper': 63,
-    'Tab': 0,
+    'Active tab': 0,
   };
   late final SharedPreferences _preferences;
 
@@ -257,11 +285,14 @@ class PreferencesState with ChangeNotifier {
     return _preferences.get(name) ?? defaultPreferences[name];
   }
 
-  void fillEvaluateParams(EvaluateParams params, bool isFirst) {
+  void fillEvaluateParams(EvaluateType evaluateType) {
+    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
     params.lower = get('Lower');
     params.upper = get('Upper');
     params.max_positions = get('Positions when evaluating');
-    params.max_time = isFirst ? get('Seconds until first evaluation') : get('Seconds between evaluations');
+    params.max_time_first_eval = get('Seconds until first evaluation');
+    params.max_time_next_evals = get('Seconds between evaluations');
+    params.max_time_analysis = get('Seconds/position in game analysis');
     params.delta = get('Delta');
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');
@@ -341,7 +372,7 @@ class GlobalAnnotationState with ChangeNotifier {
     var scores = <double>[];
     while (annotation != null && annotation != nullptr) {
       scores.add(getEvalFromAnnotations(annotation.ref, true));
-      annotation = annotation.ref.next_state_played;
+      annotation = annotation.ref.next_state_in_analysis != nullptr ? annotation.ref.next_state_in_analysis : annotation.ref.next_state_played;
     }
     return scores;
   }

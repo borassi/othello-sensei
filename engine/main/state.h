@@ -41,9 +41,12 @@ class State : public Annotations {
     SetFirstChild(nullptr);
     SetNextSibling(nullptr);
     SetNextStatePlayed(nullptr);
+    SetNextStateInAnalysis(nullptr);
     this->depth = depth;
     valid = false;
     derived = false;
+    finished = false;
+    analyzed = false;
   }
   ~State() { free(example_thor_games); }
   State(const State&) = delete;
@@ -117,6 +120,10 @@ class State : public Annotations {
 
   void SetNextStatePlayed(State* new_value) {
     next_state_played = new_value;
+  }
+
+  void SetNextStateInAnalysis(State* new_value) {
+    next_state_in_analysis = new_value;
   }
 };
 

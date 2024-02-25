@@ -99,7 +99,7 @@ class Case extends StatelessWidget {
     String line2;
     String line3 = prettyPrintDouble(annotation.descendants.toDouble());
 
-    if (Main.tabName[GlobalState.preferences.get('Tab')] == 'Archive') {
+    if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive') {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
       line2 = evalText;
     } else {

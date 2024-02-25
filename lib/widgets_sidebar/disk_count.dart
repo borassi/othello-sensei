@@ -85,7 +85,7 @@ class DiskCountWithError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HorizontalFlexWithMargins(
+    return RowWithMargins(
       children: [
         const DiskCount(true),
         widget(context, true),

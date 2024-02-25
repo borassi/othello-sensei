@@ -169,11 +169,19 @@ class Engine {
 
   void Stop();
 
+  void StartAnalysis(std::shared_ptr<State>& first_state, const EvaluateParams& params) {
+    current_future_ = std::make_shared<std::future<void>>(std::async(
+        std::launch::async, &Engine::RunAnalysis, this, current_thread_.load(),
+        current_future_, first_state, params));
+  }
+
   ThorMetadata* GetThorMetadata() {
     Stop();
     current_future_->wait();
     return &thor_metadata_;
   }
+
+  uint32_t CurrentThread() { return current_thread_.load(); }
 
  private:
   static constexpr int kNumEvaluators = 60;
@@ -232,7 +240,17 @@ class Engine {
       State* current_state, std::shared_ptr<State> first_state,
       EvaluateParams params);
 
+  // NOTE: Pass variables by value, to avoid concurrent modifications.
+  void RunAnalysis(
+      int current_thread, std::shared_ptr<std::future<void>> last_future,
+      std::shared_ptr<State> first_state, EvaluateParams params);
+
   void RunUpdateAnnotations(int current_thread, int current_state, bool finished);
+
+  void AnalyzePosition(
+      int current_thread, State* current_state,
+      const std::shared_ptr<State>& first_state, const EvaluateParams& params,
+      bool in_analysis);
 };
 
 #endif // OTHELLO_SENSEI_ENGINE_H

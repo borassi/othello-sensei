@@ -58,18 +58,21 @@ class Main {
   }
 
   void Redo() {
-    SetCurrentMove(current_state_->Depth() + 1);
+    ToState((State*) (
+        current_state_->next_state_in_analysis ?
+        current_state_->next_state_in_analysis :
+        current_state_->next_state_played));
   }
 
   void Undo() {
-    SetCurrentMove(current_state_->Depth() - 1);
+    ToState((State*) current_state_->father);
   }
 
   void Stop();
 
   char* GetSequence() {
     std::string sequence = current_state_->GetSequence().ToString();
-    char* result = (char*) malloc(sizeof(sequence) + 1);
+    char* result = (char*) malloc(sequence.size() * sizeof(char) + 1);
     strcpy(result, sequence.c_str());
     return result;
   }
@@ -95,6 +98,31 @@ class Main {
   }
 
   EvaluateParams& GetEvaluateParams() { return evaluate_params_; }
+
+  void Analyze() {
+    for (State* state = first_state_.get(); state != nullptr; state = (State*) state->next_state_played) {
+      state->next_state_in_analysis = state->next_state_played;
+    }
+    engine_.StartAnalysis(first_state_, evaluate_params_);
+  }
+
+  // We need a separate call to get the annotations in the UI thread, to prevent
+  // concurrent modification.
+  Annotations* GetCurrentAnnotations(int current_thread) {
+    if (engine_.CurrentThread() != current_thread) {
+      return nullptr;
+    }
+    return current_state_;
+  }
+
+  // We need a separate call to get the annotations in the UI thread, to prevent
+  // concurrent modification.
+  Annotations* GetStartAnnotations(int current_thread) {
+    if (engine_.CurrentThread() != current_thread) {
+      return nullptr;
+    }
+    return first_state_.get();
+  }
 
  private:
   static constexpr int kNumEvaluators = 60;

@@ -109,7 +109,7 @@ class Main extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var evaluateContent = VerticalFlexWithMargins(
+    var evaluateContent = ColumnWithMargins(
       children: const [
         DiskCountWithError(),
         Expanded(child: ScoreGraph()),
@@ -117,7 +117,7 @@ class Main extends StatelessWidget {
       ],
     );
 
-    var thorContent = VerticalFlexWithMargins(
+    var thorContent = ColumnWithMargins(
       children: [
         DiskCountsWithThor(),
         const Expanded(child: ThorGamesVisualizer()),
@@ -144,12 +144,12 @@ class Main extends StatelessWidget {
               const Board(),
               DefaultTabController(
                 length: 2,
-                initialIndex: GlobalState.preferences.get('Tab'),
+                initialIndex: GlobalState.preferences.get('Active tab'),
                 child: Scaffold(
                   bottomNavigationBar: TabBar(
                     tabs: List.generate(2, (index) => Tab(text: tabName[index])),
                     onTap: (int index) {
-                      GlobalState.preferences.set('Tab', index);
+                      GlobalState.preferences.set('Active tab', index);
                       GlobalState.evaluate();
                     },
                   ),

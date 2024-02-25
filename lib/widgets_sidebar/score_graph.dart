@@ -68,6 +68,7 @@ class ScoreGraph extends StatelessWidget {
         builder: (BuildContext context, Widget? widget) {
           var scores = GlobalState.globalAnnotations.getAllScores();
           var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
+          maxY = (maxY / 10).ceilToDouble() * 10;
           var horizontalLinesSpace = maxY / 2;
           var textSpace = Theme.of(context).textTheme.bodySmall!.fontSize! * 2;
           var width = (constraints.maxWidth - textSpace);

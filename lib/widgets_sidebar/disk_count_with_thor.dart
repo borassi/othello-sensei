@@ -64,7 +64,7 @@ class DiskCountsWithThor extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DiskCount(true),
+          const DiskCount(true),
           Expanded(
             child: TextButton(
               onPressed: () {
@@ -77,7 +77,7 @@ class DiskCountsWithThor extends StatelessWidget {
               child: Text('Filters', style: Theme.of(context).textTheme.bodyMedium!),
             )
           ),
-          DiskCount(false)
+          const DiskCount(false)
         ]
       )
     );

@@ -1,13 +1,18 @@
 Usability / bugs
-- P0 EASY What if we delete first_state before we're done with the update?
-- P2 EASY Unify SetBoard and SetAnnotations.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 MED Show more reasonable evaluations when going back.
 - P2 EASY Fix time when clicking stop.
-- P2 MED Reduce delay of the first evaluation.
 - P3 EASY First time installation.
 - P3 ???? Free memory on hot reload.
 - P3 EASY Back button undo instead of quit.
+
+Tech debt
+- P2 EASY Unify SetBoard and SetAnnotations.
+
+Analysis
+- P1 EASY Improve the logic when a position is already evaluated.
+- P1 EASY Improve the logic to choose the time to analyze the next move.
+- P1 EASY Fix stop during analysis evaluation.
 
 Thor
 - P2 EASY Click to play the next move.
@@ -22,23 +27,20 @@ Match the features of the current app
 - P3 HARD Study and repeat openings.
 
 Extra features:
-- P1 MED Analyze a game.
 - P1 HARD Remember opening book for player.
+- P2 MED XOT.
 - P2 HARD Extend opening book considering all moves.
-- P2 EASY Show stats from various moves.
 - P2 EASY Save games.
-- P2 EASY Save and load the state.
 - P2 HARD How easy / hard a position is.
 - P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
-- P2 MED Tabs with different widgets.
 - P2 MED Share opening book in Google Drive.
 - P2 MED Lookup URL in Othello Quest.
 - P2 TINY Customize delta to highlight a move.
 - P3 EASY Icons disappear from the bar.
-- P3 EASY Horizontal layout.
 - P3 MED Manually set the board.
 - P3 HARD Expand book on Google Cloud.
 - P3 HARD Choose which widgets to show.
+- P4 EASY Show stats from various moves.
 - P4 HARD Get board state from pictures.
 - P5 HARD Get sequence from board state.
 

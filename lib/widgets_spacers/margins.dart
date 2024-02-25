@@ -84,12 +84,12 @@ class FlexWithMargins extends StatelessWidget {
   }
 }
 
-class HorizontalFlexWithMargins extends FlexWithMargins {
-  HorizontalFlexWithMargins({super.key, required super.children}) :
+class RowWithMargins extends FlexWithMargins {
+  RowWithMargins({super.key, required super.children}) :
       super(direction: FlexWithMarginsDirection.horizontal);
 }
 
-class VerticalFlexWithMargins extends FlexWithMargins {
-  VerticalFlexWithMargins({super.key, required super.children}) :
+class ColumnWithMargins extends FlexWithMargins {
+  ColumnWithMargins({super.key, required super.children}) :
       super(direction: FlexWithMarginsDirection.vertical);
 }

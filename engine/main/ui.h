@@ -68,6 +68,15 @@ EXPORT
 void Evaluate(void* ptr);
 
 EXPORT
+void Analyze(void* ptr);
+
+EXPORT
+struct Annotations* GetCurrentAnnotations(void* ptr, int current_thread);
+
+EXPORT
+struct Annotations* GetStartAnnotations(void* ptr, int current_thread);
+
+EXPORT
 void Stop(void* ptr);
 
 #ifdef __cplusplus

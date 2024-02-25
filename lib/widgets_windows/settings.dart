@@ -42,7 +42,6 @@ CardSettingsWidget getCardSettings(String key, BuildContext context, SettingsLoc
     state.updates[key] = newValue;
   };
   var settingsKey = '${key.toString()}: ${state.version}';
-  // print(settingsKey);
   switch (value.runtimeType) {
     case bool:
       return CardSettingsSwitch(
@@ -121,6 +120,15 @@ class Settings extends StatelessWidget {
     'Round evaluations',
   ];
 
+  static const _analyzePreferences = [
+    'Seconds/position in game analysis',
+    'Analyze on paste',
+    'Analyze on import',
+  ];
+  static const _unshownPreferences = [
+    'Active tab',
+  ];
+
   @override
   void close() {
     GlobalState.preferences.setAll(_state.updates);
@@ -130,6 +138,8 @@ class Settings extends StatelessWidget {
   Widget build(BuildContext context) {
     var nerdPreferences = GlobalState.preferences.defaultPreferences.keys.toSet();
     nerdPreferences.removeAll(_evalPreferences);
+    nerdPreferences.removeAll(_analyzePreferences);
+    nerdPreferences.removeAll(_unshownPreferences);
 
     return PopScope(
       onPopInvoked: (bool didPop) {
@@ -153,6 +163,12 @@ class Settings extends StatelessWidget {
                         label: 'Evaluation',
                       ),
                       children: _evalPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
+                    ),
+                    CardSettingsSection(
+                      header: CardSettingsHeader(
+                        label: 'Analysis',
+                      ),
+                      children: _analyzePreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
                     ),
                     CardSettingsSection(
                       header: CardSettingsHeader(label: 'Stuff for nerds'),

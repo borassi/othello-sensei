@@ -58,6 +58,7 @@ constexpr Square Diag7MirrorMove(Square move) { return 8 * (7 - move % 8) + (7 -
 constexpr Square Rotate180Move(Square move) { return 8 * (7 - move / 8) + (7 - move % 8); }
 
 constexpr Square TransposeMove(Square move, int k) {
+  if (move == kNoSquare) { return kNoSquare; }
   for (int i = 0; i < k; i += 2) {
     move = VerticalMirrorMove(move);
     if (i + 1 == k) {
