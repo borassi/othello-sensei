@@ -67,7 +67,13 @@ class State : public Annotations {
 
   State* NextState(Square move);
 
-  State* NextStatePlayed() { return (State*) next_state_played; }
+  void SetNextStatePlayed(State* new_value) { next_state_played = new_value; }
+
+  State* NextState() const {
+    return NextStateInAnalysis() ? NextStateInAnalysis() : NextStatePlayed();
+  }
+  State* NextStatePlayed() const { return (State*) next_state_played; }
+  State* NextStateInAnalysis() const { return (State*) next_state_in_analysis; }
 
   void SetNextStates();
 
@@ -81,13 +87,10 @@ class State : public Annotations {
 
   State* ToDepth(int new_depth) {
     State* result = this;
-    if (new_depth > result->Depth()) {
-      for (; result != nullptr && new_depth > result->Depth();
-           result = result->NextStatePlayed()) {}
-    } else if (new_depth < result->Depth()) {
-      for (; result != nullptr && new_depth < result->Depth();
-           result = result->Father()) {}
-    }
+    assert(new_depth >= result->Depth());
+    for (;
+         result != nullptr && new_depth > result->Depth();
+         result = result->NextState()) {}
     return result;
   }
 
@@ -116,10 +119,6 @@ class State : public Annotations {
   void SetNextSibling(const std::shared_ptr<State>& new_value) {
     next_sibling_ = new_value;
     this->next_sibling = new_value.get();
-  }
-
-  void SetNextStatePlayed(State* new_value) {
-    next_state_played = new_value;
   }
 
   void SetNextStateInAnalysis(State* new_value) {

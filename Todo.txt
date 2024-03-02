@@ -8,6 +8,8 @@ Usability / bugs
 
 Tech debt
 - P2 EASY Unify SetBoard and SetAnnotations.
+- P2 MED Move business logic to C++ code.
+- P3 EASY Fix Flutter warnings.
 
 Analysis
 - P1 EASY Improve the logic when a position is already evaluated.

@@ -16,6 +16,8 @@
  */
 
 
+import 'dart:ffi';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -25,7 +27,7 @@ import '../utils.dart';
 class ScoreGraph extends StatelessWidget {
   const ScoreGraph({super.key});
 
-  BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY) {
+  BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY, var moveToHighlight) {
     var barWidth = width / 61;
     var score = x >= scores.length ? double.nan : scores[x];
     double fromY;
@@ -46,7 +48,7 @@ class ScoreGraph extends StatelessWidget {
           fromY: fromY,
           toY: toY,
           width: barWidth,
-          color: x == currentMove() ? highlightColor : standardColor,
+          color: x == moveToHighlight ? highlightColor : standardColor,
         ),
         BarChartRodData(
           fromY: -maxY,
@@ -66,7 +68,7 @@ class ScoreGraph extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) => ListenableBuilder(
         listenable: GlobalState.globalAnnotations,
         builder: (BuildContext context, Widget? widget) {
-          var scores = GlobalState.globalAnnotations.getAllScores();
+          var (scores, move) = GlobalState.globalAnnotations.getAllScoresAndLastMove();
           var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
           maxY = (maxY / 10).ceilToDouble() * 10;
           var horizontalLinesSpace = maxY / 2;
@@ -111,7 +113,7 @@ class ScoreGraph extends StatelessWidget {
               baselineY: 0,
               borderData: FlBorderData(show: false),
               gridData: const FlGridData(show: false),
-              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY + 1)),
+              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY + 1, move)),
               extraLinesData: ExtraLinesData(
                 extraLinesOnTop: false,
                 horizontalLines: List.generate(

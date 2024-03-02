@@ -18,18 +18,10 @@
 #include "../board/get_moves.h"
 
 State* State::NextState(Square move) {
-  State* previous_sibling = nullptr;
   for (std::shared_ptr<State> child = first_child_; child != nullptr; child = child->next_sibling_) {
     if (child->move == move) {
-      next_state_played = (Annotations*) child.get();
-//      if (previous_sibling != nullptr) {
-//        previous_sibling->SetNextSibling(child->next_sibling_);
-//        child->SetNextSibling(first_child_);
-//        SetFirstChild(child);
-//      }
       return child.get();
     }
-    previous_sibling = child.get();
   }
   return nullptr;
 }

@@ -367,20 +367,34 @@ class GlobalAnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
-  List<double> getAllScores() {
+  (List<double>, int) getAllScoresAndLastMove() {
     var annotation = startAnnotations;
     var scores = <double>[];
+    var currentMoveVar = currentMove();
+    int lastMove = -1;
+    if (startAnnotations == null) {
+      return (scores, lastMove);
+    }
+    if (startAnnotations!.ref.next_state_in_analysis == nullptr) {
+      lastMove = currentMoveVar;
+    }
     while (annotation != null && annotation != nullptr) {
       scores.add(getEvalFromAnnotations(annotation.ref, true));
+      if (lastMove == -1 && (
+          annotation.ref.next_state_in_analysis == nullptr
+          || annotation.ref.next_state_in_analysis != annotation.ref.next_state_played
+          || annotation.ref.depth == currentMoveVar)) {
+        lastMove = annotation.ref.depth;
+      }
       annotation = annotation.ref.next_state_in_analysis != nullptr ? annotation.ref.next_state_in_analysis : annotation.ref.next_state_played;
     }
-    return scores;
+    return (scores, lastMove);
   }
 
   (double, double, bool) getErrors() {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
-    var allScores = getAllScores();
+    var (allScores, _) = getAllScoresAndLastMove();
     var oldScore = 0.0;
     var hasNaN = false;
     for (double score in allScores) {

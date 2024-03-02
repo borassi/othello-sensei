@@ -52,9 +52,15 @@ class Main {
     ToState(current_state_->NextState(square));
   }
 
-  // We need an int to do SetCurrentMove(-1).
-  void SetCurrentMove(int current_move) {
-    ToState(current_state_->ToDepth(current_move));
+  void SetCurrentMove(Square current_move) {
+    ToState(first_state_->ToDepth(current_move));
+    State* child = current_state_;
+    for (State* father = current_state_->Father();
+         father != nullptr;
+         father = father->Father()) {
+      father->SetNextStatePlayed(child);
+      child = father;
+    }
   }
 
   void Redo() {

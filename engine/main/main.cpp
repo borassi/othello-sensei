@@ -24,6 +24,7 @@ Main::Main(
     SetBoard set_board,
     UpdateAnnotations update_annotations) :
     set_board_(set_board),
+    current_state_(nullptr),
     engine_(evals_filepath, book_filepath, thor_filepath, update_annotations) {
   NewGame();
 }
@@ -47,6 +48,9 @@ void Main::ToState(State* new_state) {
   Stop();
   current_state_ = new_state;
   current_state_->SetNextStates();
+  if (current_state_->Father()) {
+    current_state_->Father()->SetNextStatePlayed(new_state);
+  }
   const Board& board = current_state_->GetBoard();
   set_board_({board.Player(), board.Opponent(), current_state_->GetBlackTurn()});
 }

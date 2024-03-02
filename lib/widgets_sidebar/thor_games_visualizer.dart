@@ -25,31 +25,33 @@ import '../ffi/ffi_engine.dart';
 import '../state.dart';
 import '../utils.dart';
 
+class TableCase extends StatelessWidget {
+  final String text;
+  final Alignment? alignment;
+
+  const TableCase(this.text, {super.key, this.alignment});
+  @override
+  Widget build(BuildContext context) {
+    var textStyle = Theme.of(context).textTheme.bodySmall!;
+    return Container(
+      alignment: alignment ?? Alignment.center,
+      // color: Colors.red,
+      constraints: BoxConstraints(minHeight: textStyle.fontSize! * 2),
+      child: Text(text, style: textStyle),
+    );
+  }
+}
+
 TableRow getRow(BuildContext context, ThorGame game) {
   return TableRow(
     children: <Widget>[
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text(moveToString(game.moves[game.moves_played]), style: Theme.of(context).textTheme.bodySmall)]
-      ),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [Text(game.year.toString(), style: Theme.of(context).textTheme.bodySmall)]
-      ),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(game.black.cast<Utf8>().toDartString(), style: Theme.of(context).textTheme.bodySmall),
-          Text(game.white.cast<Utf8>().toDartString(), style: Theme.of(context).textTheme.bodySmall),
-        ]
-      ),
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(game.score.toString(), style: Theme.of(context).textTheme.bodySmall),
-          Text((64 - game.score).toString(), style: Theme.of(context).textTheme.bodySmall),
-        ]
-      ),
+      TableCase(moveToString(game.moves[game.moves_played])),
+      TableCase(game.year.toString()),
+      TableCase(game.black.cast<Utf8>().toDartString()),
+      TableCase(' ${game.score} '),
+      const TableCase('-'),
+      TableCase(' ${64 - game.score} '),
+      TableCase(game.white.cast<Utf8>().toDartString()),
     ],
   );
 }
@@ -67,9 +69,20 @@ class ThorGamesVisualizer extends StatelessWidget {
           return Table();
         }
         var annotations = GlobalState.globalAnnotations.annotations!;
+        var textStyle = Theme.of(context).textTheme.bodySmall!;
         return Column(
           children: [
-            Text('Showing ${annotations.ref.num_example_thor_games} / ${annotations.ref.num_thor_games} games', style: Theme.of(context).textTheme.bodySmall),
+            Container(
+              alignment: Alignment.center,
+              constraints: BoxConstraints(minHeight: textStyle.fontSize! * 3),
+              child: Text(
+                  'Showing ${annotations.ref.num_example_thor_games} / ${annotations.ref.num_thor_games} games',
+                  style: TextStyle(
+                    fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+                    fontWeight: FontWeight.bold,
+                  )
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 child: Table(
@@ -81,10 +94,14 @@ class ThorGamesVisualizer extends StatelessWidget {
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                   // dataRowMaxHeight: 2 * textHeight,
                   columnWidths: const {
-                    0: FlexColumnWidth(2),
-                    1: FlexColumnWidth(4),
-                    2: FlexColumnWidth(20),
-                    3: FlexColumnWidth(2),
+                    0: FlexColumnWidth(4),
+                    1: FlexColumnWidth(6),
+                    2: FlexColumnWidth(22),
+                    3: FlexColumnWidth(3),
+                    4: FlexColumnWidth(2),
+                    5: FlexColumnWidth(3),
+                    6: FlexColumnWidth(22),
+                    // 3: FlexColumnWidth(2),
                   },
                   children: List.generate(
                     annotations.ref.num_example_thor_games,

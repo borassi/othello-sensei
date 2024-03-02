@@ -57,7 +57,7 @@ class AppTheme extends StatelessWidget {
             textTheme: TextTheme(
               bodyLarge: TextStyle(fontSize: squareSize / 2.1),
               bodyMedium: TextStyle(fontSize: squareSize / 3.5),
-              bodySmall: TextStyle(fontSize: squareSize / 6.5),
+              bodySmall: TextStyle(fontSize: squareSize / 5.5),
             ),
           ),
           child: child

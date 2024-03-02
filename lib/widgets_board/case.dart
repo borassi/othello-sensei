@@ -99,7 +99,7 @@ class Case extends StatelessWidget {
     String line2;
     String line3 = prettyPrintDouble(annotation.descendants.toDouble());
 
-    if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive') {
+    if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0) {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
       line2 = evalText;
     } else {
@@ -115,28 +115,30 @@ class Case extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                       Text(
-                          line1,
-                          style: TextStyle(
-                              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                              fontWeight: FontWeight.bold,
-                              height: 1,
-                              color: color
-                          ),
+                        line1,
+                        style: TextStyle(
+                          fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                          fontWeight: FontWeight.bold,
+                          height: 1,
+                          color: color
+                        ),
                       ),
-                      SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
+                      // SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
                       AnnotationRow(
-                          text: line2,
-                          style: TextStyle(
-                              fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                              color: color
-                          ),
+                        text: line2,
+                        style: TextStyle(
+                          fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+                          color: color,
+                          height: 1.5,
+                        ),
                       ),
                       AnnotationRow(
-                          text: line3,
-                          style: TextStyle(
-                              fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                              color: color,
-                          ),
+                        text: line3,
+                        style: TextStyle(
+                          fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+                          color: color,
+                          height: 1,
+                        ),
                       )
                   ]
               )
