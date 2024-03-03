@@ -1,4 +1,6 @@
 Usability / bugs
+- P2 EASY Clear analyzed positions.
+- P2 TINY Change highlight color for moves.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 MED Show more reasonable evaluations when going back.
 - P2 EASY Fix time when clicking stop.
@@ -10,11 +12,6 @@ Tech debt
 - P2 EASY Unify SetBoard and SetAnnotations.
 - P2 MED Move business logic to C++ code.
 - P3 EASY Fix Flutter warnings.
-
-Analysis
-- P1 EASY Improve the logic when a position is already evaluated.
-- P1 EASY Improve the logic to choose the time to analyze the next move.
-- P1 EASY Fix stop during analysis evaluation.
 
 Thor
 - P2 EASY Click to play the next move.

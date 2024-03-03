@@ -347,7 +347,8 @@ abstract class AnnotationsProvenance {
   static const int EVALUATE = 0;
   static const int BOOK = 1;
   static const int CHILD_EVALUATE = 2;
-  static const int GAME_OVER = 3;
+  static const int CHILD_BOOK = 3;
+  static const int GAME_OVER = 4;
 }
 
 final class Annotations extends ffi.Struct {

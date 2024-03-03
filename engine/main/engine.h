@@ -83,7 +83,11 @@ class BoardToEvaluate {
 
   void EvaluateBook();
 
-  void Evaluate(EvaluateParams params, int steps);
+  void Evaluate(EvaluateParams params);
+
+  void EvaluateFirst(EvaluateParams params);
+
+  void FinalizeEvaluation();
 
   void Stop() {
     if (stoppable_.load()) {

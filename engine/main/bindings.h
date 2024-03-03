@@ -66,6 +66,7 @@ enum AnnotationsProvenance {
   EVALUATE,
   BOOK,
   CHILD_EVALUATE,
+  CHILD_BOOK,
   GAME_OVER,
 };
 

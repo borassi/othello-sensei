@@ -18,6 +18,7 @@
 import 'dart:ffi';
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
@@ -54,7 +55,7 @@ class AnnotationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     var texts = text.split(' ');
     if (texts.length == 1) {
-      return Text(text, style: style);
+      return Text(text.replaceAll('_', ' '), style: style);
     } else {
       assert(texts.length == 2);
       return Row(
@@ -84,7 +85,7 @@ class Case extends StatelessWidget {
 
   Widget showAnnotations(ColorScheme colorScheme) {
     var annotations = GlobalState.annotations[index];
-    if (annotations.annotations == null || annotations.annotations!.move == 255) {
+    if (annotations.annotations == null || annotations.annotations!.move == 255 || !annotations.annotations!.valid) {
       return const Text("");
     }
     var annotation = annotations.annotations!;
@@ -97,7 +98,7 @@ class Case extends StatelessWidget {
     String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';
     String line1;
     String line2;
-    String line3 = prettyPrintDouble(annotation.descendants.toDouble());
+    String line3 = (annotation.provenance == AnnotationsProvenance.BOOK || annotation.provenance == AnnotationsProvenance.CHILD_BOOK ? "bk_" : "") + prettyPrintDouble(annotation.descendants.toDouble());
 
     if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0) {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());

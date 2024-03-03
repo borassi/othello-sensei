@@ -102,6 +102,10 @@ class State : public Annotations {
     return Sequence(moves_inverted.rbegin(), moves_inverted.rend());
   }
 
+  bool InBook() const {
+    return provenance == BOOK || provenance == CHILD_BOOK;
+  }
+
  private:
   Board board_;
   std::shared_ptr<State> first_child_;
