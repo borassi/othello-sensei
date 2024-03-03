@@ -29,7 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'ffi/ffi_bridge.dart';
 import 'ffi/ffi_engine.dart';
 import 'files.dart';
-import 'widgets_windows/main.dart';
+import 'main.dart';
 
 enum ActionWhenPlay {
   playBlack,

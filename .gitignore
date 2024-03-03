@@ -10,7 +10,7 @@ build
 .externalNativeBuild
 .cxx
 local.properties
-keystore.properties
+android/key.properties
 /gradle/wrapper/*
 /.idea/
 .idea

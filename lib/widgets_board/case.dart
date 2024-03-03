@@ -23,7 +23,7 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
 import '../widgets_spacers/app_sizes.dart';
-import '../widgets_windows/main.dart';
+import '../main.dart';
 
 enum CaseState {
   black,

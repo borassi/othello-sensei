@@ -26,10 +26,10 @@ import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 
-import '../widgets_board/board.dart';
-import '../widgets_spacers/app_sizes.dart';
-import '../widgets_spacers/margins.dart';
-import 'keyboard_listener.dart';
+import 'widgets_board/board.dart';
+import 'widgets_spacers/app_sizes.dart';
+import 'widgets_spacers/margins.dart';
+import 'widgets_windows/keyboard_listener.dart';
 
 void main() async {
   await GlobalState.init();

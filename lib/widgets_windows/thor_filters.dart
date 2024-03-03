@@ -21,7 +21,7 @@ import 'package:flutter/material.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/margins.dart';
-import 'main.dart';
+import '../main.dart';
 
 
 
