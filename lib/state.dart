@@ -260,13 +260,15 @@ class PreferencesState with ChangeNotifier {
     'Positions when playing': 50000000,
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
-    'Delta': 6.0,
+    'Spend half the time on a positions worse by': 6.0,
     'Round evaluations': false,
     'Use book': true,
-    'Seconds/position in game analysis': 2.0,
+    'Seconds/position in game analysis': 1.0,
     'Analyze on paste': true,
     'Analyze on import': true,
     'Approximate': false,
+    'Highlight distance from best move': 1.0,
+    'Best move green, other yellow': false,
     'Lower': -63,
     'Upper': 63,
     'Active tab': 0,
@@ -293,7 +295,7 @@ class PreferencesState with ChangeNotifier {
     params.max_time_first_eval = get('Seconds until first evaluation');
     params.max_time_next_evals = get('Seconds between evaluations');
     params.max_time_analysis = get('Seconds/position in game analysis');
-    params.delta = get('Delta');
+    params.delta = get('Spend half the time on a positions worse by');
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');
     params.use_book = get('Use book');

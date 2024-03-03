@@ -47,6 +47,10 @@ class State : public Annotations {
     derived = false;
     finished = false;
     analyzed = false;
+    prob_lower_eval = NAN;
+    prob_upper_eval = NAN;
+    proof_number_lower = NAN;
+    disproof_number_upper = NAN;
   }
   ~State() { free(example_thor_games); }
   State(const State&) = delete;
@@ -107,6 +111,7 @@ class State : public Annotations {
   }
 
  private:
+  // TODO: Make each state contain a TreeNode.
   Board board_;
   std::shared_ptr<State> first_child_;
   std::shared_ptr<State> next_sibling_;

@@ -221,7 +221,7 @@ class Engine {
       const std::string& book_filepath,
       const std::string& thor_filepath);
 
-  void UpdateBoardsToEvaluate(const State& state);
+  void UpdateBoardsToEvaluate(const State& state, bool in_analysis);
 
   BoardToEvaluate* NextBoardToEvaluate(double delta) {
     double highestPriority = -std::numeric_limits<double>::infinity();

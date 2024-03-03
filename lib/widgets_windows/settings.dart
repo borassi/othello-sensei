@@ -115,9 +115,11 @@ class Settings extends StatelessWidget {
     'Positions when playing',
     'Seconds until first evaluation',
     'Seconds between evaluations',
-    'Delta',
+    'Spend half the time on a positions worse by',
     'Use book',
     'Round evaluations',
+    'Highlight distance from best move',
+    'Best move green, other yellow',
   ];
 
   static const _analyzePreferences = [

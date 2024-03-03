@@ -35,7 +35,6 @@ class TableCase extends StatelessWidget {
     var textStyle = Theme.of(context).textTheme.bodySmall!;
     return Container(
       alignment: alignment ?? Alignment.center,
-      // color: Colors.red,
       constraints: BoxConstraints(minHeight: textStyle.fontSize! * 2),
       child: Text(text, style: textStyle),
     );
@@ -45,7 +44,7 @@ class TableCase extends StatelessWidget {
 TableRow getRow(BuildContext context, ThorGame game) {
   return TableRow(
     children: <Widget>[
-      TableCase(moveToString(game.moves[game.moves_played])),
+      TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played])),
       TableCase(game.year.toString()),
       TableCase(game.black.cast<Utf8>().toDartString()),
       TableCase(' ${game.score} '),
@@ -92,7 +91,6 @@ class ThorGamesVisualizer extends StatelessWidget {
                     bottom: BorderSide(color: Theme.of(context).colorScheme.onPrimaryContainer)
                   ),
                   defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  // dataRowMaxHeight: 2 * textHeight,
                   columnWidths: const {
                     0: FlexColumnWidth(4),
                     1: FlexColumnWidth(6),
@@ -101,7 +99,6 @@ class ThorGamesVisualizer extends StatelessWidget {
                     4: FlexColumnWidth(2),
                     5: FlexColumnWidth(3),
                     6: FlexColumnWidth(22),
-                    // 3: FlexColumnWidth(2),
                   },
                   children: List.generate(
                     annotations.ref.num_example_thor_games,

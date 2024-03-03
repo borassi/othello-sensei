@@ -93,7 +93,10 @@ class Case extends StatelessWidget {
     var bestEval = getEvalFromAnnotations(
         GlobalState.globalAnnotations.annotations!.ref,
         GlobalState.globalAnnotations.annotations!.ref.black_turn);
-    var color = eval > bestEval - 1 ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
+
+    var delta = GlobalState.preferences.get('Highlight distance from best move');
+    var bestMoveGreen = GlobalState.preferences.get('Best move green, other yellow');
+    var color = (eval > bestEval - delta) != bestMoveGreen ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
     String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';
     String line1;

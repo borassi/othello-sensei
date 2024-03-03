@@ -97,14 +97,14 @@ void SetFatherAnnotations(State& state) {
   state.median_eval = kLessThenMinEval;
   state.provenance = CHILD_BOOK;
   state.seconds = 0;
-//  annotation.prob_lower_eval = 0;
-//  annotation.prob_upper_eval = 0;
-//  annotation.proof_number_lower = 0;
-//  annotation.disproof_number_upper = 0;
+//  state.prob_lower_eval = 0;
+//  state.prob_upper_eval = 0;
+//  state.proof_number_lower = 0;
+//  state.disproof_number_upper = 0;
   state.lower = kLessThenMinEval;
   state.upper = kLessThenMinEval;
-//  annotation.weak_lower = score;
-//  annotation.weak_upper = 0;
+//  state.weak_lower = score;
+//  state.weak_upper = 0;
   state.descendants = 0;
   state.descendants_no_book = 0;
   state.finished = true;
@@ -230,7 +230,7 @@ void Engine::Stop() {
   }
 }
 
-void Engine::UpdateBoardsToEvaluate(const State& state) {
+void Engine::UpdateBoardsToEvaluate(const State& state, bool in_analysis) {
   Board board = state.GetBoard();
   auto moves = GetAllMovesWithPass(board.Player(), board.Opponent());
   bool finished = true;
@@ -238,7 +238,7 @@ void Engine::UpdateBoardsToEvaluate(const State& state) {
   num_boards_to_evaluate_ = 0;
 
   for (State* child : state.GetChildren()) {
-    if (child->valid) {
+    if (child->valid && !in_analysis) {
       child->finished = true;
       continue;
     }
@@ -342,8 +342,9 @@ void Engine::AnalyzePosition(
     last_first_state_ = first_state;
     time_ = ElapsedTime();
     tree_node_supplier_.Reset();
-    UpdateBoardsToEvaluate(*current_state);
+    UpdateBoardsToEvaluate(*current_state, in_analysis);
   }
+  EvaluateThor(params, *current_state);
   if (current_state->first_child == nullptr) {
     assert(num_boards_to_evaluate_ == 0);
     Board board = current_state->GetBoard();
@@ -354,7 +355,6 @@ void Engine::AnalyzePosition(
         boards_to_evaluate_[i]->EvaluateBook();
       }
     }
-    EvaluateThor(params, *current_state);
     int steps = num_boards_to_evaluate_;
     // We finish if we cannot get another board to work on.
     double max_time;

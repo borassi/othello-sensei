@@ -1,6 +1,6 @@
 Usability / bugs
+- P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
 - P2 EASY Clear analyzed positions.
-- P2 TINY Change highlight color for moves.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 MED Show more reasonable evaluations when going back.
 - P2 EASY Fix time when clicking stop.
@@ -34,7 +34,6 @@ Extra features:
 - P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P2 MED Share opening book in Google Drive.
 - P2 MED Lookup URL in Othello Quest.
-- P2 TINY Customize delta to highlight a move.
 - P3 EASY Icons disappear from the bar.
 - P3 MED Manually set the board.
 - P3 HARD Expand book on Google Cloud.
