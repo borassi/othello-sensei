@@ -1,4 +1,4 @@
-package com.othellosensei.othello_sensei_flutter;
+package com.othellosensei.app;
 
 import io.flutter.embedding.android.FlutterActivity;
 
