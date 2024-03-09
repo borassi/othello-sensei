@@ -69,6 +69,8 @@ class ThorFiltersWidget extends StatelessWidget {
   }
   @override
   Widget build(BuildContext context) {
+    GlobalState.thorMetadata.setBlack([]);
+    GlobalState.thorMetadata.setWhite([]);
     return PopScope(
       child: Scaffold(
         appBar: AppBar(

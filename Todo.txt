@@ -1,4 +1,6 @@
 Usability / bugs
+- P0 EASY Wrong Thor values when changing players.
+- P1 MED Automatic Thor updates.
 - P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
 - P2 MED Keep the app alive while downloading the book.
 - P2 EASY Clear analyzed positions.
