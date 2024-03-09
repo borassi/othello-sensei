@@ -244,6 +244,8 @@ void Engine::UpdateBoardsToEvaluate(const State& state, bool in_analysis) {
   for (State* child : state.GetChildren()) {
     if (child->valid && !in_analysis) {
       child->finished = true;
+    } else {
+      child->finished = false;
     }
     Board unique = child->GetBoard().Unique();
     // Create or get the BoardToEvaluate.
