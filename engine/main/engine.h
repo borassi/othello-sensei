@@ -117,6 +117,15 @@ class BoardToEvaluate {
   std::vector<Annotations*> annotations_;
   BoardToEvaluateState state_;
   Book<>* book_;
+
+  bool AllAnnotationsFinished() const {
+    for (Annotations* annotation : annotations_) {
+      if (!annotation->finished) {
+        return false;
+      }
+    }
+    return true;
+  }
 };
 
 class ThorSourceMetadataExtended {

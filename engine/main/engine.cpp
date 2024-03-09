@@ -157,6 +157,10 @@ void BoardToEvaluate::FinalizeEvaluation() {
 
 void BoardToEvaluate::EvaluateFirst(EvaluateParams params) {
   assert(state_ == STATE_NOT_STARTED);
+  if (AllAnnotationsFinished()) {
+    state_ = STATE_FINISHED;
+    return;
+  }
   stoppable_ = false;
   evaluator_.Evaluate(
       unique_.Player(), unique_.Opponent(), params.lower, params.upper,
@@ -240,7 +244,6 @@ void Engine::UpdateBoardsToEvaluate(const State& state, bool in_analysis) {
   for (State* child : state.GetChildren()) {
     if (child->valid && !in_analysis) {
       child->finished = true;
-      continue;
     }
     Board unique = child->GetBoard().Unique();
     // Create or get the BoardToEvaluate.

@@ -33,8 +33,8 @@ import 'files.dart';
 import 'main.dart';
 
 enum ActionWhenPlay {
-  playBlack,
-  playWhite,
+  // playBlack,
+  // playWhite,
   eval,
   none,
 }
@@ -188,6 +188,7 @@ class GlobalState {
 
   static void evaluate({EvaluateType type = EvaluateType.first}) {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
+      GlobalState.globalAnnotations.reset();
       return;
     }
     GlobalState.preferences.fillEvaluateParams(type);
@@ -357,6 +358,8 @@ class GlobalAnnotationState with ChangeNotifier {
 
   void reset() {
     annotations = null;
+    startAnnotations = null;
+    notifyListeners();
   }
 
   int getNumThorGames() {

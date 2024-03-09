@@ -104,9 +104,9 @@ class ScoreGraph extends StatelessWidget {
                     reservedSize: textSpace,
                   )
                 ),
-                rightTitles: AxisTitles(),
-                topTitles: AxisTitles(),
-                bottomTitles: AxisTitles(),
+                rightTitles: const AxisTitles(),
+                topTitles: const AxisTitles(),
+                bottomTitles: const AxisTitles(),
               ),
               maxY: maxY + 1,
               minY: -maxY - 1,
