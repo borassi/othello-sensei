@@ -41,6 +41,14 @@ dependencies:
   dropdown_search: ^5.0.6
   fl_chart: ^0.66.1
   receive_sharing_intent: ^1.6.7
+  googleapis: ^13.0.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  google_sign_in: ^6.2.1
+  download_assets: ^3.1.1
+  tar: ^1.0.3
+  envied: ^0.5.3
+  envied_generator: ^0.5.3
+  build_runner: ^2.4.8
 
 dev_dependencies:
   flutter_test:
@@ -67,7 +75,6 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/book/
     - assets/pattern_evaluator.dat
     - assets/thor/
     - assets/thor/Thor/

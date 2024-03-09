@@ -22,7 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
-const String assetVersion = "3";
+const String assetVersion = "5";
 
 Future<String> localPath() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +32,10 @@ Future<String> localPath() async {
 
 Future<String> localAssetPath() async {
   return join(await localPath(), "assets");
+}
+
+Future<String> localTempPath() async {
+  return join(await localPath(), "tmp");
 }
 
 Future<String> versionFilePath() async {

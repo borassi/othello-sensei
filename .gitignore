@@ -16,4 +16,5 @@ android/key.properties
 .idea
 .flutter-plugins*
 .gdb_history
-
+/secrets.env
+/lib/env.g.dart

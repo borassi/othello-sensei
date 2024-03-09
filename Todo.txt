@@ -1,5 +1,6 @@
 Usability / bugs
 - P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
+- P2 MED Keep the app alive while downloading the book.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 MED Show more reasonable evaluations when going back.

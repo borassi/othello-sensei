@@ -26,6 +26,7 @@ enum MenuItem {
   copy,
   paste,
   analyze,
+  downloadLatestBook,
   settings
 }
 
@@ -39,6 +40,9 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.analyze:
       analyze();
+      return;
+    case MenuItem.downloadLatestBook:
+      GlobalState.driveDownloader.downloadBook(context);
       return;
     case MenuItem.settings:
       GlobalState.stop();
@@ -56,8 +60,8 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   static const Map<ActionWhenPlay, Icon> actionToIcon = {
-      ActionWhenPlay.playBlack: Icon(Icons.circle),
-      ActionWhenPlay.playWhite: Icon(Icons.circle_outlined),
+      // ActionWhenPlay.playBlack: Icon(Icons.circle),
+      // ActionWhenPlay.playWhite: Icon(Icons.circle_outlined),
       ActionWhenPlay.eval: Icon(Icons.notifications_none),
       ActionWhenPlay.none: Icon(Icons.notifications_off_outlined),
   };
