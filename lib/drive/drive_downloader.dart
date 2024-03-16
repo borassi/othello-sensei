@@ -21,6 +21,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart';
 import 'package:logger/logger.dart';
+import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_spacers/margins.dart';
 import 'package:path/path.dart';
 import 'dart:io' as io;
@@ -242,6 +243,7 @@ class DriveDownloader {
     io.Directory(bookPath).renameSync(bookPathBeforeDelete);
     io.Directory(tempBookPath).renameSync(bookPath);
     io.Directory(localTempPathVar).deleteSync(recursive: true);
+    GlobalState.resetMain();
     Navigator.pop(context);
   }
 }

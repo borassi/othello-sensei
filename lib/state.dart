@@ -134,11 +134,24 @@ class GlobalState {
 
   static Future<void> init() async {
     await maybeCopyAssetsToLocalPath();
+    driveDownloader = await DriveDownloader.create();
+    preferences = await PreferencesState.create();
+    await _createMain();
+    if (Platform.isAndroid || Platform.isIOS) {
+      ReceiveSharingIntent.getInitialMedia().then(receiveOthelloQuestEvent);
+      ReceiveSharingIntent.getMediaStream().listen(receiveOthelloQuestEvent);
+    }
+  }
+
+  static Future<void> resetMain() async {
+    ffiEngine.MainDelete(ffiMain);
+    await _createMain();
+  }
+
+  static Future<void> _createMain() async {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     var localAssetPathVar = await localAssetPath();
-    driveDownloader = await DriveDownloader.create();
-    preferences = await PreferencesState.create();
     ffiMain = ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
@@ -147,11 +160,8 @@ class GlobalState {
         setAnnotationsCallback.nativeFunction
     );
     newGame();
-    if (Platform.isAndroid || Platform.isIOS) {
-      ReceiveSharingIntent.getInitialMedia().then(receiveOthelloQuestEvent);
-      ReceiveSharingIntent.getMediaStream().listen(receiveOthelloQuestEvent);
-    }
   }
+
   static ThorMetadataState get thorMetadata {
     thorMetadataOrNull ??= ThorMetadataState();
     return thorMetadataOrNull!;
