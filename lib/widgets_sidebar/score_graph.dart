@@ -23,8 +23,9 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
+import '../widgets_utils/hide_inactive.dart';
 
-class ScoreGraph extends StatelessWidget {
+class ScoreGraph extends HideInactiveWidget {
   const ScoreGraph({super.key});
 
   BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY, var moveToHighlight) {
@@ -61,7 +62,7 @@ class ScoreGraph extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildChild(BuildContext context) {
     var highlightColor = Theme.of(context).colorScheme.onSecondaryContainer;
     var standardColor = Theme.of(context).colorScheme.onPrimaryContainer;
     return LayoutBuilder(

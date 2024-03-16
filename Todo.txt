@@ -1,6 +1,6 @@
 Usability / bugs
 - P1 MED Automatic Thor updates.
-- P1 EASY Hide some widgets when not evaluating.
+- P1 EASY Different Thor filters.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.

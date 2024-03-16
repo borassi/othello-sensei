@@ -21,6 +21,7 @@ import 'package:othello_sensei/widgets_windows/thor_filters.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
+import '../widgets_utils/hide_inactive.dart';
 import 'disk_count.dart';
 
 Widget getCase(BuildContext context, CaseState state, double squareSize) {
@@ -52,32 +53,51 @@ Widget getCase(BuildContext context, CaseState state, double squareSize) {
   );
 }
 
+class FiltersButton extends HideInactiveWidget {
+  const FiltersButton({super.key});
+
+  @override
+  Widget buildChild(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    return Expanded(
+      child: TextButton(
+        style: ButtonStyle(
+          backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primaryContainer)
+        ),
+        onPressed: () {
+          GlobalState.stop();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
+          );
+        },
+        child: Text('Filters', style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!,
+        )),
+      )
+    );
+  }
+
+}
+
 class DiskCountsWithThor extends StatelessWidget {
-  DiskCountsWithThor({super.key});
+  const DiskCountsWithThor({super.key});
 
   @override
   Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     return SizedBox(
       height: squareSize,
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const DiskCount(true),
-          Expanded(
-            child: TextButton(
-              onPressed: () {
-                GlobalState.stop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
-                );
-              },
-              child: Text('Filters', style: Theme.of(context).textTheme.bodyMedium!),
-            )
-          ),
-          const DiskCount(false)
+          DiskCount(true),
+          const Spacer(),
+          FiltersButton(),
+          const Spacer(),
+          DiskCount(false)
         ]
       )
     );

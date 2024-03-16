@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
+import 'package:othello_sensei/widgets_utils/hide_inactive.dart';
 
 import '../widgets_spacers/app_sizes.dart';
 import '../main.dart';
@@ -76,14 +77,14 @@ class AnnotationRow extends StatelessWidget {
   }
 }
 
-class Case extends StatelessWidget {
-  final CaseState state;
-  final Function playMove;
-  final Function undo;
+class Annotations extends HideInactiveWidget {
   final int index;
-  const Case(this.state, this.index, this.playMove, this.undo, {super.key});
+  const Annotations(this.index, {super.key});
 
-  Widget showAnnotations(ColorScheme colorScheme) {
+
+  @override
+  Widget buildChild(BuildContext context) {
+    var colorScheme = Theme.of(context).colorScheme;
     var annotations = GlobalState.annotations[index];
     if (annotations.annotations == null || annotations.annotations!.move == 255 || !annotations.annotations!.valid) {
       return const Text("");
@@ -150,6 +151,14 @@ class Case extends StatelessWidget {
         }
     );
   }
+}
+
+class Case extends StatelessWidget {
+  final CaseState state;
+  final Function playMove;
+  final Function undo;
+  final int index;
+  const Case(this.state, this.index, this.playMove, this.undo, {super.key});
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
     Color fill;
@@ -196,8 +205,8 @@ class Case extends StatelessWidget {
     if (index != 255) {
       children.add(
           ListenableBuilder(
-            listenable: GlobalState.annotations[index],
-            builder: (BuildContext context, Widget? child) => showAnnotations(colorScheme),
+            listenable: Listenable.merge([GlobalState.annotations[index], GlobalState.actionWhenPlay]),
+            builder: (BuildContext context, Widget? child) => Annotations(index),
           )
       );
       children.add(

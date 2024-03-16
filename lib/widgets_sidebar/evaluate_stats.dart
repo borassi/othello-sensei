@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 
 import '../state.dart';
+import '../widgets_utils/hide_inactive.dart';
 
 TableRow getRow(String name, ListenableBuilder listenable) {
   return TableRow(
@@ -33,11 +34,11 @@ TableRow getRow(String name, ListenableBuilder listenable) {
   );
 }
 
-class EvaluateStats extends StatelessWidget {
+class EvaluateStats extends HideInactiveWidget {
   const EvaluateStats({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildChild(BuildContext context) {
     return ListenableBuilder(
       listenable: GlobalState.globalAnnotations,
       builder: (BuildContext context, Widget? widget) => Table(

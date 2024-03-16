@@ -19,7 +19,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/state.dart';
 
 class AppSizes extends ThemeExtension<AppSizes> {
   double height;

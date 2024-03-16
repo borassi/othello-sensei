@@ -238,6 +238,7 @@ class ActionWhenPlayState with ChangeNotifier {
   void setActionWhenPlay(ActionWhenPlay actionWhenPlay) {
     this.actionWhenPlay = actionWhenPlay;
     notifyListeners();
+    GlobalState.evaluate();
   }
 
   void rotateActions() {

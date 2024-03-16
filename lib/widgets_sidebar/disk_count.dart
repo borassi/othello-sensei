@@ -16,6 +16,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_utils/hide_inactive.dart';
 
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -51,7 +52,7 @@ Widget getCase(BuildContext context, bool black) {
 class DiskCount extends StatelessWidget {
   final bool black;
 
-  const DiskCount(this.black, {key});
+  const DiskCount(this.black, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -62,16 +63,18 @@ class DiskCount extends StatelessWidget {
   }
 }
 
-class DiskCountWithError extends StatelessWidget {
-  const DiskCountWithError({super.key});
+class ShowError extends HideInactiveWidget {
+  final bool black;
+  const ShowError(this.black, {super.key});
 
-  Widget widget(BuildContext context, bool black) {
+  @override
+  Widget buildChild(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Spacer(),
+        const Spacer(),
         Text("Error", style: Theme.of(context).textTheme.bodySmall),
-        Spacer(),
+        const Spacer(),
         ListenableBuilder(
           listenable: GlobalState.globalAnnotations,
           builder: (BuildContext context, Widget? widget) {
@@ -85,9 +88,18 @@ class DiskCountWithError extends StatelessWidget {
             );
           }
         ),
-        Spacer(),
+        const Spacer(),
       ]
     );
+  }
+
+}
+
+class DiskCountWithError extends StatelessWidget {
+  const DiskCountWithError({super.key});
+
+  Widget widget(BuildContext context, bool black) {
+    return ShowError(black);
   }
 
   @override
