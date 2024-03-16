@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 
 import '../utils.dart';
+import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
@@ -66,31 +67,41 @@ class DiskCountWithError extends StatelessWidget {
 
   Widget widget(BuildContext context, bool black) {
     return Column(
-      crossAxisAlignment: black ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
+        Spacer(),
         Text("Error", style: Theme.of(context).textTheme.bodySmall),
+        Spacer(),
         ListenableBuilder(
           listenable: GlobalState.globalAnnotations,
           builder: (BuildContext context, Widget? widget) {
             var (errorBlack, errorWhite, hasNaN) = GlobalState.globalAnnotations.getErrors();
             return Text(
               (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite),
-              style: Theme.of(context).textTheme.bodyLarge
+              style: TextStyle(
+                fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize!,
+                height: 1.0
+              )
             );
           }
-        )
+        ),
+        Spacer(),
       ]
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return RowWithMargins(
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const DiskCount(true),
-        widget(context, true),
+        const Margin(),
+        SizedBox(height: squareSize, child: widget(context, true)),
         const Spacer(),
-        widget(context, false),
+        SizedBox(height: squareSize, child: widget(context, false)),
+        const Margin(),
         const DiskCount(false),
       ]
     );

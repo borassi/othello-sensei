@@ -74,28 +74,41 @@ class MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FlexWithMargins(
-      direction: FlexWithMarginsDirection.asAppMain,
-      children: [
-        SizedBox(
-          child: FlexWithMargins(
-            direction: FlexWithMarginsDirection.inverseAppMain,
-            children: [const Spacer(), board, const Spacer(), const Margin()],
-          )
-        ),
-        Expanded(
-          child: FlexWithMargins(
-            direction: FlexWithMarginsDirection.inverseAppMain,
-            children: [
-              const Margin(),
-              Expanded(child: FlexWithMargins(
-                direction: FlexWithMarginsDirection.horizontal,
-                children: [Expanded(child: sidebar), const Margin()],
-              ))
-            ]
+    return Center(
+      child: Flex(
+        direction: Theme.of(context).extension<AppSizes>()!.vertical! ? Axis.vertical : Axis.horizontal,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flex(
+            mainAxisSize: MainAxisSize.min,
+            direction: Theme.of(context).extension<AppSizes>()!.vertical! ? Axis.horizontal : Axis.vertical,
+            children: [board, const Margin()],
           ),
-        )
-      ]
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Margin(),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Margin(),
+                      Flexible(
+                        child: Container(
+                          constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize!),
+                          child: sidebar,
+                        ),
+                      ),
+                      const Margin()
+                    ],
+                  )
+                )
+              ]
+            )
+          )
+        ]
+      )
     );
   }
 }
@@ -108,17 +121,20 @@ class Main extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var evaluateContent = ColumnWithMargins(
-      children: const [
+    var evaluateContent = const Column(
+      children: [
         DiskCountWithError(),
+        Margin(),
         Expanded(child: ScoreGraph()),
+        Margin(),
         EvaluateStats(),
       ],
     );
 
-    var thorContent = ColumnWithMargins(
+    var thorContent = Column(
       children: [
         DiskCountsWithThor(),
+        const Margin(),
         const Expanded(child: ThorGamesVisualizer()),
       ]
     );

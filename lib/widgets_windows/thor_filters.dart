@@ -85,21 +85,24 @@ class ThorFiltersWidget extends StatelessWidget {
         ),
         body: AppTheme(
           child: SingleChildScrollView(
-            child: ColumnWithMargins(
+            child: Column(
               children: [
                 const Margin(),
-                RowWithMargins(
+                Row(
                   children: [
                     const Margin(),
                     Case(CaseState.black, 255, () => {}, () => {}),
+                    const Margin(),
                     playerSearch(context, true),
                     const Margin(),
                   ]
                 ),
-                RowWithMargins(
+                const Margin(),
+                Row(
                   children: [
                     const Margin(),
                     Case(CaseState.white, 255, () => {}, () => {}),
+                    const Margin(),
                     playerSearch(context, false),
                     const Margin(),
                   ]

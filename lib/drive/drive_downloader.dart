@@ -181,7 +181,7 @@ class DriveDownloader {
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                 foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
-              body: RowWithMargins(
+              body: Row(
                 children: [
                   const Spacer(),
                   ListenableBuilder(
@@ -199,13 +199,13 @@ class DriveDownloader {
                         text = "Unzipping";
                         progress = unzipProgress.getProgress();
                       }
-                      return ColumnWithMargins(
+                      return Column(
                         children: [
                           const Spacer(),
                           Text(text, style: Theme.of(context).textTheme.bodyMedium!),
+                          const Margin(),
                           CircularProgressIndicator(
                             value: progress,
-                            semanticsLabel: 'Circular progress indicator',
                           ),
                           const Spacer(),
                         ]
