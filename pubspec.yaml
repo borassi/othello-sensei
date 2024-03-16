@@ -49,6 +49,9 @@ dependencies:
   envied: ^0.5.3
   envied_generator: ^0.5.3
   build_runner: ^2.4.8
+  logger: ^2.1.0
+  worker_manager: ^6.3.2
+  connectivity_plus: ^2.3.8
 
 dev_dependencies:
   flutter_test:

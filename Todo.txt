@@ -1,5 +1,4 @@
 Usability / bugs
-- P0 TINY Automatic evaluation after closing Thor filters.
 - P0 EASY Rows and columns.
 - P0 EASY Failure after analysis.
 - P1 MED Automatic Thor updates.

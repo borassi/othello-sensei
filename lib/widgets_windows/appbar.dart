@@ -41,9 +41,11 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       await pasteOrError(context);
       return;
     case MenuItem.analyze:
+      GlobalState.stop();
       analyze();
       return;
     case MenuItem.downloadLatestBook:
+      GlobalState.stop();
       GlobalState.driveDownloader.downloadBook(context);
       return;
     case MenuItem.senseiEvaluates:

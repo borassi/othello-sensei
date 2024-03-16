@@ -17,14 +17,17 @@
 
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart';
+import 'package:logger/logger.dart';
 import 'package:othello_sensei/widgets_spacers/margins.dart';
 import 'package:path/path.dart';
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:tar/tar.dart';
+import 'package:worker_manager/worker_manager.dart';
 
 import '../env.dart';
 import '../files.dart';
@@ -98,7 +101,72 @@ class DriveDownloader {
     });
   }
 
-  Future<void> downloadBook(BuildContext context) async {
+  void downloadBookWithConfirmation(BuildContext context, String alertText) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext childContext) {
+        return AppTheme(
+          child: AlertDialog(
+            title: const Text('Downloading book'),
+            content: Text(alertText, style: Theme.of(childContext).textTheme.bodyMedium!),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(childContext).pop();
+                  downloadBookNoConfirmation(context).catchError((e, s) {
+                    String error = 'Error when downloading the book\n$e\n$s';
+                    Logger().e(error);
+                  });
+                },
+              ),
+              TextButton(
+                child: const Text('Abort'),
+                onPressed: () {
+                  Navigator.of(childContext).pop();
+                },
+              ),
+            ],
+          )
+        );
+      }
+    );
+  }
+
+  void downloadBook(BuildContext context) async {
+    final connectivityResult = await (Connectivity().checkConnectivity());
+    switch (connectivityResult) {
+      case ConnectivityResult.bluetooth:
+      case ConnectivityResult.wifi:
+      case ConnectivityResult.ethernet:
+        downloadBookNoConfirmation(context);
+      case ConnectivityResult.vpn:
+      case ConnectivityResult.mobile:
+      case ConnectivityResult.other:
+        downloadBookWithConfirmation(
+            context,
+            'The book is large (approximately 200MB).\n'
+            'Make sure you are connected to a WiFi, or \n'
+            'you are OK downloading it on your data plan.'
+        );
+      case ConnectivityResult.none:
+        showDialog<void>(
+          context: context,
+          builder: (BuildContext childContext) {
+            return AppTheme(
+              child: AlertDialog(
+                title: const Text('No internet connection available'),
+              )
+            );
+          }
+        );
+    }
+  }
+
+  Future<void> downloadBookNoConfirmation(BuildContext context) async {
+    downloadProgress.setProgress(0);
+    unzipProgress.setProgress(0);
     Navigator.push(
       context,
       MaterialPageRoute(
