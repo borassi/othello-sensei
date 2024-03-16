@@ -72,6 +72,11 @@ class ThorFiltersWidget extends StatelessWidget {
     GlobalState.thorMetadata.setBlack([]);
     GlobalState.thorMetadata.setWhite([]);
     return PopScope(
+      onPopInvoked: (bool didPop) {
+        if (didPop) {
+          GlobalState.evaluate();
+        }
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Thor filters'),

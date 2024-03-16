@@ -1,5 +1,4 @@
 Usability / bugs
-- P0 EASY Wrong Thor values when changing players.
 - P0 EASY Book download progress bar.
 - P0 EASY Book download goes back to the app.
 - P0 TINY Automatic evaluation after closing Thor filters.
