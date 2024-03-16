@@ -129,7 +129,7 @@ struct EvaluateParams {
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
-typedef void (*UpdateAnnotations)(int);
+typedef void (*UpdateAnnotations)(int, bool);
 
 #ifdef __cplusplus
 }

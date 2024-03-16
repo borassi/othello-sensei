@@ -498,5 +498,5 @@ typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
-typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Int);
-typedef DartUpdateAnnotationsFunction = void Function(int);
+typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Int, ffi.Bool);
+typedef DartUpdateAnnotationsFunction = void Function(int, bool);

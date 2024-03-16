@@ -119,7 +119,7 @@ class Settings extends StatelessWidget {
   static const _evalPreferences = [
     'Number of threads',
     'Positions when evaluating',
-    'Positions when playing',
+    // 'Positions when playing',
     'Seconds until first evaluation',
     'Seconds between evaluations',
     'Spend half the time on a positions worse by',
@@ -152,6 +152,7 @@ class Settings extends StatelessWidget {
     return PopScope(
       onPopInvoked: (bool didPop) {
         GlobalState.preferences.setAll(_state.updates);
+        GlobalState.evaluate();
       },
       child: Scaffold(
         appBar: AppBar(

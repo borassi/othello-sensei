@@ -1,18 +1,14 @@
 Usability / bugs
-- P0 EASY Remove all "playing" parts.
-- P0 EASY Failure after analysis.
 - P1 MED Automatic Thor updates.
-- P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
-- P2 MED Keep the app alive while downloading the book.
+- P1 EASY Hide some widgets when not evaluating.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.
-- P2 MED Show more reasonable evaluations when going back.
 - P2 EASY Fix time when clicking stop.
-- P3 EASY First time installation.
 - P3 ???? Free memory on hot reload.
 - P3 EASY Back button undo instead of quit.
 
 Tech debt
+- P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
 - P2 EASY Unify SetBoard and SetAnnotations.
 - P2 MED Move business logic to C++ code.
 - P3 EASY Fix Flutter warnings.

@@ -389,7 +389,7 @@ void Engine::AnalyzePosition(
   current_state->analyzed |= in_analysis;
 
   if (current_thread == current_thread_) {
-    update_annotations_(current_thread);
+    update_annotations_(current_thread, in_analysis);
   }
 }
 

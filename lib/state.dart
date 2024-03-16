@@ -53,13 +53,16 @@ int currentMove() {
   return GlobalState.globalAnnotations.annotations!.ref.depth;
 }
 
-void updateAnnotations(int currentThread) {
+void updateAnnotations(int currentThread, bool inAnalysis) {
   Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr) {
     return;
   }
   GlobalState.globalAnnotations.setState(annotations, startAnnotations);
+  if (inAnalysis) {
+    return;
+  }
   for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
     GlobalState.annotations[child.ref.move].setState(child.ref);
   }
@@ -272,7 +275,7 @@ class PreferencesState with ChangeNotifier {
     'Show coordinates': false,
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 1000000000000,
-    'Positions when playing': 50000000,
+    // 'Positions when playing': 50000000,
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Spend half the time on a positions worse by': 6.0,
