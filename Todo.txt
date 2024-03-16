@@ -1,6 +1,4 @@
 Usability / bugs
-- P0 EASY Book download progress bar.
-- P0 EASY Book download goes back to the app.
 - P0 TINY Automatic evaluation after closing Thor filters.
 - P0 EASY Rows and columns.
 - P0 EASY Failure after analysis.

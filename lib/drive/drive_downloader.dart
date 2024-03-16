@@ -19,6 +19,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart';
+import 'package:othello_sensei/widgets_spacers/margins.dart';
 import 'package:path/path.dart';
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
@@ -27,15 +28,31 @@ import 'package:tar/tar.dart';
 
 import '../env.dart';
 import '../files.dart';
+import '../main.dart';
 
 const kBookFolderId = '1_-NOJ_QRjoHiVlvvX4IAKivWREvrxjQe';
+
+class DriveDownloaderProgress with ChangeNotifier {
+  double progress;
+
+  DriveDownloaderProgress() : progress = 0;
+
+  void setProgress(double progress) {
+    this.progress = progress;
+    notifyListeners();
+  }
+
+  double getProgress() { return progress; }
+}
 
 class DriveDownloader {
   final DriveApi _driveApi;
   late String? message;
   late bool? downloaded;
+  DriveDownloaderProgress downloadProgress;
+  DriveDownloaderProgress unzipProgress;
 
-  DriveDownloader._create(this._driveApi);
+  DriveDownloader._create(this._driveApi) : downloadProgress = DriveDownloaderProgress(), unzipProgress = DriveDownloaderProgress();
 
   static Future<DriveDownloader> create() async {
     var authKey = Env.driveKey;
@@ -56,14 +73,19 @@ class DriveDownloader {
     await (await media as Media).stream.forEach((data) {
       dataStore.insertAll(dataStore.length, data);
       downloadedSize += data.length;
+      downloadProgress.setProgress(downloadedSize / totalSize);
     });
     var outputFile = io.File(output);
     await outputFile.writeAsBytes(dataStore);
+    downloadProgress.setProgress(1);
   }
 
-  Future<void> extractTarGz(String inputPath, String outputPath) async {
+  Future<void> extractTarGz(String inputPath, String outputPath, int numFilesForProgressBar) async {
     final input = io.File(inputPath).openRead().transform(gzip.decoder);
+    var done = 0;
     await TarReader.forEach(input, (TarEntry entry) async {
+      done += 1;
+      unzipProgress.setProgress(done / 258);
       final destination =
           // NOTE: If `entry.name` contained `../`, this may escape the target
           // directory (but the file should be safe, as I'm the only owner).
@@ -79,19 +101,56 @@ class DriveDownloader {
   Future<void> downloadBook(BuildContext context) async {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PopScope(
-        canPop: false,
-        child: Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            title: const Text('Downloading book'),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-          body: const Text(''),
+      MaterialPageRoute(
+        builder: (context) => PopScope(
+          canPop: false,
+          child: AppTheme(
+            child: Scaffold(
+              appBar: AppBar(
+                automaticallyImplyLeading: false,
+                title: const Text('Downloading book'),
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              body: RowWithMargins(
+                children: [
+                  const Spacer(),
+                  ListenableBuilder(
+                    listenable: Listenable.merge([downloadProgress, unzipProgress]),
+                    builder: (BuildContext context, Widget? w) {
+                      double progress;
+                      String text;
+                      if (downloadProgress.getProgress() == 0) {
+                        text = "Starting";
+                        progress = 0;
+                      } else if (downloadProgress.getProgress() < 1) {
+                        text = "Downloading";
+                        progress = downloadProgress.getProgress();
+                      } else {
+                        text = "Unzipping";
+                        progress = unzipProgress.getProgress();
+                      }
+                      return ColumnWithMargins(
+                        children: [
+                          const Spacer(),
+                          Text(text, style: Theme.of(context).textTheme.bodyMedium!),
+                          CircularProgressIndicator(
+                            value: progress,
+                            semanticsLabel: 'Circular progress indicator',
+                          ),
+                          const Spacer(),
+                        ]
+                      );
+                    }
+                  ),
+                  const Spacer(),
+                ]
+              )
+            )
+          )
         )
       )
-    ));
+    );
     var localTempPathVar = await localTempPath();
     try {
       io.Directory(localTempPathVar).deleteSync(recursive: true);
@@ -108,24 +167,13 @@ class DriveDownloader {
         break;
       }
     }
-    await extractTarGz(tempBookCompressedPath, localTempPathVar);
+    // We expect 258 files in the book, and AFAIK there is no way to get this
+    // number without decompressing the file. We hard-code it, since it's just
+    // used to show the progress bar.
+    await extractTarGz(tempBookCompressedPath, localTempPathVar, 258);
     io.Directory(bookPath).renameSync(bookPathBeforeDelete);
     io.Directory(tempBookPath).renameSync(bookPath);
     io.Directory(localTempPathVar).deleteSync(recursive: true);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => PopScope(
-        canPop: false,
-        child: Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            title: const Text('Downloaded book'),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-          body: const Text('Please reset the app.'),
-        )
-      )
-    ));
+    Navigator.pop(context);
   }
 }
