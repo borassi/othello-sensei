@@ -269,6 +269,7 @@ enum EvaluateType {
 
 class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
+    'Show coordinates': false,
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 1000000000000,
     'Positions when playing': 50000000,

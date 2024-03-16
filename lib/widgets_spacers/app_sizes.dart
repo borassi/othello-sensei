@@ -19,6 +19,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/state.dart';
 
 class AppSizes extends ThemeExtension<AppSizes> {
   double height;
@@ -34,8 +35,8 @@ class AppSizes extends ThemeExtension<AppSizes> {
     var horizontalBoardSize = min(height, 8 / 14 * width);
     vertical = verticalBoardSize > horizontalBoardSize;
     var boardSize = max(verticalBoardSize, horizontalBoardSize);
-    squareSize = (boardSize! / 8.5);
-    margin = (boardSize! - 8 * squareSize!) / 2;
+    margin = boardSize / 20;
+    squareSize = ((boardSize - 2 * margin!) / 8);
     sizeBarWidth = (vertical! ? boardSize! - 2 * margin! : width - boardSize! - margin!);
     sizeBarHeight = (vertical! ? height - boardSize! : height);
   }

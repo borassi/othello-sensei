@@ -110,6 +110,12 @@ class Settings extends StatelessWidget {
 
   SettingsLocalState _state;
 
+  static const _uiPreferences = [
+    'Show coordinates',
+    'Highlight distance from best move',
+    'Best move green, other yellow',
+  ];
+
   static const _evalPreferences = [
     'Number of threads',
     'Positions when evaluating',
@@ -119,8 +125,6 @@ class Settings extends StatelessWidget {
     'Spend half the time on a positions worse by',
     'Use book',
     'Round evaluations',
-    'Highlight distance from best move',
-    'Best move green, other yellow',
   ];
 
   static const _analyzePreferences = [
@@ -140,6 +144,7 @@ class Settings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var nerdPreferences = GlobalState.preferences.defaultPreferences.keys.toSet();
+    nerdPreferences.removeAll(_uiPreferences);
     nerdPreferences.removeAll(_evalPreferences);
     nerdPreferences.removeAll(_analyzePreferences);
     nerdPreferences.removeAll(_unshownPreferences);
@@ -161,6 +166,12 @@ class Settings extends StatelessWidget {
                 listenable: _state,
                 builder: (BuildContext context, Widget? widget) => CardSettings.sectioned(
                   children: <CardSettingsSection>[
+                    CardSettingsSection(
+                      header: CardSettingsHeader(
+                        label: 'User interface',
+                      ),
+                      children: _uiPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
+                    ),
                     CardSettingsSection(
                       header: CardSettingsHeader(
                         label: 'Evaluation',

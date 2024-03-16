@@ -77,11 +77,10 @@ class MainContent extends StatelessWidget {
     return FlexWithMargins(
       direction: FlexWithMarginsDirection.asAppMain,
       children: [
-        const Margin(),
         SizedBox(
           child: FlexWithMargins(
             direction: FlexWithMarginsDirection.inverseAppMain,
-            children: [const Margin(), const Spacer(), board, const Spacer(), const Margin()],
+            children: [const Spacer(), board, const Spacer(), const Margin()],
           )
         ),
         Expanded(
