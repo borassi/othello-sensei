@@ -1,5 +1,10 @@
 Usability / bugs
 - P0 EASY Wrong Thor values when changing players.
+- P0 EASY Book download progress bar.
+- P0 EASY Book download goes back to the app.
+- P0 TINY Automatic evaluation after closing Thor filters.
+- P0 EASY Rows and columns.
+- P0 EASY Failure after analysis.
 - P1 MED Automatic Thor updates.
 - P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
 - P2 MED Keep the app alive while downloading the book.

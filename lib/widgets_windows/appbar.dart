@@ -27,6 +27,8 @@ enum MenuItem {
   paste,
   analyze,
   downloadLatestBook,
+  senseiEvaluates,
+  senseiIsInactive,
   settings
 }
 
@@ -44,6 +46,12 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
     case MenuItem.downloadLatestBook:
       GlobalState.driveDownloader.downloadBook(context);
       return;
+    case MenuItem.senseiEvaluates:
+      GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
+      return;
+    case MenuItem.senseiIsInactive:
+      GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.none);
+      return;
     case MenuItem.settings:
       GlobalState.stop();
       Navigator.push(
@@ -59,13 +67,6 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
-  static const Map<ActionWhenPlay, Icon> actionToIcon = {
-      // ActionWhenPlay.playBlack: Icon(Icons.circle),
-      // ActionWhenPlay.playWhite: Icon(Icons.circle_outlined),
-      ActionWhenPlay.eval: Icon(Icons.notifications_none),
-      ActionWhenPlay.none: Icon(Icons.notifications_off_outlined),
-  };
-
   const SenseiAppBar({super.key});
 
   @override
@@ -75,23 +76,10 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         title: const Text("Sensei"),
         actions: <Widget>[
-          ListenableBuilder(
-              listenable: GlobalState.actionWhenPlay,
-              builder: (BuildContext context, Widget? child) => IconButton(
-                icon: actionToIcon[GlobalState.actionWhenPlay.actionWhenPlay]!,
-                tooltip: "Change action",
-                onPressed: GlobalState.actionWhenPlay.rotateActions,
-              )
-          ),
           const IconButton(
             icon: Icon(Icons.home),
             tooltip: 'New game',
             onPressed: GlobalState.newGame,
-          ),
-          const IconButton(
-            icon: Icon(Icons.stop_rounded),
-            tooltip: 'Stop',
-            onPressed: GlobalState.stop,
           ),
           const IconButton(
             icon: Icon(Icons.chevron_left_rounded),
@@ -103,13 +91,30 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
             tooltip: 'Redo',
             onPressed: GlobalState.redo,
           ),
-          PopupMenuButton<MenuItem>(
-            icon: const Icon(Icons.more_vert_rounded),
-            onSelected: (MenuItem i) { handleMenuItem(context, i); },
-            itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
-              return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
-            }).toList()
+          const IconButton(
+            icon: Icon(Icons.stop_rounded),
+            tooltip: 'Stop',
+            onPressed: GlobalState.stop,
           ),
+          ListenableBuilder(
+            listenable: GlobalState.actionWhenPlay,
+            builder: (BuildContext context, Widget? widget) => PopupMenuButton<MenuItem>(
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (MenuItem i) { handleMenuItem(context, i); },
+              itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
+                if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
+                  return CheckedPopupMenuItem<MenuItem>(
+                    value: i,
+                    checked:
+                        (i == MenuItem.senseiEvaluates && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval) ||
+                        (i == MenuItem.senseiIsInactive && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none),
+                    child: Text(camelCaseToSpaces(i.name))
+                  );
+                }
+                return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
+              }).toList()
+            )
+          )
         ]
       );
   }
