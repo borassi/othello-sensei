@@ -26,9 +26,10 @@ enum MenuItem {
   copy,
   paste,
   analyze,
-  downloadLatestBook,
   senseiEvaluates,
   senseiIsInactive,
+  downloadLatestBook,
+  downloadLatestArchive,
   settings
 }
 
@@ -47,6 +48,10 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
     case MenuItem.downloadLatestBook:
       GlobalState.stop();
       GlobalState.driveDownloader.downloadBook(context);
+      return;
+    case MenuItem.downloadLatestArchive:
+      GlobalState.stop();
+      GlobalState.driveDownloader.downloadArchive(context);
       return;
     case MenuItem.senseiEvaluates:
       GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);

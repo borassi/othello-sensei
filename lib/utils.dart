@@ -26,6 +26,9 @@ extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${substring(1)}";
   }
+  String lowerCase() {
+    return "${this[0].toLowerCase()}${substring(1)}";
+  }
 }
 
 // Taken from https://en.wikipedia.org/wiki/Hamming_weight.
@@ -114,7 +117,7 @@ String camelCaseToSpaces(String s) {
     if (g == null) {
       return '';
     }
-    return ' $g';
+    return ' ${g.lowerCase()}';
   });
   return result.capitalize();
 }

@@ -108,7 +108,7 @@ class ThorFiltersWidget extends StatelessWidget {
         GlobalState.thorMetadata.setFilters();
         GlobalState.evaluate();
       },
-      title: 'Thor filters',
+      title: 'Archive filters',
       child: Column(
         children: [
           const ThorSourcesWidget(),

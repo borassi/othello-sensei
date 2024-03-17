@@ -131,11 +131,11 @@ class Main extends StatelessWidget {
       ],
     );
 
-    var thorContent = Column(
+    var thorContent = const Column(
       children: [
         DiskCountsWithThor(),
-        const Margin(),
-        const Expanded(child: ThorGamesVisualizer()),
+        Margin(),
+        Expanded(child: ThorGamesVisualizer()),
       ]
     );
     return MaterialApp(

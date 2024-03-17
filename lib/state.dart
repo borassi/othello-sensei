@@ -48,7 +48,7 @@ void setBoard(BoardUpdate boardUpdate) {
 
 int currentMove() {
   if (GlobalState.globalAnnotations.annotations == null) {
-    return 0;
+    return -1;
   }
   return GlobalState.globalAnnotations.annotations!.ref.depth;
 }
@@ -60,13 +60,10 @@ void updateAnnotations(int currentThread, bool inAnalysis) {
     return;
   }
   GlobalState.globalAnnotations.setState(annotations, startAnnotations);
-  if (inAnalysis) {
-    return;
-  }
   for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
     GlobalState.annotations[child.ref.move].setState(child.ref);
   }
-  if (!annotations.ref.finished && !annotations.ref.analyzed) {
+  if (!annotations.ref.finished && !annotations.ref.analyzed && !inAnalysis) {
     GlobalState.evaluate(type: EvaluateType.subsequent);
   }
 }
@@ -158,7 +155,7 @@ class GlobalState {
     ffiMain = ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'thor').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
@@ -256,7 +253,7 @@ class AnnotationState with ChangeNotifier {
   }
 
   void setState(Annotations annotations) {
-    this.annotations = annotations;
+    this.annotations = annotations.valid ? annotations : null;
     notifyListeners();
   }
 
@@ -385,7 +382,7 @@ class GlobalAnnotationState with ChangeNotifier {
   }
 
   void setState(Pointer<Annotations> annotations, Pointer<Annotations> startAnnotations) {
-    this.annotations = annotations;
+    this.annotations = annotations.ref.valid ? annotations : null;
     this.startAnnotations = startAnnotations;
     notifyListeners();
   }
@@ -525,7 +522,6 @@ class ThorMetadataState with ChangeNotifier {
   }
 
   void setFilters() {
-    print('Set filters!\n');
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
       ThorSourceMetadata source = (thorMetadata.ref.sources + i).value.ref;
       source.active = sourceToActive[source.name.cast<Utf8>().toDartString()]!;

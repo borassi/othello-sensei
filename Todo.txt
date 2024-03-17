@@ -1,6 +1,4 @@
 Usability / bugs
-- P1 MED Automatic Thor updates.
-- P1 EASY Different Thor filters.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
@@ -16,7 +14,6 @@ Tech debt
 Thor
 - P2 EASY Click to play the next move.
 - P2 TINY Add tournament.
-- P2 EASY Use only one source.
 - P2 MED Winning percentages.
 - P3 EASY Filter by tournament / year
 - P4 ???? Avoid blocking when loading Thor window too soon.

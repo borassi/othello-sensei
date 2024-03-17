@@ -34,7 +34,7 @@ import '../env.dart';
 import '../files.dart';
 import '../main.dart';
 
-const kBookFolderId = '1_-NOJ_QRjoHiVlvvX4IAKivWREvrxjQe';
+const kBaseFolderId = '1V9GKU4X30l2oppfC3dG80qFh4PHb6sUY';
 
 class DriveDownloaderProgress with ChangeNotifier {
   double progress;
@@ -68,7 +68,25 @@ class DriveDownloader {
     return await _driveApi.files.list(q: "'$id' in parents", $fields: "files(*)");
   }
 
-  Future<void> download(String id, String output) async {
+  Future<String> getIdFromPath(String path) async {
+    var folderId = kBaseFolderId;
+    for (var pathSegment in split(path)) {
+      var found = false;
+      for (var file in (await listFiles(folderId)).files!) {
+        if (file.name == pathSegment) {
+          folderId = file.shortcutDetails?.targetId ?? file.id!;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        throw ArgumentError('Cannot open file $path because $pathSegment does not exist');
+      }
+    }
+    return folderId;
+  }
+
+  Future<void> downloadFile(String id, String output) async {
     var metadata = await _driveApi.files.get(id, $fields: "size") as File;
     var totalSize = int.parse(metadata.size!);
     var downloadedSize = 0;
@@ -102,22 +120,22 @@ class DriveDownloader {
     });
   }
 
-  void downloadBookWithConfirmation(BuildContext context, String alertText) {
+  void downloadWithConfirmation(BuildContext context, String alertText, String title, String path) {
     showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext childContext) {
         return AppTheme(
           child: AlertDialog(
-            title: const Text('Downloading book'),
+            title: Text('Downloading ${title}'),
             content: Text(alertText, style: Theme.of(childContext).textTheme.bodyMedium!),
             actions: <Widget>[
               TextButton(
                 child: const Text('OK'),
                 onPressed: () {
                   Navigator.of(childContext).pop();
-                  downloadBookNoConfirmation(context).catchError((e, s) {
-                    String error = 'Error when downloading the book\n$e\n$s';
+                  downloadNoConfirmation(context, title, path).catchError((e, s) {
+                    String error = 'Error in downloading $title\n$e\n$s';
                     Logger().e(error);
                   });
                 },
@@ -135,29 +153,31 @@ class DriveDownloader {
     );
   }
 
-  void downloadBook(BuildContext context) async {
+  void download(BuildContext context, String name, String path, int sizeMB) async {
     final connectivityResult = await (Connectivity().checkConnectivity());
     switch (connectivityResult) {
       case ConnectivityResult.bluetooth:
       case ConnectivityResult.wifi:
       case ConnectivityResult.ethernet:
-        downloadBookNoConfirmation(context);
+        downloadNoConfirmation(context, name, path);
       case ConnectivityResult.vpn:
       case ConnectivityResult.mobile:
       case ConnectivityResult.other:
-        downloadBookWithConfirmation(
+        downloadWithConfirmation(
             context,
-            'The book is large (approximately 200MB).\n'
+            'File $name is large (approximately ${sizeMB}MB).\n'
             'Make sure you are connected to a WiFi, or \n'
-            'you are OK downloading it on your data plan.'
+            'you are OK downloading it on your data plan.',
+            name,
+            path
         );
       case ConnectivityResult.none:
         showDialog<void>(
           context: context,
           builder: (BuildContext childContext) {
             return AppTheme(
-              child: AlertDialog(
-                title: const Text('No internet connection available'),
+              child: const AlertDialog(
+                title: Text('No internet connection available'),
               )
             );
           }
@@ -165,7 +185,15 @@ class DriveDownloader {
     }
   }
 
-  Future<void> downloadBookNoConfirmation(BuildContext context) async {
+  void downloadBook(BuildContext context) {
+    download(context, 'book', 'Books/latest.tar.gz', 200);
+  }
+
+  void downloadArchive(BuildContext context) {
+    download(context, 'archive', 'archive.tar.gz', 100);
+  }
+
+  Future<void> downloadNoConfirmation(BuildContext context, String title, String path) async {
     downloadProgress.setProgress(0);
     unzipProgress.setProgress(0);
     Navigator.push(
@@ -177,7 +205,7 @@ class DriveDownloader {
             child: Scaffold(
               appBar: AppBar(
                 automaticallyImplyLeading: false,
-                title: const Text('Downloading book'),
+                title: Text('Downloading $title'),
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                 foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
@@ -224,24 +252,25 @@ class DriveDownloader {
     try {
       io.Directory(localTempPathVar).deleteSync(recursive: true);
     } on PathNotFoundException {}
-    var tempBookCompressedPath = join(localTempPathVar, 'book.tar.gz');
-    var tempBookPath = join(localTempPathVar, 'book');
-    var bookPath = join(await localAssetPath(), 'book');
-    var bookPathBeforeDelete = join(localTempPathVar, 'book_old');
-
+    var tempCompressedPath = join(localTempPathVar, '${title}.tar.gz');
+    var tempUncompressedPath = join(localTempPathVar, title);
+    var targetPath = join(await localAssetPath(), title);
+    var oldTargetPathBeforeDelete = join(localTempPathVar, '${title}_old');
     io.Directory(localTempPathVar).createSync(recursive: true);
-    for (var file in (await listFiles(kBookFolderId)).files!) {
-      if (file.name == 'latest.tar.gz') {
-        await download(file.shortcutDetails!.targetId!, tempBookCompressedPath);
-        break;
-      }
-    }
+
+    var driveId = await getIdFromPath(path);
+    await downloadFile(driveId, tempCompressedPath);
+
     // We expect 258 files in the book, and AFAIK there is no way to get this
     // number without decompressing the file. We hard-code it, since it's just
     // used to show the progress bar.
-    await extractTarGz(tempBookCompressedPath, localTempPathVar, 258);
-    io.Directory(bookPath).renameSync(bookPathBeforeDelete);
-    io.Directory(tempBookPath).renameSync(bookPath);
+    await extractTarGz(tempCompressedPath, localTempPathVar, 258);
+    var toMove = io.Directory(targetPath);
+    if (toMove.existsSync()) {
+      toMove.renameSync(oldTargetPathBeforeDelete);
+    }
+    print('Moving $tempUncompressedPath to $targetPath');
+    io.Directory(tempUncompressedPath).renameSync(targetPath);
     io.Directory(localTempPathVar).deleteSync(recursive: true);
     GlobalState.resetMain();
     Navigator.pop(context);

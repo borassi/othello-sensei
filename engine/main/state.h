@@ -37,6 +37,8 @@ class State : public Annotations {
     this->black_turn = black_turn;
     board_ = board;
     example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
+    num_example_thor_games = 0;
+    num_thor_games = 0;
     SetFather(nullptr);
     SetFirstChild(nullptr);
     SetNextSibling(nullptr);

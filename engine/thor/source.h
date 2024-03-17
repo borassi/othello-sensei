@@ -224,7 +224,7 @@ class Source {
         if (result.examples.size() + cur_games <= max_games) {
           result.examples.insert(result.examples.end(), interval.start, interval.end);
         } else if (result.examples.size() < max_games) {
-          std::sample(interval.start, interval.end, std::back_inserter(result.examples), max_games - result.examples.size(), std::mt19937 {std::random_device{}()});
+          std::sample(interval.start, interval.end, std::back_inserter(result.examples), max_games - result.examples.size(), std::mt19937 {42});
         } else {
           assert(result.examples.size() == max_games);
         }
