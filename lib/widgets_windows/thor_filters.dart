@@ -17,18 +17,51 @@
 
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/margins.dart';
 import '../main.dart';
+import '../widgets_utils/misc.dart';
 
+class ThorSourcesWidget extends StatelessWidget {
+  const ThorSourcesWidget({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: GlobalState.thorMetadata,
+      builder: (BuildContext context, Widget? widget) {
+        var checkboxes = <Widget>[];
+        for (var iter in GlobalState.thorMetadata.sourceToActive.entries) {
+          checkboxes.add(
+            Row(
+              children: [
+                SenseiToggle(
+                  initialValue: iter.value,
+                  onChanged: (bool? newValue) {
+                    if (newValue != null) {
+                      GlobalState.thorMetadata.setSelectedSource(iter.key, newValue);
+                    }
+                  },
+                ),
+                const Margin(),
+                Text(iter.key, style: Theme.of(context).textTheme.bodyMedium!),
+              ]
+            )
+          );
+        }
+        return Column(children: checkboxes);
+      }
+    );
+  }
+}
 
 class ThorFiltersWidget extends StatelessWidget {
-  double squareSize;
+  final double squareSize;
 
-  ThorFiltersWidget(this.squareSize, {super.key});
+  const ThorFiltersWidget(this.squareSize, {super.key});
 
   Widget playerSearch(BuildContext context, bool black) {
     var fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
@@ -37,6 +70,7 @@ class ThorFiltersWidget extends StatelessWidget {
     return Expanded(
       child: DropdownSearch<String>.multiSelection(
         items: players,
+        selectedItems: black ? GlobalState.thorMetadata.selectedBlacks : GlobalState.thorMetadata.selectedWhites,
         popupProps: PopupPropsMultiSelection.menu(
           showSearchBox: true,
           fit: FlexFit.loose,
@@ -59,9 +93,9 @@ class ThorFiltersWidget extends StatelessWidget {
         ),
         onChanged: (List<String> elements) {
           if (black) {
-            GlobalState.thorMetadata.setBlack(elements);
+            GlobalState.thorMetadata.setSelectedBlacks(elements);
           } else {
-            GlobalState.thorMetadata.setWhite(elements);
+            GlobalState.thorMetadata.setSelectedWhites(elements);
           }
         },
       )
@@ -69,49 +103,33 @@ class ThorFiltersWidget extends StatelessWidget {
   }
   @override
   Widget build(BuildContext context) {
-    GlobalState.thorMetadata.setBlack([]);
-    GlobalState.thorMetadata.setWhite([]);
-    return PopScope(
+    return SecondaryWindow(
       onPopInvoked: (bool didPop) {
-        if (didPop) {
-          GlobalState.evaluate();
-        }
+        GlobalState.thorMetadata.setFilters();
+        GlobalState.evaluate();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Thor filters'),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-        body: AppTheme(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const Margin(),
-                Row(
-                  children: [
-                    const Margin(),
-                    Case(CaseState.black, 255, () => {}, () => {}),
-                    const Margin(),
-                    playerSearch(context, true),
-                    const Margin(),
-                  ]
-                ),
-                const Margin(),
-                Row(
-                  children: [
-                    const Margin(),
-                    Case(CaseState.white, 255, () => {}, () => {}),
-                    const Margin(),
-                    playerSearch(context, false),
-                    const Margin(),
-                  ]
-                ),
-                const Margin(),
-              ],
-            )
-          )
-        )
+      title: 'Thor filters',
+      child: Column(
+        children: [
+          const ThorSourcesWidget(),
+          const Margin(),
+          Row(
+            children: [
+              Case(CaseState.black, 255, () => {}, () => {}),
+              const Margin(),
+              playerSearch(context, true),
+            ]
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Case(CaseState.white, 255, () => {}, () => {}),
+              const Margin(),
+              playerSearch(context, false),
+            ]
+          ),
+          const Spacer(),
+        ],
       )
     );
   }

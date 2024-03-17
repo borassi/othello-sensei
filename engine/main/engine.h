@@ -143,6 +143,7 @@ class ThorSourceMetadataExtended {
       tournaments_.push_back(tournament.c_str());
       selected_tournaments_.push_back(-1);
     }
+    thor_source_metadata_.active = true;
     thor_source_metadata_.name = name_.c_str();
     thor_source_metadata_.players = players_.data();
     thor_source_metadata_.num_players = players_.size();

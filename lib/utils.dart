@@ -44,6 +44,9 @@ int bitCount(int x) {
 class IntInputFormatter implements TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text == '') {
+      return newValue;
+    }
     try {
       int.parse(newValue.text);
     } on FormatException {

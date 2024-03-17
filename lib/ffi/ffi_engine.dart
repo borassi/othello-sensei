@@ -297,6 +297,9 @@ final class ThorSourceMetadata extends ffi.Struct {
   external ffi.Pointer<ffi.Int> selected_whites;
 
   external ffi.Pointer<ffi.Int> selected_tournaments;
+
+  @ffi.Bool()
+  external bool active;
 }
 
 final class ThorMetadata extends ffi.Struct {

@@ -39,6 +39,7 @@ struct ThorSourceMetadata {
   int* selected_blacks;
   int* selected_whites;
   int* selected_tournaments;
+  bool active;
 };
 
 struct ThorMetadata {

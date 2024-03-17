@@ -83,14 +83,14 @@ Future<bool> paste() async {
   if (game == null) {
     return false;
   }
-  var gameC = game!.toNativeUtf8().cast<Char>();
+  var gameC = game.toNativeUtf8().cast<Char>();
   return ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
 }
 
 Future<void> pasteOrError(BuildContext context) async {
   bool success = await paste();
   if (!success && context.mounted) {
-    showDialog<void>(
+    await showDialog<void>(
       context: context,
       builder: (BuildContext ctx) {
         return const AlertDialog(
@@ -98,7 +98,7 @@ Future<void> pasteOrError(BuildContext context) async {
         );
       },
     );
-  };
+  }
   if (GlobalState.preferences.get("Analyze on paste")) {
     analyze();
   } else {
@@ -190,8 +190,8 @@ class GlobalState {
     evaluate();
   }
 
-  static void setCurrentMove(int current_move) {
-    ffiEngine.SetCurrentMove(GlobalState.ffiMain, current_move);
+  static void setCurrentMove(int currentMove) {
+    ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
     evaluate();
   }
 
@@ -275,11 +275,11 @@ class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Show coordinates': false,
     'Number of threads': Platform.numberOfProcessors,
-    'Positions when evaluating': 1000000000000,
+    'Positions when evaluating': 100000000000,
     // 'Positions when playing': 50000000,
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
-    'Spend half the time on a positions worse by': 6.0,
+    'Spend half time on positions worse by': 6.0,
     'Round evaluations': false,
     'Use book': true,
     'Seconds/position in game analysis': 1.0,
@@ -314,7 +314,7 @@ class PreferencesState with ChangeNotifier {
     params.max_time_first_eval = get('Seconds until first evaluation');
     params.max_time_next_evals = get('Seconds between evaluations');
     params.max_time_analysis = get('Seconds/position in game analysis');
-    params.delta = get('Spend half the time on a positions worse by');
+    params.delta = get('Spend half time on positions worse by');
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');
     params.use_book = get('Use book');
@@ -356,7 +356,7 @@ class PreferencesState with ChangeNotifier {
       case const (List<String>):
         await _preferences.setStringList(name, value);
       default:
-        throw Exception('Invalid preference type ${value.runtimeType} for value ${value}');
+        throw Exception('Invalid preference type ${value.runtimeType} for value $value');
     }
   }
 
@@ -469,14 +469,23 @@ class SourcePlayerIndex {
   SourcePlayerIndex(this.sourceIndex, this.playerIndex);
 }
 
-class ThorMetadataState {
+class ThorMetadataState with ChangeNotifier {
+  Map<String, bool> sourceToActive;
   Pointer<ThorMetadata> thorMetadata;
   Map<String, SourcePlayerIndex> playerStringToIndex;
+  List<String> selectedBlacks;
+  List<String> selectedWhites;
 
-  ThorMetadataState() : thorMetadata = ffiEngine.MainGetThorMetadata(GlobalState.ffiMain), playerStringToIndex = {} {
+  ThorMetadataState() :
+        thorMetadata = ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
+        playerStringToIndex = {},
+        sourceToActive = {},
+        selectedBlacks = [],
+        selectedWhites = [] {
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
-      ThorSourceMetadata source = thorMetadata.ref.sources.elementAt(i).value.ref;
+      var source = thorMetadata.ref.sources.elementAt(i).value.ref;
+      sourceToActive[source.name.cast<Utf8>().toDartString()] = true;
       for (int j = 0; j < source.num_players; ++j) {
         String player = source.players.elementAt(j).value.cast<Utf8>().toDartString();
         if (!playerToSources.containsKey(player)) {
@@ -500,30 +509,41 @@ class ThorMetadataState {
     }
   }
 
-  void setBlack(List<String> elements) {
-    List<int> nextIndex = List.generate(thorMetadata.ref.num_sources, (index) => 0);
-
-    for (var element in elements) {
-      var index = playerStringToIndex[element]!;
-      var sourceIndex = index.sourceIndex;
-      thorMetadata.ref.sources[sourceIndex].ref.selected_blacks[nextIndex[sourceIndex]++] = index.playerIndex;
-    }
-
-    for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
-      thorMetadata.ref.sources[i].ref.selected_blacks[nextIndex[i]] = -1;
-    }
+  void setSelectedBlacks(List<String> value) {
+    selectedBlacks = value;
+    notifyListeners();
   }
-  void setWhite(List<String> elements) {
-    List<int> nextIndex = List.generate(thorMetadata.ref.num_sources, (index) => 0);
 
-    for (var element in elements) {
-      var index = playerStringToIndex[element]!;
-      var sourceIndex = index.sourceIndex;
-      thorMetadata.ref.sources[sourceIndex].ref.selected_whites[nextIndex[sourceIndex]++] = index.playerIndex;
-    }
+  void setSelectedWhites(List<String> value) {
+    selectedWhites = value;
+    notifyListeners();
+  }
 
+  void setSelectedSource(String name, bool active) {
+    sourceToActive[name] = active;
+    notifyListeners();
+  }
+
+  void setFilters() {
+    print('Set filters!\n');
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
-      thorMetadata.ref.sources[i].ref.selected_whites[nextIndex[i]] = -1;
+      ThorSourceMetadata source = (thorMetadata.ref.sources + i).value.ref;
+      source.active = sourceToActive[source.name.cast<Utf8>().toDartString()]!;
+    }
+    for (var (players, getSource) in [
+      (selectedBlacks, (sourceIndex) => thorMetadata.ref.sources[sourceIndex].ref.selected_blacks),
+      (selectedWhites, (sourceIndex) => thorMetadata.ref.sources[sourceIndex].ref.selected_whites)]) {
+
+      List<int> nextIndex = List.generate(thorMetadata.ref.num_sources, (index) => 0);
+
+      for (var player in players) {
+        var index = playerStringToIndex[player]!;
+        var sourceIndex = index.sourceIndex;
+        getSource(sourceIndex)[nextIndex[sourceIndex]++] = index.playerIndex;
+      }
+      for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
+        getSource(i)[nextIndex[i]] = -1;
+      }
     }
   }
 }

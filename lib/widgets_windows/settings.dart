@@ -15,13 +15,16 @@
  *
  */
 
-import 'package:card_settings/card_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 
-import '../drive/drive_downloader.dart';
+import '../main.dart';
 import '../state.dart';
 import '../utils.dart';
+import '../widgets_spacers/app_sizes.dart';
+import '../widgets_spacers/margins.dart';
+import '../widgets_utils/misc.dart';
 
 class SettingsLocalState with ChangeNotifier {
   Map<String, dynamic> updates;
@@ -35,70 +38,122 @@ class SettingsLocalState with ChangeNotifier {
     ++version;
     notifyListeners();
   }
+  void set(String key, dynamic value) {
+    updates[key] = value;
+    notifyListeners();
+  }
 }
 
-CardSettingsWidget getCardSettings(String key, BuildContext context, SettingsLocalState state) {
-  var value = GlobalState.preferences.get(key);
-  onChanged(newValue) async {
-    state.updates[key] = newValue;
+class SettingsTile extends StatelessWidget {
+  final String name;
+  final Widget child;
+
+  const SettingsTile({required this.name, required this.child, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    var style = Theme.of(context).textTheme.bodyMedium!;
+
+    return SizedBox(
+      height: squareSize,
+      child: ListTile(
+        contentPadding: EdgeInsets.fromLTRB(margin, 0, 0, 0),
+        title: Text(name, style: style),
+        trailing: Container(
+          alignment: Alignment.centerRight,
+          width: 2 * squareSize,
+          child: child,
+        )
+      ),
+    );
+  }
+}
+
+class SettingsTileWithTextForm extends StatelessWidget {
+  final String name;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextInputType? keyboardType;
+  final SettingsLocalState state;
+  final Function(String? newValue) onChanged;
+
+  const SettingsTileWithTextForm({super.key, required this.name, required this.state, required this.onChanged, this.keyboardType, this.inputFormatters});
+
+  @override
+  Widget build(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var value = state.updates[key] ?? GlobalState.preferences.get(name);
+    return SettingsTile(
+      name: name,
+      child: TextFormField(
+        style: Theme.of(context).textTheme.bodyMedium!,
+        decoration: InputDecoration(
+          contentPadding: EdgeInsets.fromLTRB(0, 0, 0, squareSize * 0.1),
+          isDense: true,
+          enabledBorder: InputBorder.none
+        ),
+        onChanged: onChanged,
+        initialValue: '$value',
+        textAlign: TextAlign.right,
+        keyboardType: keyboardType,
+        inputFormatters: (inputFormatters ?? []) + [LengthLimitingTextInputFormatter(12)],
+      )
+    );
+  }
+}
+
+Widget getCardSettings(String key, BuildContext context, SettingsLocalState state) {
+  var value = state.updates[key] ?? GlobalState.preferences.get(key);
+  var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+  onChanged(newValue) {
+    state.set(key, newValue);
   };
-  var settingsKey = '${key.toString()}: ${state.version}';
   switch (value.runtimeType) {
     case bool:
-      return CardSettingsSwitch(
-        key: Key(settingsKey),
-        label: key,
-        labelWidth: 200,
-        trueLabel: '',
-        falseLabel: '',
-        initialValue: value,
-        onChanged: onChanged,
-        contentAlign: TextAlign.right,
+      return SettingsTile(
+        name: key,
+        child: SizedBox(
+          width: squareSize,
+          height: 0.65 * squareSize,
+          child: FittedBox(
+            fit: BoxFit.fill,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+            )
+          )
+        )
       );
     case int:
-      return CardSettingsText(
-        key: Key(settingsKey),
-        label: key,
-        labelWidth: 200,
-        maxLength: 20,
-        initialValue: value.toString(),
+      return SettingsTileWithTextForm(
+        name: key,
+        state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
-            onChanged(int.parse(newValue!));
+            onChanged(newValue == '' ? null : int.parse(newValue!));
           }
         },
-        contentAlign: TextAlign.right,
         keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
-        inputFormatters: [
-          IntInputFormatter()
-        ],
+        inputFormatters: [IntInputFormatter()],
       );
     case double:
-      return CardSettingsText(
-        key: Key(settingsKey),
-        label: key,
-        labelWidth: 200,
-        initialValue: value.toString(),
+      return SettingsTileWithTextForm(
+        name: key,
+        state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
-            onChanged(double.parse(newValue!));
+            onChanged(newValue == '' ? null : double.parse(newValue!));
           }
         },
-        contentAlign: TextAlign.right,
         keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
-        inputFormatters: [
-          DoubleInputFormatter()
-          // FilteringTextInputFormatter.deny(RegExp(r'(?<!(\.\d+))\.')),
-        ],
+        inputFormatters: [DoubleInputFormatter()],
       );
     case String:
-      return CardSettingsText(
-        key: Key(settingsKey),
-        label: key,
-        labelWidth: 200,
-        initialValue: value,
+      return SettingsTileWithTextForm(
+        name: key,
+        state: state,
         onChanged: onChanged,
-        contentAlign: TextAlign.right,
       );
     default:
       throw Exception('Invalid preference type ${value.runtimeType} for value ${value}');
@@ -122,7 +177,7 @@ class Settings extends StatelessWidget {
     // 'Positions when playing',
     'Seconds until first evaluation',
     'Seconds between evaluations',
-    'Spend half the time on a positions worse by',
+    'Spend half time on positions worse by',
     'Use book',
     'Round evaluations',
   ];
@@ -137,11 +192,6 @@ class Settings extends StatelessWidget {
   ];
 
   @override
-  void close() {
-    GlobalState.preferences.setAll(_state.updates);
-  }
-
-  @override
   Widget build(BuildContext context) {
     var nerdPreferences = GlobalState.preferences.defaultPreferences.keys.toSet();
     nerdPreferences.removeAll(_uiPreferences);
@@ -149,60 +199,60 @@ class Settings extends StatelessWidget {
     nerdPreferences.removeAll(_analyzePreferences);
     nerdPreferences.removeAll(_unshownPreferences);
 
-    return PopScope(
+    return SecondaryWindow(
       onPopInvoked: (bool didPop) {
         GlobalState.preferences.setAll(_state.updates);
         GlobalState.evaluate();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Settings'),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              ListenableBuilder(
-                listenable: _state,
-                builder: (BuildContext context, Widget? widget) => CardSettings.sectioned(
-                  children: <CardSettingsSection>[
-                    CardSettingsSection(
-                      header: CardSettingsHeader(
-                        label: 'User interface',
-                      ),
-                      children: _uiPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
-                    ),
-                    CardSettingsSection(
-                      header: CardSettingsHeader(
-                        label: 'Evaluation',
-                      ),
-                      children: _evalPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
-                    ),
-                    CardSettingsSection(
-                      header: CardSettingsHeader(
-                        label: 'Analysis',
-                      ),
-                      children: _analyzePreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
-                    ),
-                    CardSettingsSection(
-                      header: CardSettingsHeader(label: 'Stuff for nerds'),
-                      children: nerdPreferences.map((s) { return getCardSettings(s, context, _state); }).toList()
-                    ),
-                  ],
+      leaveSpaceRight: true,
+      title: 'Settings',
+      child: ListenableBuilder(
+        listenable: _state,
+        builder: (BuildContext context, Widget? widget) {
+          var titleStyle = TextStyle(
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!
+          );
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(0, 0, Theme.of(context).extension<AppSizes>()!.margin!, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('User interface', style: titleStyle),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _uiPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
-              ),
-              TextButton(
-                onPressed: () { _state.reset(); },
-                child: const Text('Reset to previous values'),
-              ),
-              TextButton(
-                onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
-                child: const Text('Reset to app defaults'),
-              )
-            ],
-          )
-        )
+                Text('Evaluation', style: titleStyle),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                ),
+                Text('Analysis', style: titleStyle),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _analyzePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                ),
+                Text('Stuff for nerds', style: titleStyle),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                ),
+                const Margin(),
+                SenseiButton(
+                  onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
+                  text: 'Reset to previous values',
+                ),
+                const Margin(),
+                SenseiButton(
+                  onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
+                  text: 'Reset to app defaults',
+                ),
+                const Margin(),
+              ],
+            )
+          );
+        }
       )
     );
   }

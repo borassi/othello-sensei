@@ -288,6 +288,9 @@ void Engine::EvaluateThor(const EvaluateParams& params, State& state) {
   bool include_all_sources = IncludeAllSources(thor_metadata_);
   for (int i = 0; i < thor_metadata_.num_sources; ++i) {
     const ThorSourceMetadata& source = *thor_metadata_.sources[i];
+    if (!source.active) {
+      continue;
+    }
     std::vector<std::string> blacks;
     std::vector<std::string> whites;
     std::vector<std::string> tournaments;

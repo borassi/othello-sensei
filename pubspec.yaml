@@ -52,6 +52,7 @@ dependencies:
   logger: ^2.1.0
   worker_manager: ^6.3.2
   connectivity_plus: ^2.3.8
+  flutter_settings_ui: ^3.0.0
 
 dev_dependencies:
   flutter_test:
