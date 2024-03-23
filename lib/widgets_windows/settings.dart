@@ -169,6 +169,8 @@ class Settings extends StatelessWidget {
     'Show coordinates',
     'Highlight distance from best move',
     'Best move green, other yellow',
+    'Highlight next move in analysis',
+    'Highlight next moves outside analysis',
   ];
 
   static const _evalPreferences = [

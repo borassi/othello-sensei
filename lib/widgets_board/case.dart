@@ -161,13 +161,15 @@ bool highlightCase(int index) {
   if (annotations == null) {
     return false;
   }
-  if (annotations.analyzed) {
-    return true;
+  if (GlobalState.preferences.get('Highlight next move in analysis')) {
+    if (annotations.analyzed) {
+      return true;
+    }
+    if (GlobalState.globalAnnotations.annotations?.ref.analyzed ?? false) {
+      return false;
+    }
   }
-  if (GlobalState.globalAnnotations.annotations?.ref.analyzed ?? false) {
-    return false;
-  }
-  return annotations?.first_child != nullptr;
+  return GlobalState.preferences.get('Highlight next moves outside analysis') && annotations?.first_child != nullptr;
 }
 
 class Case extends StatelessWidget {

@@ -290,6 +290,8 @@ class PreferencesState with ChangeNotifier {
     'Lower': -63,
     'Upper': 63,
     'Active tab': 0,
+    'Highlight next move in analysis': true,
+    'Highlight next moves outside analysis': true,
   };
   late final SharedPreferences _preferences;
 
