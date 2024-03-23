@@ -1,4 +1,5 @@
 Usability / bugs
+- P1 TINY Back button undo instead of quit.
 - P1 MED Update the stable branch; use it to expand the book.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.
@@ -17,7 +18,8 @@ Thor
 - P2 EASY Click to play the next move.
 - P2 TINY Add tournament.
 - P2 MED Winning percentages.
-- P3 EASY Filter by tournament / year
+- P3 EASY Filter by tournament / year.
+- P3 HARD Download games during tournaments.
 
 Match the features of the current app
 - P2 MED Play.
@@ -27,7 +29,6 @@ Extra features:
 - P1 HARD Expand all "interesting" lines in opening book.
 - P1 HARD Remember opening book for player.
 - P2 MED XOT.
-- P2 HARD Extend opening book considering all moves.
 - P2 EASY Save games.
 - P2 HARD How easy / hard a position is.
 - P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
