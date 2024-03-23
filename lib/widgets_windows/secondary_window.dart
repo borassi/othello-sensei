@@ -64,6 +64,7 @@ class SecondaryWindow extends StatelessWidget {
     return PopScope(
       onPopInvoked: onPopInvoked,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: Text(title),
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,

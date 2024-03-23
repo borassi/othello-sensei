@@ -108,10 +108,38 @@ class SettingsTileWithTextForm extends StatelessWidget {
 
 Widget getCardSettings(String key, BuildContext context, SettingsLocalState state) {
   var value = state.updates[key] ?? GlobalState.preferences.get(key);
-  var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
   onChanged(newValue) {
     state.set(key, newValue);
   };
+  var values = PreferencesState.preferencesValues[key];
+  if (values != null) {
+    return SettingsTile(
+      name: key,
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        onChanged: (String? value) {
+          // This is called when the user selects an item.
+          if (value != null) {
+            onChanged(value);
+          }
+        },
+        items: values.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium!,
+                textAlign: TextAlign.right
+              ),
+            )
+          );
+        }).toList(),
+      )
+    );
+  }
   switch (value.runtimeType) {
     case bool:
       return SettingsTile(
@@ -164,6 +192,7 @@ class Settings extends StatelessWidget {
     'Best move green, other yellow',
     'Highlight next move in analysis',
     'Highlight next moves outside analysis',
+    'Back button action',
   ];
 
   static const _evalPreferences = [

@@ -62,6 +62,9 @@ class IntInputFormatter implements TextInputFormatter {
 class DoubleInputFormatter implements TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text == '') {
+      return newValue;
+    }
     try {
       double.parse(newValue.text);
     } on FormatException {

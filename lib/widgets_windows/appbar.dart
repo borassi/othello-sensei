@@ -84,7 +84,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: const Text("Sensei"),
         actions: <Widget>[
           const IconButton(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.keyboard_double_arrow_left_rounded),
             tooltip: 'New game',
             onPressed: GlobalState.newGame,
           ),

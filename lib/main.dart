@@ -18,6 +18,7 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
@@ -151,41 +152,51 @@ class Main extends StatelessWidget {
           brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      home: MyKeyboardListener(
-        child: Scaffold(
-          // resizeToAvoidBottomInset: false,
-          appBar: const SenseiAppBar(),
-          body: AppTheme(
-            child: MainContent(
-              const Board(),
-              DefaultTabController(
-                length: 2,
-                initialIndex: 0,
-                child: ListenableBuilder(
-                  listenable: GlobalState.preferences,
-                  builder: (BuildContext context, Widget? widget) {
-                    DefaultTabController.of(context).animateTo(
-                        GlobalState.preferences.get('Active tab'),
-                        duration: const Duration(seconds: 0));
-                    return Scaffold(
-                      bottomNavigationBar: TabBar(
-                        tabs: List.generate(2, (index) => Tab(text: tabName[index])),
-                        dividerHeight: 0,
-                        onTap: (int index) {
-                          GlobalState.preferences.set('Active tab', index);
-                          GlobalState.evaluate();
-                        },
-                      ),
-                      body: TabBarView(
-                        children: [
-                          evaluateContent,
-                          thorContent,
-                        ],
-                      ),
-                    );
-                  }
+      home: PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (GlobalState.preferences.get('Back button action') == 'Undo') {
+            GlobalState.undo();
+          } else {
+            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+          }
+        },
+        child: MyKeyboardListener(
+          child: Scaffold(
+            resizeToAvoidBottomInset: false,
+            appBar: const SenseiAppBar(),
+            body: AppTheme(
+              child: MainContent(
+                const Board(),
+                DefaultTabController(
+                  length: 2,
+                  initialIndex: 0,
+                  child: ListenableBuilder(
+                    listenable: GlobalState.preferences,
+                    builder: (BuildContext context, Widget? widget) {
+                      DefaultTabController.of(context).animateTo(
+                          GlobalState.preferences.get('Active tab'),
+                          duration: const Duration(seconds: 0));
+                      return Scaffold(
+                        bottomNavigationBar: TabBar(
+                          tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                          dividerHeight: 0,
+                          onTap: (int index) {
+                            GlobalState.preferences.set('Active tab', index);
+                            GlobalState.evaluate();
+                          },
+                        ),
+                        body: TabBarView(
+                          children: [
+                            evaluateContent,
+                            thorContent,
+                          ],
+                        ),
+                      );
+                    }
+                  ),
                 ),
-              ),
+              )
             )
           )
         )

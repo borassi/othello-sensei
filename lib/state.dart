@@ -273,6 +273,7 @@ enum EvaluateType {
 class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Show coordinates': false,
+    'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 100000000000,
     // 'Positions when playing': 50000000,
@@ -292,6 +293,9 @@ class PreferencesState with ChangeNotifier {
     'Active tab': 0,
     'Highlight next move in analysis': true,
     'Highlight next moves outside analysis': true,
+  };
+  static const Map<String, List<String>> preferencesValues = {
+    'Back button action': ['Undo', 'Close app'],
   };
   late final SharedPreferences _preferences;
 
@@ -341,7 +345,7 @@ class PreferencesState with ChangeNotifier {
   }
 
   Future<void> setNoUpdate(String name, dynamic value) async {
-    _checkPreferenceName(name);
+    _checkPreferenceNameAndValue(name, value);
     if (value == null) {
       return;
     }
@@ -363,7 +367,15 @@ class PreferencesState with ChangeNotifier {
 
   void _checkPreferenceName(String name) {
     if (!defaultPreferences.containsKey(name)) {
-      throw Exception('Invalid preference name ${name}');
+      throw Exception('Invalid preference name $name');
+    }
+  }
+
+  void _checkPreferenceNameAndValue(String name, dynamic value) {
+    _checkPreferenceName(name);
+    var validValues = preferencesValues[name];
+    if (!(validValues?.contains(value) ?? true)) {
+      throw Exception('Invalid value $value for preference $name. Valid values: $validValues');
     }
   }
 }
