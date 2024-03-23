@@ -25,6 +25,7 @@ Main::Main(
     UpdateAnnotations update_annotations) :
     set_board_(set_board),
     current_state_(nullptr),
+    last_state_flutter_(nullptr),
     engine_(evals_filepath, book_filepath, thor_filepath, update_annotations) {
   NewGame();
 }

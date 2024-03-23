@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include<math.h>
+
 #include "main.h"
 #include "bindings.h"
 
@@ -97,6 +99,7 @@ void SetFatherAnnotations(State& state) {
   state.median_eval = kLessThenMinEval;
   state.provenance = CHILD_BOOK;
   state.seconds = 0;
+  state.missing = NAN;
 //  state.prob_lower_eval = 0;
 //  state.prob_upper_eval = 0;
 //  state.proof_number_lower = 0;

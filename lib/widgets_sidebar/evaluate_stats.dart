@@ -52,7 +52,6 @@ class EvaluateStats extends HideInactiveWidget {
           getRow("Positions:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositions)),
           getRow("Seconds:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getTimeString)),
           getRow("Positions / second:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositionsPerSec)),
-          getRow("Missing:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getMissing)),
           getRow("Empties:", TextListenable(listenable: GlobalState.board, textFunction: () => "${GlobalState.board.emptySquares()}")),
         ],
       )

@@ -127,7 +127,8 @@ class Main {
     if (engine_.CurrentThread() != current_thread) {
       return nullptr;
     }
-    return first_state_.get();
+    last_state_flutter_ = first_state_;
+    return last_state_flutter_.get();
   }
 
  private:
@@ -135,6 +136,9 @@ class Main {
 
   SetBoard set_board_;
 
+  // We keep the last state used by Flutter, so that it does not get deleted
+  // when Flutter is still reading it.
+  std::shared_ptr<State> last_state_flutter_;
   std::shared_ptr<State> first_state_;
   State* current_state_;
 

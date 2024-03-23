@@ -54,9 +54,13 @@ int currentMove() {
 }
 
 void updateAnnotations(int currentThread, bool inAnalysis) {
-  Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
+  Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr) {
+    GlobalState.globalAnnotations.reset();
+    for (int i = 0; i < 64; ++i) {
+      GlobalState.annotations[i].clear();
+    }
     return;
   }
   GlobalState.globalAnnotations.setState(annotations, startAnnotations);
@@ -237,7 +241,6 @@ class ActionWhenPlayState with ChangeNotifier {
   void setActionWhenPlay(ActionWhenPlay actionWhenPlay) {
     this.actionWhenPlay = actionWhenPlay;
     notifyListeners();
-    GlobalState.evaluate();
   }
 
   void rotateActions() {
@@ -466,13 +469,6 @@ class GlobalAnnotationState with ChangeNotifier {
       return '-';
     }
     return annotations!.ref.seconds.toStringAsFixed(1);
-  }
-
-  String getMissing() {
-    if (annotations == null) {
-      return '-';
-    }
-    return prettyPrintDouble(annotations!.ref.missing.toDouble());
   }
 }
 

@@ -55,6 +55,7 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.senseiEvaluates:
       GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
+      GlobalState.evaluate();
       return;
     case MenuItem.senseiIsInactive:
       GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.none);
