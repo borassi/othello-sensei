@@ -54,7 +54,7 @@ class SenseiToggle extends StatelessWidget {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     return SizedBox(
       width: squareSize,
-      height: 0.65 * squareSize,
+      height: 0.75 * squareSize,
       child: FittedBox(
         fit: BoxFit.fill,
         child: Switch(

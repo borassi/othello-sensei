@@ -269,7 +269,6 @@ class DriveDownloader {
     if (toMove.existsSync()) {
       toMove.renameSync(oldTargetPathBeforeDelete);
     }
-    print('Moving $tempUncompressedPath to $targetPath');
     io.Directory(tempUncompressedPath).renameSync(targetPath);
     io.Directory(localTempPathVar).deleteSync(recursive: true);
     GlobalState.resetMain();
