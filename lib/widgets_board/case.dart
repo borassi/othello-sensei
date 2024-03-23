@@ -113,44 +113,61 @@ class Annotations extends HideInactiveWidget {
     }
 
     return LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          return Center(
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                      Text(
-                        line1,
-                        style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                          fontWeight: FontWeight.bold,
-                          height: 1,
-                          color: color
-                        ),
-                      ),
-                      // SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
-                      AnnotationRow(
-                        text: line2,
-                        style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                          color: color,
-                          height: 1.5,
-                        ),
-                      ),
-                      AnnotationRow(
-                        text: line3,
-                        style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                          color: color,
-                          height: 1,
-                        ),
-                      )
-                  ]
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                line1,
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                  fontWeight: FontWeight.bold,
+                  height: 1,
+                  color: color
+                ),
+              ),
+              // SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
+              AnnotationRow(
+                text: line2,
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+                  color: color,
+                  height: 1.5,
+                ),
+              ),
+              AnnotationRow(
+                text: line3,
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+                  color: color,
+                  height: 1,
+                ),
               )
-          );
-        }
+            ]
+          )
+        );
+      }
     );
   }
+}
+
+bool highlightCase(int index) {
+  if (index == 255) {
+    return false;
+  }
+  var annotations = GlobalState.annotations[index].annotations;
+  if (annotations == null) {
+    return false;
+  }
+  if (annotations.analyzed) {
+    return true;
+  }
+  if (GlobalState.globalAnnotations.annotations?.ref.analyzed ?? false) {
+    return false;
+  }
+  return annotations?.first_child != nullptr;
 }
 
 class Case extends StatelessWidget {
@@ -185,42 +202,47 @@ class Case extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
-    var colorScheme = Theme.of(context).colorScheme;
-    List<Widget> children = [
-      Container(
-        decoration: BoxDecoration(
-          color: colorScheme.primaryContainer,
-          border: Border.all(
-            color: colorScheme.background,
-            width: 0.5,
-          ),
-        ),
-      ),
-    ];
-    Widget? disk = getDisk(state, colorScheme);
-    if (disk != null) {
-      children.add(disk);
-    }
-    if (index != 255) {
-      children.add(
-          ListenableBuilder(
-            listenable: Listenable.merge([GlobalState.annotations[index], GlobalState.actionWhenPlay]),
-            builder: (BuildContext context, Widget? child) => Annotations(index),
+    return ListenableBuilder(
+      listenable: Listenable.merge(index == 255 ? [] : [GlobalState.annotations[index], GlobalState.actionWhenPlay]),
+      builder: (BuildContext context, Widget? child) {
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+        var colorScheme = Theme.of(context).colorScheme;
+        List<Widget> children = [
+          Container(
+            decoration: BoxDecoration(
+              color: highlightCase(index) ? colorScheme.secondaryContainer : colorScheme.primaryContainer,
+              border: Border.all(
+                color: colorScheme.background,
+                width: 0.5,
+              ),
+            ),
           )
-      );
-      children.add(
-          GestureDetector(
-            onTapDown: (TapDownDetails details) => playMove(),
-            onSecondaryTapDown: (TapDownDetails details) => undo(),
-          )
-      );
-    }
+        ];
+        Widget? disk = getDisk(state, colorScheme);
+        if (disk != null) {
+          children.add(disk);
+        }
+        if (index != 255) {
+          children.add(
+              ListenableBuilder(
+                listenable: Listenable.merge([GlobalState.annotations[index], GlobalState.actionWhenPlay]),
+                builder: (BuildContext context, Widget? child) => Annotations(index),
+              )
+          );
+          children.add(
+            GestureDetector(
+              onTapDown: (TapDownDetails details) => playMove(),
+              onSecondaryTapDown: (TapDownDetails details) => undo(),
+            )
+          );
+        }
 
-    return SizedBox(
-      width: squareSize,
-      height: squareSize,
-      child: Stack(children: children)
+        return SizedBox(
+          width: squareSize,
+          height: squareSize,
+          child: Stack(children: children)
+        );
+      }
     );
   }
 }

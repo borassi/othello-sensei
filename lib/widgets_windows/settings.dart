@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 
-import '../main.dart';
 import '../state.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -56,8 +55,9 @@ class SettingsTile extends StatelessWidget {
     var margin = Theme.of(context).extension<AppSizes>()!.margin!;
     var style = Theme.of(context).textTheme.bodyMedium!;
 
-    return SizedBox(
-      height: squareSize,
+    return Container(
+      height: squareSize * 0.7,
+      alignment: Alignment.center,
       child: ListTile(
         contentPadding: EdgeInsets.fromLTRB(margin, 0, 0, 0),
         title: Text(name, style: style),
@@ -115,7 +115,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
         name: key,
         child: SizedBox(
           width: squareSize,
-          height: 0.65 * squareSize,
+          height: 0.7 * squareSize,
           child: FittedBox(
             fit: BoxFit.fill,
             child: Switch(
@@ -213,27 +213,28 @@ class Settings extends StatelessWidget {
             color: Theme.of(context).colorScheme.onPrimaryContainer,
             fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!
           );
+          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
           return SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(0, 0, Theme.of(context).extension<AppSizes>()!.margin!, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('User interface', style: titleStyle),
+                Container(height: 0.7 * squareSize, alignment: Alignment.centerLeft, child: Text('User interface', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _uiPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
-                Text('Evaluation', style: titleStyle),
+                Container(height: 0.7 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
-                Text('Analysis', style: titleStyle),
+                Container(height: 0.7 * squareSize, alignment: Alignment.centerLeft, child: Text('Analysis', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _analyzePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
-                Text('Stuff for nerds', style: titleStyle),
+                Container(height: 0.7 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()

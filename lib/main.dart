@@ -144,8 +144,9 @@ class Main extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
+          secondaryContainer: const Color(0xff00731b),  // primary: 0xff005313
           onSecondaryContainer: const Color(0xffeedd33),
-          surface: const Color(0xff191919),
+          surface: const Color(0xff222222),
           surfaceVariant: const Color(0xfff9f9f9),
           brightness: Brightness.dark),
         useMaterial3: true,
@@ -159,21 +160,30 @@ class Main extends StatelessWidget {
               const Board(),
               DefaultTabController(
                 length: 2,
-                initialIndex: GlobalState.preferences.get('Active tab'),
-                child: Scaffold(
-                  bottomNavigationBar: TabBar(
-                    tabs: List.generate(2, (index) => Tab(text: tabName[index])),
-                    onTap: (int index) {
-                      GlobalState.preferences.set('Active tab', index);
-                      GlobalState.evaluate();
-                    },
-                  ),
-                  body: TabBarView(
-                    children: [
-                      evaluateContent,
-                      thorContent,
-                    ],
-                  ),
+                initialIndex: 0,
+                child: ListenableBuilder(
+                  listenable: GlobalState.preferences,
+                  builder: (BuildContext context, Widget? widget) {
+                    DefaultTabController.of(context).animateTo(
+                        GlobalState.preferences.get('Active tab'),
+                        duration: const Duration(seconds: 0));
+                    return Scaffold(
+                      bottomNavigationBar: TabBar(
+                        tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                        dividerHeight: 0,
+                        onTap: (int index) {
+                          GlobalState.preferences.set('Active tab', index);
+                          GlobalState.evaluate();
+                        },
+                      ),
+                      body: TabBarView(
+                        children: [
+                          evaluateContent,
+                          thorContent,
+                        ],
+                      ),
+                    );
+                  }
                 ),
               ),
             )

@@ -104,12 +104,12 @@ Future<void> pasteOrError(BuildContext context) async {
 }
 
 void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
-  if (event.length != 1 || event[0].mimeType != "message/rfc822") {
+  if (event.length != 1 || event[0].mimeType != 'message/rfc822') {
     return;
   }
   var game = event[0].path.toNativeUtf8().cast<Char>();
   ffiEngine.SetSequence(GlobalState.ffiMain, game);
-  if (GlobalState.preferences.get("Analyze on import")) {
+  if (GlobalState.preferences.get('Analyze on import')) {
     analyze();
   } else {
     GlobalState.evaluate();
@@ -118,6 +118,8 @@ void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
 
 void analyze() {
   GlobalState.preferences.fillEvaluateParams(EvaluateType.analysis);
+  GlobalState.preferences.set('Active tab', 0);
+  GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
   ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
