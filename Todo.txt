@@ -1,7 +1,9 @@
 Usability / bugs
+- P1 MED Update the stable branch; use it to expand the book.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.
 - P2 EASY Fix time when clicking stop.
+- P2 MED Create smaller books.
 - P3 ???? Free memory on hot reload.
 - P3 EASY Back button undo instead of quit.
 
@@ -16,13 +18,13 @@ Thor
 - P2 TINY Add tournament.
 - P2 MED Winning percentages.
 - P3 EASY Filter by tournament / year
-- P4 ???? Avoid blocking when loading Thor window too soon.
 
 Match the features of the current app
 - P2 MED Play.
 - P3 HARD Study and repeat openings.
 
 Extra features:
+- P1 HARD Expand all "interesting" lines in opening book.
 - P1 HARD Remember opening book for player.
 - P2 MED XOT.
 - P2 HARD Extend opening book considering all moves.
@@ -51,7 +53,6 @@ Simplify development (match the Java app)
 - P3 EASY Reset hash maps.
 - P4 EASY Show stats on multiple evaluations (including derivative).
 - P4 EASY Load positions from FFO.
-- P4 EASY Approx mode.
 - P5 HARD Add tests for EvaluatorDerivative.
 
 Simplify development (extra)
