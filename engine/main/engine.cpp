@@ -333,6 +333,7 @@ void Engine::Run(
     int current_thread, std::shared_ptr<std::future<void>> last_future,
     State* current_state, std::shared_ptr<State> first_state,
     EvaluateParams params) {
+  time_ = ElapsedTime();
   last_future->get();
   assert(current_state);
   if (current_thread != current_thread_ && current_state->valid && current_state->HasValidChildren()) {
@@ -345,7 +346,6 @@ void Engine::AnalyzePosition(
     int current_thread, State* current_state,
     const std::shared_ptr<State>& first_state,
     const EvaluateParams& params, bool in_analysis) {
-  ElapsedTime t;
   bool first_eval = false;
   if (last_state_ != current_state || last_first_state_ != first_state) {
     first_eval = true;
@@ -385,7 +385,7 @@ void Engine::AnalyzePosition(
     for (
         auto* board_to_evaluate = NextBoardToEvaluate(params.delta);
         board_to_evaluate != nullptr &&
-          t.Get() < max_time - kNextEvalTime / 2 &&
+          time_.Get() < max_time - kNextEvalTime / 2 &&
           current_thread_ == current_thread;
         board_to_evaluate = NextBoardToEvaluate(params.delta)) {
       board_to_evaluate->Evaluate(params);
@@ -407,6 +407,7 @@ void Engine::RunAnalysis(
     return;
   }
   for (State* state = first_state.get(); state != nullptr; state = (State*) state->next_state_in_analysis) {
+    time_ = ElapsedTime();
     AnalyzePosition(current_thread, state, first_state, params, true);
     if (current_thread != current_thread_) {
       return;

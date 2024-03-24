@@ -214,7 +214,7 @@ class EvaluatorDerivative {
     return evalEffect - log(board->GetNVisited()) / log(2);
   }
 
-  double GetElapsedTime() const { return previous_elapsed_time + elapsed_time_.Get(); }
+  double GetElapsedTime() const { return previous_elapsed_time; }
 
   void ContinueEvaluate(NVisited max_n_visited, double max_time, int n_threads) {
     max_time_ = max_time;
@@ -355,7 +355,7 @@ class EvaluatorDerivative {
     NVisited visited_goal = max_n_visited_ - start_visited_;
     NVisited visited_actual = first_position_->GetNVisited() - start_visited_;
     bool good_stop = false;
-    if (time > 0.7 * max_time_ || visited_actual > 0.7 * visited_goal) {
+    if (time > 0.8 * max_time_ || visited_actual > 0.8 * visited_goal) {
       auto advancement = first_position_->Advancement(lower_, upper_);
       best_advancement_ = std::min(best_advancement_, advancement);
       good_stop = advancement <= best_advancement_;
@@ -366,7 +366,7 @@ class EvaluatorDerivative {
     }
     if (!just_started_ && (
         visited_actual > visited_goal ||
-        visited_actual > 0.8 * visited_goal && good_stop)) {
+        (visited_actual > 0.8 * visited_goal && good_stop))) {
       status_ = STOPPED_POSITIONS;
       return true;
     }
