@@ -70,6 +70,26 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
   }
 }
 
+class SenseiIconButton extends StatelessWidget {
+  final String tooltip;
+  final Icon icon;
+  final void Function() onPressed;
+
+  const SenseiIconButton({super.key, required this.tooltip, required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: tooltip,
+      child: IconButton(
+        icon: icon,
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
+    );
+  }
+}
+
 class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
@@ -84,43 +104,46 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         title: const Text("Sensei"),
         actions: <Widget>[
-          const IconButton(
+          const SenseiIconButton(
             icon: Icon(Icons.keyboard_double_arrow_left_rounded),
             tooltip: 'New game',
             onPressed: GlobalState.newGame,
           ),
-          const IconButton(
+          const SenseiIconButton(
             icon: Icon(Icons.chevron_left_rounded),
             tooltip: 'Undo',
             onPressed: GlobalState.undo,
           ),
-          const IconButton(
+          const SenseiIconButton(
             icon: Icon(Icons.chevron_right_rounded),
             tooltip: 'Redo',
             onPressed: GlobalState.redo,
           ),
-          const IconButton(
+          const SenseiIconButton(
             icon: Icon(Icons.stop_rounded),
             tooltip: 'Stop',
             onPressed: GlobalState.stop,
           ),
-          ListenableBuilder(
-            listenable: GlobalState.actionWhenPlay,
-            builder: (BuildContext context, Widget? widget) => PopupMenuButton<MenuItem>(
-              icon: const Icon(Icons.more_vert_rounded),
-              onSelected: (MenuItem i) { handleMenuItem(context, i); },
-              itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
-                if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
-                  return CheckedPopupMenuItem<MenuItem>(
-                    value: i,
-                    checked:
-                        (i == MenuItem.senseiEvaluates && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval) ||
-                        (i == MenuItem.senseiIsInactive && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none),
-                    child: Text(camelCaseToSpaces(i.name))
-                  );
-                }
-                return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
-              }).toList()
+          Semantics(
+            label: 'Show menu',
+            child: ListenableBuilder(
+              listenable: GlobalState.actionWhenPlay,
+              builder: (BuildContext context, Widget? widget) => PopupMenuButton<MenuItem>(
+                icon: const Icon(Icons.more_vert_rounded),
+                onSelected: (MenuItem i) { handleMenuItem(context, i); },
+                itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
+                  if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
+                    return CheckedPopupMenuItem<MenuItem>(
+                      value: i,
+                      checked:
+                          (i == MenuItem.senseiEvaluates && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval) ||
+                          (i == MenuItem.senseiIsInactive && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none),
+                      child: Text(camelCaseToSpaces(i.name))
+                    );
+                  }
+                  return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
+                }).toList()
+              )
             )
           )
         ]
