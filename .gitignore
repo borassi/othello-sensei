@@ -2,9 +2,8 @@
 .gradle
 gradlew
 .DS_Store
-assets/book*
-assets/thor/PlayOK
-assets/thor/OthelloQuest
+assets/archive/PlayOK
+assets/archive/OthelloQuest
 build
 /captures
 .externalNativeBuild
@@ -18,3 +17,4 @@ android/key.properties
 .gdb_history
 /secrets.env
 /lib/env.g.dart
+auxiliary_files

@@ -92,6 +92,7 @@ class Book {
   }
 
   BookNode* Mutable(const Board& b) {
+    ReloadSizes();
     Board unique = b.Unique();
     auto iterator = modified_nodes_.find(unique);
     if (iterator != modified_nodes_.end()) {
@@ -260,6 +261,12 @@ class Book {
     Commit();
   }
 
+  void ReloadSizes() {
+    auto index_file = IndexFile();
+    index_file.read((char*) &hash_map_size_, sizeof(hash_map_size_));
+    index_file.read((char*) &book_size_, sizeof(book_size_));
+  }
+
  private:
   std::string folder_;
   std::vector<ValueFile> value_files_;
@@ -343,8 +350,8 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
     CreateEmptyFileWithDirectories(IndexFilename());
     Clean();
   } else {
-    index_file.read((char*) &hash_map_size_, sizeof(hash_map_size_));
-    index_file.read((char*) &book_size_, sizeof(book_size_));
+    index_file.close();
+    ReloadSizes();
   }
 }
 

@@ -138,6 +138,7 @@ void SetFatherAnnotations(State& state) {
 } // anonymous_namespace
 
 void BoardToEvaluate::EvaluateBook() {
+  book_->ReloadSizes();
   auto board_in_book = book_->Get(unique_);
   if (board_in_book) {
     for (auto* annotation : annotations_) {
