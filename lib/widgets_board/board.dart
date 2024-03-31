@@ -43,14 +43,14 @@ class Coordinate extends StatelessWidget {
           return const SizedBox();
         }
         return SizedBox(
-            width: vertical ? coordinateSize : squareSize,
-            height: vertical ? squareSize : coordinateSize,
-            child: Center(
-                child: Text(
-                  content,
-                  style: Theme.of(context).textTheme.bodyMedium!,
-                )
+          width: vertical ? coordinateSize : squareSize,
+          height: vertical ? squareSize : coordinateSize,
+          child: Center(
+            child: Text(
+              content,
+              style: Theme.of(context).textTheme.bodyMedium!,
             )
+          )
         );
       }
     );

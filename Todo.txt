@@ -1,5 +1,4 @@
 Usability / bugs
-- P1 MED Update the stable branch; use it to expand the book.
 - P2 MED Fix accessibility issues.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.

@@ -16,6 +16,7 @@
  */
 
 import 'dart:core';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +27,7 @@ import 'package:othello_sensei/widgets_sidebar/disk_count_with_thor.dart';
 import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'widgets_board/board.dart';
 import 'widgets_spacers/app_sizes.dart';
@@ -34,6 +36,11 @@ import 'widgets_windows/keyboard_listener.dart';
 
 void main() async {
   await GlobalState.init();
+  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    WidgetsFlutterBinding.ensureInitialized();
+    WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
+    await windowManager.ensureInitialized();
+  }
   runApp(GlobalState.main);
 }
 
@@ -48,7 +55,10 @@ class AppTheme extends StatelessWidget {
       builder: (context, constraints) {
         var theme = Theme.of(context).copyWith(
           extensions: <ThemeExtension<AppSizes>>[
-            AppSizes(constraints.maxHeight, constraints.maxWidth)
+            AppSizes(
+              constraints.maxHeight - MediaQuery.of(context).viewPadding.top - MediaQuery.of(context).viewPadding.bottom,
+              constraints.maxWidth - MediaQuery.of(context).viewPadding.left - MediaQuery.of(context).viewPadding.right
+            )
           ],
         );
 
@@ -75,40 +85,67 @@ class MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Flex(
-        direction: Theme.of(context).extension<AppSizes>()!.vertical! ? Axis.vertical : Axis.horizontal,
+    var boardContent = Flex(
+      mainAxisSize: MainAxisSize.min,
+      direction: Theme.of(context).extension<AppSizes>()!.layout == AppLayout.vertical ? Axis.horizontal : Axis.vertical,
+      children: [board, const Margin()],
+    );
+    var sideContent = Expanded(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flex(
-            mainAxisSize: MainAxisSize.min,
-            direction: Theme.of(context).extension<AppSizes>()!.vertical! ? Axis.horizontal : Axis.vertical,
-            children: [board, const Margin()],
-          ),
+          const Margin(),
           Expanded(
-            child: Column(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Margin(),
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Margin(),
-                      Flexible(
-                        child: Container(
-                          constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize!),
-                          child: sidebar,
-                        ),
-                      ),
-                      const Margin()
-                    ],
-                  )
-                )
-              ]
+                Flexible(
+                  child: Container(
+                    constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize!),
+                    child: sidebar,
+                  ),
+                ),
+                const Margin()
+              ],
             )
           )
         ]
+      )
+    );
+
+    var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
+    return AnnotatedRegion(
+      value: SystemUiOverlayStyle(
+        statusBarColor: brokenAppBar ? Theme.of(context).colorScheme.background : Theme.of(context).colorScheme.primaryContainer,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: Row(
+          children:
+          (brokenAppBar ? <Widget>[SafeArea(child: boardContent)] : <Widget>[]) +
+          <Widget>[
+            Expanded(
+              child: Column(
+                children: [
+                  const SenseiAppBar(),
+                  Expanded(
+                    child: Center(
+                      child: Flex(
+                        direction: Theme.of(context).extension<AppSizes>()!.vertical() ? Axis.vertical : Axis.horizontal,
+                        mainAxisSize: MainAxisSize.min,
+                        children:
+                          (!brokenAppBar ? <Widget>[boardContent] : <Widget>[]) +
+                          [sideContent]
+                      )
+                    )
+                  )
+                ]
+              )
+            )
+          ]
+        )
       )
     );
   }
@@ -162,41 +199,37 @@ class Main extends StatelessWidget {
           }
         },
         child: MyKeyboardListener(
-          child: Scaffold(
-            resizeToAvoidBottomInset: false,
-            appBar: const SenseiAppBar(),
-            body: AppTheme(
-              child: MainContent(
-                const Board(),
-                DefaultTabController(
-                  length: 2,
-                  initialIndex: 0,
-                  child: ListenableBuilder(
-                    listenable: GlobalState.preferences,
-                    builder: (BuildContext context, Widget? widget) {
-                      DefaultTabController.of(context).animateTo(
-                          GlobalState.preferences.get('Active tab'),
-                          duration: const Duration(seconds: 0));
-                      return Scaffold(
-                        bottomNavigationBar: TabBar(
-                          tabs: List.generate(2, (index) => Tab(text: tabName[index])),
-                          dividerHeight: 0,
-                          onTap: (int index) {
-                            GlobalState.preferences.set('Active tab', index);
-                            GlobalState.evaluate();
-                          },
-                        ),
-                        body: TabBarView(
-                          children: [
-                            evaluateContent,
-                            thorContent,
-                          ],
-                        ),
-                      );
-                    }
-                  ),
+          child: AppTheme(
+            child: MainContent(
+              const Board(),
+              DefaultTabController(
+                length: 2,
+                initialIndex: 0,
+                child: ListenableBuilder(
+                  listenable: GlobalState.preferences,
+                  builder: (BuildContext context, Widget? widget) {
+                    DefaultTabController.of(context).animateTo(
+                        GlobalState.preferences.get('Active tab'),
+                        duration: const Duration(seconds: 0));
+                    return Scaffold(
+                      bottomNavigationBar: TabBar(
+                        tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                        dividerHeight: 0,
+                        onTap: (int index) {
+                          GlobalState.preferences.set('Active tab', index);
+                          GlobalState.evaluate();
+                        },
+                      ),
+                      body: TabBarView(
+                        children: [
+                          evaluateContent,
+                          thorContent,
+                        ],
+                      ),
+                    );
+                  }
                 ),
-              )
+              ),
             )
           )
         )

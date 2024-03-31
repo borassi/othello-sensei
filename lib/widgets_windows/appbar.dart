@@ -21,6 +21,8 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../utils.dart';
+import '../widgets_spacers/app_sizes.dart';
+import '../widgets_spacers/margins.dart';
 
 enum MenuItem {
   copy,
@@ -82,6 +84,7 @@ class SenseiIconButton extends StatelessWidget {
     return Semantics(
       label: tooltip,
       child: IconButton(
+        color: Theme.of(context).colorScheme.onPrimaryContainer,
         icon: icon,
         tooltip: tooltip,
         onPressed: onPressed,
@@ -99,37 +102,40 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        title: const Text("Sensei"),
-        actions: <Widget>[
-          const SenseiIconButton(
-            icon: Icon(Icons.keyboard_double_arrow_left_rounded),
-            tooltip: 'New game',
-            onPressed: GlobalState.newGame,
-          ),
-          const SenseiIconButton(
-            icon: Icon(Icons.chevron_left_rounded),
-            tooltip: 'Undo',
-            onPressed: GlobalState.undo,
-          ),
-          const SenseiIconButton(
-            icon: Icon(Icons.chevron_right_rounded),
-            tooltip: 'Redo',
-            onPressed: GlobalState.redo,
-          ),
-          const SenseiIconButton(
-            icon: Icon(Icons.stop_rounded),
-            tooltip: 'Stop',
-            onPressed: GlobalState.stop,
-          ),
-          Semantics(
-            label: 'Show menu',
-            child: ListenableBuilder(
-              listenable: GlobalState.actionWhenPlay,
-              builder: (BuildContext context, Widget? widget) => PopupMenuButton<MenuItem>(
-                icon: const Icon(Icons.more_vert_rounded),
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    var row = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SenseiIconButton(
+          icon: Icon(Icons.keyboard_double_arrow_left_rounded),
+          tooltip: 'New game',
+          onPressed: GlobalState.newGame,
+        ),
+        const SenseiIconButton(
+          icon: Icon(Icons.chevron_left_rounded),
+          tooltip: 'Undo',
+          onPressed: GlobalState.undo,
+        ),
+        const SenseiIconButton(
+          icon: Icon(Icons.chevron_right_rounded),
+          tooltip: 'Redo',
+          onPressed: GlobalState.redo,
+        ),
+        const SenseiIconButton(
+          icon: Icon(Icons.stop_rounded),
+          tooltip: 'Stop',
+          onPressed: GlobalState.stop,
+        ),
+        Semantics(
+          label: 'Show menu',
+          child: ListenableBuilder(
+            listenable: GlobalState.actionWhenPlay,
+            builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
+              child: PopupMenuButton<MenuItem>(
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer
+                ),
                 onSelected: (MenuItem i) { handleMenuItem(context, i); },
                 itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
                   if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
@@ -146,7 +152,30 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
               )
             )
           )
-        ]
-      );
+        )
+      ]
+    );
+    var title = (appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width) < AppSizes.minFullAppBarSize ? <Widget>[const Spacer()] : <Widget>[
+      const Margin(),
+      Text(
+        "Sensei",
+        style: TextStyle(
+          fontSize: 20,
+          color: Theme.of(context).colorScheme.onPrimaryContainer
+        )
+      ),
+      const Spacer()];
+    return SafeArea(
+      child: Container(
+        alignment: Alignment.center,
+        color: Theme.of(context).colorScheme.primaryContainer,
+        width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
+        // we can set width here with conditions
+        height: kToolbarHeight,
+        child: Row(
+          children: title + <Widget>[row]
+        ),
+      )
+    );
   }
 }
