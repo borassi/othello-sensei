@@ -421,7 +421,6 @@ class GlobalAnnotationState with ChangeNotifier {
       if (annotation.ref.move == ffiEngine.PassMove()) {
         continue;
       }
-      ++depth;
       scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
       if (lastMove == -1 && (
           annotation.ref.next_state_in_analysis == nullptr
@@ -429,6 +428,7 @@ class GlobalAnnotationState with ChangeNotifier {
           || depth == currentMoveVar)) {
         lastMove = depth;
       }
+      ++depth;
     }
     return (scores, lastMove);
   }

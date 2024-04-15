@@ -99,9 +99,9 @@ class Main {
       }
       if (!current_state_->Father()) {
         analyzing_ = 0;
-        return;
+      } else {
+        analyzing_ = 2;
       }
-      analyzing_ = 2;
     }
     engine_.Start(
         analyzing_ ? current_state_->Father() : current_state_,
