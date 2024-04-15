@@ -8,7 +8,6 @@ Usability / bugs
 - P3 EASY Back button undo instead of quit.
 
 Tech debt
-- P1 MED Each state contains a TreeNode, so that we can update the tree without any code duplication.
 - P2 EASY Unify SetBoard and SetAnnotations.
 - P2 MED Move business logic to C++ code.
 - P3 EASY Fix Flutter warnings.

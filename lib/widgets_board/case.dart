@@ -86,7 +86,7 @@ class Annotations extends HideInactiveWidget {
   Widget buildChild(BuildContext context) {
     var colorScheme = Theme.of(context).colorScheme;
     var annotations = GlobalState.annotations[index];
-    if (annotations.annotations == null || annotations.annotations!.move == 255 || !annotations.annotations!.valid) {
+    if (annotations.annotations == null) {
       return const Text("");
     }
     var annotation = annotations.annotations!;
@@ -102,7 +102,21 @@ class Annotations extends HideInactiveWidget {
     String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';
     String line1;
     String line2;
-    String line3 = (annotation.provenance == AnnotationsProvenance.BOOK || annotation.provenance == AnnotationsProvenance.CHILD_BOOK ? "bk_" : "") + prettyPrintDouble(annotation.descendants.toDouble());
+    String line3 = '';
+    switch(annotation.provenance) {
+      case AnnotationsProvenance.BOOK:
+      case AnnotationsProvenance.CHILD_BOOK:
+        line3 = 'bk_';
+        break;
+      case AnnotationsProvenance.CHILD_MIXED:
+        line3 = '(bk)_';
+        break;
+      case AnnotationsProvenance.EVALUATE:
+      case AnnotationsProvenance.CHILD_EVALUATE:
+      case AnnotationsProvenance.GAME_OVER:
+        break;
+    }
+    line3 += prettyPrintDouble((annotation.descendants + annotation.descendants_book).toDouble());
 
     if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0) {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
@@ -158,18 +172,16 @@ bool highlightCase(int index) {
     return false;
   }
   var annotations = GlobalState.annotations[index].annotations;
-  if (annotations == null) {
+  var globalAnnotations = GlobalState.globalAnnotations.annotations;
+  if (annotations == null || globalAnnotations == null) {
     return false;
   }
-  if (GlobalState.preferences.get('Highlight next move in analysis')) {
-    if (annotations.analyzed) {
-      return true;
-    }
-    if (GlobalState.globalAnnotations.annotations?.ref.analyzed ?? false) {
-      return false;
-    }
+  if (GlobalState.preferences.get('Highlight next move in analysis')
+      && globalAnnotations.ref.next_state_in_analysis != nullptr) {
+    return globalAnnotations.ref.next_state_in_analysis.ref.move == index;
   }
-  return GlobalState.preferences.get('Highlight next moves outside analysis') && annotations?.first_child != nullptr;
+  return GlobalState.preferences.get('Highlight next moves outside analysis') &&
+      annotations.first_child != nullptr;
 }
 
 class Case extends StatelessWidget {

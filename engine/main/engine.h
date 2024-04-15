@@ -32,14 +32,6 @@
 #include "../thor/thor.h"
 #include "../utils/misc.h"
 
-constexpr Square kStartingPositionMove = 64;
-
-enum BoardToEvaluateState {
-  STATE_NOT_STARTED = 0,
-  STATE_STARTED = 1,
-  STATE_FINISHED = 2,
-};
-
 class BoardToEvaluate {
  public:
   BoardToEvaluate(
@@ -50,60 +42,54 @@ class BoardToEvaluate {
       EvaluatorFactory evaluator_depth_one_factory,
       u_int8_t index) :
       book_(book),
-      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
+      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index),
+      can_continue_(true) {}
+
+  bool CanContinue() { return can_continue_; }
 
   void Reset(Board unique) {
     unique_ = unique;
-    annotations_.clear();
-    state_ = STATE_NOT_STARTED;
+    states_.clear();
   }
 
   bool HasMove(Square move) const {
-    for (auto* annotation : annotations_) {
-      if (annotation->move == move) {
+    for (auto* state : states_) {
+      if (state->Move() == move) {
         return true;
       }
     }
     return false;
   }
 
-  void AddAnnotation(Annotations* annotation) {
-    annotations_.push_back(annotation);
+  void AddState(EvaluationState* state) {
+    states_.push_back(state);
+    can_continue_ = true;
   }
 
   void UpdateWithThor(std::unordered_map<Square, int> next_moves) {
     int num_thor_games = 0;
-    for (Annotations* annotation : annotations_) {
-      num_thor_games += next_moves[annotation->move];
+    for (auto* state : states_) {
+      num_thor_games += next_moves[state->Move()];
     }
-    for (Annotations* annotation : annotations_) {
-      annotation->num_thor_games = num_thor_games;
+    for (auto* state : states_) {
+      state->SetNumThorGames(num_thor_games);
     }
   }
 
   void EvaluateBook();
 
-  void Evaluate(EvaluateParams params);
+  void Evaluate(const EvaluateParams& params);
 
-  void EvaluateFirst(EvaluateParams params);
+  void EvaluateFirst(const EvaluateParams& params);
 
   void FinalizeEvaluation();
-
-  void Stop() {
-    if (stoppable_.load()) {
-      evaluator_.Stop();
-    }
-  }
-
-  BoardToEvaluateState State() const { return state_; }
 
   const Board& Unique() const { return unique_; }
 
   double Priority(double delta) const {
-    if (State() == STATE_FINISHED) {
+    assert(!states_.empty());
+    if (!can_continue_) {
       return -std::numeric_limits<double>::infinity();
-    } else if (State() == STATE_NOT_STARTED) {
-      return std::numeric_limits<double>::infinity();
     }
     auto first_position = evaluator_.GetFirstPosition();
     assert(first_position);
@@ -114,13 +100,13 @@ class BoardToEvaluate {
   std::atomic_bool stoppable_;
   Board unique_;
   EvaluatorDerivative evaluator_;
-  std::vector<Annotations*> annotations_;
-  BoardToEvaluateState state_;
+  std::vector<EvaluationState*> states_;
   Book<>* book_;
+  bool can_continue_;
 
-  bool AllAnnotationsFinished() const {
-    for (Annotations* annotation : annotations_) {
-      if (!annotation->finished) {
+  bool Valid() const {
+    for (auto state : states_) {
+      if (!state->IsValid()) {
         return false;
       }
     }
@@ -166,28 +152,26 @@ class ThorSourceMetadataExtended {
   std::vector<int> selected_tournaments_;
 };
 
+class Main;
+
 class Engine {
  public:
   Engine(
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath,
+      Main& main,
       UpdateAnnotations update_annotations);
 
-  void Start(State* current_state, std::shared_ptr<State>& first_state,
-             const EvaluateParams& params) {
+  void Start(EvaluationState* current_state,
+             std::shared_ptr<EvaluationState>& first_state,
+             const EvaluateParams& params, bool in_analysis) {
     current_future_ = std::make_shared<std::future<void>>(std::async(
-        std::launch::async, &Engine::Run, this, current_thread_.load(),
-        current_future_, current_state, first_state, params));
+        std::launch::async, &Engine::Run, this, ++current_thread_,
+        current_future_, current_state, first_state, params, in_analysis));
   }
 
   void Stop();
-
-  void StartAnalysis(std::shared_ptr<State>& first_state, const EvaluateParams& params) {
-    current_future_ = std::make_shared<std::future<void>>(std::async(
-        std::launch::async, &Engine::RunAnalysis, this, current_thread_.load(),
-        current_future_, first_state, params));
-  }
 
   ThorMetadata* GetThorMetadata() {
     Stop();
@@ -221,17 +205,20 @@ class Engine {
 
   std::unique_ptr<Thor> thor_;
 
-  std::shared_ptr<State> last_first_state_;
-  State* last_state_;
+  std::shared_ptr<EvaluationState> last_first_state_;
+  EvaluationState* last_state_;
+  EvaluateParams last_params_;
 
-  void EvaluateThor(const EvaluateParams& params, State& state);
+  Main& main_;
+
+  void EvaluateThor(const EvaluateParams& params, EvaluationState& state);
 
   void Initialize(
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath);
 
-  void UpdateBoardsToEvaluate(const State& state, bool in_analysis);
+  void UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis);
 
   BoardToEvaluate* NextBoardToEvaluate(double delta) {
     double highestPriority = -std::numeric_limits<double>::infinity();
@@ -251,19 +238,12 @@ class Engine {
   // NOTE: Pass variables by value, to avoid concurrent modifications.
   void Run(
       int current_thread, std::shared_ptr<std::future<void>> last_future,
-      State* current_state, std::shared_ptr<State> first_state,
-      EvaluateParams params);
-
-  // NOTE: Pass variables by value, to avoid concurrent modifications.
-  void RunAnalysis(
-      int current_thread, std::shared_ptr<std::future<void>> last_future,
-      std::shared_ptr<State> first_state, EvaluateParams params);
-
-  void RunUpdateAnnotations(int current_thread, int current_state, bool finished);
+      EvaluationState* current_state, std::shared_ptr<EvaluationState> first_state,
+      EvaluateParams params, bool in_analysis);
 
   void AnalyzePosition(
-      int current_thread, State* current_state,
-      const std::shared_ptr<State>& first_state, const EvaluateParams& params,
+      int current_thread, EvaluationState* current_state,
+      const std::shared_ptr<EvaluationState>& first_state, const EvaluateParams& params,
       bool in_analysis);
 };
 

@@ -43,8 +43,7 @@ class Main {
       UpdateAnnotations update_annotations);
 
   void NewGame() {
-    Stop();
-    first_state_ = std::make_shared<State>(kStartingPositionMove, Board(), true, 0);
+    first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0);
     ToState(first_state_.get());
   }
 
@@ -54,24 +53,16 @@ class Main {
 
   void SetCurrentMove(Square current_move) {
     ToState(first_state_->ToDepth(current_move));
-    State* child = current_state_;
-    for (State* father = current_state_->Father();
-         father != nullptr;
-         father = father->Father()) {
-      father->SetNextStatePlayed(child);
-      child = father;
-    }
+    current_state_->SetPlayed();
   }
 
   void Redo() {
-    ToState((State*) (
-        current_state_->next_state_in_analysis ?
-        current_state_->next_state_in_analysis :
-        current_state_->next_state_played));
+    ToState(current_state_->NextState());
   }
 
   void Undo() {
-    ToState((State*) current_state_->father);
+    auto father = current_state_->Father();
+    ToState(current_state_->AfterPass() ? father->Father() : father);
   }
 
   void Stop();
@@ -95,21 +86,34 @@ class Main {
     return true;
   }
 
-  void Evaluate() {
-    engine_.Start(current_state_, first_state_, evaluate_params_);
-  }
-
   ThorMetadata* GetThorMetadata() {
     return engine_.GetThorMetadata();
   }
 
   EvaluateParams& GetEvaluateParams() { return evaluate_params_; }
 
-  void Analyze() {
-    for (State* state = first_state_.get(); state != nullptr; state = (State*) state->next_state_played) {
-      state->next_state_in_analysis = state->next_state_played;
+  void Evaluate() {
+    if (analyzing_) {
+      if (analyzing_ == 2) {
+        ToStateNoStop(current_state_->Father());
+      }
+      if (!current_state_->Father()) {
+        analyzing_ = 0;
+        return;
+      }
+      analyzing_ = 2;
     }
-    engine_.StartAnalysis(first_state_, evaluate_params_);
+    engine_.Start(
+        analyzing_ ? current_state_->Father() : current_state_,
+        first_state_,
+        evaluate_params_,
+        analyzing_);
+  }
+
+  void Analyze() {
+    ToState(first_state_->SetAnalyzed());
+    analyzing_ = 1;
+    engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }
 
   // We need a separate call to get the annotations in the UI thread, to prevent
@@ -118,7 +122,7 @@ class Main {
     if (engine_.CurrentThread() != current_thread) {
       return nullptr;
     }
-    return current_state_;
+    return current_state_->GetAnnotations();
   }
 
   // We need a separate call to get the annotations in the UI thread, to prevent
@@ -128,7 +132,7 @@ class Main {
       return nullptr;
     }
     last_state_flutter_ = first_state_;
-    return last_state_flutter_.get();
+    return last_state_flutter_->GetAnnotations();
   }
 
  private:
@@ -138,15 +142,19 @@ class Main {
 
   // We keep the last state used by Flutter, so that it does not get deleted
   // when Flutter is still reading it.
-  std::shared_ptr<State> last_state_flutter_;
-  std::shared_ptr<State> first_state_;
-  State* current_state_;
+  std::shared_ptr<EvaluationState> last_state_flutter_;
+  std::shared_ptr<EvaluationState> first_state_;
+  EvaluationState* current_state_;
 
   Engine engine_;
+  // 0 = not in analysis; 1 = started analysis (skip undo), 2 = in analysis.
+  int analyzing_;
 
   EvaluateParams evaluate_params_;
 
-  void ToState(State* new_state);
+  void ToState(EvaluationState* new_state);
+
+  void ToStateNoStop(EvaluationState* new_state);
 };
 
 #endif // OTHELLO_SENSEI_MAIN_H

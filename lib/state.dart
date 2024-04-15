@@ -50,24 +50,25 @@ int currentMove() {
   if (GlobalState.globalAnnotations.annotations == null) {
     return -1;
   }
-  return GlobalState.globalAnnotations.annotations!.ref.depth;
+  return 60 - GlobalState.board.emptySquares();
 }
 
-void updateAnnotations(int currentThread, bool inAnalysis) {
+void updateAnnotations(int currentThread, bool finished) {
   Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
   Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
-  if (annotations == nullptr || startAnnotations == nullptr) {
+  if (annotations == nullptr || startAnnotations == nullptr ||
+      !annotations!.ref.valid) {
     GlobalState.globalAnnotations.reset();
     for (int i = 0; i < 64; ++i) {
       GlobalState.annotations[i].clear();
     }
-    return;
+  } else {
+    GlobalState.globalAnnotations.setState(annotations, startAnnotations);
+    for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
+      GlobalState.annotations[child.ref.move].setState(child.ref);
+    }
   }
-  GlobalState.globalAnnotations.setState(annotations, startAnnotations);
-  for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
-    GlobalState.annotations[child.ref.move].setState(child.ref);
-  }
-  if (!annotations.ref.finished && !annotations.ref.analyzed && !inAnalysis) {
+  if (!finished) {
     GlobalState.evaluate(type: EvaluateType.subsequent);
   }
 }
@@ -258,7 +259,8 @@ class AnnotationState with ChangeNotifier {
   }
 
   void setState(Annotations annotations) {
-    this.annotations = annotations.valid ? annotations : null;
+    assert(annotations.valid);
+    this.annotations = annotations;
     notifyListeners();
   }
 
@@ -393,21 +395,14 @@ class GlobalAnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
-  int getNumThorGames() {
-    if (annotations == null) {
-      return 0;
-    }
-    return annotations![currentMove()].num_thor_games;
-  }
-
   void setState(Pointer<Annotations> annotations, Pointer<Annotations> startAnnotations) {
-    this.annotations = annotations.ref.valid ? annotations : null;
+    assert(annotations.ref.valid);
+    this.annotations = annotations;
     this.startAnnotations = startAnnotations;
     notifyListeners();
   }
 
   (List<double>, int) getAllScoresAndLastMove() {
-    var annotation = startAnnotations;
     var scores = <double>[];
     var currentMoveVar = currentMove();
     int lastMove = -1;
@@ -417,15 +412,23 @@ class GlobalAnnotationState with ChangeNotifier {
     if (startAnnotations!.ref.next_state_in_analysis == nullptr) {
       lastMove = currentMoveVar;
     }
-    while (annotation != null && annotation != nullptr) {
-      scores.add(getEvalFromAnnotations(annotation.ref, true));
+    var depth = 0;
+    for (var annotation = startAnnotations;
+         annotation != null && annotation != nullptr;
+         annotation = annotation.ref.next_state_in_analysis != nullptr ?
+                          annotation.ref.next_state_in_analysis :
+                          annotation.ref.next_state_played) {
+      if (annotation.ref.move == ffiEngine.PassMove()) {
+        continue;
+      }
+      ++depth;
+      scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
       if (lastMove == -1 && (
           annotation.ref.next_state_in_analysis == nullptr
           || annotation.ref.next_state_in_analysis != annotation.ref.next_state_played
-          || annotation.ref.depth == currentMoveVar)) {
-        lastMove = annotation.ref.depth;
+          || depth == currentMoveVar)) {
+        lastMove = depth;
       }
-      annotation = annotation.ref.next_state_in_analysis != nullptr ? annotation.ref.next_state_in_analysis : annotation.ref.next_state_played;
     }
     return (scores, lastMove);
   }
@@ -450,25 +453,41 @@ class GlobalAnnotationState with ChangeNotifier {
     return (errorBlack, errorWhite, hasNaN);
   }
 
+  (double, double) _getPositionsAndSeconds() {
+    if (annotations == null || annotations!.ref.descendants == 0) {
+      return (0, 0);
+    }
+    var positions = 0.0;
+    var seconds = 0.0;
+    for (var child = annotations!.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
+      positions += child.ref.descendants;
+      seconds += child.ref.seconds;
+    }
+    return (positions, seconds);
+  }
+
   String getPositions() {
-    if (annotations == null) {
+    var (positions, seconds) = _getPositionsAndSeconds();
+    if (positions == 0 || seconds == 0) {
       return '-';
     }
-    return prettyPrintDouble(annotations!.ref.descendants.toDouble());
+    return prettyPrintDouble(positions);
   }
 
   String getPositionsPerSec() {
-    if (annotations == null || annotations!.ref.descendants_no_book == 0) {
+    var (positions, seconds) = _getPositionsAndSeconds();
+    if (positions == 0 || seconds == 0) {
       return '-';
     }
-    return prettyPrintDouble(annotations!.ref.descendants_no_book / annotations!.ref.seconds);
+    return prettyPrintDouble(positions / seconds);
   }
 
   String getTimeString() {
-    if (annotations == null) {
+    var (positions, seconds) = _getPositionsAndSeconds();
+    if (positions == 0 || seconds == 0) {
       return '-';
     }
-    return annotations!.ref.seconds.toStringAsFixed(1);
+    return seconds.toStringAsFixed(1);
   }
 }
 

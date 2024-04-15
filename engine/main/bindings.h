@@ -30,6 +30,12 @@ extern "C" {
    #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
+const Square kPassMove = 64;
+const Square kStartingPositionMove = 65;
+
+EXPORT
+Square PassMove() { return kPassMove; }
+
 struct ThorSourceMetadata {
   const char* name;
   const char** players;
@@ -66,8 +72,10 @@ struct ThorGame {
 enum AnnotationsProvenance {
   EVALUATE,
   BOOK,
+  EVALUATE_MIXED,
   CHILD_EVALUATE,
   CHILD_BOOK,
+  CHILD_MIXED,
   GAME_OVER,
 };
 
@@ -85,10 +93,11 @@ struct Annotations {
   // Filled when evaluating this position.
   double eval;
   double leaf_eval;
+  double eval_best_line;
   int median_eval;
+  int median_eval_best_line;
   enum AnnotationsProvenance provenance;
   bool derived;  // If true, ignore it for time and descendants.
-  double seconds;
   double prob_lower_eval;
   double prob_upper_eval;
   double proof_number_lower;
@@ -97,11 +106,10 @@ struct Annotations {
   Eval upper;
   Eval weak_lower;
   Eval weak_upper;
+  double seconds;
   NVisited descendants;
-  NVisited descendants_no_book;
+  NVisited descendants_book;
   double missing;
-  bool finished;
-  bool analyzed;
   // Filled when reading Thor.
   unsigned int num_thor_games;
   struct ThorGame* example_thor_games;

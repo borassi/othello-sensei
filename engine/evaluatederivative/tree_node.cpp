@@ -70,14 +70,7 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
   // need locks. Otherwise, the evaluator would lock again this position and
   // get stuck.
   auto weak_lower_upper = evaluator.GetWeakLowerUpper(depth_);
-
-  leaf_eval_ = std::min(upper, std::max(lower, leaf_eval_));
-  Eval lower_small = EvalLargeToEvalRound(lower);
-  Eval upper_small = EvalLargeToEvalRound(upper);
-  lower_ = MaxEval(lower_, lower_small);
-  upper_ = MinEval(upper_, upper_small);
-  assert(lower_ <= 64);
-  assert(upper_ >= -64);
+  SetSolvedNoUpdate(lower, upper);
   UpdateLeafWeakLowerUpper(weak_lower_upper.first, weak_lower_upper.second);
 }
 
@@ -122,7 +115,7 @@ void TreeNode::ResetNoLock(
   leaf_eval_ = kLessThenMinEvalLarge;
 }
 
-void TreeNode::SetChildren(std::vector<TreeNode*> children, const EvaluatorDerivative& evaluator) {
+void TreeNode::SetChildren(const std::vector<TreeNode*>& children, const EvaluatorDerivative& evaluator) {
   std::lock_guard<std::mutex> guard(mutex_);
   auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(Depth());
   for (TreeNode* child : children) {
@@ -146,7 +139,6 @@ void TreeNode::SetChildren(std::vector<TreeNode*> children, const EvaluatorDeriv
     }
   }
   SetChildrenNoLock(children);
-
 }
 
 double Node::RemainingWork(Eval lower, Eval upper) const {

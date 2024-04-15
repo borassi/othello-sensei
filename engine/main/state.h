@@ -23,6 +23,8 @@
 
 #include "../board/board.h"
 #include "../board/sequence.h"
+#include "../evaluatederivative/tree_node.h"
+#include "../thor/thor.h"
 
 enum SetNextStateResult {
   INVALID_MOVE,
@@ -30,110 +32,312 @@ enum SetNextStateResult {
   DIFFERENT_STATE,
 };
 
-class State : public Annotations {
+class EvaluationState : public TreeNode {
  public:
-  State(Square move, Board board, bool black_turn, int depth) {
-    this->move = move;
-    this->black_turn = black_turn;
-    board_ = board;
-    example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
-    num_example_thor_games = 0;
-    num_thor_games = 0;
-    SetFather(nullptr);
-    SetFirstChild(nullptr);
-    SetNextSibling(nullptr);
+  EvaluationState(Square move, const Board& board, bool black_turn, int depth) :
+      TreeNode() {
+    TreeNode::Reset(board, depth, 0);
+    lower_ = -64;
+    upper_ = 64;
+    weak_lower_ = -63;
+    weak_upper_ = 63;
+    EnlargeEvaluations();
+    annotations_.move = move;
+    annotations_.depth = depth_;
+    annotations_.black_turn = black_turn;
+    annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
+    annotations_.num_example_thor_games = 0;
+    annotations_.num_thor_games = 0;
+    annotations_.first_child = nullptr;
+    annotations_.next_sibling = nullptr;
     SetNextStatePlayed(nullptr);
     SetNextStateInAnalysis(nullptr);
-    this->depth = depth;
-    valid = false;
-    derived = false;
-    finished = false;
-    analyzed = false;
-    prob_lower_eval = NAN;
-    prob_upper_eval = NAN;
-    proof_number_lower = NAN;
-    disproof_number_upper = NAN;
+    InvalidateThis();
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
-  ~State() { free(example_thor_games); }
-  State(const State&) = delete;
+  ~EvaluationState() { free(annotations_.example_thor_games); }
+  EvaluationState(const EvaluationState&) = delete;
 
-  State* Father() const { return (State*) father; }
-  const Board& GetBoard() const { return board_; }
-  bool GetBlackTurn() const { return black_turn; }
-  Square Move() const { return move; }
-  int Depth() const { return depth; }
+  Square Move() const { return annotations_.move; }
+  Annotations* GetAnnotations() { return &annotations_; }
+  bool IsValid() const { return annotations_.valid; }
+  void SetDerived(bool new_value) { annotations_.derived = new_value; }
+  double Seconds() const { return annotations_.seconds; }
+  bool IsPass() const {
+    return children_.size() == 1 && children_[0]->annotations_.move == kPassMove;
+  }
+  bool AfterPass() const {
+    return annotations_.move == kPassMove;
+  }
+  bool InAnalysisLine() const {
+    if (NextStateInAnalysis() != nullptr) {
+      return true;
+    }
+    EvaluationState* father = Father();
+    if (father == nullptr) {
+      return false;
+    }
+    return father->NextStateInAnalysis() == this;
+  }
+
+  void SetLeafEval(EvalLarge leaf_eval, Square depth) override {
+    throw std::logic_error("Cannot update leaf eval in evaluated node.");
+  }
+
+  void SetGameOver() {
+    EnsureValid();
+    Eval final_eval = GetEvaluationGameOver(player_, opponent_);
+    int final_eval_large = EvalToEvalLarge(final_eval);
+    SetSolvedNoUpdate(final_eval_large, final_eval_large);
+    annotations_.median_eval = final_eval;
+    annotations_.eval_best_line = final_eval;
+    annotations_.median_eval_best_line = final_eval;
+    UpdateSavedAnnotations();
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
+  }
+
   bool HasValidChildren() const {
-    for (State* child = first_child_.get(); child != nullptr; child = child->next_sibling_.get()) {
-      if (!child->valid) {
+    for (auto& child : children_) {
+      if (!child->IsValid()) {
         return false;
       }
     }
+    return !IsLeaf();
+  }
+
+  void SetThor(const GamesList& games);
+  bool BlackTurn() const { return annotations_.black_turn; }
+
+  EvaluationState* NextStateInAnalysis() const {
+    assert(
+      (next_state_in_analysis_ == nullptr && annotations_.next_state_in_analysis == nullptr)
+      || next_state_in_analysis_->GetAnnotations() == annotations_.next_state_in_analysis);
+    return next_state_in_analysis_;
+  }
+
+  EvaluationState* NextStatePlayed() const {
+    assert(
+      (next_state_played_ == nullptr && annotations_.next_state_played == nullptr)
+      || next_state_played_->GetAnnotations() == annotations_.next_state_played);
+    return next_state_played_;
+  }
+
+  void SetNumThorGames(unsigned int new_value) { annotations_.num_thor_games = new_value; }
+
+  bool MaybeSetGameOver() {
+    if (!IsGameOver(ToBoard())) {
+      return false;
+    }
+    SetGameOver();
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
     return true;
   }
 
-  State* NextState(Square move);
+  EvaluationState* Father() const {
+    assert(n_fathers_ <= 1);
+    if (n_fathers_ == 0) {
+      return nullptr;
+    }
+    return static_cast<EvaluationState*>(fathers_[0]);
+  }
 
-  void SetNextStatePlayed(State* new_value) { next_state_played = new_value; }
+  void SetPlayed() {
+    EvaluationState* father = Father();
+    if (father == nullptr) {
+      return;
+    }
+    father->SetNextStatePlayed(this);
+    father->SetPlayed();
+  }
 
-  State* NextState() const {
+  EvaluationState* SetAnalyzed() {
+    EvaluationState* state;
+    for (state = this; state != nullptr; state = state->NextStatePlayed()) {
+      state->SetNextStateInAnalysis(state->NextStatePlayed());
+    }
+    return state;
+  }
+
+  EvaluationState* NextState(Square move) const;
+
+  EvaluationState* NextState() const {
     return NextStateInAnalysis() ? NextStateInAnalysis() : NextStatePlayed();
   }
-  State* NextStatePlayed() const { return (State*) next_state_played; }
-  State* NextStateInAnalysis() const { return (State*) next_state_in_analysis; }
 
   void SetNextStates();
 
-  std::vector<State*> GetChildren() const {
-    std::vector<State*> result;
-    for (State* child = first_child_.get(); child != nullptr; child = child->next_sibling_.get()) {
-      result.push_back(child);
+  std::vector<EvaluationState*> GetChildren() const {
+    std::vector<EvaluationState*> result;
+    for (const std::shared_ptr<EvaluationState>& child : children_) {
+      result.push_back(child.get());
     }
     return result;
   }
 
-  State* ToDepth(int new_depth) {
-    State* result = this;
-    assert(new_depth >= result->Depth());
+  EvaluationState* ToDepth(int new_depth) {
+    EvaluationState* result = this;
+    assert(new_depth >= 60 - result->n_empties_);
+    // We cannot use Depth() because of passes.
     for (;
-         result != nullptr && new_depth > result->Depth();
+         result != nullptr && new_depth > 60 - result->n_empties_;
          result = result->NextState()) {}
     return result;
   }
 
   Sequence GetSequence() const {
     std::vector<Square> moves_inverted;
-    for (const State* state = this; state->Father() != nullptr; state = state->Father()) {
-      moves_inverted.push_back(state->Move());
+    for (const EvaluationState* state = this; state->Father() != nullptr; state = state->Father()) {
+      if (state->annotations_.move != kPassMove) {
+        moves_inverted.push_back(state->annotations_.move);
+      }
     }
     return Sequence(moves_inverted.rbegin(), moves_inverted.rend());
   }
 
   bool InBook() const {
-    return provenance == BOOK || provenance == CHILD_BOOK;
+    return annotations_.provenance == BOOK || annotations_.provenance == CHILD_BOOK;
+  }
+
+  bool BookMixed() const {
+    return annotations_.provenance == CHILD_MIXED;
+  }
+
+  void SetAnnotations(const Node& node, bool book, double seconds) {
+    assert(!HasValidChildren());
+    CopyAndEnlargeToAllEvals(node);
+    double new_seconds = seconds - annotations_.seconds;
+    annotations_.seconds = seconds;
+    NVisited new_descendants = descendants_ - annotations_.descendants;
+    annotations_.provenance = book ? BOOK : CHILD_EVALUATE;
+    if (!book) {
+      for (EvaluationState* state = Father(); state != nullptr; state = state->Father()) {
+        state->annotations_.seconds += new_seconds;
+        state->AddDescendants(new_descendants);
+      }
+    } else {
+      annotations_.descendants_book = descendants_;
+      descendants_ = 0;
+    }
+    annotations_.eval_best_line = GetEval();
+    annotations_.median_eval = GetPercentileLower(0.5) - 1;
+    annotations_.median_eval_best_line = annotations_.median_eval;
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
+    UpdateSavedAnnotations();
+  }
+
+  void InvalidateRecursive() {
+    if (!IsValid()) {
+      return;
+    }
+    InvalidateThis();
+    if (HasValidChildren()) {
+      for (auto& child : children_) {
+        child->InvalidateRecursive();
+      }
+    }
+  }
+
+  void EnsureValid() {
+    if (!IsValid()) {
+      leaf_eval_ = 0;
+    }
+  }
+
+  void UpdateFather() override {
+    // Handle the case where we have invalid nodes intertwined with valid nodes.
+    if (!HasValidChildren()) {
+      return;
+    }
+    EnsureValid();
+    TreeNode::UpdateFather();
+    bool has_book_child = false;
+    bool all_book_children = true;
+    annotations_.eval_best_line = kLessThenMinEvalLarge;
+    annotations_.median_eval_best_line = kLessThenMinEvalLarge;
+    for (auto& child : children_) {
+      annotations_.eval_best_line = std::max(
+          annotations_.eval_best_line, -child->annotations_.eval_best_line);
+      annotations_.median_eval_best_line = std::max(
+          annotations_.median_eval_best_line,
+          -child->annotations_.median_eval_best_line);
+      if (child->InBook()) {
+        has_book_child = true;
+      } else if (child->BookMixed()) {
+        has_book_child = true;
+        all_book_children = false;
+      } else {
+        all_book_children = false;
+      }
+    }
+    if (all_book_children) {
+      annotations_.provenance = CHILD_BOOK;
+    } else if (has_book_child) {
+      annotations_.provenance = CHILD_MIXED;
+    } else {
+      annotations_.provenance = CHILD_EVALUATE;
+    }
+    annotations_.median_eval = GetPercentileLower(0.5) - 1;
+    UpdateSavedAnnotations();
+    assert(annotations_.median_eval % 2 == 0);
+    assert(annotations_.median_eval_best_line % 2 == 0);
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
+  }
+
+  void UpdateSavedAnnotations() {
+    annotations_.eval = GetEval();
+    annotations_.leaf_eval = LeafEval();
+    annotations_.prob_lower_eval = SolveProbabilityLower(-65);
+    annotations_.prob_upper_eval = SolveProbabilityUpper(65);
+    annotations_.proof_number_lower = annotations_.median_eval == -64 ? 0 : RemainingWork(-63, annotations_.median_eval - 1);
+    annotations_.disproof_number_upper = annotations_.median_eval == 64 ? 0 : RemainingWork(annotations_.median_eval + 1, 63);
+    annotations_.lower = Lower();
+    annotations_.upper = Upper();
+    annotations_.weak_lower = WeakLower();
+    annotations_.weak_upper = WeakUpper();
+    annotations_.descendants = GetNVisited();
+    annotations_.missing = Node::IsSolved() ? 0 : RemainingWork(-63, 63);
+    annotations_.valid = true;
+    assert(annotations_.median_eval % 2 == 0);
+    assert(annotations_.median_eval_best_line % 2 == 0);
   }
 
  private:
-  // TODO: Make each state contain a TreeNode.
-  Board board_;
-  std::shared_ptr<State> first_child_;
-  std::shared_ptr<State> next_sibling_;
+  Annotations annotations_;
+  std::vector<std::shared_ptr<EvaluationState>> children_;
+  EvaluationState* next_state_in_analysis_;
+  EvaluationState* next_state_played_;
 
-  void SetFather(State* new_value) {
-    this->father = new_value;
+  void AddFather(TreeNode* father) override {
+    TreeNode::AddFather(father);
+    assert(n_fathers_ == 1);
+    annotations_.father = &static_cast<EvaluationState*>(fathers_[0])->annotations_;
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
 
-  void SetFirstChild(const std::shared_ptr<State>& new_value) {
-    first_child_ = new_value;
-    this->first_child = new_value.get();
+  void InvalidateThis() {
+    annotations_.valid = false;
+    annotations_.derived = false;
+    annotations_.descendants = 0;
+    annotations_.descendants_book = 0;
+    annotations_.seconds = 0;
   }
 
-  void SetNextSibling(const std::shared_ptr<State>& new_value) {
-    next_sibling_ = new_value;
-    this->next_sibling = new_value.get();
+  void UpdateAnnotationsTree() {
+    annotations_.first_child = &children_[0]->annotations_;
+    for (int i = 1; i < children_.size(); ++i) {
+      EvaluationState* child = children_[i].get();
+      children_[i-1]->annotations_.next_sibling = &children_[i]->annotations_;
+    }
   }
 
-  void SetNextStateInAnalysis(State* new_value) {
-    next_state_in_analysis = new_value;
+  void SetNextStatePlayed(EvaluationState* new_value) {
+    next_state_played_ = new_value;
+    annotations_.next_state_played = next_state_played_ ? &next_state_played_->annotations_ : nullptr;
+  }
+
+  void SetNextStateInAnalysis(EvaluationState* new_value) {
+    next_state_in_analysis_ = new_value;
+    annotations_.next_state_in_analysis = next_state_in_analysis_ ? &next_state_in_analysis_->annotations_ : nullptr;
   }
 };
 

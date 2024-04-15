@@ -149,10 +149,20 @@ String formatEval(double eval) {
   return eval.toStringAsFixed(GlobalState.preferences.get("Round evaluations") ? 0 : 2);
 }
 
-double getEvalFromAnnotations(Annotations annotation, bool black) {
+double getEvalFromAnnotations(Annotations annotation, bool black, {bool bestLine = false} ) {
   if (!annotation.valid) {
     return double.nan;
   }
-  return (annotation.black_turn == black ? 1 : -1) * (
-      GlobalState.preferences.get('Round evaluations') ? annotation.median_eval.toDouble() : annotation.eval);
+  double multiplier = (annotation.black_turn == black ? 1 : -1);
+  double value;
+  if (GlobalState.preferences.get('Round evaluations')) {
+    if (bestLine) {
+      value = annotation.median_eval_best_line.toDouble();
+    } else {
+      value = annotation.median_eval.toDouble();
+    }
+  } else {
+    value = bestLine ? annotation.eval_best_line : annotation.eval;
+  }
+  return value * multiplier;
 }

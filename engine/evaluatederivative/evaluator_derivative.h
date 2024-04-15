@@ -270,7 +270,7 @@ class EvaluatorDerivative {
     return first_position_ ? std::make_unique<Node>(*first_position_) : nullptr;
   }
 
-  Status GetStatus() { return status_; }
+  Status GetStatus() { return status_.load(); }
 
   Stats GetStats() const {
     Stats stats;
@@ -303,7 +303,7 @@ class EvaluatorDerivative {
   std::atomic_uint32_t num_tree_nodes_;
   std::atomic_int8_t weak_lower_;
   std::atomic_int8_t weak_upper_;
-  Status status_ = SOLVED;
+  std::atomic<Status> status_ = SOLVED;
   std::vector<std::unique_ptr<EvaluatorThread>> threads_;
   ElapsedTime elapsed_time_;
   NVisited start_visited_;

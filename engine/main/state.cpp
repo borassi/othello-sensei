@@ -16,43 +16,83 @@
 
 #include "state.h"
 #include "../board/get_moves.h"
+#include "../thor/thor.h"
 
-State* State::NextState(Square move) {
-  for (std::shared_ptr<State> child = first_child_; child != nullptr; child = child->next_sibling_) {
-    if (child->move == move) {
+namespace {
+
+void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
+  thor_game.black = game.BlackC();
+  thor_game.white = game.WhiteC();
+  thor_game.tournament = game.TournamentC();
+  thor_game.score = game.Score();
+  thor_game.year = game.Year();
+  auto game_sequence = game.Moves().Subsequence(sequence.Size());
+  assert(game.Moves().Size() >= sequence.Size());
+  int transposition = sequence.GetTransposition(game_sequence);
+  for (int i = 0; i < 60; ++i) {
+    thor_game.moves[i] = TransposeMove(game.Moves().Move(i), transposition);
+    assert(thor_game.moves[i] == kNoSquare || (thor_game.moves[i] >= 0 && thor_game.moves[i] <= 63));
+  }
+  thor_game.moves_played = sequence.Size();
+}
+
+}  // anonymous namespace
+
+void EvaluationState::SetThor(const GamesList& games) {
+  auto sequence = GetSequence();
+
+  annotations_.num_thor_games = games.num_games;
+  annotations_.num_example_thor_games = games.examples.size();
+  annotations_.example_thor_games = (ThorGame*) realloc(
+      annotations_.example_thor_games,
+      annotations_.num_example_thor_games * sizeof(ThorGame));
+
+  for (int i = 0; i < annotations_.num_example_thor_games; ++i) {
+    assert(games.examples[i]->Moves().Size() >= sequence.Size());
+    ThorGameSet(*games.examples[i], annotations_.example_thor_games[i], sequence);
+  }
+}
+
+EvaluationState* EvaluationState::NextState(Square move) const {
+  for (const std::shared_ptr<EvaluationState>& child : children_) {
+    if (child->annotations_.move == move) {
+      if (child->AfterPass()) {
+        assert(HaveToPass(child->Father()->ToBoard()));
+        return child->GetChildren()[0];
+      }
       return child.get();
     }
   }
   return nullptr;
 }
 
-void State::SetNextStates() {
-  if (first_child_ != nullptr) {
+void EvaluationState::SetNextStates() {
+  if (!IsLeaf()) {
     return;
   }
-  auto flips = GetAllMovesWithPass(board_.Player(), board_.Opponent());
-  State* last_state = nullptr;
+  if (MaybeSetGameOver()) {
+    return;
+  }
+  Board board = ToBoard();
+  auto flips = GetAllMovesWithPass(board.Player(), board.Opponent());
+  std::vector<TreeNode*> children;
 
   for (const auto& flip : flips) {
-    Board next = board_.Next(flip);
-    Square move = __builtin_ctzll(SquareFromFlip(flip, board_.Player(), board_.Opponent()));
-    bool next_black_turn;
-
-    if (HaveToPass(next) && !IsGameOver(next)) {
-      next.PlayMove(0);
-      next_black_turn = black_turn;
+    Board next = board.Next(flip);
+    Square move;
+    if (flip == 0) {
+      assert(!IsGameOver(next));
+      move = kPassMove;
     } else {
-      next_black_turn = !black_turn;
+      move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
     }
 
-    std::shared_ptr<State> state = std::make_shared<State>(move, next, next_black_turn, depth + 1);
-    state->SetFather(this);
+    std::shared_ptr<EvaluationState> state = std::make_shared<EvaluationState>(
+        move, next, !BlackTurn(), Depth() + 1);
 
-    if (last_state) {
-      last_state->SetNextSibling(state);
-    } else {
-      SetFirstChild(state);
-    }
-    last_state = state.get();
+    children_.push_back(state);
+    children.push_back(state.get());
   }
+  SetChildrenNoUpdate(children);
+  UpdateAnnotationsTree();
 }

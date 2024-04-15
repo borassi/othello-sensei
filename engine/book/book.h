@@ -92,7 +92,7 @@ class Book {
   }
 
   BookNode* Mutable(const Board& b) {
-    ReloadSizes();
+//    ReloadSizes();
     Board unique = b.Unique();
     auto iterator = modified_nodes_.find(unique);
     if (iterator != modified_nodes_.end()) {

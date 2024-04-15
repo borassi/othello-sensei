@@ -69,26 +69,15 @@ class Node {
       evaluator_(255) {}
 
   Node(const Node& other) :
+      // We need to set evaluations_ to nullptr otherwise it tries to free it.
       evaluations_(nullptr),
       is_leaf_(other.is_leaf_),
       player_(other.player_),
       opponent_(other.opponent_),
-      n_empties_(other.n_empties_),
-      descendants_(other.descendants_.load()),
-      leaf_eval_(other.leaf_eval_),
-      lower_(other.lower_),
-      upper_(other.upper_),
-      weak_lower_(other.weak_lower_),
-      weak_upper_(other.weak_upper_),
-      min_evaluation_(other.min_evaluation_),
-      depth_(other.depth_),
-      eval_depth_(other.eval_depth_),
-      evaluator_(other.evaluator_) {
-    EnlargeEvaluations();
-    for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
-      *MutableEvaluation(i) = other.GetEvaluation(i);
-    }
+      n_empties_(other.n_empties_) {
+    FromOther(other);
   }
+
   // We cannot convert to Node directly, because it calls a copy constructor
   // (which creates an infinite loop). The pointers do the trick.
   Node(const Node* const other) : Node(*other) {}
@@ -96,6 +85,29 @@ class Node {
   ~Node() {
     if (evaluations_ != nullptr) {
       free(evaluations_);
+    }
+  }
+
+  void FromOther(const Node& other) {
+    assert(Board(player_, opponent_).Unique() == other.ToBoard().Unique());
+    assert(n_empties_ == other.n_empties_);
+
+    if (evaluations_ != nullptr) {
+      free(evaluations_);
+    }
+    evaluations_ = nullptr;
+    descendants_ = other.descendants_.load();
+    leaf_eval_ = other.leaf_eval_;
+    lower_ = other.lower_;
+    upper_ = other.upper_;
+    weak_lower_ = other.weak_lower_;
+    weak_upper_ = other.weak_upper_;
+    min_evaluation_ = other.min_evaluation_;
+    eval_depth_ = other.eval_depth_;
+    evaluator_ = other.evaluator_;
+    EnlargeEvaluations();
+    for (int i = MaxEval(lower_ + 1, weak_lower_); i <= MinEval(upper_ - 1, weak_upper_); i += 2) {
+      *MutableEvaluation(i) = other.GetEvaluation(i);
     }
   }
 
@@ -552,6 +564,21 @@ class TreeNode : public Node {
 
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
 
+  void SetSolvedNoUpdate(EvalLarge lower, EvalLarge upper) {
+    assert(lower % 16 == 0);
+    assert(upper % 16 == 0);
+    assert(IsLeafNoLock());
+    assert(kMinEvalLarge <= leaf_eval_ && leaf_eval_ <= kMaxEvalLarge);
+
+    leaf_eval_ = std::min(upper, std::max(lower, leaf_eval_));
+    Eval lower_small = EvalLargeToEvalRound(lower);
+    Eval upper_small = EvalLargeToEvalRound(upper);
+    lower_ = MaxEval(lower_, lower_small);
+    upper_ = MinEval(upper_, upper_small);
+    assert(lower_ <= 64);
+    assert(upper_ >= -64);
+  }
+
   bool IsLeaf() const override {
     std::lock_guard<std::mutex> guard(mutex_);
     return IsLeafNoLock();
@@ -583,7 +610,7 @@ class TreeNode : public Node {
     }
   }
 
-  void UpdateFather() {
+  virtual void UpdateFather() {
     std::lock_guard<std::mutex> guard(mutex_);
     UpdateFatherNoLock();
   }
@@ -599,14 +626,14 @@ class TreeNode : public Node {
     return children;
   }
 
-  void SetChildren(std::vector<TreeNode*> children, const EvaluatorDerivative& evaluator);
+  void SetChildren(const std::vector<TreeNode*>& children, const EvaluatorDerivative& evaluator);
 
   bool HasLeafEval() {
     std::lock_guard<std::mutex> guard(mutex_);
     return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
-  void SetChildren(std::vector<TreeNode*> children) {
+  void SetChildren(const std::vector<TreeNode*>& children) {
     std::lock_guard<std::mutex> guard(mutex_);
     SetChildrenNoLock(children);
   }
@@ -615,6 +642,24 @@ class TreeNode : public Node {
 
   void ExtendToAllEvals() {
     ExtendEval(-63, 63);
+  }
+
+  void CopyAndEnlargeToAllEvals(const Node& node) {
+    FromOther(node);
+    min_evaluation_ = -63;
+    weak_lower_ = -63;
+    weak_upper_ = 63;
+    EnlargeEvaluations();
+
+    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
+      if (i < node.WeakLower()) {
+        MutableEvaluation(i)->SetProving(node.GetEvaluation(node.WeakLower()), node.WeakLower() - i);
+      } else if (i > node.WeakUpper()) {
+        MutableEvaluation(i)->SetDisproving(node.GetEvaluation(node.WeakUpper()), i - node.WeakUpper());
+      } else {
+        *MutableEvaluation(i) = Evaluation(node.GetEvaluation(i));
+      }
+    }
   }
 
   bool ContainsFather(TreeNode* father) {
@@ -809,6 +854,18 @@ class TreeNode : public Node {
     assert(min_evaluation_ <= weak_lower_);
   }
 
+  void SetChildrenNoUpdate(const std::vector<TreeNode*>& children) {
+    assert(n_children_ == 0 || n_children_ == 255);
+    n_children_ = (Square) children.size();
+    children_ = new TreeNode*[n_children_];
+    is_leaf_ = false;
+    for (int i = 0; i < n_children_; ++i) {
+      TreeNode* child = children[i];
+      child->AddFather(this);
+      children_[i] = child;
+    }
+  }
+
  protected:
   mutable std::mutex mutex_;
   TreeNode** children_;
@@ -967,7 +1024,7 @@ class TreeNode : public Node {
     assert(weak_lower_ <= weak_upper_);
   }
 
-  void AddFather(TreeNode* father) {
+  virtual void AddFather(TreeNode* father) {
     std::lock_guard<std::mutex> guard(mutex_);
     if (n_fathers_ == 0) {
       fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
@@ -979,18 +1036,8 @@ class TreeNode : public Node {
     n_fathers_++;
   }
 
-  void SetChildrenNoLock(std::vector<TreeNode*> children) {
-    assert(n_children_ == 0 || n_children_ == 255);
-    n_children_ = (Square) children.size();
-    children_ = new TreeNode*[n_children_];
-    is_leaf_ = false;
-    for (int i = 0; i < n_children_; ++i) {
-      TreeNode* child = children[i];
-      assert((child->weak_lower_ - kMinEval) % 2 == 1);
-      assert((child->weak_upper_ - kMinEval) % 2 == 1);
-      child->AddFather(this);
-      children_[i] = child;
-    }
+  void SetChildrenNoLock(const std::vector<TreeNode*>& children) {
+    SetChildrenNoUpdate(children);
     UpdateFatherNoLock();
     assert(AreChildrenCorrect());
   }
@@ -1056,7 +1103,7 @@ class LeafToUpdate {
     return std::make_unique<LeafToUpdate>(leaf);
   }
 
-  static LeafToUpdate Leaf(std::vector<Node*> sequence) {
+  static LeafToUpdate Leaf(const std::vector<Node*>& sequence) {
     LeafToUpdate leaf = sequence[0]->template AsLeafWithGoal<Node>(1);
     for (int i = 1; i < sequence.size(); ++i) {
       Node* descendant = sequence[i];

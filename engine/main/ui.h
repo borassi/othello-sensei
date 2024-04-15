@@ -25,12 +25,6 @@
 extern "C" {
 #endif
 
-#ifdef WIN32
-   #define EXPORT __declspec(dllexport)
-#else
-   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
-#endif
-
 EXPORT
 void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
 

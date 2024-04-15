@@ -26,11 +26,15 @@ Main::Main(
     set_board_(set_board),
     current_state_(nullptr),
     last_state_flutter_(nullptr),
-    engine_(evals_filepath, book_filepath, thor_filepath, update_annotations) {
+    analyzing_(0),
+    engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations) {
   NewGame();
 }
 
-void Main::Stop() { engine_.Stop(); }
+void Main::Stop() {
+  analyzing_ = 0;
+  engine_.Stop();
+}
 
 bool IncludeAllSources(ThorMetadata thor_metadata) {
   for (int i = 0; i < thor_metadata.num_sources; ++i) {
@@ -42,16 +46,22 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
   return true;
 }
 
-void Main::ToState(State* new_state) {
+void Main::ToState(EvaluationState* new_state) {
   if (!new_state) {
     return;
   }
   Stop();
+  ToStateNoStop(new_state);
+}
+
+void Main::ToStateNoStop(EvaluationState* new_state) {
   current_state_ = new_state;
+  current_state_->SetPlayed();
   current_state_->SetNextStates();
-  if (current_state_->Father()) {
-    current_state_->Father()->SetNextStatePlayed(new_state);
+  if (current_state_->IsPass()) {
+    ToStateNoStop(current_state_->GetChildren()[0]);
+    return;
   }
-  const Board& board = current_state_->GetBoard();
-  set_board_({board.Player(), board.Opponent(), current_state_->GetBlackTurn()});
+  const Board& board = current_state_->ToBoard();
+  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn()});
 }

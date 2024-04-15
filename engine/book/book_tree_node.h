@@ -46,20 +46,7 @@ class BookTreeNode : public TreeNode {
     opponent_ = b.Opponent();
     n_empties_ = b.NEmpties();
 
-    min_evaluation_ = -63;
-    weak_lower_ = -63;
-    weak_upper_ = 63;
-    EnlargeEvaluations();
-
-    for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
-      if (i < node.WeakLower()) {
-        MutableEvaluation(i)->SetProving(node.GetEvaluation(node.WeakLower()), node.WeakLower() - i);
-      } else if (i > node.WeakUpper()) {
-        MutableEvaluation(i)->SetDisproving(node.GetEvaluation(node.WeakUpper()), i - node.WeakUpper());
-      } else {
-        *MutableEvaluation(i) = Evaluation(node.GetEvaluation(i));
-      }
-    }
+    CopyAndEnlargeToAllEvals(node);
   }
 
   static std::unique_ptr<BookTreeNode> Deserialize(Book* book, const std::vector<char>& serialized) {

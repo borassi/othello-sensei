@@ -20,6 +20,23 @@ class FFIEngine {
           lookup)
       : _lookup = lookup;
 
+  late final ffi.Pointer<Square> _kPassMove = _lookup<Square>('kPassMove');
+
+  int get kPassMove => _kPassMove.value;
+
+  late final ffi.Pointer<Square> _kStartingPositionMove =
+      _lookup<Square>('kStartingPositionMove');
+
+  int get kStartingPositionMove => _kStartingPositionMove.value;
+
+  int PassMove() {
+    return _PassMove();
+  }
+
+  late final _PassMovePtr =
+      _lookup<ffi.NativeFunction<Square Function()>>('PassMove');
+  late final _PassMove = _PassMovePtr.asFunction<int Function()>();
+
   ffi.Pointer<ffi.Void> MainInit(
     ffi.Pointer<ffi.Char> evals_filepath,
     ffi.Pointer<ffi.Char> book_filepath,
@@ -279,6 +296,9 @@ class FFIEngine {
       _StopPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 }
 
+typedef Square = ffi.Uint8;
+typedef DartSquare = int;
+
 final class ThorSourceMetadata extends ffi.Struct {
   external ffi.Pointer<ffi.Char> name;
 
@@ -343,15 +363,14 @@ final class ThorGame extends ffi.Struct {
   external int year;
 }
 
-typedef Square = ffi.Uint8;
-typedef DartSquare = int;
-
 abstract class AnnotationsProvenance {
   static const int EVALUATE = 0;
   static const int BOOK = 1;
-  static const int CHILD_EVALUATE = 2;
-  static const int CHILD_BOOK = 3;
-  static const int GAME_OVER = 4;
+  static const int EVALUATE_MIXED = 2;
+  static const int CHILD_EVALUATE = 3;
+  static const int CHILD_BOOK = 4;
+  static const int CHILD_MIXED = 5;
+  static const int GAME_OVER = 6;
 }
 
 final class Annotations extends ffi.Struct {
@@ -383,17 +402,20 @@ final class Annotations extends ffi.Struct {
   @ffi.Double()
   external double leaf_eval;
 
+  @ffi.Double()
+  external double eval_best_line;
+
   @ffi.Int()
   external int median_eval;
+
+  @ffi.Int()
+  external int median_eval_best_line;
 
   @ffi.Int32()
   external int provenance;
 
   @ffi.Bool()
   external bool derived;
-
-  @ffi.Double()
-  external double seconds;
 
   @ffi.Double()
   external double prob_lower_eval;
@@ -419,20 +441,17 @@ final class Annotations extends ffi.Struct {
   @Eval()
   external int weak_upper;
 
+  @ffi.Double()
+  external double seconds;
+
   @NVisited()
   external int descendants;
 
   @NVisited()
-  external int descendants_no_book;
+  external int descendants_book;
 
   @ffi.Double()
   external double missing;
-
-  @ffi.Bool()
-  external bool finished;
-
-  @ffi.Bool()
-  external bool analyzed;
 
   @ffi.UnsignedInt()
   external int num_thor_games;

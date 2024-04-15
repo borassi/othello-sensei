@@ -193,7 +193,7 @@ TEST(GetMoves, SerializeFlip) {
   int n = 10000;
   for (int i = 0; i < n; i++) {
     Board b = RandomBoard();
-    auto flips = GetAllMovesWithPass(b.Player(), b.Opponent());
+    auto flips = GetAllMoves(b.Player(), b.Opponent());
     for (BitPattern flip : flips) {
       Board next = b;
       next.PlayMove(flip);

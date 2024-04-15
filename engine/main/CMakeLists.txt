@@ -53,6 +53,8 @@ target_link_libraries( # Specifies the target library.
         bindings
         board
         sequence
+        tree_node
+        thor
 )
 
 add_library(
