@@ -120,7 +120,7 @@ struct GamesInterval {
 
 class Source {
  public:
-  Source(const std::string& folder) : folder_(folder), players_(), tournaments_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN) {
+  Source(const std::string& folder, bool rebuild_games_order = false) : folder_(folder), players_(), tournaments_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN) {
     ElapsedTime t;
     std::set<std::string> game_files;
     for (const auto& entry : fs::directory_iterator(folder)) {
@@ -140,7 +140,7 @@ class Source {
     for (const auto& game_file : game_files) {
       LoadGames(game_file);
     }
-    if (fs::exists(SortedGamesPath())) {
+    if (fs::exists(SortedGamesPath()) && !rebuild_games_order) {
       LoadSortedGames();
     } else {
       ComputeSortedGames();

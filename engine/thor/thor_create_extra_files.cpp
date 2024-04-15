@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 
+#include <string>
+
 #include "thor.h"
 #include "../utils/parse_flags.h"
 
 int main(int argc, char* argv[]) {
-  Thor thor("assets/thor");
+  ParseFlags parse_flags(argc, argv);
+  std::string path = parse_flags.GetFlag("path");
+  bool rebuild_canonicalizer = parse_flags.GetBoolFlagOrDefault("rebuild_canonicalizer", true);
+  bool rebuild_games_order = parse_flags.GetBoolFlagOrDefault("rebuild_games_order", true);
+  Thor thor(path, rebuild_canonicalizer, rebuild_games_order);
   thor.SaveAll();
 }
