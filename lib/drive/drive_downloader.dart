@@ -186,11 +186,11 @@ class DriveDownloader {
   }
 
   void downloadBook(BuildContext context) {
-    download(context, 'book', 'Books/latest.tar.gz', 200);
+    download(context, 'book', 'Books/latest.tar.gz', 300);
   }
 
   void downloadArchive(BuildContext context) {
-    download(context, 'archive', 'archive.tar.gz', 100);
+    download(context, 'archive', 'Archive/latest.tar.gz', 100);
   }
 
   Future<void> downloadNoConfirmation(BuildContext context, String title, String path) async {
