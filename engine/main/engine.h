@@ -42,18 +42,24 @@ class BoardToEvaluate {
       EvaluatorFactory evaluator_depth_one_factory,
       u_int8_t index) :
       book_(book),
-      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index),
-      can_continue_(true) {}
+      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
 
-  bool CanContinue() { return can_continue_; }
+  bool Finished() const {
+    for (auto& [_, finished] : states_finished_) {
+      if (!finished) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   void Reset(Board unique) {
     unique_ = unique;
-    states_.clear();
+    states_finished_.clear();
   }
 
   bool HasMove(Square move) const {
-    for (auto* state : states_) {
+    for (auto& [state, _] : states_finished_) {
       if (state->Move() == move) {
         return true;
       }
@@ -61,17 +67,16 @@ class BoardToEvaluate {
     return false;
   }
 
-  void AddState(EvaluationState* state) {
-    states_.push_back(state);
-    can_continue_ = true;
+  void AddState(EvaluationState* state, bool finished) {
+    states_finished_.push_back({state, finished});
   }
 
   void UpdateWithThor(std::unordered_map<Square, int> next_moves) {
     int num_thor_games = 0;
-    for (auto* state : states_) {
+    for (auto& [state, _] : states_finished_) {
       num_thor_games += next_moves[state->Move()];
     }
-    for (auto* state : states_) {
+    for (auto& [state, _] : states_finished_) {
       state->SetNumThorGames(num_thor_games);
     }
   }
@@ -87,8 +92,8 @@ class BoardToEvaluate {
   const Board& Unique() const { return unique_; }
 
   double Priority(double delta) const {
-    assert(!states_.empty());
-    if (!can_continue_) {
+    assert(!states_finished_.empty());
+    if (Finished()) {
       return -std::numeric_limits<double>::infinity();
     }
     auto first_position = evaluator_.GetFirstPosition();
@@ -100,12 +105,11 @@ class BoardToEvaluate {
   std::atomic_bool stoppable_;
   Board unique_;
   EvaluatorDerivative evaluator_;
-  std::vector<EvaluationState*> states_;
+  std::vector<std::pair<EvaluationState*, bool>> states_finished_;
   Book<>* book_;
-  bool can_continue_;
 
   bool Valid() const {
-    for (auto state : states_) {
+    for (auto& [state, _] : states_finished_) {
       if (!state->IsValid()) {
         return false;
       }

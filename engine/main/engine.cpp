@@ -26,28 +26,27 @@ void BoardToEvaluate::EvaluateBook() {
   book_->ReloadSizes();
   auto board_in_book = book_->Get(unique_);
   if (board_in_book) {
-    for (auto* state : states_) {
-      state->SetAnnotations(*board_in_book, true, 0);
+    for (auto& [state, finished] : states_finished_) {
+      if (!finished) {
+        state->SetAnnotations(*board_in_book, true, 0);
+      }
+      finished = true;
     }
-    can_continue_ = false;
   }
 }
 
 void BoardToEvaluate::FinalizeEvaluation() {
   const TreeNode& first_position = *evaluator_.GetFirstPosition();
-  for (auto* state : states_) {
+  for (auto& [state, finished] : states_finished_) {
     state->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
     if (evaluator_.GetStatus() == SOLVED) {
-      can_continue_ = false;
+      finished = true;
     }
   }
 }
 
 void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
-  if (!can_continue_) {
-    return;
-  }
-  if (Valid()) {
+  if (Valid() || Finished()) {
     return;
   }
   evaluator_.Evaluate(
@@ -170,10 +169,6 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
   num_boards_to_evaluate_ = 0;
 
   for (EvaluationState* child : state.GetChildren()) {
-    if (last_params_ == params &&
-        !MustBeEvaluated(state, *child, params, in_analysis)) {
-      continue;
-    }
     Board unique = child->ToBoard().Unique();
     child->InvalidateRecursive();
     // Create or get the BoardToEvaluate.
@@ -193,7 +188,9 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
     } else {
       child->SetDerived(true);
     }
-    board_to_evaluate->AddState(child);
+    board_to_evaluate->AddState(
+        child,
+        last_params_ != params && !MustBeEvaluated(state, *child, params, in_analysis));
   }
 }
 
@@ -262,7 +259,7 @@ void Engine::Run(
   current_state->UpdateFathers();
   bool finished = true;
   for (int i = 0; i < num_boards_to_evaluate_; ++i) {
-    finished = finished && !boards_to_evaluate_[i]->CanContinue();
+    finished = finished && boards_to_evaluate_[i]->Finished();
   }
   if (current_thread == current_thread_) {
     update_annotations_(current_thread, finished && !in_analysis);
