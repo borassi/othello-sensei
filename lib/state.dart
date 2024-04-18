@@ -17,6 +17,7 @@
 
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
@@ -388,10 +389,19 @@ class PreferencesState with ChangeNotifier {
 class GlobalAnnotationState with ChangeNotifier {
   Pointer<Annotations>? annotations;
   Pointer<Annotations>? startAnnotations;
+  // We cannot use the father eval to highlight because it might not be the max
+  // of the child evals.
+  double bestEval;
+
+  GlobalAnnotationState() :
+      annotations = null,
+      startAnnotations = null,
+      bestEval = -66;
 
   void reset() {
     annotations = null;
     startAnnotations = null;
+    bestEval = -66;
     notifyListeners();
   }
 
@@ -399,6 +409,14 @@ class GlobalAnnotationState with ChangeNotifier {
     assert(annotations.ref.valid);
     this.annotations = annotations;
     this.startAnnotations = startAnnotations;
+    bestEval = -66;
+    for (var child = annotations.ref.first_child;
+         child != nullptr;
+         child = child.ref.next_sibling) {
+      bestEval = max(bestEval, -getEvalFromAnnotations(
+          child.ref,
+          child.ref.black_turn));
+    }
     notifyListeners();
   }
 

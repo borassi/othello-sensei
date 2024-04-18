@@ -91,9 +91,7 @@ class Annotations extends HideInactiveWidget {
     }
     var annotation = annotations.annotations!;
     var eval = annotations.getEval();
-    var bestEval = getEvalFromAnnotations(
-        GlobalState.globalAnnotations.annotations!.ref,
-        GlobalState.globalAnnotations.annotations!.ref.black_turn);
+    var bestEval = GlobalState.globalAnnotations.bestEval;
 
     var delta = GlobalState.preferences.get('Highlight distance from best move');
     var bestMoveGreen = GlobalState.preferences.get('Best move green, other yellow');
