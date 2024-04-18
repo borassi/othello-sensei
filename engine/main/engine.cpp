@@ -170,7 +170,6 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
 
   for (EvaluationState* child : state.GetChildren()) {
     Board unique = child->ToBoard().Unique();
-    child->InvalidateRecursive();
     // Create or get the BoardToEvaluate.
     BoardToEvaluate* board_to_evaluate;
     bool found = false;
@@ -188,9 +187,13 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
     } else {
       child->SetDerived(true);
     }
-    board_to_evaluate->AddState(
-        child,
-        last_params_ != params && !MustBeEvaluated(state, *child, params, in_analysis));
+    bool finished =
+        !MustBeEvaluated(state, *child, params, in_analysis) &&
+        last_params_ == params;
+    if (!finished) {
+      child->InvalidateRecursive();
+    }
+    board_to_evaluate->AddState(child, finished);
   }
 }
 
