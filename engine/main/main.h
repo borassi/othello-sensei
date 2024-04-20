@@ -95,7 +95,7 @@ class Main {
   void Evaluate() {
     if (analyzing_) {
       if (analyzing_ == 2) {
-        ToStateNoStop(current_state_->Father());
+        Undo();
       }
       if (!current_state_->Father()) {
         analyzing_ = 0;
