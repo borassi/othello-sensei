@@ -58,7 +58,7 @@ void updateAnnotations(int currentThread, bool finished) {
   Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
   Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr ||
-      !annotations!.ref.valid) {
+      !annotations.ref.valid) {
     GlobalState.globalAnnotations.reset();
     for (int i = 0; i < 64; ++i) {
       GlobalState.annotations[i].clear();
@@ -70,7 +70,7 @@ void updateAnnotations(int currentThread, bool finished) {
     }
   }
   if (!finished) {
-    GlobalState.evaluate(type: EvaluateType.subsequent);
+    GlobalState.evaluate();
   }
 }
 
@@ -123,7 +123,7 @@ void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
 }
 
 void analyze() {
-  GlobalState.preferences.fillEvaluateParams(EvaluateType.analysis);
+  GlobalState.preferences.fillEvaluateParams();
   GlobalState.preferences.set('Active tab', 0);
   GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
   ffiEngine.Analyze(GlobalState.ffiMain);
@@ -209,12 +209,12 @@ class GlobalState {
     ffiEngine.Stop(GlobalState.ffiMain);
   }
 
-  static void evaluate({EvaluateType type = EvaluateType.first}) {
+  static void evaluate() {
     if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
       GlobalState.globalAnnotations.reset();
       return;
     }
-    GlobalState.preferences.fillEvaluateParams(type);
+    GlobalState.preferences.fillEvaluateParams();
     ffiEngine.Evaluate(GlobalState.ffiMain);
   }
 }
@@ -265,8 +265,7 @@ class AnnotationState with ChangeNotifier {
   }
 
   void setState(Annotations annotations) {
-    assert(annotations.valid);
-    this.annotations = annotations;
+    this.annotations = annotations.valid ? annotations : null;
     notifyListeners();
   }
 
@@ -275,14 +274,9 @@ class AnnotationState with ChangeNotifier {
   }
 }
 
-enum EvaluateType {
-  first,
-  subsequent,
-  analysis,
-}
-
 class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
+    'Controls position': 'App bar',
     'Show coordinates': false,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
@@ -307,6 +301,7 @@ class PreferencesState with ChangeNotifier {
   };
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],
+    'Controls position': ['App bar', 'Side bar'],
   };
   late final SharedPreferences _preferences;
 
@@ -322,7 +317,7 @@ class PreferencesState with ChangeNotifier {
     return _preferences.get(name) ?? defaultPreferences[name];
   }
 
-  void fillEvaluateParams(EvaluateType evaluateType) {
+  void fillEvaluateParams() {
     var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
     params.lower = get('Lower');
     params.upper = get('Upper');
@@ -536,10 +531,10 @@ class ThorMetadataState with ChangeNotifier {
         selectedWhites = [] {
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
-      var source = thorMetadata.ref.sources.elementAt(i).value.ref;
+      var source = (thorMetadata.ref.sources + i).value.ref;
       sourceToActive[source.name.cast<Utf8>().toDartString()] = true;
       for (int j = 0; j < source.num_players; ++j) {
-        String player = source.players.elementAt(j).value.cast<Utf8>().toDartString();
+        String player = (source.players + j).value.cast<Utf8>().toDartString();
         if (!playerToSources.containsKey(player)) {
           playerToSources[player] = [];
         }

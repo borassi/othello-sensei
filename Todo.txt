@@ -1,4 +1,5 @@
 Usability / bugs
+- P1 EASY Fix analysis error shown.
 - P2 MED Fix accessibility issues.
 - P2 EASY Clear analyzed positions.
 - P2 TINY Do not show seconds when all moves are in book.

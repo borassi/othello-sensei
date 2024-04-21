@@ -184,9 +184,10 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
 class Settings extends StatelessWidget {
   Settings({super.key}) : _state = SettingsLocalState();
 
-  SettingsLocalState _state;
+  final SettingsLocalState _state;
 
   static const _uiPreferences = [
+    'Controls position',
     'Show coordinates',
     'Highlight distance from best move',
     'Best move green, other yellow',

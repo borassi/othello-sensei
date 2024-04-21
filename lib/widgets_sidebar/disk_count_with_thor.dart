@@ -16,6 +16,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_utils/misc.dart';
 import 'package:othello_sensei/widgets_windows/thor_filters.dart';
 
 import '../widgets_spacers/app_sizes.dart';
@@ -60,10 +61,8 @@ class FiltersButton extends HideInactiveWidget {
   Widget buildChild(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     return Expanded(
-      child: TextButton(
-        style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primaryContainer)
-        ),
+      child: SenseiButton(
+        text: 'Filters',
         onPressed: () {
           GlobalState.stop();
           Navigator.push(
@@ -71,10 +70,6 @@ class FiltersButton extends HideInactiveWidget {
             MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
           );
         },
-        child: Text('Filters', style: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!,
-        )),
       )
     );
   }

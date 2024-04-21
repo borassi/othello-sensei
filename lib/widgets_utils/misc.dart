@@ -21,24 +21,34 @@ import '../widgets_spacers/app_sizes.dart';
 
 class SenseiButton extends StatelessWidget {
   final String text;
+  final IconData? icon;
   final void Function() onPressed;
 
-  const SenseiButton({super.key, required this.text, required this.onPressed});
+  const SenseiButton(
+      {super.key, required this.text, required this.onPressed, this.icon});
 
   @override
   Widget build(BuildContext context) {
+    var textColor = Theme.of(context).colorScheme.onPrimaryContainer;
+    var textSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
+    var iconSize = Theme.of(context).textTheme.bodyLarge!.fontSize!;
+    Widget content;
+    if (icon != null) {
+      content = Icon(icon!, color: textColor, size: iconSize);
+    } else {
+      content = Text(
+        text!,
+        style: TextStyle(color: textColor, fontSize: textSize)
+      );
+    }
     return TextButton(
       onPressed: onPressed,
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.primaryContainer)
+        padding: MaterialStateProperty.all(EdgeInsets.zero),
+        backgroundColor: MaterialStateProperty.all(
+          Theme.of(context).colorScheme.primaryContainer)
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!,
-        )
-      ),
+      child: Semantics(label: text, child: content)
     );
   }
 }

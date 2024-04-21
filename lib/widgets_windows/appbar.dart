@@ -104,12 +104,13 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const SenseiAppBar({super.key});
 
-  @override
-  Widget build(BuildContext context) {
+  Widget buildRow(BuildContext context, Widget? widget) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
-    var row = Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
+    List<Widget> icons = [];
+    bool showIcons = GlobalState.preferences.get('Controls position') == 'App bar';
+
+    if (showIcons) {
+      icons += [
         const SenseiIconButton(
           icon: Icon(Icons.keyboard_double_arrow_left_rounded),
           tooltip: 'Back to the game / the first position',
@@ -130,6 +131,11 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: 'Stop',
           onPressed: GlobalState.stop,
         ),
+      ];
+    }
+    var row = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: icons + [
         Semantics(
           label: 'Show menu',
           child: ListenableBuilder(
@@ -159,7 +165,9 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         )
       ]
     );
-    var title = (appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width) < AppSizes.minFullAppBarSize ? <Widget>[const Spacer()] : <Widget>[
+    var availableWidth = appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width;
+    var busyWidth = showIcons ? AppSizes.minFullAppBarSize : 0;
+    var title = availableWidth < busyWidth ? <Widget>[const Spacer()] : <Widget>[
       const Margin(),
       Text(
         "Sensei",
@@ -169,6 +177,12 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         )
       ),
       const Spacer()];
+    return Row(children: title + <Widget>[row]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
     return SafeArea(
       child: Container(
         alignment: Alignment.center,
@@ -176,9 +190,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
         // we can set width here with conditions
         height: kToolbarHeight,
-        child: Row(
-          children: title + <Widget>[row]
-        ),
+        child: ListenableBuilder(listenable: GlobalState.preferences, builder: buildRow),
       )
     );
   }

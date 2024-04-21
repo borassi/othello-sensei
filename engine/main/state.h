@@ -168,7 +168,7 @@ class EvaluationState : public TreeNode {
 
   EvaluationState* SetAnalyzed() {
     EvaluationState* state;
-    for (state = this; state != nullptr; state = state->NextStatePlayed()) {
+    for (state = this; state->NextStatePlayed() != nullptr; state = state->NextStatePlayed()) {
       state->SetNextStateInAnalysis(state->NextStatePlayed());
     }
     return state;

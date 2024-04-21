@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:othello_sensei/widgets_sidebar/controls.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
@@ -159,23 +160,18 @@ class Main extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var evaluateContent = const Column(
-      children: [
-        DiskCountWithError(),
-        Margin(),
-        Expanded(child: ScoreGraph()),
-        Margin(),
-        EvaluateStats(),
-      ],
-    );
-
-    var thorContent = const Column(
-      children: [
-        DiskCountsWithThor(),
-        Margin(),
-        Expanded(child: ThorGamesVisualizer()),
-      ]
-    );
+    List<Widget> childrenEvaluate = [
+      const DiskCountWithError(),
+      const Margin(),
+      const Expanded(child: ScoreGraph()),
+      const Margin(),
+      const EvaluateStats(),
+    ];
+    List<Widget> childrenThor = [
+      const DiskCountsWithThor(),
+      const Margin(),
+      const Expanded(child: ThorGamesVisualizer()),
+    ];
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Sensei',
@@ -211,9 +207,37 @@ class Main extends StatelessWidget {
                     DefaultTabController.of(context).animateTo(
                         GlobalState.preferences.get('Active tab'),
                         duration: const Duration(seconds: 0));
+                    var childrenControls = <Widget>[];
+                    if (GlobalState.preferences.get('Controls position') == 'Side bar') {
+                      childrenControls = [
+                        const Margin(),
+                        const Controls(),
+                      ];
+                    }
+                    var evaluateContent = ListenableBuilder(
+                      listenable: GlobalState.preferences,
+                      builder: (BuildContext context, Widget? widget) => Column(
+                        children: childrenEvaluate + childrenControls
+                      )
+                    );
+
+                    var thorContent = ListenableBuilder(
+                      listenable: GlobalState.preferences,
+                      builder: (BuildContext context, Widget? widget) => Column(
+                        children: childrenThor + childrenControls,
+                      )
+                    );
                     return Scaffold(
                       bottomNavigationBar: TabBar(
-                        tabs: List.generate(2, (index) => Tab(text: tabName[index])),
+                        tabs: List.generate(2, (index) => Tab(
+                          height: Theme.of(context).extension<AppSizes>()!.squareSize!,
+                          child: Text(
+                            tabName[index],
+                            style: TextStyle(
+                              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                            )
+                          )
+                        )),
                         dividerHeight: 0,
                         onTap: (int index) {
                           GlobalState.preferences.set('Active tab', index);
