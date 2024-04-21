@@ -459,10 +459,11 @@ class GlobalAnnotationState with ChangeNotifier {
   (double, double, bool) getErrors() {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
-    var (allScores, _) = getAllScoresAndLastMove();
+    var (allScores, lastMove) = getAllScoresAndLastMove();
     var oldScore = 0.0;
     var hasNaN = false;
-    for (double score in allScores) {
+    for (int i = 0; i <= lastMove; ++i) {
+      double score = allScores[i];
       var error = score - oldScore;
       if (error.isNaN) {
         hasNaN = true;
