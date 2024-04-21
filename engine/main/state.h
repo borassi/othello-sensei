@@ -108,6 +108,22 @@ class EvaluationState : public TreeNode {
   void SetThor(const GamesList& games);
   bool BlackTurn() const { return annotations_.black_turn; }
 
+  // Returns:
+  // - If there is no analyzed game, the first state.
+  // - If there is an analyzed game and this is outside the analysis, the first
+  //   state in the analysis.
+  // - If there is an analyzed game and this is in the analysis, the first
+  //   state
+  EvaluationState* ToAnalyzedGameOrFirstState() {
+    EvaluationState* state;
+    for (state = this; state->Father() != nullptr; state = state->Father()) {
+      if (state->next_state_in_analysis_ && !next_state_in_analysis_) {
+        return state;
+      }
+    }
+    return state;
+  }
+
   EvaluationState* NextStateInAnalysis() const {
     assert(
       (next_state_in_analysis_ == nullptr && annotations_.next_state_in_analysis == nullptr)

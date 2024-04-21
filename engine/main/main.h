@@ -65,6 +65,10 @@ class Main {
     ToState(current_state_->AfterPass() ? father->Father() : father);
   }
 
+  void ToAnalyzedGameOrFirstState() {
+    ToState(current_state_->ToAnalyzedGameOrFirstState());
+  }
+
   void Stop();
 
   char* GetSequence() {

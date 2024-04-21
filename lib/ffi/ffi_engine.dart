@@ -219,6 +219,20 @@ class FFIEngine {
   late final _Redo =
       _RedoPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
+  void ToAnalyzedGameOrFirstState(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _ToAnalyzedGameOrFirstState(
+      ptr,
+    );
+  }
+
+  late final _ToAnalyzedGameOrFirstStatePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'ToAnalyzedGameOrFirstState');
+  late final _ToAnalyzedGameOrFirstState = _ToAnalyzedGameOrFirstStatePtr
+      .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
   void Evaluate(
     ffi.Pointer<ffi.Void> ptr,
   ) {

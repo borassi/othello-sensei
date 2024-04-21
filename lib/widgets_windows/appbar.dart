@@ -25,6 +25,7 @@ import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 
 enum MenuItem {
+  newGame,
   copy,
   paste,
   analyze,
@@ -37,6 +38,9 @@ enum MenuItem {
 
 void handleMenuItem(BuildContext context, MenuItem item) async {
   switch (item) {
+    case MenuItem.newGame:
+      GlobalState.newGame();
+      return;
     case MenuItem.copy:
       await copy();
       return;
@@ -108,8 +112,8 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
       children: [
         const SenseiIconButton(
           icon: Icon(Icons.keyboard_double_arrow_left_rounded),
-          tooltip: 'New game',
-          onPressed: GlobalState.newGame,
+          tooltip: 'Back to the game / the first position',
+          onPressed: GlobalState.toAnalyzedGameOrFirstState,
         ),
         const SenseiIconButton(
           icon: Icon(Icons.chevron_left_rounded),

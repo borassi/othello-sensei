@@ -195,6 +195,11 @@ class GlobalState {
     evaluate();
   }
 
+  static void toAnalyzedGameOrFirstState() async {
+    ffiEngine.ToAnalyzedGameOrFirstState(GlobalState.ffiMain);
+    evaluate();
+  }
+
   static void setCurrentMove(int currentMove) {
     ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
     evaluate();

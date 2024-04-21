@@ -46,6 +46,10 @@ void SetCurrentMove(void* ptr, int square) { static_cast<Main*>(ptr)->SetCurrent
 
 void Redo(void* ptr) { static_cast<Main*>(ptr)->Redo(); }
 
+void ToAnalyzedGameOrFirstState(void* ptr) {
+  static_cast<Main*>(ptr)->ToAnalyzedGameOrFirstState();
+}
+
 void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
 
 void Analyze(void* ptr) { static_cast<Main*>(ptr)->Analyze(); }
