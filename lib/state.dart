@@ -102,7 +102,7 @@ Future<void> pasteOrError(BuildContext context) async {
       },
     );
   }
-  if (GlobalState.preferences.get("Analyze on paste")) {
+  if (GlobalState.preferences.get("Analyze on paste") && success) {
     analyze();
   } else {
     GlobalState.evaluate();
