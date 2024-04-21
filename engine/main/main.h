@@ -103,6 +103,8 @@ class Main {
       }
       if (!current_state_->Father()) {
         analyzing_ = 0;
+        engine_.RunUpdateAnnotations();
+        return;
       } else {
         analyzing_ = 2;
       }

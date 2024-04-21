@@ -115,6 +115,7 @@ struct Annotations {
   struct ThorGame* example_thor_games;
   unsigned int num_example_thor_games;
   double thor_winning_percentage;
+  bool during_analysis;
 };
 
 struct ThorParams {

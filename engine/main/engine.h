@@ -175,6 +175,12 @@ class Engine {
         current_future_, current_state, first_state, params, in_analysis));
   }
 
+  void RunUpdateAnnotations() {
+    Stop();
+    current_future_->wait();
+    update_annotations_(current_thread_, true);
+  }
+
   void Stop();
 
   ThorMetadata* GetThorMetadata() {

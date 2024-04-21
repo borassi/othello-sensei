@@ -457,7 +457,10 @@ class GlobalAnnotationState with ChangeNotifier {
     var (allScores, lastMove) = getAllScoresAndLastMove();
     var oldScore = 0.0;
     var hasNaN = false;
-    for (int i = 0; i <= lastMove; ++i) {
+    int lastMoveForScores =
+        GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
+        allScores.length : lastMove + 1;
+    for (int i = 0; i < lastMoveForScores; ++i) {
       double score = allScores[i];
       var error = score - oldScore;
       if (error.isNaN) {

@@ -477,6 +477,9 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Double()
   external double thor_winning_percentage;
+
+  @ffi.Bool()
+  external bool during_analysis;
 }
 
 typedef Eval = ffi.Int8;

@@ -50,6 +50,7 @@ class EvaluationState : public TreeNode {
     annotations_.num_thor_games = 0;
     annotations_.first_child = nullptr;
     annotations_.next_sibling = nullptr;
+    annotations_.during_analysis = false;
     SetNextStatePlayed(nullptr);
     SetNextStateInAnalysis(nullptr);
     InvalidateThis();
@@ -66,6 +67,7 @@ class EvaluationState : public TreeNode {
   bool IsPass() const {
     return children_.size() == 1 && children_[0]->annotations_.move == kPassMove;
   }
+  void SetDuringAnalysis(bool value) { annotations_.during_analysis = value; }
   bool AfterPass() const {
     return annotations_.move == kPassMove;
   }
@@ -167,6 +169,14 @@ class EvaluationState : public TreeNode {
   }
 
   EvaluationState* SetAnalyzed() {
+    assert(Father() == nullptr);
+    EvaluationState* state_to_remove = this;
+    while (state_to_remove->NextStateInAnalysis() != nullptr) {
+      EvaluationState* new_state_to_remove = state_to_remove->NextStateInAnalysis();
+      state_to_remove->SetNextStateInAnalysis(nullptr);
+      state_to_remove = new_state_to_remove;
+    }
+
     EvaluationState* state;
     for (state = this; state->NextStatePlayed() != nullptr; state = state->NextStatePlayed()) {
       state->SetNextStateInAnalysis(state->NextStatePlayed());

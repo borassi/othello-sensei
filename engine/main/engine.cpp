@@ -264,6 +264,7 @@ void Engine::Run(
   for (int i = 0; i < num_boards_to_evaluate_; ++i) {
     finished = finished && boards_to_evaluate_[i]->Finished();
   }
+  current_state->SetDuringAnalysis(in_analysis);
   if (current_thread == current_thread_) {
     update_annotations_(current_thread, finished && !in_analysis);
   }
