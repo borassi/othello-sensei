@@ -16,6 +16,7 @@
  */
 
 import 'dart:io';
+import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,6 @@ import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:tar/tar.dart';
-import 'package:worker_manager/worker_manager.dart';
 
 import '../env.dart';
 import '../files.dart';
@@ -107,7 +107,8 @@ class DriveDownloader {
     var done = 0;
     await TarReader.forEach(input, (TarEntry entry) async {
       done += 1;
-      unzipProgress.setProgress(done / 258);
+      // Just to avoid failures if the number of files is not correct.
+      unzipProgress.setProgress(min(1, done / numFilesForProgressBar));
       final destination =
           // NOTE: If `entry.name` contained `../`, this may escape the target
           // directory (but the file should be safe, as I'm the only owner).
@@ -120,7 +121,7 @@ class DriveDownloader {
     });
   }
 
-  void downloadWithConfirmation(BuildContext context, String alertText, String title, String path) {
+  void downloadWithConfirmation(BuildContext context, String alertText, String title, String path, int numFilesForProgressBar) {
     showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
@@ -134,7 +135,7 @@ class DriveDownloader {
                 child: const Text('OK'),
                 onPressed: () {
                   Navigator.of(childContext).pop();
-                  downloadNoConfirmation(context, title, path).catchError((e, s) {
+                  downloadNoConfirmation(context, title, path, numFilesForProgressBar).catchError((e, s) {
                     String error = 'Error in downloading $title\n$e\n$s';
                     Logger().e(error);
                   });
@@ -153,13 +154,13 @@ class DriveDownloader {
     );
   }
 
-  void download(BuildContext context, String name, String path, int sizeMB) async {
+  void download(BuildContext context, String name, String path, int sizeMB, int numFilesForProgressBar) async {
     final connectivityResult = await (Connectivity().checkConnectivity());
     switch (connectivityResult) {
       case ConnectivityResult.bluetooth:
       case ConnectivityResult.wifi:
       case ConnectivityResult.ethernet:
-        downloadNoConfirmation(context, name, path);
+        downloadNoConfirmation(context, name, path, numFilesForProgressBar);
       case ConnectivityResult.vpn:
       case ConnectivityResult.mobile:
       case ConnectivityResult.other:
@@ -169,7 +170,8 @@ class DriveDownloader {
             'Make sure you are connected to a WiFi, or \n'
             'you are OK downloading it on your data plan.',
             name,
-            path
+            path,
+            numFilesForProgressBar
         );
       case ConnectivityResult.none:
         showDialog<void>(
@@ -186,14 +188,14 @@ class DriveDownloader {
   }
 
   void downloadBook(BuildContext context) {
-    download(context, 'book', 'Books/latest.tar.gz', 300);
+    download(context, 'book', 'Books/latest.tar.gz', 300, 258);
   }
 
   void downloadArchive(BuildContext context) {
-    download(context, 'archive', 'Archive/latest.tar.gz', 100);
+    download(context, 'archive', 'Archive/latest.tar.gz', 100, 58);
   }
 
-  Future<void> downloadNoConfirmation(BuildContext context, String title, String path) async {
+  Future<void> downloadNoConfirmation(BuildContext context, String title, String path, int numFilesForProgressBar) async {
     downloadProgress.setProgress(0);
     unzipProgress.setProgress(0);
     Navigator.push(
@@ -261,10 +263,7 @@ class DriveDownloader {
     var driveId = await getIdFromPath(path);
     await downloadFile(driveId, tempCompressedPath);
 
-    // We expect 258 files in the book, and AFAIK there is no way to get this
-    // number without decompressing the file. We hard-code it, since it's just
-    // used to show the progress bar.
-    await extractTarGz(tempCompressedPath, localTempPathVar, 258);
+    await extractTarGz(tempCompressedPath, localTempPathVar, numFilesForProgressBar);
     var toMove = io.Directory(targetPath);
     if (toMove.existsSync()) {
       toMove.renameSync(oldTargetPathBeforeDelete);
