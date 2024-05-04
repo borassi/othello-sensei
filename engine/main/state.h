@@ -235,9 +235,11 @@ class EvaluationState : public TreeNode {
     NVisited new_descendants = descendants_ - annotations_.descendants;
     annotations_.provenance = book ? BOOK : CHILD_EVALUATE;
     if (!book) {
-      for (EvaluationState* state = Father(); state != nullptr; state = state->Father()) {
-        state->annotations_.seconds += new_seconds;
-        state->AddDescendants(new_descendants);
+      if (!annotations_.derived) {
+        for (EvaluationState* state = Father(); state != nullptr; state = state->Father()) {
+          state->annotations_.seconds += new_seconds;
+          state->AddDescendants(new_descendants);
+        }
       }
     } else {
       annotations_.descendants_book = descendants_;
