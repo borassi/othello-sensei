@@ -77,8 +77,8 @@ SET(
 
 IF (PROFILE)
     SET(
-            CMAKE_CXX_FLAGS_RELEASE
-            "${CMAKE_CXX_FLAGS_RELEASE} -g"
+        CMAKE_CXX_FLAGS_RELEASE
+        "${CMAKE_CXX_FLAGS_RELEASE} -g"
     )
 ENDIF()
 
