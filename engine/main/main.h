@@ -96,28 +96,11 @@ class Main {
 
   EvaluateParams& GetEvaluateParams() { return evaluate_params_; }
 
-  void Evaluate() {
-    if (analyzing_) {
-      if (analyzing_ == 2) {
-        Undo();
-      }
-      if (!current_state_->Father()) {
-        analyzing_ = 0;
-        engine_.RunUpdateAnnotations();
-        return;
-      } else {
-        analyzing_ = 2;
-      }
-    }
-    engine_.Start(
-        analyzing_ ? current_state_->Father() : current_state_,
-        first_state_,
-        evaluate_params_,
-        analyzing_);
-  }
+  void Evaluate();
 
   void Analyze() {
     ToState(first_state_->SetAnalyzed());
+    first_state_->InvalidateRecursive();
     analyzing_ = 1;
     engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }
@@ -157,6 +140,7 @@ class Main {
   int analyzing_;
 
   EvaluateParams evaluate_params_;
+  EvaluateParams last_params_;
 
   void ToState(EvaluationState* new_state);
 

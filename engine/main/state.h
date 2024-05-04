@@ -229,7 +229,6 @@ class EvaluationState : public TreeNode {
   }
 
   void SetAnnotations(const Node& node, bool book, double seconds) {
-    assert(!HasValidChildren());
     CopyAndEnlargeToAllEvals(node);
     double new_seconds = seconds - annotations_.seconds;
     annotations_.seconds = seconds;
@@ -243,7 +242,11 @@ class EvaluationState : public TreeNode {
     } else {
       annotations_.descendants_book = descendants_;
       descendants_ = 0;
+      if (HasValidChildren()) {
+        return;
+      }
     }
+    assert(!HasValidChildren());
     annotations_.eval_best_line = GetEval();
     annotations_.median_eval = GetPercentileLower(0.5) - 1;
     annotations_.median_eval_best_line = annotations_.median_eval;
@@ -256,10 +259,8 @@ class EvaluationState : public TreeNode {
       return;
     }
     InvalidateThis();
-    if (HasValidChildren()) {
-      for (auto& child : children_) {
-        child->InvalidateRecursive();
-      }
+    for (auto& child : children_) {
+      child->InvalidateRecursive();
     }
   }
 

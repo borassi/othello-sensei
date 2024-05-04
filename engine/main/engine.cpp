@@ -27,9 +27,8 @@ void BoardToEvaluate::EvaluateBook() {
   auto board_in_book = book_->Get(unique_);
   if (board_in_book) {
     for (auto& [state, finished] : states_finished_) {
-      if (!finished) {
-        state->SetAnnotations(*board_in_book, true, 0);
-      }
+      // If it has valid children, we only add the book descendants.
+      state->SetAnnotations(*board_in_book, true, 0);
       finished = true;
     }
   }
@@ -38,15 +37,23 @@ void BoardToEvaluate::EvaluateBook() {
 void BoardToEvaluate::FinalizeEvaluation() {
   const TreeNode& first_position = *evaluator_.GetFirstPosition();
   for (auto& [state, finished] : states_finished_) {
-    state->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
+    if (finished) {
+      continue;
+    }
     if (evaluator_.GetStatus() == SOLVED) {
       finished = true;
+    }
+    assert(!state->HasValidChildren());
+    if (state->GetNVisited() < first_position.GetNVisited()) {
+      state->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
+    } else {
+      assert(state->IsValid());
     }
   }
 }
 
 void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
-  if (Valid() || Finished()) {
+  if (Finished() || (evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == unique_)) {
     return;
   }
   evaluator_.Evaluate(
@@ -140,28 +147,6 @@ bool MustBeEvaluated(
   return !child.HasValidChildren();
 }
 
-bool operator==(const EvaluateParams& lhs, const EvaluateParams& rhs) {
-  return std::forward_as_tuple(
-      lhs.lower,
-      lhs.upper,
-      lhs.approx,
-      lhs.use_book,
-      lhs.thor_filters.max_games,
-      lhs.thor_filters.start_year,
-      lhs.thor_filters.end_year
-  ) == std::forward_as_tuple(
-      rhs.lower,
-      rhs.upper,
-      rhs.approx,
-      rhs.use_book,
-      rhs.thor_filters.max_games,
-      rhs.thor_filters.start_year,
-      rhs.thor_filters.end_year
-  );
-}
-bool operator!=(const EvaluateParams& lhs, const EvaluateParams& rhs) {
-  return !(lhs == rhs);
-}
 } // namespace
 
 void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis) {
@@ -187,12 +172,7 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
     } else {
       child->SetDerived(true);
     }
-    bool finished =
-        !MustBeEvaluated(state, *child, params, in_analysis) &&
-        last_params_ == params;
-    if (!finished) {
-      child->InvalidateRecursive();
-    }
+    bool finished = !MustBeEvaluated(state, *child, params, in_analysis);
     board_to_evaluate->AddState(child, finished);
   }
 }
@@ -275,14 +255,13 @@ void Engine::AnalyzePosition(
     const std::shared_ptr<EvaluationState>& first_state,
     const EvaluateParams& params, bool in_analysis) {
   bool first_eval = false;
-  if (last_state_ != current_state || last_first_state_ != first_state || last_params_ != params) {
+  if (last_state_ != current_state || last_first_state_ != first_state || !current_state->HasValidChildren()) {
     first_eval = true;
     time_ = ElapsedTime();
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate(*current_state, params, in_analysis);
     last_state_ = current_state;
     last_first_state_ = first_state;
-    last_params_ = params;
   }
   EvaluateThor(params, *current_state);
 

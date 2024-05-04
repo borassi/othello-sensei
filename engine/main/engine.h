@@ -175,9 +175,13 @@ class Engine {
         current_future_, current_state, first_state, params, in_analysis));
   }
 
-  void RunUpdateAnnotations() {
+  void StopBlocking() {
     Stop();
     current_future_->wait();
+  }
+
+  void RunUpdateAnnotations() {
+    StopBlocking();
     update_annotations_(current_thread_, true);
   }
 
@@ -217,7 +221,6 @@ class Engine {
 
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;
-  EvaluateParams last_params_;
 
   Main& main_;
 
