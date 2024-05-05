@@ -81,12 +81,12 @@ class TreeNodeSupplier {
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
   }
-  std::unique_ptr<Node> Get(const Board& b, u_int8_t evaluator_index) const {
-    return Get(b.Player(), b.Opponent(), evaluator_index);
+  std::unique_ptr<Node> Get(const Board& b, Square depth, u_int8_t evaluator_index) const {
+    return Get(b.Player(), b.Opponent(), depth, evaluator_index);
   }
 
-  std::unique_ptr<Node> Get(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
-    TreeNode* tree_node = Mutable(player, opponent, evaluator_index);
+  std::unique_ptr<Node> Get(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) const {
+    TreeNode* tree_node = Mutable(player, opponent, depth, evaluator_index);
     if (tree_node) {
       return std::make_unique<Node>(*tree_node);
     } else {
@@ -94,8 +94,8 @@ class TreeNodeSupplier {
     }
   }
 
-  TreeNode* Mutable(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
-    return MutableInternal(player, opponent, evaluator_index);
+  TreeNode* Mutable(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) const {
+    return MutableInternal(player, opponent, depth, evaluator_index);
   }
 
   void Reset() {
@@ -120,8 +120,8 @@ class TreeNodeSupplier {
   std::atomic_uint32_t num_nodes_;
   uint32_t first_valid_index_;
 
-  TreeNode* MutableInternal(BitPattern player, BitPattern opponent, u_int8_t evaluator_index) const {
-    for (int hash = HashNode(player, opponent, evaluator_index);
+  TreeNode* MutableInternal(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) const {
+    for (int hash = HashNode(player, opponent, depth, evaluator_index);
          true;
          hash = (hash + 1) % tree_node_index_.size()) {
       uint32_t index = tree_node_index_[hash];
@@ -148,9 +148,9 @@ class TreeNodeSupplier {
     return index >= first_valid_index_ && index < first_valid_index_ + num_nodes_;
   }
 
-  void AddToHashMap(BitPattern player, BitPattern opponent, u_int8_t evaluator_index, uint32_t node_id) {
+  void AddToHashMap(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index, uint32_t node_id) {
     assert(first_valid_index_ <= UINT32_MAX - node_id);
-    int hash = HashNode(player, opponent, evaluator_index);
+    int hash = HashNode(player, opponent, depth, evaluator_index);
     uint32_t next_node = first_valid_index_ + node_id;
     while (IsValid(next_node)) {
       next_node = tree_node_index_[hash].exchange(next_node);
@@ -158,8 +158,8 @@ class TreeNodeSupplier {
     }
   }
 
-  uint32_t HashNode(BitPattern player, BitPattern opponent, u_int8_t evaluator) const {
-    uint32_t hash = (HashFull(player, opponent) ^ std::hash<u_int8_t>{}(evaluator)) % tree_node_index_.size();
+  uint32_t HashNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator) const {
+    uint32_t hash = (HashFull(player, opponent) ^ std::hash<int>{}((depth << 8) | evaluator)) % tree_node_index_.size();
     assert(hash >= 0 && hash < tree_node_index_.size());
     return hash;
   }

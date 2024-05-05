@@ -272,6 +272,11 @@ class EvaluationState : public TreeNode {
     }
   }
 
+  EvaluationState* PreviousNonPass() {
+    auto father = Father();
+    return AfterPass() ? father->Father() : father;
+  }
+
   void UpdateFather() override {
     // Handle the case where we have invalid nodes intertwined with valid nodes.
     if (!HasValidChildren()) {

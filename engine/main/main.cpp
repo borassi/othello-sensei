@@ -60,11 +60,11 @@ bool operator!=(const EvaluateParams& lhs, const EvaluateParams& rhs) {
 void Main::Evaluate() {
   if (last_params_ != evaluate_params_) {
     last_params_ = evaluate_params_;
-    engine_.StopBlocking();
-    first_state_->InvalidateRecursive();
+    ResetEvaluations();
   }
   if (analyzing_) {
     if (analyzing_ == 2) {
+      // This changes analyzing_ to 0, but we set it below anyway.
       Undo();
     }
     if (!current_state_->Father()) {
@@ -76,7 +76,7 @@ void Main::Evaluate() {
     }
   }
   engine_.Start(
-      analyzing_ ? current_state_->Father() : current_state_,
+      analyzing_ ? current_state_->PreviousNonPass() : current_state_,
       first_state_,
       evaluate_params_,
       analyzing_);

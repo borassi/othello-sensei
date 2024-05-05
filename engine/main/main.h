@@ -61,12 +61,16 @@ class Main {
   }
 
   void Undo() {
-    auto father = current_state_->Father();
-    ToState(current_state_->AfterPass() ? father->Father() : father);
+    ToState(current_state_->PreviousNonPass());
   }
 
   void ToAnalyzedGameOrFirstState() {
     ToState(current_state_->ToAnalyzedGameOrFirstState());
+  }
+
+  void ResetEvaluations() {
+    std::string sequence = current_state_->GetSequence().ToString();
+    SetSequence(sequence);
   }
 
   void Stop();
@@ -99,8 +103,9 @@ class Main {
   void Evaluate();
 
   void Analyze() {
+    last_params_ = evaluate_params_;
+    ResetEvaluations();
     ToState(first_state_->SetAnalyzed());
-    first_state_->InvalidateRecursive();
     analyzing_ = 1;
     engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }

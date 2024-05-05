@@ -22,7 +22,7 @@
 std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
     BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index) {
   if (kUseTranspositions) {
-    TreeNode* node = Mutable(player, opponent, evaluator_index);
+    TreeNode* node = Mutable(player, opponent, depth, evaluator_index);
     if (node != nullptr) {
       return std::make_pair(node, false);
     }
@@ -32,7 +32,7 @@ std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
   assert(node_id < kDerivativeEvaluatorSize);
   TreeNode& node = tree_nodes_[node_id];
   node.Reset(player, opponent, depth, evaluator_index);
-  AddToHashMap(player, opponent, evaluator_index, node_id);
+  AddToHashMap(player, opponent, depth, evaluator_index, node_id);
   return std::make_pair(&node, true);
 }
 

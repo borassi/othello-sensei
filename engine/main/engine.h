@@ -42,6 +42,7 @@ class BoardToEvaluate {
       EvaluatorFactory evaluator_depth_one_factory,
       u_int8_t index) :
       book_(book),
+      started_(false),
       evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
 
   bool Finished() const {
@@ -55,6 +56,7 @@ class BoardToEvaluate {
 
   void Reset(Board unique) {
     unique_ = unique;
+    started_ = false;
     states_finished_.clear();
   }
 
@@ -104,6 +106,7 @@ class BoardToEvaluate {
  private:
   std::atomic_bool stoppable_;
   Board unique_;
+  bool started_;
   EvaluatorDerivative evaluator_;
   std::vector<std::pair<EvaluationState*, bool>> states_finished_;
   Book<>* book_;

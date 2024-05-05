@@ -44,7 +44,7 @@ void BoardToEvaluate::FinalizeEvaluation() {
       finished = true;
     }
     assert(!state->HasValidChildren());
-    if (state->GetNVisited() < first_position.GetNVisited()) {
+    if (!state->IsValid() || state->GetNVisited() < first_position.GetNVisited()) {
       state->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
     } else {
       assert(state->IsValid());
@@ -53,9 +53,14 @@ void BoardToEvaluate::FinalizeEvaluation() {
 }
 
 void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
-  if (Finished() || (evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == unique_)) {
+  if (Finished()) {
     return;
   }
+  if (started_) {
+    assert(evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == unique_);
+    return;
+  }
+  started_ = true;
   evaluator_.Evaluate(
       unique_.Player(), unique_.Opponent(), params.lower, params.upper,
       params.max_positions, kFirstEvalTime, params.n_threads,
@@ -64,6 +69,8 @@ void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
 }
 
 void BoardToEvaluate::Evaluate(const EvaluateParams& params) {
+  assert(started_);
+  assert(evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == unique_);
   evaluator_.ContinueEvaluate(params.max_positions, kNextEvalTime, params.n_threads);
   FinalizeEvaluation();
 }
@@ -136,12 +143,8 @@ bool MustBeEvaluated(
     assert(!child.HasValidChildren());
     return true;
   }
-  // When analyzing, always re-evaluate everything.
-  if (in_analysis) {
-    return &child != father.NextStateInAnalysis();
-  }
   // When watching an analyzed game, don't re-evaluate.
-  if (father.InAnalysisLine()) {
+  if (father.InAnalysisLine() && !in_analysis) {
     return false;
   }
   return !child.HasValidChildren();
