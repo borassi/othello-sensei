@@ -69,8 +69,7 @@ class Main {
   }
 
   void ResetEvaluations() {
-    std::string sequence = current_state_->GetSequence().ToString();
-    SetSequence(sequence);
+    SetSequence(current_state_->GetSequence());
   }
 
   void Stop();
@@ -82,15 +81,19 @@ class Main {
     return result;
   }
 
+  void SetSequence(const Sequence& moves) {
+    NewGame();
+    for (Square move : moves.Moves()) {
+      PlayMove(move);
+    }
+  }
+
   bool SetSequence(const std::string& sequence) {
     Sequence moves = Sequence::ParseFromString(sequence);
     if (moves.Size() == 0) {
       return false;
     }
-    NewGame();
-    for (Square move : moves.Moves()) {
-      PlayMove(move);
-    }
+    SetSequence(moves);
     return true;
   }
 
@@ -104,8 +107,9 @@ class Main {
 
   void Analyze() {
     last_params_ = evaluate_params_;
-    ResetEvaluations();
-    ToState(first_state_->SetAnalyzed());
+    // This also resets all the evaluations.
+    SetSequence(first_state_->GetLongestSequence());
+    first_state_->SetAnalyzed();
     analyzing_ = 1;
     engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }

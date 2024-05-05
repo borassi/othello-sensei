@@ -170,13 +170,6 @@ class EvaluationState : public TreeNode {
 
   EvaluationState* SetAnalyzed() {
     assert(Father() == nullptr);
-    EvaluationState* state_to_remove = this;
-    while (state_to_remove->NextStateInAnalysis() != nullptr) {
-      EvaluationState* new_state_to_remove = state_to_remove->NextStateInAnalysis();
-      state_to_remove->SetNextStateInAnalysis(nullptr);
-      state_to_remove = new_state_to_remove;
-    }
-
     EvaluationState* state;
     for (state = this; state->NextStatePlayed() != nullptr; state = state->NextStatePlayed()) {
       state->SetNextStateInAnalysis(state->NextStatePlayed());
@@ -208,6 +201,16 @@ class EvaluationState : public TreeNode {
          result != nullptr && new_depth > 60 - result->n_empties_;
          result = result->NextState()) {}
     return result;
+  }
+
+  Sequence GetLongestSequence() const {
+    std::vector<Square> moves;
+    for (const EvaluationState* state = this; state != nullptr; state = state->NextStatePlayed()) {
+      if (state->annotations_.move != kPassMove) {
+        moves.push_back(state->annotations_.move);
+      }
+    }
+    return Sequence(moves.begin(), moves.end());
   }
 
   Sequence GetSequence() const {
