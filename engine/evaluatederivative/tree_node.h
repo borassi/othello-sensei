@@ -630,6 +630,10 @@ class TreeNode : public Node {
 
   bool HasLeafEval() {
     std::lock_guard<std::mutex> guard(mutex_);
+    return HasLeafEvalNoLock();
+  }
+
+  bool HasLeafEvalNoLock() {
     return leaf_eval_ != kLessThenMinEvalLarge;
   }
 
@@ -834,6 +838,9 @@ class TreeNode : public Node {
 
   virtual void SetLeafEval(EvalLarge leaf_eval, Square eval_depth) {
     std::lock_guard<std::mutex> guard(mutex_);
+    if (HasLeafEvalNoLock()) {
+      return;
+    }
     assert(IsLeafNoLock());
     assert(kMinEvalLarge <= leaf_eval && leaf_eval <= kMaxEvalLarge);
     assert(eval_depth > 0 && eval_depth <= 4);
