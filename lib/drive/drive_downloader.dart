@@ -91,14 +91,12 @@ class DriveDownloader {
     var totalSize = int.parse(metadata.size!);
     var downloadedSize = 0;
     var media = _driveApi.files.get(id, downloadOptions: DownloadOptions.fullMedia);
-    List<int> dataStore = [];
+    var outputFile = io.File(output);
     await (await media as Media).stream.forEach((data) {
-      dataStore.insertAll(dataStore.length, data);
+      outputFile.writeAsBytesSync(data, mode: FileMode.append);
       downloadedSize += data.length;
       downloadProgress.setProgress(downloadedSize / totalSize);
     });
-    var outputFile = io.File(output);
-    await outputFile.writeAsBytes(dataStore);
     downloadProgress.setProgress(1);
   }
 
