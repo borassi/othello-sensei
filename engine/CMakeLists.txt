@@ -23,7 +23,7 @@
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 # Declares and names the project.
 
@@ -46,14 +46,14 @@ ENDIF()
 MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC")
+SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC -march=native")
 
 IF(ENABLE_GOOGLETEST)
     INCLUDE(FetchContent)
     FetchContent_Declare(
-        googletest
-        DOWNLOAD_EXTRACT_TIMESTAMP
-        URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
+      googletest
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     )
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
