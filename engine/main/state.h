@@ -233,23 +233,28 @@ class EvaluationState : public TreeNode {
 
   void SetAnnotations(const Node& node, bool book, double seconds) {
     CopyAndEnlargeToAllEvals(node);
-    double new_seconds = seconds - annotations_.seconds;
-    annotations_.seconds = seconds;
-    NVisited new_descendants = descendants_ - annotations_.descendants;
-    annotations_.provenance = book ? BOOK : CHILD_EVALUATE;
-    if (!book) {
+    if (book) {
+      annotations_.descendants_book = descendants_;
+      descendants_ = annotations_.descendants;
+      if (HasValidChildren()) {
+        return;
+      }
+      annotations_.provenance = BOOK;
+    } else {
+      assert(!HasValidChildren());
+      double new_seconds = seconds - annotations_.seconds;
+      assert(descendants_ >= annotations_.descendants);
+      NVisited new_descendants = descendants_ - annotations_.descendants;
+      annotations_.descendants = descendants_;
+      annotations_.seconds = seconds;
       if (!annotations_.derived) {
         for (EvaluationState* state = Father(); state != nullptr; state = state->Father()) {
           state->annotations_.seconds += new_seconds;
           state->AddDescendants(new_descendants);
+          state->annotations_.descendants = state->descendants_;
         }
       }
-    } else {
-      annotations_.descendants_book = descendants_;
-      descendants_ = 0;
-      if (HasValidChildren()) {
-        return;
-      }
+      annotations_.provenance = CHILD_EVALUATE;
     }
     assert(!HasValidChildren());
     annotations_.eval_best_line = GetEval();
