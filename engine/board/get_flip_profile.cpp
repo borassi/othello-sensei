@@ -22,6 +22,7 @@
 
 #include "bitpattern.h"
 #include "get_flip.h"
+#include "../utils/load_training_set.h"
 
 using namespace std;
 
@@ -33,22 +34,23 @@ class TestCase {
 };
 
 int main(int argc, char** argv) {
-  std::vector<TestCase> tests;
-  ifstream tests_file("testdata/get_flip_profile_examples.txt");
-  std::string line;
-  int i = 0;
-  while (std::getline(tests_file, line)) {
-    TestCase test;
-    sscanf(line.c_str(), "%hhd %lu %lu", &test.move, &test.player, &test.opponent);
-    tests.push_back(test);
-  }
-  tests_file.close();
-  int tot = 0;
-
-  int N = 100000;
+  int N = 1000000;
   unsigned long long tmp = 12;
-  auto start = std::chrono::high_resolution_clock::now();
+  int iterations = 101;
+
+  std::vector<EvaluatedBoard> boards = load_train_set();
+  std::vector<TestCase> tests;
   for (int i = 0; i < N; ++i) {
+    EvaluatedBoard& b = boards[rand() % boards.size()];
+    TestCase t;
+    t.player = b.GetPlayer();
+    t.opponent = b.GetOpponent();
+    t.move = __builtin_ctzll(~(t.player | t.opponent));
+    tests.push_back(t);
+  }
+
+  auto start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < iterations; ++i) {
     for (const auto& test : tests) {
       tmp ^= GetFlip(test.move, test.player, test.opponent);
     }
@@ -57,7 +59,7 @@ int main(int argc, char** argv) {
   double millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
   std::cout << tmp << "\n";
-  std::cout << "Flips / sec: " << (int) (1000 * N / millis * tests.size()) << "\n";
+  std::cout << "Flips / sec: " << (int) (iterations * N * 1000.0 / millis) << "\n";
   std::cout << "Total time: " << (double) millis / 1000 << " sec\n";
 
   return (EXIT_SUCCESS);

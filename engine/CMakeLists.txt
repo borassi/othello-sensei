@@ -23,11 +23,13 @@
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 # Declares and names the project.
 
 project("othellosensei" CXX)
+
+SET (__BMI2__ TRUE)
 
 IF(NOT DEFINED ANDROID)
     SET(ANDROID TRUE)
@@ -44,6 +46,7 @@ ELSE()
 ENDIF()
 
 MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
+MESSAGE("BMI: ${__BMI2__}")
 
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC")
@@ -53,7 +56,7 @@ IF(ENABLE_GOOGLETEST)
     FetchContent_Declare(
         googletest
         DOWNLOAD_EXTRACT_TIMESTAMP
-        URL https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     )
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -84,6 +87,7 @@ ENDIF()
 
 add_subdirectory(analyzers)
 add_subdirectory(board)
+add_subdirectory(board_optimized)
 add_subdirectory(book)
 add_subdirectory(estimators)
 add_subdirectory(evaluatealphabeta)

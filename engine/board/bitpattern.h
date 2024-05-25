@@ -41,10 +41,10 @@ constexpr EvalLarge kLessThenMinEvalLarge = EvalToEvalLarge(kLessThenMinEval);
 constexpr EvalLarge kMinEvalLarge = EvalToEvalLarge(kMinEval);
 constexpr EvalLarge kMaxEvalLarge = EvalToEvalLarge(kMaxEval);
 
-constexpr BitPattern ParsePattern(const char* pattern, char letter) {
+constexpr BitPattern ParsePattern(const char* pattern, char letter='X', int size=64) {
   BitPattern result = 0;
   int parsed = 0;
-  for (int i = 0; parsed < 64; i++) {
+  for (int i = 0; parsed < size; i++) {
       result = result << 1L;
       if (pattern[i] == '\n' || pattern[i] == ' ') {
           continue;
@@ -55,10 +55,6 @@ constexpr BitPattern ParsePattern(const char* pattern, char letter) {
       ++parsed;
   }
   return result;
-}
-
-constexpr BitPattern ParsePattern(const char* pattern) {
-  return ParsePattern(pattern, 'X');
 }
 
 constexpr BitPattern kLastRowPattern = ParsePattern(

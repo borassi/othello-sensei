@@ -115,6 +115,7 @@ target_link_libraries(
         LINK_PRIVATE
         bitpattern
         get_flip
+        load_training_set
 )
 
 add_library(
