@@ -15,6 +15,7 @@ android/key.properties
 .idea
 .flutter-plugins*
 .gdb_history
+testdata
 /secrets.env
 /lib/env.g.dart
 auxiliary_files
