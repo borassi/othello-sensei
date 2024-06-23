@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2024 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #ifndef ESTIMATORS_GAUSSIAN_H
 #define ESTIMATORS_GAUSSIAN_H
 
+#include <float.h>
 #include <math.h>
 #include <tuple>
 #include "../board/bitpattern.h"
@@ -63,6 +64,9 @@ constexpr std::tuple<Square, Square, EvalLarge> CDFOffsetToDepthEmptiesEval(int 
 }
 
 inline double BaseRescaleProb(double x) {
+  if (x < DBL_MIN) {
+    return 0;
+  }
   return pow(-log(x) + 10, -3.5);
 }
 

@@ -207,7 +207,7 @@ class EvaluatorDerivative {
 
   double Progress(float gap) {
     if (GetStatus() == SOLVED) {
-      return -INFINITY;
+      return -DBL_MAX;
     }
     TreeNode* board = first_position_;
     double evalEffect = -board->GetEval() / std::max(1.0F, gap);

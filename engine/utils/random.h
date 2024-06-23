@@ -19,6 +19,8 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+#include <cstdint>
+
 struct Random {
  public:
   constexpr Random() :

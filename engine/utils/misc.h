@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
+#include <float.h>
 #include <limits>
 #include <math.h>
 #include <sstream>
@@ -38,11 +39,11 @@ class ElapsedTime {
 
 constexpr double ConstexprLog(double x) {
   assert(x > 0);
-  if (x < 1E-32) {
-    return -std::numeric_limits<double>::infinity();
+  if (x < -DBL_MAX) {
+      return 0;
   }
-  if (x == std::numeric_limits<double>::infinity()) {
-    return std::numeric_limits<double>::infinity();
+  if (x > DBL_MAX) {
+      return DBL_MAX;
   }
   double result = 0;
   // Move x between (little less than) 1 / sqrt(2)
@@ -68,11 +69,11 @@ constexpr double ConstexprLog(double x) {
 }
 
 constexpr double ConstexprExp(double x) {
-  if (x == -std::numeric_limits<double>::infinity()) {
+  if (x < -DBL_MAX) {
     return 0;
   }
-  if (x == std::numeric_limits<double>::infinity()) {
-    return std::numeric_limits<double>::infinity();
+  if (x > DBL_MAX) {
+    return DBL_MAX;
   }
   double multiplier = 1;
   double result = 1;

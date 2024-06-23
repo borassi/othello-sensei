@@ -31,15 +31,15 @@ double ElapsedTime::Get() const {
 
 std::string PrettyPrintDouble(double d) {
 //  std::locale::global(std::locale("en_US.UTF8"));
-  if (d == INFINITY) {
+  assert(!isnan(d));
+  if (d > DBL_MAX) {
     return "+Inf";
-  } else if (d == -INFINITY) {
+  } else if (d < -DBL_MAX) {
     return "-Inf";
-  } else if (isnan(d)) {
-    return "NaN";
   } else if (abs(d) < 1.E-20) {
     return "0";
   }
+
   if (d < 0) {
     return "-" + PrettyPrintDouble(-d);
   }

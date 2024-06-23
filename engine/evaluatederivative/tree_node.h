@@ -222,7 +222,7 @@ class Node {
     if (eval_goal < lower_) {
       return 0;
     } else if (eval_goal > upper_) {
-      return std::numeric_limits<float>::infinity();
+      return DBL_MAX;
     }
     return GetEvaluation(eval_goal).ProofNumber();
   }
@@ -231,7 +231,7 @@ class Node {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     if (eval_goal < lower_) {
-      return std::numeric_limits<float>::infinity();
+      return DBL_MAX;
     } else if (eval_goal > upper_) {
       return 0;
     }
@@ -411,7 +411,7 @@ class Node {
   // Starts from 0, decreases until kLogDerivativeMinusInf until partially
   // solved, then decreases more until becoming -inf.
   virtual double Advancement(Eval lower, Eval upper) const {
-    double result = -std::numeric_limits<double>::infinity();
+    double result = -DBL_MAX;
     for (int i = std::max(lower_ + 1, (int) weak_lower_); i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
       result = std::max(result, (double) GetEvaluation(i).MaxLogDerivative());
     }
@@ -686,7 +686,7 @@ class TreeNode : public Node {
     if (eval_goal < weak_lower_ || eval_goal > weak_upper_ || Node::IsSolved(eval_goal, eval_goal, false)) {
       return nullptr;
     }
-    double best_child_value = -INFINITY;
+    double best_child_value = -DBL_MAX;
     TreeNode* best_child = nullptr;
     auto start = ChildrenStart();
     auto end = ChildrenEnd();

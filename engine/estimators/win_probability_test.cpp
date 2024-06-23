@@ -38,6 +38,7 @@ TEST(Gaussian, Gaussian) {
 TEST(EvaluationTest, ProbabilityToByte) {
   ASSERT_EQ(ProbabilityToByteExplicit(0), 0);
   ASSERT_EQ(ProbabilityToByteExplicit(1), kProbStep);
+  ASSERT_NEAR(ByteToProbabilityExplicit(10), 0, 0.1);
 
   for (int i = 0; i <= kProbStep; ++i) {
     ASSERT_EQ(ProbabilityToByteExplicit(ByteToProbability((Probability) i)), i);

@@ -200,16 +200,16 @@ class Evaluation {
     prob_greater_equal_ = WinProbability(depth, n_empties, goal, eval);
     proof_number_ = prob_greater_equal_ == 0 ? kProofNumberStep : ::ProofNumber(player, opponent, goal, eval);
     if (prob_greater_equal_ > 0) {
-      assert(isfinite(ProofNumber()));
+      assert(isfinite(ProofNumber()) && ProofNumber() < FLT_MAX);
       assert(ProofNumber() > 0);
     } else {
-      assert(ProofNumber() == std::numeric_limits<float>::infinity());
+      assert(ProofNumber() == FLT_MAX);
     }
     disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep : ::DisproofNumber(player, opponent, goal, eval);
     if (prob_greater_equal_ < kProbStep) {
-      assert(isfinite(DisproofNumber()) && DisproofNumber() > 0);
+      assert(isfinite(DisproofNumber()) && ProofNumber() < FLT_MAX && DisproofNumber() > 0);
     } else {
-      assert(DisproofNumber() == std::numeric_limits<float>::infinity());
+      assert(DisproofNumber() == FLT_MAX);
     }
     assert(isfinite(disproof_number_) && disproof_number_ > 0);
     max_log_derivative_ = kCombineProb.leaf_log_derivative[prob_greater_equal_];

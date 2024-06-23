@@ -46,7 +46,7 @@ constexpr float ByteToProofNumberExplicit(PN byte) {
   if (byte == 0) {
     return 0;
   } else if (byte == kProofNumberStep) {
-    return INFINITY;
+    return FLT_MAX;
   }
   return pow(kBaseLogProofNumber, byte - 1);
 }

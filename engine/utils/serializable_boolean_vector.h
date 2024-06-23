@@ -18,6 +18,7 @@
 #define OTHELLO_SENSEI_SERIALIZABLE_BOOLEAN_VECTOR_H
 
 #include <vector>
+#include <cstdint>
 
 class SerializableBooleanVector {
  public:
