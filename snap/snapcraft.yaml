@@ -1,0 +1,38 @@
+name: othello-sensei
+version: 1.0.0
+summary: Othello Sensei
+description: A strong, responsive, and user-friendly Othello engine for advanced players
+
+contact: michele.borassi@gmail.com
+icon: assets/icons/icon_512x512.png
+license: Apache-2.0
+source-code: https://github.com/borassi/othello-sensei
+
+confinement: strict
+base: core22
+grade: devel
+
+environment:
+  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/lib
+
+slots:
+  dbus-othello-sensei:
+    interface: dbus
+    bus: session
+    name: com.othellosensei.app
+
+apps:
+  othello-sensei:
+    command: othello_sensei
+    extensions: [gnome] # gnome includes the libraries required by flutter
+    plugs:
+      - network
+      - network-manager-observe
+    slots:
+      - dbus-othello-sensei
+parts:
+  othello-sensei:
+    source: .
+    disable-parallel: false
+    plugin: flutter
+    flutter-target: lib/main.dart # The main entry-point file of the application

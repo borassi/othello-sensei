@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Othello Sensei
+Comment=A strong, responsive, and user-friendly Othello engine for advanced players
+Exec=othello-sensei
+Icon=${SNAP}/meta/gui/othello-sensei.png
+Terminal=false
+Type=Application
+Categories=Game; # Adjust accordingly your snap category.
