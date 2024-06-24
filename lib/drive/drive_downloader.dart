@@ -153,12 +153,22 @@ class DriveDownloader {
   }
 
   void download(BuildContext context, String name, String path, int sizeMB, int numFilesForProgressBar) async {
-    final connectivityResult = await (Connectivity().checkConnectivity());
+    ConnectivityResult connectivityResult;
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      downloadNoConfirmation(context, name, path, numFilesForProgressBar);
+      return;
+    }
+    try {
+      connectivityResult = await (Connectivity().checkConnectivity());
+    } catch (e) {
+      connectivityResult = ConnectivityResult.other;
+    }
     switch (connectivityResult) {
       case ConnectivityResult.bluetooth:
       case ConnectivityResult.wifi:
       case ConnectivityResult.ethernet:
         downloadNoConfirmation(context, name, path, numFilesForProgressBar);
+        return;
       case ConnectivityResult.vpn:
       case ConnectivityResult.mobile:
       case ConnectivityResult.other:
@@ -171,6 +181,7 @@ class DriveDownloader {
             path,
             numFilesForProgressBar
         );
+        return;
       case ConnectivityResult.none:
         showDialog<void>(
           context: context,
@@ -182,6 +193,7 @@ class DriveDownloader {
             );
           }
         );
+        return;
     }
   }
 

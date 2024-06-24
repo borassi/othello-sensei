@@ -22,7 +22,6 @@ import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/margins.dart';
-import '../main.dart';
 import '../widgets_utils/misc.dart';
 
 class ThorSourcesWidget extends StatelessWidget {

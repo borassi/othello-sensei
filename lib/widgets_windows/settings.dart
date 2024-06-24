@@ -110,7 +110,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
   var value = state.updates[key] ?? GlobalState.preferences.get(key);
   onChanged(newValue) {
     state.set(key, newValue);
-  };
+  }
   var values = PreferencesState.preferencesValues[key];
   if (values != null) {
     return SettingsTile(

@@ -16,7 +16,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 

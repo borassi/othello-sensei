@@ -20,9 +20,14 @@ import 'dart:io';
 
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 
-final FFIEngine ffiEngine = FFIEngine(
-  Platform.isMacOS || Platform.isIOS ? DynamicLibrary.process() // macos and ios
-        : (DynamicLibrary.open(Platform.isWindows // windows
-        ? 'ui.dll'
-        : 'libui.so'))
-);
+DynamicLibrary getDynamicLibrary() {
+  if (Platform.isMacOS || Platform.isIOS) {
+    return DynamicLibrary.process();
+  } else if (Platform.isWindows) {
+    return DynamicLibrary.open('ui.dll');
+  } else {
+    return DynamicLibrary.open('libui.so');
+  }
+}
+
+final FFIEngine ffiEngine = FFIEngine(getDynamicLibrary());

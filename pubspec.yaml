@@ -54,6 +54,8 @@ dependencies:
   connectivity_plus: ^2.3.8
   flutter_settings_ui: ^3.0.0
   window_manager: ^0.3.8
+  http: any
+  googleapis_auth: any
 
 dev_dependencies:
   flutter_test:
