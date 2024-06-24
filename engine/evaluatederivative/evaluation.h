@@ -207,7 +207,7 @@ class Evaluation {
     }
     disproof_number_ = prob_greater_equal_ == kProbStep ? kProofNumberStep : ::DisproofNumber(player, opponent, goal, eval);
     if (prob_greater_equal_ < kProbStep) {
-      assert(isfinite(DisproofNumber()) && ProofNumber() < FLT_MAX && DisproofNumber() > 0);
+      assert(isfinite(DisproofNumber()) && DisproofNumber() < FLT_MAX && DisproofNumber() > 0);
     } else {
       assert(DisproofNumber() == FLT_MAX);
     }
