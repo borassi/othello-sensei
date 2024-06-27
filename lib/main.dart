@@ -28,8 +28,10 @@ import 'package:othello_sensei/widgets_sidebar/disk_count_with_thor.dart';
 import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
+import 'package:path/path.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'files.dart';
 import 'widgets_board/board.dart';
 import 'widgets_spacers/app_sizes.dart';
 import 'widgets_spacers/margins.dart';
@@ -40,6 +42,7 @@ void main() async {
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     WidgetsFlutterBinding.ensureInitialized();
     WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
+    WindowManager.instance.setIcon(join(await localAssetPath(), 'icons/icon_512x512.png'));
     await windowManager.ensureInitialized();
   }
   runApp(GlobalState.main);
