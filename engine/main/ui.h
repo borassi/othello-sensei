@@ -25,6 +25,10 @@
 extern "C" {
 #endif
 
+
+EXPORT
+Square PassMove();
+
 EXPORT
 void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
 

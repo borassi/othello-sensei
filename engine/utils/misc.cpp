@@ -81,7 +81,7 @@ std::string Indent(const std::string& s, const std::string& characters) {
 short GetCurrentYear() {
   std::time_t t = std::time(nullptr);
   std::tm time;
-  localtime_s(&time, &t);
+  localtime_r(&t, &time);
   return 1900 + time.tm_year;
 }
 

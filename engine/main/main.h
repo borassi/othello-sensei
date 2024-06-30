@@ -77,7 +77,7 @@ class Main {
   char* GetSequence() {
     std::string sequence = current_state_->GetSequence().ToString();
     char* result = (char*) malloc(sequence.size() * sizeof(char) + 1);
-    strcpy_s(result, sequence.size() + 1, sequence.c_str());
+    strncpy(result, sequence.c_str(), sequence.size() + 1);
     return result;
   }
 

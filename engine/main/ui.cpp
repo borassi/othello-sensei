@@ -17,6 +17,8 @@
 #include "ui.h"
 #include "main.h"
 
+Square PassMove() { return kPassMove; }
+
 void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations) {
   return new Main(evals_filepath, book_filepath, thor_filepath, set_board, update_annotations);
 }

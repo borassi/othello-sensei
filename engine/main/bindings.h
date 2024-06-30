@@ -33,9 +33,6 @@ extern "C" {
 const Square kPassMove = 64;
 const Square kStartingPositionMove = 65;
 
-EXPORT
-Square PassMove();
-
 struct ThorSourceMetadata {
   const char* name;
   const char** players;

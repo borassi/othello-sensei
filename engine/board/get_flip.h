@@ -167,8 +167,8 @@ constexpr uint8_t kFlip[] = {
 
 constexpr BitPattern PExt(BitPattern x, BitPattern mask) {
   BitPattern res = 0;
-  for(BitPattern bb = 1; mask != 0; bb += bb) {
-    if(x & mask & -((int64_t) mask)) {
+  for (BitPattern bb = 1; mask != 0; bb += bb) {
+    if (x & mask & (0 - mask)) {
       res |= bb;
     }
     mask &= (mask - 1);
