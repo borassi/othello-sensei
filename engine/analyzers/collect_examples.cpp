@@ -112,7 +112,8 @@ int main(int argc, char* argv[]) {
       continue;
     }
     auto t = std::time(nullptr);
-    auto time = *std::localtime(&t);
+    tm time;
+    localtime_s(&time, &t);
     std::cout
         << "\nStarting " << collector.Get()[0].NEmpties()
         << "(" << boards.size() << ") at "
@@ -173,7 +174,7 @@ int main(int argc, char* argv[]) {
       output.close();
     }
     t = std::time(nullptr);
-    time = *std::localtime(&t);
+    localtime_s(&time, &t);
     std::cout << "\nFinished at " << std::put_time(&time, "%H:%M:%S") << "\n";
   }
   return 0;

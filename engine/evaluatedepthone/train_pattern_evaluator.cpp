@@ -95,7 +95,6 @@ float CategoricalRegression::Eval(const TrainingBoard& b) {
 }
 
 float CategoricalRegression::Error(const TrainingBoard& b) {
-  assert (isfinite(b.Eval()));
   return (float) b.Eval() - Eval(b);
 }
 

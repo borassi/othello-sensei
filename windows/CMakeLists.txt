@@ -6,6 +6,9 @@ project(othello_sensei LANGUAGES CXX)
 # the on-disk name of your application.
 set(BINARY_NAME "othello_sensei")
 
+SET(CMAKE_CXX_STANDARD 17)
+#SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -latomic")
+
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)
@@ -49,6 +52,7 @@ endfunction()
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 add_subdirectory(${FLUTTER_MANAGED_DIR})
 
+SET(ENABLE_GOOGLETEST FALSE)
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 

@@ -19,7 +19,7 @@
 #include <memory>
 #include <optional>
 #include "../board/bitpattern.h"
-#include "../constants.h"
+#include "../utils/constants.h"
 
 
 #ifndef HASH_MAP_H

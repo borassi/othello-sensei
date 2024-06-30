@@ -28,8 +28,8 @@ class Coordinate extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    var coordinateSize = Theme.of(context).extension<AppSizes>()!.margin!;
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var coordinateSize = Theme.of(context).extension<AppSizes>()!.margin;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     String content;
     if (vertical) {
       content = '${position + 1}';
@@ -65,10 +65,10 @@ class Board extends StatelessWidget {
   Widget build(BuildContext context) {
     var board = GlobalState.board;
     var colorScheme = Theme.of(context).colorScheme;
-    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    var margin = Theme.of(context).extension<AppSizes>()!.margin;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         return ListenableBuilder(
           listenable: GlobalState.board,
           builder: (BuildContext context, Widget? widget) => Stack(

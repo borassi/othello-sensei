@@ -34,15 +34,15 @@ class TestCase {
 
 int main(int argc, char** argv) {
   std::vector<TestCase> tests;
-  ifstream tests_file("testdata/get_flip_profile_examples.txt");
-  std::string line;
-  int i = 0;
-  while (std::getline(tests_file, line)) {
-    TestCase test;
-    sscanf(line.c_str(), "%hhd %lu %lu", &test.move, &test.player, &test.opponent);
-    tests.push_back(test);
-  }
-  tests_file.close();
+//  ifstream tests_file("testdata/get_flip_profile_examples.txt");
+//  std::string line;
+//  int i = 0;
+//  while (std::getline(tests_file, line)) {
+//    TestCase test;
+//    sscanf(line.c_str(), "%hhd %llu %llu", &test.move, &test.player, &test.opponent);
+//    tests.push_back(test);
+//  }
+//  tests_file.close();
   int tot = 0;
 
   int N = 100000;
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     }
   }
   auto end = std::chrono::high_resolution_clock::now();
-  double millis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  double millis = (double) std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
   std::cout << tmp << "\n";
   std::cout << "Flips / sec: " << (int) (1000 * N / millis * tests.size()) << "\n";

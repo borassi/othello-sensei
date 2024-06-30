@@ -217,7 +217,7 @@ class Case extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge(index == 255 ? [] : [GlobalState.annotations[index], GlobalState.actionWhenPlay]),
       builder: (BuildContext context, Widget? child) {
-        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         var colorScheme = Theme.of(context).colorScheme;
         List<Widget> children = [
           Container(

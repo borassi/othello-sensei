@@ -19,6 +19,7 @@
 #include <iostream>
 #include <locale>
 #include <regex>
+#include <time.h>
 #include "misc.h"
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
@@ -79,8 +80,9 @@ std::string Indent(const std::string& s, const std::string& characters) {
 
 short GetCurrentYear() {
   std::time_t t = std::time(nullptr);
-  std::tm* const time = std::localtime(&t);
-  return 1900 + time->tm_year;
+  std::tm time;
+  localtime_s(&time, &t);
+  return 1900 + time.tm_year;
 }
 
 std::string LeftStrip(const std::string& s) {

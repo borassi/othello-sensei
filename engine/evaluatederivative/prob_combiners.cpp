@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright 2024 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,27 +12,4 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-
-
-import 'package:flutter/material.dart';
-
-import 'app_sizes.dart';
-
-enum FlexWithMarginsDirection {
-  vertical,
-  horizontal,
-  asAppMain,
-  inverseAppMain,
-}
-
-class Margin extends StatelessWidget {
-  const Margin({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    var margin = Theme.of(context).extension<AppSizes>()!.margin;
-    return SizedBox(height: margin, width: margin);
-  }
-}

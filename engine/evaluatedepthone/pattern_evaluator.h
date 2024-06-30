@@ -117,7 +117,7 @@ constexpr std::array<BitPattern, kMaxFeatureSize> kFeatureDefinition[] = {
 };
 
 constexpr int kNumBaseRotations =
-    std::end(kFeatureDefinition) - std::begin(kFeatureDefinition);
+    (int) (std::end(kFeatureDefinition) - std::begin(kFeatureDefinition));
 
 typedef int8_t PatternNumber ;
 constexpr PatternNumber kMaxPatternsPerSquare = 8;
@@ -207,74 +207,74 @@ struct Features {
       splits[i] = GetSplit(i, kSplits);
     }
 
-    for (const auto &feature : kFeatureDefinition) {
-      EquivalentTransposition(feature, equivalent_transposition);
-      for (int t = 0; t < kMaxPatternTranspositions; ++t) {
-        if (equivalent_transposition[t] != t) { continue; }
-        int num_equivalent_features = 0;
-        FeatureValue feature_size = 0;
-        for (int i = 0; i < feature.size(); ++i) {
-          if (feature[i] == 0) {
-            features_to_patterns[num_features][i] = -1;
-            break;
-          }
-          Pattern::AllTranspositions(feature[i], transpositions);
-          Pattern pattern = transpositions[t];
-          max_pattern_value[num_patterns] = pattern.MaxValue();
-          features_to_patterns[num_features][i] = num_patterns;
-          patterns[num_patterns] = pattern;
-          if (i > 0) {
-            feature_size += (max_pattern_value[num_patterns] + 1) *
-                (max_pattern_value[num_patterns - 1] + 1);
-          }
-          for (int j = 0; j < pattern.Size(); ++j) {
-            Square square = pattern.Squares()[j];
-            UpdatePatterns
-                *update_patterns = &square_to_update_patterns[square];
-            UpdatePattern *update_pattern = &(
-                update_patterns->pattern[update_patterns->num_patterns]);
-            update_patterns->num_patterns++;
-            update_pattern->pattern_number = num_patterns;
-            update_pattern->delta = pattern.GetWeight(j);
-            update_pattern->delta_double = 2 * update_pattern->delta;
-          }
-          ++num_patterns;
-        }
-
-        if (feature[1] == 0) {
-          max_feature_value[num_features] = max_pattern_value[num_patterns - 1];
-        } else {
-          max_feature_value[num_features] = feature_size - 1;
-        }
-        canonical_rotation[num_features] = num_canonical_rotations;
-        features_to_patterns[num_features][feature.size()] = -1;
-
-        for (int u = t; u < kMaxPatternTranspositions; ++u) {
-          if (equivalent_transposition[u] != t) { continue; }
-          for (int i = 0; i < feature.size(); ++i) {
-            Pattern::AllTranspositions(feature[i], transpositions);
-            equivalent_features[num_features][num_equivalent_features][i] =
-                transpositions[u];
-          }
-          num_equivalent_features++;
-        }
-
-        for (; num_equivalent_features < kMaxPatternTranspositions;
-             ++num_equivalent_features) {
-          equivalent_features[num_features][num_equivalent_features][0] =
-              Pattern(0, {});
-        }
-
-        ++num_features;
-      }
-      start_feature[num_canonical_rotations + 1] =
-          1 + max_feature_value[num_features - 1] +
-          start_feature[num_canonical_rotations];
-      num_canonical_rotations++;
-    }
-    assert (kNumBaseRotations == num_canonical_rotations);
-    assert (kNumPatterns == num_patterns);
-    assert (kNumFeatures == num_features);
+//    for (const auto& feature : kFeatureDefinition) {
+//      EquivalentTransposition(feature, equivalent_transposition);
+//      for (int t = 0; t < kMaxPatternTranspositions; ++t) {
+//        if (equivalent_transposition[t] != t) { continue; }
+//        int num_equivalent_features = 0;
+//        FeatureValue feature_size = 0;
+//        for (int i = 0; i < feature.size(); ++i) {
+//          if (feature[i] == 0) {
+//            features_to_patterns[num_features][i] = -1;
+//            break;
+//          }
+//          Pattern::AllTranspositions(feature[i], transpositions);
+//          Pattern pattern = transpositions[t];
+//          max_pattern_value[num_patterns] = pattern.MaxValue();
+//          features_to_patterns[num_features][i] = num_patterns;
+//          patterns[num_patterns] = pattern;
+//          if (i > 0) {
+//            feature_size += (max_pattern_value[num_patterns] + 1) *
+//                (max_pattern_value[num_patterns - 1] + 1);
+//          }
+//          for (int j = 0; j < pattern.Size(); ++j) {
+//            Square square = pattern.Squares()[j];
+//            UpdatePatterns
+//                *update_patterns = &square_to_update_patterns[square];
+//            UpdatePattern *update_pattern = &(
+//                update_patterns->pattern[update_patterns->num_patterns]);
+//            update_patterns->num_patterns++;
+//            update_pattern->pattern_number = num_patterns;
+//            update_pattern->delta = pattern.GetWeight(j);
+//            update_pattern->delta_double = 2 * update_pattern->delta;
+//          }
+//          ++num_patterns;
+//        }
+//
+//        if (feature[1] == 0) {
+//          max_feature_value[num_features] = max_pattern_value[num_patterns - 1];
+//        } else {
+//          max_feature_value[num_features] = feature_size - 1;
+//        }
+//        canonical_rotation[num_features] = num_canonical_rotations;
+//        features_to_patterns[num_features][feature.size()] = -1;
+//
+//        for (int u = t; u < kMaxPatternTranspositions; ++u) {
+//          if (equivalent_transposition[u] != t) { continue; }
+//          for (int i = 0; i < feature.size(); ++i) {
+//            Pattern::AllTranspositions(feature[i], transpositions);
+//            equivalent_features[num_features][num_equivalent_features][i] =
+//                transpositions[u];
+//          }
+//          num_equivalent_features++;
+//        }
+//
+//        for (; num_equivalent_features < kMaxPatternTranspositions;
+//             ++num_equivalent_features) {
+//          equivalent_features[num_features][num_equivalent_features][0] =
+//              Pattern(0, {});
+//        }
+//
+//        ++num_features;
+//      }
+//      start_feature[num_canonical_rotations + 1] =
+//          1 + max_feature_value[num_features - 1] +
+//          start_feature[num_canonical_rotations];
+//      num_canonical_rotations++;
+//    }
+//    assert (kNumBaseRotations == num_canonical_rotations);
+//    assert (kNumPatterns == num_patterns);
+//    assert (kNumFeatures == num_features);
   }
 };
 

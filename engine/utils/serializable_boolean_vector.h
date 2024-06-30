@@ -24,12 +24,12 @@ class SerializableBooleanVector {
  public:
   SerializableBooleanVector() : memory_(), size_(0) {}
   template<class InputIt>
-  SerializableBooleanVector(InputIt begin, InputIt end, int size)
-      : memory_(begin, end), size_(size) {}
+  SerializableBooleanVector(InputIt begin, InputIt end, size_t size)
+      : memory_(begin, end), size_((int) size) {}
 
   void PushBack(bool b);
   void PushBack(uint32_t value, int num_bits);
-  int Size() const { return size_; };
+  int Size() const { return (int) size_; };
   const std::vector<char>& Serialize() const { return memory_; }
   bool Get(int i) const;
   uint32_t Get(int i, int num_bits) const;

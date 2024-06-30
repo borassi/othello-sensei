@@ -94,12 +94,3 @@ add_subdirectory(main)
 add_subdirectory(thor)
 add_subdirectory(utils)
 add_subdirectory(jni)
-
-add_library(
-        constants
-        constants.h
-)
-
-set_target_properties(
-        constants PROPERTIES LINKER_LANGUAGE CXX
-)

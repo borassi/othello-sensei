@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <unistd.h>
 #include <vector>
 
 #include "evaluator_derivative.h"
@@ -39,7 +38,7 @@ std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
 void EvaluatorThread::Run() {
   auto time = std::chrono::system_clock::now();
   auto duration = std::chrono::system_clock::now().time_since_epoch();
-  int n_visited;
+  NVisited n_visited;
   TreeNode* first_position = evaluator_->first_position_;
   int last_eval_goal = kLessThenMinEval;
   while (!evaluator_->CheckFinished()) {
@@ -59,7 +58,7 @@ void EvaluatorThread::Run() {
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     assert(node->IsLeaf());
     if (leaf.Leaf()->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->num_tree_nodes_, first_position->GetNVisited())) {
-      n_visited = SolvePosition(leaf, std::max(50000.0, leaf.Leaf()->RemainingWork(leaf.Alpha(), leaf.Beta())));
+      n_visited = SolvePosition(leaf, (int) std::max(50000.0, leaf.Leaf()->RemainingWork(leaf.Alpha(), leaf.Beta())));
     } else {
       n_visited = AddChildren(leaf);
     }
@@ -93,7 +92,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
   int child_n_empties = node->NEmpties() - 1;
   int depth;
-  float remaining_work = node->RemainingWork(leaf.Alpha(), leaf.Beta());
+  double remaining_work = node->RemainingWork(leaf.Alpha(), leaf.Beta());
 
   for (int i = 0; i < moves.size(); ++i) {
     BitPattern flip = moves[i];

@@ -104,7 +104,7 @@ class DiskCountWithError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [

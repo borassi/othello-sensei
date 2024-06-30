@@ -106,7 +106,7 @@ class MainContent extends StatelessWidget {
                 const Margin(),
                 Flexible(
                   child: Container(
-                    constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize!),
+                    constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize),
                     child: sidebar,
                   ),
                 ),
@@ -233,7 +233,7 @@ class Main extends StatelessWidget {
                     return Scaffold(
                       bottomNavigationBar: TabBar(
                         tabs: List.generate(2, (index) => Tab(
-                          height: Theme.of(context).extension<AppSizes>()!.squareSize!,
+                          height: Theme.of(context).extension<AppSizes>()!.squareSize,
                           child: Text(
                             tabName[index],
                             style: TextStyle(

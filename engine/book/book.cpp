@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& stream, const HashMapNode& n) {
 }
 
 // static
-u_int8_t HashMapNode::SizeToByte(int size) {
+uint8_t HashMapNode::SizeToByte(int size) {
   assert(size >= 0);
   if (size == 0) {
     return 0;
@@ -36,7 +36,7 @@ u_int8_t HashMapNode::SizeToByte(int size) {
   }
 }
 // static
-int HashMapNode::ByteToSize(u_int8_t b) {
+int HashMapNode::ByteToSize(uint8_t b) {
   if (b == 0) {
     return 0;
   } else if (b == 1) {

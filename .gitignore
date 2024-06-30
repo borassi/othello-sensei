@@ -19,3 +19,4 @@ testdata
 /secrets.env
 /lib/env.g.dart
 auxiliary_files
+.dart_tool

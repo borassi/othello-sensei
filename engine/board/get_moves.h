@@ -23,7 +23,7 @@
 #include "board.h"
 #include "get_flip.h"
 
-typedef u_int32_t CompressedFlip;
+typedef uint32_t CompressedFlip;
 
 constexpr BitPattern kNonVerticalFlipMask = ParsePattern(
   "-XXXXXX-"
@@ -37,7 +37,7 @@ constexpr BitPattern kNonVerticalFlipMask = ParsePattern(
 
 
 
-inline BitPattern GetDisksLeftOfCells6(BitPattern disks, BitPattern cells, int dir) noexcept __attribute__((always_inline));
+forceinline(BitPattern GetDisksLeftOfCells6(BitPattern disks, BitPattern cells, int dir) noexcept);
 inline BitPattern GetDisksLeftOfCells6(BitPattern disks, BitPattern cells, int dir) noexcept {
   int dir2 = dir * 2;
 
@@ -49,7 +49,7 @@ inline BitPattern GetDisksLeftOfCells6(BitPattern disks, BitPattern cells, int d
   return result;
 }
 
-inline BitPattern GetDisksRightOfCells6(BitPattern disks, BitPattern cells, int dir) noexcept __attribute__((always_inline));
+forceinline(BitPattern GetDisksRightOfCells6(BitPattern disks, BitPattern cells, int dir) noexcept);
 inline BitPattern GetDisksRightOfCells6(BitPattern disks, BitPattern cells, int dir) noexcept {
   int dir2 = dir * 2;
 
@@ -61,7 +61,7 @@ inline BitPattern GetDisksRightOfCells6(BitPattern disks, BitPattern cells, int 
   return result;
 }
 
-inline BitPattern GetMoves(BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(BitPattern GetMoves(BitPattern player, BitPattern opponent) noexcept);
 inline BitPattern GetMoves(BitPattern player, BitPattern opponent) noexcept {
   BitPattern opponentFlippable = opponent & kNonVerticalFlipMask;
   BitPattern opponentNearPlayer1 = GetDisksLeftOfCells6(opponentFlippable, player, 1) | GetDisksRightOfCells6(opponentFlippable, player, 1);
@@ -80,14 +80,14 @@ inline BitPattern GetMoves(BitPattern player, BitPattern opponent) noexcept {
       (opponentNearPlayer9 >> 9));
 }
 
-inline int GetNMovesApprox(BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(int GetNMovesApprox(BitPattern player, BitPattern opponent) noexcept);
 inline int GetNMovesApprox(BitPattern empties, BitPattern opponent) noexcept {
-  return __builtin_popcountll(Neighbors(opponent) & empties);
+  return (int) __builtin_popcountll(Neighbors(opponent) & empties);
 }
 
-inline int GetNMoves(BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(int GetNMoves(BitPattern player, BitPattern opponent) noexcept);
 inline int GetNMoves(BitPattern player, BitPattern opponent) noexcept {
-  return __builtin_popcountll(GetMoves(player, opponent));
+  return (int) __builtin_popcountll(GetMoves(player, opponent));
 }
 
 bool HaveToPass(BitPattern player, BitPattern opponent);
@@ -110,14 +110,14 @@ std::vector<Board> GetNextBoardsWithPass(BitPattern player, BitPattern opponent)
 
 std::unordered_map<Board, std::pair<Square, BitPattern>> GetUniqueNextBoardsWithPass(Board b);
 
-inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept);
 inline BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept {
   return flip & ~(player | opponent);
 }
 
-u_int8_t SerializeRow(u_int8_t square, u_int8_t row);
+LastRow SerializeRow(Square square, Square row);
 
-u_int8_t DeserializeRow(u_int8_t square, u_int8_t serialized);
+Square DeserializeRow(Square square, LastRow serialized);
 
 CompressedFlip SerializeFlip(Square square, BitPattern flip);
 

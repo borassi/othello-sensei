@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     evaluators[i] = std::make_unique<EvaluatorDerivative>(
         &tree_node_supplier, &hash_map,
         PatternEvaluator::Factory(evals.data()),
-        static_cast<u_int8_t>(i));
+        static_cast<uint8_t>(i));
   }
   if (!book.Get(Board(start_line))) {
     if (!force_first_position) {
@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
     Eval eval_goal = start->NextPositionEvalGoal(0, 1, start->SolveProbability(-63, 63) > 0.05 ? kLessThenMinEval : last_eval_goal);
     std::cout
         << "Expanding line:        " << start_line << "\n"
-        << "Positions:             " << PrettyPrintDouble(book.Size()) << "\n"
-        << "Descendants of start:  " << PrettyPrintDouble(start->GetNVisited()) << "\n"
+        << "Positions:             " << PrettyPrintDouble((double) book.Size()) << "\n"
+        << "Descendants of start:  " << PrettyPrintDouble((double) start->GetNVisited()) << "\n"
         << "Evaluation of start:   " << std::setprecision(3) << start->GetEval() << "\n"
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
     leaf.Finalize(n_visited);
     book.Commit();
     double time = t.Get();
-    std::cout << "Position:              " << PrettyPrintDouble(n_visited) << "\n";
+    std::cout << "Position:              " << PrettyPrintDouble((double) n_visited) << "\n";
     std::cout << "Time:                  " << PrettyPrintDouble(time) << " sec\n";
     std::cout << "Positions / sec:       " << PrettyPrintDouble(n_visited / time) << "\n";
     std::cout << "\n";

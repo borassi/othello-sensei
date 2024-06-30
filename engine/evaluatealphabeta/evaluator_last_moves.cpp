@@ -81,7 +81,7 @@ Eval EvalFourEmptiesOrMin(
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalThreeEmpties(x1, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+    eval = MaxEval(eval, -EvalThreeEmpties(x1, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
     if (eval >= upper) {
       return eval;
     }
@@ -89,9 +89,9 @@ Eval EvalFourEmptiesOrMin(
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalThreeEmpties(x4, x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+      eval = MaxEval(eval, -EvalThreeEmpties(x4, x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
     } else {
-      eval = max(eval, -EvalThreeEmpties(x1, x2, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+      eval = MaxEval(eval, -EvalThreeEmpties(x1, x2, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
     }
     if (eval >= upper) {
       return eval;
@@ -100,9 +100,9 @@ Eval EvalFourEmptiesOrMin(
   flip = GetFlip(x4, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalThreeEmpties(x3, x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+      eval = MaxEval(eval, -EvalThreeEmpties(x3, x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
     } else {
-      eval = max(eval, -EvalThreeEmpties(x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+      eval = MaxEval(eval, -EvalThreeEmpties(x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
     }
   }
   return eval;
@@ -148,14 +148,14 @@ Eval EvalFiveEmptiesOrMin(
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalFourEmpties(x1, x3, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
+    eval = MaxEval(eval, -EvalFourEmpties(x1, x3, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), flip, swap, stable, n_visited));
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalFourEmpties(x1, x2, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
+    eval = MaxEval(eval, -EvalFourEmpties(x1, x2, x4, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), flip, swap, stable, n_visited));
     if (eval >= upper) {
       return eval;
     }
@@ -163,9 +163,9 @@ Eval EvalFiveEmptiesOrMin(
   flip = GetFlip(x4, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalFourEmpties(x5, x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = MaxEval(eval, -EvalFourEmpties(x5, x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), flip, swap, stable, n_visited));
     } else {
-      eval = max(eval, -EvalFourEmpties(x1, x2, x3, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = MaxEval(eval, -EvalFourEmpties(x1, x2, x3, x5, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), flip, swap, stable, n_visited));
     }
     if (eval >= upper) {
       return eval;
@@ -174,9 +174,9 @@ Eval EvalFiveEmptiesOrMin(
   flip = GetFlip(x5, player, opponent);
   if (flip != 0) {
     if (swap) {
-      eval = max(eval, -EvalFourEmpties(x4, x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = MaxEval(eval, -EvalFourEmpties(x4, x1, x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), flip, swap, stable, n_visited));
     } else {
-      eval = max(eval, -EvalFourEmpties(x1, x2, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), flip, swap, stable, n_visited));
+      eval = MaxEval(eval, -EvalFourEmpties(x1, x2, x3, x4, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), flip, swap, stable, n_visited));
     }
   }
   return eval;
@@ -209,9 +209,9 @@ Eval EvalFiveEmpties(
     if (empties_in_space == 0) {
       continue;
     }
-    space_size = __builtin_popcountll(empties_in_space);
+    space_size = (int) __builtin_popcountll(empties_in_space);
     if (space_size == 1) {
-      x[cont_x++] = __builtin_ctzll(empties_in_space);
+      x[cont_x++] = (Square) __builtin_ctzll(empties_in_space);
       empties = empties & ~empties_in_space;
       continue;
     } else if (space_size == 2) {  // Can be 1:1:1:2, 1:2:2, 3:2.
@@ -224,7 +224,7 @@ Eval EvalFiveEmpties(
       for (BitPattern mask : {kCornerPattern, kCentralPattern, kEdgePattern, kXCPattern}) {
         mask = mask & empties_in_space;
         while (mask != 0) {
-          space_3[j++] = __builtin_ctzll(mask);
+          space_3[j++] = (Square) __builtin_ctzll(mask);
           mask = mask & (mask - 1);
         }
         empties = empties & ~empties_in_space;
@@ -237,7 +237,7 @@ Eval EvalFiveEmpties(
     for (BitPattern mask : {kCornerPattern, kCentralPattern, kEdgePattern, kXCPattern}) {
       mask = mask & empties_in_space;
       while (mask != 0) {
-        x[cont_x++] = __builtin_ctzll(mask);
+        x[cont_x++] = (Square) __builtin_ctzll(mask);
         mask = mask & (mask - 1);
       }
       empties = empties & ~empties_in_space;

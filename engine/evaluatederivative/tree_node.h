@@ -40,7 +40,7 @@
 #include "../utils/misc.h"
 #include "../utils/serializable_boolean_vector.h"
 
-constexpr float kProbIncreaseWeakEval = 0.05;
+constexpr float kProbIncreaseWeakEval = 0.05F;
 
 class ChildError: public std::exception {
  public:
@@ -121,7 +121,7 @@ class Node {
 
     while (true) {
       CompressedFlip compressed_flip = 0;
-      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
+      compressed_flip |= (uint8_t) serialized[i] | ((uint8_t) serialized[i+1] << 8) | ((uint8_t) serialized[i+2] << 16);
       i += 3;
       if (compressed_flip == 0) {
         break;
@@ -134,7 +134,7 @@ class Node {
       }
     }
 
-    n.descendants_ = (u_int64_t) *((float*) &(serialized[i]));
+    n.descendants_ = (NVisited) *((float*) &(serialized[i]));
     i += sizeof(float);
     n.lower_ = (Eval) serialized[i++];
     n.upper_ = (Eval) serialized[i++];
@@ -151,15 +151,15 @@ class Node {
       Probability prob = serialized[i++];
       PN proof_number = serialized[i++];
       PN disproof_number = serialized[i++];
-      u_int32_t max_log_derivative = 0;
-      u_int8_t first_byte = serialized[i];
+      uint32_t max_log_derivative = 0;
+      uint8_t first_byte = serialized[i];
       if (first_byte & (1U << 7)) {
         max_log_derivative |= (first_byte & ~(1U << 7)) << 16;
         i++;
       }
-      max_log_derivative |= (u_int8_t) serialized[i++] << 8;
-      max_log_derivative |= (u_int8_t) serialized[i++];
-      n.MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -max_log_derivative);
+      max_log_derivative |= (uint8_t) serialized[i++] << 8;
+      max_log_derivative |= (uint8_t) serialized[i++];
+      n.MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -(int) max_log_derivative);
     }
     PN proof, disproof;
     if (n.lower_ + 1 <= last_1) {
@@ -198,7 +198,7 @@ class Node {
       }
     }
     if (version < 1) {
-      n.leaf_eval_ = std::round(n.GetEval() * 8);
+      n.leaf_eval_ = (EvalLarge) std::round(n.GetEval() * 8);
     }
     return n;
   }
@@ -222,7 +222,7 @@ class Node {
     if (eval_goal < lower_) {
       return 0;
     } else if (eval_goal > upper_) {
-      return DBL_MAX;
+      return FLT_MAX;
     }
     return GetEvaluation(eval_goal).ProofNumber();
   }
@@ -231,7 +231,7 @@ class Node {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     if (eval_goal < lower_) {
-      return DBL_MAX;
+      return FLT_MAX;
     } else if (eval_goal > upper_) {
       return 0;
     }
@@ -435,7 +435,7 @@ class Node {
     return remaining_work < mult * std::min(70000, 10000 + std::max(0, delta) * 250);
   }
 
-  u_int8_t Evaluator() const { return evaluator_; }
+  uint8_t Evaluator() const { return evaluator_; }
 
   bool Equals(const Node& other, bool approx) const {
     if (!EqualsExceptDescendants(other)) {
@@ -490,7 +490,7 @@ class Node {
   Eval min_evaluation_;
   Square depth_;
   Square eval_depth_;
-  u_int8_t evaluator_;
+  uint8_t evaluator_;
   bool is_leaf_;
 
   void UpdateLeafEvaluation(int i) {
@@ -602,7 +602,7 @@ class TreeNode : public Node {
 
   void UpdateFathers() {
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
-    for (int i = 0; i < n_fathers_; ++i) {
+    for (unsigned int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
       assert(!father->IsLeaf());
       father->UpdateFather();
@@ -877,7 +877,7 @@ class TreeNode : public Node {
   mutable std::mutex mutex_;
   TreeNode** children_;
   TreeNode** fathers_;
-  u_int32_t n_fathers_;
+  uint32_t n_fathers_;
   Square n_children_;
   std::atomic_uint8_t n_threads_working_;
   static std::atomic_bool extend_eval_failed_;

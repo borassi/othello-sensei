@@ -34,6 +34,7 @@ target_link_libraries(
         sequence
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         game_test
         game_test.cpp
@@ -48,6 +49,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         thor
@@ -66,6 +68,7 @@ target_link_libraries(
         misc
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         thor_test
         thor_test.cpp
@@ -82,6 +85,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         source
@@ -97,6 +101,7 @@ target_link_libraries(
         sequence
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         source_test
         source_test.cpp
@@ -114,6 +119,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_executable(
         thor_create_extra_files

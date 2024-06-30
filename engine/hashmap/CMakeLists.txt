@@ -21,7 +21,7 @@ add_library(
 target_link_libraries(
         hash_map
         LINK_PRIVATE
-        atomic
+        # atomic
         bitpattern
 )
 

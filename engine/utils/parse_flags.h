@@ -82,7 +82,7 @@ class ParseFlags {
       return default_value;
     }
   }
-  int NumFlags() { return flags_.size(); }
+  int NumFlags() { return (int) flags_.size(); }
 
  private:
   std::unordered_map<std::string, std::string> flags_;

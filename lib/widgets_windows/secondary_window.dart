@@ -35,7 +35,7 @@ class _SecondaryWindowMainContent extends StatelessWidget {
         const Margin(),
         const Spacer(),
         SizedBox(
-          width: 8 * appSizes.squareSize! + (leaveSpaceRight ? appSizes.margin! : 0),
+          width: 8 * appSizes.squareSize + (leaveSpaceRight ? appSizes.margin : 0),
           child: Column(
             children: [
               const Margin(),

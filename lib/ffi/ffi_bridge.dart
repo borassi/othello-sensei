@@ -24,7 +24,7 @@ DynamicLibrary getDynamicLibrary() {
   if (Platform.isMacOS || Platform.isIOS) {
     return DynamicLibrary.process();
   } else if (Platform.isWindows) {
-    return DynamicLibrary.open('ui.dll');
+    return DynamicLibrary.open('api.dll');
   } else {
     return DynamicLibrary.open('libui.so');
   }

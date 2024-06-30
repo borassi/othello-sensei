@@ -32,15 +32,15 @@ int main() {
 
   CategoricalRegressions trainer(1, test_board, (int) (full_train_board.size() + test_board.size()));
 
-  trainer.Train(full_train_board, 0, {0.005, 0.002, 0.001, 0.0005});
+  trainer.Train(full_train_board, 0, {0.005F, 0.002F, 0.001F, 0.0005F});
 
   trainer.Split(num_splits);
 
 //  trainer.Train(full_train_board, 2, {0.001});
-  trainer.Train(train_board, 4, {0.001});
-  trainer.Train(train_board, 2, {0.001});
-  trainer.Train(train_board, 1, {0.001});
-  trainer.Train(train_board, 0, {0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.0001});
+  trainer.Train(train_board, 4, {0.001F});
+  trainer.Train(train_board, 2, {0.001F});
+  trainer.Train(train_board, 1, {0.001F});
+  trainer.Train(train_board, 0, {0.002F, 0.001F, 0.0005F, 0.0002F, 0.0001F, 0.0001F});
   trainer.Round();
   trainer.Save("app/src/main/assets/coefficients/pattern_evaluator_cpp_new"
                ".dat");

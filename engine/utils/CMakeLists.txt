@@ -34,9 +34,7 @@ add_library(
 add_library(
         functions
         functions.h
-)
-set_target_properties(
-        functions PROPERTIES LINKER_LANGUAGE CXX
+        functions.cpp
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -188,7 +186,17 @@ target_link_libraries(
 add_library(
         types
         types.h
+        types.cpp
 )
-set_target_properties(
-        types PROPERTIES LINKER_LANGUAGE CXX
+
+add_library(
+        constants
+        constants.h
+        constants.cpp
+)
+
+target_link_libraries(
+        constants
+        LINK_PUBLIC
+        types
 )

@@ -108,7 +108,7 @@ void Engine::Initialize(
         thor_.get(),
         &tree_node_supplier_, &hash_map_,
         PatternEvaluator::Factory(evals_->data()),
-        static_cast<u_int8_t>(i));
+        static_cast<uint8_t>(i));
   }
 
   auto players = thor_->Players();
@@ -124,7 +124,7 @@ void Engine::Initialize(
     thor_sources_metadata_.push_back(thor_sources_metadata_extended_.back()->GetThorSourceMetadata());
   }
   thor_metadata_.sources = thor_sources_metadata_.data();
-  thor_metadata_.num_sources = thor_sources_metadata_.size();
+  thor_metadata_.num_sources = (int) thor_sources_metadata_.size();
 }
 
 // This runs in the main thread, so that we cannot update the output afterwards.

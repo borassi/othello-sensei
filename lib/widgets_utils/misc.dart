@@ -37,15 +37,15 @@ class SenseiButton extends StatelessWidget {
       content = Icon(icon!, color: textColor, size: iconSize);
     } else {
       content = Text(
-        text!,
+        text,
         style: TextStyle(color: textColor, fontSize: textSize)
       );
     }
     return TextButton(
       onPressed: onPressed,
       style: ButtonStyle(
-        padding: MaterialStateProperty.all(EdgeInsets.zero),
-        backgroundColor: MaterialStateProperty.all(
+        padding: WidgetStateProperty.all(EdgeInsets.zero),
+        backgroundColor: WidgetStateProperty.all(
           Theme.of(context).colorScheme.primaryContainer)
       ),
       child: Semantics(label: text, child: content)
@@ -61,7 +61,7 @@ class SenseiToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return SizedBox(
       width: squareSize,
       height: 0.75 * squareSize,

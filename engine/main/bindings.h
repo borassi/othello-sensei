@@ -25,16 +25,16 @@ extern "C" {
 #endif
 
 #ifdef WIN32
-   #define EXPORT __declspec(dllexport)
+#define EXPORT __declspec(dllexport)
 #else
-   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
 const Square kPassMove = 64;
 const Square kStartingPositionMove = 65;
 
 EXPORT
-Square PassMove() { return kPassMove; }
+Square PassMove();
 
 struct ThorSourceMetadata {
   const char* name;

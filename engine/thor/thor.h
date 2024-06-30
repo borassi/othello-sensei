@@ -17,6 +17,8 @@
 #ifndef OTHELLO_SENSEI_THOR_H
 #define OTHELLO_SENSEI_THOR_H
 
+#include <string>
+
 #include "source.h"
 #include "../utils/files.h"
 
@@ -28,7 +30,7 @@ class Thor {
       if (!entry.is_directory()) {
         continue;
       }
-      sources_.insert({fs::path(entry).filename(), std::make_unique<Source>(entry.path(), rebuild_games_order)});
+      sources_.insert({fs::path(entry).filename().string(), std::make_unique<Source>(entry.path().string(), rebuild_games_order)});
     }
     if (!rebuild_canonicalizer && fs::exists(CanonicalizerPath())) {
       LoadCanonicalizer();

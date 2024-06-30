@@ -31,12 +31,13 @@
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../utils/misc.h"
+#include "../utils/constants.h"
 
 constexpr int kMinFileSize = kMinValueFileSize;
 constexpr int kMaxFileSize = 524288; // 2^19
 constexpr int kNumDoubling = 12;
 constexpr char kBookFilepath[] = "book";
-typedef u_int64_t HashMapIndex;
+typedef uint64_t HashMapIndex;
 
 constexpr HashMapIndex kInitialHashMapSize = 8;
 constexpr HashMapIndex kNumElementsOffset = sizeof(HashMapIndex) / sizeof(char);
@@ -48,6 +49,10 @@ enum NodeType {
   LAST_VISIT = 2,
 };
 
+
+#ifdef _MSC_VER
+__pragma(pack(push, 1));
+#endif
 class HashMapNode {
  public:
   HashMapNode() : size_byte_(0), offset_(0) {}
@@ -66,12 +71,17 @@ class HashMapNode {
   int GetValueFilePosition() const { return SizeByteToPosition(size_byte_); }
   static int SizeToPosition(int size) { return SizeByteToPosition(SizeToByte(size)); }
   static int SizeByteToPosition(int size_byte) { return size_byte - 1; }
-  static u_int8_t SizeToByte(int size);
-  static int ByteToSize(u_int8_t b);
+  static uint8_t SizeToByte(int size);
+  static int ByteToSize(uint8_t b);
  private:
   BookFileOffset offset_;
-  u_int8_t size_byte_;
-} __attribute__((packed));
+  uint8_t size_byte_;
+}
+#ifdef _MSC_VER
+__pragma(pack(pop));
+#else
+__attribute__((__packed__));
+#endif
 
 std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
 
@@ -219,7 +229,7 @@ class Book {
   };
 
   Iterator begin() const { return Iterator(*this, 0); }
-  Iterator end() const { return Iterator(*this, roots_.size()); }
+  Iterator end() const { return Iterator(*this, (int) roots_.size()); }
 
   template<int other_version>
   void Merge(const Book<other_version>& other_book, void (*leaf_func)(Node*) = nullptr, void (*internal_func)(Node*) = nullptr) {
@@ -305,7 +315,7 @@ class Book {
 
   void UpdateFathers(const BookNode& b);
 
-  u_int64_t OffsetToFilePosition(HashMapIndex offset) const {
+  uint64_t OffsetToFilePosition(HashMapIndex offset) const {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);
   }
   std::string IndexFilename() const { return folder_ + "/index.sen"; }
@@ -426,9 +436,12 @@ std::unique_ptr<Node> Book<version>::Get(const Board& b) const {
 template<int version>
 void Book<version>::Commit(bool verbose) {
   // Logic taken from https://stackoverflow.com/questions/76798937.
+
+#if defined(__GNUC__) || defined(__GNUG__) || defined(clang)
   signal(SIGINT, this->HandleSignal);   // CTRL-C
   signal(SIGHUP, this->HandleSignal);   // Close terminal
   signal(SIGQUIT, this->HandleSignal);  // CTRL-/
+#endif
   if (verbose) {
     std::cout << "Committing " << modified_nodes_.size() << " nodes: " << std::flush;
   }
@@ -452,9 +465,11 @@ void Book<version>::Commit(bool verbose) {
     std::cout << " Done\n" << std::flush;
   }
   // Reset these actions to default behavior.
+#if defined(__GNUC__) || defined(__GNUG__) || defined(clang)
   signal(SIGINT, SIG_DFL);
   signal(SIGHUP, SIG_DFL);
   signal(SIGQUIT, SIG_DFL);
+#endif
   if (received_signal_ != NSIG) {
     raise(received_signal_);
   }
@@ -478,10 +493,10 @@ void Book<version>::Commit(const BookNode& node) {
   }
 
   std::vector<char> to_store = node.Serialize();
-  auto size = to_store.size();
-  auto position = value_files_[HashMapNode::SizeToPosition(to_store.size())].Add(to_store);
+  int size = (int) to_store.size();
+  int position = value_files_[HashMapNode::SizeToPosition((int) to_store.size())].Add(to_store);
   HashMapNode to_be_stored(size, position);
-  if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
+  if (file.tellg() < (int64_t) OffsetToFilePosition(hash_map_size_)) {
     file.write((char*) &to_be_stored, sizeof(HashMapNode));
     Resize(file, {});
   } else {
@@ -541,7 +556,7 @@ void Book<version>::Print(int start, int end) {
 template<int version>
 void Book<version>::Clean() {
   std::ofstream(IndexFilename(), std::ios::out).close();
-  u_int32_t to_write = 0;
+  uint32_t to_write = 0;
   for (ValueFile& value_file : value_files_) {
     value_file.Clean();
   }
@@ -619,7 +634,7 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
   HashMapNode node_to_move;
   HashMapNode empty_node;
 
-  int extra_buffer = add_elements.size();
+  int extra_buffer = (int) add_elements.size();
   while (book_size_ > 0.4 * hash_map_size_ || extra_buffer > 0) {
     int current_buffer = 0;
     for (HashMapIndex invalidated = RepositionHash(hash_map_size_); true; ++invalidated) {
@@ -650,7 +665,7 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
     while (!board_in_position.IsEmpty()) {
       file.read((char*) &board_in_position, sizeof(board_in_position));
     }
-    file.seekp((u_int64_t) file.tellg() - sizeof(HashMapNode));
+    file.seekp((uint64_t) file.tellg() - sizeof(HashMapNode));
     file.write((char*) &node_to_move, sizeof(node_to_move));
   }
 }

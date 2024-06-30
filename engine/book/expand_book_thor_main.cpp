@@ -25,7 +25,7 @@
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../utils/files.h"
 #include "../utils/misc.h"
-#include "../utils/load_thor.h"
+#include "../thor/thor.h"
 #include "../utils/parse_flags.h"
 
 class ExpandBookThorMain {
@@ -40,7 +40,7 @@ class ExpandBookThorMain {
       evaluators_[i] = std::make_unique<EvaluatorDerivative>(
           &tree_node_supplier_, &hash_map_,
           PatternEvaluator::Factory(evals_.data()),
-          static_cast<u_int8_t>(i));
+          static_cast<uint8_t>(i));
     }
   }
 
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = parse_flags.GetLongLongFlagOrDefault("n_descendants_children", 50 * 1000 * 1000LL);
   NVisited n_descendants_solve = parse_flags.GetLongLongFlagOrDefault("n_descendants_solve",  2 * 1000 * 1000 * 1000LL);
-  NVisited n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
+  int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
 
   int start_year = parse_flags.GetIntFlagOrDefault("start_year",  2023);
   int end_year = parse_flags.GetIntFlagOrDefault("end_year",  1977);
@@ -175,12 +175,15 @@ int main(int argc, char* argv[]) {
   int max_error = parse_flags.GetIntFlagOrDefault("max_error",  20);
 
   ExpandBookThorMain expander(filepath);
+  Thor thor(kAssetFilepath);
   for (int year = start_year; year >= end_year; --year) {
-    auto games = GetGames(kAssetFilepath + std::string("/thor/WTH_" + std::to_string(year) + ".wtb"));
-    for (int i = year == start_year ? start_game : 0; i < games.size(); ++i) {
-      const auto& game = games[i];
-      expander.AddGame(game, n_descendants_children, n_descendants_solve, max_error, n_threads);
-      std::cout << "\n\n\nDONE GAME " << i << "/" << games.size() << " OF YEAR " << year << ".\n\n\n";
+    Sequence sequence("e6");
+    GamesList games = thor.GetGames("thor", sequence, INT_MAX, {}, {}, {}, year);
+    int i = 0;
+    for (auto& game : games.examples) {
+      // TODO: Fix.
+//      expander.AddGame(game, n_descendants_children, n_descendants_solve, max_error, n_threads);
+      std::cout << "\n\n\nDONE GAME " << i++ << "/" << games.examples.size() << " OF YEAR " << year << ".\n\n\n";
     }
   }
 }

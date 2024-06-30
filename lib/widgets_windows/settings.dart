@@ -53,8 +53,8 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
-    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    var margin = Theme.of(context).extension<AppSizes>()!.margin;
     var style = Theme.of(context).textTheme.bodyMedium!;
 
     return Container(
@@ -85,7 +85,7 @@ class SettingsTileWithTextForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     var value = state.updates[key] ?? GlobalState.preferences.get(name);
     return SettingsTile(
       name: name,
@@ -152,7 +152,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
         state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
-            onChanged(newValue == '' ? null : int.parse(newValue!));
+            onChanged(newValue == '' ? null : int.parse(newValue));
           }
         },
         keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),

@@ -14,12 +14,8 @@
 
 add_library(
         prob_combiners
-        SHARED
         prob_combiners.h
-)
-
-set_target_properties(
-        prob_combiners PROPERTIES LINKER_LANGUAGE CXX
+        prob_combiners.cpp
 )
 
 target_link_libraries(
@@ -29,13 +25,13 @@ target_link_libraries(
         misc
 )
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+IF(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(
             prob_combiners
             PUBLIC
             -fconstexpr-steps=100000000
     )
-ELSE()
+ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(
             prob_combiners
             PUBLIC
@@ -62,14 +58,13 @@ ENDIF()
 
 add_library(
         evaluation
-        SHARED
         evaluation.h
         evaluation.cpp
 )
 
 target_link_libraries( # Specifies the target library.
         evaluation
-        LINK_PUBLIC
+        LINK_PRIVATE
         bitpattern
         endgame_time
         win_probability
@@ -94,7 +89,6 @@ ENDIF()
 
 add_library(
         tree_node
-        SHARED
         tree_node.h
         tree_node.cpp
 )
@@ -129,7 +123,6 @@ ENDIF()
 
 add_library(
         evaluator_derivative
-        SHARED
         evaluator_derivative.h
         evaluator_derivative.cpp
 )

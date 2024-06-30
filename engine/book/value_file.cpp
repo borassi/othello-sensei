@@ -92,5 +92,5 @@ void ValueFile::SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std
   Seek(offset, file);
   std::vector<char> to_write(size_ - sizeof(BookFileOffset) / sizeof(char), 0);
   file.write((char*) &next_empty, sizeof(BookFileOffset));
-  file.write(&to_write[0], to_write.size() * sizeof(char));
+  file.write(to_write.data(), to_write.size() * sizeof(char));
 }

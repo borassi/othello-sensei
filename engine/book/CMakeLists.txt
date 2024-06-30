@@ -54,6 +54,7 @@ target_link_libraries(
         bitpattern
         board
         book_tree_node
+        constants
         files
         value_file
 )
@@ -141,7 +142,9 @@ target_link_libraries(
         merge_books_main
         LINK_PRIVATE
         book
+        constants
         parse_flags
+        win_probability
 )
 
 add_executable(
@@ -178,7 +181,7 @@ target_link_libraries(
         evaluator_alpha_beta
         evaluator_derivative
         hash_map
-        load_thor
+        thor
         misc
         parse_flags
         pattern_evaluator

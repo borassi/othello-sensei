@@ -36,7 +36,7 @@ class TestEvaluatorDepthOne : public EvaluatorDepthOneBase {
   }
   ~TestEvaluatorDepthOne() {}
   EvalLarge Evaluate() const {
-    return 8 * (__builtin_popcountll(player_) - __builtin_popcountll(opponent_) + 2);
+    return (EvalLarge) (8 * (__builtin_popcountll(player_) - __builtin_popcountll(opponent_) + 2));
   }
 
   void Setup(BitPattern player, BitPattern opponent) {

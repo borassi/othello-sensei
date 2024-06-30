@@ -74,7 +74,7 @@ class Sequence {
   Sequence() : Sequence(0) {}
   Sequence(const std::string& moves);
 
-  Sequence(const Square* moves, int length) : moves_(length) {
+  Sequence(const Square* moves, size_t length) : moves_(length) {
     memcpy(moves_.data(), moves, moves_.size() * sizeof(Square));
   }
 
@@ -187,7 +187,7 @@ class Sequence {
   inline bool operator!=(const Sequence& rhs) const { return !(*this == rhs); }
 
   const std::vector<Square>& Moves() const { return moves_; }
-  const int Size() const { return moves_.size(); }
+  const int Size() const { return (int) moves_.size(); }
 
   std::vector<Board> ToBoards() const {
     Board b;
@@ -277,7 +277,7 @@ class Sequence {
   void RemoveLastMove() { moves_.pop_back(); }
 
  private:
-  Sequence(int length) : moves_(length) {}
+  Sequence(size_t length) : moves_(length) {}
 
   std::vector<Square> moves_;
 };
@@ -402,7 +402,7 @@ class SequenceCanonicalizer {
     std::vector<char> result;
     for (const auto& [board, sequences] : board_to_sequences_) {
       result.insert(result.end(), (char*) &board, (char*) &board + sizeof(Board));
-      int n_sequences = sequences.size();
+      size_t n_sequences = sequences.size();
       result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(n_sequences));
       result.push_back(sequences.begin()->Size());
       for (const Sequence& sequence : sequences) {

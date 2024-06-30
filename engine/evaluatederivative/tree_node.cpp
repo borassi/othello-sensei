@@ -54,7 +54,7 @@ std::ostream& operator<<(std::ostream& stream, const TreeNode& n) {
 
 std::vector<Node> TreeNode::Fathers() {
   std::vector<Node> result;
-  for (int i = 0; i < n_fathers_; ++i) {
+  for (unsigned int i = 0; i < n_fathers_; ++i) {
     result.push_back(fathers_[i]);
   }
   return result;
@@ -75,13 +75,13 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
 }
 
 void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
-                     u_int8_t evaluator) {
+                     uint8_t evaluator) {
   std::lock_guard<std::mutex> guard(mutex_);
   ResetNoLock(player, opponent, depth, evaluator);
 }
 
 void TreeNode::ResetNoLock(
-    BitPattern player, BitPattern opponent, int depth, u_int8_t evaluator) {
+    BitPattern player, BitPattern opponent, int depth, uint8_t evaluator) {
   if (evaluations_ != nullptr) {
     free(evaluations_);
     evaluations_ = nullptr;

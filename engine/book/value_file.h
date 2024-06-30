@@ -28,7 +28,7 @@
 
 #include "../utils/files.h"
 
-typedef u_int32_t BookFileOffset;
+typedef uint32_t BookFileOffset;
 typedef int ValueFileSize;
 
 constexpr ValueFileSize kMinValueFileSize = sizeof(BookFileOffset);

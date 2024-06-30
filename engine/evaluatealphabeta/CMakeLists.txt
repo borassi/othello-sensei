@@ -14,7 +14,6 @@
 
 add_library(
         evaluator_last_moves
-        SHARED
         evaluator_last_moves.h
         evaluator_last_moves.cpp
 )
@@ -48,7 +47,6 @@ ENDIF()
 
 add_library(
         evaluator_alpha_beta
-        SHARED
         evaluator_alpha_beta.h
         evaluator_alpha_beta.cpp
 )

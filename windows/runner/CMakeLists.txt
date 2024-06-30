@@ -36,5 +36,47 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+message("${CMAKE_SOURCE_DIR}")
+
+SET(GOOGLETEST FALSE)
+
+add_subdirectory(../../engine/analyzers analyzers)
+add_subdirectory(../../engine/board board)
+add_subdirectory(../../engine/book book)
+add_subdirectory(../../engine/estimators estimators)
+add_subdirectory(../../engine/evaluatealphabeta evaluatealphabeta)
+add_subdirectory(../../engine/evaluatedepthone evaluatedepthone)
+add_subdirectory(../../engine/evaluatederivative evaluatederivative)
+add_subdirectory(../../engine/hashmap hashmap)
+add_subdirectory(../../engine/main main)
+add_subdirectory(../../engine/thor thor)
+add_subdirectory(../../engine/utils utils)
+add_subdirectory(../../engine/jni jni)
+#add_subdirectory(engine/board)
+#add_subdirectory(engine/book)
+#add_subdirectory(engine/estimators)
+#add_subdirectory(engine/evaluatealphabeta)
+#add_subdirectory(engine/evaluatedepthone)
+#add_subdirectory(engine/evaluatederivative)
+#add_subdirectory(engine/hashmap)
+#add_subdirectory(engine/main)
+#add_subdirectory(engine/thor)
+#add_subdirectory(engine/utils)
+#add_subdirectory(engine/jni)
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+add_library(
+        api
+        SHARED
+        ../../engine/main/ui.h
+        ../../engine/main/ui.cpp
+        ../../engine/main/exports.def
+)
+
+target_link_libraries(
+        api
+        LINK_PUBLIC
+        ui
+)

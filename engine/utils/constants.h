@@ -17,6 +17,44 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include "types.h"
+
+#ifdef _MSC_VER
+#include <immintrin.h>
+#define __builtin_popcountll _mm_popcnt_u64
+#define __builtin_popcount __popcnt
+#define __builtin_ctzll _tzcnt_u64
+#define __builtin_clzll _lzcnt_u64
+#define __builtin_ctz _tzcnt_u32
+#define __builtin_clz _lzcnt_u32
+#define __builtin_expect(x, y) x
+#define forceinline(function_def) __forceinline function_def
+#else
+#define forceinline(function_def) inline function_def __attribute__((always_inline))
+#endif
+
+constexpr int CountTrailingZerosConstexpr(BitPattern x) {
+#ifdef _MSC_VER
+  // See https://stackoverflow.com/a/72088344.
+  uint64_t y = x ^ (x - 1);
+  constexpr uint64_t debruijn = 0x03f79d71b4cb0a89;
+  uint8_t z = (debruijn * y) >> 58;
+  constexpr int lookup[] = {
+       0, 47,  1, 56, 48, 27,  2, 60,
+      57, 49, 41, 37, 28, 16,  3, 61,
+      54, 58, 35, 52, 50, 42, 21, 44,
+      38, 32, 29, 23, 17, 11,  4, 62,
+      46, 55, 26, 59, 40, 36, 15, 53,
+      34, 51, 20, 43, 31, 22, 10, 45,
+      25, 39, 14, 33, 19, 30,  9, 24,
+      13, 18,  8, 12,  7,  6,  5, 63
+  };
+  return lookup[z];
+#else
+  return __builtin_ctzll(x);
+#endif
+}
+
 #ifdef ANDROID
 constexpr int kBitHashMap = 23;
 #else
@@ -32,7 +70,7 @@ constexpr int kWeightDepthZero = 1;
 constexpr int kMinEmptiesForHashMap = 10;
 constexpr int kMinDepthForHashMap = 3;
 
-constexpr float kMultStddev = 1.03;
+constexpr float kMultStddev = 1.03F;
 constexpr float kLeafMultiplier = 0.8F;
 
 constexpr int kMaxParallelTasks = 1;

@@ -34,5 +34,5 @@ FileOffset FileLength(std::fstream& file) {
   file.seekg(0, std::ios_base::end);
   auto result = file.tellg();
   file.seekg(position, std::ios_base::beg);
-  return result;
+  return (FileOffset) result;
 }

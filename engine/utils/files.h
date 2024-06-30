@@ -23,7 +23,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 constexpr char kAssetFilepath[] = "app/src/main/assets";

@@ -40,7 +40,7 @@ class BoardToEvaluate {
       TreeNodeSupplier* tree_node_supplier,
       HashMap<kBitHashMap>* hash_map,
       EvaluatorFactory evaluator_depth_one_factory,
-      u_int8_t index) :
+      uint8_t index) :
       book_(book),
       started_(false),
       evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
@@ -139,9 +139,9 @@ class ThorSourceMetadataExtended {
     thor_source_metadata_.active = true;
     thor_source_metadata_.name = name_.c_str();
     thor_source_metadata_.players = players_.data();
-    thor_source_metadata_.num_players = players_.size();
+    thor_source_metadata_.num_players = (int) players_.size();
     thor_source_metadata_.tournaments = tournaments_.data();
-    thor_source_metadata_.num_tournaments = tournaments_.size();
+    thor_source_metadata_.num_tournaments = (int) tournaments_.size();
     thor_source_metadata_.selected_blacks = selected_blacks_.data();
     thor_source_metadata_.selected_whites = selected_whites_.data();
     thor_source_metadata_.selected_tournaments = selected_tournaments_.data();
@@ -160,6 +160,8 @@ class ThorSourceMetadataExtended {
 };
 
 class Main;
+
+bool IncludeAllSources(ThorMetadata thor_metadata);
 
 class Engine {
  public:

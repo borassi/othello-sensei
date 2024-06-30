@@ -19,11 +19,12 @@
 
 #include <iostream>
 #include "bitpattern.h"
+#include "../utils/constants.h"
 #if __BMI2__
 #include <immintrin.h>
 #endif
 
-constexpr u_int8_t kOutflank[] = {
+constexpr uint8_t kOutflank[] = {
     0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 16, 0, 0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 32, 0,
     0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 16, 0, 0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 64, 0,
     0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 16, 0, 0, 0, 4, 0, 0, 0, 8, 0, 0, 0, 4, 0, 0, 0, 32, 0,
@@ -89,7 +90,7 @@ constexpr u_int8_t kOutflank[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
 
-constexpr u_int8_t kFlip[] = {
+constexpr uint8_t kFlip[] = {
     // Move 0
     0, 0, 0, 0, 3, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -167,7 +168,7 @@ constexpr u_int8_t kFlip[] = {
 constexpr BitPattern PExt(BitPattern x, BitPattern mask) {
   BitPattern res = 0;
   for(BitPattern bb = 1; mask != 0; bb += bb) {
-    if(x & mask & -mask) {
+    if(x & mask & -((int64_t) mask)) {
       res |= bb;
     }
     mask &= (mask - 1);
@@ -175,7 +176,7 @@ constexpr BitPattern PExt(BitPattern x, BitPattern mask) {
   return res;
 }
 constexpr MoveShift GetPositionInPattern(Square move, BitPattern pattern) {
-  return __builtin_ctz(PExt(1ULL << move, pattern));
+  return (MoveShift) CountTrailingZerosConstexpr(PExt(1ULL << move, pattern));
 }
 
 struct MoveMetadata {
@@ -235,7 +236,7 @@ constexpr MoveMetadata kMoveMetadata[] = {
     MoveMetadata(56), MoveMetadata(57), MoveMetadata(58), MoveMetadata(59),
     MoveMetadata(60), MoveMetadata(61), MoveMetadata(62), MoveMetadata(63)};
 
-inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept);
 inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) noexcept {
   assert(((1ULL << move) & (player | opponent)) == 0);
   const MoveMetadata* m = kMoveMetadata + move;
@@ -261,11 +262,11 @@ inline BitPattern GetFlip(Square move, BitPattern player, BitPattern opponent) n
 #endif
 }
 
-inline BitPattern NewPlayer(BitPattern flip, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(BitPattern NewPlayer(BitPattern flip, BitPattern opponent) noexcept);
 inline BitPattern NewPlayer(BitPattern flip, BitPattern opponent) noexcept {
   return opponent & ~flip;
 }
-inline BitPattern NewOpponent(BitPattern flip, BitPattern player) noexcept __attribute__((always_inline));
+forceinline(BitPattern NewOpponent(BitPattern flip, BitPattern player) noexcept);
 inline BitPattern NewOpponent(BitPattern flip, BitPattern player) noexcept {
   return player | flip;
 }
@@ -277,10 +278,10 @@ constexpr BitPattern GetFlipBasic(Square move, BitPattern player, BitPattern opp
   BitPattern flip = 0;
   
   for (int direction : directions) {
-    if (move + direction < 0 || (opponent & (1L << (move + direction))) == 0) {
+    if (move + direction < 0 || (opponent & (1ULL << (move + direction))) == 0) {
       continue;
     }
-    BitPattern cur_flip = (1L << (move + direction)) | (1L << move);
+    BitPattern cur_flip = (1ULL << (move + direction)) | (1ULL << move);
     int max_num_steps = 7;
     if ((direction + 16) % 8 == 7) {
       max_num_steps = std::min(max_num_steps, move % 8);
@@ -291,7 +292,7 @@ constexpr BitPattern GetFlipBasic(Square move, BitPattern player, BitPattern opp
       if (move + steps * direction < 0 || move + steps * direction > 63) {
         break;
       }
-      BitPattern cur_case = (1L << (move + steps * direction));
+      BitPattern cur_case = (1ULL << (move + steps * direction));
       if ((player & cur_case) != 0) {
         flip |= cur_flip;
         break;

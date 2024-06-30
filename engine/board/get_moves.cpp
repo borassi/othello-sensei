@@ -40,7 +40,7 @@ std::vector<BitPattern> GetAllMoves(BitPattern player, BitPattern opponent) {
   std::vector<BitPattern> result;
   BitPattern empties = ~(player | opponent);
   FOR_EACH_SET_BIT(empties, square) {
-    BitPattern flip = GetFlip(__builtin_ctzll(square), player, opponent);
+    BitPattern flip = GetFlip((Square) __builtin_ctzll(square), player, opponent);
     if (flip) {
       result.push_back(flip);
     }
@@ -87,7 +87,7 @@ std::vector<Board> GetNextBoardsWithPass(Board b) {
   return GetNextBoardsWithPass(b.Player(), b.Opponent());
 }
 
-u_int8_t SerializeRow(u_int8_t square, u_int8_t row) {
+LastRow SerializeRow(Square square, Square row) {
   assert((row & (1 << square)) != 0);
   int left_flip = 7 - (__builtin_clz(row) - 24) - square;
   int right_flip = square - __builtin_ctz(row);
@@ -113,7 +113,7 @@ u_int8_t SerializeRow(u_int8_t square, u_int8_t row) {
   }
 }
 
-u_int8_t DeserializeRow(u_int8_t square, u_int8_t serialized) {
+LastRow DeserializeRow(Square square, LastRow serialized) {
   int left_flip;
   int right_flip;
   if (square <= 1) {
@@ -132,7 +132,7 @@ u_int8_t DeserializeRow(u_int8_t square, u_int8_t serialized) {
     left_flip = 0;
     right_flip = serialized;
   }
-  u_int8_t result = 0;
+  LastRow result = 0;
   for (int i = square - right_flip; i <= square + left_flip; ++i) {
     result |= 1 << i;
   }
@@ -145,8 +145,8 @@ CompressedFlip SerializeFlip(Square square, BitPattern flip) {
     return 0;
   }
   CompressedFlip result = square;
-  u_int8_t square_y = square / 8;
-  u_int8_t square_x = square % 8;
+  uint8_t square_y = square / 8;
+  uint8_t square_x = square % 8;
   // Horizontal
   LastRow row = RowToLastRow(flip, GetRow(square), square_y * 8);
   result |= SerializeRow(square_x, row) << 6;
@@ -169,8 +169,8 @@ std::pair<Square, BitPattern> DeserializeFlip(CompressedFlip flip) {
     return std::make_pair(0, 0);
   }
   Square square = flip & 63;
-  u_int8_t square_y = square / 8;
-  u_int8_t square_x = square % 8;
+  uint8_t square_y = square / 8;
+  uint8_t square_x = square % 8;
 
   auto row = DeserializeRow(square_x,  (flip >> 6 & 15));
   auto column = DeserializeRow(7 - square_y, (flip >> 10) & 15);
@@ -214,7 +214,7 @@ std::unordered_map<Board, std::pair<Square, BitPattern>> GetUniqueNextBoardsWith
             child.Opponent() < best_child.Opponent()))) {
         best_child = child;
         best_flip = flip;
-        best_square = flip == 0 ? -1 : __builtin_ctzll(
+        best_square = flip == 0 ? -1 : (int) __builtin_ctzll(
             SquareFromFlip(flip, flipped_father.Player(), flipped_father.Opponent()));
       }
     }

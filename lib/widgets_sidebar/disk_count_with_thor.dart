@@ -59,7 +59,7 @@ class FiltersButton extends HideInactiveWidget {
 
   @override
   Widget buildChild(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return Expanded(
       child: SenseiButton(
         text: 'Filters',
@@ -81,7 +81,7 @@ class DiskCountsWithThor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return SizedBox(
       height: squareSize,
       child: const Row(

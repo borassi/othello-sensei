@@ -29,7 +29,7 @@ constexpr int kLogDerivativeMinusInf = -1000000;
 constexpr int kLogDerivativeMultiplier = 100;
 
 inline int LeafLogDerivative(double prob) {
-  return round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
+  return (int) round(kLogDerivativeMultiplier * 1 * log(prob * (1 - prob)));
 }
 
 struct CombineProb {
@@ -60,14 +60,14 @@ struct CombineProb {
         } else if (i == 0) {
           disproof_to_proof_number[i][j] = 0;
         } else {
-          float proof_number =  ByteToProofNumberExplicit(i);
+          double proof_number =  ByteToProofNumberExplicit(i);
           double prob = ByteToProbabilityExplicit(j);
           if (prob > 0.5) {
             proof_number *= pow(0.5 / (1 - prob), 3);
           }
           disproof_to_proof_number[i][j] = ProofNumberToByte(std::max(
               1.0F,
-              std::min(kMaxProofNumber, proof_number)));
+              std::min(kMaxProofNumber, (float) proof_number)));
         }
         assert((i == 0 && j != kProbStep) == (disproof_to_proof_number[i][j] == 0));
         assert(
@@ -79,7 +79,7 @@ struct CombineProb {
       double x1 = ByteToProbabilityExplicit(i);
       prob_lower_cubed[i] = pow(1 - x1, 3);
       leaf_log_derivative[i] = std::max(kLogDerivativeMinusInf, LeafLogDerivative(x1));
-      log_derivative[i] = round(std::max(
+      log_derivative[i] = (int) round(std::max(
           (double) kLogDerivativeMinusInf,
           std::min((double) -kLogDerivativeMinusInf,
                    kLogDerivativeMultiplier * log(combiner.derivative(x1)))));
@@ -128,7 +128,7 @@ class Evaluation {
     return ByteToProbability(prob_greater_equal_);
   }
 
-  float ProbLowerCubed() const {
+  double ProbLowerCubed() const {
     return kCombineProb.prob_lower_cubed[prob_greater_equal_];
   }
 
@@ -211,7 +211,7 @@ class Evaluation {
     } else {
       assert(DisproofNumber() == FLT_MAX);
     }
-    assert(isfinite(disproof_number_) && disproof_number_ > 0);
+    assert(disproof_number_ > 0);
     max_log_derivative_ = kCombineProb.leaf_log_derivative[prob_greater_equal_];
     Check();
   }
@@ -236,7 +236,7 @@ class Evaluation {
     assert(delta > 0);
     assert(delta % 2 == 0);
     prob_greater_equal_ = kProbStep;
-    proof_number_ = ProofNumberToByte(ConvertProofNumber(other_eval.ProofNumber(), delta));
+    proof_number_ = ProofNumberToByte((float) ConvertProofNumber(other_eval.ProofNumber(), delta));
     disproof_number_ = kProofNumberStep;
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
@@ -244,7 +244,7 @@ class Evaluation {
   void SetDisproving(const Evaluation& other_eval, int delta) {
     prob_greater_equal_ = 0;
     proof_number_ = kProofNumberStep;
-    disproof_number_ = ProofNumberToByte(ConvertDisproofNumber(other_eval.DisproofNumber(), delta));
+    disproof_number_ = ProofNumberToByte((float) ConvertDisproofNumber(other_eval.DisproofNumber(), delta));
     max_log_derivative_ = kLogDerivativeMinusInf;
   }
 

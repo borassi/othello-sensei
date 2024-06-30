@@ -33,7 +33,7 @@ const char kInitialBoard[] =
 
 std::ostream& operator<<(std::ostream& stream, const Board& b) {
   for (int i = 63; i >= 0; --i) {
-    BitPattern mask = (1L << i);
+    BitPattern mask = (1ULL << i);
     if ((b.Player() & mask) != 0) {
       stream << 'X';
     } else if ((b.Opponent() & mask) != 0) {

@@ -207,7 +207,7 @@ class Source {
           }
         }
       }
-      result.num_games = result.examples.size();
+      result.num_games = (int) result.examples.size();
       std::sort(result.examples.begin(), result.examples.end(), [](const Game* g1, const Game* g2) {
         return
             std::forward_as_tuple(-g1->Year(), std::hash<Game>()(*g1), *g1) <
@@ -220,7 +220,7 @@ class Source {
     } else {
       for (const GamesInterval& interval : intervals) {
         auto cur_games = interval.end - interval.start;
-        result.num_games += cur_games;
+        result.num_games += (int) cur_games;
         if (result.examples.size() + cur_games <= max_games) {
           result.examples.insert(result.examples.end(), interval.start, interval.end);
         } else if (result.examples.size() < max_games) {
@@ -238,7 +238,7 @@ class Source {
               it, interval.end,
               std::pair<short, Sequence>{(*it)->Year(), next_sequence},
               cmpByYear());
-          result.next_moves[next_move] += next_it - it;
+          result.next_moves[next_move] += (int) (next_it - it);
           it = next_it;
         }
       }
@@ -257,7 +257,7 @@ class Source {
     uint32_t index;
     for (const std::vector<const Game*>* v : {&games_by_black_, &games_by_white_, &games_by_tournament_, &games_by_year_}) {
       for (const Game* game_pointer : *v) {
-        index = game_pointer - games_.data();
+        index = (int) (game_pointer - games_.data());
         assert(index >= 0 && index < games_.size());
         file.write((char*) &index, sizeof(uint32_t));
       }

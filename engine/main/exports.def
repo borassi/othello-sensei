@@ -1,0 +1,20 @@
+LIBRARY api
+EXPORTS
+    PassMove
+    MainInit
+    MainGetThorMetadata
+    MainDelete
+    MainGetEvaluateParams
+    NewGame
+    PlayMove
+    SetSequence
+    GetSequence
+    Undo
+    SetCurrentMove
+    Redo
+    ToAnalyzedGameOrFirstState
+    Evaluate
+    Analyze
+    GetCurrentAnnotations
+    GetStartAnnotations
+    Stop

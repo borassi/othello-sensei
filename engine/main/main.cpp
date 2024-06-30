@@ -87,16 +87,6 @@ void Main::Stop() {
   engine_.Stop();
 }
 
-bool IncludeAllSources(ThorMetadata thor_metadata) {
-  for (int i = 0; i < thor_metadata.num_sources; ++i) {
-    const ThorSourceMetadata& source = *thor_metadata.sources[i];
-    if (source.selected_blacks[0] >= 0 || source.selected_whites[0] >= 0 || source.selected_tournaments[0] >= 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
 void Main::ToState(EvaluationState* new_state) {
   if (!new_state) {
     return;

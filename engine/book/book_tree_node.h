@@ -68,7 +68,7 @@ class BookTreeNode : public TreeNode {
     if (n_fathers_ == 0) {
       result.insert(result.end(), {0, 0, 0});
     } else {
-      for (int i = 0; i < n_fathers_; ++i) {
+      for (unsigned int i = 0; i < n_fathers_; ++i) {
         TreeNode* father = fathers_[i];
         auto child_to_move = GetUniqueNextBoardsWithPass(father->ToBoard());
         std::pair<Square, BitPattern> move = child_to_move.at(ToBoard());
