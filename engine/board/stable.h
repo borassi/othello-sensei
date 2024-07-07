@@ -121,7 +121,7 @@ BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) {
 #else
   stable |= LastRowToRow(kStableDisksEdge.arr[RowToLastRow(player, kTopEdgePattern, 56) | (RowToLastRow(opponent, kTopEdgePattern, 56) << 8)], 56);
   stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kRightEdgePattern, 0) | (ColumnToLastRow(opponent, kRightEdgePattern, 0) << 8)], 0);
-  stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kLeftEdgePattern, 7) | (ColumnToLastRow(opponent, kLeftEdgePattern, 7) << 8)], 7);  
+  stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kLeftEdgePattern, 7) | (ColumnToLastRow(opponent, kLeftEdgePattern, 7) << 8)], 7);
 #endif
   return stable;
 }
