@@ -28,6 +28,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "types.h"
+
 class ElapsedTime {
  public:
   ElapsedTime();
@@ -145,5 +147,15 @@ short GetCurrentYear();
 std::string PrettyPrintDouble(double d);
 
 std::string Indent(const std::string& s, const std::string& characters);
+
+
+constexpr inline Eval MaxEval(Eval eval1, Eval eval2) {
+  return eval1 > eval2 ? eval1 : eval2;
+}
+
+constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
+  return eval1 < eval2 ? eval1 : eval2;
+}
+void PrintSupportedFeatures();
 
 #endif  // UTILS_MISC_H

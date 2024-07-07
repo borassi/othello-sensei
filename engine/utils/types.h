@@ -27,11 +27,4 @@ typedef uint16_t MoveShift;
 typedef uint8_t LastRow;
 typedef uint64_t NVisited;
 
-constexpr inline Eval MaxEval(Eval eval1, Eval eval2) {
-  return eval1 > eval2 ? eval1 : eval2;
-}
-
-constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
-  return eval1 < eval2 ? eval1 : eval2;
-}
 #endif

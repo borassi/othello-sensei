@@ -24,6 +24,7 @@ target_link_libraries( # Specifies the target library.
         bitpattern
         get_flip
         hash_map
+        misc
         stable
 )
 
