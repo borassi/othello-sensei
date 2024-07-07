@@ -135,7 +135,6 @@ SET (
         "${PROJECT_BINARY_DIR}/engine/evaluatedepthone/"
         "${PROJECT_BINARY_DIR}/engine/evaluatederivative/"
         "${PROJECT_BINARY_DIR}/engine/hashmap/"
-        "${PROJECT_BINARY_DIR}/engine/jni/"
         "${PROJECT_BINARY_DIR}/engine/main/"
         "${PROJECT_BINARY_DIR}/engine/thor/"
         "${PROJECT_BINARY_DIR}/engine/utils/"

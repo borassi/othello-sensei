@@ -46,7 +46,7 @@ ENDIF()
 MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC -mbmi2 -mpopcnt")
+SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC")
 
 IF(ENABLE_GOOGLETEST)
     INCLUDE(FetchContent)
@@ -59,14 +59,6 @@ IF(ENABLE_GOOGLETEST)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 ENDIF()
-
-IF(ANDROID)
-    find_library(log-lib JNI_LIBRARIES)
-ELSE()
-    find_package(JNI REQUIRED)
-ENDIF()
-
-include_directories( ${JNI_INCLUDE_DIRS} )
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
@@ -91,4 +83,3 @@ add_subdirectory(hashmap)
 add_subdirectory(main)
 add_subdirectory(thor)
 add_subdirectory(utils)
-add_subdirectory(jni)
