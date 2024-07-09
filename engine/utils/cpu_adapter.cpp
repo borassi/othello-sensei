@@ -16,9 +16,14 @@
 
 #include "cpu_adapter.h"
 
+#ifdef ANDROID
+bool CPUHasBMI2() { return false; }
+bool CPUHasPopcnt() { return false; }
+#else
 bool CPUHasBMI2() {
   return __builtin_cpu_supports("bmi2");
 }
 bool CPUHasPopcnt() {
   return __builtin_cpu_supports("popcnt");
 }
+#endif

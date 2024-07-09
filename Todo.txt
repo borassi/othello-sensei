@@ -63,3 +63,4 @@ HOW TO RELEASE:
 - Change the name in android/app/src/main/AndroidManifest to remove 'Dev'.
 - Change the version in pubspec.yaml
 - Check the paths to the Drive files.
+- $ flutter build appbundle
