@@ -278,6 +278,7 @@ class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Controls position': 'App bar',
     'Margin size': 'Small',
+    'Show extra data in evaluate mode': true,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 100000000000,

@@ -192,6 +192,7 @@ class Settings extends StatelessWidget {
   static const _uiPreferences = [
     'Controls position',
     'Margin size',
+    'Show extra data in evaluate mode',
     'Highlight distance from best move',
     'Best move green, other yellow',
     'Highlight next move in analysis',
