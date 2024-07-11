@@ -198,11 +198,11 @@ class DriveDownloader {
   }
 
   void downloadBook(BuildContext context) {
-    download(context, 'book', 'Books/latest.tar.gz', 300, 258);
+    download(context, 'book', 'Books/latest.tar.gz', 400, 258);
   }
 
   void downloadArchive(BuildContext context) {
-    download(context, 'archive', 'Archive/latest.tar.gz', 100, 58);
+    download(context, 'archive', 'Archive/latest.tar.gz', 150, 58);
   }
 
   Future<void> downloadNoConfirmation(BuildContext context, String title, String path, int numFilesForProgressBar) async {
@@ -243,7 +243,7 @@ class DriveDownloader {
                         children: [
                           const Spacer(),
                           Text(text, style: Theme.of(context).textTheme.bodyMedium!),
-                          const Margin(),
+                          const Margin.side(),
                           CircularProgressIndicator(
                             value: progress,
                           ),

@@ -45,7 +45,7 @@ class ThorSourcesWidget extends StatelessWidget {
                     }
                   },
                 ),
-                const Margin(),
+                const Margin.internal(),
                 Text(iter.key, style: Theme.of(context).textTheme.bodyMedium!),
               ]
             )
@@ -111,11 +111,11 @@ class ThorFiltersWidget extends StatelessWidget {
       child: Column(
         children: [
           const ThorSourcesWidget(),
-          const Margin(),
+          const Margin.internal(),
           Row(
             children: [
               Case(CaseState.black, 255, () => {}, () => {}),
-              const Margin(),
+              const Margin.internal(),
               playerSearch(context, true),
             ]
           ),
@@ -123,7 +123,7 @@ class ThorFiltersWidget extends StatelessWidget {
           Row(
             children: [
               Case(CaseState.white, 255, () => {}, () => {}),
-              const Margin(),
+              const Margin.internal(),
               playerSearch(context, false),
             ]
           ),

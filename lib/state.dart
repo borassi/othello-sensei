@@ -277,7 +277,7 @@ class AnnotationState with ChangeNotifier {
 class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Controls position': 'App bar',
-    'Show coordinates': false,
+    'Margin size': 'Small',
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 100000000000,
@@ -302,6 +302,7 @@ class PreferencesState with ChangeNotifier {
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],
     'Controls position': ['App bar', 'Side bar'],
+    'Margin size': ['None', 'Small', 'Large', 'Coordin'],
   };
   late final SharedPreferences _preferences;
 

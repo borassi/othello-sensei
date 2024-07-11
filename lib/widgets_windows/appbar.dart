@@ -77,7 +77,7 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
 
 class SenseiIconButton extends StatelessWidget {
   final String tooltip;
-  final Icon icon;
+  final IconData icon;
   final void Function() onPressed;
 
   const SenseiIconButton({super.key, required this.tooltip, required this.icon, required this.onPressed});
@@ -88,9 +88,9 @@ class SenseiIconButton extends StatelessWidget {
       label: tooltip,
       child: IconButton(
         color: Theme.of(context).colorScheme.onPrimaryContainer,
-        icon: icon,
+        icon: Icon(icon, size: 24),
         tooltip: tooltip,
-        onPressed: onPressed,
+        onPressed: onPressed
       ),
     );
   }
@@ -103,7 +103,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const SenseiAppBar({super.key});
 
-  Widget buildRow(BuildContext context, Widget? widget) {
+  Widget buildRow(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     List<Widget> icons = [];
     bool showIcons = GlobalState.preferences.get('Controls position') == 'App bar';
@@ -111,22 +111,22 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (showIcons) {
       icons += [
         const SenseiIconButton(
-          icon: Icon(Icons.keyboard_double_arrow_left_rounded),
+          icon: Icons.keyboard_double_arrow_left_rounded,
           tooltip: 'Back to the game / the first position',
           onPressed: GlobalState.toAnalyzedGameOrFirstState,
         ),
         const SenseiIconButton(
-          icon: Icon(Icons.chevron_left_rounded),
+          icon: Icons.chevron_left_rounded,
           tooltip: 'Undo',
           onPressed: GlobalState.undo,
         ),
         const SenseiIconButton(
-          icon: Icon(Icons.chevron_right_rounded),
+          icon: Icons.chevron_right_rounded,
           tooltip: 'Redo',
           onPressed: GlobalState.redo,
         ),
         const SenseiIconButton(
-          icon: Icon(Icons.stop_rounded),
+          icon: Icons.stop_rounded,
           tooltip: 'Stop',
           onPressed: GlobalState.stop,
         ),
@@ -167,13 +167,15 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
     var availableWidth = appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width;
     var busyWidth = showIcons ? AppSizes.minFullAppBarSize : 0;
     var title = availableWidth < busyWidth ? <Widget>[const Spacer()] : <Widget>[
-      const Margin(),
+      const Margin.side(),
       Text(
-        "Sensei",
+        'Sensei',
         style: TextStyle(
           fontSize: 20,
-          color: Theme.of(context).colorScheme.onPrimaryContainer
-        )
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          height: 1.0,
+        ),
+
       ),
       const Spacer()];
     return Row(children: title + <Widget>[row]);
@@ -189,7 +191,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
         // we can set width here with conditions
         height: kToolbarHeight,
-        child: ListenableBuilder(listenable: GlobalState.preferences, builder: buildRow),
+        child: buildRow(context),
       )
     );
   }

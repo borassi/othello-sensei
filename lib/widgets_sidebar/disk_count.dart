@@ -109,11 +109,11 @@ class DiskCountWithError extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const DiskCount(true),
-        const Margin(),
+        const Margin.internal(),
         SizedBox(height: squareSize, child: widget(context, true)),
         const Spacer(),
         SizedBox(height: squareSize, child: widget(context, false)),
-        const Margin(),
+        const Margin.internal(),
         const DiskCount(false),
       ]
     );
