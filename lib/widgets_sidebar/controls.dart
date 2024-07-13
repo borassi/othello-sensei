@@ -42,7 +42,7 @@ class Controls extends StatelessWidget {
               onPressed: GlobalState.toAnalyzedGameOrFirstState,
             )
           ),
-          Margin.side(),
+          Margin.internal(),
           Expanded(
             child: SenseiButton(
               text: 'Undo',
@@ -50,7 +50,7 @@ class Controls extends StatelessWidget {
               onPressed: GlobalState.undo,
             ),
           ),
-          Margin.side(),
+          Margin.internal(),
           Expanded(
             child: SenseiButton(
               text: 'Redo',
@@ -58,7 +58,7 @@ class Controls extends StatelessWidget {
               onPressed: GlobalState.redo,
             ),
           ),
-          Margin.side(),
+          Margin.internal(),
           Expanded(
             child: SenseiButton(
               text: 'Stop',
