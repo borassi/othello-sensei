@@ -96,7 +96,7 @@ class BoardToEvaluate {
   double Priority(double delta) const {
     assert(!states_finished_.empty());
     if (Finished()) {
-      return -std::numeric_limits<double>::infinity();
+      return -DBL_MAX;
     }
     auto first_position = evaluator_.GetFirstPosition();
     assert(first_position);
@@ -239,7 +239,7 @@ class Engine {
   void UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis);
 
   BoardToEvaluate* NextBoardToEvaluate(double delta) {
-    double highestPriority = -std::numeric_limits<double>::infinity();
+    double highestPriority = -DBL_MAX;
     BoardToEvaluate* result = nullptr;
 
     for (int i = 0; i < num_boards_to_evaluate_; ++i) {
