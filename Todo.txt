@@ -1,8 +1,6 @@
 Usability / bugs
 - P2 MED Fix accessibility issues.
 - P2 EASY Clear analyzed positions.
-- P2 TINY Do not show seconds when all moves are in book.
-- P2 EASY Fix time when clicking stop.
 - P2 MED Create smaller books.
 - P3 ???? Free memory on hot reload.
 - P3 EASY Back button undo instead of quit.
@@ -29,20 +27,18 @@ Extra features:
 - P2 MED XOT.
 - P2 EASY Save games.
 - P2 HARD How easy / hard a position is.
-- P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P2 MED Share opening book in Google Drive.
 - P2 MED Lookup URL in Othello Quest.
-- P3 EASY Icons disappear from the bar.
+- P3 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P3 MED Manually set the board.
 - P3 HARD Expand book on Google Cloud.
-- P3 HARD Choose which widgets to show.
+- P4 HARD Choose which widgets to show.
 - P4 EASY Show stats from various moves.
 - P4 HARD Get board state from pictures.
 - P5 HARD Get sequence from board state.
 
 Make the app distributable
 - P3 MED Make it work on iOS.
-- P4 EASY Make sharing from Othello Quest possible on iOS.
 - P4 MED Make it work on Mac.
 - P5 EASY Add documentation on how to run it.
 
