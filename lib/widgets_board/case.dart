@@ -136,7 +136,7 @@ class Annotations extends HideInactiveWidget {
           style: TextStyle(
             fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
             color: color,
-            height: 1.5,
+            height: 1.6,
           ),
         ),
         AnnotationRow(
@@ -172,8 +172,7 @@ class Annotations extends HideInactiveWidget {
               ),
               // Hack: the font ascent and descent are different and this is the
               // only way to center the numbers AFAIK.
-              SizedBox(height: mainFontSize * 0.06),
-              // Spacer(),
+              SizedBox(height: mainFontSize * 0.03),
             ] + extraInfo
           )
         );

@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 
 import '../state.dart';
+import '../utils.dart';
 import '../widgets_utils/hide_inactive.dart';
 
 TableRow getRow(String name, ListenableBuilder listenable) {
@@ -34,27 +35,63 @@ TableRow getRow(String name, ListenableBuilder listenable) {
   );
 }
 
+String getPositionsText(EvaluationStats stats) {
+  if (stats.nVisited > 0) {
+    return 'Positions: ${prettyPrintDouble(stats.nVisited.toDouble())}';
+  } else if (stats.nVisitedBook > 0) {
+    return 'Positions: ${prettyPrintDouble(stats.nVisitedBook.toDouble())}';
+  } else {
+    return '';
+  }
+}
+
+String getTimeText(EvaluationStats stats) {
+  if (stats.nVisited > 0) {
+    return 'Time: ${prettyPrintDouble(stats.seconds)} sec';
+  } else {
+    return '';
+  }
+}
+
+String getPosPerSecText(EvaluationStats stats) {
+  if (stats.nVisited > 0) {
+    return 'Pos/sec: ${prettyPrintDouble(stats.nVisited / stats.seconds)}';
+  } else if (stats.nVisitedBook > 0) {
+    return 'Book';
+  } else {
+    return '';
+  }
+}
+
 class EvaluateStats extends HideInactiveWidget {
   const EvaluateStats({super.key});
 
   @override
   Widget buildChild(BuildContext context) {
     return ListenableBuilder(
-      listenable: GlobalState.globalAnnotations,
-      builder: (BuildContext context, Widget? widget) => Table(
-        columnWidths: const <int, TableColumnWidth>{
-          0: IntrinsicColumnWidth(),
-          1: FlexColumnWidth(),
-        },
-        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-
-        children: <TableRow>[
-          getRow("Positions:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositions)),
-          getRow("Seconds:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getTimeString)),
-          getRow("Positions / second:", TextAnnotationListenable(textFunction: GlobalState.globalAnnotations.getPositionsPerSec)),
-          getRow("Empties:", TextListenable(listenable: GlobalState.board, textFunction: () => "${GlobalState.board.emptySquares()}")),
-        ],
-      )
+      listenable: Listenable.merge([GlobalState.globalAnnotations, GlobalState.board]),
+      builder: (BuildContext context, Widget? widget) {
+        EvaluationStats stats = GlobalState.globalAnnotations.getEvaluationStats();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Text(getPositionsText(stats)),
+                const Spacer(),
+                Text(getTimeText(stats)),
+              ]
+            ),
+            Row(
+                children: [
+                  Text(getPosPerSecText(stats)),
+                  const Spacer(),
+                  Text("Empties: ${GlobalState.board.emptySquares()}")
+                ]
+            ),
+          ]
+        );
+      }
     );
   }
 }

@@ -388,6 +388,14 @@ class PreferencesState with ChangeNotifier {
   }
 }
 
+class EvaluationStats {
+  final int nVisited;
+  final int nVisitedBook;
+  final double seconds;
+
+  EvaluationStats(this.nVisited, this.nVisitedBook, this.seconds);
+}
+
 class GlobalAnnotationState with ChangeNotifier {
   Pointer<Annotations>? annotations;
   Pointer<Annotations>? startAnnotations;
@@ -477,43 +485,21 @@ class GlobalAnnotationState with ChangeNotifier {
     return (errorBlack, errorWhite, hasNaN);
   }
 
-  (double, double) _getPositionsAndSeconds() {
-    if (annotations == null || annotations!.ref.descendants == 0) {
-      return (0, 0);
+   EvaluationStats getEvaluationStats() {
+    if (annotations == null) {
+      return EvaluationStats(0, 0, 0);
     }
-    var positions = 0.0;
+    var positions = 0;
+    var positionsBook = 0;
     var seconds = 0.0;
     for (var child = annotations!.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
       if (!child.ref.derived) {
         positions += child.ref.descendants;
+        positionsBook += child.ref.descendants_book;
         seconds += child.ref.seconds;
       }
     }
-    return (positions, seconds);
-  }
-
-  String getPositions() {
-    var (positions, seconds) = _getPositionsAndSeconds();
-    if (positions == 0 || seconds == 0) {
-      return '-';
-    }
-    return prettyPrintDouble(positions);
-  }
-
-  String getPositionsPerSec() {
-    var (positions, seconds) = _getPositionsAndSeconds();
-    if (positions == 0 || seconds == 0) {
-      return '-';
-    }
-    return prettyPrintDouble(positions / seconds);
-  }
-
-  String getTimeString() {
-    var (positions, seconds) = _getPositionsAndSeconds();
-    if (positions == 0 || seconds == 0) {
-      return '-';
-    }
-    return seconds.toStringAsFixed(1);
+    return EvaluationStats(positions, positionsBook, seconds);
   }
 }
 

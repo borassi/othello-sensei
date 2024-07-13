@@ -89,7 +89,8 @@ class MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool vertical = Theme.of(context).extension<AppSizes>()!.layout == AppLayout.vertical;
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    bool vertical = appSizes.layout == AppLayout.vertical;
     var boardContent = Flex(
       mainAxisSize: MainAxisSize.min,
       direction: vertical ? Axis.horizontal : Axis.vertical,
@@ -98,8 +99,8 @@ class MainContent extends StatelessWidget {
     var sideContent = Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          vertical ? const Margin.internal() : const Margin.side(),
+        children:
+          (vertical ? <Widget>[const Margin.internal()] : (appSizes.brokenAppBar() ? <Widget>[] : <Widget>[const Margin.side()])) + <Widget>[
           Expanded(
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -107,7 +108,7 @@ class MainContent extends StatelessWidget {
                 vertical ? const Margin.side() : const Margin.internal(),
                 Flexible(
                   child: Container(
-                    constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize),
+                    constraints: BoxConstraints(maxWidth: 8 * appSizes.squareSize),
                     child: sidebar,
                   ),
                 ),
