@@ -36,28 +36,30 @@ TableRow getRow(String name, ListenableBuilder listenable) {
 }
 
 String getPositionsText(EvaluationStats stats) {
-  if (stats.nVisited > 0) {
-    return 'Positions: ${prettyPrintDouble(stats.nVisited.toDouble())}';
-  } else if (stats.nVisitedBook > 0) {
-    return 'Positions: ${prettyPrintDouble(stats.nVisitedBook.toDouble())}';
+  int totalPositions = stats.nVisited + stats.nVisitedBook;
+  if (totalPositions > 0) {
+    return 'Positions: ${prettyPrintDouble(totalPositions.toDouble())}';
   } else {
     return '';
   }
 }
 
 String getTimeText(EvaluationStats stats) {
-  if (stats.nVisited > 0) {
-    return 'Time: ${prettyPrintDouble(stats.seconds)} sec';
+  if (stats.seconds > 0) {
+    return 'Pos / sec: ${prettyPrintDouble(stats.nVisited / stats.seconds)}';
   } else {
     return '';
   }
 }
 
 String getPosPerSecText(EvaluationStats stats) {
-  if (stats.nVisited > 0) {
-    return 'Pos/sec: ${prettyPrintDouble(stats.nVisited / stats.seconds)}';
-  } else if (stats.nVisitedBook > 0) {
+  if (stats.nVisitedBook > 0) {
+    if (stats.nVisited > 0) {
+      return 'Book + Evaluate';
+    }
     return 'Book';
+  } else if (stats.nVisited > 0) {
+    return 'Time: ${stats.seconds.toStringAsFixed(1)} sec';
   } else {
     return '';
   }
