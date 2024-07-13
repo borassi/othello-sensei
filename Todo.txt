@@ -58,9 +58,13 @@ Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
 
 
-HOW TO RELEASE:
+HOW TO RELEASE ON ANDROID:
 - Change the applicationId in android/app/build.gradle to remove 'dev'.
 - Change the name in android/app/src/main/AndroidManifest to remove 'Dev'.
 - Change the version in pubspec.yaml
 - Check the paths to the Drive files.
 - $ flutter build appbundle
+
+HOW TO RELEASE ON LINUX:
+- rm -Rf build && snapcraft --debug && sudo snap install ./othello-sensei_1.0.0_amd64.snap --dangerous && othello-sensei
+- snapcraft upload --release=beta othello-sensei_1.0.0_amd64.snap
