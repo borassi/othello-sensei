@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
+import '../drive/drive_downloader.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
@@ -52,11 +53,11 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.downloadLatestBook:
       GlobalState.stop();
-      GlobalState.driveDownloader.downloadBook(context);
+      downloadBook(context);
       return;
     case MenuItem.downloadLatestArchive:
       GlobalState.stop();
-      GlobalState.driveDownloader.downloadArchive(context);
+      downloadArchive(context);
       return;
     case MenuItem.senseiEvaluates:
       GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);

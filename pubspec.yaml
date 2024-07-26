@@ -56,6 +56,7 @@ dependencies:
   window_manager: ^0.3.8
   http: any
   googleapis_auth: any
+  system_info2: ^4.0.0
 
 dev_dependencies:
   flutter_test:

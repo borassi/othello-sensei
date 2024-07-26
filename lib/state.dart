@@ -19,10 +19,10 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:othello_sensei/drive/drive_downloader.dart';
 import 'package:othello_sensei/utils.dart';
 import 'package:path/path.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -137,12 +137,14 @@ class GlobalState {
   static late final PreferencesState preferences;
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
-  static late DriveDownloader driveDownloader;
+  static late ConnectivityResult connectivity;
   static ThorMetadataState? thorMetadataOrNull;
 
   static Future<void> init() async {
     await maybeCopyAssetsToLocalPath();
-    driveDownloader = await DriveDownloader.create();
+    var connectivityHandler = Connectivity();
+    connectivity = await connectivityHandler.checkConnectivity();
+    connectivityHandler.onConnectivityChanged.forEach((ConnectivityResult result) { connectivity = result; });
     preferences = await PreferencesState.create();
     await _createMain();
     if (Platform.isAndroid || Platform.isIOS) {
@@ -160,6 +162,11 @@ class GlobalState {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     var localAssetPathVar = await localAssetPath();
+    globalAnnotations.reset();
+    for (int i = 0; i < 64; ++i) {
+      GlobalState.annotations[i].clear();
+    }
+    thorMetadataOrNull = null;
     ffiMain = ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
