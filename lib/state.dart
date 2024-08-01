@@ -143,8 +143,16 @@ class GlobalState {
   static Future<void> init() async {
     await maybeCopyAssetsToLocalPath();
     var connectivityHandler = Connectivity();
-    connectivity = await connectivityHandler.checkConnectivity();
-    connectivityHandler.onConnectivityChanged.forEach((ConnectivityResult result) { connectivity = result; });
+    try {
+      connectivity = await connectivityHandler.checkConnectivity();
+      connectivityHandler.onConnectivityChanged.forEach((ConnectivityResult result) { connectivity = result; });
+    } on Exception catch(e) {
+      print(
+          'WARNING: cannot get connectivity. This does not prevent the app '
+          'from running, but it causes less readable error messages when '
+          'downloading book and archive. Error:\n$e');
+      connectivity = ConnectivityResult.other;
+    }
     preferences = await PreferencesState.create();
     await _createMain();
     if (Platform.isAndroid || Platform.isIOS) {

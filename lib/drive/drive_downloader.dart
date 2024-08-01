@@ -55,7 +55,6 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
       _download(context, name, path, sizeMB, numFilesForProgress);
       return;
     case ConnectivityResult.mobile:
-    case ConnectivityResult.other:
       _downloadWithConfirmation(
           context,
           name,
@@ -64,6 +63,16 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
           numFilesForProgress
       );
       return;
+    case ConnectivityResult.other:
+      // If we are not sure about the connection, we ask for confirmation only
+      // on mobile. This causes a strange error message if there is no
+      // connection.
+      // TODO: Avoid missing the connection on Linux, using Snapcraft.
+      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+        _download(context, name, path, sizeMB, numFilesForProgress);
+      } else {
+        _downloadWithConfirmation(context, name, path, sizeMB, numFilesForProgress);
+      }
     case ConnectivityResult.none:
       showDialog<void>(
           context: context,
