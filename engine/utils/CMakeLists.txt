@@ -32,6 +32,13 @@ add_library(
 #ENDIF()
 
 add_library(
+        cpu_adapter
+        SHARED
+        cpu_adapter.h
+        cpu_adapter.cpp
+)
+
+add_library(
         functions
         functions.h
         functions.cpp
@@ -81,6 +88,12 @@ add_library(
         misc
         misc.h
         misc.cpp
+)
+
+target_link_libraries(
+        misc
+        LINK_PUBLIC
+        types
 )
 
 IF(ENABLE_GOOGLETEST)

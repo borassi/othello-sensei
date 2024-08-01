@@ -20,10 +20,23 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../state.dart';
+
 enum AppLayout {
   vertical,
   horizontalFullBar,
   horizontalBrokenBar,
+}
+
+double getSideMargin(double margin) {
+  switch (GlobalState.preferences.get('Margin size')) {
+    case 'None':
+      return 2;
+    case 'Small':
+      return 0.5 * margin;
+    default:
+      return margin;
+  }
 }
 
 class AppSizes extends ThemeExtension<AppSizes> {
@@ -40,6 +53,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double sideBarWidth;
   late double sideBarHeight;
   late double margin;
+  late double sideMargin;
   late double appBarHeight;
 
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
@@ -58,8 +72,9 @@ class AppSizes extends ThemeExtension<AppSizes> {
       boardSize = horizontalBoardSizeBrokenBar;
     }
     margin = boardSize / 20;
-    squareSize = (boardSize - 2 * margin) / 8;
-    sideBarWidth = vertical() ? boardSize - 2 * margin : width - boardSize - margin;
+    sideMargin = getSideMargin(margin);
+    squareSize = (boardSize - 2 * sideMargin) / 8;
+    sideBarWidth = vertical() ? boardSize - 2 * sideMargin : width - boardSize - sideMargin;
     sideBarHeight = vertical() ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
   }
 

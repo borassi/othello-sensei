@@ -113,6 +113,9 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
   }
   var values = PreferencesState.preferencesValues[key];
   if (values != null) {
+    if (!values.contains(value!)) {
+      value = GlobalState.preferences.defaultPreferences[key];
+    }
     return SettingsTile(
       name: key,
       child: DropdownButton<String>(
@@ -188,7 +191,8 @@ class Settings extends StatelessWidget {
 
   static const _uiPreferences = [
     'Controls position',
-    'Show coordinates',
+    'Margin size',
+    'Show extra data in evaluate mode',
     'Highlight distance from best move',
     'Best move green, other yellow',
     'Highlight next move in analysis',
@@ -238,9 +242,9 @@ class Settings extends StatelessWidget {
             color: Theme.of(context).colorScheme.onPrimaryContainer,
             fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!
           );
-          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
           return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(0, 0, Theme.of(context).extension<AppSizes>()!.margin!, 0),
+            padding: EdgeInsets.fromLTRB(0, 0, Theme.of(context).extension<AppSizes>()!.margin, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -264,17 +268,16 @@ class Settings extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
-                const Margin(),
+                const Margin.internal(),
                 SenseiButton(
                   onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
                   text: 'Reset to previous values',
                 ),
-                const Margin(),
+                const Margin.internal(),
                 SenseiButton(
                   onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
                   text: 'Reset to app defaults',
                 ),
-                const Margin(),
               ],
             )
           );

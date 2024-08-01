@@ -66,7 +66,7 @@ class AppTheme extends StatelessWidget {
           ],
         );
 
-        var squareSize = theme.extension<AppSizes>()!.squareSize!;
+        var squareSize = theme.extension<AppSizes>()!.squareSize;
         return Theme(
           data: theme.copyWith(
             textTheme: TextTheme(
@@ -89,28 +89,30 @@ class MainContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    bool vertical = appSizes.layout == AppLayout.vertical;
     var boardContent = Flex(
       mainAxisSize: MainAxisSize.min,
-      direction: Theme.of(context).extension<AppSizes>()!.layout == AppLayout.vertical ? Axis.horizontal : Axis.vertical,
-      children: [board, const Margin()],
+      direction: vertical ? Axis.horizontal : Axis.vertical,
+      children: [board, const Margin.side()],
     );
     var sideContent = Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          const Margin(),
+        children:
+          (vertical ? <Widget>[const Margin.internal()] : (appSizes.brokenAppBar() ? <Widget>[] : <Widget>[const Margin.side()])) + <Widget>[
           Expanded(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Margin(),
+                vertical ? const Margin.side() : const Margin.internal(),
                 Flexible(
                   child: Container(
-                    constraints: BoxConstraints(maxWidth: 8 * Theme.of(context).extension<AppSizes>()!.squareSize),
+                    constraints: BoxConstraints(maxWidth: 8 * appSizes.squareSize),
                     child: sidebar,
                   ),
                 ),
-                const Margin()
+                const Margin.side()
               ],
             )
           )
@@ -121,7 +123,7 @@ class MainContent extends StatelessWidget {
     var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
     return AnnotatedRegion(
       value: SystemUiOverlayStyle(
-        statusBarColor: brokenAppBar ? Theme.of(context).colorScheme.background : Theme.of(context).colorScheme.primaryContainer,
+        statusBarColor: Theme.of(context).colorScheme.primaryContainer,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
@@ -132,8 +134,12 @@ class MainContent extends StatelessWidget {
           <Widget>[
             Expanded(
               child: Column(
-                children: [
-                  const SenseiAppBar(),
+                children: <Widget>[
+                  Row(
+                    children: (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[])
+                        + <Widget>[const Expanded(child: SenseiAppBar())]
+                  )] +
+                  (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[]) + [
                   Expanded(
                     child: Center(
                       child: Flex(
@@ -165,14 +171,14 @@ class Main extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Widget> childrenEvaluate = [
       const DiskCountWithError(),
-      const Margin(),
+      const Margin.internal(),
       const Expanded(child: ScoreGraph()),
-      const Margin(),
+      const Margin.internal(),
       const EvaluateStats(),
     ];
     List<Widget> childrenThor = [
       const DiskCountsWithThor(),
-      const Margin(),
+      const Margin.internal(),
       const Expanded(child: ThorGamesVisualizer()),
     ];
     return MaterialApp(
@@ -188,75 +194,72 @@ class Main extends StatelessWidget {
           brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      home: PopScope(
-        canPop: false,
-        onPopInvoked: (bool didPop) {
-          if (GlobalState.preferences.get('Back button action') == 'Undo') {
-            GlobalState.undo();
-          } else {
-            SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-          }
-        },
-        child: MyKeyboardListener(
-          child: AppTheme(
-            child: MainContent(
-              const Board(),
-              DefaultTabController(
-                length: 2,
-                initialIndex: 0,
-                child: ListenableBuilder(
-                  listenable: GlobalState.preferences,
-                  builder: (BuildContext context, Widget? widget) {
-                    DefaultTabController.of(context).animateTo(
-                        GlobalState.preferences.get('Active tab'),
-                        duration: const Duration(seconds: 0));
-                    var childrenControls = <Widget>[];
-                    if (GlobalState.preferences.get('Controls position') == 'Side bar') {
-                      childrenControls = [
-                        const Margin(),
-                        const Controls(),
-                      ];
-                    }
-                    var evaluateContent = ListenableBuilder(
-                      listenable: GlobalState.preferences,
-                      builder: (BuildContext context, Widget? widget) => Column(
+      home: ListenableBuilder(
+        listenable: GlobalState.preferences,
+        builder: (BuildContext context, Widget? widget) => PopScope(
+          canPop: false,
+          onPopInvoked: (bool didPop) {
+            if (GlobalState.preferences.get('Back button action') == 'Undo') {
+              GlobalState.undo();
+            } else {
+              SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+            }
+          },
+          child: MyKeyboardListener(
+            child: AppTheme(
+              child: MainContent(
+                const Board(),
+                DefaultTabController(
+                  length: 2,
+                  initialIndex: 0,
+                  child: ListenableBuilder(
+                    listenable: GlobalState.preferences,
+                    builder: (BuildContext context, Widget? widget) {
+                      DefaultTabController.of(context).animateTo(
+                          GlobalState.preferences.get('Active tab'),
+                          duration: const Duration(seconds: 0));
+                      var childrenControls = <Widget>[];
+                      if (GlobalState.preferences.get('Controls position') == 'Side bar') {
+                        childrenControls = [
+                          const Margin.internal(),
+                          const Controls(),
+                        ];
+                      }
+                      var evaluateContent = Column(
                         children: childrenEvaluate + childrenControls
-                      )
-                    );
+                      );
 
-                    var thorContent = ListenableBuilder(
-                      listenable: GlobalState.preferences,
-                      builder: (BuildContext context, Widget? widget) => Column(
+                      var thorContent = Column(
                         children: childrenThor + childrenControls,
-                      )
-                    );
-                    return Scaffold(
-                      bottomNavigationBar: TabBar(
-                        tabs: List.generate(2, (index) => Tab(
-                          height: Theme.of(context).extension<AppSizes>()!.squareSize,
-                          child: Text(
-                            tabName[index],
-                            style: TextStyle(
-                              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                      );
+                      return Scaffold(
+                        bottomNavigationBar: TabBar(
+                          tabs: List.generate(2, (index) => Tab(
+                            height: Theme.of(context).extension<AppSizes>()!.squareSize,
+                            child: Text(
+                              tabName[index],
+                              style: TextStyle(
+                                fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                              )
                             )
-                          )
-                        )),
-                        dividerHeight: 0,
-                        onTap: (int index) {
-                          GlobalState.preferences.set('Active tab', index);
-                          GlobalState.evaluate();
-                        },
-                      ),
-                      body: TabBarView(
-                        children: [
-                          evaluateContent,
-                          thorContent,
-                        ],
-                      ),
-                    );
-                  }
+                          )),
+                          dividerHeight: 0,
+                          onTap: (int index) {
+                            GlobalState.preferences.set('Active tab', index);
+                            GlobalState.evaluate();
+                          },
+                        ),
+                        body: TabBarView(
+                          children: [
+                            evaluateContent,
+                            thorContent,
+                          ],
+                        ),
+                      );
+                    }
+                  ),
                 ),
-              ),
+              )
             )
           )
         )

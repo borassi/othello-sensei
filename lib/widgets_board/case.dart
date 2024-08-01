@@ -115,13 +115,43 @@ class Annotations extends HideInactiveWidget {
         break;
     }
     line3 += prettyPrintDouble((annotation.descendants + annotation.descendants_book).toDouble());
+    var archive = Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0;
+    var showExtra = archive || GlobalState.preferences.get('Show extra data in evaluate mode');
+    var roundEvaluation = GlobalState.preferences.get('Round evaluations');
 
-    if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0) {
+
+    if (archive) {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
       line2 = evalText;
     } else {
       line1 = evalText;
       line2 = "${getRemaining(annotation.prob_upper_eval, annotation.disproof_number_upper)} ${getRemaining(annotation.prob_lower_eval, annotation.proof_number_lower)}";
+    }
+
+    var extraInfo = <Widget>[];
+    if (showExtra) {
+      extraInfo = <Widget>[
+        AnnotationRow(
+          text: line2,
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+            color: color,
+            height: 1.6,
+          ),
+        ),
+        AnnotationRow(
+          text: line3,
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+            color: color,
+            height: 1,
+          ),
+        )
+      ];
+    }
+    var mainFontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
+    if (roundEvaluation && !showExtra) {
+      mainFontSize = Theme.of(context).textTheme.bodyLarge!.fontSize!;
     }
 
     return LayoutBuilder(
@@ -130,34 +160,20 @@ class Annotations extends HideInactiveWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+            children: <Widget>[
               Text(
                 line1,
                 style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                  fontSize: mainFontSize,
                   fontWeight: FontWeight.bold,
                   height: 1,
                   color: color
                 ),
               ),
-              // SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
-              AnnotationRow(
-                text: line2,
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                  color: color,
-                  height: 1.5,
-                ),
-              ),
-              AnnotationRow(
-                text: line3,
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                  color: color,
-                  height: 1,
-                ),
-              )
-            ]
+              // Hack: the font ascent and descent are different and this is the
+              // only way to center the numbers AFAIK.
+              SizedBox(height: mainFontSize * 0.03),
+            ] + extraInfo
           )
         );
       }

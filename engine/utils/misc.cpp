@@ -133,3 +133,16 @@ std::vector<std::string> Split(const std::string& s, char c, bool strip) {
   }
   return result;
 }
+
+void PrintSupportedFeatures() {
+#if __POPCNT__
+  std::cout << "Using intrinsic popcount\n" << std::flush;
+#else
+  std::cout << "Not using intrinsic popcount\n" << std::flush;
+#endif
+#if __BMI2__
+  std::cout << "Using BMI2 instructions\n" << std::flush;
+#else
+  std::cout << "Not using BMI2 instructions\n" << std::flush;
+#endif
+}

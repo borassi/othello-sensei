@@ -32,20 +32,20 @@ class _SecondaryWindowMainContent extends StatelessWidget {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     return Row(
       children: [
-        const Margin(),
+        const Margin.side(),
         const Spacer(),
         SizedBox(
           width: 8 * appSizes.squareSize + (leaveSpaceRight ? appSizes.margin : 0),
           child: Column(
             children: [
-              const Margin(),
+              const Margin.side(),
               Expanded(child: child),
-              const Margin(),
+              const Margin.side(),
             ]
           )
         ),
         const Spacer(),
-      ] + (leaveSpaceRight ? [] : [const Margin()])
+      ] + (leaveSpaceRight ? [] : [const Margin.side()])
     );
   }
 

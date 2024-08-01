@@ -13,18 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TYPES_H
-#define TYPES_H
 
-#include "stdint.h"
+#ifndef OTHELLO_SENSEI_BINDINGS_H
+#define OTHELLO_SENSEI_BINDINGS_H
 
-typedef int8_t Eval;
-typedef int EvalLarge;
-typedef uint64_t BitPattern;
-typedef uint8_t Square;
-typedef uint8_t DepthValue;
-typedef uint16_t MoveShift;
-typedef uint8_t LastRow;
-typedef uint64_t NVisited;
+#include "stdbool.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#endif
+
+EXPORT
+bool CPUHasBMI2();
+
+EXPORT
+bool CPUHasPopcnt();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

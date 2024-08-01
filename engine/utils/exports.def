@@ -1,0 +1,4 @@
+LIBRARY cpu_adapter
+EXPORTS
+    CPUHasBMI2
+    CPUHasPopcnt

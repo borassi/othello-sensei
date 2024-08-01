@@ -16,6 +16,7 @@
 
 #include "main.h"
 #include "bindings.h"
+#include "../utils/misc.h"
 
 Main::Main(
     const std::string& evals_filepath,
@@ -28,6 +29,7 @@ Main::Main(
     last_state_flutter_(nullptr),
     analyzing_(0),
     engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations) {
+  PrintSupportedFeatures();
   NewGame();
 }
 

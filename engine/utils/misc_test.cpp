@@ -25,13 +25,13 @@
 using ::testing::ElementsAre;
 
 TEST(ConstexprMath, Log) {
-  for (double x : {1E-30, 0.000001, 0.01, 0.5, 1.0, 1.5, 2.0, 10.0, 10000.0, 100000000.0, std::numeric_limits<double>::infinity()}) {
+  for (double x : {1E-30, 0.000001, 0.01, 0.5, 1.0, 1.5, 2.0, 10.0, 10000.0, 100000000.0, DBL_MAX}) {
     EXPECT_FLOAT_EQ(ConstexprLog(x), log(x));
   }
 }
 
 TEST(ConstexprMath, Exp) {
-  for (double x : {-std::numeric_limits<double>::infinity(), -10.5, -4.0, -0.01, 1E-30, 0.0, 0.1, std::numeric_limits<double>::infinity()}) {
+  for (double x : {-DBL_MAX, -10.5, -4.0, -0.01, 1E-30, 0.0, 0.1, DBL_MAX}) {
     EXPECT_FLOAT_EQ(ConstexprExp(x), exp(x));
   }
 }

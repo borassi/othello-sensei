@@ -20,14 +20,35 @@ import 'dart:io';
 
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 
+import 'ffi_cpu_adapter.dart';
+
 DynamicLibrary getDynamicLibrary() {
+  if (Platform.isAndroid) {
+    return DynamicLibrary.open('libui.so');
+  }
+
   if (Platform.isMacOS || Platform.isIOS) {
     return DynamicLibrary.process();
   } else if (Platform.isWindows) {
     return DynamicLibrary.open('api.dll');
-  } else {
-    return DynamicLibrary.open('libui.so');
+  } else if (Platform.isLinux) {
+    FFICpuSupportedFeatures supportedFeatures = FFICpuSupportedFeatures(DynamicLibrary.open('libcpu_adapter.so'));
+    if (supportedFeatures.CPUHasBMI2()) {
+      try {
+        return DynamicLibrary.open('libui-bmi2.so');
+      } catch (invalidArgumentException) {
+        // Run locally, didn't copy the file.
+      }
+    }
+    if (supportedFeatures.CPUHasPopcnt()) {
+      try {
+        return DynamicLibrary.open('libui-popcnt.so');
+      } catch (invalidArgumentException) {
+        // Run locally, didn't copy the file.
+      }
+    }
   }
+  return DynamicLibrary.open('libui.so');
 }
 
 final FFIEngine ffiEngine = FFIEngine(getDynamicLibrary());

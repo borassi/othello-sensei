@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
   int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", 1);
   int start = parse_flags.GetIntFlagOrDefault("start", 41);
   int end = parse_flags.GetIntFlagOrDefault("end", 60);
+  PrintSupportedFeatures();
   using std::setw;
   HashMap<kBitHashMap> hash_map;
   auto evals = LoadEvals();

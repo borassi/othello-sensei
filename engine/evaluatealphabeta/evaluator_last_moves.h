@@ -19,6 +19,7 @@
 
 #include "../board/get_flip.h"
 #include "../hashmap/hash_map.h"
+#include "../utils/misc.h"
 
 forceinline(Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept);
 inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept {
