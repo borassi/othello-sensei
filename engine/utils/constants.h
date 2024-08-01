@@ -21,6 +21,8 @@
 
 #ifdef _MSC_VER
 #include <immintrin.h>
+// From https://stackoverflow.com/a/78599923.
+#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
 #define __builtin_popcountll _mm_popcnt_u64
 #define __builtin_popcount __popcnt
 #define __builtin_ctzll _tzcnt_u64
@@ -29,6 +31,8 @@
 #define __builtin_clz _lzcnt_u32
 #define __builtin_expect(x, y) x
 #define forceinline(function_def) __forceinline function_def
+#define localtime_r(x, y) localtime_s(y, x)
+#define strncpy(x, y, z) strcpy_s(x, z, y)
 #else
 #define forceinline(function_def) inline function_def __attribute__((always_inline))
 #endif

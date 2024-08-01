@@ -124,3 +124,11 @@ ffigen:
     include-directives:
       - 'engine/main/bindings.h'
       - 'engine/main/ui.h'
+
+msix_config:
+  display_name: Othello Sensei
+  publisher_display_name: Michele Borassi
+  identity_name: com.github.borassi.othellosensei
+  msix_version: 1.0.1.0
+#  logo_path: assets/icons/icon_512x512.png
+  capabilities: internetClient
