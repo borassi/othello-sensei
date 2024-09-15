@@ -93,6 +93,7 @@ add_library(
 target_link_libraries(
         misc
         LINK_PUBLIC
+        constants
         types
 )
 

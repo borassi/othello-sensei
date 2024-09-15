@@ -69,6 +69,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.1
   ffigen: ^11.0.0
+  msix: ^3.16.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -128,8 +129,9 @@ ffigen:
 
 msix_config:
   display_name: Othello Sensei
+  publisher: CN=F10E1E82-784B-4079-9516-F34256330A33
   publisher_display_name: Michele Borassi
-  identity_name: com.github.borassi.othellosensei
+  identity_name: MicheleBorassi.OthelloSensei
   msix_version: 1.0.1.0
-#  logo_path: assets/icons/icon_512x512.png
-  capabilities: internetClient
+  # logo_path: assets/icons/icon_512x512.png
+  enable_at_startup: false
