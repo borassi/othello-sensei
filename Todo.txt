@@ -72,12 +72,11 @@ HOW TO RELEASE ON LINUX:
 HOW TO RELEASE ON WINDOWS:
 - flutter build windows
 - Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
-- Comment the BMI2 lines in windows/CMakeLists.txt
+- Comment the BMI2 / POPCNT lines in windows/CMakeLists.txt
 - flutter build windows
 - Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-popcnt.dll
 - dart run msix:build
-
-- https://learn.microsoft.com/en-us/entra/identity-platform/howto-configure-publisher-domain
-- https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/ba62a845-85c3-4f14-9c22-a81fe6b6133f/isMSAApp~/true
-- https://partner.microsoft.com/en-us/dashboard/home
-- https://partner.microsoft.com/en-us/dashboard/products/9P7XGPW4XM6P/submissions/1152921505697922510/packages
+- Install locally by double-clicking on build\windows\x64\runner\Release\othello_sensei.msix
+- dart run msix:build --store
+- Upload build\windows\x64\runner\Release\othello_sensei.msix to the store
+  https://partner.microsoft.com/en-us/dashboard/home
