@@ -1,7 +1,3 @@
-Windows features:
-- P0 Create .msix.
-- P0 Compile various versions.
-
 Usability / bugs
 - P2 MED Fix accessibility issues.
 - P2 EASY Clear analyzed positions.

@@ -18,52 +18,53 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:othello_sensei/ffi/ffi_engine.dart';
-
 import 'ffi_cpu_adapter.dart';
 
-DynamicLibrary getDynamicLibrary() {
-  if (Platform.isAndroid) {
-    return DynamicLibrary.open('libui.so');
-  }
-
-  if (Platform.isMacOS || Platform.isIOS) {
-    return DynamicLibrary.process();
-  } else if (Platform.isWindows) {
-    FFICpuSupportedFeatures supportedFeatures = FFICpuSupportedFeatures(DynamicLibrary.open('cpu_adapter_win.dll'));
-    if (supportedFeatures.CPUHasBMI2()) {
-      try {
-        return DynamicLibrary.open('ui_win-bmi2.dll');
-      } catch (invalidArgumentException) {
-        // Run locally, didn't copy the file.
-      }
-    }
-    if (supportedFeatures.CPUHasPopcnt()) {
-      try {
-        return DynamicLibrary.open('ui_win-popcnt.dll');
-      } catch (invalidArgumentException) {
-        // Run locally, didn't copy the file.
-      }
-    }
-    return DynamicLibrary.open('ui_win.dll');
-  } else if (Platform.isLinux) {
-    FFICpuSupportedFeatures supportedFeatures = FFICpuSupportedFeatures(DynamicLibrary.open('libcpu_adapter.so'));
-    if (supportedFeatures.CPUHasBMI2()) {
-      try {
-        return DynamicLibrary.open('libui-bmi2.so');
-      } catch (invalidArgumentException) {
-        // Run locally, didn't copy the file.
-      }
-    }
-    if (supportedFeatures.CPUHasPopcnt()) {
-      try {
-        return DynamicLibrary.open('libui-popcnt.so');
-      } catch (invalidArgumentException) {
-        // Run locally, didn't copy the file.
-      }
-    }
-  }
-  return DynamicLibrary.open('libui.so');
+enum CpuType {
+  generic,
+  noFeature,
+  popcnt,
+  bmi2,
 }
 
-final FFIEngine ffiEngine = FFIEngine(getDynamicLibrary());
+(DynamicLibrary, CpuType) getDynamicLibrary() {
+  if (Platform.isAndroid) {
+    return (DynamicLibrary.open('libui.so'), CpuType.generic);
+  }
+
+  FFICpuSupportedFeatures supportedFeatures;
+  String cpuNamePattern;
+
+  if (Platform.isMacOS || Platform.isIOS) {
+    return (DynamicLibrary.process(), CpuType.generic);
+  } else if (Platform.isWindows) {
+    supportedFeatures = FFICpuSupportedFeatures(
+        DynamicLibrary.open('cpu_adapter_win.dll'));
+    cpuNamePattern = 'ui_win{}.dll';
+  } else if (Platform.isLinux) {
+    supportedFeatures = FFICpuSupportedFeatures(
+        DynamicLibrary.open('libcpu_adapter.dll'));
+    cpuNamePattern = 'libui{}.so';
+  } else {
+    throw UnimplementedError('Unsupported platform ${Platform.operatingSystem}');
+  }
+
+  if (supportedFeatures.CPUHasBMI2()) {
+    try {
+      var dynamicLibrary = DynamicLibrary.open(cpuNamePattern.replaceFirst('{}', '-bmi2'));
+      return (dynamicLibrary, CpuType.bmi2);
+    } catch (invalidArgumentException) {
+      // Run locally, didn't copy the file.
+    }
+  }
+  if (supportedFeatures.CPUHasPopcnt()) {
+    try {
+      var dynamicLibrary = DynamicLibrary.open(cpuNamePattern.replaceFirst('{}', '-popcnt'));
+      return (dynamicLibrary, CpuType.popcnt);
+    } catch (invalidArgumentException) {
+      // Run locally, didn't copy the file.
+    }
+  }
+  var dynamicLibrary = DynamicLibrary.open(cpuNamePattern.replaceFirst('{}', ''));
+  return (dynamicLibrary, CpuType.noFeature);
+}

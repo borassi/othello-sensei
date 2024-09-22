@@ -55,8 +55,8 @@ int currentMove() {
 }
 
 void updateAnnotations(int currentThread, bool finished) {
-  Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
-  Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
+  Pointer<Annotations> startAnnotations = GlobalState.ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
+  Pointer<Annotations> annotations = GlobalState.ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr ||
       !annotations.ref.valid) {
     GlobalState.globalAnnotations.reset();
@@ -75,7 +75,7 @@ void updateAnnotations(int currentThread, bool finished) {
 }
 
 Future<void> copy() async {
-  Pointer<Char> sequence = ffiEngine.GetSequence(GlobalState.ffiMain);
+  Pointer<Char> sequence = GlobalState.ffiEngine.GetSequence(GlobalState.ffiMain);
   var s = sequence.cast<Utf8>().toDartString();
   Clipboard.setData(ClipboardData(text: s));
   malloc.free(sequence);
@@ -87,7 +87,7 @@ Future<bool> paste() async {
     return false;
   }
   var gameC = game.toNativeUtf8().cast<Char>();
-  return ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+  return GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
 }
 
 Future<void> pasteOrError(BuildContext context) async {
@@ -114,7 +114,7 @@ void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
     return;
   }
   var game = event[0].path.toNativeUtf8().cast<Char>();
-  ffiEngine.SetSequence(GlobalState.ffiMain, game);
+  GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, game);
   if (GlobalState.preferences.get('Analyze on import')) {
     analyze();
   } else {
@@ -126,7 +126,7 @@ void analyze() {
   GlobalState.preferences.fillEvaluateParams();
   GlobalState.preferences.set('Active tab', 0);
   GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
-  ffiEngine.Analyze(GlobalState.ffiMain);
+  GlobalState.ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
 class GlobalState {
@@ -139,8 +139,13 @@ class GlobalState {
   static const Main main = Main();
   static late ConnectivityResult connectivity;
   static ThorMetadataState? thorMetadataOrNull;
+  static late FFIEngine ffiEngine;
+  static late CpuType cpuType;
 
   static Future<void> init() async {
+    var ffiEngineCpuType = getDynamicLibrary();
+    ffiEngine = FFIEngine(ffiEngineCpuType.$1);
+    cpuType = ffiEngineCpuType.$2;
     await maybeCopyAssetsToLocalPath();
     var connectivityHandler = Connectivity();
     try {
@@ -162,7 +167,7 @@ class GlobalState {
   }
 
   static Future<void> resetMain() async {
-    ffiEngine.MainDelete(ffiMain);
+    GlobalState.ffiEngine.MainDelete(ffiMain);
     await _createMain();
   }
 
@@ -175,7 +180,7 @@ class GlobalState {
       GlobalState.annotations[i].clear();
     }
     thorMetadataOrNull = null;
-    ffiMain = ffiEngine.MainInit(
+    ffiMain = GlobalState.ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
@@ -191,37 +196,37 @@ class GlobalState {
   }
 
   static void newGame() async {
-    ffiEngine.NewGame(GlobalState.ffiMain);
+    GlobalState.ffiEngine.NewGame(GlobalState.ffiMain);
     evaluate();
   }
 
   static void playMove(int i) {
-    ffiEngine.PlayMove(GlobalState.ffiMain, i);
+    GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i);
     evaluate();
   }
 
   static void redo() {
-    ffiEngine.Redo(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Redo(GlobalState.ffiMain);
     evaluate();
   }
 
   static void undo() {
-    ffiEngine.Undo(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Undo(GlobalState.ffiMain);
     evaluate();
   }
 
   static void toAnalyzedGameOrFirstState() async {
-    ffiEngine.ToAnalyzedGameOrFirstState(GlobalState.ffiMain);
+    GlobalState.ffiEngine.ToAnalyzedGameOrFirstState(GlobalState.ffiMain);
     evaluate();
   }
 
   static void setCurrentMove(int currentMove) {
-    ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
+    GlobalState.ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
     evaluate();
   }
 
   static void stop() {
-    ffiEngine.Stop(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Stop(GlobalState.ffiMain);
   }
 
   static void evaluate() {
@@ -230,7 +235,7 @@ class GlobalState {
       return;
     }
     GlobalState.preferences.fillEvaluateParams();
-    ffiEngine.Evaluate(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
 }
 
@@ -314,6 +319,7 @@ class PreferencesState with ChangeNotifier {
     'Active tab': 0,
     'Highlight next move in analysis': true,
     'Highlight next moves outside analysis': true,
+    'Show unsupported CPU at startup': true,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],
@@ -335,7 +341,7 @@ class PreferencesState with ChangeNotifier {
   }
 
   void fillEvaluateParams() {
-    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
+    var params = GlobalState.ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
     params.lower = get('Lower');
     params.upper = get('Upper');
     params.max_positions = get('Positions when evaluating');
@@ -461,7 +467,7 @@ class GlobalAnnotationState with ChangeNotifier {
          annotation = annotation.ref.next_state_in_analysis != nullptr ?
                           annotation.ref.next_state_in_analysis :
                           annotation.ref.next_state_played) {
-      if (annotation.ref.move == ffiEngine.PassMove()) {
+      if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
         continue;
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
@@ -532,7 +538,7 @@ class ThorMetadataState with ChangeNotifier {
   List<String> selectedWhites;
 
   ThorMetadataState() :
-        thorMetadata = ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
+        thorMetadata = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
         playerStringToIndex = {},
         sourceToActive = {},
         selectedBlacks = [],
