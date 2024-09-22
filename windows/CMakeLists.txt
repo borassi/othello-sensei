@@ -7,7 +7,13 @@ project(othello_sensei LANGUAGES CXX)
 set(BINARY_NAME "othello_sensei")
 
 SET(CMAKE_CXX_STANDARD 17)
-#SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -latomic")
+
+#SET(
+#        CMAKE_CXX_FLAGS_RELEASE
+#        "${CMAKE_CXX_FLAGS_RELEASE} /GL"
+#)
+#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /LTCG /GENPROFILE:EXACT")
+#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /LTCG /USEPROFILE")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -26,6 +32,13 @@ else()
       "Debug" "Profile" "Release")
   endif()
 endif()
+
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /fp:fast /GL /GS- /MT")
+# Uncomment for POPCNT CPUs.
+#SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__")
+# Uncomment for AVX2 CPUs.
+#SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:AVX2 -D__BMI2__ -D__POPCNT__")
+
 # Define settings for the Profile build mode.
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
 set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")

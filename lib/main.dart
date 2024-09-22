@@ -31,6 +31,7 @@ import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 import 'package:path/path.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'ffi/ffi_bridge.dart';
 import 'files.dart';
 import 'widgets_board/board.dart';
 import 'widgets_spacers/app_sizes.dart';
@@ -49,9 +50,9 @@ void main() async {
 }
 
 class AppTheme extends StatelessWidget {
-  Widget child;
+  final Widget child;
 
-  AppTheme({super.key, required this.child});
+  const AppTheme({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -82,10 +83,49 @@ class AppTheme extends StatelessWidget {
   }
 }
 
+class CpuErrorDialog extends StatelessWidget {
+  const CpuErrorDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // We do it this way because Flutter refresh keeps post frame callbacks,
+    // causing the window to show multiple times.
+    GlobalState.preferences.set('Show unsupported CPU at startup', false);
+    var content = (
+        'Your CPU does not support the commands '
+        '${GlobalState.cpuType == CpuType.popcnt ? "BMI2" : "POPCNT and BMI2"}.'
+        ' Sensei will work, but the evaluation will be slower.');
+    return AlertDialog(
+      content: Text(content),
+      actions: <Widget>[
+        TextButton(
+          style: TextButton.styleFrom(
+            textStyle: Theme.of(context).textTheme.labelLarge,
+          ),
+          child: const Text('OK - show again next time'),
+          onPressed: () {
+            GlobalState.preferences.set('Show unsupported CPU at startup', true);
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            textStyle: Theme.of(context).textTheme.labelLarge,
+          ),
+          child: const Text('OK - do not show again'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class MainContent extends StatelessWidget {
-  Widget board;
-  Widget sidebar;
-  MainContent(this.board, this.sidebar, {super.key});
+  final Widget board;
+  final Widget sidebar;
+  const MainContent(this.board, this.sidebar, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -161,11 +201,10 @@ class MainContent extends StatelessWidget {
   }
 }
 
-class Main extends StatelessWidget {
-  final String title = "Othello Sensei";
+class MainApp extends StatelessWidget {
   static const tabName = ['Evaluate', 'Archive'];
 
-  const Main({super.key});
+  const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +220,97 @@ class Main extends StatelessWidget {
       const Margin.internal(),
       const Expanded(child: ThorGamesVisualizer()),
     ];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (GlobalState.preferences.get(
+          'Show unsupported CPU at startup') &&
+          [CpuType.popcnt, CpuType.noFeature].contains(GlobalState.cpuType)) {
+        showDialog<void>(
+            context: context,
+            builder: (BuildContext context) => const CpuErrorDialog()
+        );
+      }
+    });
+    return ListenableBuilder(
+        listenable: GlobalState.preferences,
+        builder: (BuildContext context, Widget? widget) {
+          return PopScope(
+              canPop: false,
+              onPopInvoked: (bool didPop) {
+                if (GlobalState.preferences.get('Back button action') == 'Undo') {
+                  GlobalState.undo();
+                } else {
+                  SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+                }
+              },
+              child: MyKeyboardListener(
+                  child: AppTheme(
+                      child: MainContent(
+                        const Board(),
+                        DefaultTabController(
+                          length: 2,
+                          initialIndex: 0,
+                          child: ListenableBuilder(
+                              listenable: GlobalState.preferences,
+                              builder: (BuildContext context, Widget? widget) {
+                                DefaultTabController.of(context).animateTo(
+                                    GlobalState.preferences.get('Active tab'),
+                                    duration: const Duration(seconds: 0));
+                                var childrenControls = <Widget>[];
+                                if (GlobalState.preferences.get('Controls position') == 'Side bar') {
+                                  childrenControls = [
+                                    const Margin.internal(),
+                                    const Controls(),
+                                  ];
+                                }
+                                var evaluateContent = Column(
+                                    children: childrenEvaluate + childrenControls
+                                );
+
+                                var thorContent = Column(
+                                  children: childrenThor + childrenControls,
+                                );
+                                return Scaffold(
+                                  bottomNavigationBar: TabBar(
+                                    tabs: List.generate(2, (index) => Tab(
+                                        height: Theme.of(context).extension<AppSizes>()!.squareSize,
+                                        child: Text(
+                                            tabName[index],
+                                            style: TextStyle(
+                                              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                                            )
+                                        )
+                                    )),
+                                    dividerHeight: 0,
+                                    onTap: (int index) {
+                                      GlobalState.preferences.set('Active tab', index);
+                                      GlobalState.evaluate();
+                                    },
+                                  ),
+                                  body: TabBarView(
+                                    children: [
+                                      evaluateContent,
+                                      thorContent,
+                                    ],
+                                  ),
+                                );
+                              }
+                          ),
+                        ),
+                      )
+                  )
+              )
+          );
+        }
+    );
+  }
+
+}
+
+class Main extends StatelessWidget {
+  const Main({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Sensei',
@@ -194,76 +324,7 @@ class Main extends StatelessWidget {
           brightness: Brightness.dark),
         useMaterial3: true,
       ),
-      home: ListenableBuilder(
-        listenable: GlobalState.preferences,
-        builder: (BuildContext context, Widget? widget) => PopScope(
-          canPop: false,
-          onPopInvoked: (bool didPop) {
-            if (GlobalState.preferences.get('Back button action') == 'Undo') {
-              GlobalState.undo();
-            } else {
-              SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-            }
-          },
-          child: MyKeyboardListener(
-            child: AppTheme(
-              child: MainContent(
-                const Board(),
-                DefaultTabController(
-                  length: 2,
-                  initialIndex: 0,
-                  child: ListenableBuilder(
-                    listenable: GlobalState.preferences,
-                    builder: (BuildContext context, Widget? widget) {
-                      DefaultTabController.of(context).animateTo(
-                          GlobalState.preferences.get('Active tab'),
-                          duration: const Duration(seconds: 0));
-                      var childrenControls = <Widget>[];
-                      if (GlobalState.preferences.get('Controls position') == 'Side bar') {
-                        childrenControls = [
-                          const Margin.internal(),
-                          const Controls(),
-                        ];
-                      }
-                      var evaluateContent = Column(
-                        children: childrenEvaluate + childrenControls
-                      );
-
-                      var thorContent = Column(
-                        children: childrenThor + childrenControls,
-                      );
-                      return Scaffold(
-                        bottomNavigationBar: TabBar(
-                          tabs: List.generate(2, (index) => Tab(
-                            height: Theme.of(context).extension<AppSizes>()!.squareSize,
-                            child: Text(
-                              tabName[index],
-                              style: TextStyle(
-                                fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                              )
-                            )
-                          )),
-                          dividerHeight: 0,
-                          onTap: (int index) {
-                            GlobalState.preferences.set('Active tab', index);
-                            GlobalState.evaluate();
-                          },
-                        ),
-                        body: TabBarView(
-                          children: [
-                            evaluateContent,
-                            thorContent,
-                          ],
-                        ),
-                      );
-                    }
-                  ),
-                ),
-              )
-            )
-          )
-        )
-      )
+      home: const MainApp()
     );
   }
 

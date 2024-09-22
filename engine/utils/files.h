@@ -38,7 +38,7 @@ void CreateFileIfNotExists(const std::string& filepath);
 FileOffset FileLength(std::fstream& file);
 
 template<typename T>
-std::vector<T> ReadFile(std::string filename) {
+std::vector<T> ReadFile(const std::string& filename) {
   std::fstream file = std::fstream(filename, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
     return {};

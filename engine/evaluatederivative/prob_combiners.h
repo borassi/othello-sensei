@@ -57,7 +57,7 @@ inline double ExponentialTimesPolyLog(double x) {
 class ProbCombiner {
  public:
   constexpr ProbCombiner(double (*function)(double x)): function_(function) {
-    assert(f(0) == -std::numeric_limits<float>::infinity());
+    assert(f(0) == -std::numeric_limits<double>::infinity());
     assert(f(1) == 0);
   }
 
@@ -65,7 +65,11 @@ class ProbCombiner {
 
   constexpr double inverse(double y) {
     assert(y <= 0);
-    return Inverse(function_, y, 0, 1);
+    // Used to avoid infinity when computing the inverse.
+    if (function_(1E-14) > y) {
+      return 0;
+    }
+    return Inverse(function_, y, 1E-14, 1);
   }
 
   constexpr double derivative(double x) {

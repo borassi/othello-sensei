@@ -51,24 +51,26 @@ add_subdirectory(../../engine/hashmap hashmap)
 add_subdirectory(../../engine/main main)
 add_subdirectory(../../engine/thor thor)
 add_subdirectory(../../engine/utils utils)
-add_subdirectory(../../engine/jni jni)
-#add_subdirectory(engine/board)
-#add_subdirectory(engine/book)
-#add_subdirectory(engine/estimators)
-#add_subdirectory(engine/evaluatealphabeta)
-#add_subdirectory(engine/evaluatedepthone)
-#add_subdirectory(engine/evaluatederivative)
-#add_subdirectory(engine/hashmap)
-#add_subdirectory(engine/main)
-#add_subdirectory(engine/thor)
-#add_subdirectory(engine/utils)
-#add_subdirectory(engine/jni)
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
 
 add_library(
-        api
+        cpu_adapter_win
+        SHARED
+        ../../engine/utils/cpu_adapter.h
+        ../../engine/utils/cpu_adapter.cpp
+        ../../engine/utils/exports.def
+)
+
+target_link_libraries(
+        cpu_adapter_win
+        LINK_PUBLIC
+        cpu_adapter
+)
+
+add_library(
+        ui_win
         SHARED
         ../../engine/main/ui.h
         ../../engine/main/ui.cpp
@@ -76,7 +78,7 @@ add_library(
 )
 
 target_link_libraries(
-        api
+        ui_win
         LINK_PUBLIC
         ui
 )

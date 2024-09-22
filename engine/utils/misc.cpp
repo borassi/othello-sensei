@@ -20,6 +20,7 @@
 #include <locale>
 #include <regex>
 #include <time.h>
+#include "constants.h"
 #include "misc.h"
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}

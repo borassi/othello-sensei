@@ -265,13 +265,14 @@ class Source {
   }
 
   virtual void LoadSortedGames() {
-    std::ifstream file(SortedGamesPath());
-    uint32_t index;
+    std::vector<uint32_t> file = ReadFile<uint32_t>(SortedGamesPath());
+    int position = 0;
+
     for (std::vector<const Game*>* v : {&games_by_black_, &games_by_white_, &games_by_tournament_, &games_by_year_}) {
       for (int i = 0; i < games_.size(); ++i) {
-        file.read((char*) &index, sizeof(uint32_t));
-        assert(index >= 0 && index < games_.size());
-        v->push_back(games_.data() + index);
+        assert(file[position] >= 0 && file[position] < games_.size());
+        v->push_back(games_.data() + file[position]);
+        ++position;
       }
     }
   }
