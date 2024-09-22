@@ -66,10 +66,10 @@ class ProbCombiner {
   constexpr double inverse(double y) {
     assert(y <= 0);
     // Used to avoid infinity when computing the inverse.
-    if (y < -1E30) {
+    if (function_(1E-14) > y) {
       return 0;
     }
-    return Inverse(function_, y, 1E-16, 1);
+    return Inverse(function_, y, 1E-14, 1);
   }
 
   constexpr double derivative(double x) {
