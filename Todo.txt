@@ -75,4 +75,5 @@ HOW TO RELEASE ON WINDOWS:
 - Install locally by double-clicking on build\windows\x64\runner\Release\othello_sensei.msix
 - dart run msix:build --store
 - Upload build\windows\x64\runner\Release\othello_sensei.msix to the store
-  https://partner.microsoft.com/en-us/dashboard/home
+  https://partner.microsoft.com/en-us/dashboard/products/9N54CS9F3JGP/overview
+  Home page: https://partner.microsoft.com/en-us/dashboard/home
