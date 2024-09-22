@@ -1,4 +1,4 @@
-LIBRARY api
+LIBRARY ui_win
 EXPORTS
     PassMove
     MainInit

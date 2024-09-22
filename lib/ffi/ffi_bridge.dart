@@ -30,7 +30,22 @@ DynamicLibrary getDynamicLibrary() {
   if (Platform.isMacOS || Platform.isIOS) {
     return DynamicLibrary.process();
   } else if (Platform.isWindows) {
-    return DynamicLibrary.open('api.dll');
+    FFICpuSupportedFeatures supportedFeatures = FFICpuSupportedFeatures(DynamicLibrary.open('cpu_adapter_win.dll'));
+    if (supportedFeatures.CPUHasBMI2()) {
+      try {
+        return DynamicLibrary.open('ui_win-bmi2.dll');
+      } catch (invalidArgumentException) {
+        // Run locally, didn't copy the file.
+      }
+    }
+    if (supportedFeatures.CPUHasPopcnt()) {
+      try {
+        return DynamicLibrary.open('ui_win-popcnt.dll');
+      } catch (invalidArgumentException) {
+        // Run locally, didn't copy the file.
+      }
+    }
+    return DynamicLibrary.open('ui_win.dll');
   } else if (Platform.isLinux) {
     FFICpuSupportedFeatures supportedFeatures = FFICpuSupportedFeatures(DynamicLibrary.open('libcpu_adapter.so'));
     if (supportedFeatures.CPUHasBMI2()) {

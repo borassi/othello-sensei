@@ -280,7 +280,7 @@ struct Features {
 
 typedef std::vector<int8_t> EvalType;
 EvalType LoadEvals(std::string filepath = kEvalFilepath);
-constexpr Features kFeatures;
+const Features kFeatures;
 
 class PatternEvaluator : public EvaluatorDepthOneBase {
  public:

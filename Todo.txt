@@ -70,7 +70,13 @@ HOW TO RELEASE ON LINUX:
 - snapcraft upload --release=beta othello-sensei_1.0.1_amd64.snap
 
 HOW TO RELEASE ON WINDOWS:
-- dart run msix:create
+- flutter build windows
+- Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
+- Comment the BMI2 lines in windows/CMakeLists.txt
+- flutter build windows
+- Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-popcnt.dll
+- dart run msix:build
+
 - https://learn.microsoft.com/en-us/entra/identity-platform/howto-configure-publisher-domain
 - https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/ba62a845-85c3-4f14-9c22-a81fe6b6133f/isMSAApp~/true
 - https://partner.microsoft.com/en-us/dashboard/home

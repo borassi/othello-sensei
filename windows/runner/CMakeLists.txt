@@ -56,7 +56,21 @@ add_subdirectory(../../engine/utils utils)
 add_dependencies(${BINARY_NAME} flutter_assemble)
 
 add_library(
-        api
+        cpu_adapter_win
+        SHARED
+        ../../engine/utils/cpu_adapter.h
+        ../../engine/utils/cpu_adapter.cpp
+        ../../engine/utils/exports.def
+)
+
+target_link_libraries(
+        cpu_adapter_win
+        LINK_PUBLIC
+        cpu_adapter
+)
+
+add_library(
+        ui_win
         SHARED
         ../../engine/main/ui.h
         ../../engine/main/ui.cpp
@@ -64,7 +78,7 @@ add_library(
 )
 
 target_link_libraries(
-        api
+        ui_win
         LINK_PUBLIC
         ui
 )

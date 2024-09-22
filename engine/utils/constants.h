@@ -23,8 +23,24 @@
 #include <immintrin.h>
 // From https://stackoverflow.com/a/78599923.
 #define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
+
+#ifdef __POPCNT__
 #define __builtin_popcountll _mm_popcnt_u64
 #define __builtin_popcount __popcnt
+#else
+inline int __builtin_popcountll(uint64_t i) {
+  i = i - ((i >> 1) & 0x5555555555555555ULL);
+  i = (i & 0x3333333333333333ULL) + ((i >> 2) & 0x3333333333333333ULL);
+  i = (i + (i >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+  return (i * 0x0101010101010101ULL) >> 56;
+}
+inline int __builtin_popcount(uint32_t i){
+    i = (i & 0x55555555) + ((i & 0xAAAAAAAA) >> 1);
+    i = (i & 0x33333333) + ((i & 0xCCCCCCCC) >> 2);
+    return (i & 0x0F0F0F0F) + ((i & 0xF0F0F0F0) >> 4);
+}
+#endif
+
 #define __builtin_ctzll _tzcnt_u64
 #define __builtin_clzll _lzcnt_u64
 #define __builtin_ctz _tzcnt_u32
