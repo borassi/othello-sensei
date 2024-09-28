@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -141,8 +142,12 @@ class GlobalState {
   static ThorMetadataState? thorMetadataOrNull;
   static late FFIEngine ffiEngine;
   static late CpuType cpuType;
+  static late String localPath;
 
   static Future<void> init() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    final directory = await getApplicationSupportDirectory();
+    localPath = directory.path;
     var ffiEngineCpuType = getDynamicLibrary();
     ffiEngine = FFIEngine(ffiEngineCpuType.$1);
     cpuType = ffiEngineCpuType.$2;

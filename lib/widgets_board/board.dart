@@ -18,7 +18,6 @@
 import 'package:flutter/material.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
-import '../widgets_spacers/margins.dart';
 import 'case.dart';
 
 class Coordinate extends StatelessWidget {

@@ -17,53 +17,45 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:othello_sensei/state.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 
 const String assetVersion = "8";
 
-Future<String> localPath() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final directory = await getApplicationSupportDirectory();
-  return directory.path;
+String localAssetPath() {
+  return join(GlobalState.localPath, "assets");
 }
 
-Future<String> localAssetPath() async {
-  return join(await localPath(), "assets");
+String localTempPath() {
+  return join(GlobalState.localPath, "tmp");
 }
 
-Future<String> localTempPath() async {
-  return join(await localPath(), "tmp");
-}
-
-Future<String> versionFilePath() async {
-  return join(await localAssetPath(), "version.txt");
+String versionFilePath() {
+  return join(localAssetPath(), "version.txt");
 }
 
 Future<void> copyAssetsToLocalPath() async {
-  final currentAssetPath = await localPath();
   final manifestContent = await rootBundle.loadString('AssetManifest.json');
   final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-  var directory = Directory(await localAssetPath());
+  var directory = Directory(localAssetPath());
   if (directory.existsSync()) {
     directory.deleteSync(recursive: true);
   }
   for (var path in manifestMap.keys) {
-    var destinationPath = join(currentAssetPath, path);
+    var destinationPath = join(GlobalState.localPath, path);
     var destinationDirName = dirname(destinationPath);
     Directory(destinationDirName).createSync(recursive: true);
     final encryptedByteData = await rootBundle.load(path);
     File(destinationPath).writeAsBytesSync(encryptedByteData.buffer.asUint8List());
   }
-  File(await versionFilePath()).writeAsString(assetVersion);
+  File(versionFilePath()).writeAsString(assetVersion);
 }
 
 Future<void> maybeCopyAssetsToLocalPath() async {
   String storedAssetVersion = '';
   try {
-    storedAssetVersion = File(await versionFilePath()).readAsStringSync();
+    storedAssetVersion = File(versionFilePath()).readAsStringSync();
   } on PathNotFoundException {}
   if (assetVersion != storedAssetVersion) {
     await copyAssetsToLocalPath();

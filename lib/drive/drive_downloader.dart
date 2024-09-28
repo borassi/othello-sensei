@@ -21,9 +21,9 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart';
-import 'package:logger/logger.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_spacers/margins.dart';
 import 'package:path/path.dart';
@@ -31,6 +31,7 @@ import 'dart:io' as io;
 import 'package:http/http.dart' as http;
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:tar/tar.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import '../env.dart';
 import '../files.dart';
@@ -149,6 +150,73 @@ class DownloadFinishedHandler with ChangeNotifier {
   }
 }
 
+class WindowsHelpText extends StatelessWidget {
+  const WindowsHelpText({super.key});
+  static const windowsHelpUrl = (
+      'https://support.microsoft.com/en-us/windows/add-an-exclusion-to-windows'
+      '-security-811816c0-4dfd-af4a-47e4-c301afe13b26'
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        children: <TextSpan>[
+          TextSpan(
+            text: (
+                'If the download takes more than a few minutes, it might\n'
+                'be because of Windows Defender checks.\n'
+                '\n'
+                'Possible solutions:\n'
+                ' - Wait (it should take at most 1 hour).\n'
+                ' - Add a Windows Defender exclusion for process \n'
+                '     "othello_sensei.exe" ('
+            ),
+            style: Theme.of(context).textTheme.bodySmall!
+          ),
+          TextSpan(
+            text: 'instructions',
+            style: TextStyle(
+              fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => launchUrlString(windowsHelpUrl),
+          ),
+          TextSpan(
+            text: (
+                '), and the download will\n'
+                '     immediately become faster (no need to restart).\n'
+                ' - Download the latest book or archive from this Drive '),
+            style: Theme.of(context).textTheme.bodySmall!
+          ),
+          TextSpan(
+            text: 'folder',
+            style: TextStyle(
+              fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => launchUrlString('https://drive.google.com/drive/folders/1V9GKU4X30l2oppfC3dG80qFh4PHb6sUY?usp=drive_link'),
+          ),
+          TextSpan(
+              text: (
+                  '.\n'
+                  '     After the download, close Sensei and replace the content of\n'
+                  '     ${localAssetPath()}\n'
+                  '     with the uncompressed downloaded file (some folders in this\n'
+                  '     path might be hidden).\n'
+              ),
+              style: Theme.of(context).textTheme.bodySmall!
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class DownloadSecondaryWindow extends StatelessWidget {
   final String name;
   final String path;
@@ -239,12 +307,19 @@ class DownloadSecondaryWindow extends StatelessWidget {
                           builder: (BuildContext context, Widget? w) {
                             double progress;
                             String text;
+                            var windowsHelpTextWidgets = <Widget>[];
                             if (downloadProgress.getProgress() == 0) {
                               text = "Starting";
                               progress = 0;
                             } else if (downloadProgress.getProgress() < 1) {
                               text = "Downloading";
                               progress = downloadProgress.getProgress();
+                              if (Platform.isWindows) {
+                                windowsHelpTextWidgets = <Widget>[
+                                  const WindowsHelpText(),
+                                  const Spacer()
+                                ];
+                              }
                             } else {
                               text = "Unzipping";
                               progress = downloadProgress.getProgress() - 1;
@@ -254,11 +329,9 @@ class DownloadSecondaryWindow extends StatelessWidget {
                                   const Spacer(),
                                   Text(text, style: Theme.of(context).textTheme.bodyMedium!),
                                   const Margin.side(),
-                                  CircularProgressIndicator(
-                                    value: progress,
-                                  ),
+                                  CircularProgressIndicator(value: progress),
                                   const Spacer(),
-                                ]
+                                ] + windowsHelpTextWidgets
                             );
                           }
                       ),

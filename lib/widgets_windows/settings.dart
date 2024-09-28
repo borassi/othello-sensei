@@ -167,7 +167,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
         state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
-            onChanged(newValue == '' ? null : double.parse(newValue!));
+            onChanged(newValue == '' ? null : double.parse(newValue));
           }
         },
         keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
