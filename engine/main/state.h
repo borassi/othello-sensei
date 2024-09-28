@@ -111,15 +111,33 @@ class EvaluationState : public TreeNode {
   bool BlackTurn() const { return annotations_.black_turn; }
 
   // Returns:
-  // - If there is no analyzed game, the first state.
   // - If there is an analyzed game and this is outside the analysis, the first
-  //   state in the analysis.
-  // - If there is an analyzed game and this is in the analysis, the first
-  //   state
-  EvaluationState* ToAnalyzedGameOrFirstState() {
+  //   ancestor in the analysis.
+  // - The first state otherwise.
+  EvaluationState* LastAnalyzedState() {
     EvaluationState* state;
     for (state = this; state->Father() != nullptr; state = state->Father()) {
       if (state->next_state_in_analysis_ && !next_state_in_analysis_) {
+        return state;
+      }
+    }
+    return state;
+  }
+
+  int NumChildrenWithDescendants() {
+    int result = 0;
+    for (const std::shared_ptr<EvaluationState>& child : children_) {
+      result += child->HasValidChildren();
+    }
+    return result;
+  }
+
+  // Returns the first ancestor with multiple visited children.
+  EvaluationState* LastChoice() {
+    EvaluationState* state;
+    for (state = Father(); state->Father() != nullptr; state = state->Father()) {
+      assert(state->NumChildrenWithDescendants() >= 1);
+      if (state->NumChildrenWithDescendants() > 1) {
         return state;
       }
     }

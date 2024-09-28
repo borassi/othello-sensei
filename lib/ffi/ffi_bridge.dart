@@ -43,7 +43,7 @@ enum CpuType {
     cpuNamePattern = 'ui_win{}.dll';
   } else if (Platform.isLinux) {
     supportedFeatures = FFICpuSupportedFeatures(
-        DynamicLibrary.open('libcpu_adapter.dll'));
+        DynamicLibrary.open('libcpu_adapter.so'));
     cpuNamePattern = 'libui{}.so';
   } else {
     throw UnimplementedError('Unsupported platform ${Platform.operatingSystem}');

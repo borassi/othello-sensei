@@ -215,8 +215,8 @@ class GlobalState {
     evaluate();
   }
 
-  static void toAnalyzedGameOrFirstState() async {
-    GlobalState.ffiEngine.ToAnalyzedGameOrFirstState(GlobalState.ffiMain);
+  static void toAnalyzedGameOrLastChoice() async {
+    GlobalState.ffiEngine.ToAnalyzedGameOrLastChoice(GlobalState.ffiMain);
     evaluate();
   }
 

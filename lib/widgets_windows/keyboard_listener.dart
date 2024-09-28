@@ -27,6 +27,18 @@ class CopyIntent extends Intent {
 class PasteIntent extends Intent {
   const PasteIntent();
 }
+class NewGameIntent extends Intent {
+  const NewGameIntent();
+}
+class UndoIntent extends Intent {
+  const UndoIntent();
+}
+class RedoIntent extends Intent {
+  const RedoIntent();
+}
+class BackIntent extends Intent {
+  const BackIntent();
+}
 
 
 class MyKeyboardListener extends StatelessWidget {
@@ -40,6 +52,11 @@ class MyKeyboardListener extends StatelessWidget {
       shortcuts: const <ShortcutActivator, Intent>{
         SingleActivator(LogicalKeyboardKey.keyC, control: true): CopyIntent(),
         SingleActivator(LogicalKeyboardKey.keyV, control: true): PasteIntent(),
+        SingleActivator(LogicalKeyboardKey.keyN, control: true): NewGameIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowLeft): UndoIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowRight): RedoIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowUp): BackIntent(),
+        SingleActivator(LogicalKeyboardKey.pageUp): BackIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -48,6 +65,18 @@ class MyKeyboardListener extends StatelessWidget {
           ),
           PasteIntent: CallbackAction<PasteIntent>(
             onInvoke: (PasteIntent intent) => pasteOrError(context),
+          ),
+          NewGameIntent: CallbackAction<NewGameIntent>(
+            onInvoke: (NewGameIntent intent) => GlobalState.newGame(),
+          ),
+          UndoIntent: CallbackAction<UndoIntent>(
+            onInvoke: (UndoIntent intent) => GlobalState.undo(),
+          ),
+          RedoIntent: CallbackAction<RedoIntent>(
+            onInvoke: (RedoIntent intent) => GlobalState.redo(),
+          ),
+          BackIntent: CallbackAction<BackIntent>(
+            onInvoke: (BackIntent intent) => GlobalState.toAnalyzedGameOrLastChoice(),
           ),
         },
         child: Focus(

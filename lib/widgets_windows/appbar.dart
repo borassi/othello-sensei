@@ -114,7 +114,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         const SenseiIconButton(
           icon: Icons.keyboard_double_arrow_left_rounded,
           tooltip: 'Back to the game / the first position',
-          onPressed: GlobalState.toAnalyzedGameOrFirstState,
+          onPressed: GlobalState.toAnalyzedGameOrLastChoice,
         ),
         const SenseiIconButton(
           icon: Icons.chevron_left_rounded,

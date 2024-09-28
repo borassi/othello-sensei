@@ -64,8 +64,12 @@ class Main {
     ToState(current_state_->PreviousNonPass());
   }
 
-  void ToAnalyzedGameOrFirstState() {
-    ToState(current_state_->ToAnalyzedGameOrFirstState());
+  void ToAnalyzedGameOrLastChoice() {
+    if (first_state_->NextStateInAnalysis()) {
+      ToState(current_state_->LastAnalyzedState());
+    } else {
+      ToState(current_state_->LastChoice());
+    }
   }
 
   void ResetEvaluations() {

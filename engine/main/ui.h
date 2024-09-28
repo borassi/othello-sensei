@@ -63,7 +63,7 @@ EXPORT
 void Redo(void* ptr);
 
 EXPORT
-void ToAnalyzedGameOrFirstState(void* ptr);
+void ToAnalyzedGameOrLastChoice(void* ptr);
 
 EXPORT
 void Evaluate(void* ptr);
