@@ -12,7 +12,7 @@ EXPORTS
     Undo
     SetCurrentMove
     Redo
-    ToAnalyzedGameOrFirstState
+    ToAnalyzedGameOrLastChoice
     Evaluate
     Analyze
     GetCurrentAnnotations

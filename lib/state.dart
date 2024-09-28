@@ -166,8 +166,8 @@ class GlobalState {
     preferences = await PreferencesState.create();
     await _createMain();
     if (Platform.isAndroid || Platform.isIOS) {
-      ReceiveSharingIntent.getInitialMedia().then(receiveOthelloQuestEvent);
-      ReceiveSharingIntent.getMediaStream().listen(receiveOthelloQuestEvent);
+      ReceiveSharingIntent.instance.getInitialMedia().then(receiveOthelloQuestEvent);
+      ReceiveSharingIntent.instance.getMediaStream().listen(receiveOthelloQuestEvent);
     }
   }
 

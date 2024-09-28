@@ -159,20 +159,19 @@ class WindowsHelpText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
+    return SelectableText.rich(
+      TextSpan(
         children: <TextSpan>[
-          TextSpan(
+          const TextSpan(
             text: (
                 'If the download takes more than a few minutes, it might\n'
                 'be because of Windows Defender checks.\n'
                 '\n'
                 'Possible solutions:\n'
                 ' - Wait (it should take at most 1 hour).\n'
-                ' - Add a Windows Defender exclusion for process \n'
-                '     "othello_sensei.exe" ('
+                ' - Add a Windows Defender exclusion:\n'
+                '     1. Follow these '
             ),
-            style: Theme.of(context).textTheme.bodySmall!
           ),
           TextSpan(
             text: 'instructions',
@@ -184,12 +183,13 @@ class WindowsHelpText extends StatelessWidget {
             recognizer: TapGestureRecognizer()
               ..onTap = () => launchUrlString(windowsHelpUrl),
           ),
-          TextSpan(
+          const TextSpan(
             text: (
-                '), and the download will\n'
-                '     immediately become faster (no need to restart).\n'
+                '.\n'
+                '     2. After clicking "Add an exclusion", select "Process".\n'
+                '     3. Enter process name "othello_sensei.exe".\n'
+                '     4. The download will become much faster (no need to restart it).\n'
                 ' - Download the latest book or archive from this Drive '),
-            style: Theme.of(context).textTheme.bodySmall!
           ),
           TextSpan(
             text: 'folder',
@@ -203,16 +203,21 @@ class WindowsHelpText extends StatelessWidget {
           ),
           TextSpan(
               text: (
-                  '.\n'
-                  '     After the download, close Sensei and replace the content of\n'
-                  '     ${localAssetPath()}\n'
-                  '     with the uncompressed downloaded file (some folders in this\n'
-                  '     path might be hidden).\n'
+                  ':\n'
+                  '     1. Open the link and enter the "Books" or "Archive" subfolder.\n'
+                  '     2. Double click on "latest.tar.gz".\n'
+                  '     3. Click "Download".\n'
+                  '     4. Open the downloaded file and the folder\n'
+                  '        ${localAssetPath()}\n'
+                  '        (some folders in this path might be hidden).'
+                  '     5. Close Sensei.\n'
+                  '     6. Copy "book" or "archive" from the former to the latter folder.\n'
+                  '     7. Reopen Sensei. You should see the new book or archive.'
               ),
-              style: Theme.of(context).textTheme.bodySmall!
           ),
         ],
       ),
+      style: Theme.of(context).textTheme.bodySmall!
     );
   }
 }

@@ -66,6 +66,7 @@ HOW TO RELEASE ON LINUX:
 - snapcraft upload --release=beta othello-sensei_1.0.1_amd64.snap
 
 HOW TO RELEASE ON WINDOWS:
+- Check that the link on Windows Defender in drive_downloader is updated.
 - flutter build windows
 - Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
 - Comment the BMI2 / POPCNT lines in windows/CMakeLists.txt
