@@ -209,7 +209,7 @@ class WindowsHelpText extends StatelessWidget {
                   '     3. Click "Download".\n'
                   '     4. Open the downloaded file and the folder\n'
                   '        ${localAssetPath()}\n'
-                  '        (some folders in this path might be hidden).'
+                  '        (some folders in this path might be hidden).\n'
                   '     5. Close Sensei.\n'
                   '     6. Copy "book" or "archive" from the former to the latter folder.\n'
                   '     7. Reopen Sensei. You should see the new book or archive.'
