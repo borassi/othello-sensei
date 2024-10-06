@@ -165,7 +165,7 @@ class MainContent extends StatelessWidget {
 
     var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
     return Container(
-      color: Theme.of(context).colorScheme.primaryContainer,
+      color: brokenAppBar ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.primaryContainer,
       child: SafeArea(
         bottom: false,
         child: AnnotatedRegion(

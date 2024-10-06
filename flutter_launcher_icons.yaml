@@ -1,10 +1,12 @@
 dev_dependencies:
   flutter_launcher_icons: "^0.13.1"
 
+# If the icons don't work, try flutter clean.
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icons/icon.png"
+  # For iOS, replace with icon_512x512.png.
+  image_path: "assets/icons/icon_512x512.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   remove_alpha_ios: true
   adaptive_icon_background: "#005313"
@@ -20,4 +22,4 @@ flutter_launcher_icons:
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "assets/icons/icon.png"
+    image_path: "assets/icons/icon_rounded_corners.png"

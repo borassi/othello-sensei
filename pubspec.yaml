@@ -36,7 +36,7 @@ dependencies:
   path: ^1.8.3
   card_settings: ^3.5.0
   shared_preferences: ^2.2.2
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.1
   select_searchable_list: ^0.1.05
   dropdown_search: ^5.0.6
   fl_chart: ^0.66.1

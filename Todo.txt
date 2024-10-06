@@ -1,7 +1,7 @@
 Mac
 - P0 Understand how to publish the app.
-- P0 Fix icon.
 - P3 Fix warning with multiple matching destinations.
+- P4 Enable BMI2 on Mac with Intel (not really useful since newer Mac do not support it).
 
 Usability / bugs
 - P2 MED Fix accessibility issues.
