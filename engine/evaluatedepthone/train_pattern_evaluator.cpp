@@ -299,7 +299,7 @@ std::vector<std::vector<FeatureValue>> CategoricalRegressions::FeatureValueToCan
       continue;
     }
     old_canonical_rotation = kFeatures.canonical_rotation[i];
-    result.push_back(std::move(FeatureValueToCanonical(i)));
+    result.push_back(FeatureValueToCanonical(i));
   }
   return result;
 }

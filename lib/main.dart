@@ -42,9 +42,12 @@ void main() async {
   await GlobalState.init();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     WidgetsFlutterBinding.ensureInitialized();
-    WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
-    WindowManager.instance.setIcon(join(await localAssetPath(), 'icons/icon_512x512.png'));
     await windowManager.ensureInitialized();
+    WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
+    if (!Platform.isMacOS) {
+      WindowManager.instance.setIcon(
+          join(localAssetPath(), 'icons/icon_512x512.png'));
+    }
   }
   runApp(GlobalState.main);
 }
@@ -72,8 +75,8 @@ class AppTheme extends StatelessWidget {
           data: theme.copyWith(
             textTheme: TextTheme(
               bodyLarge: TextStyle(fontSize: squareSize / 2.1),
-              bodyMedium: TextStyle(fontSize: squareSize / 3.5),
-              bodySmall: TextStyle(fontSize: squareSize / 5.5),
+              bodyMedium: TextStyle(fontSize: squareSize / 3.9),
+              bodySmall: TextStyle(fontSize: squareSize / 6),
             ),
           ),
           child: child
@@ -161,40 +164,46 @@ class MainContent extends StatelessWidget {
     );
 
     var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
-    return AnnotatedRegion(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Theme.of(context).colorScheme.primaryContainer,
-        statusBarIconBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Row(
-          children:
-          (brokenAppBar ? <Widget>[SafeArea(child: boardContent)] : <Widget>[]) +
-          <Widget>[
-            Expanded(
-              child: Column(
-                children: <Widget>[
-                  Row(
-                    children: (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[])
-                        + <Widget>[const Expanded(child: SenseiAppBar())]
-                  )] +
-                  (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[]) + [
-                  Expanded(
-                    child: Center(
-                      child: Flex(
-                        direction: Theme.of(context).extension<AppSizes>()!.vertical() ? Axis.vertical : Axis.horizontal,
-                        mainAxisSize: MainAxisSize.min,
-                        children:
-                          (!brokenAppBar ? <Widget>[boardContent] : <Widget>[]) +
-                          [sideContent]
+    return Container(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: SafeArea(
+        bottom: false,
+        child: AnnotatedRegion(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Theme.of(context).colorScheme.primaryContainer,
+            statusBarIconBrightness: Brightness.light,
+          ),
+          child: Scaffold(
+            resizeToAvoidBottomInset: false,
+            body: Row(
+              children:
+              (brokenAppBar ? <Widget>[boardContent] : <Widget>[]) +
+              <Widget>[
+                Expanded(
+                  child: Column(
+                    children: <Widget>[
+                      Row(
+                        children: (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[])
+                            + <Widget>[const Expanded(child: SenseiAppBar())]
+                      )] +
+                      (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[]) + [
+                      Expanded(
+                        child: Center(
+                          child: Flex(
+                            direction: Theme.of(context).extension<AppSizes>()!.vertical() ? Axis.vertical : Axis.horizontal,
+                            mainAxisSize: MainAxisSize.min,
+                            children:
+                              (!brokenAppBar ? <Widget>[boardContent] : <Widget>[]) +
+                              [sideContent]
+                          )
+                        )
                       )
-                    )
+                    ]
                   )
-                ]
-              )
+                )
+              ]
             )
-          ]
+          )
         )
       )
     );
@@ -327,5 +336,4 @@ class Main extends StatelessWidget {
       home: const MainApp()
     );
   }
-
 }

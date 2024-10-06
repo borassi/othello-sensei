@@ -113,7 +113,6 @@ class Thor {
 
   virtual void ComputeCanonicalizer() {
     ElapsedTime t;
-    int k = 0;
     std::vector<Sequence> all_sequences;
 
     for (const auto& [_, source] : sources_) {

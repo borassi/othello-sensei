@@ -185,15 +185,13 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
-    return SafeArea(
-      child: Container(
+    return Container(
         alignment: Alignment.center,
         color: Theme.of(context).colorScheme.primaryContainer,
         width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
         // we can set width here with conditions
         height: kToolbarHeight,
         child: buildRow(context),
-      )
     );
   }
 }

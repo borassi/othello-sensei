@@ -21,7 +21,7 @@
 #include "../utils/load_training_set.h"
 
 int main() {
-  auto start = std::chrono::system_clock::now();
+//  auto start = std::chrono::system_clock::now();
   std::vector<EvaluatedBoard> full_train_board = load_hard_set(184);
   std::vector<EvaluatedBoard> train_board = load_train_set();
   full_train_board.insert(full_train_board.end(), train_board.begin(), train_board.end());

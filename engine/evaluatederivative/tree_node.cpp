@@ -21,7 +21,6 @@
 std::atomic_bool TreeNode::extend_eval_failed_(false);
 
 std::ostream& operator<<(std::ostream& stream, const Node& b) {
-  Board board = b.ToBoard();
   stream << b.Player() << " " << b.Opponent() << ": " << b.LeafEval()
          << " [" << (int) b.Lower() << " " << (int) b.Upper() << "]";
   for (int i = b.WeakLower(); i <= b.WeakUpper(); i += 2) {

@@ -146,7 +146,8 @@ String formatEval(double eval) {
   if (eval.isNaN) {
     return '-';
   }
-  return eval.toStringAsFixed(GlobalState.preferences.get("Round evaluations") ? 0 : 2);
+  return eval.toStringAsFixed(
+      GlobalState.preferences.get("Round evaluations") || eval.abs() > 100 ? 0 : 2);
 }
 
 double getEvalFromAnnotations(Annotations annotation, bool black, {bool bestLine = false} ) {

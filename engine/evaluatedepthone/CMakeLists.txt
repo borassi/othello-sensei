@@ -88,6 +88,7 @@ add_library(
 add_library(
         test_evaluator_depth_one
         test_evaluator_depth_one.h
+        test_evaluator_depth_one.cpp
 )
 
 target_link_libraries(

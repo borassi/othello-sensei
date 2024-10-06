@@ -277,7 +277,7 @@ class EvaluatorDerivative {
     for (int i = 0; i < threads_.size(); ++i) {
       stats.Merge(threads_[i]->GetStats());
     }
-    return std::move(stats);
+    return stats;
   }
 
   uint8_t Index() const { return index_; }
@@ -360,7 +360,7 @@ class EvaluatorDerivative {
       best_advancement_ = std::min(best_advancement_, advancement);
       good_stop = advancement <= best_advancement_;
     }
-    if (time > max_time_ || time > 0.8 * max_time_ && good_stop) {
+    if (time > max_time_ || (time > 0.8 * max_time_ && good_stop)) {
       status_ = STOPPED_TIME;
       return true;
     }

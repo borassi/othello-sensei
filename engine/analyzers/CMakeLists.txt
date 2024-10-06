@@ -31,9 +31,7 @@ target_link_libraries(
 add_library(
         endgame_ffo
         endgame_ffo.h
-)
-set_target_properties(
-        endgame_ffo PROPERTIES LINKER_LANGUAGE CXX
+        endgame_ffo.cpp
 )
 
 target_link_libraries(

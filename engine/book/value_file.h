@@ -68,7 +68,7 @@ class ValueFile {
 
   BookFileOffset Elements() const {
     auto file = GetFile();
-    return FileLength(file) / size_;
+    return (BookFileOffset) (FileLength(file) / size_);
   }
 
   void Print();

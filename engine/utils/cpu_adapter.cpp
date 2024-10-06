@@ -19,6 +19,9 @@
 #ifdef ANDROID
 bool CPUHasBMI2() { return false; }
 bool CPUHasPopcnt() { return false; }
+#elif __APPLE__
+bool CPUHasBMI2() { return false; }
+bool CPUHasPopcnt() { return true; }
 #elif defined(_MSC_VER)
 
 // Copied from https://learn.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex?view=msvc-160.

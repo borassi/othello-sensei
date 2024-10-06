@@ -161,7 +161,8 @@ class Node {
       max_log_derivative |= (uint8_t) serialized[i++];
       n.MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -(int) max_log_derivative);
     }
-    PN proof, disproof;
+    PN proof = 0;
+    PN disproof = 0;
     if (n.lower_ + 1 <= last_1) {
       proof = serialized[i++];
     }
@@ -969,7 +970,6 @@ class TreeNode : public Node {
   }
 
   bool IsUnderAnalyzed(const TreeNode& father, int father_eval_goal) const {
-    NVisited father_visited = father.GetNVisited();
     double remaining_work = father.Node::RemainingWork(father_eval_goal, father_eval_goal);
     if (remaining_work < 100000) {
       return false;

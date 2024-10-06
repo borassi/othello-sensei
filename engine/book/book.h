@@ -535,7 +535,6 @@ bool Book<version>::IsSizeOK() {
 template<int version>
 void Book<version>::Print(int start, int end) {
   auto index_file = IndexFile();
-  int size = index_file->GetLength();
   HashMapNode node;
   if (end == -1) {
     end = hash_map_size_;
@@ -556,7 +555,6 @@ void Book<version>::Print(int start, int end) {
 template<int version>
 void Book<version>::Clean() {
   std::ofstream(IndexFilename(), std::ios::out).close();
-  uint32_t to_write = 0;
   for (ValueFile& value_file : value_files_) {
     value_file.Clean();
   }

@@ -385,7 +385,6 @@ class EvaluationState : public TreeNode {
   void UpdateAnnotationsTree() {
     annotations_.first_child = &children_[0]->annotations_;
     for (int i = 1; i < children_.size(); ++i) {
-      EvaluationState* child = children_[i].get();
       children_[i-1]->annotations_.next_sibling = &children_[i]->annotations_;
     }
   }

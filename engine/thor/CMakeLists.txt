@@ -15,10 +15,7 @@
 add_library(
         thor_test_utils
         thor_test_utils.h
-)
-
-set_target_properties(
-        thor_test_utils PROPERTIES LINKER_LANGUAGE CXX
+        thor_test_utils.cpp
 )
 
 add_library(

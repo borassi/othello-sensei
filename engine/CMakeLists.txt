@@ -14,7 +14,7 @@
 
 # Usage:
 # cd .../AndroidStudioProjects/OthelloSensei
-# cmake -S app/src/main/cpp -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
+# cmake -S engine -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
 
 # Profile:
 # cmake -S app/src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
@@ -62,7 +62,7 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
+        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
 )
 
 IF (PROFILE)

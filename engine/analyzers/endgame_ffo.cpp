@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright 2024 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,18 +12,4 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
-
-// Usage: run
-// 1. Add a file secrets.env containing DRIVE_KEY=[ADD_YOUR_KEY_HERE_NO_PARENTHESIS]
-// 2. Run in a terminal: dart run build_runner build
-
-import 'package:envied/envied.dart';
-part 'env.g.dart';
-
-@Envied(path: 'secrets.env')
-abstract class Env{
-  @EnviedField(varName: 'DRIVE_KEY', obfuscate: true)
-  static final String driveKey = _Env.driveKey;
-}

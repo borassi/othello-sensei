@@ -63,9 +63,7 @@ ENDIF()
 add_library(
         random
         random.h
-)
-set_target_properties(
-        random PROPERTIES LINKER_LANGUAGE CXX
+        random.cpp
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -185,10 +183,7 @@ ENDIF()
 add_library(
         load_thor
         load_thor.h
-)
-
-set_target_properties(
-        load_thor PROPERTIES LINKER_LANGUAGE CXX
+        load_thor.cpp
 )
 
 target_link_libraries(

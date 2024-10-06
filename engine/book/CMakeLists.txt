@@ -82,10 +82,7 @@ ENDIF()
 add_library(
         test_utils
         test_utils.h
-)
-
-set_target_properties(
-        test_utils PROPERTIES LINKER_LANGUAGE CXX
+        test_utils.cpp
 )
 
 target_link_libraries(
