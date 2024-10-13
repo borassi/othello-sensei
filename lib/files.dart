@@ -43,6 +43,10 @@ Future<void> copyAssetsToLocalPath() async {
     directory.deleteSync(recursive: true);
   }
   for (var path in manifestMap.keys) {
+    // Avoid copying .DS_Store in Mac as it causes a failure.
+    if (basename(path).startsWith('.')) {
+      continue;
+    }
     var destinationPath = join(GlobalState.localPath, path);
     var destinationDirName = dirname(destinationPath);
     Directory(destinationDirName).createSync(recursive: true);
