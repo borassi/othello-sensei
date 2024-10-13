@@ -15,6 +15,8 @@
  *
  */
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -48,11 +50,12 @@ class MyKeyboardListener extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var isMac = Platform.isMacOS;
     return Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.keyC, control: true): CopyIntent(),
-        SingleActivator(LogicalKeyboardKey.keyV, control: true): PasteIntent(),
-        SingleActivator(LogicalKeyboardKey.keyN, control: true): NewGameIntent(),
+      shortcuts: <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.keyC, control: !isMac, meta: isMac): CopyIntent(),
+        SingleActivator(LogicalKeyboardKey.keyV, control: !isMac, meta: isMac): PasteIntent(),
+        SingleActivator(LogicalKeyboardKey.keyN, control: !isMac, meta: isMac): NewGameIntent(),
         SingleActivator(LogicalKeyboardKey.arrowLeft): UndoIntent(),
         SingleActivator(LogicalKeyboardKey.arrowRight): RedoIntent(),
         SingleActivator(LogicalKeyboardKey.arrowUp): BackIntent(),
