@@ -39,10 +39,10 @@ import 'widgets_spacers/margins.dart';
 import 'widgets_windows/keyboard_listener.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
   await GlobalState.init();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    WidgetsFlutterBinding.ensureInitialized();
-    await windowManager.ensureInitialized();
     WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
     if (!Platform.isMacOS) {
       WindowManager.instance.setIcon(

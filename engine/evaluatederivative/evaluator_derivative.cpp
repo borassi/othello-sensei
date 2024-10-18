@@ -36,8 +36,6 @@ std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
 }
 
 void EvaluatorThread::Run() {
-  auto time = std::chrono::system_clock::now();
-  auto duration = std::chrono::system_clock::now().time_since_epoch();
   NVisited n_visited;
   TreeNode* first_position = evaluator_->first_position_;
   int last_eval_goal = kLessThenMinEval;
@@ -90,7 +88,6 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   evaluator_depth_one_->Setup(player, opponent);
   evaluator_depth_one_->Invert();
   EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
-  int child_n_empties = node->NEmpties() - 1;
   int depth;
   double remaining_work = node->RemainingWork(leaf.Alpha(), leaf.Beta());
 

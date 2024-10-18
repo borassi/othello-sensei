@@ -47,34 +47,41 @@ void downloadArchive(BuildContext context) {
   _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest.tar.gz', 150, 58);
 }
 
-void _downloadMaybeWithConfirmation(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
-  switch (GlobalState.connectivity) {
+enum DialogOptions {
+  dialogFailNoConnection,
+  dialogShow,
+  dialogShowMobileOnly,
+  dialogSkip,
+}
+
+DialogOptions toDialogOption(ConnectivityResult connectivity) {
+  switch (connectivity) {
     case ConnectivityResult.bluetooth:
     case ConnectivityResult.ethernet:
     case ConnectivityResult.vpn:
     case ConnectivityResult.wifi:
-      _download(context, name, path, sizeMB, numFilesForProgress);
-      return;
+      return DialogOptions.dialogSkip;
     case ConnectivityResult.mobile:
-      _downloadWithConfirmation(
-          context,
-          name,
-          path,
-          sizeMB,
-          numFilesForProgress
-      );
-      return;
     case ConnectivityResult.other:
-      // If we are not sure about the connection, we ask for confirmation only
-      // on mobile. This causes a strange error message if there is no
-      // connection.
-      // TODO: Avoid missing the connection on Linux, using Snapcraft.
-      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-        _download(context, name, path, sizeMB, numFilesForProgress);
-      } else {
-        _downloadWithConfirmation(context, name, path, sizeMB, numFilesForProgress);
-      }
+      return DialogOptions.dialogShow;
     case ConnectivityResult.none:
+      return DialogOptions.dialogFailNoConnection;
+  }
+}
+
+DialogOptions getDialogOption(List<ConnectivityResult> connectivities) {
+  var allDialogOptions = connectivities.map(toDialogOption).toSet();
+  for (var result in DialogOptions.values) {
+    if (allDialogOptions.contains(result)) {
+      return result;
+    }
+  }
+  return DialogOptions.dialogShow;
+}
+
+void _downloadMaybeWithConfirmation(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
+  switch (getDialogOption(GlobalState.connectivity)) {
+    case DialogOptions.dialogFailNoConnection:
       showDialog<void>(
           context: context,
           builder: (BuildContext childContext) {
@@ -85,6 +92,29 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
             );
           }
       );
+      return;
+    case DialogOptions.dialogShow:
+      _downloadWithConfirmation(
+          context,
+          name,
+          path,
+          sizeMB,
+          numFilesForProgress
+      );
+      return;
+    case DialogOptions.dialogShowMobileOnly:
+      // If we are not sure about the connection, we ask for confirmation only
+      // on mobile. This causes a strange error message if there is no
+      // connection.
+      // TODO: Avoid missing the connection on Linux, using Snapcraft.
+      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+        _download(context, name, path, sizeMB, numFilesForProgress);
+      } else {
+        _downloadWithConfirmation(context, name, path, sizeMB, numFilesForProgress);
+      }
+      return;
+    case DialogOptions.dialogSkip:
+      _download(context, name, path, sizeMB, numFilesForProgress);
       return;
   }
 }

@@ -153,13 +153,12 @@ bool MustBeEvaluated(
 } // namespace
 
 void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis) {
-  Board board = state.ToBoard();
   num_boards_to_evaluate_ = 0;
 
   for (EvaluationState* child : state.GetChildren()) {
     Board unique = child->ToBoard().Unique();
     // Create or get the BoardToEvaluate.
-    BoardToEvaluate* board_to_evaluate;
+    BoardToEvaluate* board_to_evaluate = nullptr;
     bool found = false;
     for (int i = 0; i < num_boards_to_evaluate_; ++i) {
       BoardToEvaluate* b = boards_to_evaluate_[i].get();
@@ -173,6 +172,7 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
       board_to_evaluate = boards_to_evaluate_[num_boards_to_evaluate_++].get();
       board_to_evaluate->Reset(unique);
     } else {
+      assert(board_to_evaluate);
       child->SetDerived(true);
     }
     bool finished = !MustBeEvaluated(state, *child, params, in_analysis);

@@ -138,7 +138,7 @@ class GlobalState {
   static late final PreferencesState preferences;
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
-  static late ConnectivityResult connectivity;
+  static late List<ConnectivityResult> connectivity;
   static ThorMetadataState? thorMetadataOrNull;
   static late FFIEngine ffiEngine;
   static late CpuType cpuType;
@@ -155,13 +155,13 @@ class GlobalState {
     var connectivityHandler = Connectivity();
     try {
       connectivity = await connectivityHandler.checkConnectivity();
-      connectivityHandler.onConnectivityChanged.forEach((ConnectivityResult result) { connectivity = result; });
+      connectivityHandler.onConnectivityChanged.forEach((var result) { connectivity = result; });
     } on Exception catch(e) {
       print(
           'WARNING: cannot get connectivity. This does not prevent the app '
           'from running, but it causes less readable error messages when '
           'downloading book and archive. Error:\n$e');
-      connectivity = ConnectivityResult.other;
+      connectivity = [ConnectivityResult.other];
     }
     preferences = await PreferencesState.create();
     await _createMain();
