@@ -1,0 +1,22 @@
+{
+  "title": "Othello Sensei",
+  "icon": "../../assets/icons/icon_rounded_corners.png",
+  "background": "background.png",
+  "contents": [
+    {
+      "x": 550,
+      "y": 390,
+      "type": "link",
+      "path": "/Applications"
+    },
+    {
+      "x": 250,
+      "y": 390,
+      "type": "file",
+      "path": "../../build/macos/Build/Products/Release/Othello Sensei.app"
+    }
+  ],
+  "code-sign": {
+    "signing-identity": "E7AD857FB4221AF0EDDA5E2418D0B9505E971706"
+  }
+}
