@@ -24,7 +24,6 @@ import 'package:othello_sensei/widgets_sidebar/controls.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
-import 'package:othello_sensei/widgets_sidebar/disk_count_with_thor.dart';
 import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
@@ -218,14 +217,14 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<Widget> childrenEvaluate = [
-      const DiskCountWithError(),
+      const DiskCountWithExtraContent(DiskCountExtraContent.error),
       const Margin.internal(),
       const Expanded(child: ScoreGraph()),
       const Margin.internal(),
       const EvaluateStats(),
     ];
     List<Widget> childrenThor = [
-      const DiskCountsWithThor(),
+      const DiskCountWithExtraContent(DiskCountExtraContent.thor),
       const Margin.internal(),
       const Expanded(child: ThorGamesVisualizer()),
     ];

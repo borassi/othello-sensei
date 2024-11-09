@@ -107,6 +107,7 @@ class Annotations extends HideInactiveWidget {
         line3 = 'bk_';
         break;
       case AnnotationsProvenance.CHILD_MIXED:
+      case AnnotationsProvenance.EVALUATE_MIXED:
         line3 = '(bk)_';
         break;
       case AnnotationsProvenance.EVALUATE:

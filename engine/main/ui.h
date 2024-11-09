@@ -45,7 +45,7 @@ EXPORT
 void NewGame(void* ptr);
 
 EXPORT
-void PlayMove(void* ptr, int square);
+bool PlayMove(void* ptr, int square);
 
 EXPORT
 bool SetSequence(void* ptr, char* sequence);
@@ -54,16 +54,16 @@ EXPORT
 char* GetSequence(void* ptr);
 
 EXPORT
-void Undo(void* ptr);
+bool Undo(void* ptr);
 
 EXPORT
-void SetCurrentMove(void* ptr, int current_move);
+bool SetCurrentMove(void* ptr, int current_move);
 
 EXPORT
-void Redo(void* ptr);
+bool Redo(void* ptr);
 
 EXPORT
-void ToAnalyzedGameOrLastChoice(void* ptr);
+bool ToAnalyzedGameOrLastChoice(void* ptr);
 
 EXPORT
 void Evaluate(void* ptr);

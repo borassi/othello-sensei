@@ -89,15 +89,17 @@ void Main::Stop() {
   engine_.Stop();
 }
 
-void Main::ToState(EvaluationState* new_state) {
+bool Main::ToState(EvaluationState* new_state) {
   if (!new_state) {
-    return;
+    return false;
   }
   Stop();
   ToStateNoStop(new_state);
+  return true;
 }
 
 void Main::ToStateNoStop(EvaluationState* new_state) {
+  assert(new_state);
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();

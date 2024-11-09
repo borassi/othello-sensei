@@ -206,7 +206,14 @@ class GlobalState {
   }
 
   static void playMove(int i) {
-    GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i);
+    bool moved = GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i);
+    if (!moved && GlobalState.preferences.get('Use illegal moves to undo and redo')) {
+      if (i % 8 < 4) {
+        GlobalState.ffiEngine.Redo(GlobalState.ffiMain);
+      } else {
+        GlobalState.ffiEngine.Undo(GlobalState.ffiMain);
+      }
+    }
     evaluate();
   }
 
@@ -325,6 +332,8 @@ class PreferencesState with ChangeNotifier {
     'Highlight next move in analysis': true,
     'Highlight next moves outside analysis': true,
     'Show unsupported CPU at startup': true,
+    'Use illegal moves to undo and redo': false,
+    'Use disk count to undo and redo': false,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],

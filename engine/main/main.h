@@ -44,31 +44,33 @@ class Main {
 
   void NewGame() {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0);
-    ToState(first_state_.get());
+    bool new_state = ToState(first_state_.get());
+    assert(new_state);
   }
 
-  void PlayMove(Square square) {
-    ToState(current_state_->NextState(square));
+  bool PlayMove(Square square) {
+    return ToState(current_state_->NextState(square));
   }
 
-  void SetCurrentMove(Square current_move) {
-    ToState(first_state_->ToDepth(current_move));
+  bool SetCurrentMove(Square current_move) {
+    bool valid = ToState(first_state_->ToDepth(current_move));
     current_state_->SetPlayed();
+    return valid;
   }
 
-  void Redo() {
-    ToState(current_state_->NextState());
+  bool Redo() {
+    return ToState(current_state_->NextState());
   }
 
-  void Undo() {
-    ToState(current_state_->PreviousNonPass());
+  bool Undo() {
+    return ToState(current_state_->PreviousNonPass());
   }
 
-  void ToAnalyzedGameOrLastChoice() {
+  bool ToAnalyzedGameOrLastChoice() {
     if (first_state_->NextStateInAnalysis()) {
-      ToState(current_state_->LastAnalyzedState());
+      return ToState(current_state_->LastAnalyzedState());
     } else {
-      ToState(current_state_->LastChoice());
+      return ToState(current_state_->LastChoice());
     }
   }
 
@@ -155,7 +157,7 @@ class Main {
   EvaluateParams evaluate_params_;
   EvaluateParams last_params_;
 
-  void ToState(EvaluationState* new_state);
+  bool ToState(EvaluationState* new_state);
 
   void ToStateNoStop(EvaluationState* new_state);
 };

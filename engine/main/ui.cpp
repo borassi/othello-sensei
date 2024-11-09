@@ -33,7 +33,7 @@ struct EvaluateParams* MainGetEvaluateParams(void* ptr) {
 
 void NewGame(void* ptr) { static_cast<Main*>(ptr)->NewGame(); }
 
-void PlayMove(void* ptr, int square) { static_cast<Main*>(ptr)->PlayMove(square); }
+bool PlayMove(void* ptr, int square) { return static_cast<Main*>(ptr)->PlayMove(square); }
 
 bool SetSequence(void* ptr, char* sequence) {
   std::string sequence_string(sequence);
@@ -42,14 +42,14 @@ bool SetSequence(void* ptr, char* sequence) {
 
 char* GetSequence(void* ptr) { return static_cast<Main*>(ptr)->GetSequence(); }
 
-void Undo(void* ptr) { static_cast<Main*>(ptr)->Undo(); }
+bool Undo(void* ptr) { return static_cast<Main*>(ptr)->Undo(); }
 
-void SetCurrentMove(void* ptr, int square) { static_cast<Main*>(ptr)->SetCurrentMove(square); }
+bool SetCurrentMove(void* ptr, int square) { return static_cast<Main*>(ptr)->SetCurrentMove(square); }
 
-void Redo(void* ptr) { static_cast<Main*>(ptr)->Redo(); }
+bool Redo(void* ptr) { return static_cast<Main*>(ptr)->Redo(); }
 
-void ToAnalyzedGameOrLastChoice(void* ptr) {
-  static_cast<Main*>(ptr)->ToAnalyzedGameOrLastChoice();
+bool ToAnalyzedGameOrLastChoice(void* ptr) {
+  return static_cast<Main*>(ptr)->ToAnalyzedGameOrLastChoice();
 }
 
 void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
