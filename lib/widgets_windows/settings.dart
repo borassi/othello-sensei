@@ -189,33 +189,39 @@ class Settings extends StatelessWidget {
 
   final SettingsLocalState _state;
 
-  static const _uiPreferences = [
+  static const _appearancePreferences = [
     'Controls position',
     'Margin size',
+    'Show unsupported CPU at startup',
+  ];
+
+  static const _evalPreferences = [
+    'Round evaluations',
     'Show extra data in evaluate mode',
     'Highlight distance from best move',
     'Best move green, other yellow',
     'Highlight next move in analysis',
     'Highlight next moves outside analysis',
+  ];
+
+  static const _behaviorPreferences = [
+    'Use illegal moves to undo and redo',
+    'Use disk count to undo and redo',
     'Back button action',
-  ];
-
-  static const _evalPreferences = [
-    'Number of threads',
-    'Positions when evaluating',
-    // 'Positions when playing',
-    'Seconds until first evaluation',
-    'Seconds between evaluations',
-    'Spend half time on positions worse by',
-    'Use book',
-    'Round evaluations',
-  ];
-
-  static const _analyzePreferences = [
-    'Seconds/position in game analysis',
     'Analyze on paste',
     'Analyze on import',
   ];
+
+  static const _enginePreferences = [
+    'Seconds until first evaluation',
+    'Seconds between evaluations',
+    'Seconds/position in game analysis',
+    'Spend half time on positions worse by',
+    'Use book',
+    'Number of threads',
+    'Positions when evaluating',
+  ];
+
   static const _unshownPreferences = [
     'Active tab',
   ];
@@ -223,9 +229,10 @@ class Settings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var nerdPreferences = GlobalState.preferences.defaultPreferences.keys.toSet();
-    nerdPreferences.removeAll(_uiPreferences);
+    nerdPreferences.removeAll(_appearancePreferences);
     nerdPreferences.removeAll(_evalPreferences);
-    nerdPreferences.removeAll(_analyzePreferences);
+    nerdPreferences.removeAll(_behaviorPreferences);
+    nerdPreferences.removeAll(_enginePreferences);
     nerdPreferences.removeAll(_unshownPreferences);
 
     return SecondaryWindow(
@@ -247,20 +254,25 @@ class Settings extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('User interface', style: titleStyle)),
+                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Appearance', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _uiPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                  children: _appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
                 Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Analysis', style: titleStyle)),
+                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Behavior', style: titleStyle)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _analyzePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                  children: _behaviorPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                ),
+                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Engine', style: titleStyle)),
+                Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _enginePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                 ),
                 Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
                 Column(
