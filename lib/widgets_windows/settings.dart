@@ -233,7 +233,6 @@ class Settings extends StatelessWidget {
         GlobalState.preferences.setAll(_state.updates);
         GlobalState.evaluate();
       },
-      leaveSpaceRight: true,
       title: 'Settings',
       child: ListenableBuilder(
         listenable: _state,

@@ -61,17 +61,9 @@ class SenseiToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-    return SizedBox(
-      width: squareSize,
-      height: 0.75 * squareSize,
-      child: FittedBox(
-        fit: BoxFit.fill,
-        child: Switch(
-          value: initialValue,
-          onChanged: onChanged,
-        )
-      )
+    return Switch(
+      value: initialValue,
+      onChanged: onChanged,
     );
   }
 }
