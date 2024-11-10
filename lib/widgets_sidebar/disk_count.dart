@@ -137,12 +137,12 @@ class DiskCountWithExtraContent extends StatelessWidget {
 
   static void maybeUndo() {
     if (undoRedoEnabled()) {
-      GlobalState.ffiEngine.Undo(GlobalState.ffiMain);
+      GlobalState.undo();
     }
   }
   static void maybeRedo() {
     if (undoRedoEnabled()) {
-      GlobalState.ffiEngine.Redo(GlobalState.ffiMain);
+      GlobalState.redo();
     }
   }
 

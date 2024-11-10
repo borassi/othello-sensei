@@ -187,10 +187,11 @@ class GlobalState {
     bool moved = GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i);
     if (!moved && GlobalState.preferences.get('Use illegal moves to undo and redo')) {
       if (i % 8 < 4) {
-        GlobalState.ffiEngine.Redo(GlobalState.ffiMain);
+        redo();
       } else {
-        GlobalState.ffiEngine.Undo(GlobalState.ffiMain);
+        undo();
       }
+      return;
     }
     evaluate();
   }
