@@ -67,7 +67,7 @@ class MyKeyboardListener extends StatelessWidget {
             onInvoke: (CopyIntent intent) => copy(),
           ),
           PasteIntent: CallbackAction<PasteIntent>(
-            onInvoke: (PasteIntent intent) => pasteOrError(context),
+            onInvoke: (PasteIntent intent) => paste(),
           ),
           NewGameIntent: CallbackAction<NewGameIntent>(
             onInvoke: (NewGameIntent intent) => GlobalState.newGame(),

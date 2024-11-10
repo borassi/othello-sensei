@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:othello_sensei/intents.dart';
 import 'package:othello_sensei/widgets_sidebar/controls.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
@@ -39,8 +40,12 @@ import 'widgets_windows/keyboard_listener.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
+  maybeForwardIntent();
+  if (!Platform.isAndroid) {
+    await windowManager.ensureInitialized();
+  }
   await GlobalState.init();
+  await handleIntent();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
     if (!Platform.isMacOS) {
@@ -320,6 +325,7 @@ class Main extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: GlobalState.navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Sensei',
       theme: ThemeData(

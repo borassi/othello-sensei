@@ -40,7 +40,6 @@ dependencies:
   select_searchable_list: ^0.2.2
   dropdown_search: ^6.0.1
   fl_chart: ^0.69.0
-  receive_sharing_intent: ^1.6.7
   googleapis: ^13.0.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.12
   google_sign_in: ^6.2.1
@@ -58,6 +57,8 @@ dependencies:
   system_info2: ^4.0.0
   url_launcher: ^6.3.0
   connectivity_plus: ^6.0.5
+  receive_intent: ^0.2.5
+  android_intent_plus: ^5.2.0
 
 dev_dependencies:
   flutter_test:

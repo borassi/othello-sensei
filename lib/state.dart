@@ -24,9 +24,9 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
+import 'package:othello_sensei/widgets_windows/error_dialog.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ffi/ffi_bridge.dart';
@@ -81,42 +81,23 @@ Future<void> copy() async {
   Clipboard.setData(ClipboardData(text: s));
   malloc.free(sequence);
 }
-
-Future<bool> paste() async {
-  String? game = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
-  if (game == null) {
-    return false;
-  }
-  var gameC = game.toNativeUtf8().cast<Char>();
-  return GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+Future<void> paste() async {
+  var game = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+  setGameOrError(game, "Analyze on paste");
 }
 
-Future<void> pasteOrError(BuildContext context) async {
-  bool success = await paste();
-  if (!success && context.mounted) {
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext ctx) {
-        return const AlertDialog(
-          title: Text('The clipboard does not contain a game!'),
-        );
-      },
-    );
-  }
-  if (GlobalState.preferences.get("Analyze on paste") && success) {
-    analyze();
-  } else {
-    GlobalState.evaluate();
-  }
-}
-
-void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
-  if (event.length != 1 || event[0].mimeType != 'message/rfc822') {
+Future<void> setGameOrError(String? game, String preference) async {
+  if (game == null || game == '') {
+    await showErrorDialog(const Text('Empty game'), null);
     return;
   }
-  var game = event[0].path.toNativeUtf8().cast<Char>();
-  GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, game);
-  if (GlobalState.preferences.get('Analyze on import')) {
+  var gameC = game.toNativeUtf8().cast<Char>();
+  var success = GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+  if (!success) {
+    await showErrorDialog(const Text('Not a game:'), Text(game));
+    return;
+  }
+  if (GlobalState.preferences.get(preference)) {
     analyze();
   } else {
     GlobalState.evaluate();
@@ -143,6 +124,7 @@ class GlobalState {
   static late FFIEngine ffiEngine;
   static late CpuType cpuType;
   static late String localPath;
+  static final navigatorKey = GlobalKey<NavigatorState>();
 
   static Future<void> init() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -165,10 +147,6 @@ class GlobalState {
     }
     preferences = await PreferencesState.create();
     await _createMain();
-    if (Platform.isAndroid || Platform.isIOS) {
-      ReceiveSharingIntent.instance.getInitialMedia().then(receiveOthelloQuestEvent);
-      ReceiveSharingIntent.instance.getMediaStream().listen(receiveOthelloQuestEvent);
-    }
   }
 
   static Future<void> resetMain() async {

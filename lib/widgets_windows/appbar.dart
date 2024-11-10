@@ -45,7 +45,7 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       await copy();
       return;
     case MenuItem.paste:
-      await pasteOrError(context);
+      await paste();
       return;
     case MenuItem.analyze:
       GlobalState.stop();
