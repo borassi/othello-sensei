@@ -15,6 +15,7 @@
  *
  */
 
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -249,48 +250,57 @@ class Settings extends StatelessWidget {
             fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!
           );
           var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-          return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(0, 0, Theme.of(context).extension<AppSizes>()!.margin, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Appearance', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(0, 0, Platform.isIOS || Platform.isAndroid ? 0 : 12, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Appearance', style: titleStyle)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                      ),
+                      Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                      ),
+                      Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Behavior', style: titleStyle)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _behaviorPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                      ),
+                      Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Engine', style: titleStyle)),
+                      Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _enginePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                      ),
+                      Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                      ),
+                    ],
+                  )
                 ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
-                ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Behavior', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _behaviorPreferences.map((s) => getCardSettings(s, context, _state)).toList()
-                ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Engine', style: titleStyle)),
-                Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _enginePreferences.map((s) => getCardSettings(s, context, _state)).toList()
-                ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
-                ),
-                const Margin.internal(),
-                SenseiButton(
-                  onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
-                  text: 'Reset to previous values',
-                ),
-                const Margin.internal(),
-                SenseiButton(
-                  onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
-                  text: 'Reset to app defaults',
-                ),
-              ],
-            )
+              ),
+              Row(
+                children: [
+                  Expanded(child: SenseiButton(
+                    onPressed: () { _state.reset(); },
+                    text: 'Reset to previous values',
+                  )),
+                  const Margin.internal(),
+                  Expanded(child: SenseiButton(
+                    onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
+                    text: 'Reset to app defaults',
+                  )),
+                ],
+              ),
+            ]
           );
         }
       )
