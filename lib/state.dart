@@ -88,7 +88,6 @@ Future<void> paste() async {
 
 Future<void> setGameOrError(String? game, String preference) async {
   if (game == null || game == '') {
-    await showErrorDialog(const Text('Empty game'), null);
     return;
   }
   var gameC = game.toNativeUtf8().cast<Char>();
@@ -312,7 +311,7 @@ class PreferencesState with ChangeNotifier {
     'Highlight next moves outside analysis': true,
     'Show unsupported CPU at startup': true,
     'Use illegal moves to undo and redo': false,
-    'Use disk count to undo and redo': false,
+    'Use disk count to undo and redo': true,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],
@@ -480,10 +479,10 @@ class GlobalAnnotationState with ChangeNotifier {
     var errorWhite = 0.0;
     var (allScores, lastMove) = getAllScoresAndLastMove();
     var oldScore = 0.0;
-    var hasNaN = false;
     int lastMoveForScores =
         GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
         allScores.length : lastMove + 1;
+    var hasNaN = lastMoveForScores == 0;
     for (int i = 0; i < lastMoveForScores; ++i) {
       double score = allScores[i];
       var error = score - oldScore;
@@ -491,10 +490,11 @@ class GlobalAnnotationState with ChangeNotifier {
         hasNaN = true;
       } else if (error > 0) {
         errorWhite += error;
+        oldScore = score;
       } else {
         errorBlack += -error;
+        oldScore = score;
       }
-      oldScore = score;
     }
     return (errorBlack, errorWhite, hasNaN);
   }

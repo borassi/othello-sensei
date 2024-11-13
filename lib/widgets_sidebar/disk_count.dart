@@ -182,7 +182,7 @@ class DiskCountWithExtraContent extends StatelessWidget {
                   const Spacer(),
                 ] + (
                     (extraContent == DiskCountExtraContent.error) ? [
-                      widget(context, true),
+                      widget(context, false),
                       const Margin.internal(),
                     ] : []
                 ) + [

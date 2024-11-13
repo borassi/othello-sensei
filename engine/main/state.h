@@ -135,6 +135,10 @@ class EvaluationState : public TreeNode {
   // Returns the first ancestor with multiple visited children.
   EvaluationState* LastChoice() {
     EvaluationState* state;
+    // Avoid a crash if this is the starting position.
+    if (Father() == nullptr) {
+      return this;
+    }
     for (state = Father(); state->Father() != nullptr; state = state->Father()) {
       assert(state->NumChildrenWithDescendants() >= 1);
       if (state->NumChildrenWithDescendants() > 1) {
