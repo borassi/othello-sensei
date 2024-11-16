@@ -15,6 +15,7 @@
  *
  */
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
@@ -22,6 +23,7 @@ import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:receive_intent/receive_intent.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 Future<bool> maybeForwardIntent() async {
   if (!Platform.isAndroid) {
@@ -43,11 +45,13 @@ Future<bool> maybeForwardIntent() async {
   return true;
 }
 
-void _handleIntent(Intent? intent) {
-  if (intent == null) {
+void _handleIntent(List<SharedMediaFile>? intents) {
+  if (intents == null || intents.isEmpty) {
+    ReceiveSharingIntent.instance.reset();
     return;
   }
-  var game = intent.extra?['android.intent.extra.TEXT'];
+  var game = intents[0].path;
+  ReceiveSharingIntent.instance.reset();
   setGameOrError(game, 'Analyze on import');
 }
 
@@ -55,6 +59,6 @@ Future<void> handleIntent() async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     return;
   }
-  _handleIntent(await ReceiveIntent.getInitialIntent());
-  ReceiveIntent.receivedIntentStream.forEach(_handleIntent);
+  ReceiveSharingIntent.instance.getMediaStream().listen(_handleIntent);
+  _handleIntent(await ReceiveSharingIntent.instance.getInitialMedia());
 }

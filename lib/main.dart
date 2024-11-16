@@ -42,7 +42,7 @@ import 'widgets_windows/keyboard_listener.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   maybeForwardIntent();
-  if (!Platform.isAndroid) {
+  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
   }
   await GlobalState.init();
