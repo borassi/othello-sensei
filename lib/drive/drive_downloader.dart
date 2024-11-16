@@ -61,10 +61,11 @@ DialogOptions toDialogOption(ConnectivityResult connectivity) {
     case ConnectivityResult.ethernet:
     case ConnectivityResult.vpn:
     case ConnectivityResult.wifi:
-      return DialogOptions.dialogShow;
+      return DialogOptions.dialogSkip;
     case ConnectivityResult.mobile:
-    case ConnectivityResult.other:
       return DialogOptions.dialogShow;
+    case ConnectivityResult.other:
+      return DialogOptions.dialogShowMobileOnly;
     case ConnectivityResult.none:
       return DialogOptions.dialogFailNoConnection;
   }
