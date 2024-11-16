@@ -28,6 +28,7 @@ import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
 import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -98,33 +99,26 @@ class CpuErrorDialog extends StatelessWidget {
     // We do it this way because Flutter refresh keeps post frame callbacks,
     // causing the window to show multiple times.
     GlobalState.preferences.set('Show unsupported CPU at startup', false);
-    var content = (
+    return SenseiDialog(
+      content: (
         'Your CPU does not support the commands '
         '${GlobalState.cpuType == CpuType.popcnt ? "BMI2" : "POPCNT and BMI2"}.'
-        ' Sensei will work, but the evaluation will be slower.');
-    return AlertDialog(
-      content: Text(content),
-      actions: <Widget>[
-        TextButton(
-          style: TextButton.styleFrom(
-            textStyle: Theme.of(context).textTheme.labelLarge,
-          ),
-          child: const Text('OK - show again next time'),
-          onPressed: () {
+        ' Sensei will work, but the evaluation will be slower.'),
+      actions: [
+        (
+          text: 'OK - show again next time',
+          onPressed: (context) {
             GlobalState.preferences.set('Show unsupported CPU at startup', true);
             Navigator.of(context).pop();
           },
         ),
-        TextButton(
-          style: TextButton.styleFrom(
-            textStyle: Theme.of(context).textTheme.labelLarge,
-          ),
-          child: const Text('OK - do not show again'),
-          onPressed: () {
+        (
+          text: 'OK - do not show again',
+          onPressed: (context) {
             Navigator.of(context).pop();
           },
         ),
-      ],
+      ]
     );
   }
 }

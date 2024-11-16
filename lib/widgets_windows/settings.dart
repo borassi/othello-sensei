@@ -209,6 +209,7 @@ class Settings extends StatelessWidget {
     'Use illegal moves to undo and redo',
     'Use disk count to undo and redo',
     'Back button action',
+    'Pressing « from the first position',
     'Analyze on paste',
     'Analyze on import',
   ];

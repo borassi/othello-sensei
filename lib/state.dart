@@ -24,7 +24,7 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
-import 'package:othello_sensei/widgets_windows/error_dialog.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -93,7 +93,7 @@ Future<void> setGameOrError(String? game, String preference) async {
   var gameC = game.toNativeUtf8().cast<Char>();
   var success = GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
   if (!success) {
-    await showErrorDialog(const Text('Not a game:'), Text(game));
+    await showSenseiDialog(SenseiDialog(title: 'Not a game', content: game));
     return;
   }
   if (GlobalState.preferences.get(preference)) {
@@ -206,7 +206,28 @@ class GlobalState {
   }
 
   static void toAnalyzedGameOrLastChoice() async {
-    GlobalState.ffiEngine.ToAnalyzedGameOrLastChoice(GlobalState.ffiMain);
+    if (GlobalState.board.emptySquares() == 60) {
+      switch (GlobalState.preferences.get('Pressing « from the first position')) {
+        case 'Ask':
+          if (await showSenseiDialog(SenseiDialog(
+              title: 'New game?',
+              content: 'Clicking "Yes" loses all analysis data.',
+              actions: [
+                (text: 'Yes', onPressed: (context) { Navigator.pop(context, true); }),
+                (text: 'No', onPressed: (context) { Navigator.pop(context, false); }),
+              ]))) {
+            GlobalState.newGame();
+          }
+          break;
+        case 'New game':
+          GlobalState.newGame();
+          break;
+        default:
+          break;
+      }
+    } else {
+      GlobalState.ffiEngine.ToAnalyzedGameOrLastChoice(GlobalState.ffiMain);
+    }
     evaluate();
   }
 
@@ -312,11 +333,13 @@ class PreferencesState with ChangeNotifier {
     'Show unsupported CPU at startup': true,
     'Use illegal moves to undo and redo': false,
     'Use disk count to undo and redo': true,
+    'Pressing « from the first position': 'Ask',
   };
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],
     'Controls position': ['App bar', 'Side bar'],
     'Margin size': ['None', 'Small', 'Large', 'Coordin'],
+    'Pressing « from the first position': ['Do nothing', 'Ask', 'New game'],
   };
   late final SharedPreferences _preferences;
 

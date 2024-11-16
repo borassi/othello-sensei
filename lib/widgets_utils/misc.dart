@@ -44,7 +44,6 @@ class SenseiButton extends StatelessWidget {
     return TextButton(
       onPressed: onPressed,
       style: ButtonStyle(
-        padding: WidgetStateProperty.all(EdgeInsets.zero),
         backgroundColor: WidgetStateProperty.all(
           Theme.of(context).colorScheme.primaryContainer)
       ),

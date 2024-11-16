@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_spacers/margins.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'dart:io' as io;
 import 'package:http/http.dart' as http;
@@ -60,7 +61,7 @@ DialogOptions toDialogOption(ConnectivityResult connectivity) {
     case ConnectivityResult.ethernet:
     case ConnectivityResult.vpn:
     case ConnectivityResult.wifi:
-      return DialogOptions.dialogSkip;
+      return DialogOptions.dialogShow;
     case ConnectivityResult.mobile:
     case ConnectivityResult.other:
       return DialogOptions.dialogShow;
@@ -82,16 +83,7 @@ DialogOptions getDialogOption(List<ConnectivityResult> connectivities) {
 void _downloadMaybeWithConfirmation(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
   switch (getDialogOption(GlobalState.connectivity)) {
     case DialogOptions.dialogFailNoConnection:
-      showDialog<void>(
-          context: context,
-          builder: (BuildContext childContext) {
-            return AppTheme(
-                child: const AlertDialog(
-                  title: Text('No internet connection available'),
-                )
-            );
-          }
-      );
+      showSenseiDialog(SenseiDialog(title: 'Download failed', content: 'No internet connection available'));
       return;
     case DialogOptions.dialogShow:
       _downloadWithConfirmation(
@@ -125,36 +117,29 @@ void _download(BuildContext context, String name, String path, int sizeMB, int n
 }
 
 void _downloadWithConfirmation(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
-  showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext childContext) {
-        return AppTheme(
-            child: AlertDialog(
-              title: Text('Downloading $name'),
-              content: Text(
-                  'The $name is large (approximately ${sizeMB}MB).\n'
-                      'Make sure you are connected to a WiFi, or \n'
-                      'you are OK downloading it on your data plan.',
-                  style: Theme.of(childContext).textTheme.bodyMedium!),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Download'),
-                  onPressed: () {
-                    Navigator.of(childContext).pop();
-                    _download(context, name, path, sizeMB, numFilesForProgress);
-                  },
-                ),
-                TextButton(
-                  child: const Text('Abort'),
-                  onPressed: () {
-                    Navigator.of(childContext).pop();
-                  },
-                ),
-              ],
-            )
-        );
-      }
+  showDialog(
+    context: context,
+    barrierDismissible: false, // user must tap button!
+    builder: (BuildContext childContext) => SenseiDialog(
+      title: 'Downloading $name',
+      content: (
+          'The $name is large (approximately ${sizeMB}MB).\n'
+              'Make sure you are connected to a WiFi, or \n'
+              'you are OK downloading it on your data plan.'),
+      actions: [
+        (
+          text: 'Download',
+          onPressed: (ctx) {
+            Navigator.of(ctx).pop();
+            _download(context, name, path, sizeMB, numFilesForProgress);
+          }
+        ),
+        (
+          text: 'Abort',
+          onPressed: (ctx) { Navigator.of(ctx).pop(); }
+        ),
+      ]
+    )
   );
 }
 
@@ -280,11 +265,7 @@ class DownloadSecondaryWindow extends StatelessWidget {
       Navigator.pop(popContext!);
       // Hack: for some reason the message is returned as a string.
       if (!message[0].toString().contains('StoppedDownloadError')) {
-        showDialog<void>(
-            context: popContext!,
-            builder: (BuildContext childContext) {
-              return AlertDialog(title: Text('Error when downloading $name'), content: Text(message.toString()));
-            });
+        showSenseiDialog(SenseiDialog(title: 'Error when downloading $name', content: message.toString()));
       }
     });
     resultPort.listen((dynamic message) async {
