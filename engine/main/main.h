@@ -120,6 +120,10 @@ class Main {
     engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }
 
+  void ResetAnalyzedGame() {
+    first_state_->SetNotAnalyzed();
+  }
+
   // We need a separate call to get the annotations in the UI thread, to prevent
   // concurrent modification.
   Annotations* GetCurrentAnnotations(int current_thread) {

@@ -49,7 +49,11 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.analyze:
       GlobalState.stop();
-      analyze();
+      if (GlobalState.globalAnnotations.existsAnalyzedGame()) {
+        resetAnalyzedGame();
+      } else {
+        analyze();
+      }
       return;
     case MenuItem.downloadLatestBook:
       GlobalState.stop();
@@ -139,7 +143,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         Semantics(
           label: 'Show menu',
           child: ListenableBuilder(
-            listenable: GlobalState.actionWhenPlay,
+            listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations]),
             builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
               child: PopupMenuButton<MenuItem>(
                 icon: Icon(
@@ -148,7 +152,13 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 onSelected: (MenuItem i) { handleMenuItem(context, i); },
                 itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
-                  if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
+                  if (i == MenuItem.analyze) {
+                    if (GlobalState.globalAnnotations.existsAnalyzedGame()) {
+                      return PopupMenuItem<MenuItem>(value: i, child: Text('Reset analyzed game'));
+                    } else {
+                      return PopupMenuItem<MenuItem>(value: i, child: Text('Analyze'));
+                    }
+                  } else if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
                     return CheckedPopupMenuItem<MenuItem>(
                       value: i,
                       checked:

@@ -72,6 +72,9 @@ EXPORT
 void Analyze(void* ptr);
 
 EXPORT
+void ResetAnalyzedGame(void* ptr);
+
+EXPORT
 struct Annotations* GetCurrentAnnotations(void* ptr, int current_thread);
 
 EXPORT

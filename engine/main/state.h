@@ -190,6 +190,15 @@ class EvaluationState : public TreeNode {
     father->SetPlayed();
   }
 
+  void SetNotAnalyzed() {
+    assert(Father() == nullptr);
+    assert(NextStateInAnalysis() != nullptr);
+    EvaluationState* state;
+    for (state = NextStateInAnalysis(); state != nullptr; state = state->NextStateInAnalysis()) {
+      state->Father()->SetNextStateInAnalysis(nullptr);
+    }
+  }
+
   EvaluationState* SetAnalyzed() {
     assert(Father() == nullptr);
     EvaluationState* state;

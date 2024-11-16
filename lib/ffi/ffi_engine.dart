@@ -261,6 +261,20 @@ class FFIEngine {
   late final _Analyze =
       _AnalyzePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
+  void ResetAnalyzedGame(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _ResetAnalyzedGame(
+      ptr,
+    );
+  }
+
+  late final _ResetAnalyzedGamePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'ResetAnalyzedGame');
+  late final _ResetAnalyzedGame =
+      _ResetAnalyzedGamePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
   ffi.Pointer<Annotations> GetCurrentAnnotations(
     ffi.Pointer<ffi.Void> ptr,
     int current_thread,

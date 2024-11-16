@@ -56,6 +56,8 @@ void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
 
 void Analyze(void* ptr) { static_cast<Main*>(ptr)->Analyze(); }
 
+void ResetAnalyzedGame(void* ptr) { static_cast<Main*>(ptr)->ResetAnalyzedGame(); }
+
 void Stop(void* ptr) { static_cast<Main*>(ptr)->Stop(); }
 
 Annotations* GetCurrentAnnotations(void* ptr, int current_thread) {

@@ -103,6 +103,10 @@ Future<void> setGameOrError(String? game, String preference) async {
   }
 }
 
+void resetAnalyzedGame() {
+  GlobalState.ffiEngine.ResetAnalyzedGame(GlobalState.ffiMain);
+}
+
 void analyze() {
   GlobalState.preferences.fillEvaluateParams();
   GlobalState.preferences.set('Active tab', 0);
@@ -466,6 +470,13 @@ class GlobalAnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
+  bool existsAnalyzedGame() {
+    return (
+        startAnnotations != null &&
+        startAnnotations!.ref.next_state_in_analysis != nullptr
+    );
+  }
+
   (List<double>, int) getAllScoresAndLastMove() {
     var scores = <double>[];
     var currentMoveVar = currentMove();
@@ -473,7 +484,7 @@ class GlobalAnnotationState with ChangeNotifier {
     if (startAnnotations == null) {
       return (scores, lastMove);
     }
-    if (startAnnotations!.ref.next_state_in_analysis == nullptr) {
+    if (!existsAnalyzedGame()) {
       lastMove = currentMoveVar;
     }
     var depth = 0;
