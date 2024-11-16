@@ -75,7 +75,7 @@ class ThorFiltersWidget extends StatelessWidget {
           showSearchBox: true,
           fit: FlexFit.tight,
           searchFieldProps: TextFieldProps(style: TextStyle(fontSize: fontSize)),
-          constraints: BoxConstraints(maxHeight: 4 * squareSize),
+          constraints: BoxConstraints(maxHeight: 8 * squareSize),
           itemBuilder: (BuildContext context, String s, bool x, bool y) => Text(s, style: TextStyle(fontSize: fontSize)),
           searchDelay: const Duration(seconds: 0),
         ),
