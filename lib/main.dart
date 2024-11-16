@@ -242,11 +242,19 @@ class MainApp extends StatelessWidget {
         builder: (BuildContext context, Widget? widget) {
           return PopScope(
               canPop: false,
-              onPopInvoked: (bool didPop) {
+              onPopInvokedWithResult: (bool didPop, dynamic result) async {
                 if (GlobalState.preferences.get('Back button action') == 'Undo') {
                   GlobalState.undo();
                 } else {
-                  SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+                  if (await showDialog(context: context, builder: (ctx) => SenseiDialog(
+                    title: 'Close the app?',
+                    actions: [
+                      (text: 'Yes', onPressed: (ctx) { Navigator.pop(ctx, true); }),
+                      (text: 'No', onPressed: (ctx) { Navigator.pop(ctx, false); }),
+                    ]
+                  ))) {
+                    SystemNavigator.pop();
+                  }
                 }
               },
               child: MyKeyboardListener(

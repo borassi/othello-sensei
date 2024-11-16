@@ -87,7 +87,7 @@ Future<void> paste() async {
 }
 
 Future<void> setGameOrError(String? game, String preference) async {
-  if (game == null || game == '') {
+  if (game == null) {
     return;
   }
   var gameC = game.toNativeUtf8().cast<Char>();
@@ -105,6 +105,7 @@ Future<void> setGameOrError(String? game, String preference) async {
 
 void resetAnalyzedGame() {
   GlobalState.ffiEngine.ResetAnalyzedGame(GlobalState.ffiMain);
+  GlobalState.evaluate();
 }
 
 void analyze() {

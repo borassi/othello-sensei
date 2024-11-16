@@ -96,7 +96,7 @@ class Main {
 
   bool SetSequence(const std::string& sequence) {
     Sequence moves = Sequence::ParseFromString(sequence);
-    if (moves.Size() == 0) {
+    if (moves.Size() == 0 && sequence != "") {
       return false;
     }
     SetSequence(moves);
