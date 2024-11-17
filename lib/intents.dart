@@ -45,7 +45,15 @@ Future<bool> maybeForwardIntent() async {
   return true;
 }
 
-void _handleIntent(List<SharedMediaFile>? intents) {
+void _handleIntentAndroid(Intent? intent) {
+  if (intent == null) {
+    return;
+  }
+  var game = intent.extra?['android.intent.extra.TEXT'];
+  setGameOrError(game, 'Analyze on import');
+}
+
+void _handleIntentIOS(List<SharedMediaFile>? intents) {
   if (intents == null || intents.isEmpty) {
     ReceiveSharingIntent.instance.reset();
     return;
@@ -55,10 +63,20 @@ void _handleIntent(List<SharedMediaFile>? intents) {
   setGameOrError(game, 'Analyze on import');
 }
 
+Future<void> handleIntentIOS() async {
+  ReceiveSharingIntent.instance.getMediaStream().listen(_handleIntentIOS);
+  _handleIntentIOS(await ReceiveSharingIntent.instance.getInitialMedia());
+}
+
+Future<void> handleIntentAndroid() async {
+  _handleIntentAndroid(await ReceiveIntent.getInitialIntent());
+  ReceiveIntent.receivedIntentStream.forEach(_handleIntentAndroid);
+}
+
 Future<void> handleIntent() async {
-  if (!Platform.isAndroid && !Platform.isIOS) {
-    return;
+  if (Platform.isAndroid) {
+    await handleIntentAndroid();
+  } else if (Platform.isIOS) {
+    await handleIntentIOS();
   }
-  ReceiveSharingIntent.instance.getMediaStream().listen(_handleIntent);
-  _handleIntent(await ReceiveSharingIntent.instance.getInitialMedia());
 }
