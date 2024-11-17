@@ -123,24 +123,24 @@ class Source {
   Source(const std::string& folder, bool rebuild_games_order = false) : folder_(folder), players_(), tournaments_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN) {
     ElapsedTime t;
     std::set<std::string> game_files;
-    for (const auto& entry : fs::directory_iterator(folder)) {
-      if (!fs::is_regular_file(entry)) {
-        continue;
-      }
-      if (ToLower(entry.path().extension().string()) == ".jou") {
+    auto all_files = GetAllFiles(folder, /*include_files=*/true, /*include_directories=*/false);
+    // We can't use directory_iterator because it's available only from MacOS 10.15 and we want to
+    // run on MacOS 10.14.
+    for (const std::string& entry : all_files) {
+      if (EndsWith(ToLower(entry), ".jou")) {
         assert(players_.empty());
-        players_ = LoadListFromFile(entry.path().string(), kPlayerLength);
-      } else if (ToLower(entry.path().extension().string()) == ".trn") {
+        players_ = LoadListFromFile(entry, kPlayerLength);
+      } else if (EndsWith(ToLower(entry), ".trn")) {
         assert(tournaments_.empty());
-        tournaments_ = LoadListFromFile(entry.path().string(), kTournamentLength);
-      } else if (ToLower(entry.path().extension().string()) == ".wtb") {
-        game_files.insert(entry.path().string());
+        tournaments_ = LoadListFromFile(entry, kTournamentLength);
+      } else if (EndsWith(ToLower(entry), ".wtb")) {
+        game_files.insert(entry);
       }
     }
     for (const auto& game_file : game_files) {
       LoadGames(game_file);
     }
-    if (fs::exists(SortedGamesPath()) && !rebuild_games_order) {
+    if (FileExists(SortedGamesPath()) && !rebuild_games_order) {
       LoadSortedGames();
     } else {
       ComputeSortedGames();

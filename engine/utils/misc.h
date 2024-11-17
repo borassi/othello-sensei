@@ -142,6 +142,8 @@ std::vector<std::string> Split(const std::string& s, char c, bool strip = true);
 
 std::string ToLower(const std::string& s);
 
+bool EndsWith(const std::string& s, const std::string& suffix);
+
 short GetCurrentYear();
 
 std::string PrettyPrintDouble(double d);

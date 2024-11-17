@@ -26,13 +26,10 @@ class Thor {
  public:
   Thor(const std::string& folder, bool rebuild_canonicalizer = false, bool rebuild_games_order = false)
       : folder_(folder), sources_() {
-    for (const auto& entry : fs::directory_iterator(folder)) {
-      if (!entry.is_directory()) {
-        continue;
-      }
-      sources_.insert({fs::path(entry).filename().string(), std::make_unique<Source>(entry.path().string(), rebuild_games_order)});
+    for (const auto& entry : GetAllFiles(folder, /*include_files=*/false, /*include_directories=*/true)) {
+      sources_.insert({Filename(entry), std::make_unique<Source>(entry, rebuild_games_order)});
     }
-    if (!rebuild_canonicalizer && fs::exists(CanonicalizerPath())) {
+    if (!rebuild_canonicalizer && FileExists(CanonicalizerPath())) {
       LoadCanonicalizer();
     } else {
       ComputeCanonicalizer();

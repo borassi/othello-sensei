@@ -87,7 +87,7 @@ HOW TO RELEASE ON WINDOWS:
 HOW TO RELEASE ON MACOS (FREE APP)
 - flutter build macos
 - cd installers/macos
-- rm ../../Othello\ Sensei.dmg && appdmg config.json "~Desktop/Othello Sensei.dmg"
+- rm ../../Othello\ Sensei.dmg && appdmg config.json "../../Othello Sensei.dmg"
 
 HOW TO RELEASE ON MACOS (APP STORE)
 - flutter build macos

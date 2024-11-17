@@ -112,6 +112,10 @@ std::string RightStrip(const std::string& s) {
   return result;
 }
 
+bool EndsWith(const std::string& s, const std::string& suffix) {
+  return s.size() >= suffix.size() && s.substr(s.size() - suffix.size()) == suffix;
+}
+
 std::string ToLower(const std::string& s) {
   std::string result = s;
   std::transform(result.begin(), result.end(), result.begin(),

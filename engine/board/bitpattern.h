@@ -273,7 +273,7 @@ inline Square MoveToSquare(std::string move) {
   return ('h' - move[0]) + ('8' - move[1]) * 8;
 }
 
-static std::string SquareToMove(Square move) {
+inline std::string SquareToMove(Square move) {
   return std::string(1, 'h' - (move % 8)) + std::to_string(8 - move / 8);
 }
 

@@ -50,4 +50,10 @@ std::vector<T> ReadFile(const std::string& filename) {
   return result;
 }
 
+std::vector<std::string> GetAllFiles(const std::string& directory, bool include_files, bool include_directories);
+
+bool FileExists(const std::string& filename);
+
+std::string Filename(const std::string& filepath);
+
 #endif //OTHELLOSENSEI_APP_SRC_MAIN_CPP_UTILS_FILES_H_
