@@ -389,8 +389,8 @@ class PreferencesState with ChangeNotifier {
     notifyListeners();
   }
 
-  void reset() async {
-    setAll(defaultPreferences);
+  Future<void> reset() async {
+    await setAll(defaultPreferences);
   }
 
   Future<void> setNoUpdate(String name, dynamic value) async {
