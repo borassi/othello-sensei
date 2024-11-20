@@ -87,8 +87,9 @@ class SettingsTileWithTextForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-    var value = state.updates[key] ?? GlobalState.preferences.get(name);
+    var value = state.updates[name] ?? GlobalState.preferences.get(name);
     return SettingsTile(
+      key: UniqueKey(),
       name: name,
       child: TextFormField(
         style: Theme.of(context).textTheme.bodyMedium!,
@@ -107,18 +108,18 @@ class SettingsTileWithTextForm extends StatelessWidget {
   }
 }
 
-Widget getCardSettings(String key, BuildContext context, SettingsLocalState state) {
-  var value = state.updates[key] ?? GlobalState.preferences.get(key);
+Widget getCardSettings(String name, BuildContext context, SettingsLocalState state) {
+  var value = state.updates[name] ?? GlobalState.preferences.get(name);
   onChanged(newValue) {
-    state.set(key, newValue);
+    state.set(name, newValue);
   }
-  var values = PreferencesState.preferencesValues[key];
+  var values = PreferencesState.preferencesValues[name];
   if (values != null) {
     if (!values.contains(value!)) {
-      value = GlobalState.preferences.defaultPreferences[key];
+      value = GlobalState.preferences.defaultPreferences[name];
     }
     return SettingsTile(
-      name: key,
+      name: name,
       child: DropdownButton<String>(
         value: value,
         isExpanded: true,
@@ -147,12 +148,12 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
   switch (value.runtimeType) {
     case bool:
       return SettingsTile(
-        name: key,
+        name: name,
         child: SenseiToggle(initialValue: value, onChanged: onChanged)
       );
     case int:
       return SettingsTileWithTextForm(
-        name: key,
+        name: name,
         state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
@@ -164,7 +165,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
       );
     case double:
       return SettingsTileWithTextForm(
-        name: key,
+        name: name,
         state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
@@ -176,7 +177,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
       );
     case String:
       return SettingsTileWithTextForm(
-        name: key,
+        name: name,
         state: state,
         onChanged: onChanged,
       );
