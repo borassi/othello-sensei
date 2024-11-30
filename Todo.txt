@@ -1,13 +1,9 @@
 Mac
-- P0 Understand how to publish the app.
 - P3 Fix warning with multiple matching destinations.
-- P4 Enable BMI2 on Mac with Intel (not really useful since newer Mac do not support it).
 
 Usability / bugs
 - P2 MED Fix accessibility issues.
-- P2 EASY Clear analyzed positions.
 - P2 MED Create smaller books.
-- P3 ???? Free memory on hot reload.
 
 Tech debt
 - P2 EASY Unify SetBoard and SetAnnotations.
@@ -40,11 +36,6 @@ Extra features:
 - P4 EASY Show stats from various moves.
 - P4 HARD Get board state from pictures.
 - P5 HARD Get sequence from board state.
-
-Make the app distributable
-- P3 MED Make it work on iOS.
-- P4 MED Make it work on Mac.
-- P5 EASY Add documentation on how to run it.
 
 Simplify development (match the Java app)
 - P3 MED Show evaluations instead of evaluating.
