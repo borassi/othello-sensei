@@ -75,13 +75,22 @@ HOW TO RELEASE ON WINDOWS:
   https://partner.microsoft.com/en-us/dashboard/products/9N54CS9F3JGP/overview
   Home page: https://partner.microsoft.com/en-us/dashboard/home
 
+HOW TO RELEASE ON IOS (APP STORE)
+- flutter build ipa.
+- Open "Transporter" app.
+- Drag the built file in build/ios/ipa/Othello Sensei.ipa to the Transporter app.
+- Login in https://appstoreconnect.apple.com/teams/3f165cff-c17e-446a-950b-efb6fa17e751/apps/6738860855/testflight/ios.
+- Wait until the build is approved.
+- Go through the process Internal Testing > Open Testing > Production.
+
 HOW TO RELEASE ON MACOS (FREE APP)
 - flutter build macos
 - cd installers/macos
 - rm ../../Othello\ Sensei.dmg && appdmg config.json "../../Othello Sensei.dmg"
 
 HOW TO RELEASE ON MACOS (APP STORE)
+- Update CFBundleShortVersionString and CFBundleVersion in macos/Runner/Info.plist.
 - flutter build macos
-- cd installers/macos
-- Open XCode
-- Product > Archive
+- Open Xcode and select Product > Archive > Validate App, followed by Distribute App
+- Login in https://appstoreconnect.apple.com/teams/3f165cff-c17e-446a-950b-efb6fa17e751/apps/6738860855/testflight/mac.
+- Go through the process Internal Testing > Open Testing > Production.

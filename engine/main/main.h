@@ -44,7 +44,7 @@ class Main {
 
   void NewGame() {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0);
-    bool new_state = ToState(first_state_.get());
+    [[maybe_unused]] bool new_state = ToState(first_state_.get());
     assert(new_state);
   }
 
