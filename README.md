@@ -192,8 +192,6 @@ Examples:
 
 <img src="screenshots/readme_evaluate_board.png" alt="Example board" width="400"/>
 
-![Example board](screenshots/readme_evaluate_board.png?raw=true "Example board")
-
 - **H3**: Sensei proved it's -16, because the second line is "- -", after visiting 238 million
   descendants.
 - **C2**: Sensei is very confident that it's -20, after visiting 175 million positions. It needs to
