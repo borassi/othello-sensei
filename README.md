@@ -169,3 +169,43 @@ If the math is too complex, you can just follow the following rules:
 - If you care only about the best move, set the parameter around 2.
 - If you want a good balance, leave the default 6.
 - If you want to spend the same time on each move, set the parameter to 64 or higher.
+
+### What do the numbers in a square mean, in Evaluate mode?
+
+- **Line 1**: the estimated evaluation, i.e., the disk difference at the end assuming perfect play
+  (examples: +0.00 means that playing that move will lead to a draw; -2 means that playing that
+  move will lead to a 33-31 loss).
+
+- **Line 2**: the first (resp., second) number shows how far we are from proving that the actual
+  score it at least (resp., at most) equal to the evaluation in the first line. More precisely:
+  - If Sensei already proved the evaluation, it shows "-".
+  - If Sensei is very confident in the evaluation, it shows the number of positions needed to visit
+    to conclude the proof (k = thousands, M = millions, G = billions, T = trillions, etc.).
+  - Else, it shows the probability that the actual score is smaller than (resp., greater than) the
+    evaluation.
+
+- **Line 3**: the number of descendants visited to come up with the current evaluation, preceded by
+  "bk" if the evaluation comes from the book, and by "(bk)" if the evaluation comes from a mix of
+  positions in the book and current evaluations.
+
+Examples:
+![Example board](screenshots/readme_evaluate_board.png?raw=true "Example board")
+
+- **H3**: Sensei proved it's -16, because the second line is "- -", after visiting 238 million
+  descendants.
+- **C2**: Sensei is very confident that it's -20, after visiting 175 million positions. It needs to
+  visit 395 million more positions to prove that it's not -22 or below, and it needs to visit 26
+  million positions to prove that it's not -18 or above.
+- **D1**: Sensei thinks this position is probably around -36, after visiting 30 million positions.
+  It thinks it's -38 or below with probability 35%, and -34 or above with probability 26%.
+
+
+### What do the numbers in a square mean, in Archive mode?
+
+- **Line 1**: the number of games in the archive that reached this position.
+
+- **Line 2**: the estimated evaluation (same as line 1 in Evaluate mode).
+
+- **Line 3**: the number of descendants visited (same as line 3 in Evaluate mode).
+
+NOTE: if the current position contains no game, we show the same values as in Evaluate mode.
