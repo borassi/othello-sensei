@@ -60,17 +60,17 @@ applications.
 
 ### Evaluating at depth 1
 
-Similarly to existing programs, we use a
-[pattern-based evaluation](https://skatgame.net/mburo/log.html), but we use
+Similarly to existing programs, Sensei uses a
+[pattern-based evaluation](https://skatgame.net/mburo/log.html), but with
 different subsets of the board to define patterns:
 
 *	3x3 corners;
 *	5x2 corners;
 *	main diagonals;
 *	some "edge-based" pattern: a list of patterns describing the edge, of which
-  we always choose the outermost.
+  Sensei always choose the outermost.
 
-Then, we use linear regression to evaluate a position using these features.
+Then, Sensei uses linear regression to evaluate a position using these features.
 
 ### Evaluating at larger depths
 
@@ -140,7 +140,7 @@ Evaluating a position is hard and costs a lot of energy, which increases the CPU
 starts the fan. You can make the program use less CPU by reducing the "Number of threads" in the
 settings (but the evaluation will be slower).
 
-### Can we increase the font size?
+### Can I increase the font size?
 
 You can enlarge the evaluations by enabling the setting "Round evaluations" and disabling the
 setting "Show extra data in evaluate mode". You can also make the board and text slightly larger by
@@ -176,7 +176,7 @@ If the math is too complex, you can just follow the following rules:
   (examples: +0.00 means that playing that move will lead to a draw; -2 means that playing that
   move will lead to a 33-31 loss).
 
-- **Line 2**: the first (resp., second) number shows how far we are from proving that the actual
+- **Line 2**: the first (resp., second) number shows how far Sensei is from proving that the actual
   score it at least (resp., at most) equal to the evaluation in the first line. More precisely:
   - If Sensei already proved the evaluation, it shows "-".
   - If Sensei is very confident in the evaluation, it shows the number of positions needed to visit
@@ -203,10 +203,10 @@ Examples:
 
 ### What do the numbers in a square mean, in Archive mode?
 
-- **Line 1**: the number of games in the archive that reached this position.
+- **Line 1**: the number of games in the archive that reached this position, after applying filters.
 
 - **Line 2**: the estimated evaluation (same as line 1 in Evaluate mode).
 
 - **Line 3**: the number of descendants visited (same as line 3 in Evaluate mode).
 
-NOTE: if the current position contains no game, we show the same values as in Evaluate mode.
+NOTE: if the current position contains no game, Sensei shows the same values as in Evaluate mode.
