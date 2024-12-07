@@ -1,9 +1,13 @@
 Mac
-- P3 Fix warning with multiple matching destinations.
+- P3 SMALL Fix picture on Mac launch.
+- P4 SMALL Fix warning with multiple matching destinations.
 
 Usability / bugs
+- P1 MED Create smaller books.
+- P1 TINY Round lost disks.
+- P1 TINY Black / white bars in the graph (Black = Black is ahead).
 - P2 MED Fix accessibility issues.
-- P2 MED Create smaller books.
+- P4 SMALL Undo / redo in the side bar by default?
 
 Tech debt
 - P2 EASY Unify SetBoard and SetAnnotations.
@@ -11,8 +15,9 @@ Tech debt
 - P3 EASY Fix Flutter warnings.
 
 Thor
-- P2 EASY Click to play the next move.
-- P2 TINY Add tournament.
+- P1 EASY Click to play the next move.
+- P1 EASY Add tournament.
+- P2 MED Exclude games between programs.
 - P2 MED Winning percentages.
 - P3 EASY Filter by tournament / year.
 - P3 HARD Download games during tournaments.
