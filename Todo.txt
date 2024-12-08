@@ -94,7 +94,8 @@ HOW TO RELEASE ON MACOS (FREE APP)
 - rm ../../Othello\ Sensei.dmg && appdmg config.json "../../Othello Sensei.dmg"
 
 HOW TO RELEASE ON MACOS (APP STORE)
-- Update CFBundleShortVersionString and CFBundleVersion in macos/Runner/Info.plist.
+- Update version in pubspec.yaml (e.g., 1.0.2+35).
+- Update CFBundleShortVersionString (e.g., 1.0.2) and CFBundleVersion in macos/Runner/Info.plist (e.g., 35).
 - flutter build macos
 - Open Xcode and select Product > Archive > Validate App, followed by Distribute App
 - Login in https://appstoreconnect.apple.com/teams/3f165cff-c17e-446a-950b-efb6fa17e751/apps/6738860855/testflight/mac.
