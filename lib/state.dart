@@ -131,13 +131,12 @@ class GlobalState {
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   static Future<void> init() async {
-    WidgetsFlutterBinding.ensureInitialized();
     final directory = await getApplicationSupportDirectory();
     localPath = directory.path;
+    await maybeCopyAssetsToLocalPath();
     var ffiEngineCpuType = getDynamicLibrary();
     ffiEngine = FFIEngine(ffiEngineCpuType.$1);
     cpuType = ffiEngineCpuType.$2;
-    await maybeCopyAssetsToLocalPath();
     var connectivityHandler = Connectivity();
     try {
       connectivity = await connectivityHandler.checkConnectivity();
