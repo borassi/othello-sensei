@@ -140,7 +140,8 @@ class EvaluationState : public TreeNode {
       return this;
     }
     for (state = Father(); state->Father() != nullptr; state = state->Father()) {
-      assert(state->NumChildrenWithDescendants() >= 1);
+      // NOTE: we cannot assert(state->NumChildrenWithDescendants() >= 1), if the position is not
+      // evaluated, yet.
       if (state->NumChildrenWithDescendants() > 1) {
         return state;
       }
@@ -265,12 +266,14 @@ class EvaluationState : public TreeNode {
   void SetAnnotations(const Node& node, bool book, double seconds) {
     CopyAndEnlargeToAllEvals(node);
     if (book) {
+      // descendants_book are just copied from the book; descendants are updated, instead.
       annotations_.descendants_book = descendants_;
       descendants_ = annotations_.descendants;
+      annotations_.provenance = BOOK;
       if (HasValidChildren()) {
+        UpdateFather();
         return;
       }
-      annotations_.provenance = BOOK;
     } else {
       assert(!HasValidChildren());
       double new_seconds = seconds - annotations_.seconds;
@@ -323,7 +326,7 @@ class EvaluationState : public TreeNode {
     }
     EnsureValid();
     TreeNode::UpdateFather();
-    bool has_book_child = false;
+    bool has_book_child = annotations_.descendants_book > 0;
     bool all_book_children = true;
     annotations_.eval_best_line = kLessThenMinEvalLarge;
     annotations_.median_eval_best_line = kLessThenMinEvalLarge;
