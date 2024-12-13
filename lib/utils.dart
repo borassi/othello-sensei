@@ -142,12 +142,12 @@ T minIgnoreNaN<T extends num>(T x, T y) {
   return x.isNaN ? y : (y.isNaN ? x : min(x, y));
 }
 
-String formatEval(double eval) {
+String formatEval(double eval, {int roundIfGE = 100}) {
   if (eval.isNaN) {
     return '-';
   }
   return eval.toStringAsFixed(
-      GlobalState.preferences.get("Round evaluations") || eval.abs() > 100 ? 0 : 2);
+      GlobalState.preferences.get("Round evaluations") || eval.abs() >= roundIfGE ? 0 : 2);
 }
 
 double getEvalFromAnnotations(Annotations annotation, bool black, {bool bestLine = false} ) {
