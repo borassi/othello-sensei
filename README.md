@@ -210,3 +210,27 @@ Examples:
 - **Line 3**: the number of descendants visited (same as line 3 in Evaluate mode).
 
 NOTE: if the current position contains no game, Sensei shows the same values as in Evaluate mode.
+
+### How does Sensei reuse past evaluations?
+
+Each time Sensei evaluates a sequence, it will save the evaluation to reuse it if you go back to
+the same sequence, and it will update the evaluations of all parent positions in the sequence.
+For example, imagine on the starting position Sensei evaluates e6 as -2; then you click e6 and it
+evaluates e6f4 as +0, e6f6 as +0, e6d6 as -8. Then, it will also update the evaluation of e6 to +0.
+
+The tricky part is to decide when Sensei re-evaluates a position and when it shows the existing
+values. For example, on the sequence e6, Sensei will decide to evaluate e6f4 by applying the
+following rules:
+
+1. If you never played e6 before, Sensei will always evaluate e6f4.
+1. If you already played e6f4 (e.g., you clicked "e6", "f4", "Undo"), Sensei will always reuse past
+   evaluations (otherwise, there will be a mismatch between the newly computed value of e6f4 and
+   the stored values of the children of e6f4).
+1. If you already played e6 but not e6f4 (e.g., you clicked "e6", "Undo", "e6" again):
+   1. If e6 is part of an analyzed game, Sensei will always reuse past evaluations.
+   1. Else it will start a new evaluation, but it will update the score of e6f4 only when the new
+      evaluation is better than the past evaluation (e.g., if the past evaluation took 5 seconds,
+      Sensei will update the evaluation only after 5 seconds or more).
+
+You can reset the saved evaluations by clicking "New game" or by closing the app; furthermore,
+analyzing a game resets all saved evaluations.
