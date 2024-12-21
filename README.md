@@ -12,7 +12,13 @@ Download it from the Play Store
 
 ### iOS
 
-Coming soon.
+Download it from the App Store
+([link](https://apps.apple.com/us/app/othello-sensei/id6738860855?platform=iphone)).
+
+WARNING: The app might crash on old iPhones, but I don't have a phone on which I can test it, making
+the problem very hard to fix. If the app crashes on your phone and you can collect the [crash
+logs](https://developer.apple.com/documentation/xcode/acquiring-crash-reports-and-diagnostic-logs),
+please send them to michele.borassi@gmail.com and I'll do my best to fix it!
 
 ### Windows
 
@@ -21,9 +27,10 @@ Download it from the Microsoft Store
 
 ### Mac
 
-#### Using the app store
+#### Using the App Store
 
-Coming soon.
+Download it from the App Store
+([link](https://apps.apple.com/us/app/othello-sensei/id6738860855?platform=mac)).
 
 #### Using the dmg file
 
