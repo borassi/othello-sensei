@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef OTHELLO_SENSEI_THOR_SOURCE_H
+#define OTHELLO_SENSEI_THOR_SOURCE_H
+
 #include <algorithm>
 #include <climits>
 #include <cstring>
@@ -341,3 +344,5 @@ class Source {
     }
   }
 };
+
+#endif // OTHELLO_SENSEI_THOR_SOURCE_H
