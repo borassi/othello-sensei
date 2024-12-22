@@ -46,7 +46,7 @@ std::ostream& operator<<(std::ostream& stream, const Node& b) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const TreeNode& n) {
-  std::lock_guard<std::mutex> guard(n.mutex_);
+  std::lock_guard<std::mutex> guard(*n.mutex_);
   stream << (Node) n;
   return stream;
 }
@@ -60,7 +60,7 @@ std::vector<Node> TreeNode::Fathers() {
 }
 
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
-  std::lock_guard<std::mutex> guard(mutex_);
+  std::lock_guard<std::mutex> guard(*mutex_);
   assert(lower % 16 == 0);
   assert(upper % 16 == 0);
   assert(IsLeafNoLock());
@@ -74,8 +74,9 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
 }
 
 void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
-                     uint8_t evaluator) {
-  std::lock_guard<std::mutex> guard(mutex_);
+                     uint8_t evaluator, std::mutex* mutex) {
+  mutex_ = mutex;
+  std::lock_guard<std::mutex> guard(*mutex_);
   ResetNoLock(player, opponent, depth, evaluator);
 }
 
@@ -115,10 +116,10 @@ void TreeNode::ResetNoLock(
 }
 
 void TreeNode::SetChildren(const std::vector<TreeNode*>& children, const EvaluatorDerivative& evaluator) {
-  std::lock_guard<std::mutex> guard(mutex_);
+  std::lock_guard<std::mutex> guard(*mutex_);
   auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(Depth());
   for (TreeNode* child : children) {
-    std::lock_guard<std::mutex> guard(child->mutex_);
+    std::lock_guard<std::mutex> guard(*child->mutex_);
     if (child->IsLeafNoLock()) {
       child->UpdateLeafWeakLowerUpper(-weak_upper, -weak_lower);
     } else {

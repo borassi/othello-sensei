@@ -556,12 +556,12 @@ class TreeNode : public Node {
     }
   }
 
-  virtual void Reset(Board b, int depth, uint8_t evaluator) {
-    Reset(b.Player(), b.Opponent(), depth, evaluator);
+  virtual void Reset(Board b, int depth, uint8_t evaluator, std::mutex* mutex) {
+    Reset(b.Player(), b.Opponent(), depth, evaluator, mutex);
   }
 
   virtual void Reset(BitPattern player, BitPattern opponent, int depth,
-                     uint8_t evaluator);
+                     uint8_t evaluator, std::mutex* mutex);
 
   void SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator_derivative);
 
@@ -581,14 +581,14 @@ class TreeNode : public Node {
   }
 
   bool IsLeaf() const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return IsLeafNoLock();
   }
 
   // Locks a leaf by setting n_threads_working_ = 1. If n_threads_working_ > 0,
   // the lock fails. We should never have n_threads_working_ > 1 for a leaf.
   bool TryLockLeaf(Eval solved_lower, Eval solved_upper) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     // Some other thread has added this node's children or solved this node
     // before locking it.
     if (!IsLeafNoLock() || Node::IsSolved(solved_lower, solved_upper, false)) {
@@ -612,12 +612,12 @@ class TreeNode : public Node {
   }
 
   virtual void UpdateFather() {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     UpdateFatherNoLock();
   }
 
   std::vector<Node> GetChildren() {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     std::vector<Node> children;
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
@@ -630,7 +630,7 @@ class TreeNode : public Node {
   void SetChildren(const std::vector<TreeNode*>& children, const EvaluatorDerivative& evaluator);
 
   bool HasLeafEval() {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return HasLeafEvalNoLock();
   }
 
@@ -639,7 +639,7 @@ class TreeNode : public Node {
   }
 
   void SetChildren(const std::vector<TreeNode*>& children) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     SetChildrenNoLock(children);
   }
 
@@ -677,7 +677,7 @@ class TreeNode : public Node {
   }
 
   TreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     if (IsLeafNoLock()) {
       return this;
     }
@@ -694,7 +694,7 @@ class TreeNode : public Node {
     int child_eval_goal = -eval_goal;
     for (auto iter = start; iter != end; ++iter) {
       TreeNode* child = *iter;
-      std::lock_guard<std::mutex> guard(child->mutex_);
+      std::lock_guard<std::mutex> guard(*child->mutex_);
       if (child_eval_goal <= child->lower_ || child_eval_goal >= child->upper_ ||
           child_eval_goal < child->weak_lower_ || child_eval_goal > child->weak_upper_) {
         continue;
@@ -727,13 +727,13 @@ class TreeNode : public Node {
   }
 
   bool WeakLowerUpperContains(Eval weak_lower, Eval weak_upper) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return weak_lower_ <= weak_lower && weak_upper <= weak_upper_;
   }
 
   template<class T>
   std::unique_ptr<LeafToUpdate<T>> AsLeaf(int last_eval_goal) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     auto eval_goal = NextPositionEvalGoal(0, 1, Node::SolveProbability(-63, 63) > 0.05 ? kLessThenMinEval : last_eval_goal);
     if (eval_goal == kLessThenMinEval) {
       return nullptr;
@@ -743,38 +743,38 @@ class TreeNode : public Node {
 
   template<class T>
   LeafToUpdate<T> AsLeafWithGoal(Eval eval_goal) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return AsLeafNoLock<T>(eval_goal);
   }
 
   template<class T>
   void UpdateAlphaBeta(LeafToUpdate<T>* leaf) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     UpdateAlphaBetaNoLock(leaf);
   }
 
   double SolveProbability(Eval lower, Eval upper) const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return Node::SolveProbability(lower, upper);
   }
 
   bool IsSolved(Eval lower, Eval upper, bool approx) const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return Node::IsSolved(lower, upper, approx);
   }
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return Node::ToBeSolved(lower, upper, num_tree_nodes, total_visited);
   }
 
   double RemainingWork(Eval lower, Eval upper) const {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return Node::RemainingWork(lower, upper);
   }
 
   std::pair<Eval, Eval> ExpectedWeakLowerUpper() const {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     Eval expected_weak_lower = std::min(upper_ - 1, std::max(lower_ + 1, (int) weak_lower_));
     Eval expected_weak_upper = std::max(lower_ + 1, std::min(upper_ - 1, (int) weak_upper_));
     assert(expected_weak_lower <= expected_weak_upper);
@@ -818,7 +818,7 @@ class TreeNode : public Node {
   }
 
   double Advancement(Eval lower, Eval upper) const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     return Node::Advancement(lower, upper);
   }
 
@@ -838,7 +838,7 @@ class TreeNode : public Node {
   }
 
   virtual void SetLeafEval(EvalLarge leaf_eval, Square eval_depth) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     if (HasLeafEvalNoLock()) {
       return;
     }
@@ -875,7 +875,7 @@ class TreeNode : public Node {
   }
 
  protected:
-  mutable std::mutex mutex_;
+  std::mutex* mutex_;
   TreeNode** children_;
   TreeNode** fathers_;
   uint32_t n_fathers_;
@@ -887,7 +887,7 @@ class TreeNode : public Node {
 
   void ExtendEvalInternal(Eval weak_lower, Eval weak_upper) {
     {
-      std::lock_guard<std::mutex> guard(mutex_);
+      std::lock_guard<std::mutex> guard(*mutex_);
       // NOTE: We cannot return if weak_lower_, weak_upper_ of this node are OK,
       // because there might be a thread working on this node's descendants with
       // old weak_lower, weak_upper. And we cannot check that n_threads_working
@@ -902,7 +902,7 @@ class TreeNode : public Node {
       children_[i]->ExtendEvalInternal(-weak_upper, -weak_lower);
     }
     {
-      std::lock_guard<std::mutex> guard(mutex_);
+      std::lock_guard<std::mutex> guard(*mutex_);
       weak_lower_ = weak_lower;
       weak_upper_ = weak_upper;
       assert(weak_lower_ <= weak_upper_);
@@ -1007,7 +1007,7 @@ class TreeNode : public Node {
   }
 
   virtual void UpdateWithChild(const TreeNode& child) {
-    std::lock_guard<std::mutex> child_guard(child.mutex_);
+    std::lock_guard<std::mutex> child_guard(*child.mutex_);
     // We cannot check the upper, because we are currently updating it.
     assert(leaf_eval_ >= EvalToEvalLarge(lower_));
     assert(child.leaf_eval_ >= EvalToEvalLarge(child.lower_) && child.leaf_eval_ <= EvalToEvalLarge(child.upper_));
@@ -1032,7 +1032,7 @@ class TreeNode : public Node {
   }
 
   virtual void AddFather(TreeNode* father) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(*mutex_);
     if (n_fathers_ == 0) {
       fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
     } else {
