@@ -72,6 +72,7 @@ target_link_libraries(
         book
         book_tree_node
         misc
+        tree_node
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
@@ -123,6 +124,7 @@ target_link_libraries(
         book_tree_node
         get_moves
         test_utils
+        tree_node
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
