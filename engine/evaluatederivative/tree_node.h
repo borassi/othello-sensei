@@ -376,9 +376,9 @@ class Node {
     for (int i = std::max(lower_ + 1, (int) weak_lower_); i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
       const Evaluation& eval = GetEvaluation(i);
       if (eval.ProbGreaterEqual() < prob_min || eval.ProbGreaterEqual() > prob_max ||
-              eval.ProofNumber() == 0 || eval.DisproofNumber() == 0 ||
-              (i + 2 < upper_ && i < weak_upper_ && GetEvaluation(i + 2).ProbGreaterEqual() > 1 - kMinProbEvalGoal) ||
-              (i - 2 > lower_ && i > weak_lower_ && GetEvaluation(i - 2).ProbGreaterEqual() < kMinProbEvalGoal)) {
+          eval.ProofNumber() == 0 || eval.DisproofNumber() == 0 ||
+          (i + 2 < upper_ && i < weak_upper_ && GetEvaluation(i + 2).ProbGreaterEqual() > 1 - kMinProbEvalGoal) ||
+          (i - 2 > lower_ && i > weak_lower_ && GetEvaluation(i - 2).ProbGreaterEqual() < kMinProbEvalGoal)) {
         continue;
       }
       double cur_value = i == last_eval_goal ? 2 * kLogDerivativeMinusInf : eval.MaxLogDerivative();
@@ -505,7 +505,7 @@ class Node {
     evaluation->SetLeaf(player_, opponent_, i_large, leaf_eval_, eval_depth_, n_empties_);
     assert(
         (evaluation->ProbGreaterEqual() == 0 || evaluation->ProbGreaterEqual() == 1) ==
-            (evaluation->MaxLogDerivative() == kLogDerivativeMinusInf));
+        (evaluation->MaxLogDerivative() == kLogDerivativeMinusInf));
   }
 
   bool EqualsExceptDescendants(const Node& other) const {
