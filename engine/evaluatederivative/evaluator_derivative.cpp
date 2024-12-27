@@ -30,7 +30,7 @@ std::pair<TreeNode*, bool> TreeNodeSupplier::AddTreeNode(
   int node_id = num_nodes_++;
   assert(node_id < kDerivativeEvaluatorSize);
   TreeNode& node = tree_nodes_[node_id];
-  node.Reset(player, opponent, depth, evaluator_index, GetNewMutex(node_id, depth));
+  node.Reset(player, opponent, depth, evaluator_index);
   AddToHashMap(player, opponent, depth, evaluator_index, node_id);
   return std::make_pair(&node, true);
 }

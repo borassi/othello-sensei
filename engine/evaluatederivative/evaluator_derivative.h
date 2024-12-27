@@ -77,12 +77,7 @@ class TreeNodeSupplier {
   TreeNodeSupplier() :
       first_valid_index_(1),
       num_nodes_(0),
-      tree_node_index_(kHashMapSize),
-      mutex_at_depth_(64) {
-    assert(__builtin_popcount(kMutexAtDepthSize) == 1);  // Must be a power of 2.
-    for (int i = 0; i < 64; ++i) {
-      mutex_at_depth_[i] = std::vector<std::mutex>(kMutexAtDepthSize);
-    }
+      tree_node_index_(kHashMapSize) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
     FullResetHashMap();
   }
@@ -123,17 +118,11 @@ class TreeNodeSupplier {
       BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index);
 
  private:
-  static constexpr int kMutexAtDepthSize = 512;
   TreeNode* tree_nodes_;
-  std::vector<std::vector<std::mutex>> mutex_at_depth_;
   std::vector<std::atomic_uint32_t> tree_node_index_;
   std::atomic_uint32_t num_nodes_;
   uint32_t first_valid_index_;
   Random random_;
-
-  std::mutex* GetNewMutex(int32_t node_id, Square depth) {
-    return &mutex_at_depth_[depth][random_.next() & (kMutexAtDepthSize-1)];
-  }
 
   TreeNode* MutableInternal(BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index) const {
     for (int hash = HashNode(player, opponent, depth, evaluator_index);

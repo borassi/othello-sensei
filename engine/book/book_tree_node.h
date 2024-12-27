@@ -227,6 +227,11 @@ class BookTreeNode : public TreeNode {
     return true;
   }
 
+ protected:
+  std::optional<std::lock_guard<std::mutex>> GetGuard() const override {
+    return std::nullopt;
+  }
+
  private:
   Book* book_;
 

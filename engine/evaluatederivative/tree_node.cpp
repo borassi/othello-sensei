@@ -18,7 +18,22 @@
 #include "tree_node.h"
 #include "evaluator_derivative.h"
 
+constexpr int kMutexAtDepthBits = 10;
+constexpr int kMutexAtDepthSize = 1 << kMutexAtDepthBits;
+
+namespace {
+
+std::vector<std::vector<std::mutex>> BuildMutexAtDepth() {
+  std::vector<std::vector<std::mutex>> mutex_at_depth(64);
+  for (int i = 0; i < 64; ++i) {
+    mutex_at_depth[i] = std::vector<std::mutex>(kMutexAtDepthSize);
+  }
+  return mutex_at_depth;
+}
+}  // namespace
+
 std::atomic_bool TreeNode::extend_eval_failed_(false);
+std::vector<std::vector<std::mutex>> TreeNode::mutex_at_depth_(BuildMutexAtDepth());
 
 std::ostream& operator<<(std::ostream& stream, const Node& b) {
   stream << b.Player() << " " << b.Opponent() << ": " << b.LeafEval()
@@ -46,7 +61,7 @@ std::ostream& operator<<(std::ostream& stream, const Node& b) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const TreeNode& n) {
-  std::lock_guard<std::mutex> guard(*n.mutex_);
+  auto guard = n.GetGuard();
   stream << (Node) n;
   return stream;
 }
@@ -60,7 +75,7 @@ std::vector<Node> TreeNode::Fathers() {
 }
 
 void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDerivative& evaluator) {
-  std::lock_guard<std::mutex> guard(*mutex_);
+  auto guard = GetGuard();
   assert(lower % 16 == 0);
   assert(upper % 16 == 0);
   assert(IsLeafNoLock());
@@ -74,9 +89,9 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
 }
 
 void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
-                     uint8_t evaluator, std::mutex* mutex) {
-  mutex_ = mutex;
-  std::lock_guard<std::mutex> guard(*mutex_);
+                     uint8_t evaluator) {
+  mutex_ = &TreeNode::mutex_at_depth_[depth][Hash<kMutexAtDepthBits>(player, opponent)];
+  auto guard = GetGuard();
   ResetNoLock(player, opponent, depth, evaluator);
 }
 
@@ -116,10 +131,10 @@ void TreeNode::ResetNoLock(
 }
 
 void TreeNode::SetChildren(const std::vector<TreeNode*>& children, const EvaluatorDerivative& evaluator) {
-  std::lock_guard<std::mutex> guard(*mutex_);
+  auto guard = GetGuard();
   auto [weak_lower, weak_upper] = evaluator.GetWeakLowerUpper(Depth());
   for (TreeNode* child : children) {
-    std::lock_guard<std::mutex> guard(*child->mutex_);
+    auto child_guard = child->GetGuard();
     if (child->IsLeafNoLock()) {
       child->UpdateLeafWeakLowerUpper(-weak_upper, -weak_lower);
     } else {
