@@ -402,8 +402,8 @@ class SequenceCanonicalizer {
     std::vector<char> result;
     for (const auto& [board, sequences] : board_to_sequences_) {
       result.insert(result.end(), (char*) &board, (char*) &board + sizeof(Board));
-      size_t n_sequences = sequences.size();
-      result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(n_sequences));
+      int n_sequences = (int) sequences.size();
+      result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(int));
       result.push_back(sequences.begin()->Size());
       for (const Sequence& sequence : sequences) {
         result.insert(result.end(), sequence.Moves().begin(), sequence.Moves().end());
