@@ -324,21 +324,23 @@ class SequenceCanonicalizer {
   }
 
   void Load(const std::vector<char>& serialized) {
+    // TODO: Speed up the load (takes ~0.5 sec). Ideas:
+    // - Use a vector and not an unordered_set.
+    // -
     const char* it = serialized.data();
     while (it < serialized.data() + serialized.size()) {
-      Board board = *((Board*) it);
+      Board& board = *((Board*) it);
       it += sizeof(Board);
       int n_sequences = *((int*) it);
       it += sizeof(int);
       uint8_t size = *((uint8_t*) it);
       it += sizeof(uint8_t);
-      std::vector<Sequence> sequences;
+      std::unordered_set<Sequence>& sequences = board_to_sequences_[board];
       sequences.reserve(n_sequences);
       for (int i = 0; i < n_sequences; ++i) {
-        sequences.push_back(Sequence((Square*) it, size));
+        sequences.insert(Sequence((Square*) it, size));
         it += size;
       }
-      board_to_sequences_[board] = std::unordered_set<Sequence>(sequences.begin(), sequences.end());
     }
   }
 
@@ -414,8 +416,6 @@ class SequenceCanonicalizer {
 
  private:
   std::unordered_map<Board, std::unordered_set<Sequence>> board_to_sequences_;
-//  std::unordered_map<Sequence, std::pair<Sequence, uint8_t>> sequence_to_canonical_;
-//  std::unordered_map<Sequence, std::vector<Sequence>> canonical_to_sequence_;
 };
 
 #endif  // BOARD_SEQUENCE_H
