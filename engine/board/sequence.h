@@ -356,7 +356,6 @@ class SequenceCanonicalizer {
   }
 
   void Load(const std::vector<char>& serialized) {
-    // TODO: Speed up the load (takes ~0.5 sec).
     const char* it = serialized.data();
     while (it < serialized.data() + serialized.size()) {
       Board& board = *((Board*) it);
