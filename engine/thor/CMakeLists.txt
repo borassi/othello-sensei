@@ -63,6 +63,7 @@ target_link_libraries(
         get_flip
         get_moves
         misc
+        source
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -96,6 +97,7 @@ target_link_libraries(
         files
         game
         sequence
+        GTest::gtest
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -125,6 +127,18 @@ add_executable(
 
 target_link_libraries(
         thor_create_extra_files
+        LINK_PUBLIC
+        parse_flags
+        thor
+)
+
+add_executable(
+        thor_profile
+        thor_profile.cpp
+)
+
+target_link_libraries(
+        thor_profile
         LINK_PUBLIC
         parse_flags
         thor

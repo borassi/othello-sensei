@@ -197,3 +197,72 @@ TEST_F(ThorSourceTest, Rotate) {
   EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[5]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(22, 1)));
 }
+
+TEST_F(ThorSourceTest, SameExampleOrderWhenFiltering) {
+  Source source(kFolder);
+  auto examples1 = source.GetGames(Sequence(""), 100, {}, {}, {"tournament1"}).examples;
+  auto examples2 = source.GetGames(Sequence("e6"), 100, {}, {}, {"tournament1"}).examples;
+  int i = -1;
+  for (int j = 0; j < examples2.size(); ++j) {
+    ++i;
+    while (examples1[i] != examples2[j]) {
+      ++i;
+      ASSERT_LT(i, examples1.size());
+    }
+  }
+}
+
+TEST_F(ThorSourceTest, SameExampleOrderWhenNotFiltering) {
+  Source source(kFolder);
+  auto examples1 = source.GetGames(Sequence(""), 10).examples;
+  auto examples2 = source.GetGames(Sequence("e6"), 10).examples;
+  int i = -1;
+  for (int j = 0; j < examples2.size(); ++j) {
+    ++i;
+    while (examples1[i] != examples2[j]) {
+      ++i;
+      ASSERT_LT(i, examples1.size());
+    }
+  }
+}
+
+TEST_F(ThorSourceTest, SameExampleOrderWhenFilteringAndNotFiltering) {
+  Source source(kFolder);
+  auto examples1 = source.GetGames(Sequence("e6")).examples;
+  auto examples2 = source.GetGames(Sequence("e6"), 100, {}, {}, {"tournament1"}).examples;
+  int i = -1;
+  for (int j = 0; j < examples2.size(); ++j) {
+    ++i;
+    while (examples1[i] != examples2[j]) {
+      ++i;
+      ASSERT_LT(i, examples1.size());
+    }
+  }
+}
+
+TEST_F(ThorSourceTest, KeepsFirstExamplesWhenFiltering) {
+  Source source(kFolder);
+  for (int t = 1; t < 10; ++t) {
+    auto examples1 = source.GetGames(Sequence("e6"), 100, {}, {}, {"tournament1"}).examples;
+    auto examples2 = source.GetGames(Sequence("e6"), t, {}, {}, {"tournament1"}).examples;
+    examples1.resize(examples2.size());
+    ASSERT_EQ(examples1, examples2);
+  }
+}
+
+TEST_F(ThorSourceTest, KeepsFirstExamplesWhenNotFiltering) {
+  Source source(kFolder);
+  for (int t = 1; t < 10; ++t) {
+    auto examples1 = source.GetGames(Sequence("e6"), 100).examples;
+    auto examples2 = source.GetGames(Sequence("e6"), t).examples;
+    examples1.resize(examples2.size());
+    ASSERT_EQ(examples1, examples2);
+  }
+}
+
+TEST_F(ThorSourceTest, SaveLoadGamesSmallHash) {
+  Source source(kFolder);
+  source.SaveGamesSmallHash();
+  Source source1(kFolder);
+  EXPECT_EQ(source.games_with_small_hash_, source1.games_with_small_hash_);
+}
