@@ -74,16 +74,35 @@ class Sequence {
   Sequence() : Sequence(0) {}
   Sequence(const std::string& moves);
 
-  Sequence(const Square* moves, size_t length) : moves_(length) {
-    memcpy(moves_.data(), moves, moves_.size() * sizeof(Square));
+  Sequence(const Square* moves, size_t size) : Sequence(size) {
+    assert(size <= 64);
+    memcpy(moves_, moves, size_ * sizeof(Square));
   }
 
   Sequence(const std::vector<Square>& moves) : Sequence(moves.data(), moves.size()) {}
+  Sequence(const Sequence& other) : Sequence(other.moves_, other.size_) {}
 
   template <typename Iterator>
-  Sequence(Iterator begin, Iterator end) : moves_(begin, end) {}
+  Sequence(Iterator begin, Iterator end) : Sequence(end - begin) {
+    int i = 0;
+    for (Iterator it = begin; it != end; ++it) {
+      moves_[i++] = *it;
+    }
+  }
 
-  Sequence(const Sequence& sequence) : Sequence(sequence.Moves()) {}
+  ~Sequence() {
+    if (size_ > 0) {
+      free(moves_);
+    }
+  }
+
+  Sequence& operator=(const Sequence& src) {
+    if (this != &src) {
+      UpdateSize(src.Size());
+      memcpy(moves_, src.moves_, size_ * sizeof(Square));
+    }
+    return *this;
+  }
 
   static Sequence ParseFromString(std::string string) {
     string = ToLower(string);
@@ -113,12 +132,11 @@ class Sequence {
   }
 
   static Sequence FromThor(Square* moves) {
-    Sequence result(0);
-    result.moves_.resize(60);
+    Sequence result(60);
     for (int i = 0; i < 60; ++i) {
       Square move = moves[i];
       if (move == 0) {
-        result.moves_.resize(i);
+        result.UpdateSize(i);
         break;
       }
       result.moves_[i] = kThorSquareToSquare.square[move];
@@ -128,12 +146,12 @@ class Sequence {
 
   Sequence Subsequence(int size) const {
     assert(size <= Size());
-    return Sequence(moves_.data(), size);
+    return Sequence(moves_, size);
   }
 
-  Square LastMove() const { return moves_.back(); }
+  Square LastMove() const { return moves_[size_ - 1]; }
   Square Move(Square i) const {
-    return i < moves_.size() ? moves_[i] : kNoSquare;
+    return i < Size() ? moves_[i] : kNoSquare;
   }
 
   void ToCanonicalFirstMoveInplace();
@@ -163,36 +181,37 @@ class Sequence {
 
   void ReplaceStart(const Sequence& sequence) {
     assert(sequence.Size() <= Size());
-    memcpy(moves_.data(), sequence.moves_.data(), sequence.moves_.size() * sizeof(Square));
+    memcpy(moves_, sequence.moves_, sequence.Size() * sizeof(Square));
   }
 
   inline bool operator< (const Sequence& rhs) const {
-    for (int i = 0; i < std::min(moves_.size(), rhs.moves_.size()); ++i) {
+    for (int i = 0; i < std::min(Size(), rhs.Size()); ++i) {
       if (moves_[i] < rhs.moves_[i]) {
         return true;
       } else if (moves_[i] > rhs.moves_[i]) {
         return false;
       }
     }
-    return moves_.size() > rhs.moves_.size();
+    return Size() > rhs.Size();
   }
   inline bool operator>(const Sequence& rhs) const { return rhs < *this; }
   inline bool operator<=(const Sequence& rhs) const { return !(*this > rhs); }
   inline bool operator>=(const Sequence& rhs) const { return !(*this < rhs); }
   inline bool operator==(const Sequence& rhs) const {
     return
-        moves_.size() == rhs.moves_.size() &&
-        memcmp(moves_.data(), rhs.moves_.data(), moves_.size() * sizeof(Square)) == 0;
+        Size() == rhs.Size() &&
+        memcmp(moves_, rhs.moves_, Size() * sizeof(Square)) == 0;
   }
   inline bool operator!=(const Sequence& rhs) const { return !(*this == rhs); }
 
-  const std::vector<Square>& Moves() const { return moves_; }
-  const int Size() const { return (int) moves_.size(); }
+  std::vector<Square> Moves() const { return {moves_, moves_ + size_}; }
+  const Square Size() const { return size_; }
 
   std::vector<Board> ToBoards() const {
     Board b;
     std::vector<Board> result = {b};
-    for (auto move : moves_) {
+    for (int i = 0; i < size_; ++i) {
+      Square move = moves_[i];
       assert(move >= 0 && move < 64);
       auto flip = GetFlip(move, b.Player(), b.Opponent());
       if (flip == 0) {
@@ -212,16 +231,16 @@ class Sequence {
   }
 
   Sequence VerticalMirror() const {
-    Sequence result(moves_.size());
-    for (int i = 0; i < moves_.size(); ++i) {
+    Sequence result(Size());
+    for (int i = 0; i < Size(); ++i) {
       result.moves_[i] = VerticalMirrorMove(moves_[i]);
     }
     return result;
   }
 
   Sequence Diag9Mirror() const {
-    Sequence result(moves_.size());
-    for (int i = 0; i < moves_.size(); ++i) {
+    Sequence result(Size());
+    for (int i = 0; i < Size(); ++i) {
       result.moves_[i] = Diag9MirrorMove(moves_[i]);
     }
     return result;
@@ -241,8 +260,8 @@ class Sequence {
   }
 
   Sequence Transpose(int k) {
-    Sequence result(moves_.size());
-    for (int i = 0; i < moves_.size(); ++i) {
+    Sequence result(Size());
+    for (int i = 0; i < Size(); ++i) {
       result.moves_[i] = TransposeMove(moves_[i], k);
     }
     return result;
@@ -250,7 +269,8 @@ class Sequence {
 
   std::string ToString() const {
     std::stringstream stream;
-    for (Square s : Moves()) {
+    for (int i = 0; i < Size(); ++i) {
+      Square s = moves_[i];
       stream << SquareToMove(s);
     }
     return stream.str();
@@ -272,14 +292,26 @@ class Sequence {
     throw std::invalid_argument("This should never happen. Wrong rotation.");
   }
 
-  void AddMove(Square move) { moves_.push_back(move); }
+  void AddMove(Square move) {
+    UpdateSize(Size() + 1);
+    moves_[Size() - 1] = move;
+  }
 
-  void RemoveLastMove() { moves_.pop_back(); }
+  void RemoveLastMove() { UpdateSize(size_ - 1); }
 
  private:
-  Sequence(size_t length) : moves_(length) {}
+  Square* moves_;
+  Square size_;
 
-  std::vector<Square> moves_;
+  Sequence(int size) : size_(size) {
+    assert(size_ <= 64);
+    moves_ = size_ == 0 ? nullptr : (Square*) malloc(size_ * sizeof(Square));
+  }
+
+  void UpdateSize(Square new_size) {
+    size_ = new_size;
+    moves_ = (Square*) realloc(moves_, size_);
+  }
 };
 
 namespace std {
@@ -324,9 +356,7 @@ class SequenceCanonicalizer {
   }
 
   void Load(const std::vector<char>& serialized) {
-    // TODO: Speed up the load (takes ~0.5 sec). Ideas:
-    // - Use a vector and not an unordered_set.
-    // -
+    // TODO: Speed up the load (takes ~0.5 sec).
     const char* it = serialized.data();
     while (it < serialized.data() + serialized.size()) {
       Board& board = *((Board*) it);
@@ -335,10 +365,10 @@ class SequenceCanonicalizer {
       it += sizeof(int);
       uint8_t size = *((uint8_t*) it);
       it += sizeof(uint8_t);
-      std::unordered_set<Sequence>& sequences = board_to_sequences_[board];
+      std::vector<Sequence>& sequences = board_to_sequences_[board];
       sequences.reserve(n_sequences);
       for (int i = 0; i < n_sequences; ++i) {
-        sequences.insert(Sequence((Square*) it, size));
+        sequences.push_back(Sequence((Square*) it, size));
         it += size;
       }
     }
@@ -364,7 +394,11 @@ class SequenceCanonicalizer {
       for (const Board& b : sequence.ToBoards()) {
         Board unique = b.Unique();
         if (boards[unique] > 1) {
-          board_to_sequences_.insert({unique, std::unordered_set<Sequence>()}).first->second.insert(sequence.Subsequence(60 - b.NEmpties()));
+          std::vector<Sequence>& sequences = board_to_sequences_.insert({unique, std::vector<Sequence>()}).first->second;
+          Sequence subsequence = sequence.Subsequence(60 - b.NEmpties());
+          if (!Contains(sequences, subsequence)) {
+            sequences.push_back(subsequence);
+          }
         }
       }
     }
@@ -408,14 +442,15 @@ class SequenceCanonicalizer {
       result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(int));
       result.push_back(sequences.begin()->Size());
       for (const Sequence& sequence : sequences) {
-        result.insert(result.end(), sequence.Moves().begin(), sequence.Moves().end());
+        auto moves = sequence.Moves();
+        result.insert(result.end(), moves.begin(), moves.end());
       }
     }
     return result;
   }
 
  private:
-  std::unordered_map<Board, std::unordered_set<Sequence>> board_to_sequences_;
+  std::unordered_map<Board, std::vector<Sequence>> board_to_sequences_;
 };
 
 #endif  // BOARD_SEQUENCE_H
