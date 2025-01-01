@@ -105,7 +105,6 @@ class Thor {
   SequenceCanonicalizer canonicalizer_;
 
   void LoadCanonicalizer() {
-    std::ifstream file(CanonicalizerPath(), std::ios::binary);
     canonicalizer_.Load(ReadFile<char>(CanonicalizerPath()));
   }
 
