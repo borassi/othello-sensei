@@ -79,14 +79,10 @@ namespace std {
   template<>
   struct hash<Game> {
     std::size_t operator()(const Game& g) const {
-      std::tuple<Sequence, std::string, std::string, std::string, short, Eval> tuple = g.ToTuple();
-      assert(tuple_size<decltype(tuple)>::value == 6);
-      std::size_t hash = std::hash<Sequence>()(std::get<0>(tuple));
-      hash ^= std::hash<std::string>()(std::get<1>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<std::string>()(std::get<2>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<std::string>()(std::get<3>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<short>()(std::get<4>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<Eval>()(std::get<5>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      std::size_t hash = std::hash<Sequence>()(g.Moves());
+      hash ^= std::hash<std::string>()(g.Black()) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash ^= std::hash<std::string>()(g.White()) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash ^= std::hash<std::string>()(g.Tournament()) + 0x9e3779b9 + (hash<<6) + (hash>>2);
       return hash;
     }
   };

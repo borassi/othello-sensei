@@ -160,4 +160,12 @@ constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
 }
 void PrintSupportedFeatures();
 
+constexpr std::size_t murmur64(std::size_t h) {
+  h ^= h >> 33;
+  h *= 0xff51afd7ed558ccdL;
+  h ^= h >> 33;
+  h *= 0xc4ceb9fe1a85ec53L;
+  h ^= h >> 33;
+  return h;
+}
 #endif  // UTILS_MISC_H

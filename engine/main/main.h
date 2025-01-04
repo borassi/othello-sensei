@@ -89,8 +89,8 @@ class Main {
 
   void SetSequence(const Sequence& moves) {
     NewGame();
-    for (Square move : moves.Moves()) {
-      PlayMove(move);
+    for (int i = 0; i < moves.Size(); ++i) {
+      PlayMove(moves.Move(i));
     }
   }
 

@@ -204,7 +204,7 @@ class Sequence {
   }
   inline bool operator!=(const Sequence& rhs) const { return !(*this == rhs); }
 
-  std::vector<Square> Moves() const { return {moves_, moves_ + size_}; }
+  Square* Moves() const { return moves_; }
   const Square Size() const { return size_; }
 
   std::vector<Board> ToBoards() const {
@@ -318,11 +318,14 @@ namespace std {
   template<>
   struct hash<Sequence> {
     std::size_t operator()(const Sequence& s) const {
-      std::size_t hash = 0;
-      auto hasher = std::hash<int>();
-      const std::vector<Square>& moves = s.Moves();
-      for (int i = 0; i < moves.size(); ++i) {
-        hash ^= hasher(moves[i]) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      std::size_t hash = murmur64(42);
+      int last_quick = s.Size() - s.Size() % 8;
+      int i;
+      for (int64_t* position = (int64_t*) s.Moves(); position < (int64_t*) (s.Moves() + last_quick); ++position) {
+        hash ^= murmur64(*position) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      }
+      for (Square* position = s.Moves() + last_quick; position < s.Moves() + s.Size(); ++position) {
+        hash ^= murmur64(*position) + 0x9e3779b9 + (hash<<6) + (hash>>2);
       }
       return hash;
     }
@@ -441,8 +444,7 @@ class SequenceCanonicalizer {
       result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(int));
       result.push_back(sequences.begin()->Size());
       for (const Sequence& sequence : sequences) {
-        auto moves = sequence.Moves();
-        result.insert(result.end(), moves.begin(), moves.end());
+        result.insert(result.end(), sequence.Moves(), sequence.Moves() + sequence.Size());
       }
     }
     return result;
