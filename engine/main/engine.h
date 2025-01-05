@@ -36,7 +36,7 @@ class BoardToEvaluate {
  public:
   BoardToEvaluate(
       Book<>* book,
-      Thor* thor,
+      Thor<GameGetterOnDisk>* thor,
       TreeNodeSupplier* tree_node_supplier,
       HashMap<kBitHashMap>* hash_map,
       EvaluatorFactory evaluator_depth_one_factory,
@@ -222,7 +222,7 @@ class Engine {
   std::vector<ThorSourceMetadata*> thor_sources_metadata_;
   ThorMetadata thor_metadata_;
 
-  std::unique_ptr<Thor> thor_;
+  std::unique_ptr<Thor<GameGetterOnDisk>> thor_;
 
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;

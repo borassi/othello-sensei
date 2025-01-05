@@ -101,7 +101,7 @@ void Engine::Initialize(
     const std::string& thor_filepath) {
   evals_ = std::make_unique<EvalType>(LoadEvals(evals_filepath));
   book_ = std::make_unique<Book<kBookVersion>>(book_filepath);
-  thor_ = std::make_unique<Thor>(thor_filepath);
+  thor_ = std::make_unique<Thor<GameGetterOnDisk>>(thor_filepath);
   for (int i = 0; i < kNumEvaluators; ++i) {
     boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
         book_.get(),
