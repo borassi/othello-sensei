@@ -22,12 +22,13 @@
 #include "source.h"
 #include "../utils/files.h"
 
+template<class GameGetter = GameGetterOnDisk>
 class Thor {
  public:
   Thor(const std::string& folder, bool rebuild_canonicalizer = false, bool rebuild_games_order = false, bool rebuild_games_small_hash = false)
       : folder_(folder), sources_() {
     for (const auto& entry : GetAllFiles(folder, /*include_files=*/false, /*include_directories=*/true)) {
-      sources_.insert({Filename(entry), std::make_unique<Source>(entry, rebuild_games_order, rebuild_games_small_hash)});
+      sources_.insert({Filename(entry), std::make_unique<Source<GameGetter>>(entry, rebuild_games_order, rebuild_games_small_hash)});
     }
     if (!rebuild_canonicalizer && FileExists(CanonicalizerPath())) {
       LoadCanonicalizer();
@@ -101,7 +102,7 @@ class Thor {
 
  private:
   std::string folder_;
-  std::unordered_map<std::string, std::unique_ptr<Source>> sources_;
+  std::unordered_map<std::string, std::unique_ptr<Source<GameGetter>>> sources_;
   SequenceCanonicalizer canonicalizer_;
 
   void LoadCanonicalizer() {

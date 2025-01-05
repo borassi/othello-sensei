@@ -93,7 +93,7 @@ TEST_F(ThorSourceTest, Basic) {
   EXPECT_THAT(source.Players(), UnorderedElementsAre("player0", "player1", "player_with_20_chars"));
   auto games = source.GetGames(Sequence("e6f4c3c4c5"));
   EXPECT_EQ(games.num_games, 1);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[5]));
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[5]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(21, 1)));
 }
 
@@ -108,9 +108,9 @@ TEST_F(ThorSourceTest, BeforeTranspositions) {
   auto games = source.GetGames(Sequence("e6"));
   EXPECT_EQ(games.num_games, 7);
   EXPECT_THAT(games.examples, UnorderedElementsAre(
-      &source.AllGames()[0], &source.AllGames()[1], &source.AllGames()[2],
-      &source.AllGames()[3], &source.AllGames()[4], &source.AllGames()[5],
-      &source.AllGames()[6]));
+      source.AllGames()[0], source.AllGames()[1], source.AllGames()[2],
+      source.AllGames()[3], source.AllGames()[4], source.AllGames()[5],
+      source.AllGames()[6]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(
       Pair(34, 3), Pair(18, 3), Pair(20, 1)
   ));
@@ -120,7 +120,7 @@ TEST_F(ThorSourceTest, ByBlack) {
   Source source(kFolder);
   auto games = source.GetGames(Sequence("e6"), 100, {"player0"});
   EXPECT_EQ(games.num_games, 3);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[0], &source.AllGames()[1], &source.AllGames()[4]));
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[0], source.AllGames()[1], source.AllGames()[4]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(34, 1), Pair(18, 2)));
 }
 
@@ -128,7 +128,7 @@ TEST_F(ThorSourceTest, ByWhite) {
   Source source(kFolder);
   auto games = source.GetGames(Sequence("e6"), 100, {}, {"player_with_20_chars"});
   EXPECT_EQ(games.num_games, 2);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[2], &source.AllGames()[5]));
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[2], source.AllGames()[5]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(34, 2)));
 }
 
@@ -136,7 +136,7 @@ TEST_F(ThorSourceTest, ByTournament) {
   Source source(kFolder);
   auto games = source.GetGames(Sequence("e6"), 100, {}, {}, {"tournament0"});
   EXPECT_EQ(games.num_games, 4);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[0], &source.AllGames()[1], &source.AllGames()[3], &source.AllGames()[5]));
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[0], source.AllGames()[1], source.AllGames()[3], source.AllGames()[5]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(34, 2), Pair(18, 2)));
 }
 
@@ -145,8 +145,8 @@ TEST_F(ThorSourceTest, ByYear) {
   auto games = source.GetGames(Sequence("e6"), 100, {}, {}, {}, 2023, 2023);
   EXPECT_EQ(games.num_games, 6);
   EXPECT_THAT(games.examples, UnorderedElementsAre(
-      &source.AllGames()[1], &source.AllGames()[2], &source.AllGames()[3],
-      &source.AllGames()[4], &source.AllGames()[5], &source.AllGames()[6]));
+      source.AllGames()[1], source.AllGames()[2], source.AllGames()[3],
+      source.AllGames()[4], source.AllGames()[5], source.AllGames()[6]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(
       Pair(34, 3), Pair(18, 2), Pair(20, 1)
   ));
@@ -158,8 +158,8 @@ TEST_F(ThorSourceTest, Limited) {
   EXPECT_EQ(games.examples.size(), 3);
   EXPECT_EQ(games.num_games, 7);
   EXPECT_THAT(games.examples, IsSubsetOf({
-      &source.AllGames()[1], &source.AllGames()[2], &source.AllGames()[3],
-      &source.AllGames()[4], &source.AllGames()[5], &source.AllGames()[6]}));
+      source.AllGames()[1], source.AllGames()[2], source.AllGames()[3],
+      source.AllGames()[4], source.AllGames()[5], source.AllGames()[6]}));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(
       Pair(34, 3), Pair(18, 3), Pair(20, 1)
   ));
@@ -169,7 +169,7 @@ TEST_F(ThorSourceTest, ByBlackLimited) {
   Source source(kFolder);
   auto games = source.GetGames(Sequence("e6"), 2, {"player0"});
   EXPECT_EQ(games.num_games, 3);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[1], &source.AllGames()[4]))
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[1], source.AllGames()[4]))
       << source.AllGames()[1] << "\n" << source.AllGames()[4] << "\n";
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(34, 1), Pair(18, 2)));
 }
@@ -179,7 +179,7 @@ TEST_F(ThorSourceTest, ByBlackLimitedSubset) {
   auto games = source.GetGames(Sequence("e6"), 1, {"player0"});
   EXPECT_EQ(games.num_games, 3);
   EXPECT_EQ(games.examples.size(), 1);
-  EXPECT_THAT(games.examples, IsSubsetOf({&source.AllGames()[1], &source.AllGames()[4]}));
+  EXPECT_THAT(games.examples, IsSubsetOf({source.AllGames()[1], source.AllGames()[4]}));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(34, 1), Pair(18, 2)));
 }
 
@@ -194,7 +194,7 @@ TEST_F(ThorSourceTest, Rotate) {
   auto games = source.GetGames(Sequence("e6f4c3c4c5c6"));
   games.Rotate(Sequence("c4e3f6e6d6c6"));
   EXPECT_EQ(games.num_games, 1);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(&source.AllGames()[5]));
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[5]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(22, 1)));
 }
 
@@ -245,7 +245,8 @@ TEST_F(ThorSourceTest, KeepsFirstExamplesWhenFiltering) {
   for (int t = 1; t < 10; ++t) {
     auto examples1 = source.GetGames(Sequence("e6"), 100, {}, {}, {"tournament1"}).examples;
     auto examples2 = source.GetGames(Sequence("e6"), t, {}, {}, {"tournament1"}).examples;
-    examples1.resize(examples2.size());
+    assert(examples1.size() >= examples2.size());
+    examples1.erase(examples1.begin() + examples2.size(), examples1.end());
     ASSERT_EQ(examples1, examples2);
   }
 }
@@ -255,7 +256,7 @@ TEST_F(ThorSourceTest, KeepsFirstExamplesWhenNotFiltering) {
   for (int t = 1; t < 10; ++t) {
     auto examples1 = source.GetGames(Sequence("e6"), 100).examples;
     auto examples2 = source.GetGames(Sequence("e6"), t).examples;
-    examples1.resize(examples2.size());
+    examples1.erase(examples1.begin() + examples2.size(), examples1.end());
     ASSERT_EQ(examples1, examples2);
   }
 }
@@ -265,4 +266,81 @@ TEST_F(ThorSourceTest, SaveLoadGamesSmallHash) {
   source.SaveGamesSmallHash();
   Source source1(kFolder);
   EXPECT_EQ(source.games_with_small_hash_, source1.games_with_small_hash_);
+}
+
+template <typename GameGetter>
+class SourceTest : public ::testing::Test {
+ public:
+  typedef Source<GameGetter> SourceToTest;
+};
+using Types = ::testing::Types<GameGetterOnDisk, GameGetterInMemory>;
+TYPED_TEST_SUITE(SourceTest, Types);
+
+TYPED_TEST(SourceTest, EndToEnd) {
+  fs::remove_all(kFolder);
+  fs::create_directories(kFolder);
+  int start_year = 1900 + rand() % 100;
+  int end_year = start_year + rand() % 5;
+  std::vector<Game> games;
+  std::vector<std::string> players;
+  std::vector<std::string> tournaments;
+
+  std::ofstream players_file(kFolder + "/WTH.JOU", std::ios::binary);
+  WriteHeader(players_file, end_year);
+  for (int i = 0; i < 20; ++i) {
+    std::string name = "player " + std::to_string(i);
+    players.push_back(name);
+    std::string padded = PadString(name, 20);
+    players_file.write(padded.c_str(), 20);
+  }
+  players_file.close();
+
+  std::ofstream tournaments_file(kFolder + "/WTH.TRN", std::ios::binary);
+  WriteHeader(tournaments_file, end_year);
+  for (int i = 0; i < 30; ++i) {
+    std::string name = "tournament " + std::to_string(i);
+    tournaments.push_back(name);
+    std::string padded = PadString(name, 26);
+    tournaments_file.write(padded.c_str(), 26);
+  }
+  tournaments_file.close();
+
+  for (int year = start_year; year <= end_year; ++year) {
+    std::ofstream games_file(kFolder + "/WTH_" + std::to_string(year) + ".wtb", std::ios::binary);
+    WriteHeader(games_file, year);
+    for (int game = 0; game < rand() % 200; ++game) {
+      int tournament = rand() % 30;
+      int black = rand() % 20;
+      int white = rand() % 20;
+      int score = (rand() % 32) * 2;
+      int theoretical = (rand() % 32) * 2;
+      Sequence sequence = Sequence::RandomSequence(rand() % 60).ToCanonicalGame();
+
+      std::vector<char> game_to_store = StoredGame(tournament, black, white, score, theoretical, sequence.ToString());
+      games_file.write(game_to_store.data(), game_to_store.size());
+      games.push_back(Game(sequence, &players[black], &players[white], &tournaments[tournament],
+                           year, score));
+    }
+  }
+  typename TestFixture::SourceToTest source(kFolder);
+
+  for (int i = 0; i < 1000; ++i) {
+    Sequence sequence = Sequence::RandomSequence(rand() % 10);
+    std::vector<Game> expected;
+    int max_games = 1 + rand() % 100;
+    std::unordered_map<Square, int> next_moves;
+    for (const Game& game : games) {
+      if (game.Moves().Size() >= sequence.Size() &&
+          game.Moves().Subsequence(sequence.Size()) == sequence) {
+        expected.push_back(game);
+      }
+
+    }
+    std::sort(expected.begin(), expected.end(), CompareGamesByHash);
+    GamesList actual = source.GetGames(sequence, max_games);
+    ASSERT_EQ(actual.num_games, expected.size());
+    ASSERT_EQ(actual.max_games, max_games);
+    ASSERT_EQ(actual.examples, std::vector<Game>(expected.begin(), std::min(expected.end(), expected.begin() + max_games)));
+  }
+  fs::remove_all(kFolder);
 }

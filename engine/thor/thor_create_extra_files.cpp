@@ -30,6 +30,6 @@ int main(int argc, char* argv[]) {
   bool rebuild_canonicalizer = parse_flags.GetBoolFlagOrDefault("rebuild_canonicalizer", true);
   bool rebuild_games_order = parse_flags.GetBoolFlagOrDefault("rebuild_games_order", true);
   bool rebuild_games_small_hash = parse_flags.GetBoolFlagOrDefault("rebuild_games_small_hash", true);
-  Thor thor(path, rebuild_canonicalizer, rebuild_games_order, rebuild_games_small_hash);
+  Thor<GameGetterInMemory> thor(path, rebuild_canonicalizer, rebuild_games_order, rebuild_games_small_hash);
   thor.SaveAll();
 }

@@ -19,6 +19,29 @@
 #include "thor.h"
 #include "../utils/parse_flags.h"
 
+template<class GameGetter>
+void ProfileThor(const std::string& path) {
+  int N = 100;
+  std::vector<Sequence> sequences;
+  for (int i = 0; i < N; ++i) {
+    sequences.push_back(Sequence::RandomSequence(rand() % 10));
+  }
+
+  ElapsedTime load_time;
+  Thor<GameGetterOnDisk> thor(path);
+  std::cout << "Thor loaded in " << load_time.Get() << " sec.\n";
+  int tmp = 0;
+  ElapsedTime fetch_time;
+  for (int i = 0; i < N; ++i) {
+    for (auto& source : {"Thor", "PlayOK", "OthelloQuest"}) {
+      GamesList result = thor.GetGames(source, sequences[i], 100);
+      tmp ^= result.examples.size() ^ result.next_moves.size() ^ result.num_games;
+    }
+  }
+  std::cout << "Fetch time: " << fetch_time.Get() / N << "\n";
+  std::cout << "To make sure that the compiler doesn't optimize: " << tmp << "\n";
+}
+
 // Usage:
 // $ cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 // -DLIBRARY_OUTPUT_DIRECTORY=build && \
@@ -27,16 +50,8 @@
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string path = parse_flags.GetFlag("path");
-  ElapsedTime t;
-  Thor thor(path);
-  std::cout << "Thor loaded in " << t.Get() << " sec.\n";
-  Sequence sequence("");
-  int tmp = 0;
-  for (int i = 0; i < 1000; ++i) {
-    tmp ^= thor.GetGames("Thor", sequence, 100).num_games;
-    tmp ^= thor.GetGames("PlayOK", sequence, 100).num_games;
-    tmp ^= thor.GetGames("OthelloQuest", sequence, 100).num_games;
-  }
-  std::cout << "Fetch time: " << t.Get() / 1000 << "\n";
-  std::cout << "To make sure that the compiler doesn't optimize: " << tmp << "\n";
+  std::cout << "\nPROFILE ON DISK\n";
+  ProfileThor<GameGetterOnDisk>(path);
+  std::cout << "\nPROFILE IN MEMORY\n";
+  ProfileThor<GameGetterInMemory>(path);
 }

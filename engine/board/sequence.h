@@ -104,13 +104,13 @@ class Sequence {
     return *this;
   }
 
-  static Sequence ParseFromString(std::string string) {
-    string = ToLower(string);
+  static Sequence ParseFromString(const std::string& string) {
+    std::string lower_string = ToLower(string);
     std::vector<Square> result;
     Board b;
     std::regex move_regex ("[a-h][1-8]");
 
-    for (std::sregex_iterator iter(string.begin(), string.end(), move_regex);
+    for (std::sregex_iterator iter(lower_string.begin(), lower_string.end(), move_regex);
          iter != std::sregex_iterator();
          ++iter) {
       Square move = MoveToSquare((*iter)[0]);
@@ -143,6 +143,8 @@ class Sequence {
     }
     return result;
   }
+
+  static Sequence RandomSequence(int size);
 
   Sequence Subsequence(int size) const {
     assert(size <= Size());

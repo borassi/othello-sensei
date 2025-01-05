@@ -49,7 +49,7 @@ void EvaluationState::SetThor(const GamesList& games) {
 
   for (unsigned i = 0; i < annotations_.num_example_thor_games; ++i) {
     assert(games.examples[i]->Moves().Size() >= sequence.Size());
-    ThorGameSet(*games.examples[i], annotations_.example_thor_games[i], sequence);
+    ThorGameSet(games.examples[i], annotations_.example_thor_games[i], sequence);
   }
 }
 

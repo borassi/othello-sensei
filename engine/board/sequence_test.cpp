@@ -189,6 +189,23 @@ TEST(Sequence, ReplaceStart) {
   EXPECT_EQ(sequence, Sequence("e6f4d3c4c3d6"));
 }
 
+TEST(Sequence, RandomSequence) {
+  std::unordered_set<Sequence> sequences;
+  for (int i = 0; i < 100; ++i) {
+    for (int length = 0; length <= 60; ++length) {
+      Sequence sequence = Sequence::RandomSequence(length);
+      ASSERT_EQ(sequence.Size(), length);
+      // To check that the sequence is valid.
+      sequence.ToBoards();
+      if (length > 15) {
+        EXPECT_TRUE(sequences.find(sequence) == sequences.end()) << "Repeated sequence " << sequence;
+        sequences.insert(sequence);
+      }
+    }
+  }
+  EXPECT_EQ(sequences.size(), 100 * 45);
+}
+
 TEST(Sequence, SequenceCanonicalizer) {
   std::vector<Sequence> sequences = {
     Sequence("e6f4d3c4c3"),

@@ -1,4 +1,7 @@
 Mac
+- P0 MED Reduce RAM.
+- P0 MED Round evaluations for both players.
+- P1 ??? Download in background.
 - P3 SMALL Fix picture on Mac launch.
 - P4 SMALL Fix warning with multiple matching destinations.
 

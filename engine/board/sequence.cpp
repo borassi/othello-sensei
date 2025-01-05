@@ -58,6 +58,25 @@ void Sequence::ToCanonicalDiagonalInplace() {
   assert(moves_[3] == 20);
 }
 
+// static
+Sequence Sequence::RandomSequence(int size) {
+  Sequence result(size);
+  Board b;
+  for (int i = 0; i < size; ++i) {
+    auto flips = GetAllMovesWithPass(b.Player(), b.Opponent());
+    if (flips.size() == 0) {
+      return RandomSequence(size);
+    }
+    BitPattern flip = flips[rand() % flips.size()];
+    result.moves_[i] = __builtin_ctzll(SquareFromFlip(flip, b.Player(), b.Opponent()));
+    b.PlayMove(flip);
+    if (HaveToPass(b)) {
+      b.PlayMove(0);
+    }
+  }
+  return result;
+}
+
 std::ostream& operator<<(std::ostream& stream, const Sequence& s) {
   stream << s.ToString();
   return stream;

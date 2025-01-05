@@ -37,6 +37,12 @@ class Game {
     moves_.ToCanonicalGameInplace();
   }
 
+  Game(Sequence moves, const std::string* black, const std::string* white,
+       const std::string* tournament, short year, Eval score) : moves_(moves), black_(black),
+                                                                white_(white),
+                                                                tournament_(tournament),
+                                                                year_(year), score_(score) {}
+
   std::string Black() const { return *black_; }
   std::string White() const { return *white_; }
   std::string Tournament() const { return *tournament_; }
