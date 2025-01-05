@@ -82,7 +82,7 @@ class ShowError extends HideInactiveWidget {
           builder: (BuildContext context, Widget? widget) {
             var (errorBlack, errorWhite, hasNaN) = GlobalState.globalAnnotations.getErrors();
             return Text(
-              (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite, roundIfGE: hasNaN ? 10 : 100),
+              (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite),
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize!,
                 height: 1.0
