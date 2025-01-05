@@ -74,7 +74,7 @@ class Sequence {
   Sequence() : Sequence(0) {}
   Sequence(const std::string& moves);
 
-  Sequence(const Square* moves, size_t size) : Sequence(size) {
+  Sequence(const Square* moves, size_t size) : Sequence((Square) size) {
     assert(size <= 64);
     memcpy(moves_, moves, size_ * sizeof(Square));
   }

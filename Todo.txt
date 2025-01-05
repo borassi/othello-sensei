@@ -85,6 +85,7 @@ HOW TO RELEASE ON IOS (APP STORE)
 - flutter build ipa.
 - Open "Transporter" app.
 - Drag the built file in build/ios/ipa/Othello Sensei.ipa to the Transporter app.
+- Click "Deliver".
 - Login in https://appstoreconnect.apple.com/teams/3f165cff-c17e-446a-950b-efb6fa17e751/apps/6738860855/testflight/ios.
 - Wait until the build is approved.
 - Go through the process Internal Testing > Open Testing > Production.
