@@ -221,7 +221,7 @@ class CmpByTournament : public CmpGameAndSequence<std::string, Tournament, GameG
 template<class GameGetter>
 class CmpByYear : public CmpGameAndSequence<short, Year, GameGetter> { using CmpGameAndSequence<short, Year, GameGetter>::CmpGameAndSequence; };
 
-constexpr bool CompareGamesByHash(const Game& g1, const Game& g2) {
+inline bool CompareGamesByHash(const Game& g1, const Game& g2) {
   return
       std::forward_as_tuple(-g1.Year(), std::hash<Game>()(g1), g1) <
       std::forward_as_tuple(-g2.Year(), std::hash<Game>()(g2), g2);
