@@ -4,6 +4,7 @@ Mac
 
 Usability / bugs
 - P1 MED Create smaller books.
+- P1 TINY Re-evaluate a position even after it was analyzed.
 - P1 TINY Round lost disks.
 - P1 TINY Black / white bars in the graph (Black = Black is ahead).
 - P2 LARGE Download in background.
