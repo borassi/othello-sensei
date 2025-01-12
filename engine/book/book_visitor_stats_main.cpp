@@ -67,16 +67,18 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
       std::cout << "  Remaining time: " << total_time - time << "\n";
       std::cout << "  Depth: " << (int) depth_ << "\n";
     }
-    auto [error_black, error_white] = GetErrors(depth_);
-    output_
-        << sequence_ << ", "
-        << num_thor_games << ", "
-        << (int) node.NEmpties() << ", "
-        << depth_ << ", "
-        << error_black << ", "
-        << error_white << ", "
-        << node.Uncertainty() << ", "
-        << "\n";
+    if (depth_ < 5 || (depth_ < 10 && rand() % 10 == 0) || rand() % 100 == 0) {
+      auto [error_black, error_white] = GetErrors(depth_);
+      output_
+          << sequence_ << ", "
+          << num_thor_games << ", "
+          << (int) node.NEmpties() << ", "
+          << depth_ << ", "
+          << error_black << ", "
+          << error_white << ", "
+          << node.Uncertainty() << ", "
+          << "\n";
+    }
     return num_thor_games;
   }
 
@@ -109,7 +111,7 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
   }
 
   bool PreVisitInternalNode(Node& node) override {
-    return VisitNode(node) > 0 && depth_ < 10;
+    return VisitNode(node) > 0;
   }
 
   void PostVisitInternalNode(Node& node) override {
