@@ -117,6 +117,7 @@ class Node {
     n.player_ = board.Player();
     n.opponent_ = board.Opponent();
     n.n_empties_ = board.NEmpties();
+    n.depth_ = kNoSquare;
     int i = kSerializedBoardSize;
 
     while (true) {
@@ -264,6 +265,19 @@ class Node {
     return eval;
   }
 
+  double Uncertainty() const {
+    int lower = std::max(lower_ + 1, (int) weak_lower_);
+    int upper = std::min(upper_ - 1, (int) weak_upper_);
+    double e_x = lower - 1;
+    double e_x2 = (lower - 1) * (lower - 1);
+    for (int i = lower; i <= upper; i += 2) {
+      double prob = GetEvaluation(i).ProbGreaterEqual();
+      e_x += 2 * prob;
+      e_x2 += 4 * i * prob; // (i+1)^2 - (i-1)^2
+    }
+    return sqrt(e_x2 - e_x * e_x);
+  }
+
   const Evaluation& GetEvaluation(int eval_goal) const {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
@@ -395,7 +409,10 @@ class Node {
     return Equals(other, false);
   }
 
-  Square Depth() const { return depth_; }
+  Square Depth() const {
+    assert(depth_ != kNoSquare);
+    return depth_;
+  }
 
   // TODO: Avoid code duplication with SetSolved.
   void SetUpper(Eval upper) {
@@ -1044,7 +1061,7 @@ class TreeNode : public Node {
       fathers_ = (TreeNode**) realloc(fathers_, (n_fathers_ + 1) * sizeof(TreeNode*));
     }
     fathers_[n_fathers_] = father;
-    depth_ = father->depth_ + 1;
+    depth_ = father->depth_ == kNoSquare ? kNoSquare : father->depth_ + 1;
     n_fathers_++;
   }
 
