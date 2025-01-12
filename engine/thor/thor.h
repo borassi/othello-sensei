@@ -68,7 +68,7 @@ class Thor {
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) {
+      short end_year = SHRT_MAX) const {
     GamesList games;
     for (const auto& [source_name, _] : sources_) {
       GamesList new_games = GetGames(source_name, sequence, max_games, blacks, whites, tournaments,
@@ -86,13 +86,13 @@ class Thor {
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) {
+      short end_year = SHRT_MAX) const {
     const Sequence& canonical = sequence.ToCanonicalGame();
     GamesList games;
     games.max_games = max_games;
 
     for (const Sequence& equivalent : canonicalizer_.AllEquivalentSequences(canonical)) {
-      GamesList new_games = sources_[source]->GetGames(equivalent, max_games, blacks, whites, tournaments, start_year, end_year);
+      GamesList new_games = sources_.at(source)->GetGames(equivalent, max_games, blacks, whites, tournaments, start_year, end_year);
       new_games.Rotate(sequence);
       games.Merge(new_games);
     }
