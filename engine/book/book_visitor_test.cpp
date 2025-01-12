@@ -74,8 +74,9 @@ class BookVisitorToVectorNoTransposition : public BookVisitorNoTranspositions<kB
   void VisitLeaf(Node& node) override {
     nodes_.push_back({node, LEAF, sequence_});
   }
-  void PreVisitInternalNode(Node& node) override {
+  bool PreVisitInternalNode(Node& node) override {
     nodes_.push_back({node, FIRST_VISIT, sequence_});
+    return true;
   }
   void PostVisitInternalNode(Node& node) override {
     nodes_.push_back({node, LAST_VISIT, sequence_});
@@ -103,8 +104,9 @@ class BookVisitorToVectorTransposition : public BookVisitor<kBookVersion> {
   void VisitLeaf(Node& node) override {
     nodes_.push_back({node, LEAF, sequence_});
   }
-  void PreVisitInternalNode(Node& node) override {
+  bool PreVisitInternalNode(Node& node) override {
     nodes_.push_back({node, FIRST_VISIT, sequence_});
+    return true;
   }
   void PostVisitInternalNode(Node& node) override {
     nodes_.push_back({node, LAST_VISIT, sequence_});

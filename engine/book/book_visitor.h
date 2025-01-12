@@ -53,14 +53,13 @@ class BookVisitor {
   virtual void Visit(const Board& board) {
     std::unique_ptr<Node> node = book_.Get(board);
     assert(node);
-    if (!ShouldVisit(*node)) {
-      return;
-    }
     if (node->IsLeaf()) {
       VisitLeaf(*node);
       return;
     }
-    PreVisitInternalNode(*node);
+    if (!PreVisitInternalNode(*node)) {
+      return;
+    }
     auto flips = GetAllMovesWithPass(board.Player(), board.Opponent());
     std::unordered_set<Board> seen_boards;
     seen_boards.reserve(flips.size());
@@ -82,9 +81,8 @@ class BookVisitor {
   Sequence sequence_;
 
   virtual void VisitLeaf(Node& node) {};
-  virtual void PreVisitInternalNode(Node& node) {};
+  virtual bool PreVisitInternalNode(Node& node) { return true; };
   virtual void PostVisitInternalNode(Node& node) {};
-  virtual bool ShouldVisit(Node& node) { return true; }
 };
 
 template<int version = kBookVersion>
@@ -180,8 +178,9 @@ class BookMerge : public BookVisitorNoTranspositions<source_version> {
     FirstVisit(node, leaf_func_);
   }
 
-  void PreVisitInternalNode(Node& node) override {
+  bool PreVisitInternalNode(Node& node) override {
     FirstVisit(node, internal_func_);
+    return true;
   }
 
   void PostVisitInternalNode(Node& node) override {
