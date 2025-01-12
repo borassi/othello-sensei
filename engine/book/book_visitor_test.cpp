@@ -25,6 +25,21 @@
 
 using ::testing::UnorderedElementsAre;
 
+struct VisitedNode {
+  Node node;
+  NodeType node_type;
+  Sequence sequence;
+
+  bool operator==(const VisitedNode& other) const {
+    return node == other.node && node_type == other.node_type && sequence == other.sequence;
+  }
+};
+
+std::ostream& operator<<(std::ostream& stream, const VisitedNode& n) {
+  stream << "\n[" << n.sequence << "] - type: " << n.node_type << "\n" << n.node << "\n";
+  return stream;
+}
+
 void CheckVectorHasRightOrder(const std::vector<VisitedNode>& nodes) {
   std::unordered_set<Board> visited;
   for (int i = 0; i < nodes.size(); ++i) {
@@ -259,6 +274,35 @@ TEST(BookVisitor, IteratorTraspositionsChild) {
       GetVisitedNode(book, "", "e6f4c3c4d3e7", LEAF),
       GetVisitedNode(book, "", "e6f4c3c4d3f7", LEAF)
   ));
+  CheckVectorHasRightOrder(visitor.Get());
+}
+
+TEST(BookVisitor, WorksWithPass) {
+  Book<> book(kTempDir);
+  book.Clean();
+  std::string sequence = "e6f6g6g7g8h8c4f8f5h6h7g5h5h4f7";
+  Board start(sequence);
+  book.Add(*TestTreeNode(start, 0, -63, 63, 10));
+
+  std::vector<Node> children;
+  for (Board child : GetNextBoardsWithPass(start)) {
+    children.push_back(*TestTreeNode(child, 0, -63, 63, 10));
+  }
+  book.AddChildren(start, children);
+
+  Board before_pass = start.Next(GetFlip(MoveToSquare("e8"), start.Player(), start.Opponent()));
+  Board after_pass = before_pass.Next(0);
+  book.AddChildren(before_pass, {*TestTreeNode(after_pass, 0, -63, 63, 10)});
+
+  BookVisitorToVectorNoTransposition visitor(book);
+  visitor.VisitSequence(sequence);
+  EXPECT_THAT(visitor.Get(), ::testing::IsSupersetOf({
+      VisitedNode{*book.Get(start), FIRST_VISIT, sequence},
+      VisitedNode{*book.Get(before_pass), FIRST_VISIT, sequence + "e8"},
+      VisitedNode{*book.Get(after_pass), LEAF, sequence + "e8"},
+      VisitedNode{*book.Get(before_pass), LAST_VISIT, sequence + "e8"},
+      VisitedNode{*book.Get(start), LAST_VISIT, sequence}
+  }));
   CheckVectorHasRightOrder(visitor.Get());
 }
 

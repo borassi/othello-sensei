@@ -69,9 +69,13 @@ class BookVisitor {
         continue;
       }
       Square move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
-      sequence_.AddMove(move);
+      if (flip != 0) {
+        sequence_.AddMove(move);
+      }
       Visit(child);
-      sequence_.RemoveLastMove();
+      if (flip != 0) {
+        sequence_.RemoveLastMove();
+      }
     }
     PostVisitInternalNode(*node);
   }
@@ -104,21 +108,6 @@ class BookVisitorNoTranspositions : public BookVisitor<version> {
  private:
   std::unordered_set<Board> visited_;
 };
-
-struct VisitedNode {
-  Node node;
-  NodeType node_type;
-  Sequence sequence;
-
-  bool operator==(const VisitedNode& other) const {
-    return node == other.node && node_type == other.node_type && sequence == other.sequence;
-  }
-};
-
-std::ostream& operator<<(std::ostream& stream, const VisitedNode& n) {
-  stream << "\n[" << n.sequence << "] - type: " << n.node_type << "\n" << n.node << "\n";
-  return stream;
-}
 
 template<int source_version = kBookVersion, int target_version = kBookVersion>
 class BookMerge : public BookVisitorNoTranspositions<source_version> {
