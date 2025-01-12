@@ -61,6 +61,23 @@ class Thor {
     return result;
   }
 
+  GamesList GetGamesFromAllSources(
+      const Sequence& sequence,
+      int max_games = INT_MAX,
+      std::vector<std::string> blacks = {},
+      std::vector<std::string> whites = {},
+      std::vector<std::string> tournaments = {},
+      short start_year = SHRT_MIN,
+      short end_year = SHRT_MAX) {
+    GamesList games;
+    for (const auto& [source_name, _] : sources_) {
+      GamesList new_games = GetGames(source_name, sequence, max_games, blacks, whites, tournaments,
+                                     start_year, end_year);
+      games.Merge(new_games);
+    }
+    return games;
+  }
+
   GamesList GetGames(
       const std::string& source,
       const Sequence& sequence,

@@ -119,6 +119,15 @@ TEST_F(ThorTest, SingleSource) {
   ));
 }
 
+TEST_F(ThorTest, AllSources) {
+  Thor thor(kThorTestData);
+  auto games = thor.GetGamesFromAllSources(Sequence("e6"));
+  EXPECT_EQ(games.num_games, 13);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(
+      Pair(34, 6), Pair(18, 5), Pair(20, 2)
+  ));
+}
+
 TEST_F(ThorTest, Rotations) {
   fs::remove_all(kThorTestData + "/PlayOK");
   Thor thor(kThorTestData);
