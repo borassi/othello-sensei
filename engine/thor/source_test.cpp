@@ -91,7 +91,7 @@ TEST_F(ThorSourceTest, Basic) {
   Source source(kFolder);
   EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("tournament0", "tournament1"));
   EXPECT_THAT(source.Players(), UnorderedElementsAre("player0", "player1", "player_with_20_chars"));
-  auto games = source.GetGames(Sequence("e6f4c3c4c5"));
+  auto games = source.GetGames(Sequence("e6f4c3c4c5"), 10);
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[5]));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(21, 1)));
@@ -99,13 +99,13 @@ TEST_F(ThorSourceTest, Basic) {
 
 TEST_F(ThorSourceTest, LongerThanGame) {
   Source source(kFolder);
-  auto games = source.GetGames(Sequence("e6f4c3c4c5c6c7d3"));
+  auto games = source.GetGames(Sequence("e6f4c3c4c5c6c7d3"), 10);
   EXPECT_EQ(games.num_games, 0);
 }
 
 TEST_F(ThorSourceTest, BeforeTranspositions) {
   Source source(kFolder);
-  auto games = source.GetGames(Sequence("e6"));
+  auto games = source.GetGames(Sequence("e6"), 10);
   EXPECT_EQ(games.num_games, 7);
   EXPECT_THAT(games.examples, UnorderedElementsAre(
       source.AllGames()[0], source.AllGames()[1], source.AllGames()[2],
@@ -191,7 +191,7 @@ TEST_F(ThorSourceTest, NextMoves) {
 
 TEST_F(ThorSourceTest, Rotate) {
   Source source(kFolder);
-  auto games = source.GetGames(Sequence("e6f4c3c4c5c6"));
+  auto games = source.GetGames(Sequence("e6f4c3c4c5c6"), 10);
   games.Rotate(Sequence("c4e3f6e6d6c6"));
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[5]));
@@ -228,7 +228,7 @@ TEST_F(ThorSourceTest, SameExampleOrderWhenNotFiltering) {
 
 TEST_F(ThorSourceTest, SameExampleOrderWhenFilteringAndNotFiltering) {
   Source source(kFolder);
-  auto examples1 = source.GetGames(Sequence("e6")).examples;
+  auto examples1 = source.GetGames(Sequence("e6"), 100).examples;
   auto examples2 = source.GetGames(Sequence("e6"), 100, {}, {}, {"tournament1"}).examples;
   int i = -1;
   for (int j = 0; j < examples2.size(); ++j) {

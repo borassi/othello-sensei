@@ -63,7 +63,7 @@ class Thor {
 
   GamesList GetGamesFromAllSources(
       const Sequence& sequence,
-      int max_games = INT_MAX,
+      int max_games = 1,
       std::vector<std::string> blacks = {},
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
@@ -81,12 +81,13 @@ class Thor {
   GamesList GetGames(
       const std::string& source,
       const Sequence& sequence,
-      int max_games = INT_MAX,
+      int max_games = 1,
       std::vector<std::string> blacks = {},
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const {
+    assert(max_games > 0);  // Otherwise the Rotate() does not know how to rotate.
     const Sequence& canonical = sequence.ToCanonicalGame();
     GamesList games;
     games.max_games = max_games;

@@ -271,7 +271,7 @@ class Source {
 
   GamesList GetGames(
       const Sequence& sequence,
-      int max_games = INT_MAX,
+      int max_games,
       std::vector<std::string> blacks = {},
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
