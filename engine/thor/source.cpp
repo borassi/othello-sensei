@@ -59,7 +59,7 @@ GamesList Source<GameGetter>::GetGames(
     std::vector<std::string> whites,
     std::vector<std::string> tournaments,
     short start_year,
-    short end_year) {
+    short end_year) const {
   assert(max_games > 0);
   start_year = std::max(start_year, game_getter_.MinYear());
   end_year = std::min(end_year, game_getter_.MaxYear());

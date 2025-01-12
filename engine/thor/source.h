@@ -73,7 +73,7 @@ class GameGetterOnDisk {
     }
   }
 
-  virtual Game GetGame(int index) {
+  virtual Game GetGame(int index) const {
     auto hash = std::hash<int>()(index) % kHashSize;
     std::pair<int, Game>* cached = &games_cache_[hash];
     if (cached->first == index) {
@@ -106,11 +106,11 @@ class GameGetterOnDisk {
   virtual const std::vector<std::string>& Tournaments() const { return tournaments_; }
 
  private:
-  std::vector<GameFile> game_files_;
+  mutable std::vector<GameFile> game_files_;
   std::vector<int> index_to_file_;
   std::vector<std::string> players_;
   std::vector<std::string> tournaments_;
-  std::vector<std::pair<int, Game>> games_cache_;
+  mutable std::vector<std::pair<int, Game>> games_cache_;
   short min_year_;
   short max_year_;
   static constexpr int kHashSize = 5000;
@@ -153,7 +153,7 @@ class GameGetterInMemory : public GameGetterOnDisk {
   GameGetterInMemory(const std::string& folder) : GameGetterOnDisk(folder) {
     all_games_ = GetAllGames();
   }
-  virtual Game GetGame(int index) override {
+  virtual Game GetGame(int index) const override {
     return all_games_[index];
   }
 
@@ -171,7 +171,7 @@ class GameGetterInMemory : public GameGetterOnDisk {
 template<class T, T f(const Game&), class GameGetter>
 class CmpGameAndSequence {
  public:
-  CmpGameAndSequence(GameGetter& game_getter) : game_getter_(game_getter) {}
+  CmpGameAndSequence(const GameGetter& game_getter) : game_getter_(game_getter) {}
 
   bool operator()(int game_index1, int game_index2) {
     Game g1 = game_getter_.GetGame(game_index1);
@@ -201,7 +201,7 @@ class CmpGameAndSequence {
   }
 
  private:
-  GameGetter& game_getter_;
+  const GameGetter& game_getter_;
 };
 
 inline bool True(const Game& g) { return true; }
@@ -276,7 +276,7 @@ class Source {
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX);
+      short end_year = SHRT_MAX) const;
 
   std::vector<Game> AllGames() const { return game_getter_.GetAllGames(); }
 
@@ -316,7 +316,7 @@ class Source {
 
   std::vector<std::vector<uint32_t>*> game_indices_;
 
-  int IncludeProbabilityToHashIndex(double include_probability) {
+  int IncludeProbabilityToHashIndex(double include_probability) const {
     // 1: -2
     // 0.5: -1
     // 0.49: 0 (here we start to filter)
@@ -378,7 +378,7 @@ class Source {
     std::sort(game_index_by_year_.begin(), game_index_by_year_.end(), CmpByYear<GameGetter>(game_getter_));
   }
 
-  void FillNextMoves(const GamesInterval& interval, int sequence_size, std::unordered_map<Square, int>& next_moves) {
+  void FillNextMoves(const GamesInterval& interval, int sequence_size, std::unordered_map<Square, int>& next_moves) const {
     for (auto it = interval.start; it < interval.end; ) {
       Game game = game_getter_.GetGame(*it);
       Square next_move = sequence_size < game.Moves().Size() + 1 ? game.Move(sequence_size) : kNoSquare;
@@ -396,7 +396,7 @@ class Source {
   }
 
   template<class T, class Compare>
-  GamesInterval GetGameIntervals(const std::vector<uint32_t>& games, const T& search_key, Compare c) {
+  GamesInterval GetGameIntervals(const std::vector<uint32_t>& games, const T& search_key, Compare c) const {
     return GamesInterval(
         std::lower_bound(games.begin(), games.end(), search_key, c),
         std::upper_bound(games.begin(), games.end(), search_key, c)

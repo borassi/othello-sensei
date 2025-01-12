@@ -106,8 +106,6 @@ std::vector<Board> GetNextBoardsWithPass(BitPattern player, BitPattern opponent)
 
 std::vector<Board> GetNextBoardsWithPass(Board b);
 
-std::vector<Board> GetNextBoardsWithPass(BitPattern player, BitPattern opponent);
-
 std::unordered_map<Board, std::pair<Square, BitPattern>> GetUniqueNextBoardsWithPass(Board b);
 
 forceinline(BitPattern SquareFromFlip(BitPattern flip, BitPattern player, BitPattern opponent) noexcept);
