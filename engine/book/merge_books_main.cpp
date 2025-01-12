@@ -41,5 +41,5 @@ int main(int argc, char* argv[]) {
       << ", size " << old_book.Size() << ") to version " << kNewVersion
       << " in path " << new_book_path << "\n";
 
-  BookMerge<kOldVersion, kNewVersion>(old_book, new_book).Visit();
+  BookMerge<kOldVersion, kNewVersion>(old_book, new_book).VisitAll();
 }

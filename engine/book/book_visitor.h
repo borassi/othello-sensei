@@ -17,6 +17,8 @@
 #include<string.h>
 
 #include "book.h"
+#include "../board/get_moves.h"
+#include "../board/sequence.h"
 
 enum NodeType {
   LEAF = 0,
@@ -30,36 +32,25 @@ class BookVisitor {
   typedef Book<version> Book;
   typedef typename Book::BookNode BookNode;
 
-  BookVisitor(const Book& book) :
-      book_(book),
-      roots_(book_.Roots().begin(), book_.Roots().end()) {}
+  BookVisitor(const Book& book) : book_(book) {}
 
-  virtual void Visit() {
-    StartVisit();
-    for (auto& root : roots_) {
-      VisitInternal(root);
+  virtual void VisitAll() {
+    for (const Board& root : book_.Roots()) {
+      sequence_ = Sequence();
+      Visit(root);
     }
-    EndVisit();
   }
 
-  virtual void Visit(const Board& b) {
-    StartVisit();
-    VisitInternal(b);
-    EndVisit();
+  virtual void VisitString(const std::string& sequence) {
+    VisitSequence(Sequence(sequence));
   }
 
- protected:
-  const Book& book_;
-  const std::vector<Board> roots_;
+  virtual void VisitSequence(const Sequence& sequence) {
+    sequence_ = sequence;
+    Visit(sequence.ToBoard());
+  }
 
-  virtual void StartVisit() {};
-  virtual void VisitLeaf(Node& node) {};
-  virtual void PreVisitInternalNode(Node& node) {};
-  virtual void PostVisitInternalNode(Node& node) {};
-  virtual bool ShouldVisit(Node& node) { return true; }
-  virtual void EndVisit() {};
-
-  virtual void VisitInternal(const Board& board) {
+  virtual void Visit(const Board& board) {
     std::unique_ptr<Node> node = book_.Get(board);
     assert(node);
     if (!ShouldVisit(*node)) {
@@ -70,12 +61,30 @@ class BookVisitor {
       return;
     }
     PreVisitInternalNode(*node);
-    auto children = GetUniqueNextBoardsWithPass(board);
-    for (const auto& child : children) {
-      VisitInternal(child.first);
+    auto flips = GetAllMovesWithPass(board.Player(), board.Opponent());
+    std::unordered_set<Board> seen_boards;
+    seen_boards.reserve(flips.size());
+    for (const BitPattern flip : flips) {
+      Board child = board.Next(flip);
+      if (!seen_boards.insert(child).second) {
+        continue;
+      }
+      Square move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
+      sequence_.AddMove(move);
+      Visit(child);
+      sequence_.RemoveLastMove();
     }
     PostVisitInternalNode(*node);
   }
+
+ protected:
+  const Book& book_;
+  Sequence sequence_;
+
+  virtual void VisitLeaf(Node& node) {};
+  virtual void PreVisitInternalNode(Node& node) {};
+  virtual void PostVisitInternalNode(Node& node) {};
+  virtual bool ShouldVisit(Node& node) { return true; }
 };
 
 template<int version = kBookVersion>
@@ -87,16 +96,30 @@ class BookVisitorNoTranspositions : public BookVisitor<version> {
 
   BookVisitorNoTranspositions(const Book& book) : BookVisitor(book) {}
 
-  void VisitInternal(const Board& board) override {
-    if (!visited_.insert(board).second) {
+  void Visit(const Board& board) override {
+    if (!visited_.insert(board.Unique()).second) {
       return;
     }
-    BookVisitor::VisitInternal(board);
+    BookVisitor::Visit(board);
   }
 
   std::unordered_set<Board> visited_;
 };
 
+struct VisitedNode {
+  Node node;
+  NodeType node_type;
+  Sequence sequence;
+
+  bool operator==(const VisitedNode& other) const {
+    return node == other.node && node_type == other.node_type && sequence == other.sequence;
+  }
+};
+
+std::ostream& operator<<(std::ostream& stream, const VisitedNode& n) {
+  stream << "\n[" << n.sequence << "] - type: " << n.node_type << "\n" << n.node << "\n";
+  return stream;
+}
 
 template<int version = kBookVersion>
 class BookVisitorToVectorNoTransposition : public BookVisitorNoTranspositions<version> {
@@ -104,30 +127,30 @@ class BookVisitorToVectorNoTransposition : public BookVisitorNoTranspositions<ve
   typedef BookVisitor<version> BookVisitor;
   using typename BookVisitor::Book;
   using typename BookVisitor::BookNode;
+  using BookVisitor::sequence_;
 
-  BookVisitorToVectorNoTransposition(const Book& book) : BookVisitorNoTranspositions<version>(book) {}
+  BookVisitorToVectorNoTransposition(const Book& book) : BookVisitorNoTranspositions<version>(book) {
+    nodes_.reserve(BookVisitor::book_.Size());
+  }
 
-  const std::vector<std::pair<Node, NodeType>>& Get() {
+  const std::vector<VisitedNode>& Get() {
     return nodes_;
   }
 
  protected:
-  void StartVisit() override {
-    nodes_.clear();
-    nodes_.reserve(BookVisitor::book_.Size());
-  }
+
   void VisitLeaf(Node& node) override {
-    nodes_.push_back({node, LEAF});
+    nodes_.push_back({node, LEAF, sequence_});
   }
   void PreVisitInternalNode(Node& node) override {
-    nodes_.push_back({node, FIRST_VISIT});
+    nodes_.push_back({node, FIRST_VISIT, sequence_});
   }
   void PostVisitInternalNode(Node& node) override {
-    nodes_.push_back({node, LAST_VISIT});
+    nodes_.push_back({node, LAST_VISIT, sequence_});
   }
 
  private:
-  std::vector<std::pair<Node, NodeType>> nodes_;
+  std::vector<VisitedNode> nodes_;
 };
 
 template<int source_version = kBookVersion, int target_version = kBookVersion>
@@ -148,14 +171,7 @@ class BookMerge : public BookVisitorNoTranspositions<source_version> {
       BookVisitorNoTranspositions<source_version>(source),
       destination_(destination),
       leaf_func_(leaf_func),
-      internal_func_(internal_func) {}
-
- protected:
-  BookTarget& destination_;
-  void (*leaf_func_)(Node*);
-  void (*internal_func_)(Node*);
-
-  void StartVisit() override {
+      internal_func_(internal_func) {
     // This avoids adding a lot of roots and removing them afterwards (to avoid
     // memory problems).
     for (const auto& root: book_.Roots()) {
@@ -165,6 +181,16 @@ class BookMerge : public BookVisitorNoTranspositions<source_version> {
       }
     }
   }
+
+  virtual void VisitAll() override {
+    BookVisitor::VisitAll();
+    destination_.Commit();
+  }
+
+ protected:
+  BookTarget& destination_;
+  void (*leaf_func_)(Node*);
+  void (*internal_func_)(Node*);
 
   void FirstVisit(Node& source, void (*function)(Node*)) {
     auto* destination_node = destination_.Mutable(source.ToBoard());
@@ -199,10 +225,6 @@ class BookMerge : public BookVisitorNoTranspositions<source_version> {
       destination_node->UpdateFather();
     }
   }
-
-  void EndVisit() override {
-    destination_.Commit();
-  }
 };
 
 template<int version = kBookVersion>
@@ -214,6 +236,6 @@ Book<version> RemoveDescendants(const Book<version>& book, const std::string& fi
       book,
       book_no_descendants,
       [](Node* node) { node->ResetDescendants(); },
-      [](Node* node) { node->ResetDescendants(); }).Visit();
+      [](Node* node) { node->ResetDescendants(); }).VisitAll();
   return book_no_descendants;
 }

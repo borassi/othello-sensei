@@ -25,11 +25,11 @@
 
 using ::testing::UnorderedElementsAre;
 
-void CheckVectorHasRightOrder(const std::vector<std::pair<Node, NodeType>>& nodes) {
+void CheckVectorHasRightOrder(const std::vector<VisitedNode>& nodes) {
   std::unordered_set<Board> visited;
   for (int i = 0; i < nodes.size(); ++i) {
-    auto& node = nodes[i].first;
-    auto& node_type = nodes[i].second;
+    auto& node = nodes[i].node;
+    auto& node_type = nodes[i].node_type;
     visited.insert(node.ToBoard());
     if (node_type == FIRST_VISIT) {
       auto children = GetUniqueNextBoardsWithPass(node.ToBoard());
@@ -38,8 +38,8 @@ void CheckVectorHasRightOrder(const std::vector<std::pair<Node, NodeType>>& node
       }
       for (int j = i+1; j <= nodes.size(); ++j) {
         ASSERT_LT(j, nodes.size());
-        auto& child = nodes[j].first;
-        auto& child_type = nodes[j].second;
+        auto& child = nodes[j].node;
+        auto& child_type = nodes[j].node_type;
         if (child.ToBoard() == node.ToBoard()) {
           ASSERT_EQ(child_type, LAST_VISIT);
           ASSERT_TRUE(children.empty());
@@ -52,26 +52,30 @@ void CheckVectorHasRightOrder(const std::vector<std::pair<Node, NodeType>>& node
   }
 }
 
+VisitedNode GetVisitedNode(const Book<kBookVersion>& book, const std::string& pre_sequence, const std::string& sequence, NodeType node_type) {
+  return VisitedNode {*book.Get(Board(pre_sequence + sequence)), node_type, Sequence(sequence)};
+}
+
 TEST(BookVisitor, IteratorBasic) {
   std::vector<std::string> lines = {"e6f4", "e6f4c3"};
   Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
   book.Commit();
 
   BookVisitorToVectorNoTransposition visitor(book);
-  visitor.Visit();
+  visitor.VisitString("e6f4");
   EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
-      std::make_pair(*book.Get(Board("e6f4")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4d3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4e3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4f3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4g3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c6")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3d6")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3e7")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3")), LAST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4")), LAST_VISIT)
+      GetVisitedNode(book, "", "e6f4", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4d3", LEAF),
+      GetVisitedNode(book, "", "e6f4e3", LEAF),
+      GetVisitedNode(book, "", "e6f4f3", LEAF),
+      GetVisitedNode(book, "", "e6f4g3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c6", LEAF),
+      GetVisitedNode(book, "", "e6f4c3d6", LEAF),
+      GetVisitedNode(book, "", "e6f4c3e7", LEAF),
+      GetVisitedNode(book, "", "e6f4c3", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4", LAST_VISIT)
   ));
   CheckVectorHasRightOrder(visitor.Get());
 }
@@ -94,24 +98,25 @@ TEST(BookVisitor, IteratorTraspositions) {
   book.AddChildren(Board("e6f4d3c4"), children2);
 
   BookVisitorToVectorNoTransposition visitor(book);
-  visitor.Visit();
+  visitor.VisitString("e6f4c3c4");
+  visitor.VisitString("e6f4d3c4");
   EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
-      std::make_pair(*book.Get(Board("e6f4c3c4")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3c4")), LAST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4d3c4")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4d3c4")), LAST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3c4b3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4c5")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4e3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4f3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4g3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4b3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4b5")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4e3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4f3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4f5")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4g3")), LEAF)
+      GetVisitedNode(book, "", "e6f4c3c4", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4d3c4", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4d3c4", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4b3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4c5", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4e3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4f3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4g3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4b3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4b5", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4e3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4f3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4f5", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4g3", LEAF)
   ));
   CheckVectorHasRightOrder(visitor.Get());
 }
@@ -139,33 +144,60 @@ TEST(BookVisitor, IteratorTraspositionsChild) {
   book.AddChildren(Board("e6f4c3c4d3"), children3);
 
   BookVisitorToVectorNoTransposition visitor(book);
-  visitor.Visit();
+  visitor.VisitString("e6f4c3c4");
+  visitor.VisitString("e6f4d3c4");
   EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
-      std::make_pair(*book.Get(Board("e6f4c3c4")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3c4")), LAST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4d3c4")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4d3c4")), LAST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3")), FIRST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3")), LAST_VISIT),
-      std::make_pair(*book.Get(Board("e6f4c3c4b3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4c5")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4e3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4f3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4g3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4b3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4b5")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4e3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4f3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4f5")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4d3c4g3")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3c2")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3c6")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3d6")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3e2")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3e7")), LEAF),
-      std::make_pair(*book.Get(Board("e6f4c3c4d3f7")), LEAF)
+      GetVisitedNode(book, "", "e6f4c3c4", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4d3c4", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4d3c4", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4d3", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4d3", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4b3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4c5", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4e3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4f3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4g3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4b3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4b5", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4e3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4f3", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4f5", LEAF),
+      GetVisitedNode(book, "", "e6f4d3c4g3", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3c2", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3c6", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3d6", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3e2", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3e7", LEAF),
+      GetVisitedNode(book, "", "e6f4c3c4d3f7", LEAF)
   ));
   CheckVectorHasRightOrder(visitor.Get());
+}
+
+TEST(BookVisitor, VisitAll) {
+  Book<> book(kTempDir);
+  book.Clean();
+  book.Add(*TestTreeNode(Board("e6f4"), 0, -63, 63, 10));
+  book.Add(*TestTreeNode(Board("e6f6"), 0, -63, 63, 10));
+
+  std::vector<Node> children;
+  for (Board child : GetNextBoardsWithPass(Board("e6f4"))) {
+    children.push_back(*TestTreeNode(child, 0, -63, 63, 10));
+  }
+  book.AddChildren(Board("e6f4"), children);
+
+  BookVisitorToVectorNoTransposition visitor(book);
+  visitor.VisitAll();
+  EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
+      GetVisitedNode(book, "e6f4", "", FIRST_VISIT),
+      GetVisitedNode(book, "e6f4", "c3", LEAF),
+      GetVisitedNode(book, "e6f4", "d3", LEAF),
+      GetVisitedNode(book, "e6f4", "e3", LEAF),
+      GetVisitedNode(book, "e6f4", "f3", LEAF),
+      GetVisitedNode(book, "e6f4", "g3", LEAF),
+      GetVisitedNode(book, "e6f4", "", LAST_VISIT),
+      GetVisitedNode(book, "e6f6", "", LEAF)
+  ));
 }
 
 TEST(BookVisitor, MergeDisjoint) {
@@ -178,7 +210,7 @@ TEST(BookVisitor, MergeDisjoint) {
   book.Commit();
   book2.Commit();
 
-  BookMerge(book2, book).Visit();
+  BookMerge(book2, book).VisitAll();
 
   EXPECT_EQ(book.Size(), 11);
   EXPECT_EQ(*book.Get(Board("e6f4c3")), old_e6f4c3);
@@ -202,7 +234,7 @@ TEST(BookMerge, MergeSameLine) {
       /*skip=*/{},
       /*visited=*/{{Board("e6"), 3}, {Board("e6f6"), 2}});
 
-  BookMerge(book2, book).Visit();
+  BookMerge(book2, book).VisitAll();
 
   EXPECT_EQ(book.Size(), 13); // e6, par, diag, perp, diag+4, perp+5
   EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), 9); // e6f4(3) + successors of e6f4(5) + element in other book(1)
@@ -220,8 +252,7 @@ TEST(BookMerge, MergeSameLine) {
 TEST(BookMerge, MergeDifferentStarts) {
   Book<> book = BookWithPositions({"e6"}, {}, {}, {});
   Book<> book2 = BookWithPositions({"", "e6"}, {}, {}, {});
-  BookMerge(book2, book).Visit();
-
+  BookMerge(book2, book).VisitAll();
   EXPECT_EQ(book.Size(), 5);
   EXPECT_EQ(book.Get(Board("e6f4"))->GetNVisited(), 2);
   EXPECT_EQ(book.Get(Board("e6"))->GetNVisited(), 8);
@@ -235,7 +266,7 @@ TEST(BookMerge, MergeDifferentStarts) {
 TEST(BookMerge, MergeTranspositions) {
   Book<> book = BookWithPositions({"e6"});
   Book<> book2 = BookWithPositions({"e6f4", "e6f4c3", "e6f4d3", "e6f4c3c4", "e6f4d3c4", "e6f4c3c4d3"});
-  BookMerge(book2, book).Visit();
+  BookMerge(book2, book).VisitAll();
 
   EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
 }
@@ -247,7 +278,7 @@ TEST(BookMerge, ResetDescendants) {
   Book book = BookWithPositions({"e6", "e6f4", "e6f4c3", "e6f4d3", "e6f4c3c4", "e6f4d3c4", "e6f4c3c4d3"});
   Book book_copy(kTempDir + "copy");
   book_copy.Clean();
-  BookMerge(book, book_copy).Visit();
+  BookMerge(book, book_copy).VisitAll();
 
   Book book_child = RemoveDescendants(book, kTempDir + "child1");
 
@@ -273,7 +304,7 @@ TEST(BookMerge, ResetDescendants) {
       leaf_child.Finalize(n_visited);
       leaf_copy.Finalize(n_visited);
     }
-    BookMerge(book_child, book).Visit();
+    BookMerge(book_child, book).VisitAll();
 
     BookVisitorToVectorNoTransposition nodes_book(book);
     BookVisitorToVectorNoTransposition nodes_copy(book_copy);
@@ -291,7 +322,7 @@ TEST(BookMerge, ResetDescendantsDouble) {
   Book(kTempDir + "copy").Clean();
   Book book = BookWithPositions({"e6", "e6f4", "e6f6"});
   Book book_copy(kTempDir + "copy");
-  BookMerge(book, book_copy).Visit();
+  BookMerge(book, book_copy).VisitAll();
 
   Book<> book_child1 = RemoveDescendants(book, kTempDir + "child1");
   Book<> book_child2 = RemoveDescendants(book, kTempDir + "child2");
@@ -321,8 +352,8 @@ TEST(BookMerge, ResetDescendantsDouble) {
       leaf_child.Finalize(n_visited);
       leaf_copy.Finalize(n_visited);
     }
-    BookMerge(book_child1, book).Visit();
-    BookMerge(book_child2, book).Visit();
+    BookMerge(book_child1, book).VisitAll();
+    BookMerge(book_child2, book).VisitAll();
 
     BookVisitorToVectorNoTransposition nodes_book(book);
     BookVisitorToVectorNoTransposition nodes_copy(book_copy);

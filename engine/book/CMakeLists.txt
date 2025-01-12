@@ -90,6 +90,8 @@ target_link_libraries(
         book_visitor
         LINK_PRIVATE
         book
+        get_moves
+        sequence
 )
 
 IF(ENABLE_GOOGLETEST)
