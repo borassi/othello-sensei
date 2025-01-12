@@ -66,7 +66,7 @@ class BookVisitor {
     seen_boards.reserve(flips.size());
     for (const BitPattern flip : flips) {
       Board child = board.Next(flip);
-      if (!seen_boards.insert(child).second) {
+      if (!seen_boards.insert(child.Unique()).second) {
         continue;
       }
       Square move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
@@ -103,6 +103,7 @@ class BookVisitorNoTranspositions : public BookVisitor<version> {
     BookVisitor::Visit(board);
   }
 
+ private:
   std::unordered_set<Board> visited_;
 };
 
@@ -120,38 +121,6 @@ std::ostream& operator<<(std::ostream& stream, const VisitedNode& n) {
   stream << "\n[" << n.sequence << "] - type: " << n.node_type << "\n" << n.node << "\n";
   return stream;
 }
-
-template<int version = kBookVersion>
-class BookVisitorToVectorNoTransposition : public BookVisitorNoTranspositions<version> {
- public:
-  typedef BookVisitor<version> BookVisitor;
-  using typename BookVisitor::Book;
-  using typename BookVisitor::BookNode;
-  using BookVisitor::sequence_;
-
-  BookVisitorToVectorNoTransposition(const Book& book) : BookVisitorNoTranspositions<version>(book) {
-    nodes_.reserve(BookVisitor::book_.Size());
-  }
-
-  const std::vector<VisitedNode>& Get() {
-    return nodes_;
-  }
-
- protected:
-
-  void VisitLeaf(Node& node) override {
-    nodes_.push_back({node, LEAF, sequence_});
-  }
-  void PreVisitInternalNode(Node& node) override {
-    nodes_.push_back({node, FIRST_VISIT, sequence_});
-  }
-  void PostVisitInternalNode(Node& node) override {
-    nodes_.push_back({node, LAST_VISIT, sequence_});
-  }
-
- private:
-  std::vector<VisitedNode> nodes_;
-};
 
 template<int source_version = kBookVersion, int target_version = kBookVersion>
 class BookMerge : public BookVisitorNoTranspositions<source_version> {

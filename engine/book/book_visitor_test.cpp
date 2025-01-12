@@ -56,6 +56,64 @@ VisitedNode GetVisitedNode(const Book<kBookVersion>& book, const std::string& pr
   return VisitedNode {*book.Get(Board(pre_sequence + sequence)), node_type, Sequence(sequence)};
 }
 
+class BookVisitorToVectorNoTransposition : public BookVisitorNoTranspositions<kBookVersion> {
+ public:
+  typedef BookVisitorNoTranspositions<kBookVersion> BookVisitor;
+  using typename BookVisitor::Book;
+  using typename BookVisitor::BookNode;
+  using BookVisitor::sequence_;
+
+  using BookVisitorNoTranspositions::BookVisitorNoTranspositions;
+
+  const std::vector<VisitedNode>& Get() {
+    return nodes_;
+  }
+
+ protected:
+
+  void VisitLeaf(Node& node) override {
+    nodes_.push_back({node, LEAF, sequence_});
+  }
+  void PreVisitInternalNode(Node& node) override {
+    nodes_.push_back({node, FIRST_VISIT, sequence_});
+  }
+  void PostVisitInternalNode(Node& node) override {
+    nodes_.push_back({node, LAST_VISIT, sequence_});
+  }
+
+ private:
+  std::vector<VisitedNode> nodes_;
+};
+
+class BookVisitorToVectorTransposition : public BookVisitor<kBookVersion> {
+ public:
+  typedef BookVisitor<kBookVersion> BookVisitor;
+  using typename BookVisitor::Book;
+  using typename BookVisitor::BookNode;
+  using BookVisitor::sequence_;
+
+  using BookVisitor::BookVisitor;
+
+  const std::vector<VisitedNode>& Get() {
+    return nodes_;
+  }
+
+ protected:
+
+  void VisitLeaf(Node& node) override {
+    nodes_.push_back({node, LEAF, sequence_});
+  }
+  void PreVisitInternalNode(Node& node) override {
+    nodes_.push_back({node, FIRST_VISIT, sequence_});
+  }
+  void PostVisitInternalNode(Node& node) override {
+    nodes_.push_back({node, LAST_VISIT, sequence_});
+  }
+
+ private:
+  std::vector<VisitedNode> nodes_;
+};
+
 TEST(BookVisitor, IteratorBasic) {
   std::vector<std::string> lines = {"e6f4", "e6f4c3"};
   Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
@@ -78,6 +136,34 @@ TEST(BookVisitor, IteratorBasic) {
       GetVisitedNode(book, "", "e6f4", LAST_VISIT)
   ));
   CheckVectorHasRightOrder(visitor.Get());
+}
+
+TEST(BookVisitor, DoesNotRepeatFirstMove) {
+  std::vector<std::string> lines = {""};
+  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
+  book.Commit();
+
+  BookVisitorToVectorNoTransposition visitor(book);
+  visitor.VisitString("");
+  EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
+      GetVisitedNode(book, "", "", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6", LEAF),
+      GetVisitedNode(book, "", "", LAST_VISIT)
+  ));
+}
+
+TEST(BookVisitor, DoesNotRepeatDiagonal) {
+  std::vector<std::string> lines = {"e6f6f5"};
+  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
+  book.Commit();
+
+  BookVisitorToVectorNoTransposition visitor(book);
+  visitor.VisitString("e6f6f5");
+  EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
+      GetVisitedNode(book, "", "e6f6f5", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f6f5d6", LEAF),
+      GetVisitedNode(book, "", "e6f6f5", LAST_VISIT)
+  ));
 }
 
 TEST(BookVisitor, IteratorTraspositions) {
