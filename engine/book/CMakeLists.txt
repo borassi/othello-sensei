@@ -167,6 +167,23 @@ target_link_libraries(
 ENDIF()
 
 add_executable(
+        book_visitor_stats_main
+        book_visitor_stats_main.cpp
+)
+
+target_link_libraries(
+        book_visitor_stats_main
+        LINK_PRIVATE
+        book
+        book_visitor
+        constants
+        misc
+        parse_flags
+        thor
+        win_probability
+)
+
+add_executable(
         merge_books_main
         merge_books_main.cpp
 )
