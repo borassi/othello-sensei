@@ -45,6 +45,7 @@ class BookTreeNode : public TreeNode {
     player_ = b.Player();
     opponent_ = b.Opponent();
     n_empties_ = b.NEmpties();
+    depth_ = kNoSquare;
 
     CopyAndEnlargeToAllEvals(node);
   }

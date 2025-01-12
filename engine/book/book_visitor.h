@@ -32,7 +32,7 @@ class BookVisitor {
   typedef Book<version> Book;
   typedef typename Book::BookNode BookNode;
 
-  BookVisitor(const Book& book) : book_(book) {}
+  BookVisitor(const Book& book) : book_(book), depth_(0) {}
 
   virtual void VisitAll() {
     for (const Board& root : book_.Roots()) {
@@ -72,7 +72,9 @@ class BookVisitor {
       if (flip != 0) {
         sequence_.AddMove(move);
       }
+      ++depth_;
       Visit(child);
+      --depth_;
       if (flip != 0) {
         sequence_.RemoveLastMove();
       }
@@ -83,6 +85,7 @@ class BookVisitor {
  protected:
   const Book& book_;
   Sequence sequence_;
+  int depth_;
 
   virtual void VisitLeaf(Node& node) {};
   virtual bool PreVisitInternalNode(Node& node) { return true; };
