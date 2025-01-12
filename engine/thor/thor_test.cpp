@@ -119,13 +119,32 @@ TEST_F(ThorTest, SingleSource) {
   ));
 }
 
+TEST_F(ThorTest, SingleSourceTranspositions) {
+  fs::remove_all(kThorTestData + "/PlayOK");
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames("Thor", Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 2);
+}
+
+TEST_F(ThorTest, SingleSourceNoTranspositions) {
+  fs::remove_all(kThorTestData + "/PlayOK");
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames</*transpositions=*/false>("Thor", Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 1);
+}
+
 TEST_F(ThorTest, AllSources) {
   Thor thor(kThorTestData);
-  auto games = thor.GetGamesFromAllSources(Sequence("e6"));
-  EXPECT_EQ(games.num_games, 13);
-  EXPECT_THAT(games.next_moves, UnorderedElementsAre(
-      Pair(34, 6), Pair(18, 5), Pair(20, 2)
-  ));
+  auto games = thor.GetGamesFromAllSources(Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 4);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 4)));
+}
+
+TEST_F(ThorTest, AllSourcesNoTranspositions) {
+  Thor thor(kThorTestData);
+  auto games = thor.GetGamesFromAllSources</*transpositions=*/false>(Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 2)));
 }
 
 TEST_F(ThorTest, Rotations) {

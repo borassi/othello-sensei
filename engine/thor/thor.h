@@ -61,6 +61,7 @@ class Thor {
     return result;
   }
 
+  template<bool transpositions = true>
   GamesList GetGamesFromAllSources(
       const Sequence& sequence,
       int max_games = 1,
@@ -71,13 +72,14 @@ class Thor {
       short end_year = SHRT_MAX) const {
     GamesList games;
     for (const auto& [source_name, _] : sources_) {
-      GamesList new_games = GetGames(source_name, sequence, max_games, blacks, whites, tournaments,
-                                     start_year, end_year);
+      GamesList new_games = GetGames<transpositions>(
+          source_name, sequence, max_games, blacks, whites, tournaments, start_year, end_year);
       games.Merge(new_games);
     }
     return games;
   }
 
+  template<bool transpositions = true>
   GamesList GetGames(
       const std::string& source,
       const Sequence& sequence,
@@ -92,8 +94,12 @@ class Thor {
     GamesList games;
     games.max_games = max_games;
 
-    for (const Sequence& equivalent : canonicalizer_.AllEquivalentSequences(canonical)) {
-      GamesList new_games = sources_.at(source)->GetGames(equivalent, max_games, blacks, whites, tournaments, start_year, end_year);
+    std::vector<Sequence> lookup_sequences =
+        transpositions ? canonicalizer_.AllEquivalentSequences(canonical)
+        : std::vector<Sequence>({canonical});
+    for (const Sequence& lookup_sequence : lookup_sequences) {
+      GamesList new_games = sources_.at(source)->GetGames(
+          lookup_sequence, max_games, blacks, whites, tournaments, start_year, end_year);
       new_games.Rotate(sequence);
       games.Merge(new_games);
     }
