@@ -219,7 +219,7 @@ class GlobalState {
               actions: [
                 (text: 'Yes', onPressed: (context) { Navigator.pop(context, true); }),
                 (text: 'No', onPressed: (context) { Navigator.pop(context, false); }),
-              ]))) {
+              ])) ?? false) {
             GlobalState.newGame();
           }
           break;
