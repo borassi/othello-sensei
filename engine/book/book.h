@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 Michele Borassi
+ * Copyright 2022-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,13 +43,6 @@ constexpr HashMapIndex kInitialHashMapSize = 8;
 constexpr HashMapIndex kNumElementsOffset = sizeof(HashMapIndex) / sizeof(char);
 constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 
-enum NodeType {
-  LEAF = 0,
-  FIRST_VISIT = 1,
-  LAST_VISIT = 2,
-};
-
-
 #ifdef _MSC_VER
 __pragma(pack(push, 1));
 #endif
@@ -86,6 +79,9 @@ __attribute__((__packed__));
 std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
 
 constexpr int kBookVersion = 1;
+
+template<int source_version, int target_version>
+class BookMerge;
 
 template<int version = kBookVersion>
 class Book {
@@ -130,145 +126,10 @@ class Book {
 
   void Clean();
 
-  HashMapIndex Size() { return book_size_; }
+  HashMapIndex Size() const { return book_size_; }
 
   const std::unordered_set<Board>& Roots() const {
     return roots_;
-  }
-
-  Book RemoveDescendants(const std::string& filepath) {
-    Book book_no_descendants(filepath);
-    assert(book_no_descendants.Size() == 0);
-
-    book_no_descendants.Merge(*this, [](Node* node) { node->ResetDescendants(); }, [](Node* node) { node->ResetDescendants(); });
-    return book_no_descendants;
-  }
-
-  class Iterator {
-   public:
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type   = std::ptrdiff_t;
-    using value_type        = std::pair<Node, NodeType>;
-    using pointer           = value_type*;
-    using reference         = value_type;
-
-    Iterator(const Book& book, int start_root) : book_(book), roots_(book_.Roots().begin(), book_.Roots().end()), next_root_(start_root), stack_() {
-      assert (next_root_ == 0 || next_root_ == roots_.size());
-      ToNextRoot();
-    }
-    reference operator*() const {
-      const Node& node = stack_.back();
-      if (node.IsLeaf()) {
-        return {node, LEAF};
-      } else if (visited_.find(node.ToBoard()) != visited_.end()) {
-        return {node, LAST_VISIT};
-      } else {
-        return {node, FIRST_VISIT};
-      }
-    }
-//    pointer operator->() { return &operator*(); }
-
-    // Prefix increment
-    Iterator& operator++() {
-      ToNext();
-      return *this;
-    }
-
-    // Postfix increment
-    Iterator operator++(int) {
-      Iterator tmp = *this;
-      ++(*this);
-      return tmp;
-    }
-
-    bool operator==(const Iterator& other) const {
-      return &book_ == &other.book_ && roots_ == other.roots_ && stack_ == other.stack_ && next_root_ == other.next_root_;
-    }
-    bool operator!=(const Iterator& other) const {
-      return !(*this == other);
-    }
-
-   private:
-    const Book& book_;
-    const std::vector<Board> roots_;
-    std::vector<Node> stack_;
-    int next_root_;
-    std::unordered_set<Board> visited_;
-
-    void ToNextRoot() {
-      assert(stack_.empty());
-      if (next_root_ == roots_.size()) {
-        // Finished iteration.
-        return;
-      }
-      auto next = book_.Get(roots_[next_root_++]);
-      assert(next);
-      stack_.push_back(*next);
-    }
-
-    void ToNext() {
-      Node node = stack_.back();
-      Board b = node.ToBoard();
-      bool visited = visited_.find(b) != visited_.end();
-      visited_.insert(b);
-      if (visited || node.IsLeaf()) {
-        stack_.pop_back();
-        if (stack_.empty()) {
-          ToNextRoot();
-        }
-      } else {
-        for (auto child_board : GetUniqueNextBoardsWithPass(b)) {
-          if (visited_.find(child_board.first) == visited_.end()) {
-            auto child_in_book = book_.Get(child_board.first);
-            assert(child_in_book);
-            stack_.push_back(*child_in_book);
-          }
-        }
-      }
-    }
-  };
-
-  Iterator begin() const { return Iterator(*this, 0); }
-  Iterator end() const { return Iterator(*this, (int) roots_.size()); }
-
-  template<int other_version>
-  void Merge(const Book<other_version>& other_book, void (*leaf_func)(Node*) = nullptr, void (*internal_func)(Node*) = nullptr) {
-    // This avoids adding a lot of roots and removing them afterwards (to avoid
-    // memory problems).
-    for (const auto& root : other_book.Roots()) {
-      Board unique = root.Unique();
-      if (!Get(unique)) {
-        roots_.insert(unique);
-      }
-    }
-    for (auto other_node_and_type : other_book) {
-      auto other_node = other_node_and_type.first;
-      auto other_node_type = other_node_and_type.second;
-      BookNode* my_node = Mutable(other_node.ToBoard());
-      if (my_node) {
-        if (other_node_type == LEAF || other_node_type == FIRST_VISIT) {
-          my_node->AddDescendants(other_node.GetNVisited());
-          my_node->lower_ = MaxEval(my_node->lower_, other_node.Lower());
-          my_node->upper_ = MinEval(my_node->upper_, other_node.Upper());
-        } else {
-          if (my_node->IsLeaf()) {
-            AddChildren(my_node->ToBoard(), {});
-          } else {
-            my_node->UpdateFather();
-          }
-        }
-      } else {
-        assert(other_node_type == LEAF || other_node_type == FIRST_VISIT);
-        if (other_node_type == LEAF && leaf_func) {
-          leaf_func(&other_node);
-        }
-        if (other_node_type == FIRST_VISIT && internal_func) {
-          internal_func(&other_node);
-        }
-        AddNoRootsUpdate(other_node);
-      }
-    }
-    Commit();
   }
 
   void ReloadSizes() {
@@ -278,6 +139,7 @@ class Book {
   }
 
  private:
+  template<int, int> friend class BookMerge;
   std::string folder_;
   std::vector<ValueFile> value_files_;
   ValueFile roots_file_;

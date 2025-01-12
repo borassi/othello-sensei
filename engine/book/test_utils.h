@@ -153,8 +153,9 @@ Book<version> BookWithPositions(
     const std::vector<std::string>& lines,
     const std::unordered_map<Board, int>& evals = {},
     const std::unordered_set<std::pair<Board, Board>, PairHash>& skip = {},
-    const std::unordered_map<Board, int>& visited = {}) {
-  Book<> book(kTempDir);
+    const std::unordered_map<Board, int>& visited = {},
+    const std::string dir = kTempDir) {
+  Book<> book(dir);
   book.Clean();
 
   auto first_line = lines[0];

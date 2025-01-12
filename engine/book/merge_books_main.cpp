@@ -17,6 +17,7 @@
 #include <iostream>
 
 #include "book.h"
+#include "book_visitor.h"
 #include "../utils/parse_flags.h"
 #include "../estimators/win_probability.h"
 
@@ -40,5 +41,5 @@ int main(int argc, char* argv[]) {
       << ", size " << old_book.Size() << ") to version " << kNewVersion
       << " in path " << new_book_path << "\n";
 
-  new_book.Merge(old_book);
+  BookMerge<kOldVersion, kNewVersion>(old_book, new_book).Visit();
 }

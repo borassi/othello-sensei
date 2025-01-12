@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Michele Borassi
+# Copyright 2022-2025 Michele Borassi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,6 +81,38 @@ target_link_libraries(
 ENDIF()
 
 add_library(
+        book_visitor
+        book_visitor.h
+        book_visitor.cpp
+)
+
+target_link_libraries(
+        book_visitor
+        LINK_PRIVATE
+        book
+)
+
+IF(ENABLE_GOOGLETEST)
+    add_executable(
+            book_visitor_test
+            book_visitor_test.cpp
+    )
+
+    target_link_libraries(
+            book_visitor_test
+            LINK_PRIVATE
+            board
+            book
+            book_visitor
+            test_utils
+            GTest::gmock
+            GTest::gtest
+            GTest::gtest_main
+            -no-pie
+    )
+ENDIF()
+
+add_library(
         test_utils
         test_utils.h
         test_utils.cpp
@@ -141,6 +173,7 @@ target_link_libraries(
         merge_books_main
         LINK_PRIVATE
         book
+        book_visitor
         constants
         parse_flags
         win_probability
