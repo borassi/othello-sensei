@@ -52,6 +52,9 @@ TEST(Sequence, AddMove) {
 
   sequence.RemoveLastMove();
   EXPECT_EQ(sequence, Sequence());
+
+  sequence.AddMove(19);
+  EXPECT_EQ(sequence, Sequence("e6"));
 }
 
 TEST(Sequence, Sequence) {

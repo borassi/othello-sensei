@@ -306,13 +306,16 @@ class Sequence {
   Square size_;
 
   Sequence(int size) : size_(size) {
-    assert(size_ <= 64);
+    assert(size >= 0);
+    assert(size <= 64);
     moves_ = size_ == 0 ? nullptr : (Square*) malloc(size_ * sizeof(Square));
   }
 
   void UpdateSize(Square new_size) {
+    if (new_size > size_) {
+      moves_ = (Square*) realloc(moves_, new_size);
+    }
     size_ = new_size;
-    moves_ = (Square*) realloc(moves_, size_);
   }
 };
 
