@@ -114,8 +114,7 @@ target_link_libraries(
         merge_books_main
         LINK_PRIVATE
         book
-        visitor
-        constants
+        merger
         parse_flags
         win_probability
 )
