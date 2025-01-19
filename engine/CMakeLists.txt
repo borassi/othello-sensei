@@ -1,4 +1,4 @@
-# Copyright 2023 Michele Borassi
+# Copyright 2023-2025 Michele Borassi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ ENDIF()
 add_subdirectory(analyzers)
 add_subdirectory(board)
 add_subdirectory(book)
+add_subdirectory(book_visitor)
 add_subdirectory(estimators)
 add_subdirectory(evaluatealphabeta)
 add_subdirectory(evaluatedepthone)

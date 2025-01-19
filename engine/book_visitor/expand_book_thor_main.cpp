@@ -16,7 +16,7 @@
 
 #include <limits>
 
-#include "book.h"
+#include "../book/book.h"
 #include "../board/board.h"
 #include "../board/get_flip.h"
 #include "../hashmap/hash_map.h"

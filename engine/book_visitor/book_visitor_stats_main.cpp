@@ -16,8 +16,8 @@
 
 #include <iostream>
 
-#include "book.h"
-#include "book_visitor.h"
+#include "visitor.h"
+#include "../book/book.h"
 #include "../estimators/win_probability.h"
 #include "../thor/thor.h"
 #include "../utils/misc.h"
@@ -46,7 +46,7 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
       visiting_at_depth_[i] = 0;
       evaluations_at_depth_[i] = 0;
     }
-    output_ << "sequence, games, empties, depth, error_black, error_white, uncertainty\n";
+    output_ << "sequence,games,empties,depth,error_black,error_white,uncertainty\n";
   }
 
  protected:
@@ -67,16 +67,17 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
       std::cout << "  Remaining time: " << total_time - time << "\n";
       std::cout << "  Depth: " << (int) depth_ << "\n";
     }
-    if (depth_ < 5 || (depth_ < 10 && rand() % 10 == 0) || rand() % 100 == 0) {
+    auto uncertainty = node.Uncertainty();
+    if (num_thor_games > 0) {
       auto [error_black, error_white] = GetErrors(depth_);
       output_
-          << sequence_ << ", "
-          << num_thor_games << ", "
-          << (int) node.NEmpties() << ", "
-          << depth_ << ", "
-          << error_black << ", "
-          << error_white << ", "
-          << node.Uncertainty() << ", "
+          << sequence_ << ","
+          << num_thor_games << ","
+          << (int) node.NEmpties() << ","
+          << depth_ << ","
+          << error_black << ","
+          << error_white << ","
+          << uncertainty
           << "\n";
     }
     return num_thor_games;

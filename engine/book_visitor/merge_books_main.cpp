@@ -16,8 +16,8 @@
 
 #include <iostream>
 
-#include "book.h"
-#include "book_visitor.h"
+#include "visitor.h"
+#include "../book/book.h"
 #include "../utils/parse_flags.h"
 #include "../estimators/win_probability.h"
 

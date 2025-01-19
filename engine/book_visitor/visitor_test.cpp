@@ -18,10 +18,10 @@
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock.h>
 
-#include "book_visitor.h"
-#include "book.h"
+#include "visitor.h"
+#include "../book/book.h"
 #include "../board/board.h"
-#include "test_utils.h"
+#include "../book/test_utils.h"
 
 using ::testing::UnorderedElementsAre;
 

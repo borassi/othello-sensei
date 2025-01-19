@@ -16,7 +16,7 @@
 
 #include<string.h>
 
-#include "book.h"
+#include "../book/book.h"
 #include "../board/get_moves.h"
 #include "../board/sequence.h"
 

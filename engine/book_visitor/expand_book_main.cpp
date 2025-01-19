@@ -16,7 +16,7 @@
 
 #include <limits>
 
-#include "book.h"
+#include "../book/book.h"
 #include "../hashmap/hash_map.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../evaluatederivative/evaluator_derivative.h"
