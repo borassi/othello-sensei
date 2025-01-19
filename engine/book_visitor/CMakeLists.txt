@@ -13,13 +13,25 @@
 # limitations under the License.
 
 add_library(
-        book_visitor
+        book_visitor_test_utils
+        book_visitor_test_utils.h
+        book_visitor_test_utils.cpp
+)
+
+target_link_libraries(
+        book_visitor_test_utils
+        LINK_PRIVATE
+        visitor
+)
+
+add_library(
+        visitor
         visitor.h
         visitor.cpp
 )
 
 target_link_libraries(
-        book_visitor
+        visitor
         LINK_PRIVATE
         book
         get_moves
@@ -28,16 +40,46 @@ target_link_libraries(
 
 IF(ENABLE_GOOGLETEST)
     add_executable(
-            book_visitor_test
+            visitor_test
             visitor_test.cpp
     )
 
     target_link_libraries(
-            book_visitor_test
+            visitor_test
             LINK_PRIVATE
-            board
-            book
-            book_visitor
+            book_visitor_test_utils
+            visitor
+            test_utils
+            GTest::gmock
+            GTest::gtest
+            GTest::gtest_main
+            -no-pie
+    )
+ENDIF()
+
+add_library(
+        merger
+        merger.h
+        merger.cpp
+)
+
+target_link_libraries(
+        merger
+        LINK_PRIVATE
+        visitor
+)
+
+IF(ENABLE_GOOGLETEST)
+    add_executable(
+            merger_test
+            merger_test.cpp
+    )
+
+    target_link_libraries(
+            merger_test
+            LINK_PRIVATE
+            book_visitor_test_utils
+            visitor
             test_utils
             GTest::gmock
             GTest::gtest
@@ -55,7 +97,7 @@ target_link_libraries(
         book_visitor_stats_main
         LINK_PRIVATE
         book
-        book_visitor
+        visitor
         constants
         misc
         parse_flags
@@ -72,7 +114,7 @@ target_link_libraries(
         merge_books_main
         LINK_PRIVATE
         book
-        book_visitor
+        visitor
         constants
         parse_flags
         win_probability

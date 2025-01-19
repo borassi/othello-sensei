@@ -81,7 +81,7 @@ std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
 constexpr int kBookVersion = 1;
 
 template<int source_version, int target_version>
-class BookMerge;
+class BookVisitorMerge;
 
 template<int version = kBookVersion>
 class Book {
@@ -139,7 +139,7 @@ class Book {
   }
 
  private:
-  template<int, int> friend class BookMerge;
+  template<int, int> friend class BookVisitorMerge;
   std::string folder_;
   std::vector<ValueFile> value_files_;
   ValueFile roots_file_;
