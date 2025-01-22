@@ -88,12 +88,12 @@ class BookTreeNode : public TreeNode {
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       if (GetEvaluation(i).ProbGreaterEqual() == 1) {
         assert(GetEvaluation(i).MaxLogDerivative() == kLogDerivativeMinusInf);
-        assert(GetEvaluation(i).DisproofNumber() == std::numeric_limits<float>::infinity());
+        assert(GetEvaluation(i).DisproofNumber() == std::numeric_limits<float>::max());
         last_1 = i;
       }
       if (GetEvaluation(i).ProbGreaterEqual() == 0) {
         assert(GetEvaluation(i).MaxLogDerivative() == kLogDerivativeMinusInf);
-        assert(GetEvaluation(i).ProofNumber() == std::numeric_limits<float>::infinity());
+        assert(GetEvaluation(i).ProofNumber() == std::numeric_limits<float>::max());
         first_0 = i;
         break;
       }
