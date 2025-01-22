@@ -143,6 +143,9 @@ bool MustBeEvaluated(
     assert(!child.HasValidChildren());
     return true;
   }
+  if (child.IsSolved(-63, 63, false)) {
+    return false;
+  }
   // When watching an analyzed game, don't re-evaluate.
   if (father.InAnalysisLine() && !in_analysis) {
     return false;
