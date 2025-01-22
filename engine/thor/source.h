@@ -286,7 +286,6 @@ class Source {
 
   void SaveSortedGames() const {
     std::ofstream file(SortedGamesPath());
-    uint32_t index;
     for (const std::vector<uint32_t>* v : game_indices_) {
       file.write((char*) v->data(), v->size() * sizeof(uint32_t));
     }
@@ -294,7 +293,6 @@ class Source {
 
   void SaveGamesSmallHash() const {
     std::ofstream file(GamesSmallHashPath());
-    uint32_t index;
     for (const std::vector<uint32_t> v : games_with_small_hash_) {
       uint32_t size = (uint32_t) v.size();
       file.write((char*) &size, sizeof(uint32_t));
@@ -354,7 +352,6 @@ class Source {
 
   void LoadSortedGames() {
     std::vector<uint32_t> file = ReadFile<uint32_t>(SortedGamesPath());
-    int position = 0;
     int num_games = file.size() / game_indices_.size();
     assert(num_games == game_getter_.NumGames());
 

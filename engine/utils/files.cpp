@@ -32,24 +32,7 @@ void CreateFileIfNotExists(const std::string& filepath) {
 }
 
 void CreateEmptyFileWithDirectories(const std::string& filepath) {
-#if __APPLE__
-  auto split_filepath = Split(filepath, kPathSeparator);
-  std::string path_so_far = split_filepath[0];
-  int mode = S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH;
-  struct stat sb;
-
-  for (int i = 1; i < split_filepath.size() - 1; ++i) {
-    path_so_far = path_so_far + kPathSeparator + split_filepath[i];
-    if (stat(path_so_far.c_str(), &sb) == -1) {
-      mkdir(path_so_far.c_str(), mode);
-    } else {
-      mode = sb.st_mode;
-    }
-  }
-#else
-  // Works only after MacOS 10.15, we want to be compatible with MacOS 10.11.
   fs::create_directories(fs::path(filepath).remove_filename());
-#endif
   std::ofstream(filepath, std::ios::out).close();
 }
 

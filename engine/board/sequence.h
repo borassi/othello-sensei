@@ -322,7 +322,6 @@ namespace std {
     std::size_t operator()(const Sequence& s) const {
       std::size_t hash = murmur64(42);
       int last_quick = s.Size() - s.Size() % 8;
-      int i;
       for (int64_t* position = (int64_t*) s.Moves(); position < (int64_t*) (s.Moves() + last_quick); ++position) {
         hash ^= murmur64(*position) + 0x9e3779b9 + (hash<<6) + (hash>>2);
       }
