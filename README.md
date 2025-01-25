@@ -29,7 +29,7 @@ Download it from the App Store
 
 #### Using the dmg file
 
-1. Open this [link](https://github.com/borassi/othello-sensei/blob/main/Othello%20Sensei.dmg).
+1. Open this [link](https://github.com/borassi/othello-sensei/blob/main/installers/Othello%20Sensei.dmg).
 2. Click cmd+shift+S at the same time or click on "..." > "Download" (it might take a few seconds
    before the download actually starts).
 3. Install the app from the `.dmg` file, following these
