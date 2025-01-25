@@ -154,5 +154,5 @@ void PrintSupportedFeatures() {
 }
 
 size_t HashString(const std::string& s) {
-  return __murmur2_or_cityhash<std::size_t>()(s.c_str(), s.length());
+  return murmur2_or_cityhash<std::size_t>()(s.c_str(), s.length());
 }
