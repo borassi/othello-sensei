@@ -276,9 +276,7 @@ class EvaluationState : public TreeNode {
       }
     } else {
       assert(!HasValidChildren());
-      double new_seconds = seconds - annotations_.seconds;
       assert(descendants_ >= annotations_.descendants);
-      NVisited new_descendants = descendants_ - annotations_.descendants;
       annotations_.descendants = descendants_;
       annotations_.seconds = seconds;
       annotations_.provenance = CHILD_EVALUATE;
