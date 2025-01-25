@@ -80,7 +80,7 @@ constexpr int kBitHashMap = 23;
 #elif defined(IOS)
 constexpr int kBitHashMap = 23;
 #else
-constexpr int kBitHashMap = 24;
+constexpr int kBitHashMap = 23;
 #endif
 
 constexpr int kHashMapSize = 1 << kBitHashMap;

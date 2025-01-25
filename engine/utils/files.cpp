@@ -22,7 +22,11 @@
 #include "files.h"
 #include "misc.h"
 
+#ifdef _MSC_VER
+constexpr char kPathSeparator = '\\';
+#else
 constexpr char kPathSeparator = '/';
+#endif
 
 void CreateFileIfNotExists(const std::string& filepath) {
   if (FileExists(filepath)) {

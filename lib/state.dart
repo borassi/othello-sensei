@@ -152,15 +152,19 @@ class GlobalState {
     await _createMain();
   }
 
-  static Future<void> resetMain() async {
-    GlobalState.ffiEngine.MainDelete(ffiMain);
-    await _createMain();
+  static Future<void> resetMain(void Function() runWithoutFFIMain) async {
+    try {
+      GlobalState.ffiEngine.MainDelete(ffiMain);
+      runWithoutFFIMain();
+    } finally {
+      await _createMain();
+    }
   }
 
   static Future<void> _createMain() async {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
-    var localAssetPathVar = await localAssetPath();
+    var localAssetPathVar = localAssetPath();
     globalAnnotations.reset();
     for (int i = 0; i < 64; ++i) {
       GlobalState.annotations[i].clear();

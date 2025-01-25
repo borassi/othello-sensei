@@ -201,7 +201,8 @@ class WindowsHelpText extends StatelessWidget {
           ),
           const TextSpan(
             text: (
-                '.\n'
+                ' (section Virus & threat protection\n'
+                '        settings).\n'
                 '     2. After clicking "Add an exclusion", select "Process".\n'
                 '     3. Enter process name "othello_sensei.exe".\n'
                 '     4. The download will become much faster (no need to restart it).\n'
@@ -253,16 +254,17 @@ class DownloadSecondaryWindow extends StatelessWidget {
 
   Future<void> _startDownload() async {
     final resultPort = ReceivePort();
-    var localTempPathVar = await localTempPath();
-    var localAssetPathVar = await localAssetPath();
+    var localTempPathVar = localTempPath();
+    var localAssetPathVar = localAssetPath();
     var errorReceiver = ReceivePort();
     await Isolate.spawn(
       DriveDownloaderWorker.start,
-      [resultPort.sendPort, name, path, localTempPathVar, localAssetPathVar, numFilesForProgressBar],
+      [resultPort.sendPort, name, path, localTempPathVar, numFilesForProgressBar],
       errorsAreFatal: true,
       onError: errorReceiver.sendPort,
     );
     errorReceiver.listen((dynamic message) async {
+      io.Directory(localTempPathVar).deleteSync(recursive: true);
       Navigator.pop(popContext!);
       // Hack: for some reason the message is returned as a string.
       if (!message[0].toString().contains('StoppedDownloadError')) {
@@ -277,11 +279,17 @@ class DownloadSecondaryWindow extends StatelessWidget {
         }
       } else if (message is double) {
         downloadProgress.setProgress(message);
-      } else if (message == 'Done') {
-        GlobalState.resetMain();
-        resultPort.close();
-        Navigator.pop(popContext!, false);
-      } else if (message == 'Stopped') {
+      } else if (message is (String, String) && message.$1 == 'Done') {
+        var targetPath = join(localAssetPathVar, name);
+        var oldTargetPathBeforeDelete = join(localTempPathVar, '${name}_old');
+        await GlobalState.resetMain(() {
+          var toMove = io.Directory(targetPath);
+          if (toMove.existsSync()) {
+            toMove.renameSync(oldTargetPathBeforeDelete);
+          }
+          io.Directory(message.$2).renameSync(targetPath);
+          io.Directory(localTempPathVar).deleteSync(recursive: true);
+        });
         resultPort.close();
         Navigator.pop(popContext!, false);
       }
@@ -438,8 +446,7 @@ class DriveDownloaderWorker {
     String name = args[1];
     String path = args[2];
     String localTempPathVar = args[3];
-    String localAssetPathVar = args[4];
-    int numFilesForProgressBar = args[5];
+    int numFilesForProgressBar = args[4];
     var receivePort = ReceivePort();
 
     sendPort!.send(receivePort.sendPort);
@@ -454,21 +461,13 @@ class DriveDownloaderWorker {
     } on PathNotFoundException {}
     var tempCompressedPath = join(localTempPathVar, '$name.tar.gz');
     var tempUncompressedPath = join(localTempPathVar, name);
-    var targetPath = join(localAssetPathVar, name);
-    var oldTargetPathBeforeDelete = join(localTempPathVar, '${name}_old');
     io.Directory(localTempPathVar).createSync(recursive: true);
 
     var driveId = await getIdFromPath(path);
     await downloadFile(driveId, tempCompressedPath);
     await extractTarGz(tempCompressedPath, localTempPathVar, numFilesForProgressBar);
 
-    var toMove = io.Directory(targetPath);
-    if (toMove.existsSync()) {
-      toMove.renameSync(oldTargetPathBeforeDelete);
-    }
-    io.Directory(tempUncompressedPath).renameSync(targetPath);
-    io.Directory(localTempPathVar).deleteSync(recursive: true);
-    sendPort!.send('Done');
+    sendPort!.send(('Done', tempUncompressedPath));
     receivePort.close();
   }
 }
