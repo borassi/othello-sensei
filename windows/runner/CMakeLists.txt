@@ -49,6 +49,7 @@ add_subdirectory(../../engine/evaluatedepthone evaluatedepthone)
 add_subdirectory(../../engine/evaluatederivative evaluatederivative)
 add_subdirectory(../../engine/hashmap hashmap)
 add_subdirectory(../../engine/main main)
+add_subdirectory(../../engine/third_party third_party)
 add_subdirectory(../../engine/thor thor)
 add_subdirectory(../../engine/utils utils)
 
