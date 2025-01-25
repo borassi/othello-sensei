@@ -97,7 +97,6 @@ target_link_libraries(
         files
         game
         sequence
-        GTest::gtest
 )
 
 IF(ENABLE_GOOGLETEST)

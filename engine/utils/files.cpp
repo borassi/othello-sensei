@@ -33,7 +33,7 @@ void CreateFileIfNotExists(const std::string& filepath) {
 
 void CreateEmptyFileWithDirectories(const std::string& filepath) {
   fs::create_directories(fs::path(filepath).remove_filename());
-  std::ofstream(filepath, std::ios::out).close();
+  std::ofstream(filepath, std::ios::out | std::ios::binary).close();
 }
 
 FileOffset FileLength(std::fstream& file) {
@@ -76,7 +76,7 @@ std::vector<std::string> GetAllFiles(const std::string& directory, bool include_
 }
 
 bool FileExists(const std::string& filename) {
-  return std::fstream(filename, std::ios::in).is_open();
+  return std::fstream(filename, std::ios::in | std::ios::binary).is_open();
 }
 
 std::string Filename(const std::string& filepath) {

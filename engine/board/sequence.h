@@ -83,7 +83,7 @@ class Sequence {
   Sequence(const Sequence& other) : Sequence(other.moves_, other.size_) {}
 
   template <typename Iterator>
-  Sequence(Iterator begin, Iterator end) : Sequence(end - begin) {
+  Sequence(Iterator begin, Iterator end) : Sequence((int) (end - begin)) {
     int i = 0;
     for (Iterator it = begin; it != end; ++it) {
       moves_[i++] = *it;

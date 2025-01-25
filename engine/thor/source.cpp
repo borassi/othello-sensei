@@ -116,7 +116,7 @@ GamesList Source<GameGetter>::GetGames(
       result.num_games += games_in_interval;
       FillNextMoves(interval, sequence_size, result.next_moves);
 
-      int games_to_add = max_games - result.examples.size();
+      int games_to_add = (int) (max_games - result.examples.size());
       if (games_to_add <= 0 || games_in_interval == 0) {
         continue;
       }

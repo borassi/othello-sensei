@@ -265,7 +265,9 @@ TEST_F(ThorSourceTest, SaveLoadGamesSmallHash) {
   Source source(kFolder);
   source.SaveGamesSmallHash();
   Source source1(kFolder);
-  EXPECT_EQ(source.games_with_small_hash_, source1.games_with_small_hash_);
+  auto examples = source.GetGames(Sequence("e6"), 100).examples;
+  auto examples1 = source.GetGames(Sequence("e6"), 100).examples;
+  EXPECT_EQ(examples, examples1);
 }
 
 template <typename GameGetter>
