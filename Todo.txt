@@ -72,11 +72,13 @@ HOW TO RELEASE ON WINDOWS:
 - Check that the link on Windows Defender in drive_downloader is updated.
 - flutter build windows
 - Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
-- Comment the BMI2 / POPCNT lines in windows/CMakeLists.txt
+- Comment the BMI2 line in windows/CMakeLists.txt
 - flutter build windows
 - Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-popcnt.dll
+- Comment the POPCNT line in windows/CMakeLists.txt
 - dart run msix:create
 - Install locally by double-clicking on build\windows\x64\runner\Release\othello_sensei.msix
+- Copy the installer to the "installers" folder and rename it to Othello Sensei.msix
 - dart run msix:create --store
 - Upload build\windows\x64\runner\Release\othello_sensei.msix to the store
   https://partner.microsoft.com/en-us/dashboard/products/9N54CS9F3JGP/overview

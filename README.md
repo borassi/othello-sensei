@@ -17,8 +17,16 @@ Download it from the App Store
 
 ### Windows
 
+#### Using the Microsoft Store
+
 Download it from the Microsoft Store
 ([link](https://apps.microsoft.com/detail/9n54cs9f3jgp?hl=en-us&gl=US)).
+
+#### Using the msix file
+
+1. Download the msix installer from 
+   [here](https://github.com/borassi/othello-sensei/blob/main/installers/Othello%20Sensei.msix).
+2. Double click on the installer and follow the instructions.
 
 ### Mac
 
