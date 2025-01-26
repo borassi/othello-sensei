@@ -25,7 +25,9 @@ Download it from the Microsoft Store
 #### Using the exe file
 
 1. Open this [link](installers/Othello%20Sensei.exe).
-2. Double click on the installer and follow the instructions.
+2. Click cmd+shift+S at the same time or click on "..." > "Download" (it might take a few seconds
+   before the download actually starts).
+3. Double click on the installer and follow the instructions.
 
 ### Mac
 
