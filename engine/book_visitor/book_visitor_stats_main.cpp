@@ -46,7 +46,11 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
       visiting_at_depth_[i] = 0;
       evaluations_at_depth_[i] = 0;
     }
-    output_ << "sequence,games,empties,depth,error_black,error_white,uncertainty\n";
+    output_ << "sequence,games,empties,depth,error_black,error_white,uncertainty";
+    for (int i = 1; i < 40; ++i) {
+      output_ << ",error" << i;
+    }
+    output_ << "\n";
   }
 
  protected:
@@ -77,8 +81,11 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
           << depth_ << ","
           << error_black << ","
           << error_white << ","
-          << uncertainty
-          << "\n";
+          << uncertainty;
+      for (int i = 1; i <= depth_; ++i) {
+        output_ << "," << GetErrorAtDepth(i);
+      }
+      output_ << "\n";
     }
     return num_thor_games;
   }
@@ -91,12 +98,16 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
     return visited;
   }
 
+  double GetErrorAtDepth(int i) {
+    return evaluations_at_depth_[i] + evaluations_at_depth_[i-1];
+  }
+
   std::pair<double, double> GetErrors(int depth) {
     double error_black = 0.0;
     double error_white = 0.0;
 
     for (int i = 1; i <= depth_; ++i) {
-      double error = evaluations_at_depth_[i] + evaluations_at_depth_[i-1];
+      double error = GetErrorAtDepth(i);
       if (i % 2 == 1) {
         error_black += error;
       } else {
