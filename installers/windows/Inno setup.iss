@@ -60,7 +60,7 @@ Source: "..\..\build\windows\x64\runner\Release\ui_win-bmi2.dll"; DestDir: "{app
 Source: "..\..\build\windows\x64\runner\Release\ui_win-popcnt.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\windows\x64\runner\Release\url_launcher_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "msvcp14.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "vcruntime140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files

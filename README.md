@@ -22,12 +22,17 @@ Download it from the App Store
 Download it from the Microsoft Store
 ([link](https://apps.microsoft.com/detail/9n54cs9f3jgp?hl=en-us&gl=US)).
 
-#### Using the exe file
+#### Using a package
 
-1. Open this [link](installers/Othello%20Sensei.exe).
-2. Click cmd+shift+S at the same time or click on "..." > "Download" (it might take a few seconds
-   before the download actually starts).
-3. Double click on the installer and follow the instructions.
+Not supported.
+
+I cannot share a production .msix package outside the Microsoft Store because I don't own a signing
+certificate; furthermore, I cannot share a .exe package because it will be blocked by Windows
+Defender.
+
+If you have other ideas on how to share the app in a package, or if you can't install the app using
+the Microsoft Store, please contact me at michele.borassi@gmail.com and we'll try to find a
+solution.
 
 ### Mac
 
