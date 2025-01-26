@@ -20,6 +20,7 @@
 #pragma warning(disable: 4267) // possible loss of data
 #define _LIBCPP_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 #else
+#include <string.h>
 #pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #define _LIBCPP_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK \
   __attribute__((__no_sanitize__("unsigned-integer-overflow")))
@@ -35,7 +36,7 @@ _Size
 loadword(const void* __p)
 {
   _Size __r;
-  std::memcpy(&__r, __p, sizeof(__r));
+  memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
