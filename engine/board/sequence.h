@@ -83,7 +83,7 @@ class Sequence {
   Sequence(const Sequence& other) : Sequence(other.moves_, other.size_) {}
 
   template <typename Iterator>
-  Sequence(Iterator begin, Iterator end) : Sequence(end - begin) {
+  Sequence(Iterator begin, Iterator end) : Sequence((int) (end - begin)) {
     int i = 0;
     for (Iterator it = begin; it != end; ++it) {
       moves_[i++] = *it;
@@ -325,12 +325,11 @@ namespace std {
     std::size_t operator()(const Sequence& s) const {
       std::size_t hash = murmur64(42);
       int last_quick = s.Size() - s.Size() % 8;
-      int i;
       for (int64_t* position = (int64_t*) s.Moves(); position < (int64_t*) (s.Moves() + last_quick); ++position) {
-        hash ^= murmur64(*position) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+        hash = CombineHashes(hash, murmur64(*position));
       }
       for (Square* position = s.Moves() + last_quick; position < s.Moves() + s.Size(); ++position) {
-        hash ^= murmur64(*position) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+        hash = CombineHashes(hash, murmur64(*position));
       }
       return hash;
     }

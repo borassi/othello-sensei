@@ -15,15 +15,24 @@ Download it from the Play Store
 Download it from the App Store
 ([link](https://apps.apple.com/us/app/othello-sensei/id6738860855?platform=iphone)).
 
-WARNING: The app might crash on old iPhones, but I don't have a phone on which I can test it, making
-the problem very hard to fix. If the app crashes on your phone and you can collect the [crash
-logs](https://developer.apple.com/documentation/xcode/acquiring-crash-reports-and-diagnostic-logs),
-please send them to michele.borassi@gmail.com and I'll do my best to fix it!
-
 ### Windows
+
+#### Using the Microsoft Store
 
 Download it from the Microsoft Store
 ([link](https://apps.microsoft.com/detail/9n54cs9f3jgp?hl=en-us&gl=US)).
+
+#### Using a package
+
+Not supported.
+
+I cannot share a production .msix package outside the Microsoft Store because I don't own a signing
+certificate; furthermore, I cannot share a .exe package because it will be blocked by Windows
+Defender.
+
+If you have other ideas on how to share the app in a package, or if you can't install the app using
+the Microsoft Store, please contact me at michele.borassi@gmail.com and we'll try to find a
+solution.
 
 ### Mac
 
@@ -34,7 +43,7 @@ Download it from the App Store
 
 #### Using the dmg file
 
-1. Open this [link](https://github.com/borassi/othello-sensei/blob/main/Othello%20Sensei.dmg).
+1. Open this [link](installers/Othello%20Sensei.dmg).
 2. Click cmd+shift+S at the same time or click on "..." > "Download" (it might take a few seconds
    before the download actually starts).
 3. Install the app from the `.dmg` file, following these

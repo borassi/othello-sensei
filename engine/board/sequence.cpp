@@ -16,7 +16,7 @@
 
 #include "sequence.h"
 
-Sequence::Sequence(const std::string& moves) : Sequence(moves.size() / 2) {
+Sequence::Sequence(const std::string& moves) : Sequence((int) moves.size() / 2) {
   assert(moves.size() % 2 == 0);
   assert(moves.size() <= 120);
   for (int i = 0; i < moves.length(); i += 2) {
@@ -68,7 +68,7 @@ Sequence Sequence::RandomSequence(int size) {
       return RandomSequence(size);
     }
     BitPattern flip = flips[rand() % flips.size()];
-    result.moves_[i] = __builtin_ctzll(SquareFromFlip(flip, b.Player(), b.Opponent()));
+    result.moves_[i] = (Square) __builtin_ctzll(SquareFromFlip(flip, b.Player(), b.Opponent()));
     b.PlayMove(flip);
     if (HaveToPass(b)) {
       b.PlayMove(0);

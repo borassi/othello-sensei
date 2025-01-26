@@ -24,8 +24,8 @@ constexpr int kMutexAtDepthSize = 1 << kMutexAtDepthBits;
 namespace {
 
 std::vector<std::vector<std::mutex>> BuildMutexAtDepth() {
-  std::vector<std::vector<std::mutex>> mutex_at_depth(64);
-  for (int i = 0; i < 64; ++i) {
+  std::vector<std::vector<std::mutex>> mutex_at_depth(120);
+  for (int i = 0; i < 120; ++i) {
     mutex_at_depth[i] = std::vector<std::mutex>(kMutexAtDepthSize);
   }
   return mutex_at_depth;

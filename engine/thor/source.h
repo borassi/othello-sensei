@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <climits>
 #include <cstring>
-#include <gtest/gtest_prod.h>
 #include <random>
 
 #include "../board/sequence.h"
@@ -32,12 +31,22 @@ constexpr int kPlayerLength = 20;
 constexpr int kTournamentLength = 26;
 
 struct GameFile {
-  GameFile(const std::string& path, uint32_t offset, short year) :
-      path(path), file(path), offset(offset), year(year) {}
+  GameFile(const std::string& path, uint32_t offset) :
+      path(path), file(path, std::ios::in | std::ios::binary), offset(offset) {
+    FileOffset length = FileLength(file);
+    if (length % 68 != 16) {
+      std::cout << "WARNING: Wrong length for Thor file " << path << ". Expected 16+68k. Got " << length << ".\n" << std::flush;
+      return;
+    }
+    num_games = (uint32_t) ((length - 16) / 68);
+    file.seekg(10);
+    file.read((char*) &year, sizeof(year));
+  }
 
   std::string path;
-  std::ifstream file;
+  std::fstream file;
   uint32_t offset;
+  uint32_t num_games;
   short year;
 };
 
@@ -99,7 +108,7 @@ class GameGetterOnDisk {
     }
     return result;
   }
-  virtual int NumGames() const { return index_to_file_.size(); }
+  virtual int NumGames() const { return (int) index_to_file_.size(); }
   virtual short MinYear() const { return min_year_; }
   virtual short MaxYear() const { return max_year_; }
   virtual const std::vector<std::string>& Players() const { return players_; }
@@ -116,20 +125,10 @@ class GameGetterOnDisk {
   static constexpr int kHashSize = 5000;
 
   void LoadGames(const std::string& filepath) {
-    std::fstream file(filepath);
-    FileOffset length = FileLength(file);
-    if (length % 68 != 16) {
-      std::cout << "WARNING: Wrong length for Thor file. Expected 16+68k. Got " << length << ".\n";
-      return;
-    }
-    uint32_t num_games = (uint32_t) ((length - 16) / 68);
-    short year;
-    file.seekg(10);
-    file.read((char*) &year, sizeof(year));
-    min_year_ = std::min(min_year_, year);
-    max_year_ = std::max(max_year_, year);
-    game_files_.emplace_back(filepath, index_to_file_.size(), year);
-    index_to_file_.insert(index_to_file_.end(), num_games, game_files_.size() - 1);
+    GameFile& game_file = game_files_.emplace_back(filepath, (uint32_t) index_to_file_.size());
+    min_year_ = std::min(min_year_, game_file.year);
+    max_year_ = std::max(max_year_, game_file.year);
+    index_to_file_.insert(index_to_file_.end(), game_file.num_games, (int) game_files_.size() - 1);
   }
 
   std::vector<std::string> LoadListFromFile(const std::string& filepath, int size) {
@@ -285,16 +284,14 @@ class Source {
   std::string GamesSmallHashPath() const { return folder_ + "/games_with_small_hash.sen"; }
 
   void SaveSortedGames() const {
-    std::ofstream file(SortedGamesPath());
-    uint32_t index;
+    std::ofstream file(SortedGamesPath(), std::ios::binary);
     for (const std::vector<uint32_t>* v : game_indices_) {
       file.write((char*) v->data(), v->size() * sizeof(uint32_t));
     }
   }
 
   void SaveGamesSmallHash() const {
-    std::ofstream file(GamesSmallHashPath());
-    uint32_t index;
+    std::ofstream file(GamesSmallHashPath(), std::ios::binary);
     for (const std::vector<uint32_t> v : games_with_small_hash_) {
       uint32_t size = (uint32_t) v.size();
       file.write((char*) &size, sizeof(uint32_t));
@@ -303,7 +300,6 @@ class Source {
   }
 
  private:
-  FRIEND_TEST(ThorSourceTest, SaveLoadGamesSmallHash);
   std::string folder_;
   GameGetter game_getter_;
   SequenceCanonicalizer* canonicalizer_;
@@ -322,7 +318,7 @@ class Source {
     // 0.49: 0 (here we start to filter)
     // 0.25: 0
     // 0.24: 1
-    return log(0.25 / include_probability) / log(2);
+    return (int) (log(0.25 / include_probability) / log(2));
   }
 
   void LoadGamesSmallHash() {
@@ -354,8 +350,7 @@ class Source {
 
   void LoadSortedGames() {
     std::vector<uint32_t> file = ReadFile<uint32_t>(SortedGamesPath());
-    int position = 0;
-    int num_games = file.size() / game_indices_.size();
+    int num_games = (int) (file.size() / game_indices_.size());
     assert(num_games == game_getter_.NumGames());
 
     for (int i = 0; i < game_indices_.size(); ++i) {
@@ -390,7 +385,7 @@ class Source {
           it, interval.end,
           std::pair<short, Sequence>{game.Year(), next_sequence},
           CmpByYear<GameGetter>(game_getter_));
-      next_moves[next_move] += next_it - it;
+      next_moves[next_move] += (int) (next_it - it);
       it = next_it;
     }
   }

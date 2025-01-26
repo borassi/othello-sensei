@@ -416,7 +416,7 @@ void Book<version>::Print(int start, int end) {
 
 template<int version>
 void Book<version>::Clean() {
-  std::ofstream(IndexFilename(), std::ios::out).close();
+  std::ofstream(IndexFilename(), std::ios::binary | std::ios::out).close();
   for (ValueFile& value_file : value_files_) {
     value_file.Clean();
   }
@@ -461,7 +461,7 @@ std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitP
   player = unique.Player();
   opponent = unique.Opponent();
   auto hash = RepositionHash(HashFull(player, opponent));
-  assert(std::fstream(IndexFilename(), std::ios::in).is_open());
+  assert(std::fstream(IndexFilename(), std::ios::in | std::ios::binary).is_open());
   auto file = IndexFile();
   file.seekg(OffsetToFilePosition(hash));
   HashMapNode node;

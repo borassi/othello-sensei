@@ -86,9 +86,9 @@ namespace std {
   struct hash<Game> {
     std::size_t operator()(const Game& g) const {
       std::size_t hash = std::hash<Sequence>()(g.Moves());
-      hash ^= std::hash<std::string>()(g.Black()) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<std::string>()(g.White()) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<std::string>()(g.Tournament()) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      hash = CombineHashes(hash, HashString(g.Black()));
+      hash = CombineHashes(hash, HashString(g.White()));
+      hash = CombineHashes(hash, HashString(g.Tournament()));
       return hash;
     }
   };
