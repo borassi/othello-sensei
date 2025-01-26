@@ -22,12 +22,10 @@ Download it from the App Store
 Download it from the Microsoft Store
 ([link](https://apps.microsoft.com/detail/9n54cs9f3jgp?hl=en-us&gl=US)).
 
-#### Using the msix file
+#### Using the exe file
 
-1. Open this [link](installers/Othello%20Sensei.msix).
-2. Click CTRL+shift+S at the same time or click on "..." > "Download" (it might take a few seconds
-   before the download actually starts).
-3. Double click on the installer and follow the instructions.
+1. Open this [link](installers/Othello%20Sensei.exe).
+2. Double click on the installer and follow the instructions.
 
 ### Mac
 
