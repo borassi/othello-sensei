@@ -94,6 +94,7 @@ class EvaluationState : public TreeNode {
     annotations_.median_eval = final_eval;
     annotations_.eval_best_line = final_eval;
     annotations_.median_eval_best_line = final_eval;
+    annotations_.provenance = EVALUATE;
     UpdateSavedAnnotations();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
