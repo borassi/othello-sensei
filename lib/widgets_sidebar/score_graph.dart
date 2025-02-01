@@ -27,9 +27,27 @@ import '../widgets_utils/hide_inactive.dart';
 class ScoreGraph extends HideInactiveWidget {
   const ScoreGraph({super.key});
 
-  BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY, var moveToHighlight) {
+  BarChartGroupData generateGroupData(int x, List<double> scores, ColorScheme colorScheme, double height, double width, double maxY, var moveToHighlight) {
     var barWidth = width / 61;
     var score = x >= scores.length ? double.nan : scores[x];
+    Color color = colorScheme.background;
+    Color? borderColor;
+    if (!GlobalState.preferences.get('Black and white bars in the graph')) {
+      color = x == moveToHighlight ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
+    } else {
+      borderColor = colorScheme.surface;
+      if (x == moveToHighlight) {
+        color = colorScheme.onSecondaryContainer;
+      } else if (score > 1) {
+        color = colorScheme.surface;
+        borderColor = colorScheme.surfaceVariant;
+      } else if (score < -1) {
+        color = colorScheme.surfaceVariant;
+      } else {
+        color = colorScheme.onPrimaryContainer;
+      }
+    }
+
     double fromY;
     double toY;
     if (score.isNaN) {
@@ -48,7 +66,8 @@ class ScoreGraph extends HideInactiveWidget {
           fromY: fromY,
           toY: toY,
           width: barWidth,
-          color: x == moveToHighlight ? highlightColor : standardColor,
+          color: color,
+          borderSide: borderColor != null ? BorderSide(color: borderColor) : null,
         ),
         BarChartRodData(
           fromY: -maxY,
@@ -62,8 +81,6 @@ class ScoreGraph extends HideInactiveWidget {
 
   @override
   Widget buildChild(BuildContext context) {
-    var highlightColor = Theme.of(context).colorScheme.onSecondaryContainer;
-    var standardColor = Theme.of(context).colorScheme.onPrimaryContainer;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) => ListenableBuilder(
         listenable: GlobalState.globalAnnotations,
@@ -113,7 +130,7 @@ class ScoreGraph extends HideInactiveWidget {
               baselineY: 0,
               borderData: FlBorderData(show: false),
               gridData: const FlGridData(show: false),
-              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY + 1, move)),
+              barGroups: List.generate(61, (i) => generateGroupData(i, scores, Theme.of(context).colorScheme, height, width, maxY + 1, move)),
               extraLinesData: ExtraLinesData(
                 extraLinesOnTop: false,
                 horizontalLines: List.generate(

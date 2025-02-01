@@ -211,6 +211,7 @@ class Settings extends StatelessWidget {
     'Controls position',
     'Margin size',
     'Last move marker',
+    'Black and white bars in the graph',
     'Show unsupported CPU at startup',
   ];
 

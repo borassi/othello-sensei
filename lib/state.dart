@@ -320,6 +320,7 @@ class PreferencesState with ChangeNotifier {
     'Controls position': 'App bar',
     'Margin size': 'Small',
     'Last move marker': true,
+    'Black and white bars in the graph': false,
     'Show extra data in evaluate mode': true,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
