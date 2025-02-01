@@ -82,6 +82,14 @@ class ParseFlags {
       return default_value;
     }
   }
+  double GetDoubleFlag(const std::string& name) { return stof(GetFlag(name)); }
+  double GetDoubleFlagOrDefault(const std::string& name, double default_value) {
+    if (flags_.count(name)) {
+      return GetDoubleFlag(name);
+    } else {
+      return default_value;
+    }
+  }
   int NumFlags() { return (int) flags_.size(); }
 
  private:

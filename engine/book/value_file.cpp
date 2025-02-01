@@ -53,7 +53,7 @@ std::vector<char> ValueFile::Remove(BookFileOffset offset) {
 }
 
 std::vector<char> ValueFile::Get(BookFileOffset offset) const {
-  auto file = GetFile();
+  std::fstream& file = GetFileCached();
   return Get(offset, file);
 }
 
@@ -65,7 +65,7 @@ std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream& file) cons
 }
 
 void ValueFile::Print() {
-  auto file = GetFile();
+  std::fstream& file = GetFileCached();
   auto elements = Elements();
   std::vector<char> content(elements);
   file.read(&content[0], elements * sizeof(char));
@@ -80,7 +80,15 @@ void ValueFile::Print() {
 }
 
 std::fstream ValueFile::GetFile() const {
+  cached_file_ = std::nullopt;
   return std::fstream(filename_, std::ios::binary | std::ios::out | std::ios::in);
+}
+
+std::fstream& ValueFile::GetFileCached() const {
+  if (!cached_file_.has_value()) {
+    cached_file_ = std::make_optional(GetFile());
+  }
+  return *cached_file_;
 }
 
 void ValueFile::Seek(BookFileOffset offset, std::fstream& file) const {

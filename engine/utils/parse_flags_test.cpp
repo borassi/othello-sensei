@@ -31,10 +31,11 @@ TEST(ParseFlags, SingleFlag) {
   EXPECT_EQ(parse_flags.GetFlag("approx"), "");
 }
 TEST(ParseFlags, ManyFlags) {
-  char const* flags[] = {"run_my_program", "--approx", "--n_threads", "2", "--tasks=100", "--happy", "--glad=True", "--tired=FALSE"};
+  char const* flags[] = {"run_my_program", "--approx", "--n_threads", "2", "--tasks=100", "--dbl=2.0", "--happy", "--glad=True", "--tired=FALSE"};
   ParseFlags parse_flags(8, flags);
   EXPECT_THROW(parse_flags.GetFlag("no_flag"), ParseFlagsException);
   EXPECT_EQ(parse_flags.GetFlag("approx"), "");
+  EXPECT_DOUBLE_EQ(parse_flags.GetDoubleFlag("dbl"), 2.0);
   EXPECT_EQ(parse_flags.GetFlag("n_threads"), "2");
   EXPECT_EQ(parse_flags.GetIntFlag("n_threads"), 2);
   EXPECT_EQ(parse_flags.GetIntFlag("tasks"), 100);

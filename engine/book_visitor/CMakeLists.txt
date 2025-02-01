@@ -89,6 +89,23 @@ IF(ENABLE_GOOGLETEST)
 ENDIF()
 
 add_executable(
+        reduce_book_main
+        reduce_book_main.cpp
+)
+
+target_link_libraries(
+        reduce_book_main
+        LINK_PRIVATE
+        book
+        visitor
+        constants
+        misc
+        parse_flags
+        thor
+        win_probability
+)
+
+add_executable(
         book_visitor_stats_main
         book_visitor_stats_main.cpp
 )

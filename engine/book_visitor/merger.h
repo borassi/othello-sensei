@@ -18,7 +18,7 @@
 #include "../book/book.h"
 
 template<int source_version = kBookVersion, int target_version = kBookVersion>
-class BookVisitorMerge : public BookVisitorNoTranspositions<source_version> {
+class BookVisitorMerge : public BookVisitorWithProgress<source_version> {
  public:
   typedef BookVisitor<source_version> BookVisitor;
   typedef Book<source_version> BookSource;
@@ -32,7 +32,7 @@ class BookVisitorMerge : public BookVisitorNoTranspositions<source_version> {
       BookTarget& destination,
       void (*leaf_func)(Node*) = nullptr,
       void (*internal_func)(Node*) = nullptr) :
-      BookVisitorNoTranspositions<source_version>(source),
+      BookVisitorWithProgress<source_version>(source),
       destination_(destination),
       leaf_func_(leaf_func),
       internal_func_(internal_func) {
@@ -71,16 +71,16 @@ class BookVisitorMerge : public BookVisitorNoTranspositions<source_version> {
     }
   }
 
-  void VisitLeaf(Node& node) override {
+  virtual void VisitLeaf(Node& node) override {
     FirstVisit(node, leaf_func_);
   }
 
-  bool PreVisitInternalNode(Node& node) override {
+  virtual bool PreVisitInternalNode(Node& node) override {
     FirstVisit(node, internal_func_);
     return true;
   }
 
-  void PostVisitInternalNode(Node& node) override {
+  virtual void PostVisitInternalNode(Node& node) override {
     // Node is the source node
     auto* destination_node = destination_.Mutable(node.ToBoard());
     assert(destination_node);
