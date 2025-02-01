@@ -26,23 +26,30 @@ using ::testing::UnorderedElementsAre;
 
 TEST(BookVisitor, IteratorBasic) {
   std::vector<std::string> lines = {"e6f4", "e6f4c3"};
-  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
+  Book book = BookWithPositions(lines, {
+      {Board("e6f4c3"), 2},
+      {Board("e6f4c3c4"), -2},
+      {Board("e6f4c3c6"), -2},
+      {Board("e6f4c3d6"), -2},
+      {Board("e6f4c3e7"), 2},
+    },
+    {}, {}, kTempDir, true);
   book.Commit();
 
   BookVisitorToVectorNoTransposition visitor(book);
   visitor.VisitString("e6f4");
   EXPECT_THAT(visitor.Get(), UnorderedElementsAre(
       GetVisitedNode(book, "", "e6f4", FIRST_VISIT),
-      GetVisitedNode(book, "", "e6f4c3", FIRST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3", FIRST_VISIT, 2),
       GetVisitedNode(book, "", "e6f4d3", LEAF),
       GetVisitedNode(book, "", "e6f4e3", LEAF),
       GetVisitedNode(book, "", "e6f4f3", LEAF),
       GetVisitedNode(book, "", "e6f4g3", LEAF),
-      GetVisitedNode(book, "", "e6f4c3c4", LEAF),
-      GetVisitedNode(book, "", "e6f4c3c6", LEAF),
-      GetVisitedNode(book, "", "e6f4c3d6", LEAF),
-      GetVisitedNode(book, "", "e6f4c3e7", LEAF),
-      GetVisitedNode(book, "", "e6f4c3", LAST_VISIT),
+      GetVisitedNode(book, "", "e6f4c3c4", LEAF, 2),
+      GetVisitedNode(book, "", "e6f4c3c6", LEAF, 2),
+      GetVisitedNode(book, "", "e6f4c3d6", LEAF, 2),
+      GetVisitedNode(book, "", "e6f4c3e7", LEAF, 2, 4),
+      GetVisitedNode(book, "", "e6f4c3", LAST_VISIT, 2),
       GetVisitedNode(book, "", "e6f4", LAST_VISIT)
   ));
   CheckVectorHasRightOrder(visitor.Get());
@@ -50,7 +57,7 @@ TEST(BookVisitor, IteratorBasic) {
 
 TEST(BookVisitor, DoesNotRepeatFirstMove) {
   std::vector<std::string> lines = {""};
-  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
+  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{}, kTempDir, true);
   book.Commit();
 
   BookVisitorToVectorNoTransposition visitor(book);
@@ -64,7 +71,7 @@ TEST(BookVisitor, DoesNotRepeatFirstMove) {
 
 TEST(BookVisitor, DoesNotRepeatDiagonal) {
   std::vector<std::string> lines = {"e6f6f5"};
-  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{});
+  Book book = BookWithPositions(lines, /*evals=*/{}, /*skips=*/{}, /*visited=*/{}, kTempDir, true);
   book.Commit();
 
   BookVisitorToVectorNoTransposition visitor(book);
@@ -76,7 +83,7 @@ TEST(BookVisitor, DoesNotRepeatDiagonal) {
   ));
 }
 
-TEST(BookVisitor, IteratorTraspositions) {
+TEST(BookVisitor, IteratorTranspositions) {
   Book<> book(kTempDir);
   book.Clean();
   book.Add(*TestTreeNode(Board("e6f4c3c4"), 0, -63, 63, 10));
@@ -84,11 +91,11 @@ TEST(BookVisitor, IteratorTraspositions) {
 
   std::vector<Node> children1;
   for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4"))) {
-    children1.push_back(*RandomTestTreeNode(child));
+    children1.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   std::vector<Node> children2;
   for (Board child : GetNextBoardsWithPass(Board("e6f4d3c4"))) {
-    children2.push_back(*RandomTestTreeNode(child));
+    children2.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   book.AddChildren(Board("e6f4c3c4"), children1);
   book.AddChildren(Board("e6f4d3c4"), children2);
@@ -117,23 +124,23 @@ TEST(BookVisitor, IteratorTraspositions) {
   CheckVectorHasRightOrder(visitor.Get());
 }
 
-TEST(BookVisitor, IteratorTraspositionsChild) {
+TEST(BookVisitor, IteratorTranspositionsChild) {
   Book<> book(kTempDir);
   book.Clean();
-  book.Add(*TestTreeNode(Board("e6f4c3c4"), 0, -63, 63, 10));
-  book.Add(*TestTreeNode(Board("e6f4d3c4"), 0, -63, 63, 10));
+  book.Add(*TestTreeNode(Board("e6f4c3c4"), 0, -63, 63, 10, 0));
+  book.Add(*TestTreeNode(Board("e6f4d3c4"), 0, -63, 63, 10, 0));
 
   std::vector<Node> children1;
   for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4"))) {
-    children1.push_back(*TestTreeNode(child, 0, -63, 63, 10));
+    children1.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   std::vector<Node> children2;
   for (Board child : GetNextBoardsWithPass(Board("e6f4d3c4"))) {
-    children2.push_back(*TestTreeNode(child, 0, -63, 63, 10));
+    children2.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   std::vector<Node> children3;
   for (Board child : GetNextBoardsWithPass(Board("e6f4c3c4d3"))) {
-    children3.push_back(*RandomTestTreeNode(child));
+    children3.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   book.AddChildren(Board("e6f4c3c4"), children1);
   book.AddChildren(Board("e6f4d3c4"), children2);
@@ -175,11 +182,11 @@ TEST(BookVisitor, WorksWithPass) {
   book.Clean();
   std::string sequence = "e6f6g6g7g8h8c4f8f5h6h7g5h5h4f7";
   Board start(sequence);
-  book.Add(*TestTreeNode(start, 0, -63, 63, 10));
+  book.Add(*TestTreeNode(start, 0, -63, 63, 10, 0));
 
   std::vector<Node> children;
   for (Board child : GetNextBoardsWithPass(start)) {
-    children.push_back(*TestTreeNode(child, 0, -63, 63, 10));
+    children.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   book.AddChildren(start, children);
 
@@ -202,12 +209,12 @@ TEST(BookVisitor, WorksWithPass) {
 TEST(BookVisitor, VisitAll) {
   Book<> book(kTempDir);
   book.Clean();
-  book.Add(*TestTreeNode(Board("e6f4"), 0, -63, 63, 10));
+  book.Add(*TestTreeNode(Board("e6f4"), 0, -63, 63, 10, 0));
   book.Add(*TestTreeNode(Board("e6f6"), 0, -63, 63, 10));
 
   std::vector<Node> children;
   for (Board child : GetNextBoardsWithPass(Board("e6f4"))) {
-    children.push_back(*TestTreeNode(child, 0, -63, 63, 10));
+    children.push_back(*TestTreeNode(child, 0, -63, 63, 10, 0));
   }
   book.AddChildren(Board("e6f4"), children);
 

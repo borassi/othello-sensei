@@ -79,11 +79,16 @@ class TestBook {
   std::unordered_map<Board, TestBookTreeNode> nodes_;
 };
 
-std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited) {
+std::shared_ptr<TreeNode> TestTreeNode(Board b, Eval leaf_eval, Eval weak_lower, Eval weak_upper, NVisited n_visited, Eval fixed_eval = kLessThenMinEval) {
   std::shared_ptr<TreeNode> t(new TreeNode());
   t->Reset(b.Player(), b.Opponent(), 4, 0);
   t->SetLeafEval(EvalToEvalLarge(leaf_eval), 4);
   t->UpdateLeafWeakLowerUpper(weak_lower, weak_upper);
+  if (fixed_eval != kLessThenMinEval) {
+    assert(fixed_eval % 2 == 0);
+    t->SetLower(fixed_eval);
+    t->SetUpper(fixed_eval);
+  }
   t->AddDescendants(n_visited);
   return t;
 }
@@ -154,12 +159,14 @@ Book<version> BookWithPositions(
     const std::unordered_map<Board, int>& evals = {},
     const std::unordered_set<std::pair<Board, Board>, PairHash>& skip = {},
     const std::unordered_map<Board, int>& visited = {},
-    const std::string dir = kTempDir) {
+    const std::string dir = kTempDir,
+    bool are_evals_fixed = false) {
   Book<> book(dir);
   book.Clean();
 
   auto first_line = lines[0];
-  auto start = book.Add(*TestTreeNode(Board(first_line), 0, -63, 63, GetOrDefault(visited, Board(first_line), 1)));
+  auto eval_fixed = are_evals_fixed ? GetOrDefault(evals, Board(first_line), 0) : kLessThenMinEval;
+  auto start = book.Add(*TestTreeNode(Board(first_line), 0, -63, 63, GetOrDefault(visited, Board(first_line), 1), eval_fixed));
 
   for (const auto& line : lines) {
     NVisited total_visited = 0;
@@ -177,7 +184,8 @@ Book<version> BookWithPositions(
       }
       int eval = GetOrDefault(evals, child, 41);
       int n_visited = GetOrDefault(visited, child, 1);
-      children.push_back(*TestTreeNode(child, eval, -63, 63, n_visited));
+      auto eval_fixed = are_evals_fixed ? GetOrDefault(evals, child, 0) : kLessThenMinEval;
+      children.push_back(*TestTreeNode(child, eval, -63, 63, n_visited, eval_fixed));
       total_visited += n_visited;
     }
     auto leaf = LeafToUpdate<typename Book<version>::BookNode>::Leaf(parents);

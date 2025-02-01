@@ -602,13 +602,17 @@ class TreeNode : public Node {
     return IsLeafNoLock();
   }
 
+  virtual bool IsLockableLeaf(Eval solved_lower, Eval solved_upper) {
+    return IsLeafNoLock() && !Node::IsSolved(solved_lower, solved_upper, false);
+  }
+
   // Locks a leaf by setting n_threads_working_ = 1. If n_threads_working_ > 0,
   // the lock fails. We should never have n_threads_working_ > 1 for a leaf.
   bool TryLockLeaf(Eval solved_lower, Eval solved_upper) {
     auto guard = GetGuard();
     // Some other thread has added this node's children or solved this node
     // before locking it.
-    if (!IsLeafNoLock() || Node::IsSolved(solved_lower, solved_upper, false)) {
+    if (!IsLockableLeaf(solved_lower, solved_upper)) {
       return false;
     }
     uint8_t expected = 0;

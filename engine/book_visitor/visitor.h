@@ -23,19 +23,17 @@
 #include "../board/get_moves.h"
 #include "../board/sequence.h"
 
-enum NodeType {
-  LEAF = 0,
-  FIRST_VISIT = 1,
-  LAST_VISIT = 2,
-};
-
 template<int version = kBookVersion>
 class BookVisitor {
  public:
   typedef Book<version> Book;
   typedef typename Book::BookNode BookNode;
 
-  BookVisitor(const Book& book) : book_(book), depth_(0) {}
+  BookVisitor(const Book& book) : book_(book), depth_(0) {
+    for (int i = 0; i < 120; ++i) {
+      evaluations_at_depth_[i] = 0;
+    }
+  }
 
   virtual void VisitAll() {
     for (const Board& root : book_.Roots()) {
@@ -56,6 +54,7 @@ class BookVisitor {
   virtual void Visit(const Board& board) {
     std::unique_ptr<Node> node = book_.Get(board);
     assert(node);
+    evaluations_at_depth_[depth_] = node->GetEval();
     if (node->IsLeaf()) {
       VisitLeaf(*node);
       return;
@@ -83,12 +82,33 @@ class BookVisitor {
       }
     }
     PostVisitInternalNode(*node);
+    evaluations_at_depth_[depth_] = 0;
+  }
+
+  double GetErrorAtDepth(int i) {
+    return evaluations_at_depth_[i] + evaluations_at_depth_[i-1];
+  }
+
+  std::pair<double, double> GetErrors() {
+    double error_black = 0.0;
+    double error_white = 0.0;
+
+    for (int i = 1; i <= depth_; ++i) {
+      double error = GetErrorAtDepth(i);
+      if (i % 2 == 1) {
+        error_black += error;
+      } else {
+        error_white += error;
+      }
+    }
+    return {error_black, error_white};
   }
 
  protected:
   const Book& book_;
   Sequence sequence_;
   int depth_;
+  double evaluations_at_depth_[120];
 
   virtual void VisitLeaf(Node& node) {};
   virtual bool PreVisitInternalNode(Node& node) { return true; };
@@ -104,7 +124,7 @@ class BookVisitorNoTranspositions : public BookVisitor<version> {
 
   BookVisitorNoTranspositions(const Book& book) : BookVisitor(book) {}
 
-  void Visit(const Board& board) override {
+  virtual void Visit(const Board& board) override {
     if (!visited_.insert(board.Unique()).second) {
       return;
     }
@@ -113,6 +133,62 @@ class BookVisitorNoTranspositions : public BookVisitor<version> {
 
  private:
   std::unordered_set<Board> visited_;
+};
+
+template<int version = kBookVersion>
+class BookVisitorWithProgress : public BookVisitor<kBookVersion> {
+ public:
+  typedef BookVisitor<kBookVersion> BookVisitor;
+  using typename BookVisitor::Book;
+  using typename BookVisitor::BookNode;
+  using BookVisitor::book_;
+
+  BookVisitorWithProgress(const Book& book) : BookVisitor(book), actually_visited_(0) {
+    to_be_visited_ = book_.Get(Board())->GetNVisited();
+    for (int i = 0; i < 120; ++i) {
+      visited_at_depth_[i] = 0;
+      visiting_at_depth_[i] = 0;
+    }
+    std::cout << "Book size: " << book_.Size() << "\n";
+  }
+
+  virtual void Visit(const Board& board) override {
+    ++actually_visited_;
+    if (actually_visited_ % 100000 == 0) {
+      NVisited visited = GetVisited();
+      double time = time_.Get();
+      double total_time = time / visited * to_be_visited_;
+      std::cout << "Done " << PrettyPrintDouble(visited) << " of " << PrettyPrintDouble(to_be_visited_) << "\n";
+      std::cout << "  Sequence: " << sequence_ << "\n";
+      std::cout << "  Total time: " << total_time << "\n";
+      std::cout << "  Remaining time: " << total_time - time << "\n";
+      std::cout << "  Depth: " << (int) depth_ << "\n";
+    }
+    BookVisitor::Visit(board);
+    // TODO: Avoid this Get.
+    visited_at_depth_[depth_] += book_.Get(board)->GetNVisited();
+    visited_at_depth_[depth_ + 1] = 0;
+    evaluations_at_depth_[depth_] = 0;
+  }
+
+ protected:
+  using BookVisitor::sequence_;
+  using BookVisitor::depth_;
+
+  NVisited GetVisited() {
+    NVisited visited;
+    for (int i = 0; i < 120; ++i) {
+      visited += visited_at_depth_[i];
+    }
+    return visited;
+  }
+
+ private:
+  ElapsedTime time_;
+  NVisited to_be_visited_;
+  NVisited actually_visited_;
+  NVisited visiting_at_depth_[120];
+  NVisited visited_at_depth_[120];
 };
 
 #endif  // BOOK_VISITOR_VISITOR_H

@@ -228,6 +228,10 @@ class BookTreeNode : public TreeNode {
     return true;
   }
 
+  virtual bool IsLockableLeaf(Eval solved_lower, Eval solved_upper) override {
+    return IsLeafNoLock();
+  }
+
  protected:
   std::optional<std::lock_guard<std::mutex>> GetGuard() const override {
     return std::nullopt;

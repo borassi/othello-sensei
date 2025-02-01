@@ -23,29 +23,21 @@
 #include "../utils/misc.h"
 #include "../utils/parse_flags.h"
 
-class BookVisitorStats : public BookVisitor<kBookVersion> {
+class BookVisitorStats : public BookVisitorWithProgress<kBookVersion> {
  public:
-  typedef BookVisitor<kBookVersion> BookVisitor;
-  using typename BookVisitor::Book;
-  using typename BookVisitor::BookNode;
-  using BookVisitor::book_;
+  typedef BookVisitorWithProgress<kBookVersion> BookVisitorWithProgress;
+  using typename BookVisitorWithProgress::Book;
+  using typename BookVisitorWithProgress::BookNode;
+  using BookVisitorWithProgress::book_;
 
   BookVisitorStats(const Book& book, const Thor<GameGetterInMemory>& archive, const std::string& output_path) :
-      BookVisitor(book),
-      actually_visited_(0),
+      BookVisitorWithProgress(book),
       archive_(archive),
       thor_games_(0) {
-    to_be_visited_ = book_.Get(Board())->GetNVisited();
     // 8754564 / 286170000
-    std::cout << "Book size: " << book_.Size() << "\n";
     std::cout << "Archive games: "
               << archive_.GetGamesFromAllSources(Sequence(""), 1).num_games << "\n";
     output_.open(output_path);
-    for (int i = 0; i < 120; ++i) {
-      visited_at_depth_[i] = 0;
-      visiting_at_depth_[i] = 0;
-      evaluations_at_depth_[i] = 0;
-    }
     output_ << "sequence,games,empties,depth,error_black,error_white,uncertainty";
     for (int i = 1; i < 40; ++i) {
       output_ << ",error" << i;
@@ -58,22 +50,11 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
   using BookVisitor::depth_;
 
   int VisitNode(Node& node) {
-    evaluations_at_depth_[depth_] = node.GetEval();
-    ++actually_visited_;
     int num_thor_games = archive_.GetGames<false>("OthelloQuest", sequence_).num_games;
-    if (actually_visited_ % 100000 == 0) {
-      NVisited visited = GetVisited();
-      double time = time_.Get();
-      double total_time = time / visited * to_be_visited_;
-      std::cout << "Done " << PrettyPrintDouble(visited) << " of " << PrettyPrintDouble(to_be_visited_) << "\n";
-      std::cout << "  Sequence: " << sequence_ << "\n";
-      std::cout << "  Total time: " << total_time << "\n";
-      std::cout << "  Remaining time: " << total_time - time << "\n";
-      std::cout << "  Depth: " << (int) depth_ << "\n";
-    }
+
     auto uncertainty = node.Uncertainty();
     if (num_thor_games > 0) {
-      auto [error_black, error_white] = GetErrors(depth_);
+      auto [error_black, error_white] = GetErrors();
       output_
           << sequence_ << ","
           << num_thor_games << ","
@@ -90,57 +71,17 @@ class BookVisitorStats : public BookVisitor<kBookVersion> {
     return num_thor_games;
   }
 
-  NVisited GetVisited() {
-    NVisited visited;
-    for (int i = 0; i < 120; ++i) {
-      visited += visited_at_depth_[i];
-    }
-    return visited;
-  }
-
-  double GetErrorAtDepth(int i) {
-    return evaluations_at_depth_[i] + evaluations_at_depth_[i-1];
-  }
-
-  std::pair<double, double> GetErrors(int depth) {
-    double error_black = 0.0;
-    double error_white = 0.0;
-
-    for (int i = 1; i <= depth_; ++i) {
-      double error = GetErrorAtDepth(i);
-      if (i % 2 == 1) {
-        error_black += error;
-      } else {
-        error_white += error;
-      }
-    }
-    return {error_black, error_white};
-  }
-
   void VisitLeaf(Node& node) override {
     VisitNode(node);
-    visited_at_depth_[depth_] += node.GetNVisited();
   }
 
   bool PreVisitInternalNode(Node& node) override {
     return VisitNode(node) > 0;
   }
 
-  void PostVisitInternalNode(Node& node) override {
-    visited_at_depth_[depth_] += node.GetNVisited();
-    visited_at_depth_[depth_ + 1] = 0;
-    evaluations_at_depth_[depth_] = 0;
-  }
-
  private:
   const Thor<GameGetterInMemory>& archive_;
-  ElapsedTime time_;
   NVisited thor_games_;
-  NVisited to_be_visited_;
-  NVisited visiting_at_depth_[120];
-  NVisited visited_at_depth_[120];
-  double evaluations_at_depth_[120];
-  NVisited actually_visited_;
   std::ofstream output_;
 };
 
