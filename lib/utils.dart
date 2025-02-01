@@ -142,21 +142,26 @@ T minIgnoreNaN<T extends num>(T x, T y) {
   return x.isNaN ? y : (y.isNaN ? x : min(x, y));
 }
 
-String formatEval(double eval, {int roundIfGE = 100}) {
+bool roundEvaluations(bool inError) {
+  return
+    GlobalState.preferences.get("Round evaluations") == 'Always' ||
+    (GlobalState.preferences.get("Round evaluations") == 'Only errors' && inError);
+}
+
+String formatEval(double eval, bool inError, {int roundIfGE = 100}) {
   if (eval.isNaN) {
     return '-';
   }
-  return eval.toStringAsFixed(
-      GlobalState.preferences.get("Round evaluations") || eval.abs() >= roundIfGE ? 0 : 2);
+  return eval.toStringAsFixed(roundEvaluations(inError) || eval.abs() >= roundIfGE ? 0 : 2);
 }
 
-double getEvalFromAnnotations(Annotations annotation, bool black, {bool bestLine = false} ) {
+double getEvalFromAnnotations(Annotations annotation, bool black, bool inError, {bool bestLine = false}) {
   if (!annotation.valid) {
     return double.nan;
   }
   double multiplier = (annotation.black_turn == black ? 1 : -1);
   double value;
-  if (GlobalState.preferences.get('Round evaluations')) {
+  if (roundEvaluations(inError)) {
     if (bestLine) {
       value = annotation.median_eval_best_line.toDouble();
     } else {

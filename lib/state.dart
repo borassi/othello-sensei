@@ -310,9 +310,14 @@ class AnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
-  double getEval() {
-    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn);
+  double getEval(bool inError) {
+    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn, inError);
   }
+}
+
+class InvalidPreferenceException implements Exception {
+  String cause;
+  InvalidPreferenceException(this.cause);
 }
 
 class PreferencesState with ChangeNotifier {
@@ -329,7 +334,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Spend half time on positions worse by': 6.0,
-    'Round evaluations': false,
+    'Round evaluations': 'Never',
     'Use book': true,
     'Seconds/position in game analysis': 1.0,
     'Analyze on paste': true,
@@ -349,13 +354,26 @@ class PreferencesState with ChangeNotifier {
   };
   static const Map<String, List<String>> preferencesValues = {
     'Back button action': ['Undo', 'Close app'],
+    'Round evaluations': ['Never', 'Only errors', 'Always'],
     'Controls position': ['App bar', 'Side bar'],
     'Margin size': ['None', 'Small', 'Large', 'Coordin'],
     'Pressing « from the first position': ['Do nothing', 'Ask', 'New game'],
   };
   late final SharedPreferences _preferences;
 
-  PreferencesState._initialize(this._preferences);
+  PreferencesState._initialize(this._preferences) {
+    for (String name in _preferences.getKeys()) {
+      try {
+        _checkPreferenceNameAndValue(name, _preferences.get(name));
+      } on InvalidPreferenceException {
+        if (defaultPreferences.containsKey(name)) {
+          set(name, defaultPreferences[name]);
+        } else {
+          _preferences.remove(name);
+        }
+      }
+    }
+  }
 
   static Future<PreferencesState> create() async {
     var preferences = await SharedPreferences.getInstance();
@@ -363,8 +381,9 @@ class PreferencesState with ChangeNotifier {
   }
 
   dynamic get(String name) {
-    _checkPreferenceName(name);
-    return _preferences.get(name) ?? defaultPreferences[name];
+    var value = _preferences.get(name) ?? defaultPreferences[name];
+    _checkPreferenceNameAndValue(name, value);
+    return value;
   }
 
   void fillEvaluateParams() {
@@ -417,13 +436,13 @@ class PreferencesState with ChangeNotifier {
       case const (List<String>):
         await _preferences.setStringList(name, value);
       default:
-        throw Exception('Invalid preference type ${value.runtimeType} for value $value');
+        throw InvalidPreferenceException('Invalid preference type ${value.runtimeType} for value $value');
     }
   }
 
   void _checkPreferenceName(String name) {
     if (!defaultPreferences.containsKey(name)) {
-      throw Exception('Invalid preference name $name');
+      throw InvalidPreferenceException('Invalid preference name $name');
     }
   }
 
@@ -431,7 +450,10 @@ class PreferencesState with ChangeNotifier {
     _checkPreferenceName(name);
     var validValues = preferencesValues[name];
     if (!(validValues?.contains(value) ?? true)) {
-      throw Exception('Invalid value $value for preference $name. Valid values: $validValues');
+      throw InvalidPreferenceException('Invalid value $value for preference $name. Valid values: $validValues');
+    }
+    if (value.runtimeType != defaultPreferences[name].runtimeType) {
+      throw InvalidPreferenceException('Invalid type ${value.runtimeType} for preference $name. Expected: ${defaultPreferences[name].runtimeType}');
     }
   }
 }
@@ -473,7 +495,7 @@ class GlobalAnnotationState with ChangeNotifier {
          child = child.ref.next_sibling) {
       bestEval = max(bestEval, -getEvalFromAnnotations(
           child.ref,
-          child.ref.black_turn));
+          child.ref.black_turn, false));
     }
     notifyListeners();
   }
@@ -504,7 +526,7 @@ class GlobalAnnotationState with ChangeNotifier {
       if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
         continue;
       }
-      scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
+      scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
       if (lastMove == -1 && (
           annotation.ref.next_state_in_analysis == nullptr
           || annotation.ref.next_state_in_analysis != annotation.ref.next_state_played

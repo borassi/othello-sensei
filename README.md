@@ -158,7 +158,7 @@ settings (but the evaluation will be slower).
 
 ### Can I increase the font size?
 
-You can enlarge the evaluations by enabling the setting "Round evaluations" and disabling the
+You can enlarge the evaluations by setting "Round evaluations" to "Always" and disabling the
 setting "Show extra data in evaluate mode". You can also make the board and text slightly larger by
 setting "Margin size" to "None".
 

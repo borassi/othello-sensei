@@ -90,14 +90,14 @@ class Annotations extends HideInactiveWidget {
       return const Text("");
     }
     var annotation = annotations.annotations!;
-    var eval = annotations.getEval();
+    var eval = annotations.getEval(false);
     var bestEval = GlobalState.globalAnnotations.bestEval;
 
     var delta = GlobalState.preferences.get('Highlight distance from best move');
     var bestMoveGreen = GlobalState.preferences.get('Best move green, other yellow');
     var color = (eval > bestEval - delta) != bestMoveGreen ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
-    String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';
+    String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs(), false)}';
     String line1;
     String line2;
     String line3 = '';
@@ -118,7 +118,7 @@ class Annotations extends HideInactiveWidget {
     line3 += prettyPrintDouble((annotation.descendants + annotation.descendants_book).toDouble());
     var archive = MainApp.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0;
     var showExtra = archive || GlobalState.preferences.get('Show extra data in evaluate mode');
-    var roundEvaluation = GlobalState.preferences.get('Round evaluations');
+    var roundEvaluation = GlobalState.preferences.get('Round evaluations') != 'Never';
 
 
     if (archive) {
