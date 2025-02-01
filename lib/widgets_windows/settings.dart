@@ -210,6 +210,7 @@ class Settings extends StatelessWidget {
   static const _appearancePreferences = [
     'Controls position',
     'Margin size',
+    'Last move marker',
     'Show unsupported CPU at startup',
   ];
 

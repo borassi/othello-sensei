@@ -37,6 +37,7 @@ Widget getCase(BuildContext context, bool black) {
           255,
           () => {},
           () => {},
+          false
         ),
         Text(
           text,

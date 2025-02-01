@@ -7,6 +7,7 @@ Usability / bugs
 - P1 TINY Re-evaluate a position even after it was analyzed.
 - P1 TINY Round lost disks.
 - P1 TINY Black / white bars in the graph (Black = Black is ahead).
+- P1 SMALL Should we show lost disks instead of error?
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
 - P4 SMALL Undo / redo in the side bar by default?

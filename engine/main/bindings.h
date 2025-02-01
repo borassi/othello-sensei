@@ -54,6 +54,7 @@ struct BoardUpdate {
   BitPattern player;
   BitPattern opponent;
   bool black_turn;
+  int last_move;
 };
 
 struct ThorGame {

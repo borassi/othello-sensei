@@ -76,7 +76,7 @@ class Board extends StatelessWidget {
                   List.generate(8, (x) => TableRow(
                     children: <Widget>[Coordinate(true, x)] + List.generate(8, (y) {
                       var index = 63 - 8 * x - y;
-                      return Case(getState(index, board), index, () => GlobalState.playMove(index), GlobalState.undo);
+                      return Case(getState(index, board), index, () => GlobalState.playMove(index), GlobalState.undo, index == GlobalState.board.lastMove);
                     })
                   ))
               )

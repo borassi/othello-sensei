@@ -357,6 +357,9 @@ final class ThorMetadata extends ffi.Struct {
   external int num_sources;
 }
 
+typedef BitPattern = ffi.Uint64;
+typedef DartBitPattern = int;
+
 final class BoardUpdate extends ffi.Struct {
   @BitPattern()
   external int player;
@@ -366,10 +369,10 @@ final class BoardUpdate extends ffi.Struct {
 
   @ffi.Bool()
   external bool black_turn;
-}
 
-typedef BitPattern = ffi.Uint64;
-typedef DartBitPattern = int;
+  @ffi.Int()
+  external int last_move;
+}
 
 final class ThorGame extends ffi.Struct {
   external ffi.Pointer<ffi.Char> black;
@@ -415,6 +418,11 @@ enum AnnotationsProvenance {
             "Unknown value for AnnotationsProvenance: $value"),
       };
 }
+
+typedef Eval = ffi.Int8;
+typedef DartEval = int;
+typedef NVisited = ffi.Uint64;
+typedef DartNVisited = int;
 
 final class Annotations extends ffi.Struct {
   @Square()
@@ -514,11 +522,6 @@ final class Annotations extends ffi.Struct {
   external bool during_analysis;
 }
 
-typedef Eval = ffi.Int8;
-typedef DartEval = int;
-typedef NVisited = ffi.Uint64;
-typedef DartNVisited = int;
-
 final class ThorParams extends ffi.Struct {
   @ffi.Int()
   external int max_games;
@@ -564,10 +567,10 @@ final class EvaluateParams extends ffi.Struct {
   external ThorParams thor_filters;
 }
 
-typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;
 typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
-typedef UpdateAnnotations
-    = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
+typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;
 typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Int, ffi.Bool);
 typedef DartUpdateAnnotationsFunction = void Function(int, bool);
+typedef UpdateAnnotations
+    = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;

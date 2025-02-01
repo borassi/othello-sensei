@@ -108,5 +108,5 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
     return;
   }
   const Board& board = current_state_->ToBoard();
-  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn()});
+  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), current_state_->Move()});
 }

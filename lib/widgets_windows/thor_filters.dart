@@ -128,7 +128,7 @@ class ThorFiltersWidget extends StatelessWidget {
             const Margin.internal(),
             Row(
               children: [
-                Case(CaseState.black, 255, () => {}, () => {}),
+                Case(CaseState.black, 255, () => {}, () => {}, false),
                 const Margin.internal(),
                 Expanded(child: playerSearch(context, true)),
               ]
@@ -136,7 +136,7 @@ class ThorFiltersWidget extends StatelessWidget {
             const Spacer(),
             Row(
               children: [
-                Case(CaseState.white, 255, () => {}, () => {}),
+                Case(CaseState.white, 255, () => {}, () => {}, false),
                 const Margin.internal(),
                 Expanded(child: playerSearch(context, false)),
               ]

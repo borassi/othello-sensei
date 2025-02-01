@@ -203,8 +203,9 @@ class Case extends StatelessWidget {
   final CaseState state;
   final Function playMove;
   final Function undo;
+  final bool isLastMove;
   final int index;
-  const Case(this.state, this.index, this.playMove, this.undo, {super.key});
+  const Case(this.state, this.index, this.playMove, this.undo, this.isLastMove, {super.key});
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
     Color fill;
@@ -262,6 +263,21 @@ class Case extends StatelessWidget {
             GestureDetector(
               onTapDown: (TapDownDetails details) => playMove(),
               onSecondaryTapDown: (TapDownDetails details) => undo(),
+            )
+          );
+        }
+        if (isLastMove && GlobalState.preferences.get('Last move marker')) {
+          children.add(
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                height: 0.14 * squareSize,
+                width: 0.14 * squareSize,
+                decoration: BoxDecoration(
+                  color: state == CaseState.black ? colorScheme.surfaceVariant : colorScheme.surface,
+                  shape: BoxShape.circle,
+                ),
+              )
             )
           );
         }

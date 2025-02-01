@@ -262,13 +262,15 @@ class BoardState with ChangeNotifier {
   int player;
   int opponent;
   bool blackTurn;
+  int lastMove;
 
-  BoardState() : player = 0, opponent = 0, blackTurn = true;
+  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1;
 
   void setState(BoardUpdate boardUpdate) {
     player = boardUpdate.player;
     opponent = boardUpdate.opponent;
     blackTurn = boardUpdate.black_turn;
+    lastMove = boardUpdate.last_move;
     notifyListeners();
   }
 
@@ -317,6 +319,7 @@ class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Controls position': 'App bar',
     'Margin size': 'Small',
+    'Last move marker': true,
     'Show extra data in evaluate mode': true,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
