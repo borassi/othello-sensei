@@ -147,7 +147,7 @@ bool MustBeEvaluated(
     return false;
   }
   // When watching an analyzed game, don't re-evaluate.
-  if (father.InAnalysisLine() && !in_analysis) {
+  if (father.InAnalysisLine() && !in_analysis && !params.reevaluate_during_analysis) {
     return false;
   }
   return !child.HasValidChildren();

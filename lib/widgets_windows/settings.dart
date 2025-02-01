@@ -229,6 +229,7 @@ class Settings extends StatelessWidget {
     'Use disk count to undo and redo',
     'Back button action',
     'Pressing « from the first position',
+    'Evaluate if watching an analyzed game',
     'Analyze on paste',
     'Analyze on import',
   ];

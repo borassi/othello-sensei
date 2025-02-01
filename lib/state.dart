@@ -327,6 +327,7 @@ class PreferencesState with ChangeNotifier {
     'Last move marker': true,
     'Black and white bars in the graph': false,
     'Show extra data in evaluate mode': true,
+    'Evaluate if watching an analyzed game': false,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 100000000000,
@@ -398,6 +399,7 @@ class PreferencesState with ChangeNotifier {
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');
     params.use_book = get('Use book');
+    params.reevaluate_during_analysis = get('Evaluate if watching an analyzed game');
     params.thor_filters.max_games = 100;
     params.thor_filters.start_year = 1000;
     params.thor_filters.end_year = 3000;

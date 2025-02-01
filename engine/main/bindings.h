@@ -133,6 +133,7 @@ struct EvaluateParams {
   double delta;
   bool approx;
   bool use_book;
+  bool reevaluate_during_analysis;
   struct ThorParams thor_filters;
 };
 

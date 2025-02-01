@@ -564,6 +564,9 @@ final class EvaluateParams extends ffi.Struct {
   @ffi.Bool()
   external bool use_book;
 
+  @ffi.Bool()
+  external bool reevaluate_during_analysis;
+
   external ThorParams thor_filters;
 }
 
