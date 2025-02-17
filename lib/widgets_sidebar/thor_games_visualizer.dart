@@ -27,31 +27,56 @@ import '../utils.dart';
 
 class TableCase extends StatelessWidget {
   final String text;
+  final int flex;
   final Alignment? alignment;
 
-  const TableCase(this.text, {super.key, this.alignment});
+  const TableCase(this.text, this.flex, {super.key, this.alignment});
   @override
   Widget build(BuildContext context) {
     var textStyle = Theme.of(context).textTheme.bodySmall!;
-    return Container(
-      alignment: alignment ?? Alignment.center,
-      constraints: BoxConstraints(minHeight: textStyle.fontSize! * 2),
-      child: Text(text, style: textStyle),
+    return Expanded(
+      flex: flex,
+      child: Container(
+        alignment: alignment ?? Alignment.center,
+        constraints: BoxConstraints(minHeight: textStyle.fontSize! * 2),
+        child: Text(text, style: textStyle),
+      )
     );
   }
 }
 
-TableRow getRow(BuildContext context, ThorGame game) {
-  return TableRow(
-    children: <Widget>[
-      TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played])),
-      TableCase(game.year.toString()),
-      TableCase(game.black.cast<Utf8>().toDartString()),
-      TableCase(' ${game.score} '),
-      const TableCase('-'),
-      TableCase(' ${64 - game.score} '),
-      TableCase(game.white.cast<Utf8>().toDartString()),
-    ],
+Widget getRow(BuildContext context, ThorGame game) {
+  void playOneMove() {
+    if (game.moves_played < 60 && game.moves[game.moves_played] != 255) {
+      GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, game.moves[game.moves_played]);
+    }
+    GlobalState.evaluate();
+  }
+  void playWholeGame() {
+    for (int i = game.moves_played; i < 60; ++i) {
+      if (game.moves[i] != 255) {
+        GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, game.moves[i]);
+      }
+    }
+    GlobalState.evaluate();
+  }
+
+  return GestureDetector(
+    onTap: playOneMove,
+    onLongPress: playWholeGame,
+    onDoubleTap: playWholeGame,
+    behavior: HitTestBehavior.opaque,
+    child: Row(
+      children: <Widget>[
+        TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played]), 4),
+        TableCase(game.year.toString(), 6),
+        TableCase(game.black.cast<Utf8>().toDartString(), 22),
+        TableCase(' ${game.score} ', 3),
+        TableCase('-', 2),
+        TableCase(' ${64 - game.score} ', 3),
+        TableCase(game.white.cast<Utf8>().toDartString(), 22),
+      ]
+    )
   );
 }
 
@@ -84,25 +109,15 @@ class ThorGamesVisualizer extends StatelessWidget {
             ),
             Expanded(
               child: SingleChildScrollView(
-                child: Table(
-                  border: TableBorder(
-                    top: BorderSide(color: Theme.of(context).colorScheme.onPrimaryContainer),
-                    horizontalInside: BorderSide(color: Theme.of(context).colorScheme.onPrimaryContainer),
-                    bottom: BorderSide(color: Theme.of(context).colorScheme.onPrimaryContainer)
-                  ),
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  columnWidths: const {
-                    0: FlexColumnWidth(4),
-                    1: FlexColumnWidth(6),
-                    2: FlexColumnWidth(22),
-                    3: FlexColumnWidth(3),
-                    4: FlexColumnWidth(2),
-                    5: FlexColumnWidth(3),
-                    6: FlexColumnWidth(22),
-                  },
+                child: Column(
                   children: List.generate(
-                    annotations.ref.num_example_thor_games,
-                    (i) => getRow(context, annotations.ref.example_thor_games.elementAt(i).ref)
+                    2 * annotations.ref.num_example_thor_games + 1,
+                    (i) => i % 2 == 0 ?
+                      Divider(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        height: 1
+                      ) :
+                      getRow(context, annotations.ref.example_thor_games[i ~/ 2])
                   ),
                 )
               ),

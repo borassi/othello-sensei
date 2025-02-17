@@ -1,14 +1,13 @@
 Mac
 - P3 SMALL Fix picture on Mac launch.
-- P4 SMALL Fix warning with multiple matching destinations.
+- P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
-- P1 MED Create smaller books.
-- P1 TINY Re-evaluate a position even after it was analyzed.
 - P1 SMALL Should we show lost disks instead of error?
+- P1 SMALL Undo / redo in the side bar by default?
+- P2 MED Create smaller books.
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
-- P4 SMALL Undo / redo in the side bar by default?
 
 Tech debt
 - P2 EASY Unify SetBoard and SetAnnotations.
@@ -16,32 +15,31 @@ Tech debt
 - P3 EASY Fix Flutter warnings.
 
 Thor
-- P1 EASY Click to play the next move.
-- P1 EASY Add tournament.
+- P2 EASY Add tournament.
 - P2 MED Exclude games between programs.
 - P2 MED Winning percentages.
 - P3 EASY Filter by tournament / year.
-- P3 HARD Download games during tournaments.
+- P3 LARGE Download games during tournaments.
 
 Match the features of the current app
 - P2 MED Play.
-- P3 HARD Study and repeat openings.
+- P3 LARGE Study and repeat openings.
 
 Extra features:
-- P1 HARD Expand all "interesting" lines in opening book.
-- P1 HARD Remember opening book for player.
-- P2 MED XOT.
-- P2 EASY Save games.
-- P2 HARD How easy / hard a position is.
+- P1 LARGE How easy / hard a position is.
+- P1 LARGE Expand all "interesting" lines in opening book.
+- P1 LARGE Remember opening book for player.
+- P1 MED XOT.
+- P1 EASY Save games.
 - P2 MED Share opening book in Google Drive.
 - P2 MED Lookup URL in Othello Quest.
 - P3 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P3 MED Manually set the board.
-- P3 HARD Expand book on Google Cloud.
-- P4 HARD Choose which widgets to show.
+- P3 LARGE Expand book on Google Cloud.
+- P4 LARGE Choose which widgets to show.
 - P4 EASY Show stats from various moves.
-- P4 HARD Get board state from pictures.
-- P5 HARD Get sequence from board state.
+- P4 LARGE Get board state from pictures.
+- P5 LARGE Get sequence from board state.
 
 Simplify development (match the Java app)
 - P3 MED Show evaluations instead of evaluating.
@@ -49,7 +47,7 @@ Simplify development (match the Java app)
 - P3 EASY Reset hash maps.
 - P4 EASY Show stats on multiple evaluations (including derivative).
 - P4 EASY Load positions from FFO.
-- P5 HARD Add tests for EvaluatorDerivative.
+- P5 LARGE Add tests for EvaluatorDerivative.
 
 Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
