@@ -115,7 +115,8 @@ class Annotations extends HideInactiveWidget {
       case AnnotationsProvenance.GAME_OVER:
         break;
     }
-    line3 += prettyPrintDouble((annotation.descendants + annotation.descendants_book).toDouble());
+    var descendants = annotation.descendants + annotation.descendants_book;
+    line3 += descendants < 100 ? descendants.toString() : prettyPrintDouble(descendants.toDouble());
     var archive = MainApp.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0;
     var showExtra = archive || GlobalState.preferences.get('Show extra data in evaluate mode');
     var roundEvaluation = GlobalState.preferences.get('Round evaluations') != 'Never';
