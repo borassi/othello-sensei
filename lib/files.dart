@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright (c) 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:path/path.dart';
 
-const String assetVersion = "10";
+const String assetVersion = "11";
 
 String localAssetPath() {
   return join(GlobalState.localPath, "assets");

@@ -22,13 +22,17 @@ Main::Main(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath,
+    const std::string& xot_small_filepath,
+    const std::string& xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations) :
     set_board_(set_board),
     current_state_(nullptr),
     last_state_flutter_(nullptr),
     analyzing_(0),
-    engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations) {
+    engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations),
+    xot_small_(LoadTextFile(xot_small_filepath)),
+    xot_large_(LoadTextFile(xot_large_filepath)) {
   PrintSupportedFeatures();
   NewGame();
 }

@@ -127,8 +127,10 @@ add_executable(
 target_link_libraries(
         thor_create_extra_files
         LINK_PUBLIC
+        fix_xot_source
         parse_flags
         thor
+        xot
 )
 
 add_executable(
@@ -142,3 +144,34 @@ target_link_libraries(
         parse_flags
         thor
 )
+
+add_library(
+        fix_xot_source
+        fix_xot_source.h
+        fix_xot_source.cpp
+)
+
+target_link_libraries(
+        fix_xot_source
+        LINK_PUBLIC
+        source
+        xot
+)
+
+IF(ENABLE_GOOGLETEST)
+    add_executable(
+            fix_xot_source_test
+            fix_xot_source_test.cpp
+    )
+
+    target_link_libraries(
+            fix_xot_source_test
+            LINK_PRIVATE
+            fix_xot_source
+            thor_test_utils
+            GTest::gmock
+            GTest::gtest
+            GTest::gtest_main
+            -no-pie
+    )
+ENDIF()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,6 +178,14 @@ TEST(Sequence, FromThor) {
   EXPECT_EQ(Sequence::FromThor(sequence), Sequence("e6f4c3c4d3"));
 }
 
+TEST(Sequence, FromToThor) {
+  for (int i = 0; i < 1000; ++i) {
+    Sequence sequence = Sequence::RandomSequence(rand() % 60);
+    std::vector<Square> thor = sequence.ToThor();
+    EXPECT_EQ(Sequence::FromThor(thor.data()), sequence);
+  }
+}
+
 TEST(Sequence, Subsequence) {
   Sequence sequence("e6f4c3c4d3");
   EXPECT_EQ(sequence.Subsequence(0), Sequence());
@@ -207,6 +215,27 @@ TEST(Sequence, RandomSequence) {
     }
   }
   EXPECT_EQ(sequences.size(), 100 * 45);
+}
+
+TEST(Sequence, ToBoards) {
+  Sequence sequence("e6f4");
+  EXPECT_THAT(
+      sequence.ToBoards(), ElementsAre(Board(), Board("e6"), Board("e6f4"))
+  );
+  EXPECT_EQ(sequence.ToBoard(0), Board());
+  EXPECT_EQ(sequence.ToBoard(1), Board("e6"));
+  EXPECT_EQ(sequence.ToBoard(2), Board("e6f4"));
+  EXPECT_EQ(sequence.ToBoard(-1), Board("e6f4"));
+  EXPECT_EQ(sequence.ToBoard(-2), Board("e6"));
+  EXPECT_EQ(sequence.ToBoard(-3), Board());
+}
+
+TEST(Sequence, IsValid) {
+  EXPECT_TRUE(Sequence("").IsValid());
+  EXPECT_TRUE(Sequence("e6f4").IsValid());
+  EXPECT_TRUE(Sequence("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3a4b1g1b5h2f7d8e8f8d7c8c6b8a3a2g7h6h8h7b2a1h1c1g8b6a5g2a7b7a8a6").IsValid());
+  EXPECT_FALSE(Sequence("e6e7").IsValid());
+  EXPECT_FALSE(Sequence("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3a4b1g1b5h2f7d8e8f8d7c8c6b8a3a2g7h6h8h7b2a1h1c1g8b6a5g2a7b7a8a4").IsValid());
 }
 
 TEST(Sequence, SequenceCanonicalizer) {
@@ -347,4 +376,28 @@ TEST(Sequence, SequenceCanonicalizerSerialize) {
           Sequence("e6f6f5d6c5e3f3f4g5")
       )
   );
+}
+
+TEST(Sequence, ExtendStandard) {
+  Sequence s("e6");
+  EXPECT_TRUE(s.Extend(Sequence("f4")));
+  EXPECT_EQ(s, Sequence("e6f4"));
+}
+
+TEST(Sequence, ExtendBarelyIn) {
+  Sequence s("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3");
+  EXPECT_TRUE(s.Extend(Sequence("a4b1g1b5h2f7d8e8f8d7c8c6b8a3a2g7h6h8h7b2a1h1c1g8b6a5g2a7b7a8a6")));
+  EXPECT_EQ(s, Sequence("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3a4b1g1b5h2f7d8e8f8d7c8c6b8a3a2g7h6h8h7b2a1h1c1g8b6a5g2a7b7a8a6"));
+}
+
+TEST(Sequence, ExtendEmpty) {
+  Sequence s("e6f4c3c4d3");
+  EXPECT_TRUE(s.Extend(Sequence("")));
+  EXPECT_EQ(s, Sequence("e6f4c3c4d3"));
+}
+
+TEST(Sequence, ExtendTooLong) {
+  Sequence s("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3");
+  EXPECT_FALSE(s.Extend(Sequence("a4b1g1b5h2f7d8e8f8d7c8c6b8a3a2g7h6h8h7b2a1h1c1g8b6a5g2a7b7a8a6a6")));
+  EXPECT_EQ(s, Sequence("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3"));
 }

@@ -174,6 +174,8 @@ class GlobalState {
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'xot/openingssmall').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'xot/openingslarge').toNativeUtf8().cast<Char>(),
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );

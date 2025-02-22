@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,5 +55,7 @@ std::vector<std::string> GetAllFiles(const std::string& directory, bool include_
 bool FileExists(const std::string& filename);
 
 std::string Filename(const std::string& filepath);
+
+std::string LoadTextFile(const std::string& filepath);
 
 #endif //OTHELLOSENSEI_APP_SRC_MAIN_CPP_UTILS_FILES_H_

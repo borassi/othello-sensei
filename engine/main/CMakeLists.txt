@@ -81,6 +81,8 @@ target_link_libraries( # Specifies the target library.
         pattern_evaluator
         state
         thor
+        tree_node
+        xot
 )
 
 add_library(

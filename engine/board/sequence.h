@@ -35,14 +35,16 @@
 
 struct ThorSquareToSquare {
   Square square[256];
+  Square square_to_thor[64];
 
-  constexpr ThorSquareToSquare() : square() {
+  constexpr ThorSquareToSquare() : square(), square_to_thor() {
     for (int i = 0; i < 256; ++i) {
-      if (i % 10 >= 1 && i % 10 <= 8 && i / 10 >= 1 && i / 10 <= 8) {
-        square[i] = (8 - i % 10) + 8 * (8 - i / 10);
-      } else {
-        square[i] = kNoSquare;
-      }
+      square[i] = kNoSquare;
+    }
+    for (int i = 0; i < 64; ++i) {
+      Square thor_square = (8 - i % 8) + (8 - i / 8) * 10;
+      square_to_thor[i] = thor_square;
+      square[thor_square] = i;
     }
   }
 };
@@ -68,6 +70,16 @@ constexpr Square TransposeMove(Square move, int k) {
   }
   return move;
 }
+
+// Private.
+template<class T>
+struct PlayResultFetcher {
+  virtual T Get() = 0;
+  virtual bool AtBoard(const Board&) = 0;
+  virtual void AtFail() {
+    throw InvalidSequenceException();
+  }
+};
 
 class Sequence {
  public:
@@ -144,6 +156,14 @@ class Sequence {
     return result;
   }
 
+  std::vector<Square> ToThor() {
+    std::vector<Square> result(60, 0);
+    for (int i = 0; i < size_; ++i) {
+      result[i] = kThorSquareToSquare.square_to_thor[moves_[i]];
+    }
+    return result;
+  }
+
   static Sequence RandomSequence(int size);
 
   Sequence Subsequence(int size) const {
@@ -209,28 +229,11 @@ class Sequence {
   Square* Moves() const { return moves_; }
   const Square Size() const { return size_; }
 
-  std::vector<Board> ToBoards() const {
-    Board b;
-    std::vector<Board> result = {b};
-    for (int i = 0; i < size_; ++i) {
-      Square move = moves_[i];
-      assert(move >= 0 && move < 64);
-      auto flip = GetFlip(move, b.Player(), b.Opponent());
-      if (flip == 0) {
-        throw InvalidSequenceException();
-      }
-      b.PlayMove(flip);
-      if (HaveToPass(b.Player(), b.Opponent())) {
-        b.PlayMove(0);
-      }
-      result.push_back(b);
-    }
-    return result;
-  }
+  std::vector<Board> ToBoards() const;
 
-  Board ToBoard() const {
-    return ToBoards().back();
-  }
+  Board ToBoard(int i = -1) const;
+
+  bool IsValid() const;
 
   Sequence VerticalMirror() const {
     Sequence result(Size());
@@ -248,7 +251,7 @@ class Sequence {
     return result;
   }
 
-  std::vector<Sequence> AllTranspositions() {
+  std::vector<Sequence> AllTranspositions() const {
     std::vector<Sequence> result;
     Sequence sequence(*this);
     for (int i = 0; i < 4; ++i) {
@@ -299,6 +302,16 @@ class Sequence {
     moves_[Size() - 1] = move;
   }
 
+  bool Extend(Sequence suffix) {
+    int size = Size();
+    if (size + suffix.Size() > 60) {
+      return false;
+    }
+    UpdateSize(size + suffix.Size());
+    memcpy(&moves_[size], suffix.moves_, suffix.Size() * sizeof(Square));
+    return true;
+  }
+
   void RemoveLastMove() { UpdateSize(size_ - 1); }
 
  private:
@@ -316,6 +329,31 @@ class Sequence {
       moves_ = (Square*) realloc(moves_, new_size);
     }
     size_ = new_size;
+  }
+
+  // Plays this sequence, and updates a PlayResultFetcher.
+  template<class T>
+  T Play(PlayResultFetcher<T>* fetcher) const {
+    Board b;
+    fetcher->AtBoard(b);
+    for (int i = 0; i < size_; ++i) {
+      Square move = moves_[i];
+      assert(move >= 0 && move < 64);
+      BitPattern flip = 0;
+      if (((1ULL << move) & (b.Player() | b.Opponent())) == 0) {
+        flip = GetFlip(move, b.Player(), b.Opponent());
+      }
+      if (flip == 0) {
+        fetcher->AtFail();
+        return fetcher->Get();
+      }
+      b.PlayMove(flip);
+      if (HaveToPass(b.Player(), b.Opponent())) {
+        b.PlayMove(0);
+      }
+      fetcher->AtBoard(b);
+    }
+    return fetcher->Get();
   }
 };
 

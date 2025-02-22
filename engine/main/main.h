@@ -32,6 +32,7 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../thor/thor.h"
 #include "../utils/misc.h"
+#include "../xot/xot.h"
 
 class Main {
  public:
@@ -39,6 +40,8 @@ class Main {
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath,
+      const std::string& xot_small_filepath,
+      const std::string& xot_large_filepath,
       SetBoard set_board,
       UpdateAnnotations update_annotations);
 
@@ -153,6 +156,8 @@ class Main {
   std::shared_ptr<EvaluationState> last_state_flutter_;
   std::shared_ptr<EvaluationState> first_state_;
   EvaluationState* current_state_;
+  XOT xot_small_;
+  XOT xot_large_;
 
   Engine engine_;
   // 0 = not in analysis; 1 = started analysis (skip undo), 2 = in analysis.

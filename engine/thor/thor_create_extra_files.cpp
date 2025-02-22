@@ -16,8 +16,10 @@
 
 #include <string>
 
+#include "fix_xot_source.h"
 #include "thor.h"
 #include "../utils/parse_flags.h"
+#include "../xot/xot.h"
 
 // Usage:
 // $ cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -26,10 +28,28 @@
 // ./build/thor/thor_create_extra_files --path=assets/archive
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
-  std::string path = parse_flags.GetFlag("path");
+  std::string input_path = parse_flags.GetFlag("input_path");
+  std::string output_path = parse_flags.GetFlag("output_path");
+  std::string xot_path = parse_flags.GetFlagOrDefault("xot_path", "");
   bool rebuild_canonicalizer = parse_flags.GetBoolFlagOrDefault("rebuild_canonicalizer", true);
   bool rebuild_games_order = parse_flags.GetBoolFlagOrDefault("rebuild_games_order", true);
   bool rebuild_games_small_hash = parse_flags.GetBoolFlagOrDefault("rebuild_games_small_hash", true);
-  Thor<GameGetterInMemory> thor(path, rebuild_canonicalizer, rebuild_games_order, rebuild_games_small_hash);
+
+  fs::create_directories(fs::path(output_path).remove_filename());
+
+  if (xot_path.empty()) {
+    std::cout << "No XOT path, copying...\n";
+    fs::copy(input_path, output_path, fs::copy_options::recursive);
+  } else {
+    std::cout << "XOT path, fixing...\n";
+    XOT xot(LoadTextFile(xot_path));
+    for (const auto& entry : GetAllFiles(input_path, /*include_files=*/false, /*include_directories=*/true)) {
+      std::cout << "  Starting " << entry << "\n";
+      auto result = FixXOTSource(xot, entry, fs::path(output_path) / fs::path(entry).filename());
+      std::cout << "    " << result << "\n";
+    }
+  }
+
+  Thor<GameGetterInMemory> thor(output_path, rebuild_canonicalizer, rebuild_games_order, rebuild_games_small_hash);
   thor.SaveAll();
 }

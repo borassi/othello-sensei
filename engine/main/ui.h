@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,14 @@ EXPORT
 Square PassMove();
 
 EXPORT
-void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
+void* MainInit(
+    char* evals_filepath,
+    char* book_filepath,
+    char* thor_filepath,
+    char* xot_small_filepath,
+    char* xot_large_filepath,
+    SetBoard set_board,
+    UpdateAnnotations update_annotations);
 
 EXPORT
 struct ThorMetadata* MainGetThorMetadata(void* ptr);

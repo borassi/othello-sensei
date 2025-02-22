@@ -41,6 +41,8 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> evals_filepath,
     ffi.Pointer<ffi.Char> book_filepath,
     ffi.Pointer<ffi.Char> thor_filepath,
+    ffi.Pointer<ffi.Char> xot_small_filepath,
+    ffi.Pointer<ffi.Char> xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
   ) {
@@ -48,6 +50,8 @@ class FFIEngine {
       evals_filepath,
       book_filepath,
       thor_filepath,
+      xot_small_filepath,
+      xot_large_filepath,
       set_board,
       update_annotations,
     );
@@ -59,10 +63,14 @@ class FFIEngine {
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
               SetBoard,
               UpdateAnnotations)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
       ffi.Pointer<ffi.Void> Function(
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,

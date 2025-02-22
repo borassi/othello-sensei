@@ -81,3 +81,68 @@ std::ostream& operator<<(std::ostream& stream, const Sequence& s) {
   stream << s.ToString();
   return stream;
 }
+
+namespace {
+struct PlayToVector : public PlayResultFetcher<std::vector<Board>> {
+  std::vector<Board> Get() override {
+    return boards_;
+  }
+
+  bool AtBoard(const Board& b) override {
+    boards_.push_back(b);
+    return true;
+  }
+
+ private:
+  std::vector<Board> boards_;
+};
+
+struct PlayToBoard : public PlayResultFetcher<Board> {
+  PlayToBoard(int depth) : remaining_moves_(depth) {}
+  Board Get() override {
+    return result_;
+  }
+
+  bool AtBoard(const Board& b) override {
+    if (remaining_moves_-- == 0) {
+      result_ = b;
+      return false;
+    }
+    return true;
+  }
+
+ private:
+  int remaining_moves_;
+  Board result_;
+};
+
+struct PlayIsValid : public PlayResultFetcher<bool> {
+  bool Get() override { return result_; }
+  bool AtBoard(const Board& b) override { return true; }
+  void AtFail() override { result_ = false; }
+
+ private:
+  bool result_ = true;
+};
+}
+
+std::vector<Board> Sequence::ToBoards() const {
+  PlayToVector play_to_vector;
+  return Play<std::vector<Board>>(&play_to_vector);
+}
+
+Board Sequence::ToBoard(int i) const {
+  if (i < 0) {
+    i += size_ + 1;
+  }
+  if (i < 0 || i > size_) {
+    throw InvalidSequenceException();
+  }
+  PlayToBoard play_to_board(i);
+  return Play<Board>(&play_to_board);
+}
+
+bool Sequence::IsValid() const {
+  PlayIsValid play_is_valid;
+  return Play<bool>(&play_is_valid);
+}

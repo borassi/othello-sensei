@@ -87,3 +87,9 @@ std::string Filename(const std::string& filepath) {
   auto split = Split(filepath, kPathSeparator);
   return split.back();
 }
+
+std::string LoadTextFile(const std::string& filepath) {
+  std::ifstream ifstream(filepath);
+  return std::string(std::istreambuf_iterator<char>(ifstream),
+                     std::istreambuf_iterator<char>());
+}

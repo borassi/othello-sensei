@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,17 @@
 
 Square PassMove() { return kPassMove; }
 
-void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations) {
-  return new Main(evals_filepath, book_filepath, thor_filepath, set_board, update_annotations);
+void* MainInit(
+    char* evals_filepath,
+    char* book_filepath,
+    char* thor_filepath,
+    char* xot_small_filepath,
+    char* xot_large_filepath,
+    SetBoard set_board,
+    UpdateAnnotations update_annotations) {
+  return new Main(
+      evals_filepath, book_filepath, thor_filepath, xot_small_filepath, xot_large_filepath,
+      set_board, update_annotations);
 }
 
 ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
