@@ -32,13 +32,14 @@ class ScoreGraph extends HideInactiveWidget {
     var score = x >= scores.length ? double.nan : scores[x];
     Color color = colorScheme.background;
     Color? borderColor;
-    if (!GlobalState.preferences.get('Black and white bars in the graph')) {
-      color = x == moveToHighlight ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
+    if (x == moveToHighlight) {
+      color = colorScheme.onSecondaryContainer;
+    } else if (GlobalState.board.xot && x <= 8) {
+      color = colorScheme.primaryContainer;
+    } else if (!GlobalState.preferences.get('Black and white bars in the graph')) {
+      color = colorScheme.onPrimaryContainer;
     } else {
-      borderColor = colorScheme.surface;
-      if (x == moveToHighlight) {
-        color = colorScheme.onSecondaryContainer;
-      } else if (score > 1) {
+      if (score > 1) {
         color = colorScheme.surface;
         borderColor = colorScheme.surfaceVariant;
       } else if (score < -1) {
@@ -67,7 +68,7 @@ class ScoreGraph extends HideInactiveWidget {
           toY: toY,
           width: barWidth,
           color: color,
-          borderSide: borderColor != null ? BorderSide(color: borderColor) : null,
+          borderSide: BorderSide(color: borderColor ?? color),
         ),
         BarChartRodData(
           fromY: -maxY,
@@ -89,7 +90,7 @@ class ScoreGraph extends HideInactiveWidget {
           var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
           maxY = (maxY / 10).ceilToDouble() * 10;
           var horizontalLinesSpace = maxY / 2;
-          var textSpace = Theme.of(context).textTheme.bodyMedium!.fontSize! * 2;
+          var textSpace = Theme.of(context).textTheme.bodyMedium!.fontSize! * 2.8;
           var width = (constraints.maxWidth - textSpace);
           var height = constraints.maxHeight;
 
@@ -115,8 +116,10 @@ class ScoreGraph extends HideInactiveWidget {
                     showTitles: true,
                     interval: horizontalLinesSpace,
                     getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? const Text('') : Align(
-                      alignment: Alignment.center,
-                      child: Text(x.toStringAsFixed(0), style: Theme.of(context).textTheme.bodyMedium!)
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                          x > 0 ? '+${x.toStringAsFixed(0)}B ' : (x == 0 ? '+0 ' : '+${(-x).toStringAsFixed(0)}W '),
+                          style: Theme.of(context).textTheme.bodyMedium!)
                     ),
                     reservedSize: textSpace,
                   )

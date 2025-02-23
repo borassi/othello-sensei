@@ -330,6 +330,64 @@ class FFIEngine {
           'Stop');
   late final _Stop =
       _StopPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void RandomXOT(
+    ffi.Pointer<ffi.Void> ptr,
+    bool large,
+  ) {
+    return _RandomXOT(
+      ptr,
+      large,
+    );
+  }
+
+  late final _RandomXOTPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Bool)>>('RandomXOT');
+  late final _RandomXOT =
+      _RandomXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>, bool)>();
+
+  void ForceNotXOT(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _ForceNotXOT(
+      ptr,
+    );
+  }
+
+  late final _ForceNotXOTPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'ForceNotXOT');
+  late final _ForceNotXOT =
+      _ForceNotXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void ForceXOT(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _ForceXOT(
+      ptr,
+    );
+  }
+
+  late final _ForceXOTPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'ForceXOT');
+  late final _ForceXOT =
+      _ForceXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void AutomaticXOT(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _AutomaticXOT(
+      ptr,
+    );
+  }
+
+  late final _AutomaticXOTPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'AutomaticXOT');
+  late final _AutomaticXOT =
+      _AutomaticXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -377,6 +435,9 @@ final class BoardUpdate extends ffi.Struct {
 
   @ffi.Bool()
   external bool black_turn;
+
+  @ffi.Bool()
+  external bool xot;
 
   @ffi.Int()
   external int last_move;

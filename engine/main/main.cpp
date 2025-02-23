@@ -31,6 +31,7 @@ Main::Main(
     last_state_flutter_(nullptr),
     analyzing_(0),
     engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations),
+    force_xot_(std::nullopt),
     xot_small_(LoadTextFile(xot_small_filepath)),
     xot_large_(LoadTextFile(xot_large_filepath)) {
   PrintSupportedFeatures();
@@ -112,5 +113,5 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
     return;
   }
   const Board& board = current_state_->ToBoard();
-  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), current_state_->Move()});
+  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->Move()});
 }

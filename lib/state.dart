@@ -174,8 +174,8 @@ class GlobalState {
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'xot/openingssmall').toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'xot/openingslarge').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>(),
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
@@ -265,14 +265,16 @@ class BoardState with ChangeNotifier {
   int opponent;
   bool blackTurn;
   int lastMove;
+  bool xot;
 
-  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1;
+  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1, xot = false;
 
   void setState(BoardUpdate boardUpdate) {
     player = boardUpdate.player;
     opponent = boardUpdate.opponent;
     blackTurn = boardUpdate.black_turn;
     lastMove = boardUpdate.last_move;
+    xot = boardUpdate.xot;
     notifyListeners();
   }
 
@@ -546,12 +548,16 @@ class GlobalAnnotationState with ChangeNotifier {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
     var (allScores, lastMove) = getAllScoresAndLastMove();
-    var oldScore = 0.0;
+    var start = GlobalState.board.xot ? 8 : 0;
     int lastMoveForScores =
         GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
         allScores.length : lastMove + 1;
     var hasNaN = lastMoveForScores == 0;
-    for (int i = 0; i < lastMoveForScores; ++i) {
+    var oldScore = allScores.elementAtOrNull(start) ?? double.nan;
+    if (oldScore.isNaN) {
+      oldScore = 0;
+    }
+    for (int i = start + 1; i < lastMoveForScores; ++i) {
       double score = allScores[i];
       var error = score - oldScore;
       if (error.isNaN) {

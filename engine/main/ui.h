@@ -90,6 +90,18 @@ struct Annotations* GetStartAnnotations(void* ptr, int current_thread);
 EXPORT
 void Stop(void* ptr);
 
+EXPORT
+void RandomXOT(void* ptr, bool large);
+
+EXPORT
+void ForceNotXOT(void* ptr);
+
+EXPORT
+void ForceXOT(void* ptr);
+
+EXPORT
+void AutomaticXOT(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

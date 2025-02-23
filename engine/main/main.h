@@ -70,11 +70,16 @@ class Main {
   }
 
   bool ToAnalyzedGameOrLastChoice() {
+    EvaluationState* non_xot_state = nullptr;
     if (first_state_->NextStateInAnalysis()) {
-      return ToState(current_state_->LastAnalyzedState());
+      non_xot_state = current_state_->LastAnalyzedState();
     } else {
-      return ToState(current_state_->LastChoice());
+      non_xot_state = current_state_->LastChoice();
     }
+    if (IsXOT() && non_xot_state->NEmpties() > 52 && current_state_->NEmpties() < 52) {
+      return ToState(first_state_->ToDepth(8));
+    }
+    return ToState(non_xot_state);
   }
 
   void ResetEvaluations() {
@@ -146,6 +151,16 @@ class Main {
     return last_state_flutter_->GetAnnotations();
   }
 
+  void RandomXOT(bool large) {
+    XOT& xot = large ? xot_small_ : xot_large_;
+    Sequence sequence = xot.RandomSequence();
+    SetSequence(sequence);
+  }
+
+  void ForceNotXOT() { force_xot_ = false; }
+  void ForceXOT() { force_xot_ = true; }
+  void AutomaticXOT() { force_xot_ = std::nullopt; }
+
  private:
   static constexpr int kNumEvaluators = 60;
 
@@ -158,6 +173,7 @@ class Main {
   EvaluationState* current_state_;
   XOT xot_small_;
   XOT xot_large_;
+  std::optional<bool> force_xot_;
 
   Engine engine_;
   // 0 = not in analysis; 1 = started analysis (skip undo), 2 = in analysis.
@@ -169,6 +185,14 @@ class Main {
   bool ToState(EvaluationState* new_state);
 
   void ToStateNoStop(EvaluationState* new_state);
+
+  bool IsXOT() {
+    if (force_xot_.has_value()) {
+      return *force_xot_;
+    }
+    auto state_in_xot = first_state_->ToDepth(8);
+    return state_in_xot && xot_large_.IsInList(state_in_xot->GetSequence());
+  }
 };
 
 #endif // OTHELLO_SENSEI_MAIN_H

@@ -76,3 +76,9 @@ Annotations* GetCurrentAnnotations(void* ptr, int current_thread) {
 Annotations* GetStartAnnotations(void* ptr, int current_thread) {
   return static_cast<Main*>(ptr)->GetStartAnnotations(current_thread);
 }
+
+void RandomXOT(void* ptr, bool large) { static_cast<Main*>(ptr)->RandomXOT(large); }
+
+void ForceNotXOT(void* ptr) { static_cast<Main*>(ptr)->ForceNotXOT(); }
+void ForceXOT(void* ptr) { static_cast<Main*>(ptr)->ForceXOT(); }
+void AutomaticXOT(void* ptr) { static_cast<Main*>(ptr)->AutomaticXOT(); }

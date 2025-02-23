@@ -3,6 +3,7 @@ Mac
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
+- P1 TINY Move number on last move.
 - P1 SMALL Should we show lost disks instead of error?
 - P1 SMALL Undo / redo in the side bar by default?
 - P2 MED Create smaller books.

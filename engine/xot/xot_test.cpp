@@ -38,6 +38,19 @@ TEST(XOT, IsInList) {
   EXPECT_FALSE(xot.IsInList(Board()));
   EXPECT_FALSE(xot.IsInList(Board("e6f4c3c4d3d6f6e7")));
 }
+TEST(XOT, IsInListSequence) {
+  XOT xot("f5d6c4d3c2b3b4b5\n"
+          "f5f4g3g6f3g4e3e2");
+
+  EXPECT_TRUE(xot.IsInList(Sequence("f5d6c4d3c2b3b4b5")));
+  EXPECT_TRUE(xot.IsInList(Sequence("f5f4g3g6f3g4e3e2")));
+  EXPECT_TRUE(xot.IsInList(Sequence("c4e3f5e6f7g6g5g4")));
+  EXPECT_TRUE(xot.IsInList(Sequence("f5d6c4d3c2b3b4b5a4d2")));
+  EXPECT_FALSE(xot.IsInList(Sequence("")));
+  EXPECT_FALSE(xot.IsInList(Sequence("f5d6c4d3c2b3b4f4")));
+  EXPECT_FALSE(xot.IsInList(Sequence("e6f4c3c4d3d6f6e7")));
+}
+
 
 TEST(XOT, RandomPosition) {
   srand(42);

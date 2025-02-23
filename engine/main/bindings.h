@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ struct BoardUpdate {
   BitPattern player;
   BitPattern opponent;
   bool black_turn;
+  bool xot;
   int last_move;
 };
 

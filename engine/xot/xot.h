@@ -35,6 +35,10 @@ class XOT {
     }
   }
 
+  bool IsInList(const Sequence& sequence) const {
+    return sequence.Size() >= 8 && IsInList(sequence.Subsequence(8).ToBoard());
+  }
+
   bool IsInList(const Board& board) const {
     return board_to_sequence_.find(board.Unique()) != board_to_sequence_.end();
   }

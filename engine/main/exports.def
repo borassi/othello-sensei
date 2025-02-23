@@ -18,3 +18,7 @@ EXPORTS
     GetCurrentAnnotations
     GetStartAnnotations
     Stop
+    RandomXOT
+    ForceNotXOT
+    ForceXOT
+    AutomaticXOT
