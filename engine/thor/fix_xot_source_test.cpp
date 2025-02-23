@@ -103,7 +103,8 @@ TEST_F(FixXotSourceTest, Basic) {
           &source.Players()[1],
           &source.Tournaments()[0],
           2023,
-          12
+          12,
+          0.1
       ),
       Game(
           Sequence("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7"),
@@ -111,7 +112,8 @@ TEST_F(FixXotSourceTest, Basic) {
           &source.Players()[2],
           &source.Tournaments()[1],
           2023,
-          12
+          12,
+          0.1
       ),
       Game(
           Sequence("e6f4d3c4b3c2d2e2e3b5c3b4c1f3c5d1a3a5a4a2e1c6f5d6f6f2g4f1g1g5g3d7f7h4h6e7e8d8c8c7b8g7h8h3g6f8g8b7a7h7h5b2g2a8a6b6a1b1h2h1"),
@@ -119,7 +121,8 @@ TEST_F(FixXotSourceTest, Basic) {
           &source.Players()[0],
           &source.Tournaments()[0],
           2023,
-          12
+          12,
+          0.1
       ),
       Game(
           Sequence(""),
@@ -127,7 +130,8 @@ TEST_F(FixXotSourceTest, Basic) {
           &source.Players()[2],
           &source.Tournaments()[0],
           2023,
-          12
+          12,
+          0.1
       )
   ));
 }
