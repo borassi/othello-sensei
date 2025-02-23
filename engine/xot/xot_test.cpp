@@ -32,25 +32,24 @@ TEST(XOT, IsInList) {
   XOT xot("f5d6c4d3c2b3b4b5\n"
           "f5f4g3g6f3g4e3e2");
 
-  EXPECT_TRUE(xot.IsInList(Board("f5d6c4d3c2b3b4b5")));
-  EXPECT_TRUE(xot.IsInList(Board("f5f4g3g6f3g4e3e2")));
-  EXPECT_TRUE(xot.IsInList(Board("c4e3f5e6f7g6g5g4")));
-  EXPECT_FALSE(xot.IsInList(Board()));
-  EXPECT_FALSE(xot.IsInList(Board("e6f4c3c4d3d6f6e7")));
-}
-TEST(XOT, IsInListSequence) {
-  XOT xot("f5d6c4d3c2b3b4b5\n"
-          "f5f4g3g6f3g4e3e2");
-
   EXPECT_TRUE(xot.IsInList(Sequence("f5d6c4d3c2b3b4b5")));
   EXPECT_TRUE(xot.IsInList(Sequence("f5f4g3g6f3g4e3e2")));
   EXPECT_TRUE(xot.IsInList(Sequence("c4e3f5e6f7g6g5g4")));
-  EXPECT_TRUE(xot.IsInList(Sequence("f5d6c4d3c2b3b4b5a4d2")));
   EXPECT_FALSE(xot.IsInList(Sequence("")));
-  EXPECT_FALSE(xot.IsInList(Sequence("f5d6c4d3c2b3b4f4")));
   EXPECT_FALSE(xot.IsInList(Sequence("e6f4c3c4d3d6f6e7")));
 }
+TEST(XOT, IsInListPrefix) {
+  XOT xot("f5d6c4d3c2b3b4b5\n"
+          "f5f4g3g6f3g4e3e2");
 
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("f5d6c4d3c2b3b4b5")));
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("f5f4g3g6f3g4e3e2")));
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("c4e3f5e6f7g6g5g4")));
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("f5d6c4d3c2b3b4b5a4d2")));
+  EXPECT_FALSE(xot.IsInListPrefix(Sequence("")));
+  EXPECT_FALSE(xot.IsInListPrefix(Sequence("f5d6c4d3c2b3b4f4")));
+  EXPECT_FALSE(xot.IsInListPrefix(Sequence("e6f4c3c4d3d6f6e7")));
+}
 
 TEST(XOT, RandomPosition) {
   srand(42);
@@ -69,6 +68,13 @@ TEST(XOT, RandomPosition) {
           Pair(Sequence("f5f4g3g6f3g4e3e2"), DoubleNear(5000, 100))
       )
   );
+}
+
+TEST(XOT, Transposition) {
+  srand(42);
+  XOT xot("e6f4c3c4d3d6f6e7");
+
+  EXPECT_FALSE(xot.IsInList(Sequence("e6f4d3c4c3d6f6e7")));
 }
 
 TEST(XOT, FindStart) {
@@ -96,6 +102,16 @@ TEST(XOT, FindStartInvalid) {
           "f5f4g3g6f3g4e3e2");
 
   EXPECT_THAT(xot.FindStart(Sequence("a1")), IsEmpty());
+}
+
+TEST(XOT, FindStartMirroredBoard) {
+  XOT xot("f5d6c4d3c2b3b4b5\n"
+          "f5f4g3g6f3g4e3e2");
+
+  EXPECT_THAT(
+      xot.FindStart(Sequence("c4e7c6d7a6c3e6a5c8e8d8b8a4f6e3f5f3b3d2a3a2e2c2g5g3d1f1g4h4h5h6g6h7g2h1c1f2h3h2g7g8g1e1b7b2h8f8f7a8a7b1a1")),
+      IsEmpty()
+  );
 }
 
 TEST(XOT, FindStartMultiple) {

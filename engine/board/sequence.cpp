@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,22 @@ void Sequence::ToCanonicalFirstMoveInplace() {
     assert(false);
   }
   assert(moves_[0] == 19);
+}
+
+Sequence Sequence::Unique() const {
+  std::vector<Sequence> all_sequences = AllTranspositions();
+  Sequence best_sequence = all_sequences[0];
+
+  for (int i = 1; i < all_sequences.size(); ++i) {
+    const Sequence& sequence = all_sequences[i];
+    if (!sequence.IsValid()) {
+      continue;
+    }
+    if (sequence < best_sequence) {
+      best_sequence = sequence;
+    }
+  }
+  return best_sequence;
 }
 
 void Sequence::ToCanonicalDiagonalInplace() {

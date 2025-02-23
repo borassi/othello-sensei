@@ -31,16 +31,17 @@ class XOT {
       sequences_.emplace_back(Sequence(sequence_string));
     }
     for (const SequenceWithMetadata& sequence : sequences_) {
-      board_to_sequence_[sequence.unique] = &sequence;
+      assert(sequence.sequence.Size() == 8);
+      board_to_sequence_[sequence.sequence_unique] = &sequence;
     }
   }
 
-  bool IsInList(const Sequence& sequence) const {
-    return sequence.Size() >= 8 && IsInList(sequence.Subsequence(8).ToBoard());
+  bool IsInListPrefix(const Sequence& sequence) const {
+    return sequence.Size() >= 8 && IsInList(sequence.Subsequence(8));
   }
 
-  bool IsInList(const Board& board) const {
-    return board_to_sequence_.find(board.Unique()) != board_to_sequence_.end();
+  bool IsInList(const Sequence& sequence) const {
+    return board_to_sequence_.find(sequence.Unique()) != board_to_sequence_.end();
   }
 
   Sequence RandomSequence() const {
@@ -52,19 +53,19 @@ class XOT {
  private:
   struct SequenceWithMetadata {
     Sequence sequence;
+    Sequence sequence_unique;
     Board board;
-    Board unique;
     std::vector<Board> board_transpositions;
     std::vector<Sequence> sequence_transpositions;
 
     SequenceWithMetadata(const Sequence& sequence) : sequence(sequence), board(sequence.ToBoard()) {
-      unique = board.Unique();
+      sequence_unique = sequence.Unique();
       board_transpositions = board.AllTranspositions();
       sequence_transpositions = sequence.AllTranspositions();
     }
   };
   std::vector<SequenceWithMetadata> sequences_;
-  std::unordered_map<Board, const SequenceWithMetadata*> board_to_sequence_;
+  std::unordered_map<Sequence, const SequenceWithMetadata*> board_to_sequence_;
 };
 
 #endif  // OTHELLO_SENSEI_XOT_XOT_H

@@ -238,6 +238,15 @@ TEST(Sequence, IsValid) {
   EXPECT_FALSE(Sequence("e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7b4h3a4b1g1b5h2f7d8e8f8d7c8c6b8a3a2g7h6h8h7b2a1h1c1g8b6a5g2a7b7a8a4").IsValid());
 }
 
+TEST(Sequence, Unique) {
+  EXPECT_EQ(Sequence("e6").Unique(), Sequence("e6"));
+  EXPECT_EQ(Sequence("c4").Unique(), Sequence("e6"));
+  EXPECT_EQ(Sequence("d3c4c3").Unique(), Sequence("d3c4c3"));
+  EXPECT_EQ(Sequence("d6f4c3").Unique(), Sequence("d6f4c3"));
+  EXPECT_EQ(Sequence("").Unique(), Sequence(""));
+}
+
+
 TEST(Sequence, SequenceCanonicalizer) {
   std::vector<Sequence> sequences = {
     Sequence("e6f4d3c4c3"),

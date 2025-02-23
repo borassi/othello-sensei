@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,7 +197,14 @@ class Main {
         return false;
       case XOT_STATE_AUTOMATIC:
         auto state_in_xot = first_state_->ToDepth(8);
-        return state_in_xot && xot_large_.IsInList(state_in_xot->GetSequence());
+        if (!state_in_xot) {
+          return false;
+        }
+        if (!xot_large_.IsInListPrefix(state_in_xot->GetSequence())) {
+          return false;
+        }
+        auto [error_black, error_white] = state_in_xot->TotalError();
+        return std::max(error_black, error_white) > 5;
     }
   }
 };
