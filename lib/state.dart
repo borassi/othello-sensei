@@ -333,7 +333,7 @@ class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Controls position': 'App bar',
     'Margin size': 'Small',
-    'Last move marker': true,
+    'Last move marker': 'None',
     'Black and white bars in the graph': false,
     'Show extra data in evaluate mode': true,
     'Evaluate if watching an analyzed game': false,
@@ -363,6 +363,7 @@ class PreferencesState with ChangeNotifier {
     'Pressing « from the first position': 'Ask',
   };
   static const Map<String, List<String>> preferencesValues = {
+    'Last move marker': ['None', 'Dot', 'Number'],
     'Back button action': ['Undo', 'Close app'],
     'Round evaluations': ['Never', 'Only errors', 'Always'],
     'Controls position': ['App bar', 'Side bar'],

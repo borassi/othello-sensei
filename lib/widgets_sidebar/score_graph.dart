@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright 2024-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,9 +116,9 @@ class ScoreGraph extends HideInactiveWidget {
                     showTitles: true,
                     interval: horizontalLinesSpace,
                     getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? const Text('') : Align(
-                      alignment: Alignment.centerRight,
+                      alignment: Alignment.center,
                       child: Text(
-                          x > 0 ? 'B+${x.toStringAsFixed(0)} ' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)} '),
+                          x > 0 ? 'B+${x.toStringAsFixed(0)}' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)}'),
                           style: Theme.of(context).textTheme.bodyMedium!)
                     ),
                     reservedSize: textSpace,

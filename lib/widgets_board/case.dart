@@ -253,20 +253,45 @@ class Case extends StatelessWidget {
         if (disk != null) {
           children.add(disk);
         }
-        if (isLastMove && GlobalState.preferences.get('Last move marker')) {
-          children.add(
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                height: 0.14 * squareSize,
-                width: 0.14 * squareSize,
-                decoration: BoxDecoration(
-                  color: state == CaseState.black ? colorScheme.surfaceVariant : colorScheme.surface,
-                  shape: BoxShape.circle,
-                ),
-              )
-            )
-          );
+        if (isLastMove) {
+          var color = state == CaseState.black ? colorScheme.surfaceVariant : colorScheme.surface;
+          var marker = GlobalState.preferences.get('Last move marker');
+          switch (marker) {
+            case 'None':
+              break;
+            case 'Number':
+              children.add(
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${60 - GlobalState.board.emptySquares()}',
+                    style: TextStyle(
+                      fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                      color: color
+                    ),
+                  )
+                )
+              );
+              break;
+            case 'Dot':
+              children.add(
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    height: 0.14 * squareSize,
+                    width: 0.14 * squareSize,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                )
+              );
+            default:
+              throw Exception('Invalid last move marker preference value: $marker');
+          }
         }
         if (index != 255) {
           children.add(

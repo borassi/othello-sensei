@@ -3,7 +3,6 @@ Mac
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
-- P1 TINY Move number on last move.
 - P1 SMALL Should we show lost disks instead of error?
 - P1 SMALL Undo / redo in the side bar by default?
 - P2 MED Create smaller books.
@@ -16,10 +15,11 @@ Tech debt
 - P3 EASY Fix Flutter warnings.
 
 Thor
-- P2 EASY Add tournament.
+- P1 SMALL Sort by game time.
+- P2 SMALL Add tournament.
 - P2 MED Exclude games between programs.
 - P2 MED Winning percentages.
-- P3 EASY Filter by tournament / year.
+- P3 SMALL Filter by tournament / year.
 - P3 LARGE Download games during tournaments.
 
 Match the features of the current app
