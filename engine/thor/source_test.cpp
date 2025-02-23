@@ -31,6 +31,7 @@ const std::string kFolder = kThorTestData + "/my_source";
 
 class ThorSourceTest : public testing::Test {
   void SetUp() override {
+    fs::remove_all(kFolder);
     fs::create_directories(kFolder);
     std::ofstream thor_games_2022(kFolder + "/WTH_2022.wtb", std::ios::binary);
     std::ofstream thor_games_2023(kFolder + "/WTH_2023.wtb", std::ios::binary);
@@ -256,6 +257,7 @@ TEST_F(ThorSourceTest, KeepsFirstExamplesWhenNotFiltering) {
   for (int t = 1; t < 10; ++t) {
     auto examples1 = source.GetGames(Sequence("e6"), 100).examples;
     auto examples2 = source.GetGames(Sequence("e6"), t).examples;
+    assert(examples1.size() >= examples2.size());
     examples1.erase(examples1.begin() + examples2.size(), examples1.end());
     ASSERT_EQ(examples1, examples2);
   }
@@ -310,7 +312,8 @@ TYPED_TEST(SourceTest, EndToEnd) {
   for (int year = start_year; year <= end_year; ++year) {
     std::ofstream games_file(kFolder + "/WTH_" + std::to_string(year) + ".wtb", std::ios::binary);
     WriteHeader(games_file, year);
-    for (int game = 0; game < rand() % 200; ++game) {
+    int num_games = rand() % 200;
+    for (int game = 0; game < num_games; ++game) {
       int tournament = rand() % 30;
       int black = rand() % 20;
       int white = rand() % 20;
@@ -321,7 +324,7 @@ TYPED_TEST(SourceTest, EndToEnd) {
       std::vector<char> game_to_store = StoredGame(tournament, black, white, score, theoretical, sequence.ToString());
       games_file.write(game_to_store.data(), game_to_store.size());
       games.push_back(Game(sequence, &players[black], &players[white], &tournaments[tournament],
-                           year, score));
+                           year, score, game / (float) (num_games - 1)));
     }
   }
   typename TestFixture::SourceToTest source(kFolder);
@@ -336,7 +339,6 @@ TYPED_TEST(SourceTest, EndToEnd) {
           game.Moves().Subsequence(sequence.Size()) == sequence) {
         expected.push_back(game);
       }
-
     }
     std::sort(expected.begin(), expected.end(), CompareGamesByHash);
     GamesList actual = source.GetGames(sequence, max_games);

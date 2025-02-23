@@ -27,21 +27,29 @@
 
 class Game {
  public:
-  Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments) :
+  Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments, float priority) :
       black_(&players[(buffer[offset + 2] & 0xff) | ((buffer[offset + 3] & 0xff) << 8)]),
       white_(&players[(buffer[offset + 4] & 0xff) | ((buffer[offset + 5] & 0xff) << 8)]),
       year_(year),
       tournament_(&tournaments[(buffer[offset] & 0xff) | ((buffer[offset + 1] & 0xff) << 8)]),
       score_(buffer[offset + 6]),
-      moves_(Sequence::FromThor((Square*) buffer + offset + 8)) {
+      moves_(Sequence::FromThor((Square*) buffer + offset + 8)),
+      priority_(priority) {
+    assert(priority_ >= 0 && priority_ <= 1);
     moves_.ToCanonicalGameInplace();
   }
 
   Game(Sequence moves, const std::string* black, const std::string* white,
-       const std::string* tournament, short year, Eval score) : moves_(moves), black_(black),
-                                                                white_(white),
-                                                                tournament_(tournament),
-                                                                year_(year), score_(score) {}
+       const std::string* tournament, short year, Eval score, float priority) :
+      moves_(moves),
+      black_(black),
+      white_(white),
+      tournament_(tournament),
+      year_(year),
+      score_(score),
+      priority_(priority) {
+    assert(priority_ >= 0 && priority_ <= 1);
+  }
 
   std::string Black() const { return *black_; }
   std::string White() const { return *white_; }
@@ -51,6 +59,7 @@ class Game {
   const char* TournamentC() const { return tournament_->c_str(); }
   short Year() const { return year_; }
   Eval Score() const { return score_; }
+  float Priority() const { return priority_; }
 
   const Sequence& Moves() const { return moves_; }
   Square Move(Square i) const { return moves_.Move(i); }
@@ -78,6 +87,7 @@ class Game {
   const std::string* white_;
   const std::string* tournament_;
   short year_;
+  float priority_;
   Eval score_;
 };
 

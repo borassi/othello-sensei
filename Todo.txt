@@ -15,7 +15,6 @@ Tech debt
 - P3 EASY Fix Flutter warnings.
 
 Thor
-- P1 SMALL Sort by game time.
 - P2 SMALL Add tournament.
 - P2 MED Exclude games between programs.
 - P2 MED Winning percentages.

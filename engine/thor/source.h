@@ -75,7 +75,7 @@ class GameGetterOnDisk {
     auto& file = game_files_[0].file;
     file.seekg(16);
     file.read(buffer, 68 * sizeof(char));
-    Game random_game(buffer, 0, game_files_[0].year, players_, tournaments_);
+    Game random_game(buffer, 0, game_files_[0].year, players_, tournaments_, 1);
     games_cache_.reserve(kHashSize);
     for (int i = 0; i < kHashSize; ++i) {
       games_cache_.push_back({-1, random_game});
@@ -93,7 +93,7 @@ class GameGetterOnDisk {
     char game[68];
     file.seekg(16 + 68 * (index - game_file.offset));
     file.read(game, 68 * sizeof(char));
-    Game result(game, 0, game_file.year, players_, tournaments_);
+    Game result(game, 0, game_file.year, players_, tournaments_, (index - game_file.offset) / (float) game_file.num_games);
     *cached = {index, result};
     return result;
   }
@@ -103,7 +103,7 @@ class GameGetterOnDisk {
     for (const GameFile& game_file : game_files_) {
       std::vector<char> games = ReadFile<char>(game_file.path);
       for (int i = 16; i < games.size(); i += 68) {
-        result.emplace_back(games.data(), i, game_file.year, players_, tournaments_);
+        result.emplace_back(games.data(), i, game_file.year, players_, tournaments_, (i - 16) / (games.size() - 16.0F));
       }
     }
     return result;
@@ -222,8 +222,8 @@ class CmpByYear : public CmpGameAndSequence<short, Year, GameGetter> { using Cmp
 
 inline bool CompareGamesByHash(const Game& g1, const Game& g2) {
   return
-      std::forward_as_tuple(-g1.Year(), std::hash<Game>()(g1), g1) <
-      std::forward_as_tuple(-g2.Year(), std::hash<Game>()(g2), g2);
+      std::forward_as_tuple(-g1.Year(), 1 - g1.Priority(), g1) <
+      std::forward_as_tuple(-g2.Year(), 1 - g2.Priority(), g2);
 }
 
 struct GamesList {
@@ -313,12 +313,12 @@ class Source {
   std::vector<std::vector<uint32_t>*> game_indices_;
 
   int IncludeProbabilityToHashIndex(double include_probability) const {
-    // 1: -2
+    // 0: -2
     // 0.5: -1
-    // 0.49: 0 (here we start to filter)
-    // 0.25: 0
-    // 0.24: 1
-    return (int) (log(0.25 / include_probability) / log(2));
+    // 0.51: 0 (here we start to filter)
+    // 0.75: 0
+    // 0.76: 1
+    return (int) (log(0.25 / (1-include_probability)) / log(2));
   }
 
   void LoadGamesSmallHash() {
@@ -334,13 +334,13 @@ class Source {
 
   void ComputeGamesSmallHash() {
     ElapsedTime t1;
-    games_with_small_hash_.resize(IncludeProbabilityToHashIndex(0.5 / game_index_by_year_.size()));
+    games_with_small_hash_.resize(IncludeProbabilityToHashIndex(1-0.5 / game_index_by_year_.size()));
     std::size_t max_hash = std::numeric_limits<std::size_t>::max();
     GameGetterInMemory game_getter(folder_);
 
     for (uint32_t i = 0; i < game_index_by_year_.size(); ++i) {
       Game game = game_getter.GetGame(game_index_by_year_[i]);
-      auto probability = std::hash<Game>()(game) / (double) max_hash;
+      auto probability = game.Priority();
       for (int j = std::min(IncludeProbabilityToHashIndex(probability), (int) games_with_small_hash_.size() - 1);
            j >= 0; --j) {
         games_with_small_hash_[j].push_back(i);
