@@ -16,6 +16,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
@@ -26,6 +27,8 @@ import '../widgets_spacers/margins.dart';
 
 enum MenuItem {
   newGame,
+  newGameXotSmall,
+  newGameXotLarge,
   copy,
   paste,
   analyze,
@@ -33,13 +36,22 @@ enum MenuItem {
   senseiIsInactive,
   downloadLatestBook,
   downloadLatestArchive,
-  settings
+  settings,
+  xotAutomatic,
+  xotAlways,
+  xotNever,
 }
 
 void handleMenuItem(BuildContext context, MenuItem item) async {
   switch (item) {
     case MenuItem.newGame:
       GlobalState.newGame();
+      return;
+    case MenuItem.newGameXotSmall:
+      GlobalState.newGameXot(true);
+      return;
+    case MenuItem.newGameXotLarge:
+      GlobalState.newGameXot(false);
       return;
     case MenuItem.copy:
       await copy();
@@ -76,6 +88,15 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
         context,
         MaterialPageRoute(builder: (context) => Settings()),
       );
+      return;
+    case MenuItem.xotAlways:
+      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_ALWAYS);
+      return;
+    case MenuItem.xotAutomatic:
+      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_AUTOMATIC);
+      return;
+    case MenuItem.xotNever:
+      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_NEVER);
       return;
   }
 }
@@ -137,39 +158,126 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ];
     }
+    const padding = EdgeInsets.symmetric(horizontal: 12);
     var row = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: icons + [
-        Semantics(
-          label: 'Show menu',
-          child: ListenableBuilder(
-            listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations]),
-            builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
-              child: PopupMenuButton<MenuItem>(
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer
+        ListenableBuilder(
+          listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations]),
+          builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
+            child: PopupMenuButton<MenuItem>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: Theme.of(context).colorScheme.onPrimaryContainer
+              ),
+              onSelected: (MenuItem i) { handleMenuItem(context, i); },
+              itemBuilder: (context) => [
+                PopupMenuItem<MenuItem>(
+                  padding: EdgeInsets.zero,
+                  onTap: () {},
+                  child: PopupMenuButton<MenuItem>(
+                    child: Container(
+                      height: kMinInteractiveDimension,
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      padding: padding,
+                      child: Text('New game')
+                    ),
+                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<MenuItem>(
+                        padding: padding,
+                        value: MenuItem.newGame,
+                        child: Text('Standard game'),
+                      ),
+                      PopupMenuItem<MenuItem>(
+                        padding: padding,
+                        value: MenuItem.newGameXotSmall,
+                        child: Text('XOT small list'),
+                      ),
+                      PopupMenuItem<MenuItem>(
+                        padding: padding,
+                        value: MenuItem.newGameXotLarge,
+                        child: Text('XOT large list'),
+                      )
+                    ]
+                  )
                 ),
-                onSelected: (MenuItem i) { handleMenuItem(context, i); },
-                itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
-                  if (i == MenuItem.analyze) {
-                    if (GlobalState.globalAnnotations.existsAnalyzedGame()) {
-                      return PopupMenuItem<MenuItem>(value: i, child: Text('Reset analyzed game'));
-                    } else {
-                      return PopupMenuItem<MenuItem>(value: i, child: Text('Analyze'));
-                    }
-                  } else if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
-                    return CheckedPopupMenuItem<MenuItem>(
-                      value: i,
-                      checked:
-                          (i == MenuItem.senseiEvaluates && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval) ||
-                          (i == MenuItem.senseiIsInactive && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none),
-                      child: Text(camelCaseToSpaces(i.name))
-                    );
-                  }
-                  return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
-                }).toList()
-              )
+                PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.copy,
+                  child: Text('Copy')),
+                PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.paste,
+                  child: Text('Paste')),
+                PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.analyze,
+                  child: Text(GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze')),
+                PopupMenuItem<MenuItem>(
+                  padding: EdgeInsets.zero,
+                  onTap: () {},
+                  child: PopupMenuButton<MenuItem>(
+                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    padding: EdgeInsets.zero,
+                    child: Container(
+                      height: kMinInteractiveDimension,
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      padding: padding,
+                      child: Text('Sensei action')
+                    ),
+                    itemBuilder: (context) => [
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiEvaluates,
+                        checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval,
+                        child: Text('Sensei evaluates'),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiIsInactive,
+                        checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none,
+                        child: Text('Sensei is inactive'),
+                      )
+                    ]
+                  )
+                ),
+                PopupMenuItem<MenuItem>(
+                  padding: EdgeInsets.zero,
+                  onTap: () {},
+                  child: PopupMenuButton<MenuItem>(
+                    padding: EdgeInsets.zero,
+                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    child: Container(
+                      height: kMinInteractiveDimension,
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      padding: padding,
+                      child: Text('XOT errors')
+                    ),
+                    itemBuilder: (context) => [
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.xotAutomatic,
+                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_AUTOMATIC,
+                        child: Text('Automatic'),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.xotAlways,
+                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_ALWAYS,
+                        child: Text('Always XOT'),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.xotNever,
+                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_NEVER,
+                        child: Text('Never XOT'),
+                      )
+                    ]
+                  )
+                ),
+                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestBook, child: Text('Download latest book')),
+                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive')),
+                PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings')),
+              ]
             )
           )
         )

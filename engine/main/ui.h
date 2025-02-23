@@ -94,13 +94,10 @@ EXPORT
 void RandomXOT(void* ptr, bool large);
 
 EXPORT
-void ForceNotXOT(void* ptr);
+void SetXOTState(void* ptr, enum XOTState xot_state);
 
 EXPORT
-void ForceXOT(void* ptr);
-
-EXPORT
-void AutomaticXOT(void* ptr);
+enum XOTState GetXOTState(void* ptr);
 
 #ifdef __cplusplus
 }

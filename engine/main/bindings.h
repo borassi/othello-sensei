@@ -68,6 +68,12 @@ struct ThorGame {
   int year;
 };
 
+enum XOTState {
+  XOT_STATE_AUTOMATIC,
+  XOT_STATE_ALWAYS,
+  XOT_STATE_NEVER,
+};
+
 enum AnnotationsProvenance {
   EVALUATE,
   BOOK,

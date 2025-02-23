@@ -187,6 +187,11 @@ class GlobalState {
     return thorMetadataOrNull!;
   }
 
+  static void newGameXot(bool small) async {
+    GlobalState.ffiEngine.RandomXOT(GlobalState.ffiMain, small);
+    evaluate();
+  }
+
   static void newGame() async {
     GlobalState.ffiEngine.NewGame(GlobalState.ffiMain);
     evaluate();

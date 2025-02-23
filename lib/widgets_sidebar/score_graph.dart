@@ -118,7 +118,7 @@ class ScoreGraph extends HideInactiveWidget {
                     getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? const Text('') : Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                          x > 0 ? '+${x.toStringAsFixed(0)}B ' : (x == 0 ? '+0 ' : '+${(-x).toStringAsFixed(0)}W '),
+                          x > 0 ? 'B+${x.toStringAsFixed(0)} ' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)} '),
                           style: Theme.of(context).textTheme.bodyMedium!)
                     ),
                     reservedSize: textSpace,

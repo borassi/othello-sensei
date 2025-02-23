@@ -31,7 +31,7 @@ Main::Main(
     last_state_flutter_(nullptr),
     analyzing_(0),
     engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations),
-    force_xot_(std::nullopt),
+    xot_state_(XOT_STATE_AUTOMATIC),
     xot_small_(LoadTextFile(xot_small_filepath)),
     xot_large_(LoadTextFile(xot_large_filepath)) {
   PrintSupportedFeatures();

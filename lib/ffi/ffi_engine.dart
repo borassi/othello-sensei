@@ -347,47 +347,36 @@ class FFIEngine {
   late final _RandomXOT =
       _RandomXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>, bool)>();
 
-  void ForceNotXOT(
+  void SetXOTState(
     ffi.Pointer<ffi.Void> ptr,
+    XOTState xot_state,
   ) {
-    return _ForceNotXOT(
+    return _SetXOTState(
       ptr,
+      xot_state.value,
     );
   }
 
-  late final _ForceNotXOTPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-          'ForceNotXOT');
-  late final _ForceNotXOT =
-      _ForceNotXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+  late final _SetXOTStatePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Pointer<ffi.Void>, ffi.UnsignedInt)>>('SetXOTState');
+  late final _SetXOTState =
+      _SetXOTStatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>, int)>();
 
-  void ForceXOT(
+  XOTState GetXOTState(
     ffi.Pointer<ffi.Void> ptr,
   ) {
-    return _ForceXOT(
+    return XOTState.fromValue(_GetXOTState(
       ptr,
-    );
+    ));
   }
 
-  late final _ForceXOTPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-          'ForceXOT');
-  late final _ForceXOT =
-      _ForceXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
-
-  void AutomaticXOT(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _AutomaticXOT(
-      ptr,
-    );
-  }
-
-  late final _AutomaticXOTPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-          'AutomaticXOT');
-  late final _AutomaticXOT =
-      _AutomaticXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+  late final _GetXOTStatePtr = _lookup<
+          ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ffi.Void>)>>(
+      'GetXOTState');
+  late final _GetXOTState =
+      _GetXOTStatePtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -461,6 +450,22 @@ final class ThorGame extends ffi.Struct {
 
   @ffi.Int()
   external int year;
+}
+
+enum XOTState {
+  XOT_STATE_AUTOMATIC(0),
+  XOT_STATE_ALWAYS(1),
+  XOT_STATE_NEVER(2);
+
+  final int value;
+  const XOTState(this.value);
+
+  static XOTState fromValue(int value) => switch (value) {
+        0 => XOT_STATE_AUTOMATIC,
+        1 => XOT_STATE_ALWAYS,
+        2 => XOT_STATE_NEVER,
+        _ => throw ArgumentError("Unknown value for XOTState: $value"),
+      };
 }
 
 enum AnnotationsProvenance {

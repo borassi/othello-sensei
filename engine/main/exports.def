@@ -19,6 +19,5 @@ EXPORTS
     GetStartAnnotations
     Stop
     RandomXOT
-    ForceNotXOT
-    ForceXOT
-    AutomaticXOT
+    SetXOTState
+    GetXOTState

@@ -157,9 +157,12 @@ class Main {
     SetSequence(sequence);
   }
 
-  void ForceNotXOT() { force_xot_ = false; }
-  void ForceXOT() { force_xot_ = true; }
-  void AutomaticXOT() { force_xot_ = std::nullopt; }
+  void SetXOTState(XOTState xot_state) {
+    xot_state_ = xot_state;
+    Board board = current_state_->ToBoard();
+    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->Move()});
+  }
+  XOTState GetXOTState() { return xot_state_; }
 
  private:
   static constexpr int kNumEvaluators = 60;
@@ -173,7 +176,7 @@ class Main {
   EvaluationState* current_state_;
   XOT xot_small_;
   XOT xot_large_;
-  std::optional<bool> force_xot_;
+  XOTState xot_state_;
 
   Engine engine_;
   // 0 = not in analysis; 1 = started analysis (skip undo), 2 = in analysis.
@@ -187,11 +190,15 @@ class Main {
   void ToStateNoStop(EvaluationState* new_state);
 
   bool IsXOT() {
-    if (force_xot_.has_value()) {
-      return *force_xot_;
+    switch (xot_state_) {
+      case XOT_STATE_ALWAYS:
+        return true;
+      case XOT_STATE_NEVER:
+        return false;
+      case XOT_STATE_AUTOMATIC:
+        auto state_in_xot = first_state_->ToDepth(8);
+        return state_in_xot && xot_large_.IsInList(state_in_xot->GetSequence());
     }
-    auto state_in_xot = first_state_->ToDepth(8);
-    return state_in_xot && xot_large_.IsInList(state_in_xot->GetSequence());
   }
 };
 
