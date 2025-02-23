@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Michele Borassi
+ * Copyright 2024 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ class EvaluationState : public TreeNode {
   EvaluationState(const EvaluationState&) = delete;
 
   Square Move() const { return annotations_.move; }
-  Square LastMove() const { return Move() == kPassMove ? Father()->Move() : Move(); }
   Annotations* GetAnnotations() { return &annotations_; }
   bool IsValid() const { return annotations_.valid; }
   void SetDerived(bool new_value) { annotations_.derived = new_value; }
@@ -107,27 +106,6 @@ class EvaluationState : public TreeNode {
       }
     }
     return !IsLeaf();
-  }
-
-  std::pair<double, double> TotalError() {
-    double errorBlack = 0.0;
-    double errorWhite = 0.0;
-
-    std::vector<double> scores;
-    for (auto* state = this; state != nullptr; state = state->Father()) {
-      scores.push_back(state->annotations_.eval_best_line);
-    }
-    for (int i = 0; i < scores.size() - 1; ++i) {
-      if (isnan(scores[scores.size() - i - 1]) || isnan(scores[scores.size() - i - 2])) {
-        continue;
-      }
-      if (i % 2 == 0) {
-        errorBlack += scores[scores.size() - i - 1] + scores[scores.size() - i - 2];
-      } else {
-        errorWhite += scores[scores.size() - i - 1] + scores[scores.size() - i - 2];
-      }
-    }
-    return {errorBlack, errorWhite};
   }
 
   void SetThor(const GamesList& games);
