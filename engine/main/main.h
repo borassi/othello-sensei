@@ -159,8 +159,7 @@ class Main {
 
   void SetXOTState(XOTState xot_state) {
     xot_state_ = xot_state;
-    Board board = current_state_->ToBoard();
-    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->Move()});
+    RunSetBoard();
   }
   XOTState GetXOTState() { return xot_state_; }
 
@@ -188,6 +187,11 @@ class Main {
   bool ToState(EvaluationState* new_state);
 
   void ToStateNoStop(EvaluationState* new_state);
+
+  void RunSetBoard() {
+    Board board = current_state_->ToBoard();
+    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->LastMove()});
+  }
 
   bool IsXOT() {
     switch (xot_state_) {

@@ -30,7 +30,6 @@ Extra features:
 - P1 LARGE How easy / hard a position is.
 - P1 LARGE Expand all "interesting" lines in opening book.
 - P1 LARGE Remember opening book for player.
-- P1 MED XOT.
 - P1 EASY Save games.
 - P2 MED Share opening book in Google Drive.
 - P2 MED Lookup URL in Othello Quest.

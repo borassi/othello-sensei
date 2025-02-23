@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,13 +221,13 @@ class Case extends StatelessWidget {
         break;
     }
     return Transform.scale(
-        scale: 0.9,
-        child: Container(
-          decoration: BoxDecoration(
-              color: fill,
-              shape: BoxShape.circle,
-          ),
-        )
+      scale: 0.9,
+      child: Container(
+        decoration: BoxDecoration(
+          color: fill,
+          shape: BoxShape.circle,
+        ),
+      )
     );
   }
 
@@ -253,20 +253,6 @@ class Case extends StatelessWidget {
         if (disk != null) {
           children.add(disk);
         }
-        if (index != 255) {
-          children.add(
-              ListenableBuilder(
-                listenable: Listenable.merge([GlobalState.annotations[index], GlobalState.actionWhenPlay]),
-                builder: (BuildContext context, Widget? child) => Annotations(index),
-              )
-          );
-          children.add(
-            GestureDetector(
-              onTapDown: (TapDownDetails details) => playMove(),
-              onSecondaryTapDown: (TapDownDetails details) => undo(),
-            )
-          );
-        }
         if (isLastMove && GlobalState.preferences.get('Last move marker')) {
           children.add(
             Align(
@@ -279,6 +265,20 @@ class Case extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               )
+            )
+          );
+        }
+        if (index != 255) {
+          children.add(
+              ListenableBuilder(
+                listenable: Listenable.merge([GlobalState.annotations[index], GlobalState.actionWhenPlay]),
+                builder: (BuildContext context, Widget? child) => Annotations(index),
+              )
+          );
+          children.add(
+            GestureDetector(
+              onTapDown: (TapDownDetails details) => playMove(),
+              onSecondaryTapDown: (TapDownDetails details) => undo(),
             )
           );
         }

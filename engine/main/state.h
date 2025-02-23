@@ -60,6 +60,7 @@ class EvaluationState : public TreeNode {
   EvaluationState(const EvaluationState&) = delete;
 
   Square Move() const { return annotations_.move; }
+  Square LastMove() const { return Move() == kPassMove ? Father()->Move() : Move(); }
   Annotations* GetAnnotations() { return &annotations_; }
   bool IsValid() const { return annotations_.valid; }
   void SetDerived(bool new_value) { annotations_.derived = new_value; }

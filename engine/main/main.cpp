@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,5 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
     ToStateNoStop(current_state_->GetChildren()[0]);
     return;
   }
-  const Board& board = current_state_->ToBoard();
-  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->Move()});
+  RunSetBoard();
 }
