@@ -117,7 +117,7 @@ constexpr std::array<BitPattern, kMaxFeatureSize> kFeatureDefinition[] = {
 };
 
 constexpr int kNumBaseRotations =
-    std::end(kFeatureDefinition) - std::begin(kFeatureDefinition);
+    (int) (std::end(kFeatureDefinition) - std::begin(kFeatureDefinition));
 
 typedef int8_t PatternNumber ;
 constexpr PatternNumber kMaxPatternsPerSquare = 8;
@@ -207,7 +207,7 @@ struct Features {
       splits[i] = GetSplit(i, kSplits);
     }
 
-    for (const auto &feature : kFeatureDefinition) {
+    for (const auto& feature : kFeatureDefinition) {
       EquivalentTransposition(feature, equivalent_transposition);
       for (int t = 0; t < kMaxPatternTranspositions; ++t) {
         if (equivalent_transposition[t] != t) { continue; }
@@ -280,7 +280,7 @@ struct Features {
 
 typedef std::vector<int8_t> EvalType;
 EvalType LoadEvals(std::string filepath = kEvalFilepath);
-constexpr Features kFeatures;
+const Features kFeatures;
 
 class PatternEvaluator : public EvaluatorDepthOneBase {
  public:

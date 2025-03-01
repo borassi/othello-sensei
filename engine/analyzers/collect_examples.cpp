@@ -60,7 +60,7 @@ class Collector {
 
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
-  int n = parse_flags.GetIntFlagOrDefault("n", 20);
+//  int n = parse_flags.GetIntFlagOrDefault("n", 20);
   std::vector<Collector> collectors;
   for (int i = 0; i < 64; ++i) {
     if (i <= 51) {
@@ -112,7 +112,8 @@ int main(int argc, char* argv[]) {
       continue;
     }
     auto t = std::time(nullptr);
-    auto time = *std::localtime(&t);
+    tm time;
+    localtime_r(&t, &time);
     std::cout
         << "\nStarting " << collector.Get()[0].NEmpties()
         << "(" << boards.size() << ") at "
@@ -173,7 +174,7 @@ int main(int argc, char* argv[]) {
       output.close();
     }
     t = std::time(nullptr);
-    time = *std::localtime(&t);
+    localtime_r(&t, &time);
     std::cout << "\nFinished at " << std::put_time(&time, "%H:%M:%S") << "\n";
   }
   return 0;

@@ -24,7 +24,7 @@
 
 
 void PrintOutflank() {
-  std::string result = "constexpr u_int8_t OUTFLANK[] = {";
+  std::string result = "constexpr uint8_t OUTFLANK[] = {";
   
   for (int move = 0; move < 8; ++move) {
     for (int opponent = 0; opponent < 256; ++opponent) {
@@ -40,7 +40,7 @@ void PrintOutflank() {
         result += "0";
         continue;
       }
-      u_int8_t outflank = 0;
+      uint8_t outflank = 0;
       int disk = move - 1;
       if (((1L << disk) & opponent) != 0) {
         for (disk = move - 2; disk >= 0; --disk) {
@@ -67,7 +67,7 @@ void PrintOutflank() {
 }
 
 void PrintFlip() {
-  std::string result = "constexpr u_int8_t FLIP[] = {";
+  std::string result = "constexpr uint8_t FLIP[] = {";
   
   for (Square move = 0; move < 8; ++move) {
     for (unsigned int outflank = 0; outflank < 256; ++outflank) {

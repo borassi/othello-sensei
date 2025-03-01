@@ -72,7 +72,7 @@ struct StableDisksEdge {
   LastRow arr[65536];
 
   constexpr static int Hash(BitPattern player, BitPattern opponent) {
-    return player | (opponent << 8);
+    return (int) (player | (opponent << 8));
   }
   
   constexpr LastRow GetFlipOneDirection(Square x, LastRow player, LastRow opponent) {
@@ -84,19 +84,19 @@ struct StableDisksEdge {
     BitPattern stable = ~empties;
 
     if (empties == 0) {
-      arr[Hash(player, opponent)] = stable;
+      arr[Hash(player, opponent)] = (LastRow) stable;
     }
 
     for (int x = 0; x < 8; ++x) {
       Square move = 1 << x;
       if ((empties & move) != 0) {
-        uint8_t flip = GetFlipOneDirection(x, player, opponent) | move;
+        LastRow flip = (LastRow) (GetFlipOneDirection(x, (LastRow) player, (LastRow) opponent) | move);
         stable = stable & ~flip & arr[Hash(opponent & ~flip, player | flip)];
-        flip = GetFlipBasic(x, opponent, player) | move;
+        flip = (LastRow) (GetFlipBasic(x, opponent, player) | move);
         stable = stable & ~flip & arr[Hash(player & ~flip, opponent | flip)];
       }
     }
-    arr[Hash(player, opponent)] = stable;
+    arr[Hash(player, opponent)] = (LastRow) stable;
   }
 
   constexpr StableDisksEdge() : arr() {
@@ -108,9 +108,9 @@ struct StableDisksEdge {
   }
 };
 
-constexpr StableDisksEdge kStableDisksEdge;
+const StableDisksEdge kStableDisksEdge;
 
-inline BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) __attribute__((always_inline));
+forceinline(BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent));
 
 BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) {
   BitPattern stable = kStableDisksEdge.arr[(player & kBottomEdgePattern) | ((opponent & kBottomEdgePattern) << 8)];
@@ -121,12 +121,12 @@ BitPattern GetStableDisksEdges(BitPattern player, BitPattern opponent) {
 #else
   stable |= LastRowToRow(kStableDisksEdge.arr[RowToLastRow(player, kTopEdgePattern, 56) | (RowToLastRow(opponent, kTopEdgePattern, 56) << 8)], 56);
   stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kRightEdgePattern, 0) | (ColumnToLastRow(opponent, kRightEdgePattern, 0) << 8)], 0);
-  stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kLeftEdgePattern, 7) | (ColumnToLastRow(opponent, kLeftEdgePattern, 7) << 8)], 7);  
+  stable |= LastRowToColumn(kStableDisksEdge.arr[ColumnToLastRow(player, kLeftEdgePattern, 7) | (ColumnToLastRow(opponent, kLeftEdgePattern, 7) << 8)], 7);
 #endif
   return stable;
 }
 
-inline BitPattern GetFullDiags7(BitPattern empty) __attribute__((always_inline));
+forceinline(BitPattern GetFullDiags7(BitPattern empty));
 inline BitPattern GetFullDiags7(BitPattern empty) {
   BitPattern emptyL = empty | ((empty >> 7) & kAllMinusLastColumnPattern);
   emptyL = emptyL | ((emptyL >> 14) & kAllMinusLast2ColumnsPattern);
@@ -139,7 +139,7 @@ inline BitPattern GetFullDiags7(BitPattern empty) {
   return ~(emptyL | emptyR);
 }
 
-inline BitPattern GetFullDiags9(BitPattern empty) __attribute__((always_inline));
+forceinline(BitPattern GetFullDiags9(BitPattern empty));
 inline BitPattern GetFullDiags9(BitPattern empty) {
   BitPattern emptyL = empty | ((empty << 9) & kAllMinusLastColumnPattern);
   emptyL = emptyL | ((emptyL << 18) & kAllMinusLast2ColumnsPattern);
@@ -152,7 +152,7 @@ inline BitPattern GetFullDiags9(BitPattern empty) {
   return ~(emptyL | emptyR);
 }
 
-inline BitPattern GetFullColumns(BitPattern empty) __attribute__((always_inline));
+forceinline(BitPattern GetFullColumns(BitPattern empty));
 inline BitPattern GetFullColumns(BitPattern empty) {
   BitPattern emptyL = empty | (empty >> 8);
   emptyL = emptyL | (emptyL >> 16);
@@ -165,7 +165,7 @@ inline BitPattern GetFullColumns(BitPattern empty) {
   return ~(emptyL | emptyR);
 }
 
-inline BitPattern GetFullRows(BitPattern empty) __attribute__((always_inline));
+forceinline(BitPattern GetFullRows(BitPattern empty));
 inline BitPattern GetFullRows(BitPattern empty) {
   BitPattern emptyL = empty | ((empty << 1) & kAllMinusLastColumnPattern);
   emptyL = emptyL | ((emptyL << 2) & kAllMinusLast2ColumnsPattern);
@@ -178,9 +178,8 @@ inline BitPattern GetFullRows(BitPattern empty) {
   return ~(emptyL | emptyR);
 }
 
-inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent,
-                                 BitPattern stable = 0) noexcept __attribute__((always_inline));
-inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable) noexcept {
+forceinline(BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable = 0));
+inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPattern stable) {
   stable |= GetStableDisksEdges(player, opponent);
   BitPattern empties = ~(player | opponent);
   BitPattern full_rows = GetFullRows(empties);
@@ -203,10 +202,10 @@ inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPatt
   return stable | stablePlayer;
 }
 
-inline Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) __attribute__((always_inline));
+forceinline(Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent));
 
 inline Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) {
-  return 64 - 2 * __builtin_popcountll(stable & opponent);
+  return (Eval) (64 - 2 * __builtin_popcountll(stable & opponent));
 }
 
 inline Eval GetStableDisksUpperBound(BitPattern player, BitPattern opponent) {

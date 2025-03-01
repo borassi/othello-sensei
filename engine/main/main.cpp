@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,25 @@
 
 #include "main.h"
 #include "bindings.h"
+#include "../utils/misc.h"
 
 Main::Main(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath,
+    const std::string& xot_small_filepath,
+    const std::string& xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations) :
     set_board_(set_board),
     current_state_(nullptr),
     last_state_flutter_(nullptr),
     analyzing_(0),
-    engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations) {
+    engine_(evals_filepath, book_filepath, thor_filepath, *this, update_annotations),
+    xot_state_(XOT_STATE_AUTOMATIC),
+    xot_small_(LoadTextFile(xot_small_filepath)),
+    xot_large_(LoadTextFile(xot_large_filepath)) {
+  PrintSupportedFeatures();
   NewGame();
 }
 
@@ -87,25 +94,17 @@ void Main::Stop() {
   engine_.Stop();
 }
 
-bool IncludeAllSources(ThorMetadata thor_metadata) {
-  for (int i = 0; i < thor_metadata.num_sources; ++i) {
-    const ThorSourceMetadata& source = *thor_metadata.sources[i];
-    if (source.selected_blacks[0] >= 0 || source.selected_whites[0] >= 0 || source.selected_tournaments[0] >= 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-void Main::ToState(EvaluationState* new_state) {
+bool Main::ToState(EvaluationState* new_state) {
   if (!new_state) {
-    return;
+    return false;
   }
   Stop();
   ToStateNoStop(new_state);
+  return true;
 }
 
 void Main::ToStateNoStop(EvaluationState* new_state) {
+  assert(new_state);
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();
@@ -113,6 +112,5 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
     ToStateNoStop(current_state_->GetChildren()[0]);
     return;
   }
-  const Board& board = current_state_->ToBoard();
-  set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn()});
+  RunSetBoard();
 }

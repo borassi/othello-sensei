@@ -27,14 +27,28 @@
 
 class Game {
  public:
-  Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments) :
+  Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments, float priority) :
       black_(&players[(buffer[offset + 2] & 0xff) | ((buffer[offset + 3] & 0xff) << 8)]),
       white_(&players[(buffer[offset + 4] & 0xff) | ((buffer[offset + 5] & 0xff) << 8)]),
       year_(year),
       tournament_(&tournaments[(buffer[offset] & 0xff) | ((buffer[offset + 1] & 0xff) << 8)]),
       score_(buffer[offset + 6]),
-      moves_(Sequence::FromThor((Square*) buffer + offset + 8)) {
+      moves_(Sequence::FromThor((Square*) buffer + offset + 8)),
+      priority_(priority) {
+    assert(priority_ >= 0 && priority_ <= 1);
     moves_.ToCanonicalGameInplace();
+  }
+
+  Game(Sequence moves, const std::string* black, const std::string* white,
+       const std::string* tournament, short year, Eval score, float priority) :
+      moves_(moves),
+      black_(black),
+      white_(white),
+      tournament_(tournament),
+      year_(year),
+      score_(score),
+      priority_(priority) {
+    assert(priority_ >= 0 && priority_ <= 1);
   }
 
   std::string Black() const { return *black_; }
@@ -45,6 +59,7 @@ class Game {
   const char* TournamentC() const { return tournament_->c_str(); }
   short Year() const { return year_; }
   Eval Score() const { return score_; }
+  float Priority() const { return priority_; }
 
   const Sequence& Moves() const { return moves_; }
   Square Move(Square i) const { return moves_.Move(i); }
@@ -72,6 +87,7 @@ class Game {
   const std::string* white_;
   const std::string* tournament_;
   short year_;
+  float priority_;
   Eval score_;
 };
 
@@ -79,14 +95,10 @@ namespace std {
   template<>
   struct hash<Game> {
     std::size_t operator()(const Game& g) const {
-      std::tuple<Sequence, std::string, std::string, std::string, short, Eval> tuple = g.ToTuple();
-      assert(tuple_size<decltype(tuple)>::value == 6);
-      std::size_t hash = std::hash<Sequence>()(std::get<0>(tuple));
-      hash ^= std::hash<std::string>()(std::get<1>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<std::string>()(std::get<2>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<std::string>()(std::get<3>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<short>()(std::get<4>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
-      hash ^= std::hash<Eval>()(std::get<5>(tuple)) + 0x9e3779b9 + (hash<<6) + (hash>>2);
+      std::size_t hash = std::hash<Sequence>()(g.Moves());
+      hash = CombineHashes(hash, HashString(g.Black()));
+      hash = CombineHashes(hash, HashString(g.White()));
+      hash = CombineHashes(hash, HashString(g.Tournament()));
       return hash;
     }
   };

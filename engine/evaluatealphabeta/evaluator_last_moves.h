@@ -19,28 +19,25 @@
 
 #include "../board/get_flip.h"
 #include "../hashmap/hash_map.h"
+#include "../utils/misc.h"
 
-Eval max(Eval e1, Eval e2) {
-  return e1 > e2 ? e1 : e2;
-}
-
-inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept __attribute__((always_inline));
+forceinline(Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept);
 inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept {
   BitPattern flip = GetFlip(x, player, opponent);
   if (__builtin_expect(flip, 1)) {
-    return (__builtin_popcountll(NewOpponent(flip, player)) << 1) - 64;
+    return (Eval) ((__builtin_popcountll(NewOpponent(flip, player)) << 1) - 64);
   }
   flip = GetFlip(x, opponent, player);
   if (flip) {
-    return 64 - (__builtin_popcountll(opponent | flip) << 1);
+    return (Eval) (64 - (__builtin_popcountll(opponent | flip) << 1));
   }
-  Eval playerDisks = __builtin_popcountll(player) << 1;
-  return playerDisks - (playerDisks >= 64 ? 62 : 64);
+  Eval playerDisks = (Eval) (__builtin_popcountll(player) << 1);
+  return (Eval) (playerDisks - (playerDisks >= 64 ? 62 : 64));
 }
 
-inline Eval EvalTwoEmptiesOrMin(
+forceinline(Eval EvalTwoEmptiesOrMin(
     const Square x1, const Square x2, const BitPattern player,
-    const BitPattern opponent, const Eval upper, int* const n_visited) noexcept __attribute__((always_inline));
+    const BitPattern opponent, const Eval upper, int* const n_visited) noexcept);
 
 inline Eval EvalTwoEmptiesOrMin(
     const Square x1, const Square x2, const BitPattern player,
@@ -58,15 +55,15 @@ inline Eval EvalTwoEmptiesOrMin(
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
     (*n_visited)++;
-    return max(eval, -EvalOneEmpty(x1, NewPlayer(flip, opponent), NewOpponent(flip, player)));
+    return MaxEval(eval, -EvalOneEmpty(x1, NewPlayer(flip, opponent), NewOpponent(flip, player)));
   }
   return eval;
 }
 
-inline Eval EvalTwoEmpties(
+forceinline(Eval EvalTwoEmpties(
   const Square x1, const Square x2, const BitPattern player,
   const BitPattern opponent, const Eval lower, const Eval upper,
-  int* const n_visited) noexcept __attribute__((always_inline));
+  int* const n_visited) noexcept);
 
 inline Eval EvalTwoEmpties(
   const Square x1, const Square x2, const BitPattern player,
@@ -83,11 +80,11 @@ inline Eval EvalTwoEmpties(
   return GetEvaluationGameOver(player, opponent);
 }
 
-inline Eval EvalThreeEmptiesOrMin(
+forceinline(Eval EvalThreeEmptiesOrMin(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
   const Eval lower, const Eval upper,
-  int* const n_visited) noexcept __attribute__((always_inline));
+  int* const n_visited) noexcept);
 
 inline Eval EvalThreeEmptiesOrMin(
   const Square x1, const Square x2, const Square x3,
@@ -105,23 +102,23 @@ inline Eval EvalThreeEmptiesOrMin(
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = max(eval, -EvalTwoEmpties(x1, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+    eval = MaxEval(eval, -EvalTwoEmpties(x1, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
-    return max(eval, -EvalTwoEmpties(x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -max(lower, eval), n_visited));
+    return MaxEval(eval, -EvalTwoEmpties(x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
   }
   return eval;
 }
 
-inline Eval EvalThreeEmpties(
+forceinline(Eval EvalThreeEmpties(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
   const Eval lower, const Eval upper,
-  int* const n_visited) noexcept __attribute__((always_inline));
+  int* const n_visited) noexcept);
 
 inline Eval EvalThreeEmpties(
   const Square x1, const Square x2, const Square x3,

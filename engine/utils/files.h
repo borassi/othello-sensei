@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 constexpr char kAssetFilepath[] = "app/src/main/assets";
@@ -39,7 +38,7 @@ void CreateFileIfNotExists(const std::string& filepath);
 FileOffset FileLength(std::fstream& file);
 
 template<typename T>
-std::vector<T> ReadFile(std::string filename) {
+std::vector<T> ReadFile(const std::string& filename) {
   std::fstream file = std::fstream(filename, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
     return {};
@@ -50,5 +49,13 @@ std::vector<T> ReadFile(std::string filename) {
   file.read((char*) result.data(), length);
   return result;
 }
+
+std::vector<std::string> GetAllFiles(const std::string& directory, bool include_files, bool include_directories);
+
+bool FileExists(const std::string& filename);
+
+std::string Filename(const std::string& filepath);
+
+std::string LoadTextFile(const std::string& filepath);
 
 #endif //OTHELLOSENSEI_APP_SRC_MAIN_CPP_UTILS_FILES_H_

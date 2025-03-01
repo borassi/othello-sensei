@@ -65,7 +65,7 @@ void MoveIteratorVeryQuick::Setup(
 BitPattern MoveIteratorVeryQuick::NextFlip() {
   BitPattern flip = 0;
   while (flip == 0 && candidate_moves_ != 0) {
-    int move = __builtin_ctzll(candidate_moves_);
+    Square move = (Square) __builtin_ctzll(candidate_moves_);
     candidate_moves_ &= (~(1ULL << move));
     assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
@@ -125,7 +125,7 @@ BitPattern MoveIteratorQuick<very_quick>::NextFlip() {
       ++current_mask_;
       mask = masks_[current_mask_];
     }
-    int move = __builtin_ctzll(mask & candidate_moves_);
+    Square move = (Square) __builtin_ctzll(mask & candidate_moves_);
     candidate_moves_ &= (~(1ULL << move));
     assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
@@ -148,7 +148,7 @@ void MoveIteratorEval::Setup(
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   BitPattern flip;
   remaining_moves_ = 0;
-  empties_ = __builtin_popcountll(empties);
+  empties_ = (Square) __builtin_popcountll(empties);
   if (entry && entry->best_move != kNoSquare) {
     assert(player == entry->player && opponent == entry->opponent);
     assert(entry->best_move == kNoSquare || (((1ULL << entry->best_move) & (player | opponent)) == 0));
@@ -156,7 +156,7 @@ void MoveIteratorEval::Setup(
   }
   depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
-    Square square = __builtin_ctzll(square_pattern);
+    Square square = (Square) __builtin_ctzll(square_pattern);
     assert(((1ULL << square) & (player | opponent)) == 0);
     flip = GetFlip(square, player, opponent);
     if (flip == 0) {
@@ -195,7 +195,7 @@ int MoveIteratorMinimizeOpponentMoves::Eval(
     Square square, Square empties) {
   BitPattern moves = GetMoves(NewPlayer(flip, opponent), NewOpponent(flip, player));
   return
-      -(__builtin_popcountll(moves) + __builtin_popcountll(moves & kCornerPattern)) * 1000
+      -((int) __builtin_popcountll(moves) + (int) __builtin_popcountll(moves & kCornerPattern)) * 1000
       + kSquareValue[square];
 }
 
@@ -395,7 +395,7 @@ int EvaluatorAlphaBeta::VisitedToDisprove(const BitPattern player, const BitPatt
   BitPattern empties = ~(player | opponent);
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
-    Square square = __builtin_ctzll(square_pattern);
+    Square square = (Square) __builtin_ctzll(square_pattern);
     BitPattern pattern = 1ULL << square;
     assert(((1ULL << square) & (player | opponent)) == 0);
     flip = GetFlip(square, player, opponent);
@@ -459,7 +459,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       move_iterators_[MoveIteratorOffset(depth, solve, unlikely && depth <= 13)].get();
   moves->Setup(player, opponent, last_flip, upper, hash_entry.get(), evaluator_depth_one_.get());
   double to_be_visited = 0;
-  double already_visited = stats_.GetAll();
+  double already_visited = (double) stats_.GetAll();
   bool try_early_filter = depth > 13 && solve && depth_zero_eval < upper - 32;
   if (try_early_filter) {
     assert(UpdateDepthOneEvaluator(depth, solve));
@@ -497,7 +497,7 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       }
       current_eval = -EvaluateInternal<NextNEmpties(depth), false, solve>(
           new_player, new_opponent,
-          -upper, -max_lower_eval, flip, new_stable, max_visited - to_be_visited);
+          -upper, -max_lower_eval, flip, new_stable, max_visited - (int) to_be_visited);
     }
     if (current_eval == -kLessThenMinEvalLarge) {
       return kLessThenMinEvalLarge;
@@ -506,10 +506,10 @@ EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
       second_best_eval = best_eval;
       second_best_move = best_move;
       best_eval = current_eval;
-      best_move = __builtin_ctzll(square);
+      best_move = (Square) __builtin_ctzll(square);
     } else if (current_eval > second_best_eval) {
       second_best_eval = current_eval;
-      second_best_move = __builtin_ctzll(square);
+      second_best_move = (Square) __builtin_ctzll(square);
     }
     if (UpdateDepthOneEvaluator(depth, solve)) {
       evaluator_depth_one_->UndoUpdate(square, flip);

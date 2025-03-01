@@ -18,9 +18,14 @@ add_library(
         bindings.cpp
 )
 
+target_link_libraries( # Specifies the target library.
+        bindings
+        LINK_PUBLIC
+        types
+)
+
 add_library(
         engine
-        SHARED
         engine.h
         engine.cpp
 )
@@ -42,7 +47,6 @@ target_link_libraries( # Specifies the target library.
 
 add_library(
         state
-        SHARED
         state.h
         state.cpp
 )
@@ -53,13 +57,12 @@ target_link_libraries( # Specifies the target library.
         bindings
         board
         sequence
-        tree_node
         thor
+        tree_node
 )
 
 add_library(
         main
-        SHARED
         main.h
         main.cpp
 )
@@ -78,6 +81,8 @@ target_link_libraries( # Specifies the target library.
         pattern_evaluator
         state
         thor
+        tree_node
+        xot
 )
 
 add_library(

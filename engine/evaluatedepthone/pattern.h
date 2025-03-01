@@ -42,7 +42,7 @@ class Pattern {
     }
   }
   constexpr Pattern(std::initializer_list<Square> squares) :
-      size_(squares.size()), squares_() {
+      size_((Square) squares.size()), squares_() {
     int i = 0;
     for (Square square : squares) {
       squares_[i++] = square;
@@ -54,7 +54,7 @@ class Pattern {
 
   constexpr Pattern(BitPattern pattern) : size_(), squares_() {
     while (pattern != 0) {
-      Square square = __builtin_ctzll(pattern);
+      Square square = (Square) __builtin_ctzll(pattern);
       pattern &= ~(1ULL << square);
       squares_[size_++] = square;
     }

@@ -1,4 +1,4 @@
-# Copyright 2023 Michele Borassi
+# Copyright 2023-2025 Michele Borassi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 # Usage:
 # cd .../AndroidStudioProjects/OthelloSensei
-# cmake -S app/src/main/cpp -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
+# cmake -S engine -B build -DANDROID=FALSE && cmake --build build && ./build/FILE
 
 # Profile:
 # cmake -S app/src/main/cpp -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
@@ -23,13 +23,11 @@
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 # Declares and names the project.
 
 project("othellosensei" CXX)
-
-SET (__BMI2__ TRUE)
 
 IF(NOT DEFINED ANDROID)
     SET(ANDROID TRUE)
@@ -55,7 +53,7 @@ IF(ENABLE_GOOGLETEST)
     INCLUDE(FetchContent)
     FetchContent_Declare(
         googletest
-        DOWNLOAD_EXTRACT_TIMESTAMP
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
         URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     )
     # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -63,19 +61,9 @@ IF(ENABLE_GOOGLETEST)
     FetchContent_MakeAvailable(googletest)
 ENDIF()
 
-IF(ANDROID)
-    find_library(log-lib JNI_LIBRARIES)
-ELSE()
-    find_package(JNI REQUIRED)
-ENDIF()
-
-#find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
-
-include_directories( ${JNI_INCLUDE_DIRS} )
-
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -D_GNU_SOURCE=1 -m64 -Ofast -DNDEBUG -march=native -funroll-loops -DUSE_GAS_X64 -DPOPCOUNT -DHAS_CPU_64 -fomit-frame-pointer -DUSE_GCC_ARM"
+        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
 )
 
 IF (PROFILE)
@@ -89,12 +77,14 @@ add_subdirectory(analyzers)
 add_subdirectory(board)
 add_subdirectory(board_optimized)
 add_subdirectory(book)
+add_subdirectory(book_visitor)
 add_subdirectory(estimators)
 add_subdirectory(evaluatealphabeta)
 add_subdirectory(evaluatedepthone)
 add_subdirectory(evaluatederivative)
 add_subdirectory(hashmap)
 add_subdirectory(main)
+add_subdirectory(third_party)
 add_subdirectory(thor)
 add_subdirectory(utils)
 add_subdirectory(jni)

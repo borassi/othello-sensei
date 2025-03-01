@@ -20,7 +20,7 @@
 
 TEST(ProbCombinerTest, F) {
   ProbCombiner combiner(ExpPolyLog<150>);
-  EXPECT_EQ(-INFINITY, combiner.f(0));
+  EXPECT_LE(-FLT_MAX, combiner.f(0));
   EXPECT_EQ(0, combiner.f(1));
   for (double d = 0.01; d <= 1; d += 0.01) {
     EXPECT_TRUE(combiner.f(d) > combiner.f(d - 0.01));

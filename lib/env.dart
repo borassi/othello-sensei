@@ -15,6 +15,10 @@
  *
  */
 
+// Usage: run
+// 1. Add a file secrets.env containing DRIVE_KEY=[ADD_YOUR_KEY_HERE_NO_PARENTHESIS]
+// 2. Run in a terminal: dart run build_runner build
+
 import 'package:envied/envied.dart';
 part 'env.g.dart';
 

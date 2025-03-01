@@ -91,6 +91,7 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+add_subdirectory("./engine")
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
@@ -123,15 +124,28 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     COMPONENT Runtime)
 endforeach(bundled_library)
 
-add_subdirectory("./engine")
-install(FILES ${PROJECT_BINARY_DIR}/engine/main/libui.so DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
-
-# TODO: Understand why this fails.
-## Copy the native assets provided by the build.dart from all packages.
-#set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")
-#install(DIRECTORY "${NATIVE_ASSETS_DIR}"
-#   DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-#   COMPONENT Runtime)
+# Copy all built libraries to the 'lib' folder. Snap cannot find them elsewhere.
+SET (
+        NATIVE_LIBRARIES
+        "${PROJECT_BINARY_DIR}/engine/analyzers/"
+        "${PROJECT_BINARY_DIR}/engine/board/"
+        "${PROJECT_BINARY_DIR}/engine/book/"
+        "${PROJECT_BINARY_DIR}/engine/estimators/"
+        "${PROJECT_BINARY_DIR}/engine/evaluatealphabeta/"
+        "${PROJECT_BINARY_DIR}/engine/evaluatedepthone/"
+        "${PROJECT_BINARY_DIR}/engine/evaluatederivative/"
+        "${PROJECT_BINARY_DIR}/engine/hashmap/"
+        "${PROJECT_BINARY_DIR}/engine/main/"
+        "${PROJECT_BINARY_DIR}/engine/thor/"
+        "${PROJECT_BINARY_DIR}/engine/utils/"
+        "${PROJECT_BINARY_DIR}/engine/"
+)
+foreach(NATIVE_LIBRARY IN LISTS NATIVE_LIBRARIES)
+  INSTALL(
+        DIRECTORY "${NATIVE_LIBRARY}"
+        DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+        COMPONENT Runtime)
+endforeach()
 
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.

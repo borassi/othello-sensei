@@ -15,6 +15,8 @@
  *
  */
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,6 +29,18 @@ class CopyIntent extends Intent {
 class PasteIntent extends Intent {
   const PasteIntent();
 }
+class NewGameIntent extends Intent {
+  const NewGameIntent();
+}
+class UndoIntent extends Intent {
+  const UndoIntent();
+}
+class RedoIntent extends Intent {
+  const RedoIntent();
+}
+class BackIntent extends Intent {
+  const BackIntent();
+}
 
 
 class MyKeyboardListener extends StatelessWidget {
@@ -36,10 +50,16 @@ class MyKeyboardListener extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var isMac = Platform.isMacOS;
     return Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.keyC, control: true): CopyIntent(),
-        SingleActivator(LogicalKeyboardKey.keyV, control: true): PasteIntent(),
+      shortcuts: <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.keyC, control: !isMac, meta: isMac): CopyIntent(),
+        SingleActivator(LogicalKeyboardKey.keyV, control: !isMac, meta: isMac): PasteIntent(),
+        SingleActivator(LogicalKeyboardKey.keyN, control: !isMac, meta: isMac): NewGameIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowLeft): UndoIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowRight): RedoIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowUp): BackIntent(),
+        SingleActivator(LogicalKeyboardKey.pageUp): BackIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -47,7 +67,19 @@ class MyKeyboardListener extends StatelessWidget {
             onInvoke: (CopyIntent intent) => copy(),
           ),
           PasteIntent: CallbackAction<PasteIntent>(
-            onInvoke: (PasteIntent intent) => pasteOrError(context),
+            onInvoke: (PasteIntent intent) => paste(),
+          ),
+          NewGameIntent: CallbackAction<NewGameIntent>(
+            onInvoke: (NewGameIntent intent) => GlobalState.newGame(),
+          ),
+          UndoIntent: CallbackAction<UndoIntent>(
+            onInvoke: (UndoIntent intent) => GlobalState.undo(),
+          ),
+          RedoIntent: CallbackAction<RedoIntent>(
+            onInvoke: (RedoIntent intent) => GlobalState.redo(),
+          ),
+          BackIntent: CallbackAction<BackIntent>(
+            onInvoke: (BackIntent intent) => GlobalState.toAnalyzedGameOrLastChoice(),
           ),
         },
         child: Focus(

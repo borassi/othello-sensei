@@ -18,11 +18,53 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:othello_sensei/ffi/ffi_engine.dart';
+import 'ffi_cpu_adapter.dart';
 
-final FFIEngine ffiEngine = FFIEngine(
-  Platform.isMacOS || Platform.isIOS ? DynamicLibrary.process() // macos and ios
-        : (DynamicLibrary.open(Platform.isWindows // windows
-        ? 'ui.dll'
-        : 'libui.so'))
-);
+enum CpuType {
+  generic,
+  noFeature,
+  popcnt,
+  bmi2,
+}
+
+(DynamicLibrary, CpuType) getDynamicLibrary() {
+  if (Platform.isAndroid) {
+    return (DynamicLibrary.open('libui.so'), CpuType.generic);
+  }
+
+  FFICpuSupportedFeatures supportedFeatures;
+  String cpuNamePattern;
+
+  if (Platform.isMacOS || Platform.isIOS) {
+    return (DynamicLibrary.process(), CpuType.generic);
+  } else if (Platform.isWindows) {
+    supportedFeatures = FFICpuSupportedFeatures(
+        DynamicLibrary.open('cpu_adapter_win.dll'));
+    cpuNamePattern = 'ui_win{}.dll';
+  } else if (Platform.isLinux) {
+    supportedFeatures = FFICpuSupportedFeatures(
+        DynamicLibrary.open('libcpu_adapter.so'));
+    cpuNamePattern = 'libui{}.so';
+  } else {
+    throw UnimplementedError('Unsupported platform ${Platform.operatingSystem}');
+  }
+
+  if (supportedFeatures.CPUHasBMI2()) {
+    try {
+      var dynamicLibrary = DynamicLibrary.open(cpuNamePattern.replaceFirst('{}', '-bmi2'));
+      return (dynamicLibrary, CpuType.bmi2);
+    } catch (invalidArgumentException) {
+      // Run locally, didn't copy the file.
+    }
+  }
+  if (supportedFeatures.CPUHasPopcnt()) {
+    try {
+      var dynamicLibrary = DynamicLibrary.open(cpuNamePattern.replaceFirst('{}', '-popcnt'));
+      return (dynamicLibrary, CpuType.popcnt);
+    } catch (invalidArgumentException) {
+      // Run locally, didn't copy the file.
+    }
+  }
+  var dynamicLibrary = DynamicLibrary.open(cpuNamePattern.replaceFirst('{}', ''));
+  return (dynamicLibrary, CpuType.noFeature);
+}

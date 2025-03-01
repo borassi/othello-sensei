@@ -18,7 +18,7 @@
 
 std::string Game::ToString() const {
   std::stringstream result;
-  result << *black_ << " " << (int) score_ << " - " << (64-score_) << " " << *white_ << " (" << *tournament_ << " " << year_ << "): " << Moves();
+  result << *black_ << " " << (int) score_ << " - " << (64-score_) << " " << *white_ << " (" << *tournament_ << " " << year_ << "): " << Moves() << " " << Priority() << "\n";
   return result.str();
 }
 

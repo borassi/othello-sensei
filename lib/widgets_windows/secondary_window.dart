@@ -23,29 +23,29 @@ import '../widgets_spacers/margins.dart';
 
 class _SecondaryWindowMainContent extends StatelessWidget {
   final Widget child;
-  final bool leaveSpaceRight;
 
-  const _SecondaryWindowMainContent({required this.child, required this.leaveSpaceRight});
+  const _SecondaryWindowMainContent({required this.child});
 
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     return Row(
       children: [
-        const Margin(),
+        const Margin.side(),
         const Spacer(),
         SizedBox(
-          width: 8 * appSizes.squareSize! + (leaveSpaceRight ? appSizes.margin! : 0),
+          width: 8 * appSizes.squareSize,
           child: Column(
             children: [
-              const Margin(),
+              const Margin.side(),
               Expanded(child: child),
-              const Margin(),
+              const Margin.side(),
             ]
           )
         ),
         const Spacer(),
-      ] + (leaveSpaceRight ? [] : [const Margin()])
+        const Margin.side(),
+      ]
     );
   }
 
@@ -55,9 +55,8 @@ class SecondaryWindow extends StatelessWidget {
   final Function(bool)? onPopInvoked;
   final String title;
   final Widget child;
-  final bool leaveSpaceRight;
 
-  const SecondaryWindow({super.key, required this.title, required this.child, this.onPopInvoked, this.leaveSpaceRight = false});
+  const SecondaryWindow({super.key, required this.title, required this.child, this.onPopInvoked});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +69,7 @@ class SecondaryWindow extends StatelessWidget {
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
-        body: AppTheme(child: _SecondaryWindowMainContent(leaveSpaceRight: leaveSpaceRight, child: child))
+        body: AppTheme(child: _SecondaryWindowMainContent(child: child))
       )
     );
   }

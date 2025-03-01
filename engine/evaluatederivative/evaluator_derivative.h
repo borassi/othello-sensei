@@ -31,7 +31,7 @@
 #include <unordered_set>
 
 #include "tree_node.h"
-#include "../constants.h"
+#include "../utils/constants.h"
 #include "../evaluatealphabeta/evaluator_alpha_beta.h"
 #include "../utils/misc.h"
 #include "../evaluatedepthone/evaluator_depth_one_base.h"
@@ -53,7 +53,7 @@ enum Status {
     STOPPED_TREE_POSITIONS = 8,
 };
 
-typedef std::tuple<BitPattern, BitPattern, u_int8_t> NodeKey;
+typedef std::tuple<BitPattern, BitPattern, uint8_t> NodeKey;
 
 struct TupleEqual
 {
@@ -74,18 +74,21 @@ struct TupleHasher
 
 class TreeNodeSupplier {
  public:
-  TreeNodeSupplier() : first_valid_index_(1), num_nodes_(0), tree_node_index_(kHashMapSize) {
+  TreeNodeSupplier() :
+      first_valid_index_(1),
+      num_nodes_(0),
+      tree_node_index_(kHashMapSize) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
     FullResetHashMap();
   }
   ~TreeNodeSupplier() {
     delete[] tree_nodes_;
   }
-  std::unique_ptr<Node> Get(const Board& b, Square depth, u_int8_t evaluator_index) const {
+  std::unique_ptr<Node> Get(const Board& b, Square depth, uint8_t evaluator_index) const {
     return Get(b.Player(), b.Opponent(), depth, evaluator_index);
   }
 
-  std::unique_ptr<Node> Get(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) const {
+  std::unique_ptr<Node> Get(BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index) const {
     TreeNode* tree_node = Mutable(player, opponent, depth, evaluator_index);
     if (tree_node) {
       return std::make_unique<Node>(*tree_node);
@@ -94,12 +97,12 @@ class TreeNodeSupplier {
     }
   }
 
-  TreeNode* Mutable(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) const {
+  TreeNode* Mutable(BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index) const {
     return MutableInternal(player, opponent, depth, evaluator_index);
   }
 
   void Reset() {
-    assert(num_nodes_ <= kDerivativeEvaluatorSize);
+    assert(num_nodes_ <= (unsigned) kDerivativeEvaluatorSize);
     first_valid_index_ += num_nodes_;
     if (first_valid_index_ >= UINT32_MAX - kDerivativeEvaluatorSize - 1) {
       FullResetHashMap();
@@ -119,8 +122,9 @@ class TreeNodeSupplier {
   std::vector<std::atomic_uint32_t> tree_node_index_;
   std::atomic_uint32_t num_nodes_;
   uint32_t first_valid_index_;
+  Random random_;
 
-  TreeNode* MutableInternal(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index) const {
+  TreeNode* MutableInternal(BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index) const {
     for (int hash = HashNode(player, opponent, depth, evaluator_index);
          true;
          hash = (hash + 1) % tree_node_index_.size()) {
@@ -148,7 +152,7 @@ class TreeNodeSupplier {
     return index >= first_valid_index_ && index < first_valid_index_ + num_nodes_;
   }
 
-  void AddToHashMap(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator_index, uint32_t node_id) {
+  void AddToHashMap(BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator_index, uint32_t node_id) {
     assert(first_valid_index_ <= UINT32_MAX - node_id);
     int hash = HashNode(player, opponent, depth, evaluator_index);
     uint32_t next_node = first_valid_index_ + node_id;
@@ -158,8 +162,8 @@ class TreeNodeSupplier {
     }
   }
 
-  uint32_t HashNode(BitPattern player, BitPattern opponent, Square depth, u_int8_t evaluator) const {
-    uint32_t hash = (HashFull(player, opponent) ^ std::hash<int>{}((depth << 8) | evaluator)) % tree_node_index_.size();
+  uint32_t HashNode(BitPattern player, BitPattern opponent, Square depth, uint8_t evaluator) const {
+    uint32_t hash = (uint32_t) ((HashFull(player, opponent) ^ std::hash<int>{}((depth << 8) | evaluator)) % tree_node_index_.size());
     assert(hash >= 0 && hash < tree_node_index_.size());
     return hash;
   }
@@ -195,7 +199,7 @@ class EvaluatorThread {
 
 class EvaluatorDerivative {
  public:
-  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap<kBitHashMap>* hash_map, EvaluatorFactory evaluator_depth_one, u_int8_t index = 0) :
+  EvaluatorDerivative(TreeNodeSupplier* tree_node_supplier, HashMap<kBitHashMap>* hash_map, EvaluatorFactory evaluator_depth_one, uint8_t index = 0) :
       threads_(),
       tree_node_supplier_(tree_node_supplier),
       first_position_(nullptr),
@@ -207,7 +211,7 @@ class EvaluatorDerivative {
 
   double Progress(float gap) {
     if (GetStatus() == SOLVED) {
-      return -INFINITY;
+      return -DBL_MAX;
     }
     TreeNode* board = first_position_;
     double evalEffect = -board->GetEval() / std::max(1.0F, gap);
@@ -277,10 +281,10 @@ class EvaluatorDerivative {
     for (int i = 0; i < threads_.size(); ++i) {
       stats.Merge(threads_[i]->GetStats());
     }
-    return std::move(stats);
+    return stats;
   }
 
-  u_int8_t Index() const { return index_; }
+  uint8_t Index() const { return index_; }
 
   std::pair<Eval, Eval> GetWeakLowerUpper(Square depth) const {
     if (depth & 1) {
@@ -311,7 +315,7 @@ class EvaluatorDerivative {
   bool approx_;
   TreeNodeSupplier* tree_node_supplier_;
   TreeNode* first_position_;
-  u_int8_t index_;
+  uint8_t index_;
   std::atomic_uint64_t n_thread_multiplier_;
   std::atomic_flag is_updating_weak_lower_upper_;
   double best_advancement_;
@@ -360,7 +364,7 @@ class EvaluatorDerivative {
       best_advancement_ = std::min(best_advancement_, advancement);
       good_stop = advancement <= best_advancement_;
     }
-    if (time > max_time_ || time > 0.8 * max_time_ && good_stop) {
+    if (time > max_time_ || (time > 0.8 * max_time_ && good_stop)) {
       status_ = STOPPED_TIME;
       return true;
     }
@@ -436,7 +440,7 @@ class EvaluatorDerivative {
   }
 
   float NThreadMultiplier() {
-    return n_thread_multiplier_ / 1000.0;
+    return n_thread_multiplier_ / 1000.0F;
   }
 };
 

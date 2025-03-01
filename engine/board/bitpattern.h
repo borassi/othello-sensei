@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "../constants.h"
+#include "../utils/constants.h"
 #include "../utils/random.h"
 #include "../utils/types.h"
 
@@ -125,14 +125,6 @@ Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent);
 #define FOR_EACH_SET_BIT(pattern, name) \
   for (BitPattern name = pattern; name != 0; name = name & (name - 1))
 
-constexpr inline Eval MaxEval(Eval eval1, Eval eval2) {
-  return eval1 > eval2 ? eval1 : eval2;
-}
-
-constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
-  return eval1 < eval2 ? eval1 : eval2;
-}
-
 constexpr BitPattern GetRow(Square move) {
   return kLastRowPattern << (move & 56);
 }
@@ -153,8 +145,8 @@ constexpr BitPattern GetDiag9(Square move) {
 }
 
 struct HashValues {
-  u_int32_t hash_player[33][8][256];
-  u_int32_t hash_opponent[33][8][256];
+  uint32_t hash_player[33][8][256];
+  uint32_t hash_opponent[33][8][256];
 
   constexpr HashValues() : hash_player(), hash_opponent() {
     Random random;
@@ -176,7 +168,7 @@ struct HashValues {
 constexpr HashValues kHashValues;
 
 template<int bits>
-inline u_int32_t Hash(BitPattern player, BitPattern opponent) {
+inline uint32_t Hash(BitPattern player, BitPattern opponent) {
   auto hash_player = kHashValues.hash_player[bits];
   auto hash_opponent = kHashValues.hash_opponent[bits];
   return
@@ -198,7 +190,7 @@ inline u_int32_t Hash(BitPattern player, BitPattern opponent) {
       hash_opponent[7][(opponent >> 56)];
 }
 
-inline u_int32_t HashFull(BitPattern player, BitPattern opponent) {
+inline uint32_t HashFull(BitPattern player, BitPattern opponent) {
   return Hash<32>(player, opponent);
 }
 
@@ -212,7 +204,7 @@ constexpr BitPattern Neighbors(BitPattern b) {
 
 inline LastRow RowToLastRow(BitPattern pattern, BitPattern row, int row_num) {
   assert ((kLastRowPattern << row_num) == row);
-  return (pattern & row) >> row_num;
+  return (LastRow) ((pattern & row) >> row_num);
 }
 inline LastRow ColumnToLastRow(BitPattern pattern, BitPattern column, int col_num) {
   assert ((kLastColumnPattern << col_num) == column);
@@ -277,7 +269,7 @@ inline Square MoveToSquare(std::string move) {
   return ('h' - move[0]) + ('8' - move[1]) * 8;
 }
 
-static std::string SquareToMove(Square move) {
+inline std::string SquareToMove(Square move) {
   return std::string(1, 'h' - (move % 8)) + std::to_string(8 - move / 8);
 }
 

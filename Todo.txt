@@ -1,11 +1,16 @@
+Mac
+- P3 SMALL Fix picture on Mac launch.
+- P4 LARGE Fix warning with multiple matching destinations.
+
 Usability / bugs
-- P2 MED Fix accessibility issues.
-- P2 EASY Clear analyzed positions.
-- P2 TINY Do not show seconds when all moves are in book.
-- P2 EASY Fix time when clicking stop.
+- P0 MED Debug wrong evaluations on Marc's phone.
+- P0 SMALL Avoid crashes on iPhone
+- P1 SMALL Avoid tooltip on the menu
+- P1 SMALL Should we show lost disks instead of error?
+- P1 SMALL Undo / redo in the side bar by default?
 - P2 MED Create smaller books.
-- P3 ???? Free memory on hot reload.
-- P3 EASY Back button undo instead of quit.
+- P2 LARGE Download in background.
+- P2 MED Fix accessibility issues.
 
 Tech debt
 - P2 EASY Unify SetBoard and SetAnnotations.
@@ -13,38 +18,30 @@ Tech debt
 - P3 EASY Fix Flutter warnings.
 
 Thor
-- P2 EASY Click to play the next move.
-- P2 TINY Add tournament.
+- P2 SMALL Add tournament.
+- P2 MED Exclude games between programs.
 - P2 MED Winning percentages.
-- P3 EASY Filter by tournament / year.
-- P3 HARD Download games during tournaments.
+- P3 SMALL Filter by tournament / year.
+- P3 LARGE Download games during tournaments.
 
 Match the features of the current app
 - P2 MED Play.
-- P3 HARD Study and repeat openings.
+- P3 LARGE Study and repeat openings.
 
 Extra features:
-- P1 HARD Expand all "interesting" lines in opening book.
-- P1 HARD Remember opening book for player.
-- P2 MED XOT.
-- P2 EASY Save games.
-- P2 HARD How easy / hard a position is.
-- P2 MED Customize which evaluations are shown in the square (missing positions? CI?).
+- P1 LARGE How easy / hard a position is.
+- P1 LARGE Expand all "interesting" lines in opening book.
+- P1 LARGE Remember opening book for player.
+- P1 EASY Save games.
 - P2 MED Share opening book in Google Drive.
 - P2 MED Lookup URL in Othello Quest.
-- P3 EASY Icons disappear from the bar.
+- P3 MED Customize which evaluations are shown in the square (missing positions? CI?).
 - P3 MED Manually set the board.
-- P3 HARD Expand book on Google Cloud.
-- P3 HARD Choose which widgets to show.
+- P3 LARGE Expand book on Google Cloud.
+- P4 LARGE Choose which widgets to show.
 - P4 EASY Show stats from various moves.
-- P4 HARD Get board state from pictures.
-- P5 HARD Get sequence from board state.
-
-Make the app distributable
-- P3 MED Make it work on iOS.
-- P4 EASY Make sharing from Othello Quest possible on iOS.
-- P4 MED Make it work on Mac.
-- P5 EASY Add documentation on how to run it.
+- P4 LARGE Get board state from pictures.
+- P5 LARGE Get sequence from board state.
 
 Simplify development (match the Java app)
 - P3 MED Show evaluations instead of evaluating.
@@ -52,14 +49,64 @@ Simplify development (match the Java app)
 - P3 EASY Reset hash maps.
 - P4 EASY Show stats on multiple evaluations (including derivative).
 - P4 EASY Load positions from FFO.
-- P5 HARD Add tests for EvaluatorDerivative.
+- P5 LARGE Add tests for EvaluatorDerivative.
 
 Simplify development (extra)
 - P4 MED Use a proper C++ editor - not developing currently.
 
 
-HOW TO RELEASE:
+HOW TO RELEASE ON ANDROID:
 - Change the applicationId in android/app/build.gradle to remove 'dev'.
 - Change the name in android/app/src/main/AndroidManifest to remove 'Dev'.
 - Change the version in pubspec.yaml
 - Check the paths to the Drive files.
+- $ flutter build appbundle
+- Upload build/app/outputs/bundle/release/app-release.aab to https://play.google.com/console/u/0/developers/7776248980242675505/app/4976314818508265057
+
+HOW TO RELEASE ON LINUX:
+- rm -Rf build && snapcraft clean && snapcraft --debug && sudo snap install ./othello-sensei_1.0.1_amd64.snap --dangerous && othello-sensei
+- snapcraft upload --release=beta othello-sensei_1.0.1_amd64.snap
+
+HOW TO RELEASE ON WINDOWS (APP STORE):
+- Check that the link on Windows Defender in drive_downloader is updated.
+- flutter build windows
+- Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
+- Comment the BMI2 line in windows/CMakeLists.txt
+- flutter build windows
+- Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-popcnt.dll
+- Comment the POPCNT line in windows/CMakeLists.txt
+- dart run msix:create
+- Install locally by double-clicking on build\windows\x64\runner\Release\othello_sensei.msix
+- Copy the installer to the "installers" folder and rename it to Othello Sensei.msix
+- dart run msix:create --store
+- Upload build\windows\x64\runner\Release\othello_sensei.msix to the store
+  https://partner.microsoft.com/en-us/dashboard/products/9N54CS9F3JGP/overview
+  Home page: https://partner.microsoft.com/en-us/dashboard/home
+
+HOW TO RELEASE ON WINDOWS (PACKAGE):
+- Same as app store up to msix:create.
+- Open installers/windows/Inno setup.iss with Inno Setup.
+- Compile it.
+- The .exe will be available inside "installers".
+
+HOW TO RELEASE ON IOS (APP STORE)
+- flutter build ipa.
+- Open "Transporter" app.
+- Drag the built file in build/ios/ipa/Othello Sensei.ipa to the Transporter app.
+- Click "Deliver".
+- Login in https://appstoreconnect.apple.com/teams/3f165cff-c17e-446a-950b-efb6fa17e751/apps/6738860855/testflight/ios.
+- Wait until the build is approved.
+- Go through the process Internal Testing > Open Testing > Production.
+
+HOW TO RELEASE ON MACOS (FREE APP)
+- flutter build macos
+- cd installers/macos
+- rm ../../Othello\ Sensei.dmg && appdmg config.json "../../Othello Sensei.dmg"
+
+HOW TO RELEASE ON MACOS (APP STORE)
+- Update version in pubspec.yaml (e.g., 1.0.2+35).
+- Update CFBundleShortVersionString (e.g., 1.0.2) and CFBundleVersion in macos/Runner/Info.plist (e.g., 35).
+- flutter build macos
+- Open Xcode and select Product > Archive > Validate App, followed by Distribute App
+- Login in https://appstoreconnect.apple.com/teams/3f165cff-c17e-446a-950b-efb6fa17e751/apps/6738860855/testflight/mac.
+- Go through the process Internal Testing > Open Testing > Production.

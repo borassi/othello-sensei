@@ -40,7 +40,7 @@
 #include "../utils/misc.h"
 #include "../utils/serializable_boolean_vector.h"
 
-constexpr float kProbIncreaseWeakEval = 0.05;
+constexpr float kProbIncreaseWeakEval = 0.05F;
 
 class ChildError: public std::exception {
  public:
@@ -117,11 +117,12 @@ class Node {
     n.player_ = board.Player();
     n.opponent_ = board.Opponent();
     n.n_empties_ = board.NEmpties();
+    n.depth_ = kNoSquare;
     int i = kSerializedBoardSize;
 
     while (true) {
       CompressedFlip compressed_flip = 0;
-      compressed_flip |= (u_int8_t) serialized[i] | ((u_int8_t) serialized[i+1] << 8) | ((u_int8_t) serialized[i+2] << 16);
+      compressed_flip |= (uint8_t) serialized[i] | ((uint8_t) serialized[i+1] << 8) | ((uint8_t) serialized[i+2] << 16);
       i += 3;
       if (compressed_flip == 0) {
         break;
@@ -134,7 +135,7 @@ class Node {
       }
     }
 
-    n.descendants_ = (u_int64_t) *((float*) &(serialized[i]));
+    n.descendants_ = (NVisited) *((float*) &(serialized[i]));
     i += sizeof(float);
     n.lower_ = (Eval) serialized[i++];
     n.upper_ = (Eval) serialized[i++];
@@ -151,17 +152,18 @@ class Node {
       Probability prob = serialized[i++];
       PN proof_number = serialized[i++];
       PN disproof_number = serialized[i++];
-      u_int32_t max_log_derivative = 0;
-      u_int8_t first_byte = serialized[i];
+      uint32_t max_log_derivative = 0;
+      uint8_t first_byte = serialized[i];
       if (first_byte & (1U << 7)) {
         max_log_derivative |= (first_byte & ~(1U << 7)) << 16;
         i++;
       }
-      max_log_derivative |= (u_int8_t) serialized[i++] << 8;
-      max_log_derivative |= (u_int8_t) serialized[i++];
-      n.MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -max_log_derivative);
+      max_log_derivative |= (uint8_t) serialized[i++] << 8;
+      max_log_derivative |= (uint8_t) serialized[i++];
+      n.MutableEvaluation(eval)->Set(prob, proof_number, disproof_number, -(int) max_log_derivative);
     }
-    PN proof, disproof;
+    PN proof = 0;
+    PN disproof = 0;
     if (n.lower_ + 1 <= last_1) {
       proof = serialized[i++];
     }
@@ -198,7 +200,7 @@ class Node {
       }
     }
     if (version < 1) {
-      n.leaf_eval_ = std::round(n.GetEval() * 8);
+      n.leaf_eval_ = (EvalLarge) std::round(n.GetEval() * 8);
     }
     return n;
   }
@@ -222,7 +224,7 @@ class Node {
     if (eval_goal < lower_) {
       return 0;
     } else if (eval_goal > upper_) {
-      return std::numeric_limits<float>::infinity();
+      return FLT_MAX;
     }
     return GetEvaluation(eval_goal).ProofNumber();
   }
@@ -231,7 +233,7 @@ class Node {
     assert((eval_goal - kMinEval) % 2 == 1);
     assert(eval_goal >= weak_lower_ && eval_goal <= weak_upper_);
     if (eval_goal < lower_) {
-      return std::numeric_limits<float>::infinity();
+      return FLT_MAX;
     } else if (eval_goal > upper_) {
       return 0;
     }
@@ -261,6 +263,19 @@ class Node {
       eval += 2 * prob;
     }
     return eval;
+  }
+
+  double Uncertainty() const {
+    int lower = std::max(lower_ + 1, (int) weak_lower_);
+    int upper = std::min(upper_ - 1, (int) weak_upper_);
+    double e_x = lower - 1;
+    double e_x2 = (lower - 1) * (lower - 1);
+    for (int i = lower; i <= upper; i += 2) {
+      double prob = GetEvaluation(i).ProbGreaterEqual();
+      e_x += 2 * prob;
+      e_x2 += 4 * i * prob; // (i+1)^2 - (i-1)^2
+    }
+    return sqrt(e_x2 - e_x * e_x);
   }
 
   const Evaluation& GetEvaluation(int eval_goal) const {
@@ -375,9 +390,9 @@ class Node {
     for (int i = std::max(lower_ + 1, (int) weak_lower_); i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
       const Evaluation& eval = GetEvaluation(i);
       if (eval.ProbGreaterEqual() < prob_min || eval.ProbGreaterEqual() > prob_max ||
-              eval.ProofNumber() == 0 || eval.DisproofNumber() == 0 ||
-              (i + 2 < upper_ && i < weak_upper_ && GetEvaluation(i + 2).ProbGreaterEqual() > 1 - kMinProbEvalGoal) ||
-              (i - 2 > lower_ && i > weak_lower_ && GetEvaluation(i - 2).ProbGreaterEqual() < kMinProbEvalGoal)) {
+          eval.ProofNumber() == 0 || eval.DisproofNumber() == 0 ||
+          (i + 2 < upper_ && i < weak_upper_ && GetEvaluation(i + 2).ProbGreaterEqual() > 1 - kMinProbEvalGoal) ||
+          (i - 2 > lower_ && i > weak_lower_ && GetEvaluation(i - 2).ProbGreaterEqual() < kMinProbEvalGoal)) {
         continue;
       }
       double cur_value = i == last_eval_goal ? 2 * kLogDerivativeMinusInf : eval.MaxLogDerivative();
@@ -394,7 +409,10 @@ class Node {
     return Equals(other, false);
   }
 
-  Square Depth() const { return depth_; }
+  Square Depth() const {
+    assert(depth_ != kNoSquare);
+    return depth_;
+  }
 
   // TODO: Avoid code duplication with SetSolved.
   void SetUpper(Eval upper) {
@@ -411,7 +429,7 @@ class Node {
   // Starts from 0, decreases until kLogDerivativeMinusInf until partially
   // solved, then decreases more until becoming -inf.
   virtual double Advancement(Eval lower, Eval upper) const {
-    double result = -std::numeric_limits<double>::infinity();
+    double result = -DBL_MAX;
     for (int i = std::max(lower_ + 1, (int) weak_lower_); i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
       result = std::max(result, (double) GetEvaluation(i).MaxLogDerivative());
     }
@@ -435,7 +453,7 @@ class Node {
     return remaining_work < mult * std::min(70000, 10000 + std::max(0, delta) * 250);
   }
 
-  u_int8_t Evaluator() const { return evaluator_; }
+  uint8_t Evaluator() const { return evaluator_; }
 
   bool Equals(const Node& other, bool approx) const {
     if (!EqualsExceptDescendants(other)) {
@@ -490,7 +508,7 @@ class Node {
   Eval min_evaluation_;
   Square depth_;
   Square eval_depth_;
-  u_int8_t evaluator_;
+  uint8_t evaluator_;
   bool is_leaf_;
 
   void UpdateLeafEvaluation(int i) {
@@ -504,7 +522,7 @@ class Node {
     evaluation->SetLeaf(player_, opponent_, i_large, leaf_eval_, eval_depth_, n_empties_);
     assert(
         (evaluation->ProbGreaterEqual() == 0 || evaluation->ProbGreaterEqual() == 1) ==
-            (evaluation->MaxLogDerivative() == kLogDerivativeMinusInf));
+        (evaluation->MaxLogDerivative() == kLogDerivativeMinusInf));
   }
 
   bool EqualsExceptDescendants(const Node& other) const {
@@ -580,17 +598,21 @@ class TreeNode : public Node {
   }
 
   bool IsLeaf() const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return IsLeafNoLock();
+  }
+
+  virtual bool IsLockableLeaf(Eval solved_lower, Eval solved_upper) {
+    return IsLeafNoLock() && !Node::IsSolved(solved_lower, solved_upper, false);
   }
 
   // Locks a leaf by setting n_threads_working_ = 1. If n_threads_working_ > 0,
   // the lock fails. We should never have n_threads_working_ > 1 for a leaf.
   bool TryLockLeaf(Eval solved_lower, Eval solved_upper) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     // Some other thread has added this node's children or solved this node
     // before locking it.
-    if (!IsLeafNoLock() || Node::IsSolved(solved_lower, solved_upper, false)) {
+    if (!IsLockableLeaf(solved_lower, solved_upper)) {
       return false;
     }
     uint8_t expected = 0;
@@ -602,7 +624,7 @@ class TreeNode : public Node {
 
   void UpdateFathers() {
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
-    for (int i = 0; i < n_fathers_; ++i) {
+    for (unsigned int i = 0; i < n_fathers_; ++i) {
       TreeNode* father = fathers_[i];
       assert(!father->IsLeaf());
       father->UpdateFather();
@@ -611,12 +633,12 @@ class TreeNode : public Node {
   }
 
   virtual void UpdateFather() {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     UpdateFatherNoLock();
   }
 
   std::vector<Node> GetChildren() {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     std::vector<Node> children;
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
@@ -629,7 +651,7 @@ class TreeNode : public Node {
   void SetChildren(const std::vector<TreeNode*>& children, const EvaluatorDerivative& evaluator);
 
   bool HasLeafEval() {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return HasLeafEvalNoLock();
   }
 
@@ -638,7 +660,7 @@ class TreeNode : public Node {
   }
 
   void SetChildren(const std::vector<TreeNode*>& children) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     SetChildrenNoLock(children);
   }
 
@@ -676,7 +698,7 @@ class TreeNode : public Node {
   }
 
   TreeNode* BestChild(int eval_goal, float n_thread_multiplier) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     if (IsLeafNoLock()) {
       return this;
     }
@@ -686,14 +708,14 @@ class TreeNode : public Node {
     if (eval_goal < weak_lower_ || eval_goal > weak_upper_ || Node::IsSolved(eval_goal, eval_goal, false)) {
       return nullptr;
     }
-    double best_child_value = -INFINITY;
+    double best_child_value = -DBL_MAX;
     TreeNode* best_child = nullptr;
     auto start = ChildrenStart();
     auto end = ChildrenEnd();
     int child_eval_goal = -eval_goal;
     for (auto iter = start; iter != end; ++iter) {
       TreeNode* child = *iter;
-      std::lock_guard<std::mutex> guard(child->mutex_);
+      auto child_guard = child->GetGuard();
       if (child_eval_goal <= child->lower_ || child_eval_goal >= child->upper_ ||
           child_eval_goal < child->weak_lower_ || child_eval_goal > child->weak_upper_) {
         continue;
@@ -726,13 +748,13 @@ class TreeNode : public Node {
   }
 
   bool WeakLowerUpperContains(Eval weak_lower, Eval weak_upper) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return weak_lower_ <= weak_lower && weak_upper <= weak_upper_;
   }
 
   template<class T>
   std::unique_ptr<LeafToUpdate<T>> AsLeaf(int last_eval_goal) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     auto eval_goal = NextPositionEvalGoal(0, 1, Node::SolveProbability(-63, 63) > 0.05 ? kLessThenMinEval : last_eval_goal);
     if (eval_goal == kLessThenMinEval) {
       return nullptr;
@@ -742,38 +764,38 @@ class TreeNode : public Node {
 
   template<class T>
   LeafToUpdate<T> AsLeafWithGoal(Eval eval_goal) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return AsLeafNoLock<T>(eval_goal);
   }
 
   template<class T>
   void UpdateAlphaBeta(LeafToUpdate<T>* leaf) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     UpdateAlphaBetaNoLock(leaf);
   }
 
   double SolveProbability(Eval lower, Eval upper) const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return Node::SolveProbability(lower, upper);
   }
 
   bool IsSolved(Eval lower, Eval upper, bool approx) const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return Node::IsSolved(lower, upper, approx);
   }
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return Node::ToBeSolved(lower, upper, num_tree_nodes, total_visited);
   }
 
   double RemainingWork(Eval lower, Eval upper) const {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return Node::RemainingWork(lower, upper);
   }
 
   std::pair<Eval, Eval> ExpectedWeakLowerUpper() const {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     Eval expected_weak_lower = std::min(upper_ - 1, std::max(lower_ + 1, (int) weak_lower_));
     Eval expected_weak_upper = std::max(lower_ + 1, std::min(upper_ - 1, (int) weak_upper_));
     assert(expected_weak_lower <= expected_weak_upper);
@@ -817,7 +839,7 @@ class TreeNode : public Node {
   }
 
   double Advancement(Eval lower, Eval upper) const override {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     return Node::Advancement(lower, upper);
   }
 
@@ -837,7 +859,7 @@ class TreeNode : public Node {
   }
 
   virtual void SetLeafEval(EvalLarge leaf_eval, Square eval_depth) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     if (HasLeafEvalNoLock()) {
       return;
     }
@@ -874,19 +896,24 @@ class TreeNode : public Node {
   }
 
  protected:
-  mutable std::mutex mutex_;
+  std::mutex* mutex_;
   TreeNode** children_;
   TreeNode** fathers_;
-  u_int32_t n_fathers_;
+  uint32_t n_fathers_;
   Square n_children_;
   std::atomic_uint8_t n_threads_working_;
   static std::atomic_bool extend_eval_failed_;
+  static std::vector<std::vector<std::mutex>> mutex_at_depth_;
 
   friend std::ostream& operator<<(std::ostream& stream, const TreeNode& n);
+  
+  virtual std::optional<std::lock_guard<std::mutex>> GetGuard() const {
+    return std::optional<std::lock_guard<std::mutex>>{*mutex_};
+  }
 
   void ExtendEvalInternal(Eval weak_lower, Eval weak_upper) {
     {
-      std::lock_guard<std::mutex> guard(mutex_);
+      auto guard = GetGuard();
       // NOTE: We cannot return if weak_lower_, weak_upper_ of this node are OK,
       // because there might be a thread working on this node's descendants with
       // old weak_lower, weak_upper. And we cannot check that n_threads_working
@@ -901,7 +928,7 @@ class TreeNode : public Node {
       children_[i]->ExtendEvalInternal(-weak_upper, -weak_lower);
     }
     {
-      std::lock_guard<std::mutex> guard(mutex_);
+      auto guard = GetGuard();
       weak_lower_ = weak_lower;
       weak_upper_ = weak_upper;
       assert(weak_lower_ <= weak_upper_);
@@ -969,7 +996,6 @@ class TreeNode : public Node {
   }
 
   bool IsUnderAnalyzed(const TreeNode& father, int father_eval_goal) const {
-    NVisited father_visited = father.GetNVisited();
     double remaining_work = father.Node::RemainingWork(father_eval_goal, father_eval_goal);
     if (remaining_work < 100000) {
       return false;
@@ -1007,7 +1033,7 @@ class TreeNode : public Node {
   }
 
   virtual void UpdateWithChild(const TreeNode& child) {
-    std::lock_guard<std::mutex> child_guard(child.mutex_);
+    auto child_guard = child.GetGuard();
     // We cannot check the upper, because we are currently updating it.
     assert(leaf_eval_ >= EvalToEvalLarge(lower_));
     assert(child.leaf_eval_ >= EvalToEvalLarge(child.lower_) && child.leaf_eval_ <= EvalToEvalLarge(child.upper_));
@@ -1032,14 +1058,14 @@ class TreeNode : public Node {
   }
 
   virtual void AddFather(TreeNode* father) {
-    std::lock_guard<std::mutex> guard(mutex_);
+    auto guard = GetGuard();
     if (n_fathers_ == 0) {
       fathers_ = (TreeNode**) malloc(sizeof(TreeNode*));
     } else {
       fathers_ = (TreeNode**) realloc(fathers_, (n_fathers_ + 1) * sizeof(TreeNode*));
     }
     fathers_[n_fathers_] = father;
-    depth_ = father->depth_ + 1;
+    depth_ = father->depth_ == kNoSquare ? kNoSquare : father->depth_ + 1;
     n_fathers_++;
   }
 

@@ -17,20 +17,20 @@
 #ifndef OTHELLO_SENSEI_THOR_H
 #define OTHELLO_SENSEI_THOR_H
 
+#include <string>
+
 #include "source.h"
 #include "../utils/files.h"
 
+template<class GameGetter = GameGetterOnDisk>
 class Thor {
  public:
-  Thor(const std::string& folder, bool rebuild_canonicalizer = false, bool rebuild_games_order = false)
+  Thor(const std::string& folder, bool rebuild_canonicalizer = false, bool rebuild_games_order = false, bool rebuild_games_small_hash = false)
       : folder_(folder), sources_() {
-    for (const auto& entry : fs::directory_iterator(folder)) {
-      if (!entry.is_directory()) {
-        continue;
-      }
-      sources_.insert({fs::path(entry).filename(), std::make_unique<Source>(entry.path(), rebuild_games_order)});
+    for (const auto& entry : GetAllFiles(folder, /*include_files=*/false, /*include_directories=*/true)) {
+      sources_.insert({Filename(entry), std::make_unique<Source<GameGetter>>(entry, rebuild_games_order, rebuild_games_small_hash)});
     }
-    if (!rebuild_canonicalizer && fs::exists(CanonicalizerPath())) {
+    if (!rebuild_canonicalizer && FileExists(CanonicalizerPath())) {
       LoadCanonicalizer();
     } else {
       ComputeCanonicalizer();
@@ -61,21 +61,45 @@ class Thor {
     return result;
   }
 
-  GamesList GetGames(
-      const std::string& source,
+  template<bool transpositions = true>
+  GamesList GetGamesFromAllSources(
       const Sequence& sequence,
-      int max_games = INT_MAX,
+      int max_games = 1,
       std::vector<std::string> blacks = {},
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) {
+      short end_year = SHRT_MAX) const {
+    GamesList games;
+    for (const auto& [source_name, _] : sources_) {
+      GamesList new_games = GetGames<transpositions>(
+          source_name, sequence, max_games, blacks, whites, tournaments, start_year, end_year);
+      games.Merge(new_games);
+    }
+    return games;
+  }
+
+  template<bool transpositions = true>
+  GamesList GetGames(
+      const std::string& source,
+      const Sequence& sequence,
+      int max_games = 1,
+      std::vector<std::string> blacks = {},
+      std::vector<std::string> whites = {},
+      std::vector<std::string> tournaments = {},
+      short start_year = SHRT_MIN,
+      short end_year = SHRT_MAX) const {
+    assert(max_games > 0);  // Otherwise the Rotate() does not know how to rotate.
     const Sequence& canonical = sequence.ToCanonicalGame();
     GamesList games;
     games.max_games = max_games;
 
-    for (const Sequence& equivalent : canonicalizer_.AllEquivalentSequences(canonical)) {
-      GamesList new_games = sources_[source]->GetGames(equivalent, max_games, blacks, whites, tournaments, start_year, end_year);
+    std::vector<Sequence> lookup_sequences =
+        transpositions ? canonicalizer_.AllEquivalentSequences(canonical)
+        : std::vector<Sequence>({canonical});
+    for (const Sequence& lookup_sequence : lookup_sequences) {
+      GamesList new_games = sources_.at(source)->GetGames(
+          lookup_sequence, max_games, blacks, whites, tournaments, start_year, end_year);
       new_games.Rotate(sequence);
       games.Merge(new_games);
     }
@@ -96,22 +120,21 @@ class Thor {
     SaveCanonicalizer();
     for (const auto& [_, source] : sources_) {
       source->SaveSortedGames();
+      source->SaveGamesSmallHash();
     }
   }
 
  private:
   std::string folder_;
-  std::unordered_map<std::string, std::unique_ptr<Source>> sources_;
+  std::unordered_map<std::string, std::unique_ptr<Source<GameGetter>>> sources_;
   SequenceCanonicalizer canonicalizer_;
 
   void LoadCanonicalizer() {
-    std::ifstream file(CanonicalizerPath(), std::ios::binary);
     canonicalizer_.Load(ReadFile<char>(CanonicalizerPath()));
   }
 
   virtual void ComputeCanonicalizer() {
     ElapsedTime t;
-    int k = 0;
     std::vector<Sequence> all_sequences;
 
     for (const auto& [_, source] : sources_) {

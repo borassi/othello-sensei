@@ -45,6 +45,7 @@ class BookTreeNode : public TreeNode {
     player_ = b.Player();
     opponent_ = b.Opponent();
     n_empties_ = b.NEmpties();
+    depth_ = kNoSquare;
 
     CopyAndEnlargeToAllEvals(node);
   }
@@ -68,7 +69,7 @@ class BookTreeNode : public TreeNode {
     if (n_fathers_ == 0) {
       result.insert(result.end(), {0, 0, 0});
     } else {
-      for (int i = 0; i < n_fathers_; ++i) {
+      for (unsigned int i = 0; i < n_fathers_; ++i) {
         TreeNode* father = fathers_[i];
         auto child_to_move = GetUniqueNextBoardsWithPass(father->ToBoard());
         std::pair<Square, BitPattern> move = child_to_move.at(ToBoard());
@@ -88,12 +89,12 @@ class BookTreeNode : public TreeNode {
     for (int i = WeakLower(); i <= WeakUpper(); i += 2) {
       if (GetEvaluation(i).ProbGreaterEqual() == 1) {
         assert(GetEvaluation(i).MaxLogDerivative() == kLogDerivativeMinusInf);
-        assert(GetEvaluation(i).DisproofNumber() == std::numeric_limits<float>::infinity());
+        assert(GetEvaluation(i).DisproofNumber() == std::numeric_limits<float>::max());
         last_1 = i;
       }
       if (GetEvaluation(i).ProbGreaterEqual() == 0) {
         assert(GetEvaluation(i).MaxLogDerivative() == kLogDerivativeMinusInf);
-        assert(GetEvaluation(i).ProofNumber() == std::numeric_limits<float>::infinity());
+        assert(GetEvaluation(i).ProofNumber() == std::numeric_limits<float>::max());
         first_0 = i;
         break;
       }
@@ -225,6 +226,15 @@ class BookTreeNode : public TreeNode {
       }
     }
     return true;
+  }
+
+  virtual bool IsLockableLeaf(Eval solved_lower, Eval solved_upper) override {
+    return IsLeafNoLock();
+  }
+
+ protected:
+  std::optional<std::lock_guard<std::mutex>> GetGuard() const override {
+    return std::nullopt;
   }
 
  private:

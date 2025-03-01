@@ -19,9 +19,9 @@
 
 void PatternEvaluator::Setup(BitPattern player, BitPattern opponent) {
   memset(patterns_, 0, sizeof(patterns_));
-  empties_ = __builtin_popcountll(~(player | opponent));
+  empties_ = (int) __builtin_popcountll(~(player | opponent));
   FOR_EACH_SET_BIT(~player, remaining) {
-    BitPattern square = remaining & (-remaining);
+    BitPattern square = remaining & (0 - remaining);
     const UpdatePatterns& update_patterns =
         kFeatures.square_to_update_patterns[__builtin_ctzll(square)];
     for (int i = 0; i < update_patterns.num_patterns; ++i) {

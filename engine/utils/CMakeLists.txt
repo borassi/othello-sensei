@@ -1,4 +1,4 @@
-# Copyright 2023 Michele Borassi
+# Copyright 2023-2025 Michele Borassi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@ add_library(
         files.h
         files.cpp
 )
-#
-#target_link_libraries(
-#        files
-#        stdc++fs
-#)
+
+target_link_libraries(
+        files
+        misc
+)
 #
 #IF(ANDROID)
 #target_link_libraries(
@@ -32,11 +32,16 @@ add_library(
 #ENDIF()
 
 add_library(
+        cpu_adapter
+        SHARED
+        cpu_adapter.h
+        cpu_adapter.cpp
+)
+
+add_library(
         functions
         functions.h
-)
-set_target_properties(
-        functions PROPERTIES LINKER_LANGUAGE CXX
+        functions.cpp
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -58,9 +63,7 @@ ENDIF()
 add_library(
         random
         random.h
-)
-set_target_properties(
-        random PROPERTIES LINKER_LANGUAGE CXX
+        random.cpp
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -83,6 +86,13 @@ add_library(
         misc
         misc.h
         misc.cpp
+)
+
+target_link_libraries(
+        misc
+        LINK_PUBLIC
+        utility
+        types
 )
 
 IF(ENABLE_GOOGLETEST)
@@ -173,10 +183,7 @@ ENDIF()
 add_library(
         load_thor
         load_thor.h
-)
-
-set_target_properties(
-        load_thor PROPERTIES LINKER_LANGUAGE CXX
+        load_thor.cpp
 )
 
 target_link_libraries(
@@ -188,7 +195,17 @@ target_link_libraries(
 add_library(
         types
         types.h
+        types.cpp
 )
-set_target_properties(
-        types PROPERTIES LINKER_LANGUAGE CXX
+
+add_library(
+        constants
+        constants.h
+        constants.cpp
+)
+
+target_link_libraries(
+        constants
+        LINK_PUBLIC
+        types
 )

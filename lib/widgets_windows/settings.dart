@@ -15,6 +15,7 @@
  *
  */
 
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -28,20 +29,32 @@ import '../widgets_spacers/margins.dart';
 import '../widgets_utils/misc.dart';
 
 class SettingsLocalState with ChangeNotifier {
-  Map<String, dynamic> updates;
+  final Map<String, dynamic> updates = {};
+  final Map<String, TextEditingController> controllers = {};
 
-  SettingsLocalState() : updates = <String, dynamic>{};
-
-  int version = 0;
+  SettingsLocalState();
 
   void reset() {
     updates.clear();
-    ++version;
+    for (var name in controllers.keys) {
+      getTextEditingController(name);
+    }
     notifyListeners();
   }
-  void set(String key, dynamic value) {
-    updates[key] = value;
+  void set(String name, dynamic value) {
+    updates[name] = value;
     notifyListeners();
+  }
+  dynamic get(String name) {
+    return updates[name] ?? GlobalState.preferences.get(name) ?? GlobalState.preferences.defaultPreferences[name];
+  }
+  TextEditingController getTextEditingController(String name) {
+    var result = controllers.putIfAbsent(name, () => TextEditingController());
+    var value = get(name).toString();
+    if (result.text != value) {
+      result.text = value;
+    }
+    return result;
   }
 }
 
@@ -53,8 +66,8 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
-    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    var margin = Theme.of(context).extension<AppSizes>()!.margin;
     var style = Theme.of(context).textTheme.bodyMedium!;
 
     return Container(
@@ -85,8 +98,7 @@ class SettingsTileWithTextForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
-    var value = state.updates[key] ?? GlobalState.preferences.get(name);
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return SettingsTile(
       name: name,
       child: TextFormField(
@@ -97,7 +109,7 @@ class SettingsTileWithTextForm extends StatelessWidget {
           enabledBorder: InputBorder.none
         ),
         onChanged: onChanged,
-        initialValue: '$value',
+        controller: state.getTextEditingController(name),
         textAlign: TextAlign.right,
         keyboardType: keyboardType,
         inputFormatters: (inputFormatters ?? []) + [LengthLimitingTextInputFormatter(12)],
@@ -106,53 +118,62 @@ class SettingsTileWithTextForm extends StatelessWidget {
   }
 }
 
-Widget getCardSettings(String key, BuildContext context, SettingsLocalState state) {
-  var value = state.updates[key] ?? GlobalState.preferences.get(key);
+Widget getCardSettings(String name, BuildContext context, SettingsLocalState state) {
+  var value = state.updates[name] ?? GlobalState.preferences.get(name);
   onChanged(newValue) {
-    state.set(key, newValue);
-  };
-  var values = PreferencesState.preferencesValues[key];
+    state.set(name, newValue);
+  }
+  var values = PreferencesState.preferencesValues[name];
   if (values != null) {
     return SettingsTile(
-      name: key,
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        onChanged: (String? value) {
-          // This is called when the user selects an item.
-          if (value != null) {
-            onChanged(value);
-          }
-        },
-        items: values.map((String value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                value,
-                style: Theme.of(context).textTheme.bodyMedium!,
-                textAlign: TextAlign.right
-              ),
-            )
-          );
-        }).toList(),
+      name: name,
+      child: ListenableBuilder(
+        listenable: state,
+        builder: (BuildContext context, Widget? widget) => DropdownButton<String>(
+          value: state.get(name),
+          isExpanded: true,
+          onChanged: (String? value) {
+            // This is called when the user selects an item.
+            if (value != null) {
+              onChanged(value);
+            }
+          },
+          items: values.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  value,
+                  style: Theme.of(context).textTheme.bodyMedium!,
+                  textAlign: TextAlign.right
+                ),
+              )
+            );
+          }).toList(),
+        )
       )
     );
   }
   switch (value.runtimeType) {
     case bool:
       return SettingsTile(
-        name: key,
-        child: SenseiToggle(initialValue: value, onChanged: onChanged)
+        name: name,
+        child: ListenableBuilder(
+          listenable: state,
+          builder: (BuildContext context, Widget? widget) => SenseiToggle(
+            initialValue: state.get(name),
+            onChanged: onChanged
+          )
+        )
       );
     case int:
       return SettingsTileWithTextForm(
-        name: key,
+        name: name,
         state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
-            onChanged(newValue == '' ? null : int.parse(newValue!));
+            onChanged(newValue == '' ? null : int.parse(newValue));
           }
         },
         keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
@@ -160,11 +181,11 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
       );
     case double:
       return SettingsTileWithTextForm(
-        name: key,
+        name: name,
         state: state,
         onChanged: (String? newValue) {
           if (newValue != null) {
-            onChanged(newValue == '' ? null : double.parse(newValue!));
+            onChanged(newValue == '' ? null : double.parse(newValue));
           }
         },
         keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
@@ -172,7 +193,7 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
       );
     case String:
       return SettingsTileWithTextForm(
-        name: key,
+        name: name,
         state: state,
         onChanged: onChanged,
       );
@@ -182,36 +203,47 @@ Widget getCardSettings(String key, BuildContext context, SettingsLocalState stat
 }
 
 class Settings extends StatelessWidget {
-  Settings({super.key}) : _state = SettingsLocalState();
-
   final SettingsLocalState _state;
 
-  static const _uiPreferences = [
+  Settings({super.key}) : _state = SettingsLocalState();
+
+  static const _appearancePreferences = [
     'Controls position',
-    'Show coordinates',
+    'Margin size',
+    'Last move marker',
+    'Black and white bars in the graph',
+    'Show unsupported CPU at startup',
+  ];
+
+  static const _evalPreferences = [
+    'Round evaluations',
+    'Show extra data in evaluate mode',
     'Highlight distance from best move',
     'Best move green, other yellow',
     'Highlight next move in analysis',
     'Highlight next moves outside analysis',
+  ];
+
+  static const _behaviorPreferences = [
+    'Use illegal moves to undo and redo',
+    'Use disk count to undo and redo',
     'Back button action',
-  ];
-
-  static const _evalPreferences = [
-    'Number of threads',
-    'Positions when evaluating',
-    // 'Positions when playing',
-    'Seconds until first evaluation',
-    'Seconds between evaluations',
-    'Spend half time on positions worse by',
-    'Use book',
-    'Round evaluations',
-  ];
-
-  static const _analyzePreferences = [
-    'Seconds/position in game analysis',
+    'Pressing « from the first position',
+    'Evaluate if watching an analyzed game',
     'Analyze on paste',
     'Analyze on import',
   ];
+
+  static const _enginePreferences = [
+    'Seconds until first evaluation',
+    'Seconds between evaluations',
+    'Seconds/position in game analysis',
+    'Spend half time on positions worse by',
+    'Use book',
+    'Number of threads',
+    'Positions when evaluating',
+  ];
+
   static const _unshownPreferences = [
     'Active tab',
   ];
@@ -219,9 +251,10 @@ class Settings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var nerdPreferences = GlobalState.preferences.defaultPreferences.keys.toSet();
-    nerdPreferences.removeAll(_uiPreferences);
+    nerdPreferences.removeAll(_appearancePreferences);
     nerdPreferences.removeAll(_evalPreferences);
-    nerdPreferences.removeAll(_analyzePreferences);
+    nerdPreferences.removeAll(_behaviorPreferences);
+    nerdPreferences.removeAll(_enginePreferences);
     nerdPreferences.removeAll(_unshownPreferences);
 
     return SecondaryWindow(
@@ -229,53 +262,72 @@ class Settings extends StatelessWidget {
         GlobalState.preferences.setAll(_state.updates);
         GlobalState.evaluate();
       },
-      leaveSpaceRight: true,
       title: 'Settings',
-      child: ListenableBuilder(
-        listenable: _state,
-        builder: (BuildContext context, Widget? widget) {
+      child: Builder(
+        builder: (BuildContext context) {
           var titleStyle = TextStyle(
             color: Theme.of(context).colorScheme.onPrimaryContainer,
             fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!
           );
-          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
-          return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(0, 0, Theme.of(context).extension<AppSizes>()!.margin!, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+          return Scaffold(
+            resizeToAvoidBottomInset: true,
+            body: Column(
               children: [
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('User interface', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _uiPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(0, 0, Platform.isIOS || Platform.isAndroid ? 0 : 12, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Appearance', style: titleStyle)),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                        ),
+                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                        ),
+                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Behavior', style: titleStyle)),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _behaviorPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                        ),
+                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Engine', style: titleStyle)),
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _enginePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                        ),
+                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                        ),
+                      ],
+                    )
+                  ),
                 ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                Row(
+                  children: [
+                    Expanded(child: SenseiButton(
+                      onPressed: () { _state.reset(); },
+                      text: 'Reset to previous values',
+                    )),
+                    const Margin.internal(),
+                    Expanded(
+                      child: SenseiButton(
+                        onPressed: () async {
+                          await GlobalState.preferences.reset();
+                          _state.reset();
+                        },
+                        text: 'Reset to app defaults',
+                      )
+                    ),
+                  ],
                 ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Analysis', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _analyzePreferences.map((s) => getCardSettings(s, context, _state)).toList()
-                ),
-                Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
-                ),
-                const Margin(),
-                SenseiButton(
-                  onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
-                  text: 'Reset to previous values',
-                ),
-                const Margin(),
-                SenseiButton(
-                  onPressed: () { GlobalState.preferences.reset(); _state.reset(); },
-                  text: 'Reset to app defaults',
-                ),
-                const Margin(),
-              ],
+              ]
             )
           );
         }

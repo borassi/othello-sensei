@@ -19,7 +19,10 @@
 #include <iostream>
 #include <locale>
 #include <regex>
+#include <time.h>
+#include "constants.h"
 #include "misc.h"
+#include "../third_party/utility.h"
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
 
@@ -31,15 +34,15 @@ double ElapsedTime::Get() const {
 
 std::string PrettyPrintDouble(double d) {
 //  std::locale::global(std::locale("en_US.UTF8"));
-  if (d == INFINITY) {
+  assert(!isnan(d));
+  if (d > DBL_MAX) {
     return "+Inf";
-  } else if (d == -INFINITY) {
+  } else if (d < -DBL_MAX) {
     return "-Inf";
-  } else if (isnan(d)) {
-    return "NaN";
   } else if (abs(d) < 1.E-20) {
     return "0";
   }
+
   if (d < 0) {
     return "-" + PrettyPrintDouble(-d);
   }
@@ -79,8 +82,9 @@ std::string Indent(const std::string& s, const std::string& characters) {
 
 short GetCurrentYear() {
   std::time_t t = std::time(nullptr);
-  std::tm* const time = std::localtime(&t);
-  return 1900 + time->tm_year;
+  std::tm time;
+  localtime_r(&t, &time);
+  return 1900 + time.tm_year;
 }
 
 std::string LeftStrip(const std::string& s) {
@@ -109,6 +113,10 @@ std::string RightStrip(const std::string& s) {
   return result;
 }
 
+bool EndsWith(const std::string& s, const std::string& suffix) {
+  return s.size() >= suffix.size() && s.substr(s.size() - suffix.size()) == suffix;
+}
+
 std::string ToLower(const std::string& s) {
   std::string result = s;
   std::transform(result.begin(), result.end(), result.begin(),
@@ -130,4 +138,21 @@ std::vector<std::string> Split(const std::string& s, char c, bool strip) {
     }
   }
   return result;
+}
+
+void PrintSupportedFeatures() {
+#if __POPCNT__
+  std::cout << "Using intrinsic popcount\n" << std::flush;
+#else
+  std::cout << "Not using intrinsic popcount\n" << std::flush;
+#endif
+#if __BMI2__
+  std::cout << "Using BMI2 instructions\n" << std::flush;
+#else
+  std::cout << "Not using BMI2 instructions\n" << std::flush;
+#endif
+}
+
+size_t HashString(const std::string& s) {
+  return murmur2_or_cityhash<std::size_t>()(s.c_str(), s.length());
 }

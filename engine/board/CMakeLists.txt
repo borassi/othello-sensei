@@ -173,13 +173,13 @@ target_link_libraries(
         get_flip
 )
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(
             stable
             PUBLIC
             -fconstexpr-steps=100000000
     )
-ELSE()
+ELSEIF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(
             stable
             PUBLIC
@@ -228,6 +228,7 @@ target_link_libraries(
         misc
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         sequence_test
         sequence_test.cpp
@@ -242,3 +243,4 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()

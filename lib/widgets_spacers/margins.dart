@@ -28,11 +28,14 @@ enum FlexWithMarginsDirection {
 }
 
 class Margin extends StatelessWidget {
-  const Margin({super.key});
+  final bool isSideMargin;
+  const Margin.side({super.key}) : isSideMargin = true;
+  const Margin.internal({super.key}) : isSideMargin = false;
 
   @override
   Widget build(BuildContext context) {
-    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    var margin = isSideMargin ? appSizes.sideMargin : appSizes.margin;
     return SizedBox(height: margin, width: margin);
   }
 }

@@ -22,7 +22,6 @@ import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/margins.dart';
-import '../main.dart';
 import '../widgets_utils/misc.dart';
 
 class ThorSourcesWidget extends StatelessWidget {
@@ -46,7 +45,7 @@ class ThorSourcesWidget extends StatelessWidget {
                     }
                   },
                 ),
-                const Margin(),
+                const Margin.internal(),
                 Text(iter.key, style: Theme.of(context).textTheme.bodyMedium!),
               ]
             )
@@ -67,30 +66,38 @@ class ThorFiltersWidget extends StatelessWidget {
     var fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
     var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
     players.sort();
-    return Expanded(
-      child: DropdownSearch<String>.multiSelection(
-        items: players,
+    return ListenableBuilder(
+      listenable: GlobalState.thorMetadata,
+      builder: (BuildContext context, Widget? child) => DropdownSearch<String>.multiSelection(
+        items: (filter, infiniteScrollProps) => players,
         selectedItems: black ? GlobalState.thorMetadata.selectedBlacks : GlobalState.thorMetadata.selectedWhites,
         popupProps: PopupPropsMultiSelection.menu(
           showSearchBox: true,
-          fit: FlexFit.loose,
-          searchFieldProps: TextFieldProps(
-            style: TextStyle(fontSize: fontSize)
-          ),
-          itemBuilder: (context, branch, val) {
-            return DropdownMenuItem(
-              child: Text(branch, style: TextStyle(fontSize: fontSize)),
-            );
-          },
+          fit: FlexFit.tight,
+          searchFieldProps: TextFieldProps(style: TextStyle(fontSize: fontSize)),
+          constraints: BoxConstraints(maxHeight: 8 * squareSize),
+          itemBuilder: (BuildContext context, String s, bool x, bool y) => Text(s, style: TextStyle(fontSize: fontSize)),
+          searchDelay: const Duration(seconds: 0),
         ),
-        clearButtonProps: ClearButtonProps(
-          icon: Icon(Icons.clear, size: fontSize),
-          isVisible: true
-        ),
-        dropdownButtonProps: DropdownButtonProps(
-          icon: Icon(Icons.arrow_drop_down, size: fontSize),
-          isVisible: true
-        ),
+        dropdownBuilder: (context, selectedItems) {
+          return Column(
+            children: selectedItems.map((String item) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  child: Text(item, style: TextStyle(fontSize: fontSize)),
+                  onPressed: () {
+                    selectedItems.remove(item);
+                    if (black) {
+                      GlobalState.thorMetadata.setSelectedBlacks(selectedItems);
+                    } else {
+                      GlobalState.thorMetadata.setSelectedWhites(selectedItems);
+                    }
+                  }),
+              );
+            }).toList()
+          );
+        },
         onChanged: (List<String> elements) {
           if (black) {
             GlobalState.thorMetadata.setSelectedBlacks(elements);
@@ -109,28 +116,35 @@ class ThorFiltersWidget extends StatelessWidget {
         GlobalState.evaluate();
       },
       title: 'Archive filters',
-      child: Column(
-        children: [
-          const ThorSourcesWidget(),
-          const Margin(),
-          Row(
-            children: [
-              Case(CaseState.black, 255, () => {}, () => {}),
-              const Margin(),
-              playerSearch(context, true),
-            ]
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Case(CaseState.white, 255, () => {}, () => {}),
-              const Margin(),
-              playerSearch(context, false),
-            ]
-          ),
-          const Spacer(),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraint) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraint.maxHeight),
+            child: IntrinsicHeight(
+        child: Column(
+          children: [
+            const ThorSourcesWidget(),
+            const Margin.internal(),
+            Row(
+              children: [
+                Case(CaseState.black, 255, () => {}, () => {}, false),
+                const Margin.internal(),
+                Expanded(child: playerSearch(context, true)),
+              ]
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Case(CaseState.white, 255, () => {}, () => {}, false),
+                const Margin.internal(),
+                Expanded(child: playerSearch(context, false)),
+              ]
+            ),
+            const Spacer(),
+          ],
+        )
       )
-    );
-  }
+    ));
+  }));}
 }

@@ -27,6 +27,8 @@ using ::testing::UnorderedElementsAre;
 
 class ThorTest : public testing::Test {
   void SetUp() override {
+    // In case one test failed and did not clean up.
+    fs::remove_all(kThorTestData);
     fs::create_directories(kThorTestData + "/Thor");
     fs::create_directories(kThorTestData + "/PlayOK");
     std::ofstream thor_games_2022_file(kThorTestData + "/Thor/WTH_2022.wtb", std::ios::binary);
@@ -117,6 +119,34 @@ TEST_F(ThorTest, SingleSource) {
   ));
 }
 
+TEST_F(ThorTest, SingleSourceTranspositions) {
+  fs::remove_all(kThorTestData + "/PlayOK");
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames("Thor", Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 2);
+}
+
+TEST_F(ThorTest, SingleSourceNoTranspositions) {
+  fs::remove_all(kThorTestData + "/PlayOK");
+  Thor thor(kThorTestData);
+  auto games = thor.GetGames</*transpositions=*/false>("Thor", Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 1);
+}
+
+TEST_F(ThorTest, AllSources) {
+  Thor thor(kThorTestData);
+  auto games = thor.GetGamesFromAllSources(Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 4);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 4)));
+}
+
+TEST_F(ThorTest, AllSourcesNoTranspositions) {
+  Thor thor(kThorTestData);
+  auto games = thor.GetGamesFromAllSources</*transpositions=*/false>(Sequence("e6f4c3c4d3"));
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 2)));
+}
+
 TEST_F(ThorTest, Rotations) {
   fs::remove_all(kThorTestData + "/PlayOK");
   Thor thor(kThorTestData);
@@ -147,16 +177,3 @@ TEST_F(ThorTest, Save) {
   EXPECT_EQ(games.num_games, 2);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
 }
-//
-//TEST_F(ThorTest, Transpositions) {
-//  Thor thor(kThorTestData);
-//  auto [n_games, games] = source.GetGames(Sequence("e6f4c3c4d3"));
-//  EXPECT_EQ(n_games, 2);
-//  EXPECT_THAT(games, UnorderedElementsAre(&source.AllGames()[1], &source.AllGames()[2]))
-//      << source.AllGames()[1] << "\n" << source.AllGames()[2] << "\n";
-//}
-
-//TEST(Thor, Thor) {
-//  Thor thor("assets/thor");
-//  thor.LookupPositions({}, {}, {});
-//}

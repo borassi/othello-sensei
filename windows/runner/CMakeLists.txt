@@ -36,5 +36,50 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+message("${CMAKE_SOURCE_DIR}")
+
+SET(GOOGLETEST FALSE)
+
+add_subdirectory(../../engine/analyzers analyzers)
+add_subdirectory(../../engine/board board)
+add_subdirectory(../../engine/book book)
+add_subdirectory(../../engine/estimators estimators)
+add_subdirectory(../../engine/evaluatealphabeta evaluatealphabeta)
+add_subdirectory(../../engine/evaluatedepthone evaluatedepthone)
+add_subdirectory(../../engine/evaluatederivative evaluatederivative)
+add_subdirectory(../../engine/hashmap hashmap)
+add_subdirectory(../../engine/main main)
+add_subdirectory(../../engine/third_party third_party)
+add_subdirectory(../../engine/thor thor)
+add_subdirectory(../../engine/utils utils)
+
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+add_library(
+        cpu_adapter_win
+        SHARED
+        ../../engine/utils/cpu_adapter.h
+        ../../engine/utils/cpu_adapter.cpp
+        ../../engine/utils/exports.def
+)
+
+target_link_libraries(
+        cpu_adapter_win
+        LINK_PUBLIC
+        cpu_adapter
+)
+
+add_library(
+        ui_win
+        SHARED
+        ../../engine/main/ui.h
+        ../../engine/main/ui.cpp
+        ../../engine/main/exports.def
+)
+
+target_link_libraries(
+        ui_win
+        LINK_PUBLIC
+        ui
+)

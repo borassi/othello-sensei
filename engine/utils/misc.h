@@ -20,12 +20,15 @@
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
+#include <float.h>
 #include <limits>
 #include <math.h>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "types.h"
 
 class ElapsedTime {
  public:
@@ -38,11 +41,11 @@ class ElapsedTime {
 
 constexpr double ConstexprLog(double x) {
   assert(x > 0);
-  if (x < 1E-32) {
-    return -std::numeric_limits<double>::infinity();
+  if (x < -DBL_MAX) {
+      return 0;
   }
-  if (x == std::numeric_limits<double>::infinity()) {
-    return std::numeric_limits<double>::infinity();
+  if (x > DBL_MAX) {
+      return DBL_MAX;
   }
   double result = 0;
   // Move x between (little less than) 1 / sqrt(2)
@@ -68,11 +71,11 @@ constexpr double ConstexprLog(double x) {
 }
 
 constexpr double ConstexprExp(double x) {
-  if (x == -std::numeric_limits<double>::infinity()) {
+  if (x < -DBL_MAX) {
     return 0;
   }
-  if (x == std::numeric_limits<double>::infinity()) {
-    return std::numeric_limits<double>::infinity();
+  if (x > DBL_MAX) {
+    return DBL_MAX;
   }
   double multiplier = 1;
   double result = 1;
@@ -139,10 +142,39 @@ std::vector<std::string> Split(const std::string& s, char c, bool strip = true);
 
 std::string ToLower(const std::string& s);
 
+bool EndsWith(const std::string& s, const std::string& suffix);
+
 short GetCurrentYear();
 
 std::string PrettyPrintDouble(double d);
 
 std::string Indent(const std::string& s, const std::string& characters);
+
+
+constexpr inline Eval MaxEval(Eval eval1, Eval eval2) {
+  return eval1 > eval2 ? eval1 : eval2;
+}
+
+constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
+  return eval1 < eval2 ? eval1 : eval2;
+}
+void PrintSupportedFeatures();
+
+constexpr std::size_t murmur64(std::size_t h) {
+  h ^= h >> 33;
+  h *= 0xff51afd7ed558ccdL;
+  h ^= h >> 33;
+  h *= 0xc4ceb9fe1a85ec53L;
+  h ^= h >> 33;
+  return h;
+}
+
+constexpr std::size_t CombineHashes(std::size_t h1, std::size_t h2) {
+  return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+}
+
+// Same as std::hash for Linux and Mac.
+// We need consistent hashes for different operating systems, so we re-implement it here.
+std::size_t HashString(const std::string& s);
 
 #endif  // UTILS_MISC_H

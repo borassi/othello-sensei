@@ -23,6 +23,8 @@ import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
+import '../widgets_utils/misc.dart';
+import '../widgets_windows/thor_filters.dart';
 
 Widget getCase(BuildContext context, bool black) {
   var textColor = black ? Colors.white : Colors.black;
@@ -35,6 +37,7 @@ Widget getCase(BuildContext context, bool black) {
           255,
           () => {},
           () => {},
+          false
         ),
         Text(
           text,
@@ -80,7 +83,7 @@ class ShowError extends HideInactiveWidget {
           builder: (BuildContext context, Widget? widget) {
             var (errorBlack, errorWhite, hasNaN) = GlobalState.globalAnnotations.getErrors();
             return Text(
-              (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite),
+              (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite, true),
               style: TextStyle(
                 fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize!,
                 height: 1.0
@@ -95,27 +98,102 @@ class ShowError extends HideInactiveWidget {
 
 }
 
-class DiskCountWithError extends StatelessWidget {
-  const DiskCountWithError({super.key});
+class FiltersButton extends HideInactiveWidget {
+  const FiltersButton({super.key});
+
+  @override
+  Widget buildChild(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    return Expanded(
+        child: SenseiButton(
+          text: 'Filters',
+          onPressed: () {
+            GlobalState.stop();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
+            );
+          },
+        )
+    );
+  }
+}
+
+enum DiskCountExtraContent {
+  error,
+  thor,
+}
+
+class DiskCountWithExtraContent extends StatelessWidget {
+  final DiskCountExtraContent extraContent;
+  const DiskCountWithExtraContent(this.extraContent, {super.key});
 
   Widget widget(BuildContext context, bool black) {
     return ShowError(black);
   }
 
+  static bool undoRedoEnabled() {
+    return GlobalState.preferences.get('Use disk count to undo and redo');
+  }
+
+  static void maybeUndo() {
+    if (undoRedoEnabled()) {
+      GlobalState.undo();
+    }
+  }
+  static void maybeRedo() {
+    if (undoRedoEnabled()) {
+      GlobalState.redo();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const DiskCount(true),
-        const Margin(),
-        SizedBox(height: squareSize, child: widget(context, true)),
-        const Spacer(),
-        SizedBox(height: squareSize, child: widget(context, false)),
-        const Margin(),
-        const DiskCount(false),
-      ]
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    return SizedBox(
+      height: squareSize,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (TapDownDetails details) => maybeUndo(),
+              child: Row(
+                children: <Widget>[
+                  const DiskCount(true)
+                ] + (
+                    (extraContent == DiskCountExtraContent.error) ? [
+                    const Margin.internal(),
+                    widget(context, true),
+                  ] : []
+                ) + [
+                  const Spacer(),
+                ]
+              )
+            )
+          ),
+        ] + ((extraContent == DiskCountExtraContent.thor) ? [FiltersButton()] : []) + [
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (TapDownDetails details) => maybeRedo(),
+              child: Row(
+                children: <Widget>[
+                  const Spacer(),
+                ] + (
+                    (extraContent == DiskCountExtraContent.error) ? [
+                      widget(context, false),
+                      const Margin.internal(),
+                    ] : []
+                ) + [
+                  const DiskCount(false),
+                ]
+              )
+            )
+          )
+        ]
+      )
     );
   }
 }

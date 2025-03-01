@@ -19,13 +19,14 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:othello_sensei/drive/drive_downloader.dart';
 import 'package:othello_sensei/utils.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ffi/ffi_bridge.dart';
@@ -55,8 +56,8 @@ int currentMove() {
 }
 
 void updateAnnotations(int currentThread, bool finished) {
-  Pointer<Annotations> startAnnotations = ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
-  Pointer<Annotations> annotations = ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
+  Pointer<Annotations> startAnnotations = GlobalState.ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
+  Pointer<Annotations> annotations = GlobalState.ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr ||
       !annotations.ref.valid) {
     GlobalState.globalAnnotations.reset();
@@ -75,58 +76,43 @@ void updateAnnotations(int currentThread, bool finished) {
 }
 
 Future<void> copy() async {
-  Pointer<Char> sequence = ffiEngine.GetSequence(GlobalState.ffiMain);
+  Pointer<Char> sequence = GlobalState.ffiEngine.GetSequence(GlobalState.ffiMain);
   var s = sequence.cast<Utf8>().toDartString();
   Clipboard.setData(ClipboardData(text: s));
   malloc.free(sequence);
 }
+Future<void> paste() async {
+  var game = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+  setGameOrError(game, "Analyze on paste");
+}
 
-Future<bool> paste() async {
-  String? game = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+Future<void> setGameOrError(String? game, String preference) async {
   if (game == null) {
-    return false;
-  }
-  var gameC = game.toNativeUtf8().cast<Char>();
-  return ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
-}
-
-Future<void> pasteOrError(BuildContext context) async {
-  bool success = await paste();
-  if (!success && context.mounted) {
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext ctx) {
-        return const AlertDialog(
-          title: Text('The clipboard does not contain a game!'),
-        );
-      },
-    );
-  }
-  if (GlobalState.preferences.get("Analyze on paste") && success) {
-    analyze();
-  } else {
-    GlobalState.evaluate();
-  }
-}
-
-void receiveOthelloQuestEvent(List<SharedMediaFile> event) {
-  if (event.length != 1 || event[0].mimeType != 'message/rfc822') {
     return;
   }
-  var game = event[0].path.toNativeUtf8().cast<Char>();
-  ffiEngine.SetSequence(GlobalState.ffiMain, game);
-  if (GlobalState.preferences.get('Analyze on import')) {
+  var gameC = game.toNativeUtf8().cast<Char>();
+  var success = GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+  if (!success) {
+    await showSenseiDialog(SenseiDialog(title: 'Not a game', content: game));
+    return;
+  }
+  if (GlobalState.preferences.get(preference)) {
     analyze();
   } else {
     GlobalState.evaluate();
   }
+}
+
+void resetAnalyzedGame() {
+  GlobalState.ffiEngine.ResetAnalyzedGame(GlobalState.ffiMain);
+  GlobalState.evaluate();
 }
 
 void analyze() {
   GlobalState.preferences.fillEvaluateParams();
   GlobalState.preferences.set('Active tab', 0);
   GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
-  ffiEngine.Analyze(GlobalState.ffiMain);
+  GlobalState.ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
 class GlobalState {
@@ -137,33 +123,59 @@ class GlobalState {
   static late final PreferencesState preferences;
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
-  static late DriveDownloader driveDownloader;
+  static late List<ConnectivityResult> connectivity;
   static ThorMetadataState? thorMetadataOrNull;
+  static late FFIEngine ffiEngine;
+  static late CpuType cpuType;
+  static late String localPath;
+  static final navigatorKey = GlobalKey<NavigatorState>();
 
   static Future<void> init() async {
+    final directory = await getApplicationSupportDirectory();
+    localPath = directory.path;
     await maybeCopyAssetsToLocalPath();
-    driveDownloader = await DriveDownloader.create();
+    var ffiEngineCpuType = getDynamicLibrary();
+    ffiEngine = FFIEngine(ffiEngineCpuType.$1);
+    cpuType = ffiEngineCpuType.$2;
+    var connectivityHandler = Connectivity();
+    try {
+      connectivity = await connectivityHandler.checkConnectivity();
+      connectivityHandler.onConnectivityChanged.forEach((var result) { connectivity = result; });
+    } on Exception catch(e) {
+      print(
+          'WARNING: cannot get connectivity. This does not prevent the app '
+          'from running, but it causes less readable error messages when '
+          'downloading book and archive. Error:\n$e');
+      connectivity = [ConnectivityResult.other];
+    }
     preferences = await PreferencesState.create();
     await _createMain();
-    if (Platform.isAndroid || Platform.isIOS) {
-      ReceiveSharingIntent.getInitialMedia().then(receiveOthelloQuestEvent);
-      ReceiveSharingIntent.getMediaStream().listen(receiveOthelloQuestEvent);
-    }
   }
 
-  static Future<void> resetMain() async {
-    ffiEngine.MainDelete(ffiMain);
-    await _createMain();
+  static Future<void> resetMain(void Function() runWithoutFFIMain) async {
+    try {
+      GlobalState.ffiEngine.MainDelete(ffiMain);
+      runWithoutFFIMain();
+    } finally {
+      await _createMain();
+    }
   }
 
   static Future<void> _createMain() async {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
-    var localAssetPathVar = await localAssetPath();
-    ffiMain = ffiEngine.MainInit(
+    var localAssetPathVar = localAssetPath();
+    globalAnnotations.reset();
+    for (int i = 0; i < 64; ++i) {
+      GlobalState.annotations[i].clear();
+    }
+    thorMetadataOrNull = null;
+    ffiMain = GlobalState.ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>(),
+        join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>(),
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction
     );
@@ -175,38 +187,72 @@ class GlobalState {
     return thorMetadataOrNull!;
   }
 
+  static void newGameXot(bool small) async {
+    GlobalState.ffiEngine.RandomXOT(GlobalState.ffiMain, small);
+    evaluate();
+  }
+
   static void newGame() async {
-    ffiEngine.NewGame(GlobalState.ffiMain);
+    GlobalState.ffiEngine.NewGame(GlobalState.ffiMain);
     evaluate();
   }
 
   static void playMove(int i) {
-    ffiEngine.PlayMove(GlobalState.ffiMain, i);
+    bool moved = GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i);
+    if (!moved && GlobalState.preferences.get('Use illegal moves to undo and redo')) {
+      if (i % 8 < 4) {
+        redo();
+      } else {
+        undo();
+      }
+      return;
+    }
     evaluate();
   }
 
   static void redo() {
-    ffiEngine.Redo(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Redo(GlobalState.ffiMain);
     evaluate();
   }
 
   static void undo() {
-    ffiEngine.Undo(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Undo(GlobalState.ffiMain);
     evaluate();
   }
 
-  static void toAnalyzedGameOrFirstState() async {
-    ffiEngine.ToAnalyzedGameOrFirstState(GlobalState.ffiMain);
+  static void toAnalyzedGameOrLastChoice() async {
+    if (GlobalState.board.emptySquares() == 60) {
+      switch (GlobalState.preferences.get('Pressing « from the first position')) {
+        case 'Ask':
+          if (await showSenseiDialog(SenseiDialog(
+              title: 'New game?',
+              content: 'Clicking "Yes" loses all analysis data.',
+              actions: [
+                (text: 'Yes', onPressed: (context) { Navigator.pop(context, true); }),
+                (text: 'No', onPressed: (context) { Navigator.pop(context, false); }),
+              ])) ?? false) {
+            GlobalState.newGame();
+          }
+          break;
+        case 'New game':
+          GlobalState.newGame();
+          break;
+        default:
+          break;
+      }
+    } else {
+      GlobalState.ffiEngine.ToAnalyzedGameOrLastChoice(GlobalState.ffiMain);
+    }
     evaluate();
   }
 
   static void setCurrentMove(int currentMove) {
-    ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
+    GlobalState.ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
     evaluate();
   }
 
   static void stop() {
-    ffiEngine.Stop(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Stop(GlobalState.ffiMain);
   }
 
   static void evaluate() {
@@ -215,7 +261,7 @@ class GlobalState {
       return;
     }
     GlobalState.preferences.fillEvaluateParams();
-    ffiEngine.Evaluate(GlobalState.ffiMain);
+    GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
 }
 
@@ -223,13 +269,17 @@ class BoardState with ChangeNotifier {
   int player;
   int opponent;
   bool blackTurn;
+  int lastMove;
+  bool xot;
 
-  BoardState() : player = 0, opponent = 0, blackTurn = true;
+  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1, xot = false;
 
   void setState(BoardUpdate boardUpdate) {
     player = boardUpdate.player;
     opponent = boardUpdate.opponent;
     blackTurn = boardUpdate.black_turn;
+    lastMove = boardUpdate.last_move;
+    xot = boardUpdate.xot;
     notifyListeners();
   }
 
@@ -269,15 +319,24 @@ class AnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
-  double getEval() {
-    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn);
+  double getEval(bool inError) {
+    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn, inError);
   }
+}
+
+class InvalidPreferenceException implements Exception {
+  String cause;
+  InvalidPreferenceException(this.cause);
 }
 
 class PreferencesState with ChangeNotifier {
   final Map<String, dynamic> defaultPreferences = {
     'Controls position': 'App bar',
-    'Show coordinates': false,
+    'Margin size': 'Small',
+    'Last move marker': 'None',
+    'Black and white bars in the graph': false,
+    'Show extra data in evaluate mode': true,
+    'Evaluate if watching an analyzed game': false,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
     'Positions when evaluating': 100000000000,
@@ -285,7 +344,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Spend half time on positions worse by': 6.0,
-    'Round evaluations': false,
+    'Round evaluations': 'Never',
     'Use book': true,
     'Seconds/position in game analysis': 1.0,
     'Analyze on paste': true,
@@ -298,14 +357,34 @@ class PreferencesState with ChangeNotifier {
     'Active tab': 0,
     'Highlight next move in analysis': true,
     'Highlight next moves outside analysis': true,
+    'Show unsupported CPU at startup': true,
+    'Use illegal moves to undo and redo': false,
+    'Use disk count to undo and redo': true,
+    'Pressing « from the first position': 'Ask',
   };
   static const Map<String, List<String>> preferencesValues = {
+    'Last move marker': ['None', 'Dot', 'Number'],
     'Back button action': ['Undo', 'Close app'],
+    'Round evaluations': ['Never', 'Only errors', 'Always'],
     'Controls position': ['App bar', 'Side bar'],
+    'Margin size': ['None', 'Small', 'Large', 'Coordin'],
+    'Pressing « from the first position': ['Do nothing', 'Ask', 'New game'],
   };
   late final SharedPreferences _preferences;
 
-  PreferencesState._initialize(this._preferences);
+  PreferencesState._initialize(this._preferences) {
+    for (String name in _preferences.getKeys()) {
+      try {
+        _checkPreferenceNameAndValue(name, _preferences.get(name));
+      } on InvalidPreferenceException {
+        if (defaultPreferences.containsKey(name)) {
+          set(name, defaultPreferences[name]);
+        } else {
+          _preferences.remove(name);
+        }
+      }
+    }
+  }
 
   static Future<PreferencesState> create() async {
     var preferences = await SharedPreferences.getInstance();
@@ -313,12 +392,13 @@ class PreferencesState with ChangeNotifier {
   }
 
   dynamic get(String name) {
-    _checkPreferenceName(name);
-    return _preferences.get(name) ?? defaultPreferences[name];
+    var value = _preferences.get(name) ?? defaultPreferences[name];
+    _checkPreferenceNameAndValue(name, value);
+    return value;
   }
 
   void fillEvaluateParams() {
-    var params = ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
+    var params = GlobalState.ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
     params.lower = get('Lower');
     params.upper = get('Upper');
     params.max_positions = get('Positions when evaluating');
@@ -329,6 +409,7 @@ class PreferencesState with ChangeNotifier {
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');
     params.use_book = get('Use book');
+    params.reevaluate_during_analysis = get('Evaluate if watching an analyzed game');
     params.thor_filters.max_games = 100;
     params.thor_filters.start_year = 1000;
     params.thor_filters.end_year = 3000;
@@ -346,8 +427,8 @@ class PreferencesState with ChangeNotifier {
     notifyListeners();
   }
 
-  void reset() async {
-    setAll(defaultPreferences);
+  Future<void> reset() async {
+    await setAll(defaultPreferences);
   }
 
   Future<void> setNoUpdate(String name, dynamic value) async {
@@ -367,13 +448,13 @@ class PreferencesState with ChangeNotifier {
       case const (List<String>):
         await _preferences.setStringList(name, value);
       default:
-        throw Exception('Invalid preference type ${value.runtimeType} for value $value');
+        throw InvalidPreferenceException('Invalid preference type ${value.runtimeType} for value $value');
     }
   }
 
   void _checkPreferenceName(String name) {
     if (!defaultPreferences.containsKey(name)) {
-      throw Exception('Invalid preference name $name');
+      throw InvalidPreferenceException('Invalid preference name $name');
     }
   }
 
@@ -381,9 +462,20 @@ class PreferencesState with ChangeNotifier {
     _checkPreferenceName(name);
     var validValues = preferencesValues[name];
     if (!(validValues?.contains(value) ?? true)) {
-      throw Exception('Invalid value $value for preference $name. Valid values: $validValues');
+      throw InvalidPreferenceException('Invalid value $value for preference $name. Valid values: $validValues');
+    }
+    if (value.runtimeType != defaultPreferences[name].runtimeType) {
+      throw InvalidPreferenceException('Invalid type ${value.runtimeType} for preference $name. Expected: ${defaultPreferences[name].runtimeType}');
     }
   }
+}
+
+class EvaluationStats {
+  final int nVisited;
+  final int nVisitedBook;
+  final double seconds;
+
+  EvaluationStats(this.nVisited, this.nVisitedBook, this.seconds);
 }
 
 class GlobalAnnotationState with ChangeNotifier {
@@ -415,9 +507,16 @@ class GlobalAnnotationState with ChangeNotifier {
          child = child.ref.next_sibling) {
       bestEval = max(bestEval, -getEvalFromAnnotations(
           child.ref,
-          child.ref.black_turn));
+          child.ref.black_turn, false));
     }
     notifyListeners();
+  }
+
+  bool existsAnalyzedGame() {
+    return (
+        startAnnotations != null &&
+        startAnnotations!.ref.next_state_in_analysis != nullptr
+    );
   }
 
   (List<double>, int) getAllScoresAndLastMove() {
@@ -427,7 +526,7 @@ class GlobalAnnotationState with ChangeNotifier {
     if (startAnnotations == null) {
       return (scores, lastMove);
     }
-    if (startAnnotations!.ref.next_state_in_analysis == nullptr) {
+    if (!existsAnalyzedGame()) {
       lastMove = currentMoveVar;
     }
     var depth = 0;
@@ -436,10 +535,10 @@ class GlobalAnnotationState with ChangeNotifier {
          annotation = annotation.ref.next_state_in_analysis != nullptr ?
                           annotation.ref.next_state_in_analysis :
                           annotation.ref.next_state_played) {
-      if (annotation.ref.move == ffiEngine.PassMove()) {
+      if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
         continue;
       }
-      scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
+      scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
       if (lastMove == -1 && (
           annotation.ref.next_state_in_analysis == nullptr
           || annotation.ref.next_state_in_analysis != annotation.ref.next_state_played
@@ -455,63 +554,46 @@ class GlobalAnnotationState with ChangeNotifier {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
     var (allScores, lastMove) = getAllScoresAndLastMove();
-    var oldScore = 0.0;
-    var hasNaN = false;
+    var start = GlobalState.board.xot ? 8 : 0;
     int lastMoveForScores =
         GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
         allScores.length : lastMove + 1;
-    for (int i = 0; i < lastMoveForScores; ++i) {
+    var hasNaN = lastMoveForScores == 0;
+    var oldScore = allScores.elementAtOrNull(start) ?? double.nan;
+    if (oldScore.isNaN) {
+      oldScore = 0;
+    }
+    for (int i = start + 1; i < lastMoveForScores; ++i) {
       double score = allScores[i];
       var error = score - oldScore;
       if (error.isNaN) {
         hasNaN = true;
       } else if (error > 0) {
         errorWhite += error;
+        oldScore = score;
       } else {
         errorBlack += -error;
+        oldScore = score;
       }
-      oldScore = score;
     }
     return (errorBlack, errorWhite, hasNaN);
   }
 
-  (double, double) _getPositionsAndSeconds() {
-    if (annotations == null || annotations!.ref.descendants == 0) {
-      return (0, 0);
+   EvaluationStats getEvaluationStats() {
+    if (annotations == null) {
+      return EvaluationStats(0, 0, 0);
     }
-    var positions = 0.0;
+    var positions = 0;
+    var positionsBook = 0;
     var seconds = 0.0;
     for (var child = annotations!.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
       if (!child.ref.derived) {
         positions += child.ref.descendants;
+        positionsBook += child.ref.descendants_book;
         seconds += child.ref.seconds;
       }
     }
-    return (positions, seconds);
-  }
-
-  String getPositions() {
-    var (positions, seconds) = _getPositionsAndSeconds();
-    if (positions == 0 || seconds == 0) {
-      return '-';
-    }
-    return prettyPrintDouble(positions);
-  }
-
-  String getPositionsPerSec() {
-    var (positions, seconds) = _getPositionsAndSeconds();
-    if (positions == 0 || seconds == 0) {
-      return '-';
-    }
-    return prettyPrintDouble(positions / seconds);
-  }
-
-  String getTimeString() {
-    var (positions, seconds) = _getPositionsAndSeconds();
-    if (positions == 0 || seconds == 0) {
-      return '-';
-    }
-    return seconds.toStringAsFixed(1);
+    return EvaluationStats(positions, positionsBook, seconds);
   }
 }
 
@@ -529,7 +611,7 @@ class ThorMetadataState with ChangeNotifier {
   List<String> selectedWhites;
 
   ThorMetadataState() :
-        thorMetadata = ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
+        thorMetadata = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
         playerStringToIndex = {},
         sourceToActive = {},
         selectedBlacks = [],

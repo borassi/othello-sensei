@@ -16,10 +16,11 @@
 
 #include <array>
 #include <atomic>
+#include <cstring>
 #include <memory>
 #include <optional>
 #include "../board/bitpattern.h"
-#include "../constants.h"
+#include "../utils/constants.h"
 
 
 #ifndef HASH_MAP_H
@@ -35,8 +36,15 @@ struct HashMapEntry {
   Square second_best_move;
 };
 
-struct HashMapEntryWithBusy {
-  HashMapEntry entry;
+// We don't use a member or inheritance to save memory.
+struct HashMapEntryInternal {
+  BitPattern player;
+  BitPattern opponent;
+  EvalLarge lower;
+  EvalLarge upper;
+  DepthValue depth;
+  Square best_move;
+  Square second_best_move;
   std::atomic_bool busy;
 };
 
@@ -57,12 +65,11 @@ class HashMap {
       BitPattern player, BitPattern opponent, DepthValue depth,
       EvalLarge eval, EvalLarge lower, EvalLarge upper, Square best_move,
       Square second_best_move) {
-    auto& entry_with_busy = hash_map_[Hash(player, opponent)];
+    auto& entry = hash_map_[Hash(player, opponent)];
     bool expected = false;
-    if (!entry_with_busy.busy.compare_exchange_strong(expected, true)) {
+    if (!entry.busy.compare_exchange_strong(expected, true)) {
       return;
     }
-    auto& entry = entry_with_busy.entry;
     entry.player = player;
     entry.opponent = opponent;
     entry.lower = eval > lower ? eval : kMinEvalLarge;
@@ -70,38 +77,37 @@ class HashMap {
     entry.depth = depth;
     entry.best_move = best_move;
     entry.second_best_move = second_best_move;
-    entry_with_busy.busy = false;
+    entry.busy = false;
   }
 
   void Reset() {
-    HashMapEntry empty;
-    empty.player = 0;
-    empty.opponent = 0;
-    for (int i = 0; i < size; ++i) {
-      hash_map_[i].entry = empty;
-      hash_map_[i].busy = false;
+    for (HashMapEntryInternal& entry : hash_map_) {
+      entry.player = 0;
+      entry.opponent = 0;
+      entry.busy = false;
     }
   }
 
   // NOTE: We cannot just return a reference because another thread might
   // invalidate it. We need to copy it.
   std::unique_ptr<HashMapEntry> Get(BitPattern player, BitPattern opponent) {
-    auto& entry_with_busy = hash_map_[Hash(player, opponent)];
+    auto& entry_internal = hash_map_[Hash(player, opponent)];
     bool expected = false;
-    if (!entry_with_busy.busy.compare_exchange_strong(expected, true)) {
+    if (!entry_internal.busy.compare_exchange_strong(expected, true)) {
       return nullptr;
     }
-    if (entry_with_busy.entry.player != player || entry_with_busy.entry.opponent != opponent) {
-      entry_with_busy.busy = false;
+    if (entry_internal.player != player || entry_internal.opponent != opponent) {
+      entry_internal.busy = false;
       return nullptr;
     }
-    HashMapEntry entry = entry_with_busy.entry;
-    entry_with_busy.busy = false;
-    return std::make_unique<HashMapEntry>(entry);
+    std::unique_ptr<HashMapEntry> entry(new HashMapEntry());
+    memcpy(entry.get(), &entry_internal, sizeof(HashMapEntry));
+    entry_internal.busy = false;
+    return entry;
   }
 
   bool IsAllFree() {
-    for (const HashMapEntryWithBusy& entry : hash_map_) {
+    for (const HashMapEntryInternal& entry : hash_map_) {
       if (entry.busy) {
         return false;
       }
@@ -110,6 +116,6 @@ class HashMap {
   }
 
  private:
-  std::vector<HashMapEntryWithBusy> hash_map_;
+  std::vector<HashMapEntryInternal> hash_map_;
 };
 #endif  // HASH_MAP_H

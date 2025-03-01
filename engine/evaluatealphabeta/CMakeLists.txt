@@ -14,7 +14,6 @@
 
 add_library(
         evaluator_last_moves
-        SHARED
         evaluator_last_moves.h
         evaluator_last_moves.cpp
 )
@@ -25,6 +24,7 @@ target_link_libraries( # Specifies the target library.
         bitpattern
         get_flip
         hash_map
+        misc
         stable
 )
 
@@ -48,7 +48,6 @@ ENDIF()
 
 add_library(
         evaluator_alpha_beta
-        SHARED
         evaluator_alpha_beta.h
         evaluator_alpha_beta.cpp
 )

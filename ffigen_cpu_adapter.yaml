@@ -1,0 +1,8 @@
+name: 'FFICpuSupportedFeatures'
+description: 'Checks if the current CPU supports a feature'
+output: 'lib/ffi/ffi_cpu_adapter.dart'
+headers:
+  entry-points:
+    - 'engine/utils/cpu_adapter.h'
+  include-directives:
+    - 'engine/utils/cpu_adapter.h'

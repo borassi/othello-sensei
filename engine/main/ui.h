@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,19 @@
 extern "C" {
 #endif
 
+
 EXPORT
-void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations);
+Square PassMove();
+
+EXPORT
+void* MainInit(
+    char* evals_filepath,
+    char* book_filepath,
+    char* thor_filepath,
+    char* xot_small_filepath,
+    char* xot_large_filepath,
+    SetBoard set_board,
+    UpdateAnnotations update_annotations);
 
 EXPORT
 struct ThorMetadata* MainGetThorMetadata(void* ptr);
@@ -41,7 +52,7 @@ EXPORT
 void NewGame(void* ptr);
 
 EXPORT
-void PlayMove(void* ptr, int square);
+bool PlayMove(void* ptr, int square);
 
 EXPORT
 bool SetSequence(void* ptr, char* sequence);
@@ -50,22 +61,25 @@ EXPORT
 char* GetSequence(void* ptr);
 
 EXPORT
-void Undo(void* ptr);
+bool Undo(void* ptr);
 
 EXPORT
-void SetCurrentMove(void* ptr, int current_move);
+bool SetCurrentMove(void* ptr, int current_move);
 
 EXPORT
-void Redo(void* ptr);
+bool Redo(void* ptr);
 
 EXPORT
-void ToAnalyzedGameOrFirstState(void* ptr);
+bool ToAnalyzedGameOrLastChoice(void* ptr);
 
 EXPORT
 void Evaluate(void* ptr);
 
 EXPORT
 void Analyze(void* ptr);
+
+EXPORT
+void ResetAnalyzedGame(void* ptr);
 
 EXPORT
 struct Annotations* GetCurrentAnnotations(void* ptr, int current_thread);
@@ -75,6 +89,15 @@ struct Annotations* GetStartAnnotations(void* ptr, int current_thread);
 
 EXPORT
 void Stop(void* ptr);
+
+EXPORT
+void RandomXOT(void* ptr, bool large);
+
+EXPORT
+void SetXOTState(void* ptr, enum XOTState xot_state);
+
+EXPORT
+enum XOTState GetXOTState(void* ptr);
 
 #ifdef __cplusplus
 }

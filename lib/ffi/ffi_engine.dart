@@ -22,12 +22,12 @@ class FFIEngine {
 
   late final ffi.Pointer<Square> _kPassMove = _lookup<Square>('kPassMove');
 
-  int get kPassMove => _kPassMove.value;
+  DartSquare get kPassMove => _kPassMove.value;
 
   late final ffi.Pointer<Square> _kStartingPositionMove =
       _lookup<Square>('kStartingPositionMove');
 
-  int get kStartingPositionMove => _kStartingPositionMove.value;
+  DartSquare get kStartingPositionMove => _kStartingPositionMove.value;
 
   int PassMove() {
     return _PassMove();
@@ -41,6 +41,8 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> evals_filepath,
     ffi.Pointer<ffi.Char> book_filepath,
     ffi.Pointer<ffi.Char> thor_filepath,
+    ffi.Pointer<ffi.Char> xot_small_filepath,
+    ffi.Pointer<ffi.Char> xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
   ) {
@@ -48,6 +50,8 @@ class FFIEngine {
       evals_filepath,
       book_filepath,
       thor_filepath,
+      xot_small_filepath,
+      xot_large_filepath,
       set_board,
       update_annotations,
     );
@@ -59,10 +63,14 @@ class FFIEngine {
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
               SetBoard,
               UpdateAnnotations)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
       ffi.Pointer<ffi.Void> Function(
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
@@ -127,7 +135,7 @@ class FFIEngine {
   late final _NewGame =
       _NewGamePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
-  void PlayMove(
+  bool PlayMove(
     ffi.Pointer<ffi.Void> ptr,
     int square,
   ) {
@@ -139,9 +147,9 @@ class FFIEngine {
 
   late final _PlayMovePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('PlayMove');
+          ffi.Bool Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('PlayMove');
   late final _PlayMove =
-      _PlayMovePtr.asFunction<void Function(ffi.Pointer<ffi.Void>, int)>();
+      _PlayMovePtr.asFunction<bool Function(ffi.Pointer<ffi.Void>, int)>();
 
   bool SetSequence(
     ffi.Pointer<ffi.Void> ptr,
@@ -175,7 +183,7 @@ class FFIEngine {
   late final _GetSequence = _GetSequencePtr.asFunction<
       ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>)>();
 
-  void Undo(
+  bool Undo(
     ffi.Pointer<ffi.Void> ptr,
   ) {
     return _Undo(
@@ -184,12 +192,12 @@ class FFIEngine {
   }
 
   late final _UndoPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+      _lookup<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void>)>>(
           'Undo');
   late final _Undo =
-      _UndoPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+      _UndoPtr.asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
 
-  void SetCurrentMove(
+  bool SetCurrentMove(
     ffi.Pointer<ffi.Void> ptr,
     int current_move,
   ) {
@@ -201,11 +209,11 @@ class FFIEngine {
 
   late final _SetCurrentMovePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('SetCurrentMove');
+          ffi.Bool Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('SetCurrentMove');
   late final _SetCurrentMove = _SetCurrentMovePtr.asFunction<
-      void Function(ffi.Pointer<ffi.Void>, int)>();
+      bool Function(ffi.Pointer<ffi.Void>, int)>();
 
-  void Redo(
+  bool Redo(
     ffi.Pointer<ffi.Void> ptr,
   ) {
     return _Redo(
@@ -214,24 +222,24 @@ class FFIEngine {
   }
 
   late final _RedoPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+      _lookup<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void>)>>(
           'Redo');
   late final _Redo =
-      _RedoPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+      _RedoPtr.asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
 
-  void ToAnalyzedGameOrFirstState(
+  bool ToAnalyzedGameOrLastChoice(
     ffi.Pointer<ffi.Void> ptr,
   ) {
-    return _ToAnalyzedGameOrFirstState(
+    return _ToAnalyzedGameOrLastChoice(
       ptr,
     );
   }
 
-  late final _ToAnalyzedGameOrFirstStatePtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
-          'ToAnalyzedGameOrFirstState');
-  late final _ToAnalyzedGameOrFirstState = _ToAnalyzedGameOrFirstStatePtr
-      .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+  late final _ToAnalyzedGameOrLastChoicePtr =
+      _lookup<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void>)>>(
+          'ToAnalyzedGameOrLastChoice');
+  late final _ToAnalyzedGameOrLastChoice = _ToAnalyzedGameOrLastChoicePtr
+      .asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
 
   void Evaluate(
     ffi.Pointer<ffi.Void> ptr,
@@ -260,6 +268,20 @@ class FFIEngine {
           'Analyze');
   late final _Analyze =
       _AnalyzePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void ResetAnalyzedGame(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _ResetAnalyzedGame(
+      ptr,
+    );
+  }
+
+  late final _ResetAnalyzedGamePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'ResetAnalyzedGame');
+  late final _ResetAnalyzedGame =
+      _ResetAnalyzedGamePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   ffi.Pointer<Annotations> GetCurrentAnnotations(
     ffi.Pointer<ffi.Void> ptr,
@@ -308,6 +330,53 @@ class FFIEngine {
           'Stop');
   late final _Stop =
       _StopPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void RandomXOT(
+    ffi.Pointer<ffi.Void> ptr,
+    bool large,
+  ) {
+    return _RandomXOT(
+      ptr,
+      large,
+    );
+  }
+
+  late final _RandomXOTPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Bool)>>('RandomXOT');
+  late final _RandomXOT =
+      _RandomXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>, bool)>();
+
+  void SetXOTState(
+    ffi.Pointer<ffi.Void> ptr,
+    XOTState xot_state,
+  ) {
+    return _SetXOTState(
+      ptr,
+      xot_state.value,
+    );
+  }
+
+  late final _SetXOTStatePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Pointer<ffi.Void>, ffi.UnsignedInt)>>('SetXOTState');
+  late final _SetXOTState =
+      _SetXOTStatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>, int)>();
+
+  XOTState GetXOTState(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return XOTState.fromValue(_GetXOTState(
+      ptr,
+    ));
+  }
+
+  late final _GetXOTStatePtr = _lookup<
+          ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ffi.Void>)>>(
+      'GetXOTState');
+  late final _GetXOTState =
+      _GetXOTStatePtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -343,6 +412,9 @@ final class ThorMetadata extends ffi.Struct {
   external int num_sources;
 }
 
+typedef BitPattern = ffi.Uint64;
+typedef DartBitPattern = int;
+
 final class BoardUpdate extends ffi.Struct {
   @BitPattern()
   external int player;
@@ -352,10 +424,13 @@ final class BoardUpdate extends ffi.Struct {
 
   @ffi.Bool()
   external bool black_turn;
-}
 
-typedef BitPattern = ffi.Uint64;
-typedef DartBitPattern = int;
+  @ffi.Bool()
+  external bool xot;
+
+  @ffi.Int()
+  external int last_move;
+}
 
 final class ThorGame extends ffi.Struct {
   external ffi.Pointer<ffi.Char> black;
@@ -377,15 +452,51 @@ final class ThorGame extends ffi.Struct {
   external int year;
 }
 
-abstract class AnnotationsProvenance {
-  static const int EVALUATE = 0;
-  static const int BOOK = 1;
-  static const int EVALUATE_MIXED = 2;
-  static const int CHILD_EVALUATE = 3;
-  static const int CHILD_BOOK = 4;
-  static const int CHILD_MIXED = 5;
-  static const int GAME_OVER = 6;
+enum XOTState {
+  XOT_STATE_AUTOMATIC(0),
+  XOT_STATE_ALWAYS(1),
+  XOT_STATE_NEVER(2);
+
+  final int value;
+  const XOTState(this.value);
+
+  static XOTState fromValue(int value) => switch (value) {
+        0 => XOT_STATE_AUTOMATIC,
+        1 => XOT_STATE_ALWAYS,
+        2 => XOT_STATE_NEVER,
+        _ => throw ArgumentError("Unknown value for XOTState: $value"),
+      };
 }
+
+enum AnnotationsProvenance {
+  EVALUATE(0),
+  BOOK(1),
+  EVALUATE_MIXED(2),
+  CHILD_EVALUATE(3),
+  CHILD_BOOK(4),
+  CHILD_MIXED(5),
+  GAME_OVER(6);
+
+  final int value;
+  const AnnotationsProvenance(this.value);
+
+  static AnnotationsProvenance fromValue(int value) => switch (value) {
+        0 => EVALUATE,
+        1 => BOOK,
+        2 => EVALUATE_MIXED,
+        3 => CHILD_EVALUATE,
+        4 => CHILD_BOOK,
+        5 => CHILD_MIXED,
+        6 => GAME_OVER,
+        _ => throw ArgumentError(
+            "Unknown value for AnnotationsProvenance: $value"),
+      };
+}
+
+typedef Eval = ffi.Int8;
+typedef DartEval = int;
+typedef NVisited = ffi.Uint64;
+typedef DartNVisited = int;
 
 final class Annotations extends ffi.Struct {
   @Square()
@@ -425,8 +536,11 @@ final class Annotations extends ffi.Struct {
   @ffi.Int()
   external int median_eval_best_line;
 
-  @ffi.Int32()
-  external int provenance;
+  @ffi.UnsignedInt()
+  external int provenanceAsInt;
+
+  AnnotationsProvenance get provenance =>
+      AnnotationsProvenance.fromValue(provenanceAsInt);
 
   @ffi.Bool()
   external bool derived;
@@ -482,11 +596,6 @@ final class Annotations extends ffi.Struct {
   external bool during_analysis;
 }
 
-typedef Eval = ffi.Int8;
-typedef DartEval = int;
-typedef NVisited = ffi.Uint64;
-typedef DartNVisited = int;
-
 final class ThorParams extends ffi.Struct {
   @ffi.Int()
   external int max_games;
@@ -529,13 +638,16 @@ final class EvaluateParams extends ffi.Struct {
   @ffi.Bool()
   external bool use_book;
 
+  @ffi.Bool()
+  external bool reevaluate_during_analysis;
+
   external ThorParams thor_filters;
 }
 
-typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;
 typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
-typedef UpdateAnnotations
-    = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
+typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;
 typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Int, ffi.Bool);
 typedef DartUpdateAnnotationsFunction = void Function(int, bool);
+typedef UpdateAnnotations
+    = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;

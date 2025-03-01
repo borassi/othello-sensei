@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright 2024-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
  */
 
 
-import 'dart:ffi';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -28,9 +27,28 @@ import '../widgets_utils/hide_inactive.dart';
 class ScoreGraph extends HideInactiveWidget {
   const ScoreGraph({super.key});
 
-  BarChartGroupData generateGroupData(int x, List<double> scores, Color highlightColor, Color standardColor, double height, double width, double maxY, var moveToHighlight) {
+  BarChartGroupData generateGroupData(int x, List<double> scores, ColorScheme colorScheme, double height, double width, double maxY, var moveToHighlight) {
     var barWidth = width / 61;
     var score = x >= scores.length ? double.nan : scores[x];
+    Color color = colorScheme.background;
+    Color? borderColor;
+    if (x == moveToHighlight) {
+      color = colorScheme.onSecondaryContainer;
+    } else if (GlobalState.board.xot && x <= 8) {
+      color = colorScheme.primaryContainer;
+    } else if (!GlobalState.preferences.get('Black and white bars in the graph')) {
+      color = colorScheme.onPrimaryContainer;
+    } else {
+      if (score > 1) {
+        color = colorScheme.surface;
+        borderColor = colorScheme.surfaceVariant;
+      } else if (score < -1) {
+        color = colorScheme.surfaceVariant;
+      } else {
+        color = colorScheme.onPrimaryContainer;
+      }
+    }
+
     double fromY;
     double toY;
     if (score.isNaN) {
@@ -49,7 +67,8 @@ class ScoreGraph extends HideInactiveWidget {
           fromY: fromY,
           toY: toY,
           width: barWidth,
-          color: x == moveToHighlight ? highlightColor : standardColor,
+          color: color,
+          borderSide: BorderSide(color: borderColor ?? color),
         ),
         BarChartRodData(
           fromY: -maxY,
@@ -63,8 +82,6 @@ class ScoreGraph extends HideInactiveWidget {
 
   @override
   Widget buildChild(BuildContext context) {
-    var highlightColor = Theme.of(context).colorScheme.onSecondaryContainer;
-    var standardColor = Theme.of(context).colorScheme.onPrimaryContainer;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) => ListenableBuilder(
         listenable: GlobalState.globalAnnotations,
@@ -73,7 +90,7 @@ class ScoreGraph extends HideInactiveWidget {
           var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
           maxY = (maxY / 10).ceilToDouble() * 10;
           var horizontalLinesSpace = maxY / 2;
-          var textSpace = Theme.of(context).textTheme.bodyMedium!.fontSize! * 2;
+          var textSpace = Theme.of(context).textTheme.bodyMedium!.fontSize! * 2.8;
           var width = (constraints.maxWidth - textSpace);
           var height = constraints.maxHeight;
 
@@ -100,7 +117,9 @@ class ScoreGraph extends HideInactiveWidget {
                     interval: horizontalLinesSpace,
                     getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? const Text('') : Align(
                       alignment: Alignment.center,
-                      child: Text(x.toStringAsFixed(0), style: Theme.of(context).textTheme.bodyMedium!)
+                      child: Text(
+                          x > 0 ? 'B+${x.toStringAsFixed(0)}' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)}'),
+                          style: Theme.of(context).textTheme.bodyMedium!)
                     ),
                     reservedSize: textSpace,
                   )
@@ -114,7 +133,7 @@ class ScoreGraph extends HideInactiveWidget {
               baselineY: 0,
               borderData: FlBorderData(show: false),
               gridData: const FlGridData(show: false),
-              barGroups: List.generate(61, (i) => generateGroupData(i, scores, highlightColor, standardColor, height, width, maxY + 1, move)),
+              barGroups: List.generate(61, (i) => generateGroupData(i, scores, Theme.of(context).colorScheme, height, width, maxY + 1, move)),
               extraLinesData: ExtraLinesData(
                 extraLinesOnTop: false,
                 horizontalLines: List.generate(

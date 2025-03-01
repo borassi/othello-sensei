@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,14 @@
 extern "C" {
 #endif
 
-#ifdef WIN32
-   #define EXPORT __declspec(dllexport)
+#ifdef _MSC_VER
+#define EXPORT __declspec(dllexport)
 #else
-   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
 const Square kPassMove = 64;
 const Square kStartingPositionMove = 65;
-
-EXPORT
-Square PassMove() { return kPassMove; }
 
 struct ThorSourceMetadata {
   const char* name;
@@ -57,6 +54,8 @@ struct BoardUpdate {
   BitPattern player;
   BitPattern opponent;
   bool black_turn;
+  bool xot;
+  int last_move;
 };
 
 struct ThorGame {
@@ -67,6 +66,12 @@ struct ThorGame {
   int moves_played;
   int score;
   int year;
+};
+
+enum XOTState {
+  XOT_STATE_AUTOMATIC,
+  XOT_STATE_ALWAYS,
+  XOT_STATE_NEVER,
 };
 
 enum AnnotationsProvenance {
@@ -135,6 +140,7 @@ struct EvaluateParams {
   double delta;
   bool approx;
   bool use_book;
+  bool reevaluate_during_analysis;
   struct ThorParams thor_filters;
 };
 

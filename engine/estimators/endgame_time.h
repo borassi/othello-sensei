@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2024 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@
 #define OTHELLOSENSEI_ENDGAME_TIME_H
 
 typedef uint8_t PN;
-constexpr float kMaxProofNumber = 1E25;
+constexpr float kMaxProofNumber = 1E25F;
 constexpr int kProofNumberStep = 255;
-constexpr float kBaseLogProofNumber = ConstexprPow(kMaxProofNumber, 1.0 / (kProofNumberStep - 1.99));
+constexpr float kBaseLogProofNumber = (float) ConstexprPow(kMaxProofNumber, 1.0 / (kProofNumberStep - 1.99));
 constexpr int kMaxProofNumberOffset = /*depth*/ 16 * /*n_empties*/ 64 * /*eval_delta*/ (256+1);
 
 constexpr PN ProofNumberToByte(float proof_number) {
@@ -46,9 +46,9 @@ constexpr float ByteToProofNumberExplicit(PN byte) {
   if (byte == 0) {
     return 0;
   } else if (byte == kProofNumberStep) {
-    return INFINITY;
+    return FLT_MAX;
   }
-  return pow(kBaseLogProofNumber, byte - 1);
+  return (float) pow(kBaseLogProofNumber, byte - 1);
 }
 
 
@@ -65,8 +65,8 @@ constexpr std::tuple<Square, Square, int> ProofNumberOffsetToEmptiesMovesEval(in
   return std::make_tuple((cdf_offset & 63), (cdf_offset >> 6) & 15, (cdf_offset >> 10) + 2 * kMinEval);
 }
 
-inline double Bound(double value) {
-  return std::max(1.0, std::min(kMaxProofNumber * 0.99, value));
+inline float Bound(double value) {
+  return (float) std::max(1.0, std::min(kMaxProofNumber * 0.99, value));
 }
 
 inline double ConvertProofNumber(double old, int delta) {
@@ -359,7 +359,7 @@ struct ProofDisproofNumberData {
   PN proof_number[kMaxProofNumberOffset + 1];
   PN disproof_number[kMaxProofNumberOffset + 1];
   int disproof_number_over_prob[kMaxProofNumberOffset + 1];
-  double byte_to_proof_number[kProofNumberStep + 1];
+  float byte_to_proof_number[kProofNumberStep + 1];
 
   ProofDisproofNumberData() : proof_number(), disproof_number(), byte_to_proof_number() {
     for (int empties = 0; empties <= 63; ++empties) {
@@ -399,7 +399,7 @@ inline float ByteToProofNumber(PN byte) {
 
 inline PN DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   return kProofDisproofNumberData.disproof_number[DataToProofNumberOffset(
-      __builtin_popcountll(~(player | opponent)),
+      (Square) __builtin_popcountll(~(player | opponent)),
       std::min(15, GetNMoves(player, opponent)),
       (approx_eval - lower) >> 3
   )];
@@ -407,16 +407,16 @@ inline PN DisproofNumber(BitPattern player, BitPattern opponent, EvalLarge lower
 
 inline PN ProofNumber(BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   return kProofDisproofNumberData.proof_number[DataToProofNumberOffset(
-      __builtin_popcountll(~(player | opponent)),
+      (Square) __builtin_popcountll(~(player | opponent)),
       std::min(15, GetNMoves(opponent, player)),
       (approx_eval - lower) >> 3
   )];
 }
 
-inline float DisproofNumberOverProb(
+inline int DisproofNumberOverProb(
     BitPattern player, BitPattern opponent, EvalLarge lower, EvalLarge approx_eval) {
   return kProofDisproofNumberData.disproof_number_over_prob[DataToProofNumberOffset(
-      __builtin_popcountll(~(player | opponent)),
+      (Square) __builtin_popcountll(~(player | opponent)),
       std::min(15, GetNMoves(player, opponent)),
       (approx_eval - lower) >> 3
   )];

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,19 @@
 #include "ui.h"
 #include "main.h"
 
-void* MainInit(char* evals_filepath, char* book_filepath, char* thor_filepath, SetBoard set_board, UpdateAnnotations update_annotations) {
-  return new Main(evals_filepath, book_filepath, thor_filepath, set_board, update_annotations);
+Square PassMove() { return kPassMove; }
+
+void* MainInit(
+    char* evals_filepath,
+    char* book_filepath,
+    char* thor_filepath,
+    char* xot_small_filepath,
+    char* xot_large_filepath,
+    SetBoard set_board,
+    UpdateAnnotations update_annotations) {
+  return new Main(
+      evals_filepath, book_filepath, thor_filepath, xot_small_filepath, xot_large_filepath,
+      set_board, update_annotations);
 }
 
 ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
@@ -31,7 +42,7 @@ struct EvaluateParams* MainGetEvaluateParams(void* ptr) {
 
 void NewGame(void* ptr) { static_cast<Main*>(ptr)->NewGame(); }
 
-void PlayMove(void* ptr, int square) { static_cast<Main*>(ptr)->PlayMove(square); }
+bool PlayMove(void* ptr, int square) { return static_cast<Main*>(ptr)->PlayMove(square); }
 
 bool SetSequence(void* ptr, char* sequence) {
   std::string sequence_string(sequence);
@@ -40,19 +51,21 @@ bool SetSequence(void* ptr, char* sequence) {
 
 char* GetSequence(void* ptr) { return static_cast<Main*>(ptr)->GetSequence(); }
 
-void Undo(void* ptr) { static_cast<Main*>(ptr)->Undo(); }
+bool Undo(void* ptr) { return static_cast<Main*>(ptr)->Undo(); }
 
-void SetCurrentMove(void* ptr, int square) { static_cast<Main*>(ptr)->SetCurrentMove(square); }
+bool SetCurrentMove(void* ptr, int square) { return static_cast<Main*>(ptr)->SetCurrentMove(square); }
 
-void Redo(void* ptr) { static_cast<Main*>(ptr)->Redo(); }
+bool Redo(void* ptr) { return static_cast<Main*>(ptr)->Redo(); }
 
-void ToAnalyzedGameOrFirstState(void* ptr) {
-  static_cast<Main*>(ptr)->ToAnalyzedGameOrFirstState();
+bool ToAnalyzedGameOrLastChoice(void* ptr) {
+  return static_cast<Main*>(ptr)->ToAnalyzedGameOrLastChoice();
 }
 
 void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
 
 void Analyze(void* ptr) { static_cast<Main*>(ptr)->Analyze(); }
+
+void ResetAnalyzedGame(void* ptr) { static_cast<Main*>(ptr)->ResetAnalyzedGame(); }
 
 void Stop(void* ptr) { static_cast<Main*>(ptr)->Stop(); }
 
@@ -63,3 +76,8 @@ Annotations* GetCurrentAnnotations(void* ptr, int current_thread) {
 Annotations* GetStartAnnotations(void* ptr, int current_thread) {
   return static_cast<Main*>(ptr)->GetStartAnnotations(current_thread);
 }
+
+void RandomXOT(void* ptr, bool large) { static_cast<Main*>(ptr)->RandomXOT(large); }
+
+void SetXOTState(void* ptr, XOTState xot_state) { static_cast<Main*>(ptr)->SetXOTState(xot_state); }
+XOTState GetXOTState(void* ptr) { return static_cast<Main*>(ptr)->GetXOTState(); }

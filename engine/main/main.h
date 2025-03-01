@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "../evaluatedepthone/pattern_evaluator.h"
 #include "../thor/thor.h"
 #include "../utils/misc.h"
+#include "../xot/xot.h"
 
 class Main {
  public:
@@ -39,33 +40,46 @@ class Main {
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath,
+      const std::string& xot_small_filepath,
+      const std::string& xot_large_filepath,
       SetBoard set_board,
       UpdateAnnotations update_annotations);
 
   void NewGame() {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0);
-    ToState(first_state_.get());
+    [[maybe_unused]] bool new_state = ToState(first_state_.get());
+    assert(new_state);
   }
 
-  void PlayMove(Square square) {
-    ToState(current_state_->NextState(square));
+  bool PlayMove(Square square) {
+    return ToState(current_state_->NextState(square));
   }
 
-  void SetCurrentMove(Square current_move) {
-    ToState(first_state_->ToDepth(current_move));
+  bool SetCurrentMove(Square current_move) {
+    bool valid = ToState(first_state_->ToDepth(current_move));
     current_state_->SetPlayed();
+    return valid;
   }
 
-  void Redo() {
-    ToState(current_state_->NextState());
+  bool Redo() {
+    return ToState(current_state_->NextState());
   }
 
-  void Undo() {
-    ToState(current_state_->PreviousNonPass());
+  bool Undo() {
+    return ToState(current_state_->PreviousNonPass());
   }
 
-  void ToAnalyzedGameOrFirstState() {
-    ToState(current_state_->ToAnalyzedGameOrFirstState());
+  bool ToAnalyzedGameOrLastChoice() {
+    EvaluationState* non_xot_state = nullptr;
+    if (first_state_->NextStateInAnalysis()) {
+      non_xot_state = current_state_->LastAnalyzedState();
+    } else {
+      non_xot_state = current_state_->LastChoice();
+    }
+    if (IsXOT() && non_xot_state->NEmpties() > 52 && current_state_->NEmpties() < 52) {
+      return ToState(first_state_->ToDepth(8));
+    }
+    return ToState(non_xot_state);
   }
 
   void ResetEvaluations() {
@@ -77,20 +91,20 @@ class Main {
   char* GetSequence() {
     std::string sequence = current_state_->GetSequence().ToString();
     char* result = (char*) malloc(sequence.size() * sizeof(char) + 1);
-    strcpy(result, sequence.c_str());
+    strncpy(result, sequence.c_str(), sequence.size() + 1);
     return result;
   }
 
   void SetSequence(const Sequence& moves) {
     NewGame();
-    for (Square move : moves.Moves()) {
-      PlayMove(move);
+    for (int i = 0; i < moves.Size(); ++i) {
+      PlayMove(moves.Move(i));
     }
   }
 
   bool SetSequence(const std::string& sequence) {
     Sequence moves = Sequence::ParseFromString(sequence);
-    if (moves.Size() == 0) {
+    if (moves.Size() == 0 && sequence != "") {
       return false;
     }
     SetSequence(moves);
@@ -114,6 +128,10 @@ class Main {
     engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }
 
+  void ResetAnalyzedGame() {
+    first_state_->SetNotAnalyzed();
+  }
+
   // We need a separate call to get the annotations in the UI thread, to prevent
   // concurrent modification.
   Annotations* GetCurrentAnnotations(int current_thread) {
@@ -133,6 +151,18 @@ class Main {
     return last_state_flutter_->GetAnnotations();
   }
 
+  void RandomXOT(bool large) {
+    XOT& xot = large ? xot_small_ : xot_large_;
+    Sequence sequence = xot.RandomSequence();
+    SetSequence(sequence);
+  }
+
+  void SetXOTState(XOTState xot_state) {
+    xot_state_ = xot_state;
+    RunSetBoard();
+  }
+  XOTState GetXOTState() { return xot_state_; }
+
  private:
   static constexpr int kNumEvaluators = 60;
 
@@ -143,6 +173,9 @@ class Main {
   std::shared_ptr<EvaluationState> last_state_flutter_;
   std::shared_ptr<EvaluationState> first_state_;
   EvaluationState* current_state_;
+  XOT xot_small_;
+  XOT xot_large_;
+  XOTState xot_state_;
 
   Engine engine_;
   // 0 = not in analysis; 1 = started analysis (skip undo), 2 = in analysis.
@@ -151,9 +184,33 @@ class Main {
   EvaluateParams evaluate_params_;
   EvaluateParams last_params_;
 
-  void ToState(EvaluationState* new_state);
+  bool ToState(EvaluationState* new_state);
 
   void ToStateNoStop(EvaluationState* new_state);
+
+  void RunSetBoard() {
+    Board board = current_state_->ToBoard();
+    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->LastMove()});
+  }
+
+  bool IsXOT() {
+    switch (xot_state_) {
+      case XOT_STATE_ALWAYS:
+        return true;
+      case XOT_STATE_NEVER:
+        return false;
+      case XOT_STATE_AUTOMATIC:
+        auto state_in_xot = first_state_->ToDepth(8);
+        if (!state_in_xot) {
+          return false;
+        }
+        if (!xot_large_.IsInListPrefix(state_in_xot->GetSequence())) {
+          return false;
+        }
+        auto [error_black, error_white] = state_in_xot->TotalError();
+        return std::max(error_black, error_white) > 5;
+    }
+  }
 };
 
 #endif // OTHELLO_SENSEI_MAIN_H

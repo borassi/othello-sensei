@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Michele Borassi
+ * Copyright 2024-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ class EvaluationState : public TreeNode {
   EvaluationState(const EvaluationState&) = delete;
 
   Square Move() const { return annotations_.move; }
+  Square LastMove() const { return Move() == kPassMove ? Father()->Move() : Move(); }
   Annotations* GetAnnotations() { return &annotations_; }
   bool IsValid() const { return annotations_.valid; }
   void SetDerived(bool new_value) { annotations_.derived = new_value; }
@@ -94,6 +95,7 @@ class EvaluationState : public TreeNode {
     annotations_.median_eval = final_eval;
     annotations_.eval_best_line = final_eval;
     annotations_.median_eval_best_line = final_eval;
+    annotations_.provenance = EVALUATE;
     UpdateSavedAnnotations();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
@@ -107,19 +109,64 @@ class EvaluationState : public TreeNode {
     return !IsLeaf();
   }
 
+  std::pair<double, double> TotalError() {
+    double errorBlack = 0.0;
+    double errorWhite = 0.0;
+
+    std::vector<double> scores;
+    for (auto* state = this; state != nullptr; state = state->Father()) {
+      scores.push_back(state->IsValid() ? state->annotations_.eval_best_line : kLessThenMinEvalLarge);
+    }
+    for (int i = 0; i < scores.size() - 1; ++i) {
+      if (scores[scores.size() - i - 1] == kLessThenMinEvalLarge ||
+          scores[scores.size() - i - 2] == kLessThenMinEvalLarge) {
+        continue;
+      }
+      if (i % 2 == 0) {
+        errorBlack += scores[scores.size() - i - 1] + scores[scores.size() - i - 2];
+      } else {
+        errorWhite += scores[scores.size() - i - 1] + scores[scores.size() - i - 2];
+      }
+    }
+    return {errorBlack, errorWhite};
+  }
+
   void SetThor(const GamesList& games);
   bool BlackTurn() const { return annotations_.black_turn; }
 
   // Returns:
-  // - If there is no analyzed game, the first state.
   // - If there is an analyzed game and this is outside the analysis, the first
-  //   state in the analysis.
-  // - If there is an analyzed game and this is in the analysis, the first
-  //   state
-  EvaluationState* ToAnalyzedGameOrFirstState() {
+  //   ancestor in the analysis.
+  // - The first state otherwise.
+  EvaluationState* LastAnalyzedState() {
     EvaluationState* state;
     for (state = this; state->Father() != nullptr; state = state->Father()) {
       if (state->next_state_in_analysis_ && !next_state_in_analysis_) {
+        return state;
+      }
+    }
+    return state;
+  }
+
+  int NumChildrenWithDescendants() {
+    int result = 0;
+    for (const std::shared_ptr<EvaluationState>& child : children_) {
+      result += child->HasValidChildren();
+    }
+    return result;
+  }
+
+  // Returns the first ancestor with multiple visited children.
+  EvaluationState* LastChoice() {
+    EvaluationState* state;
+    // Avoid a crash if this is the starting position.
+    if (Father() == nullptr) {
+      return this;
+    }
+    for (state = Father(); state->Father() != nullptr; state = state->Father()) {
+      // NOTE: we cannot assert(state->NumChildrenWithDescendants() >= 1), if the position is not
+      // evaluated, yet.
+      if (state->NumChildrenWithDescendants() > 1) {
         return state;
       }
     }
@@ -166,6 +213,15 @@ class EvaluationState : public TreeNode {
     }
     father->SetNextStatePlayed(this);
     father->SetPlayed();
+  }
+
+  void SetNotAnalyzed() {
+    assert(Father() == nullptr);
+    assert(NextStateInAnalysis() != nullptr);
+    EvaluationState* state;
+    for (state = NextStateInAnalysis(); state != nullptr; state = state->NextStateInAnalysis()) {
+      state->Father()->SetNextStateInAnalysis(nullptr);
+    }
   }
 
   EvaluationState* SetAnalyzed() {
@@ -233,23 +289,21 @@ class EvaluationState : public TreeNode {
 
   void SetAnnotations(const Node& node, bool book, double seconds) {
     CopyAndEnlargeToAllEvals(node);
-    double new_seconds = seconds - annotations_.seconds;
-    annotations_.seconds = seconds;
-    NVisited new_descendants = descendants_ - annotations_.descendants;
-    annotations_.provenance = book ? BOOK : CHILD_EVALUATE;
-    if (!book) {
-      if (!annotations_.derived) {
-        for (EvaluationState* state = Father(); state != nullptr; state = state->Father()) {
-          state->annotations_.seconds += new_seconds;
-          state->AddDescendants(new_descendants);
-        }
-      }
-    } else {
+    if (book) {
+      // descendants_book are just copied from the book; descendants are updated, instead.
       annotations_.descendants_book = descendants_;
-      descendants_ = 0;
+      descendants_ = annotations_.descendants;
+      annotations_.provenance = BOOK;
       if (HasValidChildren()) {
+        UpdateFather();
         return;
       }
+    } else {
+      assert(!HasValidChildren());
+      assert(descendants_ >= annotations_.descendants);
+      annotations_.descendants = descendants_;
+      annotations_.seconds = seconds;
+      annotations_.provenance = CHILD_EVALUATE;
     }
     assert(!HasValidChildren());
     annotations_.eval_best_line = GetEval();
@@ -287,11 +341,15 @@ class EvaluationState : public TreeNode {
     }
     EnsureValid();
     TreeNode::UpdateFather();
-    bool has_book_child = false;
+    bool has_book_child = annotations_.descendants_book > 0;
     bool all_book_children = true;
     annotations_.eval_best_line = kLessThenMinEvalLarge;
     annotations_.median_eval_best_line = kLessThenMinEvalLarge;
+    descendants_ = 0;
+    annotations_.seconds = 0;
     for (auto& child : children_) {
+      descendants_ += child->descendants_;
+      annotations_.seconds += child->annotations_.seconds;
       annotations_.eval_best_line = std::max(
           annotations_.eval_best_line, -child->annotations_.eval_best_line);
       annotations_.median_eval_best_line = std::max(
@@ -306,6 +364,7 @@ class EvaluationState : public TreeNode {
         all_book_children = false;
       }
     }
+    annotations_.descendants = descendants_;
     if (all_book_children) {
       annotations_.provenance = CHILD_BOOK;
     } else if (has_book_child) {
@@ -362,7 +421,6 @@ class EvaluationState : public TreeNode {
   void UpdateAnnotationsTree() {
     annotations_.first_child = &children_[0]->annotations_;
     for (int i = 1; i < children_.size(); ++i) {
-      EvaluationState* child = children_[i].get();
       children_[i-1]->annotations_.next_sibling = &children_[i]->annotations_;
     }
   }

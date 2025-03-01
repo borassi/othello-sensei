@@ -42,14 +42,14 @@ void EvaluationState::SetThor(const GamesList& games) {
   auto sequence = GetSequence();
 
   annotations_.num_thor_games = games.num_games;
-  annotations_.num_example_thor_games = games.examples.size();
+  annotations_.num_example_thor_games = (int) games.examples.size();
   annotations_.example_thor_games = (ThorGame*) realloc(
       annotations_.example_thor_games,
       annotations_.num_example_thor_games * sizeof(ThorGame));
 
-  for (int i = 0; i < annotations_.num_example_thor_games; ++i) {
-    assert(games.examples[i]->Moves().Size() >= sequence.Size());
-    ThorGameSet(*games.examples[i], annotations_.example_thor_games[i], sequence);
+  for (unsigned i = 0; i < annotations_.num_example_thor_games; ++i) {
+    assert(games.examples[i].Moves().Size() >= sequence.Size());
+    ThorGameSet(games.examples[i], annotations_.example_thor_games[i], sequence);
   }
 }
 
@@ -84,7 +84,7 @@ void EvaluationState::SetNextStates() {
       assert(!IsGameOver(next));
       move = kPassMove;
     } else {
-      move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
+      move = (Square) __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
     }
 
     std::shared_ptr<EvaluationState> state = std::make_shared<EvaluationState>(

@@ -41,7 +41,7 @@ class Board {
     return ~(player_ | opponent_);
   }
   int NEmpties() const {
-    return __builtin_popcountll(Empties());
+    return (int) __builtin_popcountll(Empties());
   }
   bool IsEmpty(Square move) const {
     return !IsFull(player_, move) && !IsFull(opponent_, move);
@@ -70,7 +70,7 @@ class Board {
   Square MoveFromFlip(BitPattern flip) const {
     BitPattern move_bitpattern = flip & ~(player_ | opponent_);
     assert(__builtin_popcountll(move_bitpattern) == 1);
-    return __builtin_ctzll(move_bitpattern);
+    return (Square) __builtin_ctzll(move_bitpattern);
   }
   bool operator==(const Board& rhs) const {
     return Player() == rhs.Player() && Opponent() == rhs.Opponent();

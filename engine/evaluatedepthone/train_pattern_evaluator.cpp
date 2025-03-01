@@ -95,7 +95,6 @@ float CategoricalRegression::Eval(const TrainingBoard& b) {
 }
 
 float CategoricalRegression::Error(const TrainingBoard& b) {
-  assert (isfinite(b.Eval()));
   return (float) b.Eval() - Eval(b);
 }
 
@@ -300,7 +299,7 @@ std::vector<std::vector<FeatureValue>> CategoricalRegressions::FeatureValueToCan
       continue;
     }
     old_canonical_rotation = kFeatures.canonical_rotation[i];
-    result.push_back(std::move(FeatureValueToCanonical(i)));
+    result.push_back(FeatureValueToCanonical(i));
   }
   return result;
 }

@@ -10,11 +10,56 @@
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C80F4294D02FB00263BE5 /* RunnerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 331C80F3294D02FB00263BE5 /* RunnerTests.m */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		53CE13F5C5E7E2ACDDC6FD11 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E87E452273E22BE2D4EF5209 /* Pods_Runner.framework */; };
 		978B8F6F1D3862AE00F588F7 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7AFFD8EE1D35381100E5BB4D /* AppDelegate.m */; };
 		97C146F31CF9000F007C117D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 97C146F21CF9000F007C117D /* main.m */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		C27C672236EBF6BD58BABAA1 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FC9E79566422933C8B99B96 /* Pods_RunnerTests.framework */; };
+		CD3DF9662CE12CE3000E5098 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD3DF9652CE12CE3000E5098 /* ShareViewController.swift */; };
+		CD3DF9692CE12CE3000E5098 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = CD3DF9682CE12CE3000E5098 /* Base */; };
+		CD3DF96D2CE12CE3000E5098 /* Share Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CD3DF9632CE12CE3000E5098 /* Share Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CDA310182CB19610006E46F5 /* bitpattern.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F7F2CB19610006E46F5 /* bitpattern.cpp */; };
+		CDA3101A2CB19610006E46F5 /* board.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F822CB19610006E46F5 /* board.cpp */; };
+		CDA3101E2CB19610006E46F5 /* get_flip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F872CB19610006E46F5 /* get_flip.cpp */; };
+		CDA310202CB19610006E46F5 /* get_moves.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F8A2CB19610006E46F5 /* get_moves.cpp */; };
+		CDA310222CB19610006E46F5 /* sequence.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F8D2CB19610006E46F5 /* sequence.cpp */; };
+		CDA310242CB19610006E46F5 /* stable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F902CB19610006E46F5 /* stable.cpp */; };
+		CDA310272CB19610006E46F5 /* book_tree_node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F952CB19610006E46F5 /* book_tree_node.cpp */; };
+		CDA310282CB19610006E46F5 /* book.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F972CB19610006E46F5 /* book.cpp */; };
+		CDA3102E2CB19610006E46F5 /* value_file.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F9F2CB19610006E46F5 /* value_file.cpp */; };
+		CDA310312CB19610006E46F5 /* endgame_time.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FA42CB19610006E46F5 /* endgame_time.cpp */; };
+		CDA310332CB19610006E46F5 /* win_probability.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FA72CB19610006E46F5 /* win_probability.cpp */; };
+		CDA310362CB19610006E46F5 /* evaluator_alpha_beta.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FAC2CB19610006E46F5 /* evaluator_alpha_beta.cpp */; };
+		CDA310382CB19610006E46F5 /* evaluator_last_moves.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FAF2CB19610006E46F5 /* evaluator_last_moves.cpp */; };
+		CDA3103C2CB19610006E46F5 /* evaluator_depth_one_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FB62CB19610006E46F5 /* evaluator_depth_one_base.cpp */; };
+		CDA3103E2CB19610006E46F5 /* pattern_evaluator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FB92CB19610006E46F5 /* pattern_evaluator.cpp */; };
+		CDA310402CB19610006E46F5 /* pattern.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FBC2CB19610006E46F5 /* pattern.cpp */; };
+		CDA310442CB19610006E46F5 /* train_pattern_evaluator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FC22CB19610006E46F5 /* train_pattern_evaluator.cpp */; };
+		CDA310472CB19610006E46F5 /* evaluation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FC72CB19610006E46F5 /* evaluation.cpp */; };
+		CDA310492CB19610006E46F5 /* evaluator_derivative.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FCA2CB19610006E46F5 /* evaluator_derivative.cpp */; };
+		CDA3104B2CB19610006E46F5 /* prob_combiners.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FCD2CB19610006E46F5 /* prob_combiners.cpp */; };
+		CDA3104D2CB19610006E46F5 /* tree_node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FD02CB19610006E46F5 /* tree_node.cpp */; };
+		CDA310502CB19610006E46F5 /* hash_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FD52CB19610006E46F5 /* hash_map.cpp */; };
+		CDA310512CB19610006E46F5 /* bindings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FD82CB19610006E46F5 /* bindings.cpp */; };
+		CDA310532CB19610006E46F5 /* engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FDB2CB19610006E46F5 /* engine.cpp */; };
+		CDA310552CB19610006E46F5 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FDE2CB19610006E46F5 /* main.cpp */; };
+		CDA310562CB19610006E46F5 /* state.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FE02CB19610006E46F5 /* state.cpp */; };
+		CDA310572CB19610006E46F5 /* ui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FE22CB19610006E46F5 /* ui.cpp */; };
+		CDA3105A2CB19610006E46F5 /* game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FE72CB19610006E46F5 /* game.cpp */; };
+		CDA3105C2CB19610006E46F5 /* source.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FEA2CB19610006E46F5 /* source.cpp */; };
+		CDA3105F2CB19610006E46F5 /* thor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FEF2CB19610006E46F5 /* thor.cpp */; };
+		CDA310612CB19610006E46F5 /* constants.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FF32CB19610006E46F5 /* constants.cpp */; };
+		CDA310622CB19610006E46F5 /* cpu_adapter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FF52CB19610006E46F5 /* cpu_adapter.cpp */; };
+		CDA310642CB19610006E46F5 /* files.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FF82CB19610006E46F5 /* files.cpp */; };
+		CDA310662CB19610006E46F5 /* functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FFB2CB19610006E46F5 /* functions.cpp */; };
+		CDA310682CB19610006E46F5 /* load_training_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30FFF2CB19610006E46F5 /* load_training_set.cpp */; };
+		CDA3106A2CB19610006E46F5 /* misc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA310022CB19610006E46F5 /* misc.cpp */; };
+		CDA3106C2CB19610006E46F5 /* parse_flags.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA310052CB19610006E46F5 /* parse_flags.cpp */; };
+		CDA3106F2CB19610006E46F5 /* serializable_boolean_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA3100A2CB19610006E46F5 /* serializable_boolean_vector.cpp */; };
+		CDA310702CB19610006E46F5 /* types.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA3100C2CB19610006E46F5 /* types.cpp */; };
+		D0CA9314A0201C5A3E9B98CA /* Pods_Share_Extension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56DC272BC8FD5408D506F9C9 /* Pods_Share_Extension.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,6 +69,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		CD3DF96B2CE12CE3000E5098 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CD3DF9622CE12CE3000E5098;
+			remoteInfo = "Share Extension";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -38,17 +90,38 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CD3DF9432CE114C4000E5098 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CD3DF96D2CE12CE3000E5098 /* Share Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		096E46E1E6C656D9F6821BDA /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		139B0AE4DD5A1D312882A88E /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		245DC5DC865E5524502D7BE5 /* Pods-Share Extension.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Share Extension.profile.xcconfig"; path = "Target Support Files/Pods-Share Extension/Pods-Share Extension.profile.xcconfig"; sourceTree = "<group>"; };
 		331C80F1294D02FB00263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80F3294D02FB00263BE5 /* RunnerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RunnerTests.m; sourceTree = "<group>"; };
+		3AB05DB24E8361B5E948916C /* Pods-Share Extension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Share Extension.release.xcconfig"; path = "Target Support Files/Pods-Share Extension/Pods-Share Extension.release.xcconfig"; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3FC9E79566422933C8B99B96 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		4DFBCBD1A1525D90A5635E3B /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		56DC272BC8FD5408D506F9C9 /* Pods_Share_Extension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Share_Extension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5F8DF714299F3B3DCAB1C5EC /* Pods-Share Extension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Share Extension.debug.xcconfig"; path = "Target Support Files/Pods-Share Extension/Pods-Share Extension.debug.xcconfig"; sourceTree = "<group>"; };
+		6A8899D551353D7F1409A827 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7AFFD8ED1D35381100E5BB4D /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		7AFFD8EE1D35381100E5BB4D /* AppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		7C83F7B86C06DA002575332A /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -57,6 +130,158 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C97F7318638E3F090E37A970 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		CD3DF95B2CE116F2000E5098 /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
+		CD3DF95C2CE11702000E5098 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		CD3DF9632CE12CE3000E5098 /* Share Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Share Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD3DF9652CE12CE3000E5098 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		CD3DF9682CE12CE3000E5098 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
+		CD3DF96A2CE12CE3000E5098 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CD3DF9722CE12E67000E5098 /* Share Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Share Extension.entitlements"; sourceTree = "<group>"; };
+		CDA30F762CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30F772CB19610006E46F5 /* collect_examples.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = collect_examples.cpp; sourceTree = "<group>"; };
+		CDA30F782CB19610006E46F5 /* endgame_ffo_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = endgame_ffo_main.cpp; sourceTree = "<group>"; };
+		CDA30F792CB19610006E46F5 /* endgame_ffo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = endgame_ffo.h; sourceTree = "<group>"; };
+		CDA30F7A2CB19610006E46F5 /* last_moves.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = last_moves.cpp; sourceTree = "<group>"; };
+		CDA30F7B2CB19610006E46F5 /* thor_endgame.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thor_endgame.cpp; sourceTree = "<group>"; };
+		CDA30F7C2CB19610006E46F5 /* thor_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thor_main.cpp; sourceTree = "<group>"; };
+		CDA30F7E2CB19610006E46F5 /* bitpattern_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitpattern_test.cpp; sourceTree = "<group>"; };
+		CDA30F7F2CB19610006E46F5 /* bitpattern.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitpattern.cpp; sourceTree = "<group>"; };
+		CDA30F802CB19610006E46F5 /* bitpattern.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitpattern.h; sourceTree = "<group>"; };
+		CDA30F812CB19610006E46F5 /* board_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = board_test.cpp; sourceTree = "<group>"; };
+		CDA30F822CB19610006E46F5 /* board.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = board.cpp; sourceTree = "<group>"; };
+		CDA30F832CB19610006E46F5 /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = board.h; sourceTree = "<group>"; };
+		CDA30F842CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30F852CB19610006E46F5 /* get_flip_profile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_flip_profile.cpp; sourceTree = "<group>"; };
+		CDA30F862CB19610006E46F5 /* get_flip_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_flip_test.cpp; sourceTree = "<group>"; };
+		CDA30F872CB19610006E46F5 /* get_flip.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_flip.cpp; sourceTree = "<group>"; };
+		CDA30F882CB19610006E46F5 /* get_flip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = get_flip.h; sourceTree = "<group>"; };
+		CDA30F892CB19610006E46F5 /* get_moves_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_moves_test.cpp; sourceTree = "<group>"; };
+		CDA30F8A2CB19610006E46F5 /* get_moves.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = get_moves.cpp; sourceTree = "<group>"; };
+		CDA30F8B2CB19610006E46F5 /* get_moves.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = get_moves.h; sourceTree = "<group>"; };
+		CDA30F8C2CB19610006E46F5 /* sequence_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sequence_test.cpp; sourceTree = "<group>"; };
+		CDA30F8D2CB19610006E46F5 /* sequence.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = sequence.cpp; sourceTree = "<group>"; };
+		CDA30F8E2CB19610006E46F5 /* sequence.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sequence.h; sourceTree = "<group>"; };
+		CDA30F8F2CB19610006E46F5 /* stable_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stable_test.cpp; sourceTree = "<group>"; };
+		CDA30F902CB19610006E46F5 /* stable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stable.cpp; sourceTree = "<group>"; };
+		CDA30F912CB19610006E46F5 /* stable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stable.h; sourceTree = "<group>"; };
+		CDA30F932CB19610006E46F5 /* book_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = book_test.cpp; sourceTree = "<group>"; };
+		CDA30F942CB19610006E46F5 /* book_tree_node_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = book_tree_node_test.cpp; sourceTree = "<group>"; };
+		CDA30F952CB19610006E46F5 /* book_tree_node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = book_tree_node.cpp; sourceTree = "<group>"; };
+		CDA30F962CB19610006E46F5 /* book_tree_node.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = book_tree_node.h; sourceTree = "<group>"; };
+		CDA30F972CB19610006E46F5 /* book.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = book.cpp; sourceTree = "<group>"; };
+		CDA30F982CB19610006E46F5 /* book.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = book.h; sourceTree = "<group>"; };
+		CDA30F992CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30F9A2CB19610006E46F5 /* expand_book_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = expand_book_main.cpp; sourceTree = "<group>"; };
+		CDA30F9B2CB19610006E46F5 /* expand_book_thor_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = expand_book_thor_main.cpp; sourceTree = "<group>"; };
+		CDA30F9C2CB19610006E46F5 /* merge_books_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = merge_books_main.cpp; sourceTree = "<group>"; };
+		CDA30F9D2CB19610006E46F5 /* test_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_utils.h; sourceTree = "<group>"; };
+		CDA30F9E2CB19610006E46F5 /* value_file_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = value_file_test.cpp; sourceTree = "<group>"; };
+		CDA30F9F2CB19610006E46F5 /* value_file.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = value_file.cpp; sourceTree = "<group>"; };
+		CDA30FA02CB19610006E46F5 /* value_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = value_file.h; sourceTree = "<group>"; };
+		CDA30FA22CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FA32CB19610006E46F5 /* endgame_time_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = endgame_time_test.cpp; sourceTree = "<group>"; };
+		CDA30FA42CB19610006E46F5 /* endgame_time.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = endgame_time.cpp; sourceTree = "<group>"; };
+		CDA30FA52CB19610006E46F5 /* endgame_time.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = endgame_time.h; sourceTree = "<group>"; };
+		CDA30FA62CB19610006E46F5 /* win_probability_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = win_probability_test.cpp; sourceTree = "<group>"; };
+		CDA30FA72CB19610006E46F5 /* win_probability.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = win_probability.cpp; sourceTree = "<group>"; };
+		CDA30FA82CB19610006E46F5 /* win_probability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = win_probability.h; sourceTree = "<group>"; };
+		CDA30FAA2CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FAB2CB19610006E46F5 /* evaluator_alpha_beta_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_alpha_beta_test.cpp; sourceTree = "<group>"; };
+		CDA30FAC2CB19610006E46F5 /* evaluator_alpha_beta.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_alpha_beta.cpp; sourceTree = "<group>"; };
+		CDA30FAD2CB19610006E46F5 /* evaluator_alpha_beta.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = evaluator_alpha_beta.h; sourceTree = "<group>"; };
+		CDA30FAE2CB19610006E46F5 /* evaluator_last_moves_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_last_moves_test.cpp; sourceTree = "<group>"; };
+		CDA30FAF2CB19610006E46F5 /* evaluator_last_moves.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_last_moves.cpp; sourceTree = "<group>"; };
+		CDA30FB02CB19610006E46F5 /* evaluator_last_moves.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = evaluator_last_moves.h; sourceTree = "<group>"; };
+		CDA30FB12CB19610006E46F5 /* test_evaluator_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_evaluator_test.cpp; sourceTree = "<group>"; };
+		CDA30FB22CB19610006E46F5 /* test_evaluator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_evaluator.cpp; sourceTree = "<group>"; };
+		CDA30FB32CB19610006E46F5 /* test_evaluator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_evaluator.h; sourceTree = "<group>"; };
+		CDA30FB52CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FB62CB19610006E46F5 /* evaluator_depth_one_base.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_depth_one_base.cpp; sourceTree = "<group>"; };
+		CDA30FB72CB19610006E46F5 /* evaluator_depth_one_base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = evaluator_depth_one_base.h; sourceTree = "<group>"; };
+		CDA30FB82CB19610006E46F5 /* pattern_evaluator_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pattern_evaluator_test.cpp; sourceTree = "<group>"; };
+		CDA30FB92CB19610006E46F5 /* pattern_evaluator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pattern_evaluator.cpp; sourceTree = "<group>"; };
+		CDA30FBA2CB19610006E46F5 /* pattern_evaluator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pattern_evaluator.h; sourceTree = "<group>"; };
+		CDA30FBB2CB19610006E46F5 /* pattern_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pattern_test.cpp; sourceTree = "<group>"; };
+		CDA30FBC2CB19610006E46F5 /* pattern.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pattern.cpp; sourceTree = "<group>"; };
+		CDA30FBD2CB19610006E46F5 /* pattern.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pattern.h; sourceTree = "<group>"; };
+		CDA30FBE2CB19610006E46F5 /* test_evaluator_depth_one_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_evaluator_depth_one_test.cpp; sourceTree = "<group>"; };
+		CDA30FBF2CB19610006E46F5 /* test_evaluator_depth_one.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_evaluator_depth_one.h; sourceTree = "<group>"; };
+		CDA30FC02CB19610006E46F5 /* train_pattern_evaluator_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = train_pattern_evaluator_main.cpp; sourceTree = "<group>"; };
+		CDA30FC12CB19610006E46F5 /* train_pattern_evaluator_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = train_pattern_evaluator_test.cpp; sourceTree = "<group>"; };
+		CDA30FC22CB19610006E46F5 /* train_pattern_evaluator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = train_pattern_evaluator.cpp; sourceTree = "<group>"; };
+		CDA30FC32CB19610006E46F5 /* train_pattern_evaluator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = train_pattern_evaluator.h; sourceTree = "<group>"; };
+		CDA30FC52CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FC62CB19610006E46F5 /* evaluation_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluation_test.cpp; sourceTree = "<group>"; };
+		CDA30FC72CB19610006E46F5 /* evaluation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluation.cpp; sourceTree = "<group>"; };
+		CDA30FC82CB19610006E46F5 /* evaluation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = evaluation.h; sourceTree = "<group>"; };
+		CDA30FC92CB19610006E46F5 /* evaluator_derivative_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_derivative_test.cpp; sourceTree = "<group>"; };
+		CDA30FCA2CB19610006E46F5 /* evaluator_derivative.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = evaluator_derivative.cpp; sourceTree = "<group>"; };
+		CDA30FCB2CB19610006E46F5 /* evaluator_derivative.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = evaluator_derivative.h; sourceTree = "<group>"; };
+		CDA30FCC2CB19610006E46F5 /* prob_combiners_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = prob_combiners_test.cpp; sourceTree = "<group>"; };
+		CDA30FCD2CB19610006E46F5 /* prob_combiners.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = prob_combiners.cpp; sourceTree = "<group>"; };
+		CDA30FCE2CB19610006E46F5 /* prob_combiners.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = prob_combiners.h; sourceTree = "<group>"; };
+		CDA30FCF2CB19610006E46F5 /* tree_node_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tree_node_test.cpp; sourceTree = "<group>"; };
+		CDA30FD02CB19610006E46F5 /* tree_node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tree_node.cpp; sourceTree = "<group>"; };
+		CDA30FD12CB19610006E46F5 /* tree_node.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tree_node.h; sourceTree = "<group>"; };
+		CDA30FD32CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FD42CB19610006E46F5 /* hash_map_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hash_map_test.cpp; sourceTree = "<group>"; };
+		CDA30FD52CB19610006E46F5 /* hash_map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = hash_map.cpp; sourceTree = "<group>"; };
+		CDA30FD62CB19610006E46F5 /* hash_map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hash_map.h; sourceTree = "<group>"; };
+		CDA30FD82CB19610006E46F5 /* bindings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bindings.cpp; sourceTree = "<group>"; };
+		CDA30FD92CB19610006E46F5 /* bindings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		CDA30FDA2CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FDB2CB19610006E46F5 /* engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = engine.cpp; sourceTree = "<group>"; };
+		CDA30FDC2CB19610006E46F5 /* engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = engine.h; sourceTree = "<group>"; };
+		CDA30FDD2CB19610006E46F5 /* exports.def */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = exports.def; sourceTree = "<group>"; };
+		CDA30FDE2CB19610006E46F5 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		CDA30FDF2CB19610006E46F5 /* main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
+		CDA30FE02CB19610006E46F5 /* state.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = state.cpp; sourceTree = "<group>"; };
+		CDA30FE12CB19610006E46F5 /* state.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = state.h; sourceTree = "<group>"; };
+		CDA30FE22CB19610006E46F5 /* ui.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ui.cpp; sourceTree = "<group>"; };
+		CDA30FE32CB19610006E46F5 /* ui.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ui.h; sourceTree = "<group>"; };
+		CDA30FE52CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FE62CB19610006E46F5 /* game_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = game_test.cpp; sourceTree = "<group>"; };
+		CDA30FE72CB19610006E46F5 /* game.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = game.cpp; sourceTree = "<group>"; };
+		CDA30FE82CB19610006E46F5 /* game.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = game.h; sourceTree = "<group>"; };
+		CDA30FE92CB19610006E46F5 /* source_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = source_test.cpp; sourceTree = "<group>"; };
+		CDA30FEA2CB19610006E46F5 /* source.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = source.cpp; sourceTree = "<group>"; };
+		CDA30FEB2CB19610006E46F5 /* source.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = source.h; sourceTree = "<group>"; };
+		CDA30FEC2CB19610006E46F5 /* thor_create_extra_files.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thor_create_extra_files.cpp; sourceTree = "<group>"; };
+		CDA30FED2CB19610006E46F5 /* thor_test_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thor_test_utils.h; sourceTree = "<group>"; };
+		CDA30FEE2CB19610006E46F5 /* thor_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thor_test.cpp; sourceTree = "<group>"; };
+		CDA30FEF2CB19610006E46F5 /* thor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = thor.cpp; sourceTree = "<group>"; };
+		CDA30FF02CB19610006E46F5 /* thor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thor.h; sourceTree = "<group>"; };
+		CDA30FF22CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CDA30FF32CB19610006E46F5 /* constants.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = constants.cpp; sourceTree = "<group>"; };
+		CDA30FF42CB19610006E46F5 /* constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = constants.h; sourceTree = "<group>"; };
+		CDA30FF52CB19610006E46F5 /* cpu_adapter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cpu_adapter.cpp; sourceTree = "<group>"; };
+		CDA30FF62CB19610006E46F5 /* cpu_adapter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cpu_adapter.h; sourceTree = "<group>"; };
+		CDA30FF72CB19610006E46F5 /* exports.def */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = exports.def; sourceTree = "<group>"; };
+		CDA30FF82CB19610006E46F5 /* files.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = files.cpp; sourceTree = "<group>"; };
+		CDA30FF92CB19610006E46F5 /* files.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = files.h; sourceTree = "<group>"; };
+		CDA30FFA2CB19610006E46F5 /* functions_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = functions_test.cpp; sourceTree = "<group>"; };
+		CDA30FFB2CB19610006E46F5 /* functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = functions.cpp; sourceTree = "<group>"; };
+		CDA30FFC2CB19610006E46F5 /* functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = functions.h; sourceTree = "<group>"; };
+		CDA30FFD2CB19610006E46F5 /* load_thor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = load_thor.h; sourceTree = "<group>"; };
+		CDA30FFE2CB19610006E46F5 /* load_training_set_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = load_training_set_main.cpp; sourceTree = "<group>"; };
+		CDA30FFF2CB19610006E46F5 /* load_training_set.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = load_training_set.cpp; sourceTree = "<group>"; };
+		CDA310002CB19610006E46F5 /* load_training_set.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = load_training_set.h; sourceTree = "<group>"; };
+		CDA310012CB19610006E46F5 /* misc_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = misc_test.cpp; sourceTree = "<group>"; };
+		CDA310022CB19610006E46F5 /* misc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = misc.cpp; sourceTree = "<group>"; };
+		CDA310032CB19610006E46F5 /* misc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = misc.h; sourceTree = "<group>"; };
+		CDA310042CB19610006E46F5 /* parse_flags_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = parse_flags_test.cpp; sourceTree = "<group>"; };
+		CDA310052CB19610006E46F5 /* parse_flags.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = parse_flags.cpp; sourceTree = "<group>"; };
+		CDA310062CB19610006E46F5 /* parse_flags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = parse_flags.h; sourceTree = "<group>"; };
+		CDA310072CB19610006E46F5 /* random_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = random_test.cpp; sourceTree = "<group>"; };
+		CDA310082CB19610006E46F5 /* random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = random.h; sourceTree = "<group>"; };
+		CDA310092CB19610006E46F5 /* serializable_boolean_vector_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = serializable_boolean_vector_test.cpp; sourceTree = "<group>"; };
+		CDA3100A2CB19610006E46F5 /* serializable_boolean_vector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = serializable_boolean_vector.cpp; sourceTree = "<group>"; };
+		CDA3100B2CB19610006E46F5 /* serializable_boolean_vector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = serializable_boolean_vector.h; sourceTree = "<group>"; };
+		CDA3100C2CB19610006E46F5 /* types.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = types.cpp; sourceTree = "<group>"; };
+		CDA3100D2CB19610006E46F5 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
+		CDA3100F2CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		E87E452273E22BE2D4EF5209 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +289,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C27C672236EBF6BD58BABAA1 /* Pods_RunnerTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +297,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53CE13F5C5E7E2ACDDC6FD11 /* Pods_Runner.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD3DF9602CE12CE3000E5098 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D0CA9314A0201C5A3E9B98CA /* Pods_Share_Extension.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,10 +334,14 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
+				CDA310102CB19610006E46F5 /* engine */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				331C80F2294D02FB00263BE5 /* RunnerTests */,
+				CD3DF9642CE12CE3000E5098 /* Share Extension */,
 				97C146EF1CF9000F007C117D /* Products */,
+				E622B6E1E09B8F9140863EF8 /* Pods */,
+				F5C605052171737B5AE0B040 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -111,6 +350,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C80F1294D02FB00263BE5 /* RunnerTests.xctest */,
+				CD3DF9632CE12CE3000E5098 /* Share Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +358,8 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				CD3DF95C2CE11702000E5098 /* Runner.entitlements */,
+				CD3DF95B2CE116F2000E5098 /* RunnerDebug.entitlements */,
 				7AFFD8ED1D35381100E5BB4D /* AppDelegate.h */,
 				7AFFD8EE1D35381100E5BB4D /* AppDelegate.m */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
@@ -139,6 +381,282 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		CD3DF9642CE12CE3000E5098 /* Share Extension */ = {
+			isa = PBXGroup;
+			children = (
+				CD3DF9722CE12E67000E5098 /* Share Extension.entitlements */,
+				CD3DF9652CE12CE3000E5098 /* ShareViewController.swift */,
+				CD3DF9672CE12CE3000E5098 /* MainInterface.storyboard */,
+				CD3DF96A2CE12CE3000E5098 /* Info.plist */,
+			);
+			path = "Share Extension";
+			sourceTree = "<group>";
+		};
+		CDA30F7D2CB19610006E46F5 /* analyzers */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30F762CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30F772CB19610006E46F5 /* collect_examples.cpp */,
+				CDA30F782CB19610006E46F5 /* endgame_ffo_main.cpp */,
+				CDA30F792CB19610006E46F5 /* endgame_ffo.h */,
+				CDA30F7A2CB19610006E46F5 /* last_moves.cpp */,
+				CDA30F7B2CB19610006E46F5 /* thor_endgame.cpp */,
+				CDA30F7C2CB19610006E46F5 /* thor_main.cpp */,
+			);
+			path = analyzers;
+			sourceTree = "<group>";
+		};
+		CDA30F922CB19610006E46F5 /* board */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30F7E2CB19610006E46F5 /* bitpattern_test.cpp */,
+				CDA30F7F2CB19610006E46F5 /* bitpattern.cpp */,
+				CDA30F802CB19610006E46F5 /* bitpattern.h */,
+				CDA30F812CB19610006E46F5 /* board_test.cpp */,
+				CDA30F822CB19610006E46F5 /* board.cpp */,
+				CDA30F832CB19610006E46F5 /* board.h */,
+				CDA30F842CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30F852CB19610006E46F5 /* get_flip_profile.cpp */,
+				CDA30F862CB19610006E46F5 /* get_flip_test.cpp */,
+				CDA30F872CB19610006E46F5 /* get_flip.cpp */,
+				CDA30F882CB19610006E46F5 /* get_flip.h */,
+				CDA30F892CB19610006E46F5 /* get_moves_test.cpp */,
+				CDA30F8A2CB19610006E46F5 /* get_moves.cpp */,
+				CDA30F8B2CB19610006E46F5 /* get_moves.h */,
+				CDA30F8C2CB19610006E46F5 /* sequence_test.cpp */,
+				CDA30F8D2CB19610006E46F5 /* sequence.cpp */,
+				CDA30F8E2CB19610006E46F5 /* sequence.h */,
+				CDA30F8F2CB19610006E46F5 /* stable_test.cpp */,
+				CDA30F902CB19610006E46F5 /* stable.cpp */,
+				CDA30F912CB19610006E46F5 /* stable.h */,
+			);
+			path = board;
+			sourceTree = "<group>";
+		};
+		CDA30FA12CB19610006E46F5 /* book */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30F932CB19610006E46F5 /* book_test.cpp */,
+				CDA30F942CB19610006E46F5 /* book_tree_node_test.cpp */,
+				CDA30F952CB19610006E46F5 /* book_tree_node.cpp */,
+				CDA30F962CB19610006E46F5 /* book_tree_node.h */,
+				CDA30F972CB19610006E46F5 /* book.cpp */,
+				CDA30F982CB19610006E46F5 /* book.h */,
+				CDA30F992CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30F9A2CB19610006E46F5 /* expand_book_main.cpp */,
+				CDA30F9B2CB19610006E46F5 /* expand_book_thor_main.cpp */,
+				CDA30F9C2CB19610006E46F5 /* merge_books_main.cpp */,
+				CDA30F9D2CB19610006E46F5 /* test_utils.h */,
+				CDA30F9E2CB19610006E46F5 /* value_file_test.cpp */,
+				CDA30F9F2CB19610006E46F5 /* value_file.cpp */,
+				CDA30FA02CB19610006E46F5 /* value_file.h */,
+			);
+			path = book;
+			sourceTree = "<group>";
+		};
+		CDA30FA92CB19610006E46F5 /* estimators */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FA22CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FA32CB19610006E46F5 /* endgame_time_test.cpp */,
+				CDA30FA42CB19610006E46F5 /* endgame_time.cpp */,
+				CDA30FA52CB19610006E46F5 /* endgame_time.h */,
+				CDA30FA62CB19610006E46F5 /* win_probability_test.cpp */,
+				CDA30FA72CB19610006E46F5 /* win_probability.cpp */,
+				CDA30FA82CB19610006E46F5 /* win_probability.h */,
+			);
+			path = estimators;
+			sourceTree = "<group>";
+		};
+		CDA30FB42CB19610006E46F5 /* evaluatealphabeta */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FAA2CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FAB2CB19610006E46F5 /* evaluator_alpha_beta_test.cpp */,
+				CDA30FAC2CB19610006E46F5 /* evaluator_alpha_beta.cpp */,
+				CDA30FAD2CB19610006E46F5 /* evaluator_alpha_beta.h */,
+				CDA30FAE2CB19610006E46F5 /* evaluator_last_moves_test.cpp */,
+				CDA30FAF2CB19610006E46F5 /* evaluator_last_moves.cpp */,
+				CDA30FB02CB19610006E46F5 /* evaluator_last_moves.h */,
+				CDA30FB12CB19610006E46F5 /* test_evaluator_test.cpp */,
+				CDA30FB22CB19610006E46F5 /* test_evaluator.cpp */,
+				CDA30FB32CB19610006E46F5 /* test_evaluator.h */,
+			);
+			path = evaluatealphabeta;
+			sourceTree = "<group>";
+		};
+		CDA30FC42CB19610006E46F5 /* evaluatedepthone */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FB52CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FB62CB19610006E46F5 /* evaluator_depth_one_base.cpp */,
+				CDA30FB72CB19610006E46F5 /* evaluator_depth_one_base.h */,
+				CDA30FB82CB19610006E46F5 /* pattern_evaluator_test.cpp */,
+				CDA30FB92CB19610006E46F5 /* pattern_evaluator.cpp */,
+				CDA30FBA2CB19610006E46F5 /* pattern_evaluator.h */,
+				CDA30FBB2CB19610006E46F5 /* pattern_test.cpp */,
+				CDA30FBC2CB19610006E46F5 /* pattern.cpp */,
+				CDA30FBD2CB19610006E46F5 /* pattern.h */,
+				CDA30FBE2CB19610006E46F5 /* test_evaluator_depth_one_test.cpp */,
+				CDA30FBF2CB19610006E46F5 /* test_evaluator_depth_one.h */,
+				CDA30FC02CB19610006E46F5 /* train_pattern_evaluator_main.cpp */,
+				CDA30FC12CB19610006E46F5 /* train_pattern_evaluator_test.cpp */,
+				CDA30FC22CB19610006E46F5 /* train_pattern_evaluator.cpp */,
+				CDA30FC32CB19610006E46F5 /* train_pattern_evaluator.h */,
+			);
+			path = evaluatedepthone;
+			sourceTree = "<group>";
+		};
+		CDA30FD22CB19610006E46F5 /* evaluatederivative */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FC52CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FC62CB19610006E46F5 /* evaluation_test.cpp */,
+				CDA30FC72CB19610006E46F5 /* evaluation.cpp */,
+				CDA30FC82CB19610006E46F5 /* evaluation.h */,
+				CDA30FC92CB19610006E46F5 /* evaluator_derivative_test.cpp */,
+				CDA30FCA2CB19610006E46F5 /* evaluator_derivative.cpp */,
+				CDA30FCB2CB19610006E46F5 /* evaluator_derivative.h */,
+				CDA30FCC2CB19610006E46F5 /* prob_combiners_test.cpp */,
+				CDA30FCD2CB19610006E46F5 /* prob_combiners.cpp */,
+				CDA30FCE2CB19610006E46F5 /* prob_combiners.h */,
+				CDA30FCF2CB19610006E46F5 /* tree_node_test.cpp */,
+				CDA30FD02CB19610006E46F5 /* tree_node.cpp */,
+				CDA30FD12CB19610006E46F5 /* tree_node.h */,
+			);
+			path = evaluatederivative;
+			sourceTree = "<group>";
+		};
+		CDA30FD72CB19610006E46F5 /* hashmap */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FD32CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FD42CB19610006E46F5 /* hash_map_test.cpp */,
+				CDA30FD52CB19610006E46F5 /* hash_map.cpp */,
+				CDA30FD62CB19610006E46F5 /* hash_map.h */,
+			);
+			path = hashmap;
+			sourceTree = "<group>";
+		};
+		CDA30FE42CB19610006E46F5 /* main */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FD82CB19610006E46F5 /* bindings.cpp */,
+				CDA30FD92CB19610006E46F5 /* bindings.h */,
+				CDA30FDA2CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FDB2CB19610006E46F5 /* engine.cpp */,
+				CDA30FDC2CB19610006E46F5 /* engine.h */,
+				CDA30FDD2CB19610006E46F5 /* exports.def */,
+				CDA30FDE2CB19610006E46F5 /* main.cpp */,
+				CDA30FDF2CB19610006E46F5 /* main.h */,
+				CDA30FE02CB19610006E46F5 /* state.cpp */,
+				CDA30FE12CB19610006E46F5 /* state.h */,
+				CDA30FE22CB19610006E46F5 /* ui.cpp */,
+				CDA30FE32CB19610006E46F5 /* ui.h */,
+			);
+			path = main;
+			sourceTree = "<group>";
+		};
+		CDA30FF12CB19610006E46F5 /* thor */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FE52CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FE62CB19610006E46F5 /* game_test.cpp */,
+				CDA30FE72CB19610006E46F5 /* game.cpp */,
+				CDA30FE82CB19610006E46F5 /* game.h */,
+				CDA30FE92CB19610006E46F5 /* source_test.cpp */,
+				CDA30FEA2CB19610006E46F5 /* source.cpp */,
+				CDA30FEB2CB19610006E46F5 /* source.h */,
+				CDA30FEC2CB19610006E46F5 /* thor_create_extra_files.cpp */,
+				CDA30FED2CB19610006E46F5 /* thor_test_utils.h */,
+				CDA30FEE2CB19610006E46F5 /* thor_test.cpp */,
+				CDA30FEF2CB19610006E46F5 /* thor.cpp */,
+				CDA30FF02CB19610006E46F5 /* thor.h */,
+			);
+			path = thor;
+			sourceTree = "<group>";
+		};
+		CDA3100E2CB19610006E46F5 /* utils */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30FF22CB19610006E46F5 /* CMakeLists.txt */,
+				CDA30FF32CB19610006E46F5 /* constants.cpp */,
+				CDA30FF42CB19610006E46F5 /* constants.h */,
+				CDA30FF52CB19610006E46F5 /* cpu_adapter.cpp */,
+				CDA30FF62CB19610006E46F5 /* cpu_adapter.h */,
+				CDA30FF72CB19610006E46F5 /* exports.def */,
+				CDA30FF82CB19610006E46F5 /* files.cpp */,
+				CDA30FF92CB19610006E46F5 /* files.h */,
+				CDA30FFA2CB19610006E46F5 /* functions_test.cpp */,
+				CDA30FFB2CB19610006E46F5 /* functions.cpp */,
+				CDA30FFC2CB19610006E46F5 /* functions.h */,
+				CDA30FFD2CB19610006E46F5 /* load_thor.h */,
+				CDA30FFE2CB19610006E46F5 /* load_training_set_main.cpp */,
+				CDA30FFF2CB19610006E46F5 /* load_training_set.cpp */,
+				CDA310002CB19610006E46F5 /* load_training_set.h */,
+				CDA310012CB19610006E46F5 /* misc_test.cpp */,
+				CDA310022CB19610006E46F5 /* misc.cpp */,
+				CDA310032CB19610006E46F5 /* misc.h */,
+				CDA310042CB19610006E46F5 /* parse_flags_test.cpp */,
+				CDA310052CB19610006E46F5 /* parse_flags.cpp */,
+				CDA310062CB19610006E46F5 /* parse_flags.h */,
+				CDA310072CB19610006E46F5 /* random_test.cpp */,
+				CDA310082CB19610006E46F5 /* random.h */,
+				CDA310092CB19610006E46F5 /* serializable_boolean_vector_test.cpp */,
+				CDA3100A2CB19610006E46F5 /* serializable_boolean_vector.cpp */,
+				CDA3100B2CB19610006E46F5 /* serializable_boolean_vector.h */,
+				CDA3100C2CB19610006E46F5 /* types.cpp */,
+				CDA3100D2CB19610006E46F5 /* types.h */,
+			);
+			path = utils;
+			sourceTree = "<group>";
+		};
+		CDA310102CB19610006E46F5 /* engine */ = {
+			isa = PBXGroup;
+			children = (
+				CDA30F7D2CB19610006E46F5 /* analyzers */,
+				CDA30F922CB19610006E46F5 /* board */,
+				CDA30FA12CB19610006E46F5 /* book */,
+				CDA30FA92CB19610006E46F5 /* estimators */,
+				CDA30FB42CB19610006E46F5 /* evaluatealphabeta */,
+				CDA30FC42CB19610006E46F5 /* evaluatedepthone */,
+				CDA30FD22CB19610006E46F5 /* evaluatederivative */,
+				CDA30FD72CB19610006E46F5 /* hashmap */,
+				CDA30FE42CB19610006E46F5 /* main */,
+				CDA30FF12CB19610006E46F5 /* thor */,
+				CDA3100E2CB19610006E46F5 /* utils */,
+				CDA3100F2CB19610006E46F5 /* CMakeLists.txt */,
+			);
+			name = engine;
+			path = ../engine;
+			sourceTree = "<group>";
+		};
+		E622B6E1E09B8F9140863EF8 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				4DFBCBD1A1525D90A5635E3B /* Pods-Runner.debug.xcconfig */,
+				6A8899D551353D7F1409A827 /* Pods-Runner.release.xcconfig */,
+				096E46E1E6C656D9F6821BDA /* Pods-Runner.profile.xcconfig */,
+				C97F7318638E3F090E37A970 /* Pods-RunnerTests.debug.xcconfig */,
+				139B0AE4DD5A1D312882A88E /* Pods-RunnerTests.release.xcconfig */,
+				7C83F7B86C06DA002575332A /* Pods-RunnerTests.profile.xcconfig */,
+				5F8DF714299F3B3DCAB1C5EC /* Pods-Share Extension.debug.xcconfig */,
+				3AB05DB24E8361B5E948916C /* Pods-Share Extension.release.xcconfig */,
+				245DC5DC865E5524502D7BE5 /* Pods-Share Extension.profile.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		F5C605052171737B5AE0B040 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E87E452273E22BE2D4EF5209 /* Pods_Runner.framework */,
+				3FC9E79566422933C8B99B96 /* Pods_RunnerTests.framework */,
+				56DC272BC8FD5408D506F9C9 /* Pods_Share_Extension.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -146,6 +664,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C80F7294D02FB00263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
 			buildPhases = (
+				8445C45D37656D1824E80250 /* [CP] Check Pods Manifest.lock */,
 				331C80ED294D02FB00263BE5 /* Sources */,
 				331C80EE294D02FB00263BE5 /* Frameworks */,
 				331C80EF294D02FB00263BE5 /* Resources */,
@@ -164,21 +683,44 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
+				ADDA55CF6608E6755CA30F9E /* [CP] Check Pods Manifest.lock */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				CD3DF9432CE114C4000E5098 /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
+				55DC80F88EB325CA7D983A7F /* [CP] Copy Pods Resources */,
+				0DC07D6D724E7E2D967A94E0 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				CD3DF96C2CE12CE3000E5098 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
+		};
+		CD3DF9622CE12CE3000E5098 /* Share Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CD3DF9712CE12CE3000E5098 /* Build configuration list for PBXNativeTarget "Share Extension" */;
+			buildPhases = (
+				9B17F5622EF5950B0D5AD56A /* [CP] Check Pods Manifest.lock */,
+				CD3DF95F2CE12CE3000E5098 /* Sources */,
+				CD3DF9602CE12CE3000E5098 /* Frameworks */,
+				CD3DF9612CE12CE3000E5098 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Share Extension";
+			productName = "Share Extension";
+			productReference = CD3DF9632CE12CE3000E5098 /* Share Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -187,7 +729,8 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					331C80F0294D02FB00263BE5 = {
@@ -196,6 +739,9 @@
 					};
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
+					};
+					CD3DF9622CE12CE3000E5098 = {
+						CreatedOnToolsVersion = 15.4;
 					};
 				};
 			};
@@ -214,6 +760,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C80F0294D02FB00263BE5 /* RunnerTests */,
+				CD3DF9622CE12CE3000E5098 /* Share Extension */,
 			);
 		};
 /* End PBXProject section */
@@ -237,9 +784,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CD3DF9612CE12CE3000E5098 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD3DF9692CE12CE3000E5098 /* Base in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		0DC07D6D724E7E2D967A94E0 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -256,6 +828,45 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
+		55DC80F88EB325CA7D983A7F /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8445C45D37656D1824E80250 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-RunnerTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -270,6 +881,50 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		9B17F5622EF5950B0D5AD56A /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Share Extension-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		ADDA55CF6608E6755CA30F9E /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Runner-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -286,9 +941,56 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDA310562CB19610006E46F5 /* state.cpp in Sources */,
+				CDA310312CB19610006E46F5 /* endgame_time.cpp in Sources */,
+				CDA3105A2CB19610006E46F5 /* game.cpp in Sources */,
+				CDA310242CB19610006E46F5 /* stable.cpp in Sources */,
+				CDA310492CB19610006E46F5 /* evaluator_derivative.cpp in Sources */,
+				CDA310272CB19610006E46F5 /* book_tree_node.cpp in Sources */,
+				CDA3105F2CB19610006E46F5 /* thor.cpp in Sources */,
+				CDA310552CB19610006E46F5 /* main.cpp in Sources */,
+				CDA310332CB19610006E46F5 /* win_probability.cpp in Sources */,
+				CDA310382CB19610006E46F5 /* evaluator_last_moves.cpp in Sources */,
+				CDA310472CB19610006E46F5 /* evaluation.cpp in Sources */,
+				CDA3106F2CB19610006E46F5 /* serializable_boolean_vector.cpp in Sources */,
+				CDA3101A2CB19610006E46F5 /* board.cpp in Sources */,
+				CDA3103C2CB19610006E46F5 /* evaluator_depth_one_base.cpp in Sources */,
+				CDA310572CB19610006E46F5 /* ui.cpp in Sources */,
 				978B8F6F1D3862AE00F588F7 /* AppDelegate.m in Sources */,
+				CDA310622CB19610006E46F5 /* cpu_adapter.cpp in Sources */,
+				CDA3102E2CB19610006E46F5 /* value_file.cpp in Sources */,
+				CDA310442CB19610006E46F5 /* train_pattern_evaluator.cpp in Sources */,
+				CDA3105C2CB19610006E46F5 /* source.cpp in Sources */,
+				CDA310182CB19610006E46F5 /* bitpattern.cpp in Sources */,
+				CDA310642CB19610006E46F5 /* files.cpp in Sources */,
+				CDA3104B2CB19610006E46F5 /* prob_combiners.cpp in Sources */,
+				CDA310502CB19610006E46F5 /* hash_map.cpp in Sources */,
+				CDA3104D2CB19610006E46F5 /* tree_node.cpp in Sources */,
+				CDA310532CB19610006E46F5 /* engine.cpp in Sources */,
+				CDA310282CB19610006E46F5 /* book.cpp in Sources */,
+				CDA310402CB19610006E46F5 /* pattern.cpp in Sources */,
 				97C146F31CF9000F007C117D /* main.m in Sources */,
+				CDA310222CB19610006E46F5 /* sequence.cpp in Sources */,
+				CDA3106A2CB19610006E46F5 /* misc.cpp in Sources */,
+				CDA3106C2CB19610006E46F5 /* parse_flags.cpp in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				CDA310202CB19610006E46F5 /* get_moves.cpp in Sources */,
+				CDA310662CB19610006E46F5 /* functions.cpp in Sources */,
+				CDA310362CB19610006E46F5 /* evaluator_alpha_beta.cpp in Sources */,
+				CDA310612CB19610006E46F5 /* constants.cpp in Sources */,
+				CDA3101E2CB19610006E46F5 /* get_flip.cpp in Sources */,
+				CDA310702CB19610006E46F5 /* types.cpp in Sources */,
+				CDA3103E2CB19610006E46F5 /* pattern_evaluator.cpp in Sources */,
+				CDA310682CB19610006E46F5 /* load_training_set.cpp in Sources */,
+				CDA310512CB19610006E46F5 /* bindings.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD3DF95F2CE12CE3000E5098 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD3DF9662CE12CE3000E5098 /* ShareViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,6 +1001,11 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C80F5294D02FB00263BE5 /* PBXContainerItemProxy */;
+		};
+		CD3DF96C2CE12CE3000E5098 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CD3DF9622CE12CE3000E5098 /* Share Extension */;
+			targetProxy = CD3DF96B2CE12CE3000E5098 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -319,13 +1026,24 @@
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
+		CD3DF9672CE12CE3000E5098 /* MainInterface.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CD3DF9682CE12CE3000E5098 /* Base */,
+			);
+			name = MainInterface.storyboard;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -350,9 +1068,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -363,10 +1083,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CPLUSPLUSFLAGS = "-DIOS";
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
@@ -376,25 +1099,48 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 32;
+				CUSTOM_GROUP_ID = group.com.othellosensei.ShareExtension;
+				DEVELOPMENT_TEAM = D284R47M4F;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
 				ENABLE_BITCODE = NO;
+				GCC_C_LANGUAGE_STANDARD = c17;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.othelloSenseiFlutter;
+				MARKETING_VERSION = 1.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRIP_STYLE = "non-global";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Profile;
 		};
 		331C80F8294D02FB00263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C97F7318638E3F090E37A970 /* Pods-RunnerTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D284R47M4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.othelloSenseiFlutter.RunnerTests;
@@ -405,9 +1151,11 @@
 		};
 		331C80F9294D02FB00263BE5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 139B0AE4DD5A1D312882A88E /* Pods-RunnerTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D284R47M4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.othelloSenseiFlutter.RunnerTests;
@@ -418,9 +1166,11 @@
 		};
 		331C80FA294D02FB00263BE5 /* Profile */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7C83F7B86C06DA002575332A /* Pods-RunnerTests.profile.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D284R47M4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.othelloSenseiFlutter.RunnerTests;
@@ -432,7 +1182,10 @@
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -457,9 +1210,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -476,9 +1231,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CPLUSPLUSFLAGS = "-DIOS";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -487,7 +1245,10 @@
 		97C147041CF9000F007C117D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -512,9 +1273,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -525,10 +1288,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CPLUSPLUSFLAGS = "-DIOS";
 				SDKROOT = iphoneos;
-				SUPPORTED_PLATFORMS = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
@@ -538,16 +1304,37 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Runner/RunnerDebug.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 32;
+				CUSTOM_GROUP_ID = group.com.othellosensei.ShareExtension;
+				DEVELOPMENT_TEAM = D284R47M4F;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
 				ENABLE_BITCODE = NO;
+				GCC_C_LANGUAGE_STANDARD = c17;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.othelloSenseiFlutter;
+				MARKETING_VERSION = 1.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRIP_STYLE = "non-global";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -556,19 +1343,168 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = AppIcon;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 32;
+				CUSTOM_GROUP_ID = group.com.othellosensei.ShareExtension;
+				DEVELOPMENT_TEAM = D284R47M4F;
+				EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE = YES;
 				ENABLE_BITCODE = NO;
+				GCC_C_LANGUAGE_STANDARD = c17;
 				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.othelloSenseiFlutter;
+				MARKETING_VERSION = 1.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRIP_STYLE = "non-global";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		CD3DF96E2CE12CE3000E5098 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5F8DF714299F3B3DCAB1C5EC /* Pods-Share Extension.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "Share Extension/Share Extension.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				CUSTOM_GROUP_ID = group.com.othellosensei.ShareExtension;
+				DEVELOPMENT_TEAM = D284R47M4F;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Share Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Share Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.othellosensei.app.Share-Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CD3DF96F2CE12CE3000E5098 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3AB05DB24E8361B5E948916C /* Pods-Share Extension.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "Share Extension/Share Extension.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				CUSTOM_GROUP_ID = group.com.othellosensei.ShareExtension;
+				DEVELOPMENT_TEAM = D284R47M4F;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Share Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Share Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.othellosensei.app.Share-Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CD3DF9702CE12CE3000E5098 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 245DC5DC865E5524502D7BE5 /* Pods-Share Extension.profile.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "Share Extension/Share Extension.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				CUSTOM_GROUP_ID = group.com.othellosensei.ShareExtension;
+				DEVELOPMENT_TEAM = D284R47M4F;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Share Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Share Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.othellosensei.app.Share-Extension";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Profile;
 		};
 /* End XCBuildConfiguration section */
 
@@ -599,6 +1535,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CD3DF9712CE12CE3000E5098 /* Build configuration list for PBXNativeTarget "Share Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CD3DF96E2CE12CE3000E5098 /* Debug */,
+				CD3DF96F2CE12CE3000E5098 /* Release */,
+				CD3DF9702CE12CE3000E5098 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

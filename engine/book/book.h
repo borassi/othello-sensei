@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 Michele Borassi
+ * Copyright 2022-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,23 +31,21 @@
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #include "../utils/misc.h"
+#include "../utils/constants.h"
 
 constexpr int kMinFileSize = kMinValueFileSize;
 constexpr int kMaxFileSize = 524288; // 2^19
 constexpr int kNumDoubling = 12;
 constexpr char kBookFilepath[] = "book";
-typedef u_int64_t HashMapIndex;
+typedef uint64_t HashMapIndex;
 
 constexpr HashMapIndex kInitialHashMapSize = 8;
 constexpr HashMapIndex kNumElementsOffset = sizeof(HashMapIndex) / sizeof(char);
 constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 
-enum NodeType {
-  LEAF = 0,
-  FIRST_VISIT = 1,
-  LAST_VISIT = 2,
-};
-
+#ifdef _MSC_VER
+__pragma(pack(push, 1));
+#endif
 class HashMapNode {
  public:
   HashMapNode() : size_byte_(0), offset_(0) {}
@@ -66,16 +64,24 @@ class HashMapNode {
   int GetValueFilePosition() const { return SizeByteToPosition(size_byte_); }
   static int SizeToPosition(int size) { return SizeByteToPosition(SizeToByte(size)); }
   static int SizeByteToPosition(int size_byte) { return size_byte - 1; }
-  static u_int8_t SizeToByte(int size);
-  static int ByteToSize(u_int8_t b);
+  static uint8_t SizeToByte(int size);
+  static int ByteToSize(uint8_t b);
  private:
   BookFileOffset offset_;
-  u_int8_t size_byte_;
-} __attribute__((packed));
+  uint8_t size_byte_;
+}
+#ifdef _MSC_VER
+__pragma(pack(pop));
+#else
+__attribute__((__packed__));
+#endif
 
 std::ostream& operator<<(std::ostream& stream, const HashMapNode& n);
 
 constexpr int kBookVersion = 1;
+
+template<int source_version, int target_version>
+class BookVisitorMerge;
 
 template<int version = kBookVersion>
 class Book {
@@ -120,145 +126,10 @@ class Book {
 
   void Clean();
 
-  HashMapIndex Size() { return book_size_; }
+  HashMapIndex Size() const { return book_size_; }
 
   const std::unordered_set<Board>& Roots() const {
     return roots_;
-  }
-
-  Book RemoveDescendants(const std::string& filepath) {
-    Book book_no_descendants(filepath);
-    assert(book_no_descendants.Size() == 0);
-
-    book_no_descendants.Merge(*this, [](Node* node) { node->ResetDescendants(); }, [](Node* node) { node->ResetDescendants(); });
-    return book_no_descendants;
-  }
-
-  class Iterator {
-   public:
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type   = std::ptrdiff_t;
-    using value_type        = std::pair<Node, NodeType>;
-    using pointer           = value_type*;
-    using reference         = value_type;
-
-    Iterator(const Book& book, int start_root) : book_(book), roots_(book_.Roots().begin(), book_.Roots().end()), next_root_(start_root), stack_() {
-      assert (next_root_ == 0 || next_root_ == roots_.size());
-      ToNextRoot();
-    }
-    reference operator*() const {
-      const Node& node = stack_.back();
-      if (node.IsLeaf()) {
-        return {node, LEAF};
-      } else if (visited_.find(node.ToBoard()) != visited_.end()) {
-        return {node, LAST_VISIT};
-      } else {
-        return {node, FIRST_VISIT};
-      }
-    }
-//    pointer operator->() { return &operator*(); }
-
-    // Prefix increment
-    Iterator& operator++() {
-      ToNext();
-      return *this;
-    }
-
-    // Postfix increment
-    Iterator operator++(int) {
-      Iterator tmp = *this;
-      ++(*this);
-      return tmp;
-    }
-
-    bool operator==(const Iterator& other) const {
-      return &book_ == &other.book_ && roots_ == other.roots_ && stack_ == other.stack_ && next_root_ == other.next_root_;
-    }
-    bool operator!=(const Iterator& other) const {
-      return !(*this == other);
-    }
-
-   private:
-    const Book& book_;
-    const std::vector<Board> roots_;
-    std::vector<Node> stack_;
-    int next_root_;
-    std::unordered_set<Board> visited_;
-
-    void ToNextRoot() {
-      assert(stack_.empty());
-      if (next_root_ == roots_.size()) {
-        // Finished iteration.
-        return;
-      }
-      auto next = book_.Get(roots_[next_root_++]);
-      assert(next);
-      stack_.push_back(*next);
-    }
-
-    void ToNext() {
-      Node node = stack_.back();
-      Board b = node.ToBoard();
-      bool visited = visited_.find(b) != visited_.end();
-      visited_.insert(b);
-      if (visited || node.IsLeaf()) {
-        stack_.pop_back();
-        if (stack_.empty()) {
-          ToNextRoot();
-        }
-      } else {
-        for (auto child_board : GetUniqueNextBoardsWithPass(b)) {
-          if (visited_.find(child_board.first) == visited_.end()) {
-            auto child_in_book = book_.Get(child_board.first);
-            assert(child_in_book);
-            stack_.push_back(*child_in_book);
-          }
-        }
-      }
-    }
-  };
-
-  Iterator begin() const { return Iterator(*this, 0); }
-  Iterator end() const { return Iterator(*this, roots_.size()); }
-
-  template<int other_version>
-  void Merge(const Book<other_version>& other_book, void (*leaf_func)(Node*) = nullptr, void (*internal_func)(Node*) = nullptr) {
-    // This avoids adding a lot of roots and removing them afterwards (to avoid
-    // memory problems).
-    for (const auto& root : other_book.Roots()) {
-      Board unique = root.Unique();
-      if (!Get(unique)) {
-        roots_.insert(unique);
-      }
-    }
-    for (auto other_node_and_type : other_book) {
-      auto other_node = other_node_and_type.first;
-      auto other_node_type = other_node_and_type.second;
-      BookNode* my_node = Mutable(other_node.ToBoard());
-      if (my_node) {
-        if (other_node_type == LEAF || other_node_type == FIRST_VISIT) {
-          my_node->AddDescendants(other_node.GetNVisited());
-          my_node->lower_ = MaxEval(my_node->lower_, other_node.Lower());
-          my_node->upper_ = MinEval(my_node->upper_, other_node.Upper());
-        } else {
-          if (my_node->IsLeaf()) {
-            AddChildren(my_node->ToBoard(), {});
-          } else {
-            my_node->UpdateFather();
-          }
-        }
-      } else {
-        assert(other_node_type == LEAF || other_node_type == FIRST_VISIT);
-        if (other_node_type == LEAF && leaf_func) {
-          leaf_func(&other_node);
-        }
-        if (other_node_type == FIRST_VISIT && internal_func) {
-          internal_func(&other_node);
-        }
-        AddNoRootsUpdate(other_node);
-      }
-    }
-    Commit();
   }
 
   void ReloadSizes() {
@@ -268,6 +139,7 @@ class Book {
   }
 
  private:
+  template<int, int> friend class BookVisitorMerge;
   std::string folder_;
   std::vector<ValueFile> value_files_;
   ValueFile roots_file_;
@@ -305,7 +177,7 @@ class Book {
 
   void UpdateFathers(const BookNode& b);
 
-  u_int64_t OffsetToFilePosition(HashMapIndex offset) const {
+  uint64_t OffsetToFilePosition(HashMapIndex offset) const {
     return kOffset + offset * sizeof(HashMapNode) / sizeof(char);
   }
   std::string IndexFilename() const { return folder_ + "/index.sen"; }
@@ -426,9 +298,12 @@ std::unique_ptr<Node> Book<version>::Get(const Board& b) const {
 template<int version>
 void Book<version>::Commit(bool verbose) {
   // Logic taken from https://stackoverflow.com/questions/76798937.
+
+#if defined(__GNUC__) || defined(__GNUG__) || defined(clang)
   signal(SIGINT, this->HandleSignal);   // CTRL-C
   signal(SIGHUP, this->HandleSignal);   // Close terminal
   signal(SIGQUIT, this->HandleSignal);  // CTRL-/
+#endif
   if (verbose) {
     std::cout << "Committing " << modified_nodes_.size() << " nodes: " << std::flush;
   }
@@ -452,9 +327,11 @@ void Book<version>::Commit(bool verbose) {
     std::cout << " Done\n" << std::flush;
   }
   // Reset these actions to default behavior.
+#if defined(__GNUC__) || defined(__GNUG__) || defined(clang)
   signal(SIGINT, SIG_DFL);
   signal(SIGHUP, SIG_DFL);
   signal(SIGQUIT, SIG_DFL);
+#endif
   if (received_signal_ != NSIG) {
     raise(received_signal_);
   }
@@ -478,10 +355,10 @@ void Book<version>::Commit(const BookNode& node) {
   }
 
   std::vector<char> to_store = node.Serialize();
-  auto size = to_store.size();
-  auto position = value_files_[HashMapNode::SizeToPosition(to_store.size())].Add(to_store);
+  int size = (int) to_store.size();
+  int position = value_files_[HashMapNode::SizeToPosition((int) to_store.size())].Add(to_store);
   HashMapNode to_be_stored(size, position);
-  if (file.tellg() < OffsetToFilePosition(hash_map_size_)) {
+  if (file.tellg() < (int64_t) OffsetToFilePosition(hash_map_size_)) {
     file.write((char*) &to_be_stored, sizeof(HashMapNode));
     Resize(file, {});
   } else {
@@ -520,7 +397,6 @@ bool Book<version>::IsSizeOK() {
 template<int version>
 void Book<version>::Print(int start, int end) {
   auto index_file = IndexFile();
-  int size = index_file->GetLength();
   HashMapNode node;
   if (end == -1) {
     end = hash_map_size_;
@@ -540,8 +416,7 @@ void Book<version>::Print(int start, int end) {
 
 template<int version>
 void Book<version>::Clean() {
-  std::ofstream(IndexFilename(), std::ios::out).close();
-  u_int32_t to_write = 0;
+  std::ofstream(IndexFilename(), std::ios::binary | std::ios::out).close();
   for (ValueFile& value_file : value_files_) {
     value_file.Clean();
   }
@@ -586,7 +461,7 @@ std::pair<std::fstream, HashMapNode> Book<version>::Find(BitPattern player, BitP
   player = unique.Player();
   opponent = unique.Opponent();
   auto hash = RepositionHash(HashFull(player, opponent));
-  assert(std::fstream(IndexFilename(), std::ios::in).is_open());
+  assert(std::fstream(IndexFilename(), std::ios::in | std::ios::binary).is_open());
   auto file = IndexFile();
   file.seekg(OffsetToFilePosition(hash));
   HashMapNode node;
@@ -619,7 +494,7 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
   HashMapNode node_to_move;
   HashMapNode empty_node;
 
-  int extra_buffer = add_elements.size();
+  int extra_buffer = (int) add_elements.size();
   while (book_size_ > 0.4 * hash_map_size_ || extra_buffer > 0) {
     int current_buffer = 0;
     for (HashMapIndex invalidated = RepositionHash(hash_map_size_); true; ++invalidated) {
@@ -650,7 +525,7 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
     while (!board_in_position.IsEmpty()) {
       file.read((char*) &board_in_position, sizeof(board_in_position));
     }
-    file.seekp((u_int64_t) file.tellg() - sizeof(HashMapNode));
+    file.seekp((uint64_t) file.tellg() - sizeof(HashMapNode));
     file.write((char*) &node_to_move, sizeof(node_to_move));
   }
 }

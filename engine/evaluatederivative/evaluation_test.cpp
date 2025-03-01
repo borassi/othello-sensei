@@ -59,7 +59,7 @@ TEST(EvaluationTest, ProofNumberToByte) {
   ASSERT_EQ(ProofNumberToByte(0), 0);
   ASSERT_EQ(ProofNumberToByte(1), 1);
   ASSERT_EQ(ProofNumberToByte(kMaxProofNumber), kProofNumberStep - 1);
-  ASSERT_EQ(ProofNumberToByte(INFINITY), kProofNumberStep);
+  ASSERT_EQ(ProofNumberToByte(DBL_MAX), kProofNumberStep);
   for (int i = 0; i <= kProofNumberStep; ++i) {
     ASSERT_EQ(ProofNumberToByte(ByteToProofNumber((PN) i)), i);
   }

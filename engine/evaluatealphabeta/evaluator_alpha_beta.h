@@ -222,7 +222,7 @@ class EvaluatorAlphaBeta {
   }
   EvalLarge Evaluate(BitPattern player, BitPattern opponent, int depth, EvalLarge lower, EvalLarge upper, int max_visited = INT_MAX) {
     stats_.Reset();
-    int n_empties = __builtin_popcountll(~(player | opponent));
+    int n_empties = (int) __builtin_popcountll(~(player | opponent));
     depth = std::min(depth, n_empties);
     evaluator_depth_one_->Setup(player, opponent);
     stats_.Add(1, LAST_5);

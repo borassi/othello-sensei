@@ -101,14 +101,14 @@ void Engine::Initialize(
     const std::string& thor_filepath) {
   evals_ = std::make_unique<EvalType>(LoadEvals(evals_filepath));
   book_ = std::make_unique<Book<kBookVersion>>(book_filepath);
-  thor_ = std::make_unique<Thor>(thor_filepath);
+  thor_ = std::make_unique<Thor<GameGetterOnDisk>>(thor_filepath);
   for (int i = 0; i < kNumEvaluators; ++i) {
     boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
         book_.get(),
         thor_.get(),
         &tree_node_supplier_, &hash_map_,
         PatternEvaluator::Factory(evals_->data()),
-        static_cast<u_int8_t>(i));
+        static_cast<uint8_t>(i));
   }
 
   auto players = thor_->Players();
@@ -124,7 +124,7 @@ void Engine::Initialize(
     thor_sources_metadata_.push_back(thor_sources_metadata_extended_.back()->GetThorSourceMetadata());
   }
   thor_metadata_.sources = thor_sources_metadata_.data();
-  thor_metadata_.num_sources = thor_sources_metadata_.size();
+  thor_metadata_.num_sources = (int) thor_sources_metadata_.size();
 }
 
 // This runs in the main thread, so that we cannot update the output afterwards.
@@ -143,8 +143,11 @@ bool MustBeEvaluated(
     assert(!child.HasValidChildren());
     return true;
   }
+  if (child.IsSolved(-63, 63, false)) {
+    return false;
+  }
   // When watching an analyzed game, don't re-evaluate.
-  if (father.InAnalysisLine() && !in_analysis) {
+  if (father.InAnalysisLine() && !in_analysis && !params.reevaluate_during_analysis) {
     return false;
   }
   return !child.HasValidChildren();
@@ -153,13 +156,12 @@ bool MustBeEvaluated(
 } // namespace
 
 void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis) {
-  Board board = state.ToBoard();
   num_boards_to_evaluate_ = 0;
 
   for (EvaluationState* child : state.GetChildren()) {
     Board unique = child->ToBoard().Unique();
     // Create or get the BoardToEvaluate.
-    BoardToEvaluate* board_to_evaluate;
+    BoardToEvaluate* board_to_evaluate = nullptr;
     bool found = false;
     for (int i = 0; i < num_boards_to_evaluate_; ++i) {
       BoardToEvaluate* b = boards_to_evaluate_[i].get();
@@ -173,6 +175,7 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
       board_to_evaluate = boards_to_evaluate_[num_boards_to_evaluate_++].get();
       board_to_evaluate->Reset(unique);
     } else {
+      assert(board_to_evaluate);
       child->SetDerived(true);
     }
     bool finished = !MustBeEvaluated(state, *child, params, in_analysis);

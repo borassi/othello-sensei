@@ -18,7 +18,6 @@
 import 'package:flutter/material.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
-import '../widgets_spacers/margins.dart';
 import 'case.dart';
 
 class Coordinate extends StatelessWidget {
@@ -28,31 +27,27 @@ class Coordinate extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    var coordinateSize = Theme.of(context).extension<AppSizes>()!.margin!;
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
     String content;
     if (vertical) {
       content = '${position + 1}';
     } else {
       content = String.fromCharCode('A'.codeUnitAt(0) + position);
     }
-    return ListenableBuilder(
-      listenable: GlobalState.preferences,
-      builder: (BuildContext context, Widget? widget) {
-        if (!GlobalState.preferences.get('Show coordinates')) {
-          return const SizedBox();
-        }
-        return SizedBox(
-          width: vertical ? coordinateSize : squareSize,
-          height: vertical ? squareSize : coordinateSize,
-          child: Center(
-            child: Text(
-              content,
-              style: Theme.of(context).textTheme.bodyMedium!,
-            )
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    var squareSize = appSizes.squareSize;
+    Widget contentWidget = Container();
+    if (GlobalState.preferences.get('Margin size') == 'Coordin') {
+      contentWidget = Center(
+          child: Text(
+            content,
+            style: Theme.of(context).textTheme.bodyMedium!,
           )
-        );
-      }
+      );
+    }
+    return SizedBox(
+      width: vertical ? appSizes.sideMargin : squareSize,
+      height: vertical ? squareSize : appSizes.sideMargin,
+      child: contentWidget
     );
   }
 
@@ -65,10 +60,10 @@ class Board extends StatelessWidget {
   Widget build(BuildContext context) {
     var board = GlobalState.board;
     var colorScheme = Theme.of(context).colorScheme;
-    var margin = Theme.of(context).extension<AppSizes>()!.margin!;
+    var margin = Theme.of(context).extension<AppSizes>()!.sideMargin;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         return ListenableBuilder(
           listenable: GlobalState.board,
           builder: (BuildContext context, Widget? widget) => Stack(
@@ -77,11 +72,11 @@ class Board extends StatelessWidget {
                 defaultColumnWidth: FixedColumnWidth(squareSize),
                 columnWidths: {0: FixedColumnWidth(margin)},
                 children:
-                  [TableRow(children: <Widget>[const Margin()] + List.generate(8, (y) => Coordinate(false, y)))] +
+                  [TableRow(children: <Widget>[Container()] + List.generate(8, (y) => Coordinate(false, y)))] +
                   List.generate(8, (x) => TableRow(
                     children: <Widget>[Coordinate(true, x)] + List.generate(8, (y) {
                       var index = 63 - 8 * x - y;
-                      return Case(getState(index, board), index, () => GlobalState.playMove(index), GlobalState.undo);
+                      return Case(getState(index, board), index, () => GlobalState.playMove(index), GlobalState.undo, index == GlobalState.board.lastMove);
                     })
                   ))
               )

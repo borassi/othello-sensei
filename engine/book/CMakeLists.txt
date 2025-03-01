@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Michele Borassi
+# Copyright 2022-2025 Michele Borassi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ target_link_libraries(
         bitpattern
         board
         book_tree_node
+        constants
         files
         value_file
 )
@@ -71,6 +72,7 @@ target_link_libraries(
         book
         book_tree_node
         misc
+        tree_node
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
@@ -81,10 +83,7 @@ ENDIF()
 add_library(
         test_utils
         test_utils.h
-)
-
-set_target_properties(
-        test_utils PROPERTIES LINKER_LANGUAGE CXX
+        test_utils.cpp
 )
 
 target_link_libraries(
@@ -125,61 +124,10 @@ target_link_libraries(
         book_tree_node
         get_moves
         test_utils
+        tree_node
         GTest::gmock
         GTest::gtest
         GTest::gtest_main
         -no-pie
 )
 ENDIF()
-
-add_executable(
-        merge_books_main
-        merge_books_main.cpp
-)
-
-target_link_libraries(
-        merge_books_main
-        LINK_PRIVATE
-        book
-        parse_flags
-)
-
-add_executable(
-        expand_book_main
-        expand_book_main.cpp
-)
-
-target_link_libraries(
-        expand_book_main
-        LINK_PRIVATE
-        book
-        book_tree_node
-        evaluator_alpha_beta
-        evaluator_derivative
-        files
-        hash_map
-        misc
-        parse_flags
-        pattern_evaluator
-)
-
-add_executable(
-        expand_book_thor_main
-        expand_book_thor_main.cpp
-)
-
-target_link_libraries(
-        expand_book_thor_main
-        LINK_PRIVATE
-        files
-        board
-        book
-        book_tree_node
-        evaluator_alpha_beta
-        evaluator_derivative
-        hash_map
-        load_thor
-        misc
-        parse_flags
-        pattern_evaluator
-)

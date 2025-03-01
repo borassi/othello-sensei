@@ -15,10 +15,7 @@
 add_library(
         thor_test_utils
         thor_test_utils.h
-)
-
-set_target_properties(
-        thor_test_utils PROPERTIES LINKER_LANGUAGE CXX
+        thor_test_utils.cpp
 )
 
 add_library(
@@ -34,6 +31,7 @@ target_link_libraries(
         sequence
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         game_test
         game_test.cpp
@@ -48,6 +46,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         thor
@@ -64,8 +63,10 @@ target_link_libraries(
         get_flip
         get_moves
         misc
+        source
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         thor_test
         thor_test.cpp
@@ -82,6 +83,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_library(
         source
@@ -97,6 +99,7 @@ target_link_libraries(
         sequence
 )
 
+IF(ENABLE_GOOGLETEST)
 add_executable(
         source_test
         source_test.cpp
@@ -114,6 +117,7 @@ target_link_libraries(
         GTest::gtest_main
         -no-pie
 )
+ENDIF()
 
 add_executable(
         thor_create_extra_files
@@ -123,6 +127,51 @@ add_executable(
 target_link_libraries(
         thor_create_extra_files
         LINK_PUBLIC
+        fix_xot_source
+        parse_flags
+        thor
+        xot
+)
+
+add_executable(
+        thor_profile
+        thor_profile.cpp
+)
+
+target_link_libraries(
+        thor_profile
+        LINK_PUBLIC
         parse_flags
         thor
 )
+
+add_library(
+        fix_xot_source
+        fix_xot_source.h
+        fix_xot_source.cpp
+)
+
+target_link_libraries(
+        fix_xot_source
+        LINK_PUBLIC
+        source
+        xot
+)
+
+IF(ENABLE_GOOGLETEST)
+    add_executable(
+            fix_xot_source_test
+            fix_xot_source_test.cpp
+    )
+
+    target_link_libraries(
+            fix_xot_source_test
+            LINK_PRIVATE
+            fix_xot_source
+            thor_test_utils
+            GTest::gmock
+            GTest::gtest
+            GTest::gtest_main
+            -no-pie
+    )
+ENDIF()

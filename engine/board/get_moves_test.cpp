@@ -172,7 +172,7 @@ TEST(GetMoves, SquareFromFlip) {
 TEST(GetMoves, SerializedRow) {
   for (int start = 0; start < 8; ++start) {
     for (int end = start; end < 8; ++end) {
-      u_int8_t flip = 0;
+      LastRow flip = 0;
       for (int i = start; i <= end; ++i) {
         flip |= 1 << i;
       }

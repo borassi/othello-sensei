@@ -26,8 +26,8 @@
 #include "bitpattern.h"
 
 Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent) {
-  int player_disks = __builtin_popcountll(player);
-  int opponent_disks = __builtin_popcountll(opponent);
+  int player_disks = (int) __builtin_popcountll(player);
+  int opponent_disks = (int) __builtin_popcountll(opponent);
   int diff = player_disks - opponent_disks;
   return static_cast<Eval>(diff + (int) ((diff > 0) - (diff < 0)) * (64 - player_disks - opponent_disks));
 }
@@ -35,7 +35,7 @@ Eval GetEvaluationGameOver(BitPattern player, BitPattern opponent) {
 std::string PatternToString(BitPattern pattern) {
   std::string result;
   for (int i = 63; i >= 0; --i) {
-    BitPattern mask = (1L << i);
+    BitPattern mask = (1ULL << i);
     if ((pattern & mask) != 0) {
       result += 'X';
     } else {
@@ -68,7 +68,7 @@ std::vector<BitPattern> AllSubBitPatterns(BitPattern p) {
     return std::vector<BitPattern>({0});
   }
 
-  int last_full_square = __builtin_ctzll(p);
+  int last_full_square = (int) __builtin_ctzll(p);
   BitPattern last_full_square_pattern = 1ULL << last_full_square;
   std::vector<BitPattern> patterns = AllSubBitPatterns(
       p & ~last_full_square_pattern);

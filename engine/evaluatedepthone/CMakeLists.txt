@@ -82,15 +82,13 @@ ENDIF()
 add_library(
         evaluator_depth_one_base
         evaluator_depth_one_base.h
-)
-
-set_target_properties(
-        evaluator_depth_one_base PROPERTIES LINKER_LANGUAGE CXX
+        evaluator_depth_one_base.cpp
 )
 
 add_library(
         test_evaluator_depth_one
         test_evaluator_depth_one.h
+        test_evaluator_depth_one.cpp
 )
 
 target_link_libraries(
@@ -126,7 +124,7 @@ add_library(
 
 target_link_libraries(
         train_pattern_evaluator
-        LINK_PRIVATE
+        LINK_PUBLIC
         misc
         pattern_evaluator
         pattern

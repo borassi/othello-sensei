@@ -15,7 +15,8 @@
 
 add_library(
         endgame_time
-        ../estimators/endgame_time.h
+        endgame_time.h
+        endgame_time.cpp
 )
 
 target_link_libraries( # Specifies the target library.
@@ -24,10 +25,6 @@ target_link_libraries( # Specifies the target library.
         bitpattern
         get_moves
         misc
-)
-
-set_target_properties(
-        endgame_time PROPERTIES LINKER_LANGUAGE CXX
 )
 
 IF(ENABLE_GOOGLETEST)

@@ -1,0 +1,80 @@
+# How to run:
+# $ rm -Rf build
+# $ snapcraft clean
+# $ snapcraft --debug && sudo snap install ./othello-sensei_1.0.0_amd64.snap --dangerous && othello-sensei
+#
+# In case of failure, inside snapcraft --debug, try:
+# $ rm -R /root/parts/othello-sensei/build
+
+name: othello-sensei
+version: 1.0.1
+summary: Othello Sensei
+description: A strong, responsive, and user-friendly Othello engine for advanced players
+
+contact: michele.borassi@gmail.com
+icon: assets/icons/icon_512x512.png
+license: Apache-2.0
+source-code: https://github.com/borassi/othello-sensei
+
+confinement: strict
+base: core22
+grade: stable
+
+environment:
+  LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/lib
+
+slots:
+  dbus-othello-sensei:
+    interface: dbus
+    bus: session
+    name: com.github.borassi.othellosensei
+
+architectures:
+  - build-on: [amd64]
+
+apps:
+  othello-sensei:
+    command: othello_sensei
+    extensions: [gnome] # gnome includes the libraries required by flutter
+    plugs:
+      - network
+      - network-manager-observe
+    slots:
+      - dbus-othello-sensei
+parts:
+
+  engine-bmi2:
+    plugin: dump
+    source: .
+    override-build: |
+      cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-mbmi2 -mpopcnt" 
+      cmake --build build --parallel=12 --target=ui
+
+  engine-popcnt:
+    plugin: dump
+    source: .
+    override-build: |
+      cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-mpopcnt" 
+      cmake --build build --parallel=12 --target=ui
+
+  othello-sensei:
+    source: .
+    disable-parallel: false
+    plugin: flutter
+    flutter-target: lib/main.dart
+
+  cleanup:
+    after: [othello-sensei, engine-popcnt, engine-bmi2]
+    plugin: nil
+    override-prime: |
+      mkdir -p final_lib
+      cp /root/parts/engine-bmi2/build/build/main/libui.so final_lib/libui-bmi2.so
+      cp /root/parts/engine-popcnt/build/build/main/libui.so final_lib/libui-popcnt.so
+      cp lib/libflutter_linux_gtk.so final_lib
+      cp lib/libscreen_retriever_plugin.so final_lib
+      cp lib/libwindow_manager_plugin.so final_lib
+      cp lib/libui.so final_lib
+      cp lib/libcpu_adapter.so final_lib
+      cp lib/libapp.so final_lib
+      rm -Rf lib
+      mv final_lib lib

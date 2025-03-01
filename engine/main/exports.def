@@ -1,0 +1,23 @@
+LIBRARY ui_win
+EXPORTS
+    PassMove
+    MainInit
+    MainGetThorMetadata
+    MainDelete
+    MainGetEvaluateParams
+    NewGame
+    PlayMove
+    SetSequence
+    GetSequence
+    Undo
+    SetCurrentMove
+    Redo
+    ToAnalyzedGameOrLastChoice
+    Evaluate
+    Analyze
+    GetCurrentAnnotations
+    GetStartAnnotations
+    Stop
+    RandomXOT
+    SetXOTState
+    GetXOTState

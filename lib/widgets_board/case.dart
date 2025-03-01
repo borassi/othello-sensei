@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,14 +90,14 @@ class Annotations extends HideInactiveWidget {
       return const Text("");
     }
     var annotation = annotations.annotations!;
-    var eval = annotations.getEval();
+    var eval = annotations.getEval(false);
     var bestEval = GlobalState.globalAnnotations.bestEval;
 
     var delta = GlobalState.preferences.get('Highlight distance from best move');
     var bestMoveGreen = GlobalState.preferences.get('Best move green, other yellow');
     var color = (eval > bestEval - delta) != bestMoveGreen ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
-    String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs())}';
+    String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs(), false)}';
     String line1;
     String line2;
     String line3 = '';
@@ -107,6 +107,7 @@ class Annotations extends HideInactiveWidget {
         line3 = 'bk_';
         break;
       case AnnotationsProvenance.CHILD_MIXED:
+      case AnnotationsProvenance.EVALUATE_MIXED:
         line3 = '(bk)_';
         break;
       case AnnotationsProvenance.EVALUATE:
@@ -114,14 +115,45 @@ class Annotations extends HideInactiveWidget {
       case AnnotationsProvenance.GAME_OVER:
         break;
     }
-    line3 += prettyPrintDouble((annotation.descendants + annotation.descendants_book).toDouble());
+    var descendants = annotation.descendants + annotation.descendants_book;
+    line3 += descendants < 100 ? descendants.toString() : prettyPrintDouble(descendants.toDouble());
+    var archive = MainApp.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0;
+    var showExtra = archive || GlobalState.preferences.get('Show extra data in evaluate mode');
+    var roundEvaluation = GlobalState.preferences.get('Round evaluations') != 'Never';
 
-    if (Main.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0) {
+
+    if (archive) {
       line1 = annotation.num_thor_games < 10000 ? annotation.num_thor_games.toString() : prettyPrintDouble(annotation.num_thor_games.toDouble());
       line2 = evalText;
     } else {
       line1 = evalText;
       line2 = "${getRemaining(annotation.prob_upper_eval, annotation.disproof_number_upper)} ${getRemaining(annotation.prob_lower_eval, annotation.proof_number_lower)}";
+    }
+
+    var extraInfo = <Widget>[];
+    if (showExtra) {
+      extraInfo = <Widget>[
+        AnnotationRow(
+          text: line2,
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+            color: color,
+            height: 1.6,
+          ),
+        ),
+        AnnotationRow(
+          text: line3,
+          style: TextStyle(
+            fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
+            color: color,
+            height: 1,
+          ),
+        )
+      ];
+    }
+    var mainFontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
+    if (roundEvaluation && !showExtra) {
+      mainFontSize = Theme.of(context).textTheme.bodyLarge!.fontSize!;
     }
 
     return LayoutBuilder(
@@ -130,34 +162,20 @@ class Annotations extends HideInactiveWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+            children: <Widget>[
               Text(
                 line1,
                 style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                  fontSize: mainFontSize,
                   fontWeight: FontWeight.bold,
                   height: 1,
                   color: color
                 ),
               ),
-              // SizedBox(height: 0.2 * Theme.of(context).textTheme.bodySmall!.fontSize!),
-              AnnotationRow(
-                text: line2,
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                  color: color,
-                  height: 1.5,
-                ),
-              ),
-              AnnotationRow(
-                text: line3,
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                  color: color,
-                  height: 1,
-                ),
-              )
-            ]
+              // Hack: the font ascent and descent are different and this is the
+              // only way to center the numbers AFAIK.
+              SizedBox(height: mainFontSize * 0.03),
+            ] + extraInfo
           )
         );
       }
@@ -186,8 +204,9 @@ class Case extends StatelessWidget {
   final CaseState state;
   final Function playMove;
   final Function undo;
+  final bool isLastMove;
   final int index;
-  const Case(this.state, this.index, this.playMove, this.undo, {super.key});
+  const Case(this.state, this.index, this.playMove, this.undo, this.isLastMove, {super.key});
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
     Color fill;
@@ -202,13 +221,13 @@ class Case extends StatelessWidget {
         break;
     }
     return Transform.scale(
-        scale: 0.9,
-        child: Container(
-          decoration: BoxDecoration(
-              color: fill,
-              shape: BoxShape.circle,
-          ),
-        )
+      scale: 0.9,
+      child: Container(
+        decoration: BoxDecoration(
+          color: fill,
+          shape: BoxShape.circle,
+        ),
+      )
     );
   }
 
@@ -217,7 +236,7 @@ class Case extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge(index == 255 ? [] : [GlobalState.annotations[index], GlobalState.actionWhenPlay]),
       builder: (BuildContext context, Widget? child) {
-        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize!;
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         var colorScheme = Theme.of(context).colorScheme;
         List<Widget> children = [
           Container(
@@ -233,6 +252,46 @@ class Case extends StatelessWidget {
         Widget? disk = getDisk(state, colorScheme);
         if (disk != null) {
           children.add(disk);
+        }
+        if (isLastMove) {
+          var color = state == CaseState.black ? colorScheme.surfaceVariant : colorScheme.surface;
+          var marker = GlobalState.preferences.get('Last move marker');
+          switch (marker) {
+            case 'None':
+              break;
+            case 'Number':
+              children.add(
+                Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${60 - GlobalState.board.emptySquares()}',
+                    style: TextStyle(
+                      fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                      color: color
+                    ),
+                  )
+                )
+              );
+              break;
+            case 'Dot':
+              children.add(
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    height: 0.14 * squareSize,
+                    width: 0.14 * squareSize,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                )
+              );
+            default:
+              throw Exception('Invalid last move marker preference value: $marker');
+          }
         }
         if (index != 255) {
           children.add(

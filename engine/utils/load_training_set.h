@@ -48,7 +48,7 @@ class EvaluatedBoard {
   }
 
   int Empties() const {
-    return __builtin_popcountll(~(player_ | opponent_));
+    return (int) __builtin_popcountll(~(player_ | opponent_));
   }
 
   bool IsValid() const {

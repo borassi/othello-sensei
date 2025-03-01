@@ -16,16 +16,19 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
+import '../drive/drive_downloader.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 
 enum MenuItem {
   newGame,
+  newGameXotSmall,
+  newGameXotLarge,
   copy,
   paste,
   analyze,
@@ -33,7 +36,10 @@ enum MenuItem {
   senseiIsInactive,
   downloadLatestBook,
   downloadLatestArchive,
-  settings
+  settings,
+  xotAutomatic,
+  xotAlways,
+  xotNever,
 }
 
 void handleMenuItem(BuildContext context, MenuItem item) async {
@@ -41,23 +47,33 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
     case MenuItem.newGame:
       GlobalState.newGame();
       return;
+    case MenuItem.newGameXotSmall:
+      GlobalState.newGameXot(true);
+      return;
+    case MenuItem.newGameXotLarge:
+      GlobalState.newGameXot(false);
+      return;
     case MenuItem.copy:
       await copy();
       return;
     case MenuItem.paste:
-      await pasteOrError(context);
+      await paste();
       return;
     case MenuItem.analyze:
       GlobalState.stop();
-      analyze();
+      if (GlobalState.globalAnnotations.existsAnalyzedGame()) {
+        resetAnalyzedGame();
+      } else {
+        analyze();
+      }
       return;
     case MenuItem.downloadLatestBook:
       GlobalState.stop();
-      GlobalState.driveDownloader.downloadBook(context);
+      downloadBook(context);
       return;
     case MenuItem.downloadLatestArchive:
       GlobalState.stop();
-      GlobalState.driveDownloader.downloadArchive(context);
+      downloadArchive(context);
       return;
     case MenuItem.senseiEvaluates:
       GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
@@ -73,12 +89,21 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
         MaterialPageRoute(builder: (context) => Settings()),
       );
       return;
+    case MenuItem.xotAlways:
+      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_ALWAYS);
+      return;
+    case MenuItem.xotAutomatic:
+      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_AUTOMATIC);
+      return;
+    case MenuItem.xotNever:
+      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_NEVER);
+      return;
   }
 }
 
 class SenseiIconButton extends StatelessWidget {
   final String tooltip;
-  final Icon icon;
+  final IconData icon;
   final void Function() onPressed;
 
   const SenseiIconButton({super.key, required this.tooltip, required this.icon, required this.onPressed});
@@ -89,9 +114,9 @@ class SenseiIconButton extends StatelessWidget {
       label: tooltip,
       child: IconButton(
         color: Theme.of(context).colorScheme.onPrimaryContainer,
-        icon: icon,
+        icon: Icon(icon, size: 24),
         tooltip: tooltip,
-        onPressed: onPressed,
+        onPressed: onPressed
       ),
     );
   }
@@ -104,7 +129,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const SenseiAppBar({super.key});
 
-  Widget buildRow(BuildContext context, Widget? widget) {
+  Widget buildRow(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     List<Widget> icons = [];
     bool showIcons = GlobalState.preferences.get('Controls position') == 'App bar';
@@ -112,54 +137,147 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (showIcons) {
       icons += [
         const SenseiIconButton(
-          icon: Icon(Icons.keyboard_double_arrow_left_rounded),
+          icon: Icons.keyboard_double_arrow_left_rounded,
           tooltip: 'Back to the game / the first position',
-          onPressed: GlobalState.toAnalyzedGameOrFirstState,
+          onPressed: GlobalState.toAnalyzedGameOrLastChoice,
         ),
         const SenseiIconButton(
-          icon: Icon(Icons.chevron_left_rounded),
+          icon: Icons.chevron_left_rounded,
           tooltip: 'Undo',
           onPressed: GlobalState.undo,
         ),
         const SenseiIconButton(
-          icon: Icon(Icons.chevron_right_rounded),
+          icon: Icons.chevron_right_rounded,
           tooltip: 'Redo',
           onPressed: GlobalState.redo,
         ),
         const SenseiIconButton(
-          icon: Icon(Icons.stop_rounded),
+          icon: Icons.stop_rounded,
           tooltip: 'Stop',
           onPressed: GlobalState.stop,
         ),
       ];
     }
+    const padding = EdgeInsets.symmetric(horizontal: 12);
     var row = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: icons + [
-        Semantics(
-          label: 'Show menu',
-          child: ListenableBuilder(
-            listenable: GlobalState.actionWhenPlay,
-            builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
-              child: PopupMenuButton<MenuItem>(
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer
+        ListenableBuilder(
+          listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations]),
+          builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
+            child: PopupMenuButton<MenuItem>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: Theme.of(context).colorScheme.onPrimaryContainer
+              ),
+              onSelected: (MenuItem i) { handleMenuItem(context, i); },
+              itemBuilder: (context) => [
+                PopupMenuItem<MenuItem>(
+                  padding: EdgeInsets.zero,
+                  onTap: () {},
+                  child: PopupMenuButton<MenuItem>(
+                    child: Container(
+                      height: kMinInteractiveDimension,
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      padding: padding,
+                      child: Text('New game')
+                    ),
+                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<MenuItem>(
+                        padding: padding,
+                        value: MenuItem.newGame,
+                        child: Text('Standard game'),
+                      ),
+                      PopupMenuItem<MenuItem>(
+                        padding: padding,
+                        value: MenuItem.newGameXotSmall,
+                        child: Text('XOT small list'),
+                      ),
+                      PopupMenuItem<MenuItem>(
+                        padding: padding,
+                        value: MenuItem.newGameXotLarge,
+                        child: Text('XOT large list'),
+                      )
+                    ]
+                  )
                 ),
-                onSelected: (MenuItem i) { handleMenuItem(context, i); },
-                itemBuilder: (context) => MenuItem.values.map((MenuItem i) {
-                  if (i == MenuItem.senseiEvaluates || i == MenuItem.senseiIsInactive) {
-                    return CheckedPopupMenuItem<MenuItem>(
-                      value: i,
-                      checked:
-                          (i == MenuItem.senseiEvaluates && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval) ||
-                          (i == MenuItem.senseiIsInactive && GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none),
-                      child: Text(camelCaseToSpaces(i.name))
-                    );
-                  }
-                  return PopupMenuItem<MenuItem>(value: i, child: Text(camelCaseToSpaces(i.name)));
-                }).toList()
-              )
+                PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.copy,
+                  child: Text('Copy')),
+                PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.paste,
+                  child: Text('Paste')),
+                PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.analyze,
+                  child: Text(GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze')),
+                PopupMenuItem<MenuItem>(
+                  padding: EdgeInsets.zero,
+                  onTap: () {},
+                  child: PopupMenuButton<MenuItem>(
+                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    padding: EdgeInsets.zero,
+                    child: Container(
+                      height: kMinInteractiveDimension,
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      padding: padding,
+                      child: Text('Sensei action')
+                    ),
+                    itemBuilder: (context) => [
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiEvaluates,
+                        checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval,
+                        child: Text('Sensei evaluates'),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiIsInactive,
+                        checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none,
+                        child: Text('Sensei is inactive'),
+                      )
+                    ]
+                  )
+                ),
+                PopupMenuItem<MenuItem>(
+                  padding: EdgeInsets.zero,
+                  onTap: () {},
+                  child: PopupMenuButton<MenuItem>(
+                    padding: EdgeInsets.zero,
+                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    child: Container(
+                      height: kMinInteractiveDimension,
+                      width: double.infinity,
+                      alignment: Alignment.centerLeft,
+                      padding: padding,
+                      child: Text('XOT errors')
+                    ),
+                    itemBuilder: (context) => [
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.xotAutomatic,
+                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_AUTOMATIC,
+                        child: Text('Automatic'),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.xotAlways,
+                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_ALWAYS,
+                        child: Text('Always XOT'),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.xotNever,
+                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_NEVER,
+                        child: Text('Never XOT'),
+                      )
+                    ]
+                  )
+                ),
+                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestBook, child: Text('Download latest book')),
+                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive')),
+                PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings')),
+              ]
             )
           )
         )
@@ -168,13 +286,15 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
     var availableWidth = appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width;
     var busyWidth = showIcons ? AppSizes.minFullAppBarSize : 0;
     var title = availableWidth < busyWidth ? <Widget>[const Spacer()] : <Widget>[
-      const Margin(),
+      const Margin.side(),
       Text(
-        "Sensei",
+        'Sensei',
         style: TextStyle(
           fontSize: 20,
-          color: Theme.of(context).colorScheme.onPrimaryContainer
-        )
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          height: 1.0,
+        ),
+
       ),
       const Spacer()];
     return Row(children: title + <Widget>[row]);
@@ -183,15 +303,13 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
-    return SafeArea(
-      child: Container(
+    return Container(
         alignment: Alignment.center,
         color: Theme.of(context).colorScheme.primaryContainer,
         width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
         // we can set width here with conditions
         height: kToolbarHeight,
-        child: ListenableBuilder(listenable: GlobalState.preferences, builder: buildRow),
-      )
+        child: buildRow(context),
     );
   }
 }
