@@ -277,6 +277,7 @@ class SourceTest : public ::testing::Test {
  public:
   typedef Source<GameGetter> SourceToTest;
 };
+
 using Types = ::testing::Types<GameGetterOnDisk, GameGetterInMemory>;
 TYPED_TEST_SUITE(SourceTest, Types);
 

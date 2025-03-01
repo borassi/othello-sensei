@@ -121,8 +121,8 @@ GamesList Source<GameGetter>::GetGames(
         continue;
       }
       ElapsedTime t;
-      double include_probability = games_to_add / (double) games_in_interval;
-      int hash_index = IncludeProbabilityToHashIndex(include_probability);
+      double include_probability = std::min(1.0, games_to_add / (double) games_in_interval);
+      int hash_index = std::min((int) games_with_small_hash_.size() - 1, IncludeProbabilityToHashIndex(1-include_probability));
       assert(hash_index < (int) games_with_small_hash_.size());
       for (; hash_index >= 0; --hash_index) {
         auto& games_with_small_hash = games_with_small_hash_[hash_index];

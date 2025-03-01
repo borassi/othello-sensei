@@ -318,7 +318,7 @@ class Source {
     // 0.51: 0 (here we start to filter)
     // 0.75: 0
     // 0.76: 1
-    return (int) (log(0.25 / (1-include_probability)) / log(2));
+    return (int) std::max(-2.0, log(0.25 / (1-include_probability)) / log(2));
   }
 
   void LoadGamesSmallHash() {
@@ -334,7 +334,7 @@ class Source {
 
   void ComputeGamesSmallHash() {
     ElapsedTime t1;
-    games_with_small_hash_.resize(IncludeProbabilityToHashIndex(1-0.5 / game_index_by_year_.size()));
+    games_with_small_hash_.resize(IncludeProbabilityToHashIndex(1 - 0.5 / game_index_by_year_.size()));
     std::size_t max_hash = std::numeric_limits<std::size_t>::max();
     GameGetterInMemory game_getter(folder_);
 

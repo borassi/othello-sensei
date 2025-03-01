@@ -3,6 +3,9 @@ Mac
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
+- P0 MED Debug wrong evaluations on Marc's phone.
+- P0 SMALL Avoid crashes on iPhone
+- P1 SMALL Avoid tooltip on the menu
 - P1 SMALL Should we show lost disks instead of error?
 - P1 SMALL Undo / redo in the side bar by default?
 - P2 MED Create smaller books.
