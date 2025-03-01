@@ -15,6 +15,7 @@
 #define _LIBCPP_INLINE_VISIBILITY
 #endif
 #define __CHAR_BIT__ 8
+#define _LIBCPP_FALLTHROUGH
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4267) // possible loss of data
@@ -45,6 +46,49 @@ loadword(const void* __p)
 // multiplication, which can be very slow on 32-bit systems.
 template <class _Size, size_t = sizeof(_Size)*__CHAR_BIT__>
 struct murmur2_or_cityhash;
+
+template <class _Size>
+struct murmur2_or_cityhash<_Size, 32>
+{
+  inline _Size operator()(const void* __key, _Size __len)
+  _LIBCPP_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK;
+};
+
+// murmur2
+template <class _Size>
+_Size
+murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __len)
+{
+  const _Size __m = 0x5bd1e995;
+  const _Size __r = 24;
+  _Size __h = __len;
+  const unsigned char* __data = static_cast<const unsigned char*>(__key);
+  for (; __len >= 4; __data += 4, __len -= 4)
+  {
+    _Size __k = __loadword<_Size>(__data);
+    __k *= __m;
+    __k ^= __k >> __r;
+    __k *= __m;
+    __h *= __m;
+    __h ^= __k;
+  }
+  switch (__len)
+  {
+    case 3:
+      __h ^= __data[2] << 16;
+//      _LIBCPP_FALLTHROUGH();
+    case 2:
+      __h ^= __data[1] << 8;
+//      _LIBCPP_FALLTHROUGH();
+    case 1:
+      __h ^= __data[0];
+      __h *= __m;
+  }
+  __h ^= __h >> 13;
+  __h *= __m;
+  __h ^= __h >> 15;
+  return __h;
+}
 
 template <class _Size>
 struct murmur2_or_cityhash<_Size, 64>
