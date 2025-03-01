@@ -115,10 +115,11 @@ class EvaluationState : public TreeNode {
 
     std::vector<double> scores;
     for (auto* state = this; state != nullptr; state = state->Father()) {
-      scores.push_back(state->annotations_.eval_best_line);
+      scores.push_back(state->IsValid() ? state->annotations_.eval_best_line : kLessThenMinEvalLarge);
     }
     for (int i = 0; i < scores.size() - 1; ++i) {
-      if (isnan(scores[scores.size() - i - 1]) || isnan(scores[scores.size() - i - 2])) {
+      if (scores[scores.size() - i - 1] == kLessThenMinEvalLarge ||
+          scores[scores.size() - i - 2] == kLessThenMinEvalLarge) {
         continue;
       }
       if (i % 2 == 0) {

@@ -41,11 +41,11 @@ import '../main.dart';
 const kBaseFolderId = '1V9GKU4X30l2oppfC3dG80qFh4PHb6sUY';
 
 void downloadBook(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'book', 'Books/latest.tar.gz', 400, 258);
+  _downloadMaybeWithConfirmation(context, 'book', 'Books/latest.tar.gz', 500, 258);
 }
 
 void downloadArchive(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest.tar.gz', 150, 58);
+  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v2.tar.gz', 150, 58);
 }
 
 enum DialogOptions {
