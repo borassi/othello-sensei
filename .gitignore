@@ -28,3 +28,8 @@ auxiliary_files
 /windows/flutter/generated_plugins.cmake
 /macos/Flutter/GeneratedPluginRegistrant.swift
 pubspec.lock
+/assets/archive/OthelloQuest
+/assets/archive/PlayOK
+/assets/archive_*
+/assets/book*
+pin.log
