@@ -43,9 +43,6 @@ ELSE()
     MESSAGE("WARNING: disabled googletest because CMake version ${CMAKE_VERSION} is too old")
 ENDIF()
 
-MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
-MESSAGE("BMI: ${__BMI2__}")
-
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC")
 
@@ -63,8 +60,11 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
+        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -D__BMI2__ -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
 )
+
+MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
+MESSAGE("BMI: ${__BMI2__}")
 
 IF (PROFILE)
     SET(
@@ -82,18 +82,9 @@ add_subdirectory(estimators)
 add_subdirectory(evaluatealphabeta)
 add_subdirectory(evaluatedepthone)
 add_subdirectory(evaluatederivative)
+add_subdirectory(evaluatealphabeta_optimized)
 add_subdirectory(hashmap)
 add_subdirectory(main)
 add_subdirectory(third_party)
 add_subdirectory(thor)
 add_subdirectory(utils)
-add_subdirectory(jni)
-
-add_library(
-        constants
-        constants.h
-)
-
-set_target_properties(
-        constants PROPERTIES LINKER_LANGUAGE CXX
-)

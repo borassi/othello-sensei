@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef SENSEI_BOARD_OPTIMIZED_BOARD_OPTIMIZED_H
+#define SENSEI_BOARD_OPTIMIZED_BOARD_OPTIMIZED_H
+
 #include "../board/bitpattern.h"
 #include "../board/board.h"
 #if __BMI2__
@@ -21,362 +24,87 @@
 #endif
 #include <tuple>
 
-constexpr int kNumPatterns = 38;
+typedef uint64_t BoardPattern;
+typedef uint16_t SingleRowPattern;
+typedef uint8_t SingleRowPatternSmall;
 
-typedef void (*FlipFunction)(short patterns[kNumPatterns]);
-typedef bool (*FlipAllFunction)(short patterns[kNumPatterns]);
-typedef void (*PlayMoveFunction)(short patterns[kNumPatterns]);
+// Bottom 4
+BoardPattern top_rows;
+BoardPattern bottom_rows;
+BoardPattern left_columns;
+BoardPattern right_columns;
+BoardPattern top_diag7s;
+BoardPattern bottom_diag7s;
+BoardPattern top_diag9s;
+BoardPattern bottom_diag9s;
 
-constexpr short kPowersOf3[] = {1, 3, 9, 27, 81, 243, 729, 2187, 6561};
-constexpr int kNumCompressedFlipValues = 42;
+bool flipped;
+Square depth;
+int8_t turn;
+int8_t action_stack_count;
+int8_t disk_difference;
 
-constexpr int8_t Row(Square square) { return square / 8; }
-constexpr int8_t Column(Square square) { return square % 8; }
-constexpr int8_t Diag9(Square square) { return Row(square) - Column(square); }
-constexpr int8_t Diag7(Square square) { return Row(square) - (7 - Column(square)); }
+void NoFlip() {}
 
-constexpr void DoNothing() {}
-
-constexpr int GetNSquare(short pattern, int i) {
-  assert(i >= 0 && i < 8);
-  return (pattern % kPowersOf3[i+1]) / kPowersOf3[i] - 1;
-}
-
-constexpr u_int8_t ContiguousPattern(int start, int end) {
-  assert(start >= 0 && start <= 31);
-  assert(end >= 0 && end <= 31);
-  if (start == end+1) {
-    return 0;
-  }
-  assert(start <= end);
-  return (1 << (end+1)) - (1 << start);
-}
-
-template<Square square, bool new_disk>
-void Flip(short patterns[kNumPatterns]) {
-  assert(square < 64);
-  int8_t row = Row(square);
-  int8_t column = Column(square);
-  int8_t diag9 = Diag9(square);
-  int8_t diag7 = Diag7(square);
-
-  short multiplier = (new_disk ? 1 : 2);
-  patterns[row] += multiplier * kPowersOf3[column];
-  patterns[8 + column] += multiplier * kPowersOf3[row];
-  if (diag9 >= -5 && diag9 <= 5) {
-    patterns[21 + diag9] += multiplier * kPowersOf3[row - std::max((int8_t) 0, diag9)];
-  }
-  if (diag7 >= -5 && diag7 <= 5) {
-    patterns[32 + diag7] += multiplier * kPowersOf3[row - std::max((int8_t) 0, diag7)];
-  }
-}
-
-template<int i>
-constexpr void InitFlipFunction(FlipFunction* flip_function) {
-  flip_function[i-1] = &Flip<(i-1) % 64, (i-1) / 64>;
-  InitFlipFunction<i-1>(flip_function);
-}
-
-template <>
-constexpr void InitFlipFunction<0>(FlipFunction* flip_function) {}
-
-constexpr int NumFlipOffset(Square move, short pattern) {
-  assert(move < 8);
-  assert(pattern < kPowersOf3[8]);
-  return move + pattern * 8;
-}
-
-constexpr bool IsContiguous(u_int8_t pattern) {
-  if (pattern == 0) {
-    return true;
-  }
-  pattern = pattern >> __builtin_ctz(pattern);
-  return __builtin_popcount(pattern + 1) == 1;
-}
-
-constexpr u_int8_t CompressFlip(u_int8_t flip) {
-  assert((flip & 1) == 0);
-  assert((flip & 128) == 0);
-  if (flip == 0) {
-    return 0;
-  }
-  if (IsContiguous(flip)) {
-    int start = __builtin_ctz(flip);
-    int end = 31 - __builtin_clz(flip);
-    assert (end >= start);
-    switch(start) {
-      case 1:
-        return end;      // 1-6
-      case 2:
-        return 5 + end;  // 7-11
-      case 3:
-        return 9 + end;  // 12-15
-      case 4:
-        return 12 + end; // 16-18
-      case 5:
-        return 14 + end; // 19-20
-      case 6:
-        return 21;
-      default:
-        assert(false);
-    }
-  } else {
-    int start = __builtin_ctz(flip);
-    int end = 31 - __builtin_clz(flip);
-    int mid = __builtin_ctz((~flip) >> start) + start;
-    assert(end - start >= 2);
-    assert(end - mid >= 1);
-    assert(mid - start >= 1);
-    switch(end - start) {
-      case 5:
-        return 20 + mid;   // 22-25
-      case 4:
-        if (start == 1) {
-          assert(mid >= 2 && mid <= 4);
-          return 24 + mid; // 26-28
-        } else {
-          assert(start == 2);
-          assert(mid >= 3 && mid <= 5);
-          return 26 + mid; // 29-31
-        }
-      case 3:
-        if (start == 1) {
-          assert(mid >= 2 && mid <= 3);
-          return 30 + mid; // 32-33
-        } else if (start == 2) {
-          assert(mid >= 3 && mid <= 4);
-          return 31 + mid; // 34-35
-        } else {
-          assert(start == 3);
-          assert(mid >= 4 && mid <= 5);
-          return 32 + mid; // 36-37
-        }
-      case 2:
-        assert(start >= 1 && start <= 4);
-        assert(mid == start + 1);
-        assert(end == start + 2);
-        return 37 + start; // 38-41
-      default:
-        assert(false);
-    }
-  }
-  return 255;
-}
-
-constexpr u_int8_t DecompressFlip(u_int8_t flip) {
-  assert(flip < kNumCompressedFlipValues);
-  if (flip >= 38) {
-    return ContiguousPattern(flip-37, flip-35) & ~(1 << (flip-36));
-  } else if (flip >= 36) {
-    return ContiguousPattern(3, 6) & ~(1 << (flip-32));
-  } else if (flip >= 34) {
-    return ContiguousPattern(2, 5) & ~(1 << (flip-31));
-  } else if (flip >= 32) {
-    return ContiguousPattern(1, 4) & ~(1 << (flip-30));
-  } else if (flip >= 29) {
-    return ContiguousPattern(2, 6) & ~(1 << (flip-26));
-  } else if (flip >= 26) {
-    return ContiguousPattern(1, 5) & ~(1 << (flip-24));
-  } else if (flip >= 22) {
-    return ContiguousPattern(1, 6) & ~(1 << (flip-20));
-  } else if (flip == 21) {
-    return ContiguousPattern(6, 6);
-  } else if (flip >= 19) {
-    return ContiguousPattern(5, flip - 14);
-  } else if (flip >= 16) {
-    return ContiguousPattern(4, flip - 12);
-  } else if (flip >= 12) {
-    return ContiguousPattern(3, flip - 9);
-  } else if (flip >= 7) {
-    return ContiguousPattern(2, flip - 5);
-  } else if (flip >= 1) {
-    return ContiguousPattern(1, flip);
-  } else {
-    return 0;
-  }
-}
-
-constexpr int Direction(u_int8_t pattern_index) {
-  if (pattern_index < 8) {
-    return 1;
-  } else if (pattern_index < 16) {
-    return 8;
-  } else if (pattern_index < 27) {
-    return 9;
-  } else {
-    return 7;
-  }
-}
-
-constexpr u_int8_t GetFlip(Square position_in_pattern, short pattern) {
-  assert (position_in_pattern < 8);
-  assert (pattern >= 0 && pattern < kPowersOf3[8]);
-  if (GetNSquare(pattern, position_in_pattern) != 0) {
-    return 0;
-  }
-  u_int8_t flip = 0;
-  for (int i = position_in_pattern+1; i <= 7; ++i) {
-    int square = GetNSquare(pattern, i);
-    if (square == 1) {
-      flip |= ContiguousPattern(position_in_pattern+1, i-1);
-      break;
-    } else if (square != -1) {
-      break;
-    }
-  }
-  for (int i = position_in_pattern-1; i >= 0; --i) {
-    int square = GetNSquare(pattern, i);
-    if (square == 1) {
-      flip |= ContiguousPattern(i+1, position_in_pattern-1);
-      break;
-    } else if (square != -1) {
-      break;
-    }
-  }
-  assert((flip & 1) == 0);
-  assert((flip & 128) == 0);
-  return CompressFlip(flip);
-}
-
-template<u_int8_t pattern_index, u_int8_t compressed_flip>
-constexpr bool FlipAll(short patterns[kNumPatterns]);
-
-template<Square move>
-constexpr void PlayMove(short patterns[kNumPatterns]);
-
-constexpr int FlipAllOffset(u_int8_t pattern_index, u_int8_t compressed_flip) {
-  return pattern_index + compressed_flip * kNumPatterns;
-}
-
-template<int start, int end>
-constexpr void InitFlipAllFunctions(FlipAllFunction* function) {
-  assert(end > start);
-  if (start == end - 1) {
-    function[start] = &FlipAll<start % kNumPatterns, start / kNumPatterns>;
-  } else {
-    constexpr int mid = (start + end) / 2;
-    InitFlipAllFunctions<start, mid>(function);
-    InitFlipAllFunctions<mid, end>(function);
-  }
-}
-
-template<int start, int end>
-constexpr void InitPlayMoveFunctions(PlayMoveFunction* function) {
-  assert(end > start);
-  if (start == end - 1) {
-    function[start] = &PlayMove<start>;
-  } else {
-    constexpr int mid = (start + end) / 2;
-    InitPlayMoveFunctions<start, mid>(function);
-    InitPlayMoveFunctions<mid, end>(function);
-  }
-}
-
-struct Constants {
-  BitPattern patterns[kNumPatterns];
-  u_int8_t pattern_to_square[kNumPatterns][8];
-  u_int8_t num_flips[8 * kPowersOf3[8]];
-  FlipFunction flip_function[128];
-  FlipAllFunction flip_all_function[kNumCompressedFlipValues * kNumPatterns];
-  PlayMoveFunction play_move_function[64];
-
-
-  constexpr Constants() : patterns(), num_flips(), flip_function(), flip_all_function(), pattern_to_square(), play_move_function() {
-    for (int i = 0; i < 8; ++i) {
-      patterns[i] = kLastRowPattern << (i * 8);
-    }
-    for (int i = 0; i < 8; ++i) {
-      patterns[i + 8] = kLastColumnPattern << i;
-    }
-    for (int i = -5; i <= 5; ++i) {
-      patterns[i + 21] = i > 0 ? (kMainDiag9Pattern << (8 * i)) : (kMainDiag9Pattern >> -(8 * i));
-    }
-    for (int i = -5; i <= 5; ++i) {
-      patterns[i + 32] = i > 0 ? (kMainDiag7Pattern << (8 * i)) : (kMainDiag7Pattern >> -(8 * i));
-    }
-    for (int i = 0; i <= 7; ++i) {
-      for (int state = 0; state < kPowersOf3[8]; ++state) {
-        num_flips[NumFlipOffset(i, state)] = GetFlip(i, state);
+struct ActionStack {
+  void (*value[128][5])();
+  ActionStack() : value() {
+    for (int i = 0; i < 128; ++i) {
+      for (int j = 0; j < 5; ++j) {
+        value[i][j] = &NoFlip;
       }
     }
-    for (int i = 0; i < kNumPatterns; ++i) {
-      BitPattern pattern = patterns[i];
-      for (int j = 0; j < 8; ++j) {
-        if (pattern == 0) {
-          pattern_to_square[i][j] = 255;
-        } else {
-          pattern_to_square[i][j] = __builtin_ctzll(pattern);
-          pattern = pattern & ~(1ULL << pattern_to_square[i][j]);
-        }
-      }
-    }
-    InitFlipFunction<128>(flip_function);
-    InitFlipAllFunctions<0, kNumPatterns * kNumCompressedFlipValues>(flip_all_function);
-    InitPlayMoveFunctions<0, 64>(play_move_function);
   }
 };
 
-constexpr Constants kConstants;
+ActionStack action_stack;
 
-template<u_int8_t pattern_index, u_int8_t compressed_flip>
-constexpr bool FlipAll(short patterns[kNumPatterns]) {
-  constexpr u_int8_t flip = DecompressFlip(compressed_flip);
-  if (flip & 2) {
-    Flip<kConstants.pattern_to_square[pattern_index][1], false>(patterns);
-  }
-  if (flip & 4) {
-    Flip<kConstants.pattern_to_square[pattern_index][2], false>(patterns);
-  }
-  if (flip & 8) {
-    Flip<kConstants.pattern_to_square[pattern_index][3], false>(patterns);
-  }
-  if (flip & 16) {
-    Flip<kConstants.pattern_to_square[pattern_index][4], false>(patterns);
-  }
-  if (flip & 32) {
-    Flip<kConstants.pattern_to_square[pattern_index][5], false>(patterns);
-  }
-  if (flip & 64) {
-    Flip<kConstants.pattern_to_square[pattern_index][6], false>(patterns);
-  }
-  return compressed_flip != 0;
-}
+SingleRowPattern* const row_a1_h1 = ((SingleRowPattern*) &top_rows) + 3;
+SingleRowPattern* const row_a2_h2 = ((SingleRowPattern*) &top_rows) + 2;
+SingleRowPattern* const row_a3_h3 = ((SingleRowPattern*) &top_rows) + 1;
+SingleRowPattern* const row_a4_h4 = ((SingleRowPattern*) &top_rows);
+SingleRowPattern* const row_a5_h5 = ((SingleRowPattern*) &bottom_rows) + 3;
+SingleRowPattern* const row_a6_h6 = ((SingleRowPattern*) &bottom_rows) + 2;
+SingleRowPattern* const row_a7_h7 = ((SingleRowPattern*) &bottom_rows) + 1;
+SingleRowPattern* const row_a8_h8 = ((SingleRowPattern*) &bottom_rows);
 
-short GetSquare(short patterns[kNumPatterns], int i) {
-  assert(i >= 0 && i < 64);
-  BitPattern square = 1ULL << i;
-  int result = -2;
-  int num_seen = 0;
-  int num_seen1 = 0;
-  for (int j = 0; j < kNumPatterns; ++j) {
-    BitPattern pattern = kConstants.patterns[j];
-    if ((pattern & square) != 0) {
-      int pattern_counter = 0;
-      ++num_seen;
-      for (int k = 0; k < 64; ++k) {
-        if (((1ULL << k) & pattern) == 0) {
-          continue;
-        }
-        if (i == k) {
-          ++num_seen1;
-          assert(result == -2 || result == GetNSquare(patterns[j], pattern_counter));
-          result = GetNSquare(patterns[j], pattern_counter);
-          break;
-        }
-        ++pattern_counter;
-      }
-    }
-  }
-  assert(num_seen == num_seen1);
-  assert(num_seen == 3 || num_seen == 4);
-  assert((num_seen == 3) ==
-      (i == 0 || i == 1 || i == 6 || i == 7 || i == 8 || i == 15
-       || i == 48 || i == 55 || i == 56 || i == 57 || i == 62 || i == 63));
-  assert(result != -2);
-  return result;
-}
+SingleRowPattern* const column_a1_a8 = ((SingleRowPattern*) &left_columns) + 3;
+SingleRowPattern* const column_b1_b8 = ((SingleRowPattern*) &left_columns) + 2;
+SingleRowPattern* const column_c1_c8 = ((SingleRowPattern*) &left_columns) + 1;
+SingleRowPattern* const column_d1_d8 = ((SingleRowPattern*) &left_columns);
+SingleRowPattern* const column_e1_e8 = ((SingleRowPattern*) &right_columns) + 3;
+SingleRowPattern* const column_f1_f8 = ((SingleRowPattern*) &right_columns) + 2;
+SingleRowPattern* const column_g1_g8 = ((SingleRowPattern*) &right_columns) + 1;
+SingleRowPattern* const column_h1_h8 = ((SingleRowPattern*) &right_columns);
 
-short LastRowToPattern(BitPattern player, BitPattern opponent) {
+SingleRowPatternSmall* const diag7_c1_a3 = ((SingleRowPatternSmall*) &top_diag7s) + 7;
+SingleRowPatternSmall* const diag7_d1_a4 = ((SingleRowPatternSmall*) &top_diag7s) + 6;
+SingleRowPatternSmall* const diag7_e1_a5 = ((SingleRowPatternSmall*) &top_diag7s) + 5;
+SingleRowPatternSmall* const diag7_h6_f8 = ((SingleRowPatternSmall*) &top_diag7s) + 4;
+SingleRowPattern* const diag7_f1_a6 = ((SingleRowPattern*) &top_diag7s) + 1;
+SingleRowPattern* const diag7_g1_a7 = ((SingleRowPattern*) &top_diag7s);
+SingleRowPattern* const diag7_h1_a8 = ((SingleRowPattern*) &bottom_diag7s) + 3;
+SingleRowPattern* const diag7_h2_b8 = ((SingleRowPattern*) &bottom_diag7s) + 2;
+SingleRowPattern* const diag7_h3_c8 = ((SingleRowPattern*) &bottom_diag7s) + 1;
+SingleRowPatternSmall* const diag7_h4_d8 = ((SingleRowPatternSmall*) &bottom_diag7s) + 1;
+SingleRowPatternSmall* const diag7_h5_e8 = ((SingleRowPatternSmall*) &bottom_diag7s);
+
+SingleRowPatternSmall* const diag9_f1_h3 = ((SingleRowPatternSmall*) &top_diag9s) + 7;
+SingleRowPatternSmall* const diag9_e1_h4 = ((SingleRowPatternSmall*) &top_diag9s) + 6;
+SingleRowPatternSmall* const diag9_d1_h5 = ((SingleRowPatternSmall*) &top_diag9s) + 5;
+SingleRowPatternSmall* const diag9_a6_c8 = ((SingleRowPatternSmall*) &top_diag9s) + 4;
+SingleRowPattern* const diag9_c1_h6 = ((SingleRowPattern*) &top_diag9s) + 1;
+SingleRowPattern* const diag9_b1_h7 = ((SingleRowPattern*) &top_diag9s);
+SingleRowPattern* const diag9_a1_h8 = ((SingleRowPattern*) &bottom_diag9s) + 3;
+SingleRowPattern* const diag9_a2_g8 = ((SingleRowPattern*) &bottom_diag9s) + 2;
+SingleRowPattern* const diag9_a3_f8 = ((SingleRowPattern*) &bottom_diag9s) + 1;
+SingleRowPatternSmall* const diag9_a4_e8 = ((SingleRowPatternSmall*) &bottom_diag9s) + 1;
+SingleRowPatternSmall* const diag9_a5_d8 = ((SingleRowPatternSmall*) &bottom_diag9s);
+
+
+constexpr SingleRowPattern kPowersOf3[] = {1, 3, 9, 27, 81, 243, 729, 2187, 6561};
+
+constexpr SingleRowPattern LastRowToPatternExplicit(BitPattern player, BitPattern opponent) {
   assert((player & opponent) == 0);
   assert(player < 256);
   assert(opponent < 256);
@@ -393,72 +121,345 @@ short LastRowToPattern(BitPattern player, BitPattern opponent) {
   return result;
 }
 
-void PatternsInit(short patterns[kNumPatterns], BitPattern player, BitPattern opponent) {
-  for (int i = 0; i < kNumPatterns; ++i) {
-    BitPattern pattern = kConstants.patterns[i];
-    BitPattern player_pattern = _pext_u64(player, pattern);
-    BitPattern opponent_pattern = _pext_u64(opponent, pattern);
-    patterns[i] = LastRowToPattern(player_pattern, opponent_pattern);
-  }
-}
+struct LastRowToPattern {
+  SingleRowPattern value[256][256];
 
-void CheckPatternsOk(short patterns[kNumPatterns]) {
-  for (int i = 0; i < 64; ++i) {
-    GetSquare(patterns, i);
-  }
-}
-
-Board ToBoard(short patterns[kNumPatterns]) {
-  BitPattern player = 0;
-  BitPattern opponent = 0;
-  for (int i = 0; i < 64; ++i) {
-    switch (GetSquare(patterns,i)) {
-      case -1:
-        opponent |= 1ULL << i;
-        break;
-      case 1:
-        player |= 1ULL << i;
-        break;
-      case 0:
-        break;
-      default:
-        assert(false);
+  constexpr LastRowToPattern() : value() {
+    for (int i = 0; i < 256; ++i) {
+      for (int j = 0; j < 256; ++j) {
+        if ((i & j) == 0) {
+          value[i][j] = LastRowToPatternExplicit(i, j);
+        } else {
+          value[i][j] = 0;
+        }
+      }
     }
   }
+};
+
+constexpr LastRowToPattern kLastRowToPattern;
+
+void NoMove();
+
+void BoardToPatterns(BitPattern player, BitPattern opponent) {
+  *row_a1_h1 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 56)][_pext_u64(opponent, kLastRowPattern << 56)];
+  *row_a2_h2 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 48)][_pext_u64(opponent, kLastRowPattern << 48)];
+  *row_a3_h3 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 40)][_pext_u64(opponent, kLastRowPattern << 40)];
+  *row_a4_h4 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 32)][_pext_u64(opponent, kLastRowPattern << 32)];
+  *row_a5_h5 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 24)][_pext_u64(opponent, kLastRowPattern << 24)];
+  *row_a6_h6 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 16)][_pext_u64(opponent, kLastRowPattern << 16)];
+  *row_a7_h7 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 8)][_pext_u64(opponent, kLastRowPattern << 8)];
+  *row_a8_h8 = kLastRowToPattern.value[_pext_u64(player, kLastRowPattern << 0)][_pext_u64(opponent, kLastRowPattern << 0)];
+
+  *column_a1_a8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 7)][_pext_u64(opponent, kLastColumnPattern << 7)];
+  *column_b1_b8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 6)][_pext_u64(opponent, kLastColumnPattern << 6)];
+  *column_c1_c8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 5)][_pext_u64(opponent, kLastColumnPattern << 5)];
+  *column_d1_d8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 4)][_pext_u64(opponent, kLastColumnPattern << 4)];
+  *column_e1_e8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 3)][_pext_u64(opponent, kLastColumnPattern << 3)];
+  *column_f1_f8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 2)][_pext_u64(opponent, kLastColumnPattern << 2)];
+  *column_g1_g8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 1)][_pext_u64(opponent, kLastColumnPattern << 1)];
+  *column_h1_h8 = kLastRowToPattern.value[_pext_u64(player, kLastColumnPattern << 0)][_pext_u64(opponent, kLastColumnPattern << 0)];
+
+  *diag7_c1_a3 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern << 40)][_pext_u64(opponent, kMainDiag7Pattern << 40) | 248];
+  *diag7_d1_a4 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern << 32)][_pext_u64(opponent, kMainDiag7Pattern << 32) | 240];
+  *diag7_e1_a5 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern << 24)][_pext_u64(opponent, kMainDiag7Pattern << 24) | 224];
+  *diag7_h6_f8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern >> 40)][_pext_u64(opponent, kMainDiag7Pattern >> 40) | 248];
+  *diag7_f1_a6 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern << 16)][_pext_u64(opponent, kMainDiag7Pattern << 16) | 192];
+  *diag7_g1_a7 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern << 8)][_pext_u64(opponent, kMainDiag7Pattern << 8) | 128];
+  *diag7_h1_a8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern << 0)][_pext_u64(opponent, kMainDiag7Pattern << 0)];
+  *diag7_h2_b8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern >> 8)][_pext_u64(opponent, kMainDiag7Pattern >> 8) | 128];
+  *diag7_h3_c8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern >> 16)][_pext_u64(opponent, kMainDiag7Pattern >> 16) | 192];
+  *diag7_h4_d8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern >> 24)][_pext_u64(opponent, kMainDiag7Pattern >> 24) | 224];
+  *diag7_h5_e8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag7Pattern >> 32)][_pext_u64(opponent, kMainDiag7Pattern >> 32) | 240];
+
+  *diag9_f1_h3 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern << 40)][_pext_u64(opponent, kMainDiag9Pattern << 40) | 248];
+  *diag9_e1_h4 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern << 32)][_pext_u64(opponent, kMainDiag9Pattern << 32) | 240];
+  *diag9_d1_h5 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern << 24)][_pext_u64(opponent, kMainDiag9Pattern << 24) | 224];
+  *diag9_a6_c8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern >> 40)][_pext_u64(opponent, kMainDiag9Pattern >> 40) | 248];
+  *diag9_c1_h6 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern << 16)][_pext_u64(opponent, kMainDiag9Pattern << 16) | 192];
+  *diag9_b1_h7 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern << 8)][_pext_u64(opponent, kMainDiag9Pattern << 8) | 128];
+  *diag9_a1_h8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern << 0)][_pext_u64(opponent, kMainDiag9Pattern << 0)];
+  *diag9_a2_g8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern >> 8)][_pext_u64(opponent, kMainDiag9Pattern >> 8) | 128];
+  *diag9_a3_f8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern >> 16)][_pext_u64(opponent, kMainDiag9Pattern >> 16) | 192];
+  *diag9_a4_e8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern >> 24)][_pext_u64(opponent, kMainDiag9Pattern >> 24) | 224];
+  *diag9_a5_d8 = kLastRowToPattern.value[_pext_u64(player, kMainDiag9Pattern >> 32)][_pext_u64(opponent, kMainDiag9Pattern >> 32) | 240];
+
+  depth = 0;
+  flipped = false;
+  turn = 1;
+  disk_difference = __builtin_popcountll(player) - __builtin_popcountll(opponent);
+}
+
+constexpr int GetFromPattern(SingleRowPattern pattern, int position) {
+  return (pattern % kPowersOf3[position+1]) / kPowersOf3[position] - 1;
+}
+
+void CheckPatternsOk() {
+  assert(GetFromPattern(*row_a1_h1, 0) == GetFromPattern(*column_h1_h8, 7));
+  assert(GetFromPattern(*row_a1_h1, 0) == GetFromPattern(*diag7_h1_a8, 7));
+  assert(GetFromPattern(*row_a1_h1, 1) == GetFromPattern(*column_g1_g8, 7));
+  assert(GetFromPattern(*row_a1_h1, 1) == GetFromPattern(*diag7_g1_a7, 6));
+  assert(GetFromPattern(*row_a1_h1, 2) == GetFromPattern(*column_f1_f8, 7));
+  assert(GetFromPattern(*row_a1_h1, 2) == GetFromPattern(*diag7_f1_a6, 5));
+  assert(GetFromPattern(*row_a1_h1, 2) == GetFromPattern(*diag9_f1_h3, 2));
+  assert(GetFromPattern(*row_a1_h1, 3) == GetFromPattern(*column_e1_e8, 7));
+  assert(GetFromPattern(*row_a1_h1, 3) == GetFromPattern(*diag7_e1_a5, 4));
+  assert(GetFromPattern(*row_a1_h1, 3) == GetFromPattern(*diag9_e1_h4, 3));
+  assert(GetFromPattern(*row_a1_h1, 4) == GetFromPattern(*column_d1_d8, 7));
+  assert(GetFromPattern(*row_a1_h1, 4) == GetFromPattern(*diag7_d1_a4, 3));
+  assert(GetFromPattern(*row_a1_h1, 4) == GetFromPattern(*diag9_d1_h5, 4));
+  assert(GetFromPattern(*row_a1_h1, 5) == GetFromPattern(*column_c1_c8, 7));
+  assert(GetFromPattern(*row_a1_h1, 5) == GetFromPattern(*diag7_c1_a3, 2));
+  assert(GetFromPattern(*row_a1_h1, 5) == GetFromPattern(*diag9_c1_h6, 5));
+  assert(GetFromPattern(*row_a1_h1, 6) == GetFromPattern(*column_b1_b8, 7));
+  assert(GetFromPattern(*row_a1_h1, 6) == GetFromPattern(*diag9_b1_h7, 6));
+  assert(GetFromPattern(*row_a1_h1, 7) == GetFromPattern(*column_a1_a8, 7));
+  assert(GetFromPattern(*row_a1_h1, 7) == GetFromPattern(*diag9_a1_h8, 7));
+  assert(GetFromPattern(*row_a2_h2, 0) == GetFromPattern(*column_h1_h8, 6));
+  assert(GetFromPattern(*row_a2_h2, 0) == GetFromPattern(*diag7_h2_b8, 6));
+  assert(GetFromPattern(*row_a2_h2, 1) == GetFromPattern(*column_g1_g8, 6));
+  assert(GetFromPattern(*row_a2_h2, 1) == GetFromPattern(*diag7_h1_a8, 6));
+  assert(GetFromPattern(*row_a2_h2, 1) == GetFromPattern(*diag9_f1_h3, 1));
+  assert(GetFromPattern(*row_a2_h2, 2) == GetFromPattern(*column_f1_f8, 6));
+  assert(GetFromPattern(*row_a2_h2, 2) == GetFromPattern(*diag7_g1_a7, 5));
+  assert(GetFromPattern(*row_a2_h2, 2) == GetFromPattern(*diag9_e1_h4, 2));
+  assert(GetFromPattern(*row_a2_h2, 3) == GetFromPattern(*column_e1_e8, 6));
+  assert(GetFromPattern(*row_a2_h2, 3) == GetFromPattern(*diag7_f1_a6, 4));
+  assert(GetFromPattern(*row_a2_h2, 3) == GetFromPattern(*diag9_d1_h5, 3));
+  assert(GetFromPattern(*row_a2_h2, 4) == GetFromPattern(*column_d1_d8, 6));
+  assert(GetFromPattern(*row_a2_h2, 4) == GetFromPattern(*diag7_e1_a5, 3));
+  assert(GetFromPattern(*row_a2_h2, 4) == GetFromPattern(*diag9_c1_h6, 4));
+  assert(GetFromPattern(*row_a2_h2, 5) == GetFromPattern(*column_c1_c8, 6));
+  assert(GetFromPattern(*row_a2_h2, 5) == GetFromPattern(*diag7_d1_a4, 2));
+  assert(GetFromPattern(*row_a2_h2, 5) == GetFromPattern(*diag9_b1_h7, 5));
+  assert(GetFromPattern(*row_a2_h2, 6) == GetFromPattern(*column_b1_b8, 6));
+  assert(GetFromPattern(*row_a2_h2, 6) == GetFromPattern(*diag7_c1_a3, 1));
+  assert(GetFromPattern(*row_a2_h2, 6) == GetFromPattern(*diag9_a1_h8, 6));
+  assert(GetFromPattern(*row_a2_h2, 7) == GetFromPattern(*column_a1_a8, 6));
+  assert(GetFromPattern(*row_a2_h2, 7) == GetFromPattern(*diag9_a2_g8, 6));
+  assert(GetFromPattern(*row_a3_h3, 0) == GetFromPattern(*column_h1_h8, 5));
+  assert(GetFromPattern(*row_a3_h3, 0) == GetFromPattern(*diag7_h3_c8, 5));
+  assert(GetFromPattern(*row_a3_h3, 0) == GetFromPattern(*diag9_f1_h3, 0));
+  assert(GetFromPattern(*row_a3_h3, 1) == GetFromPattern(*column_g1_g8, 5));
+  assert(GetFromPattern(*row_a3_h3, 1) == GetFromPattern(*diag7_h2_b8, 5));
+  assert(GetFromPattern(*row_a3_h3, 1) == GetFromPattern(*diag9_e1_h4, 1));
+  assert(GetFromPattern(*row_a3_h3, 2) == GetFromPattern(*column_f1_f8, 5));
+  assert(GetFromPattern(*row_a3_h3, 2) == GetFromPattern(*diag7_h1_a8, 5));
+  assert(GetFromPattern(*row_a3_h3, 2) == GetFromPattern(*diag9_d1_h5, 2));
+  assert(GetFromPattern(*row_a3_h3, 3) == GetFromPattern(*column_e1_e8, 5));
+  assert(GetFromPattern(*row_a3_h3, 3) == GetFromPattern(*diag7_g1_a7, 4));
+  assert(GetFromPattern(*row_a3_h3, 3) == GetFromPattern(*diag9_c1_h6, 3));
+  assert(GetFromPattern(*row_a3_h3, 4) == GetFromPattern(*column_d1_d8, 5));
+  assert(GetFromPattern(*row_a3_h3, 4) == GetFromPattern(*diag7_f1_a6, 3));
+  assert(GetFromPattern(*row_a3_h3, 4) == GetFromPattern(*diag9_b1_h7, 4));
+  assert(GetFromPattern(*row_a3_h3, 5) == GetFromPattern(*column_c1_c8, 5));
+  assert(GetFromPattern(*row_a3_h3, 5) == GetFromPattern(*diag7_e1_a5, 2));
+  assert(GetFromPattern(*row_a3_h3, 5) == GetFromPattern(*diag9_a1_h8, 5));
+  assert(GetFromPattern(*row_a3_h3, 6) == GetFromPattern(*column_b1_b8, 5));
+  assert(GetFromPattern(*row_a3_h3, 6) == GetFromPattern(*diag7_d1_a4, 1));
+  assert(GetFromPattern(*row_a3_h3, 6) == GetFromPattern(*diag9_a2_g8, 5));
+  assert(GetFromPattern(*row_a3_h3, 7) == GetFromPattern(*column_a1_a8, 5));
+  assert(GetFromPattern(*row_a3_h3, 7) == GetFromPattern(*diag7_c1_a3, 0));
+  assert(GetFromPattern(*row_a3_h3, 7) == GetFromPattern(*diag9_a3_f8, 5));
+  assert(GetFromPattern(*row_a4_h4, 0) == GetFromPattern(*column_h1_h8, 4));
+  assert(GetFromPattern(*row_a4_h4, 0) == GetFromPattern(*diag7_h4_d8, 4));
+  assert(GetFromPattern(*row_a4_h4, 0) == GetFromPattern(*diag9_e1_h4, 0));
+  assert(GetFromPattern(*row_a4_h4, 1) == GetFromPattern(*column_g1_g8, 4));
+  assert(GetFromPattern(*row_a4_h4, 1) == GetFromPattern(*diag7_h3_c8, 4));
+  assert(GetFromPattern(*row_a4_h4, 1) == GetFromPattern(*diag9_d1_h5, 1));
+  assert(GetFromPattern(*row_a4_h4, 2) == GetFromPattern(*column_f1_f8, 4));
+  assert(GetFromPattern(*row_a4_h4, 2) == GetFromPattern(*diag7_h2_b8, 4));
+  assert(GetFromPattern(*row_a4_h4, 2) == GetFromPattern(*diag9_c1_h6, 2));
+  assert(GetFromPattern(*row_a4_h4, 3) == GetFromPattern(*column_e1_e8, 4));
+  assert(GetFromPattern(*row_a4_h4, 3) == GetFromPattern(*diag7_h1_a8, 4));
+  assert(GetFromPattern(*row_a4_h4, 3) == GetFromPattern(*diag9_b1_h7, 3));
+  assert(GetFromPattern(*row_a4_h4, 4) == GetFromPattern(*column_d1_d8, 4));
+  assert(GetFromPattern(*row_a4_h4, 4) == GetFromPattern(*diag7_g1_a7, 3));
+  assert(GetFromPattern(*row_a4_h4, 4) == GetFromPattern(*diag9_a1_h8, 4));
+  assert(GetFromPattern(*row_a4_h4, 5) == GetFromPattern(*column_c1_c8, 4));
+  assert(GetFromPattern(*row_a4_h4, 5) == GetFromPattern(*diag7_f1_a6, 2));
+  assert(GetFromPattern(*row_a4_h4, 5) == GetFromPattern(*diag9_a2_g8, 4));
+  assert(GetFromPattern(*row_a4_h4, 6) == GetFromPattern(*column_b1_b8, 4));
+  assert(GetFromPattern(*row_a4_h4, 6) == GetFromPattern(*diag7_e1_a5, 1));
+  assert(GetFromPattern(*row_a4_h4, 6) == GetFromPattern(*diag9_a3_f8, 4));
+  assert(GetFromPattern(*row_a4_h4, 7) == GetFromPattern(*column_a1_a8, 4));
+  assert(GetFromPattern(*row_a4_h4, 7) == GetFromPattern(*diag7_d1_a4, 0));
+  assert(GetFromPattern(*row_a4_h4, 7) == GetFromPattern(*diag9_a4_e8, 4));
+  assert(GetFromPattern(*row_a5_h5, 0) == GetFromPattern(*column_h1_h8, 3));
+  assert(GetFromPattern(*row_a5_h5, 0) == GetFromPattern(*diag7_h5_e8, 3));
+  assert(GetFromPattern(*row_a5_h5, 0) == GetFromPattern(*diag9_d1_h5, 0));
+  assert(GetFromPattern(*row_a5_h5, 1) == GetFromPattern(*column_g1_g8, 3));
+  assert(GetFromPattern(*row_a5_h5, 1) == GetFromPattern(*diag7_h4_d8, 3));
+  assert(GetFromPattern(*row_a5_h5, 1) == GetFromPattern(*diag9_c1_h6, 1));
+  assert(GetFromPattern(*row_a5_h5, 2) == GetFromPattern(*column_f1_f8, 3));
+  assert(GetFromPattern(*row_a5_h5, 2) == GetFromPattern(*diag7_h3_c8, 3));
+  assert(GetFromPattern(*row_a5_h5, 2) == GetFromPattern(*diag9_b1_h7, 2));
+  assert(GetFromPattern(*row_a5_h5, 3) == GetFromPattern(*column_e1_e8, 3));
+  assert(GetFromPattern(*row_a5_h5, 3) == GetFromPattern(*diag7_h2_b8, 3));
+  assert(GetFromPattern(*row_a5_h5, 3) == GetFromPattern(*diag9_a1_h8, 3));
+  assert(GetFromPattern(*row_a5_h5, 4) == GetFromPattern(*column_d1_d8, 3));
+  assert(GetFromPattern(*row_a5_h5, 4) == GetFromPattern(*diag7_h1_a8, 3));
+  assert(GetFromPattern(*row_a5_h5, 4) == GetFromPattern(*diag9_a2_g8, 3));
+  assert(GetFromPattern(*row_a5_h5, 5) == GetFromPattern(*column_c1_c8, 3));
+  assert(GetFromPattern(*row_a5_h5, 5) == GetFromPattern(*diag7_g1_a7, 2));
+  assert(GetFromPattern(*row_a5_h5, 5) == GetFromPattern(*diag9_a3_f8, 3));
+  assert(GetFromPattern(*row_a5_h5, 6) == GetFromPattern(*column_b1_b8, 3));
+  assert(GetFromPattern(*row_a5_h5, 6) == GetFromPattern(*diag7_f1_a6, 1));
+  assert(GetFromPattern(*row_a5_h5, 6) == GetFromPattern(*diag9_a4_e8, 3));
+  assert(GetFromPattern(*row_a5_h5, 7) == GetFromPattern(*column_a1_a8, 3));
+  assert(GetFromPattern(*row_a5_h5, 7) == GetFromPattern(*diag7_e1_a5, 0));
+  assert(GetFromPattern(*row_a5_h5, 7) == GetFromPattern(*diag9_a5_d8, 3));
+  assert(GetFromPattern(*row_a6_h6, 0) == GetFromPattern(*column_h1_h8, 2));
+  assert(GetFromPattern(*row_a6_h6, 0) == GetFromPattern(*diag7_h6_f8, 2));
+  assert(GetFromPattern(*row_a6_h6, 0) == GetFromPattern(*diag9_c1_h6, 0));
+  assert(GetFromPattern(*row_a6_h6, 1) == GetFromPattern(*column_g1_g8, 2));
+  assert(GetFromPattern(*row_a6_h6, 1) == GetFromPattern(*diag7_h5_e8, 2));
+  assert(GetFromPattern(*row_a6_h6, 1) == GetFromPattern(*diag9_b1_h7, 1));
+  assert(GetFromPattern(*row_a6_h6, 2) == GetFromPattern(*column_f1_f8, 2));
+  assert(GetFromPattern(*row_a6_h6, 2) == GetFromPattern(*diag7_h4_d8, 2));
+  assert(GetFromPattern(*row_a6_h6, 2) == GetFromPattern(*diag9_a1_h8, 2));
+  assert(GetFromPattern(*row_a6_h6, 3) == GetFromPattern(*column_e1_e8, 2));
+  assert(GetFromPattern(*row_a6_h6, 3) == GetFromPattern(*diag7_h3_c8, 2));
+  assert(GetFromPattern(*row_a6_h6, 3) == GetFromPattern(*diag9_a2_g8, 2));
+  assert(GetFromPattern(*row_a6_h6, 4) == GetFromPattern(*column_d1_d8, 2));
+  assert(GetFromPattern(*row_a6_h6, 4) == GetFromPattern(*diag7_h2_b8, 2));
+  assert(GetFromPattern(*row_a6_h6, 4) == GetFromPattern(*diag9_a3_f8, 2));
+  assert(GetFromPattern(*row_a6_h6, 5) == GetFromPattern(*column_c1_c8, 2));
+  assert(GetFromPattern(*row_a6_h6, 5) == GetFromPattern(*diag7_h1_a8, 2));
+  assert(GetFromPattern(*row_a6_h6, 5) == GetFromPattern(*diag9_a4_e8, 2));
+  assert(GetFromPattern(*row_a6_h6, 6) == GetFromPattern(*column_b1_b8, 2));
+  assert(GetFromPattern(*row_a6_h6, 6) == GetFromPattern(*diag7_g1_a7, 1));
+  assert(GetFromPattern(*row_a6_h6, 6) == GetFromPattern(*diag9_a5_d8, 2));
+  assert(GetFromPattern(*row_a6_h6, 7) == GetFromPattern(*column_a1_a8, 2));
+  assert(GetFromPattern(*row_a6_h6, 7) == GetFromPattern(*diag7_f1_a6, 0));
+  assert(GetFromPattern(*row_a6_h6, 7) == GetFromPattern(*diag9_a6_c8, 2));
+  assert(GetFromPattern(*row_a7_h7, 0) == GetFromPattern(*column_h1_h8, 1));
+  assert(GetFromPattern(*row_a7_h7, 0) == GetFromPattern(*diag9_b1_h7, 0));
+  assert(GetFromPattern(*row_a7_h7, 1) == GetFromPattern(*column_g1_g8, 1));
+  assert(GetFromPattern(*row_a7_h7, 1) == GetFromPattern(*diag7_h6_f8, 1));
+  assert(GetFromPattern(*row_a7_h7, 1) == GetFromPattern(*diag9_a1_h8, 1));
+  assert(GetFromPattern(*row_a7_h7, 2) == GetFromPattern(*column_f1_f8, 1));
+  assert(GetFromPattern(*row_a7_h7, 2) == GetFromPattern(*diag7_h5_e8, 1));
+  assert(GetFromPattern(*row_a7_h7, 2) == GetFromPattern(*diag9_a2_g8, 1));
+  assert(GetFromPattern(*row_a7_h7, 3) == GetFromPattern(*column_e1_e8, 1));
+  assert(GetFromPattern(*row_a7_h7, 3) == GetFromPattern(*diag7_h4_d8, 1));
+  assert(GetFromPattern(*row_a7_h7, 3) == GetFromPattern(*diag9_a3_f8, 1));
+  assert(GetFromPattern(*row_a7_h7, 4) == GetFromPattern(*column_d1_d8, 1));
+  assert(GetFromPattern(*row_a7_h7, 4) == GetFromPattern(*diag7_h3_c8, 1));
+  assert(GetFromPattern(*row_a7_h7, 4) == GetFromPattern(*diag9_a4_e8, 1));
+  assert(GetFromPattern(*row_a7_h7, 5) == GetFromPattern(*column_c1_c8, 1));
+  assert(GetFromPattern(*row_a7_h7, 5) == GetFromPattern(*diag7_h2_b8, 1));
+  assert(GetFromPattern(*row_a7_h7, 5) == GetFromPattern(*diag9_a5_d8, 1));
+  assert(GetFromPattern(*row_a7_h7, 6) == GetFromPattern(*column_b1_b8, 1));
+  assert(GetFromPattern(*row_a7_h7, 6) == GetFromPattern(*diag7_h1_a8, 1));
+  assert(GetFromPattern(*row_a7_h7, 6) == GetFromPattern(*diag9_a6_c8, 1));
+  assert(GetFromPattern(*row_a7_h7, 7) == GetFromPattern(*column_a1_a8, 1));
+  assert(GetFromPattern(*row_a7_h7, 7) == GetFromPattern(*diag7_g1_a7, 0));
+  assert(GetFromPattern(*row_a8_h8, 0) == GetFromPattern(*column_h1_h8, 0));
+  assert(GetFromPattern(*row_a8_h8, 0) == GetFromPattern(*diag9_a1_h8, 0));
+  assert(GetFromPattern(*row_a8_h8, 1) == GetFromPattern(*column_g1_g8, 0));
+  assert(GetFromPattern(*row_a8_h8, 1) == GetFromPattern(*diag9_a2_g8, 0));
+  assert(GetFromPattern(*row_a8_h8, 2) == GetFromPattern(*column_f1_f8, 0));
+  assert(GetFromPattern(*row_a8_h8, 2) == GetFromPattern(*diag7_h6_f8, 0));
+  assert(GetFromPattern(*row_a8_h8, 2) == GetFromPattern(*diag9_a3_f8, 0));
+  assert(GetFromPattern(*row_a8_h8, 3) == GetFromPattern(*column_e1_e8, 0));
+  assert(GetFromPattern(*row_a8_h8, 3) == GetFromPattern(*diag7_h5_e8, 0));
+  assert(GetFromPattern(*row_a8_h8, 3) == GetFromPattern(*diag9_a4_e8, 0));
+  assert(GetFromPattern(*row_a8_h8, 4) == GetFromPattern(*column_d1_d8, 0));
+  assert(GetFromPattern(*row_a8_h8, 4) == GetFromPattern(*diag7_h4_d8, 0));
+  assert(GetFromPattern(*row_a8_h8, 4) == GetFromPattern(*diag9_a5_d8, 0));
+  assert(GetFromPattern(*row_a8_h8, 5) == GetFromPattern(*column_c1_c8, 0));
+  assert(GetFromPattern(*row_a8_h8, 5) == GetFromPattern(*diag7_h3_c8, 0));
+  assert(GetFromPattern(*row_a8_h8, 5) == GetFromPattern(*diag9_a6_c8, 0));
+  assert(GetFromPattern(*row_a8_h8, 6) == GetFromPattern(*column_b1_b8, 0));
+  assert(GetFromPattern(*row_a8_h8, 6) == GetFromPattern(*diag7_h2_b8, 0));
+  assert(GetFromPattern(*row_a8_h8, 7) == GetFromPattern(*column_a1_a8, 0));
+  assert(GetFromPattern(*row_a8_h8, 7) == GetFromPattern(*diag7_h1_a8, 0));
+}
+
+void AddToPattern(SingleRowPattern pattern, int position, Square square, BitPattern& player, BitPattern& opponent) {
+  switch (GetFromPattern(pattern, position) * turn) {
+    case 1:
+      player |= 1ULL << square;
+      return;
+    case -1:
+      opponent |= 1ULL << square;
+      return;
+    case 0:
+      return;
+    default:
+      assert(false);
+  }
+}
+
+Board PatternsToBoard() {
+  BitPattern player = 0;
+  BitPattern opponent = 0;
+  AddToPattern(*row_a1_h1, 0, 56, player, opponent);
+  AddToPattern(*row_a1_h1, 1, 57, player, opponent);
+  AddToPattern(*row_a1_h1, 2, 58, player, opponent);
+  AddToPattern(*row_a1_h1, 3, 59, player, opponent);
+  AddToPattern(*row_a1_h1, 4, 60, player, opponent);
+  AddToPattern(*row_a1_h1, 5, 61, player, opponent);
+  AddToPattern(*row_a1_h1, 6, 62, player, opponent);
+  AddToPattern(*row_a1_h1, 7, 63, player, opponent);
+  AddToPattern(*row_a2_h2, 0, 48, player, opponent);
+  AddToPattern(*row_a2_h2, 1, 49, player, opponent);
+  AddToPattern(*row_a2_h2, 2, 50, player, opponent);
+  AddToPattern(*row_a2_h2, 3, 51, player, opponent);
+  AddToPattern(*row_a2_h2, 4, 52, player, opponent);
+  AddToPattern(*row_a2_h2, 5, 53, player, opponent);
+  AddToPattern(*row_a2_h2, 6, 54, player, opponent);
+  AddToPattern(*row_a2_h2, 7, 55, player, opponent);
+  AddToPattern(*row_a3_h3, 0, 40, player, opponent);
+  AddToPattern(*row_a3_h3, 1, 41, player, opponent);
+  AddToPattern(*row_a3_h3, 2, 42, player, opponent);
+  AddToPattern(*row_a3_h3, 3, 43, player, opponent);
+  AddToPattern(*row_a3_h3, 4, 44, player, opponent);
+  AddToPattern(*row_a3_h3, 5, 45, player, opponent);
+  AddToPattern(*row_a3_h3, 6, 46, player, opponent);
+  AddToPattern(*row_a3_h3, 7, 47, player, opponent);
+  AddToPattern(*row_a4_h4, 0, 32, player, opponent);
+  AddToPattern(*row_a4_h4, 1, 33, player, opponent);
+  AddToPattern(*row_a4_h4, 2, 34, player, opponent);
+  AddToPattern(*row_a4_h4, 3, 35, player, opponent);
+  AddToPattern(*row_a4_h4, 4, 36, player, opponent);
+  AddToPattern(*row_a4_h4, 5, 37, player, opponent);
+  AddToPattern(*row_a4_h4, 6, 38, player, opponent);
+  AddToPattern(*row_a4_h4, 7, 39, player, opponent);
+  AddToPattern(*row_a5_h5, 0, 24, player, opponent);
+  AddToPattern(*row_a5_h5, 1, 25, player, opponent);
+  AddToPattern(*row_a5_h5, 2, 26, player, opponent);
+  AddToPattern(*row_a5_h5, 3, 27, player, opponent);
+  AddToPattern(*row_a5_h5, 4, 28, player, opponent);
+  AddToPattern(*row_a5_h5, 5, 29, player, opponent);
+  AddToPattern(*row_a5_h5, 6, 30, player, opponent);
+  AddToPattern(*row_a5_h5, 7, 31, player, opponent);
+  AddToPattern(*row_a6_h6, 0, 16, player, opponent);
+  AddToPattern(*row_a6_h6, 1, 17, player, opponent);
+  AddToPattern(*row_a6_h6, 2, 18, player, opponent);
+  AddToPattern(*row_a6_h6, 3, 19, player, opponent);
+  AddToPattern(*row_a6_h6, 4, 20, player, opponent);
+  AddToPattern(*row_a6_h6, 5, 21, player, opponent);
+  AddToPattern(*row_a6_h6, 6, 22, player, opponent);
+  AddToPattern(*row_a6_h6, 7, 23, player, opponent);
+  AddToPattern(*row_a7_h7, 0, 8, player, opponent);
+  AddToPattern(*row_a7_h7, 1, 9, player, opponent);
+  AddToPattern(*row_a7_h7, 2, 10, player, opponent);
+  AddToPattern(*row_a7_h7, 3, 11, player, opponent);
+  AddToPattern(*row_a7_h7, 4, 12, player, opponent);
+  AddToPattern(*row_a7_h7, 5, 13, player, opponent);
+  AddToPattern(*row_a7_h7, 6, 14, player, opponent);
+  AddToPattern(*row_a7_h7, 7, 15, player, opponent);
+  AddToPattern(*row_a8_h8, 0, 0, player, opponent);
+  AddToPattern(*row_a8_h8, 1, 1, player, opponent);
+  AddToPattern(*row_a8_h8, 2, 2, player, opponent);
+  AddToPattern(*row_a8_h8, 3, 3, player, opponent);
+  AddToPattern(*row_a8_h8, 4, 4, player, opponent);
+  AddToPattern(*row_a8_h8, 5, 5, player, opponent);
+  AddToPattern(*row_a8_h8, 6, 6, player, opponent);
+  AddToPattern(*row_a8_h8, 7, 7, player, opponent);
   return Board(player, opponent);
 }
 
-template<Square square>
-constexpr void PlayMove(short patterns[kNumPatterns]) {
-  assert(square < 64);
-  constexpr int8_t row = Row(square);
-  constexpr int8_t column = Column(square);
-  bool flipped = false;
-
-  int compressed_flip = kConstants.num_flips[NumFlipOffset(column, patterns[row])];
-  flipped |= kConstants.flip_all_function[FlipAllOffset(row, compressed_flip)](patterns);
-
-  compressed_flip = kConstants.num_flips[NumFlipOffset(row, patterns[8 + column])];
-  flipped |= kConstants.flip_all_function[FlipAllOffset(8 + column, compressed_flip)](patterns);
-
-  constexpr int8_t diag9 = Diag9(square);
-  if (diag9 >= -5 && diag9 <= 5) {
-    compressed_flip = kConstants.num_flips[NumFlipOffset(row - std::max(diag9, (int8_t) 0), patterns[21 + diag9])];
-    flipped |= kConstants.flip_all_function[FlipAllOffset(21 + diag9, compressed_flip)](patterns);
-  }
-
-  constexpr int8_t diag7 = Diag7(square);
-  if (diag7 >= -5 && diag7 <= 5) {
-    compressed_flip = kConstants.num_flips[NumFlipOffset(row - std::max(diag7, (int8_t) 0), patterns[32 + diag7])];
-    flipped |= kConstants.flip_all_function[FlipAllOffset(32 + diag7, compressed_flip)](patterns);
-  }
-  if (flipped) {
-    Flip<square, true>(patterns);
-  }
-}
-
-void Invert(short patterns[kNumPatterns]) {
-  for (int i = 0; i < kNumPatterns; ++i) {
-    patterns[i] = 6560 - patterns[i];
-  }
-}
+#endif  // SENSEI_BOARD_OPTIMIZED_BOARD_OPTIMIZED_H
