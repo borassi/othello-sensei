@@ -29,7 +29,7 @@ constexpr int kNumIterations = 1;
 
 
 int main(int argc, char** argv) {
-  int N = 1000;
+  int N = 200;
   unsigned long long tmp = 12;
 
   std::vector<EvaluatedBoard> boards = load_train_set();

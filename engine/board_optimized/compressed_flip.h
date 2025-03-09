@@ -154,7 +154,7 @@ constexpr LastRowPattern DecompressFlip(CompressedFlipForEval flip) {
   }
 }
 
-constexpr CompressedFlipForEval GetFlip(int turn, Square position_in_pattern, SingleRowPattern pattern) {
+constexpr CompressedFlipForEval GetFlip(Square position_in_pattern, SingleRowPattern pattern) {
   assert (position_in_pattern < 8);
   assert (pattern >= 0 && pattern < kPowersOf3[8]);
   if (GetFromPattern(pattern, position_in_pattern) != 0) {
@@ -164,19 +164,19 @@ constexpr CompressedFlipForEval GetFlip(int turn, Square position_in_pattern, Si
   LastRowPattern flip = 0;
   for (int i = position_in_pattern+1; i <= 7; ++i) {
     int square = GetFromPattern(pattern, i);
-    if (square == turn) {
+    if (square == 1) {
       flip |= ContiguousPattern(position_in_pattern+1, i-1);
       break;
-    } else if (square != -turn) {
+    } else if (square != -1) {
       break;
     }
   }
   for (int i = position_in_pattern-1; i >= 0; --i) {
     int square = GetFromPattern(pattern, i);
-    if (square == turn) {
+    if (square == 1) {
       flip |= ContiguousPattern(i+1, position_in_pattern-1);
       break;
-    } else if (square != -turn) {
+    } else if (square != -1) {
       break;
     }
   }
@@ -184,25 +184,19 @@ constexpr CompressedFlipForEval GetFlip(int turn, Square position_in_pattern, Si
   return CompressFlip(flip);
 }
 
-constexpr int TurnToOffset(int turn) {
-  return (turn + 1) >> 1;
-}
-
 struct SquareCompressedPatternToFlip {
-  CompressedFlipForEval value_8[2][8][6561];
-  CompressedFlipForEval value_7[2][7][2187];
-  CompressedFlipForEval value_6[2][6][729];
-  CompressedFlipForEval value_5[2][5][243];
-  CompressedFlipForEval value_4[2][4][81];
-  CompressedFlipForEval value_3[2][3][27];
+  CompressedFlipForEval value_8[8][6561];
+  CompressedFlipForEval value_7[7][2187];
+  CompressedFlipForEval value_6[6][729];
+  CompressedFlipForEval value_5[5][243];
+  CompressedFlipForEval value_4[4][81];
+  CompressedFlipForEval value_3[3][27];
 
   constexpr SquareCompressedPatternToFlip() : value_8(), value_7(), value_6(), value_5(), value_4(), value_3() {
-    for (int turn : {1, -1}) {
-      for (int move = 0; move < 8; ++move) {
-        for (int pattern = 0; pattern < 6561; ++pattern) {
-          value_8[TurnToOffset(turn)][move][pattern] = GetFlip(turn, move, pattern);
-          assert(value_8[TurnToOffset(turn)][move][pattern] < kNumCompressedFlipValues);
-        }
+    for (int move = 0; move < 8; ++move) {
+      for (int pattern = 0; pattern < 6561; ++pattern) {
+        value_8[move][pattern] = GetFlip(move, pattern);
+        assert(value_8[move][pattern] < kNumCompressedFlipValues);
       }
     }
     for (int value = 3; value < 8; ++value) {
@@ -210,31 +204,29 @@ struct SquareCompressedPatternToFlip {
       for (int i = value; i < 8; ++i) {
         value_to_sum += kPowersOf3[i];
       }
-      for (int turn : {1, -1}) {
-        for (int move = 0; move < value; ++move) {
-          for (int pattern = 0; pattern < kPowersOf3[value]; ++pattern) {
-            switch(value) {
-              case 3:
-                value_3[TurnToOffset(turn)][move][pattern] = value_8[TurnToOffset(turn)][move][pattern + value_to_sum];
-                assert(value_3[TurnToOffset(turn)][move][pattern] < kNumCompressedFlipValues);
-                break;
-              case 4:
-                value_4[TurnToOffset(turn)][move][pattern] = value_8[TurnToOffset(turn)][move][pattern + value_to_sum];
-                assert(value_4[TurnToOffset(turn)][move][pattern] < kNumCompressedFlipValues);
-                break;
-              case 5:
-                value_5[TurnToOffset(turn)][move][pattern] = value_8[TurnToOffset(turn)][move][pattern + value_to_sum];
-                assert(value_5[TurnToOffset(turn)][move][pattern] < kNumCompressedFlipValues);
-                break;
-              case 6:
-                value_6[TurnToOffset(turn)][move][pattern] = value_8[TurnToOffset(turn)][move][pattern + value_to_sum];
-                assert(value_6[TurnToOffset(turn)][move][pattern] < kNumCompressedFlipValues);
-                break;
-              case 7:
-                value_7[TurnToOffset(turn)][move][pattern] = value_8[TurnToOffset(turn)][move][pattern + value_to_sum];
-                assert(value_7[TurnToOffset(turn)][move][pattern] < kNumCompressedFlipValues);
-                break;
-            }
+      for (int move = 0; move < value; ++move) {
+        for (int pattern = 0; pattern < kPowersOf3[value]; ++pattern) {
+          switch(value) {
+            case 3:
+              value_3[move][pattern] = value_8[move][pattern + value_to_sum];
+              assert(value_3[move][pattern] < kNumCompressedFlipValues);
+              break;
+            case 4:
+              value_4[move][pattern] = value_8[move][pattern + value_to_sum];
+              assert(value_4[move][pattern] < kNumCompressedFlipValues);
+              break;
+            case 5:
+              value_5[move][pattern] = value_8[move][pattern + value_to_sum];
+              assert(value_5[move][pattern] < kNumCompressedFlipValues);
+              break;
+            case 6:
+              value_6[move][pattern] = value_8[move][pattern + value_to_sum];
+              assert(value_6[move][pattern] < kNumCompressedFlipValues);
+              break;
+            case 7:
+              value_7[move][pattern] = value_8[move][pattern + value_to_sum];
+              assert(value_7[move][pattern] < kNumCompressedFlipValues);
+              break;
           }
         }
       }

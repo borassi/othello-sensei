@@ -40,7 +40,6 @@ BoardPattern bottom_diag9s;
 
 bool flipped;
 Square depth;
-int8_t turn;
 int8_t action_stack_count;
 int8_t disk_difference;
 
@@ -186,7 +185,6 @@ void BoardToPatterns(BitPattern player, BitPattern opponent) {
 
   depth = 0;
   flipped = false;
-  turn = 1;
   disk_difference = __builtin_popcountll(player) - __builtin_popcountll(opponent);
 }
 
@@ -378,7 +376,7 @@ void CheckPatternsOk() {
 }
 
 void AddToPattern(SingleRowPattern pattern, int position, Square square, BitPattern& player, BitPattern& opponent) {
-  switch (GetFromPattern(pattern, position) * turn) {
+  switch (GetFromPattern(pattern, position)) {
     case 1:
       player |= 1ULL << square;
       return;

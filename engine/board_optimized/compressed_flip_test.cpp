@@ -51,11 +51,11 @@ TEST(BoardOptimized, SquareCompressedPatternToFlipRight) {
   auto player = ParsePattern(pattern.c_str(), 'X', 8);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 8);
   auto row = kLastRowToPattern.value[player][opponent];
-  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][4][row]), ParsePattern("--X-----", 'X', 8));
-  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][0][row]), ParsePattern("-----XX-", 'X', 8));
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][7][row], 0);
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][6][row], 0);
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][5][row], 0);
+  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[4][row]), ParsePattern("--X-----", 'X', 8));
+  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[0][row]), ParsePattern("-----XX-", 'X', 8));
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[7][row], 0);
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[6][row], 0);
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[5][row], 0);
 }
 
 TEST(BoardOptimized, SquareCompressedPatternToFlipLeft) {
@@ -63,7 +63,7 @@ TEST(BoardOptimized, SquareCompressedPatternToFlipLeft) {
   auto player = ParsePattern(pattern.c_str(), 'X', 8);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 8);
   auto row = kLastRowToPattern.value[player][opponent];
-  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][7][row]), ParsePattern("-X------", 'X', 8));
+  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[7][row]), ParsePattern("-X------", 'X', 8));
 }
 
 TEST(BoardOptimized, SquareCompressedPatternToFlipNoOutflank) {
@@ -71,8 +71,8 @@ TEST(BoardOptimized, SquareCompressedPatternToFlipNoOutflank) {
   auto player = ParsePattern(pattern.c_str(), 'X', 8);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 8);
   auto row = kLastRowToPattern.value[player][opponent];
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][3][row], 0);
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][0][row], 0);
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[3][row], 0);
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_8[0][row], 0);
 }
 
 TEST(BoardOptimized, SquareCompressedPatternToFlipTwoDirections) {
@@ -80,15 +80,7 @@ TEST(BoardOptimized, SquareCompressedPatternToFlipTwoDirections) {
   auto player = ParsePattern(pattern.c_str(), 'X', 8);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 8);
   auto row = kLastRowToPattern.value[player][opponent];
-  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[TurnToOffset(1)][4][row]), ParsePattern("--X-XXX-", 'X', 8));
-}
-
-TEST(BoardOptimized, SquareCompressedPatternToFlipOtherTurn) {
-  std::string pattern = "-XO-OOOX";
-  auto player = ParsePattern(pattern.c_str(), 'O', 8);
-  auto opponent = ParsePattern(pattern.c_str(), 'X', 8);
-  auto row = kLastRowToPattern.value[player][opponent];
-  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[TurnToOffset(-1)][4][row]), ParsePattern("--X-XXX-", 'X', 8));
+  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_8[4][row]), ParsePattern("--X-XXX-", 'X', 8));
 }
 
 TEST(BoardOptimized, SmallerValues) {
@@ -96,7 +88,7 @@ TEST(BoardOptimized, SmallerValues) {
   auto player = ParsePattern(pattern.c_str(), 'X', 8);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 8);
   auto row = kLastRowToPattern.value[player][opponent];
-  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_5[TurnToOffset(1)][0][row]), ParsePattern("-----XX-", 'X', 8));
+  EXPECT_EQ(DecompressFlip(kSquareCompressedPatternToFlip.value_5[0][row]), ParsePattern("-----XX-", 'X', 8));
 }
 
 TEST(BoardOptimized, SmallerValuesNotFlipTurn0) {
@@ -104,7 +96,7 @@ TEST(BoardOptimized, SmallerValuesNotFlipTurn0) {
   auto player = ParsePattern(pattern.c_str(), 'X', 3);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 3);
   auto row = kLastRowToPattern.value[player][opponent | (8 + 16 + 32 + 64 + 128)];
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_3[TurnToOffset(0)][0][row], 0);
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_3[0][row], 0);
 }
 
 TEST(BoardOptimized, SmallerValuesNotFlipTurn1) {
@@ -112,5 +104,5 @@ TEST(BoardOptimized, SmallerValuesNotFlipTurn1) {
   auto player = ParsePattern(pattern.c_str(), 'X', 3);
   auto opponent = ParsePattern(pattern.c_str(), 'O', 3);
   auto row = kLastRowToPattern.value[player][opponent | (8 + 16 + 32 + 64 + 128)];
-  EXPECT_EQ(kSquareCompressedPatternToFlip.value_3[TurnToOffset(1)][0][row], 0);
+  EXPECT_EQ(kSquareCompressedPatternToFlip.value_3[0][row], 0);
 }

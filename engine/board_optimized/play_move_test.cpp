@@ -53,7 +53,7 @@ TEST_F(PlayMove, PlayHoriz) {
   PlayA1();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
-  EXPECT_EQ(disk_difference, 3);
+  EXPECT_EQ(disk_difference, -3);
 }
 
 TEST_F(PlayMove, PlayVert) {
@@ -78,7 +78,7 @@ TEST_F(PlayMove, PlayVert) {
   PlayA1();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
-  EXPECT_EQ(disk_difference, 4);
+  EXPECT_EQ(disk_difference, -4);
 }
 
 TEST_F(PlayMove, PlayDiag9) {
@@ -103,7 +103,7 @@ TEST_F(PlayMove, PlayDiag9) {
   PlayA1();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
-  EXPECT_EQ(disk_difference, 6);
+  EXPECT_EQ(disk_difference, -6);
 }
 
 TEST_F(PlayMove, PlayDiag7) {
@@ -129,7 +129,7 @@ TEST_F(PlayMove, PlayDiag7) {
   PlayF8();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
-  EXPECT_EQ(disk_difference, 3);
+  EXPECT_EQ(disk_difference, -3);
 }
 
 TEST_F(PlayMove, PlayMultiDir) {
@@ -155,7 +155,7 @@ TEST_F(PlayMove, PlayMultiDir) {
   PlayD8();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
-  EXPECT_EQ(disk_difference, 8);
+  EXPECT_EQ(disk_difference, -8);
 }
 
 TEST_F(PlayMove, PlayStrangeDiagonal) {
@@ -177,7 +177,7 @@ TEST_F(PlayMove, PlayStrangeDiagonal) {
                  "----O---", true);
 
   BoardToPatterns(b.Player(), b.Opponent());
-  turn = -turn;
+  Invert();
   PlayG6();
   EXPECT_EQ(expected, PatternsToBoard());
 }
@@ -202,7 +202,7 @@ TEST_F(PlayMove, PlayInvertedTurn) {
                  "OOOOOOOO", true);
 
   BoardToPatterns(b.Player(), b.Opponent());
-  turn = -turn;
+  Invert();
   PlayD8();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
@@ -219,7 +219,7 @@ TEST_F(PlayMove, PlayMultipleMoves) {
   EXPECT_EQ(Board("e6f4c3"), PatternsToBoard());
   CheckPatternsOk();
   EXPECT_EQ(depth, 3);
-  EXPECT_EQ(disk_difference, 3);
+  EXPECT_EQ(disk_difference, -3);
 }
 
 TEST_F(PlayMove, Undo) {
@@ -244,7 +244,7 @@ TEST_F(PlayMove, MultipleUndo) {
   EXPECT_EQ(Board("e6"), PatternsToBoard());
   CheckPatternsOk();
   EXPECT_EQ(depth, 1);
-  EXPECT_EQ(disk_difference, 3);
+  EXPECT_EQ(disk_difference, -3);
 }
 
 TEST_F(PlayMove, PlayMovePointers) {

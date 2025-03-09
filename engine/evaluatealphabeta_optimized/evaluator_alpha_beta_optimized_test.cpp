@@ -108,3 +108,26 @@ TEST(EvaluatorAlphaBetaOptimizedTest, Endgame) {
   }
 }
 
+TEST(EvaluatorAlphaBetaOptimizedTest, EndgameStandard) {
+  for (int i = 0; i < 1000; i++) {
+    double perc_player = (double) rand() / RAND_MAX * 0.9;
+    double perc_opponent = 0.9 - perc_player;
+    Board b = RandomBoard(perc_player, perc_opponent);
+
+    int n_visited = 0;
+    int actual;
+    BitPattern empties = b.Empties();
+    int nEmpties = b.NEmpties();
+
+    if (nEmpties > 8) {
+      i--;
+      continue;
+    }
+    actual = EvaluateStandard(b.Player(), b.Opponent());
+    int expected = SolveBasic(b.Player(), b.Opponent(), false);
+
+    ASSERT_EQ(actual, expected) << b;
+  }
+}
+
+

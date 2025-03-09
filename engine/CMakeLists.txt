@@ -60,7 +60,7 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -D__BMI2__ -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
+        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -mbmi2 -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
 )
 
 MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")

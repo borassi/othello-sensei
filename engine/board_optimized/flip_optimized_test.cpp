@@ -177,31 +177,28 @@ TEST(FlipOptimized, FlipDiag9) {
   EXPECT_EQ(disk_difference, -56);
 }
 
-TEST(FlipOptimized, Turn) {
-  Board b("XXXXXXXX"
-          "XXXXXXXX"
+TEST(FlipOptimized, Invert) {
+  Board b("--------"
+          "OOOOOOOO"
           "XXXXXXXX"
           "XXXXXXXX"
           "XXXXXXXX"
           "XXXXXXXX"
           "XXXXXXXX"
           "XXXXXXXX", true);
-  Board expected("OOOOOOOO"
-                 "OXOOOOOO"
+  Board expected("--------"
+                 "XXXXXXXX"
                  "OOOOOOOO"
-                 "OOOXOOOO"
+                 "OOOOOOOO"
                  "OOOOOOOO"
                  "OOOOOOOO"
                  "OOOOOOOO"
                  "OOOOOOOO", true);
 
   BoardToPatterns(b.Player(), b.Opponent());
-  turn = -1;
-  Flip_B2_D4();
+  Invert();
   EXPECT_EQ(expected, PatternsToBoard());
   CheckPatternsOk();
-  EXPECT_TRUE(flipped);
-  EXPECT_EQ(disk_difference, 60);
 }
 
 TEST(FlipOptimized, Set) {
@@ -228,32 +225,32 @@ TEST(FlipOptimized, Set) {
   CheckPatternsOk();
   EXPECT_EQ(disk_difference, 1);
 }
-
-TEST(FlipOptimized, SetOtherTurn) {
-  Board b("--------"
-          "--------"
-          "--------"
-          "--------"
-          "--------"
-          "--------"
-          "--------"
-          "--------", true);
-  Board expected("--------"
-          "--------"
-          "--------"
-          "--------"
-          "--------"
-          "-X------"
-          "--------"
-          "--------", true);
-
-  BoardToPatterns(b.Player(), b.Opponent());
-  turn = -1;
-  Set_B6();
-  EXPECT_EQ(expected, PatternsToBoard());
-  CheckPatternsOk();
-  EXPECT_EQ(disk_difference, -1);
-}
+//
+//TEST(FlipOptimized, SetOtherTurn) {
+//  Board b("--------"
+//          "--------"
+//          "--------"
+//          "--------"
+//          "--------"
+//          "--------"
+//          "--------"
+//          "--------", true);
+//  Board expected("--------"
+//          "--------"
+//          "--------"
+//          "--------"
+//          "--------"
+//          "-X------"
+//          "--------"
+//          "--------", true);
+//
+//  BoardToPatterns(b.Player(), b.Opponent());
+//  turn = -1;
+//  Set_B6();
+//  EXPECT_EQ(expected, PatternsToBoard());
+//  CheckPatternsOk();
+//  EXPECT_EQ(disk_difference, -1);
+//}
 
 
 
