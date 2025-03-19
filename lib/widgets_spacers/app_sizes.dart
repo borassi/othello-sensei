@@ -59,8 +59,8 @@ class AppSizes extends ThemeExtension<AppSizes> {
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
     heightMinusBarHeight = height - appBarHeight;
     var verticalBoardSize = min(width, 8 / 14 * heightMinusBarHeight);
-    var horizontalBoardSizeFullBar = min(heightMinusBarHeight, 8 / 14.3 * width);
-    var horizontalBoardSizeBrokenBar = min(min(height, 8 / 14.3 * width), width - minAppBarWidth);
+    var horizontalBoardSizeFullBar = min(heightMinusBarHeight, 8 / 15 * width);
+    var horizontalBoardSizeBrokenBar = min(min(height, 8 / 15 * width), width - minAppBarWidth);
     if (verticalBoardSize > horizontalBoardSizeFullBar && verticalBoardSize > horizontalBoardSizeBrokenBar) {
       layout = AppLayout.vertical;
       boardSize = verticalBoardSize;

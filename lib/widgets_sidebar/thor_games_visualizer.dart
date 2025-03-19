@@ -24,16 +24,21 @@ import 'package:flutter/material.dart';
 import '../ffi/ffi_engine.dart';
 import '../state.dart';
 import '../utils.dart';
+import '../widgets_spacers/margins.dart';
 
 class TableCase extends StatelessWidget {
   final String text;
   final int flex;
   final Alignment? alignment;
+  final TextStyle? textStyle;
 
-  const TableCase(this.text, this.flex, {super.key, this.alignment});
+  const TableCase(this.text, this.flex, {this.textStyle, super.key, this.alignment});
   @override
   Widget build(BuildContext context) {
-    var textStyle = Theme.of(context).textTheme.bodySmall!;
+    var colorScheme = Theme.of(context).colorScheme;
+    var textStyle = Theme.of(context).textTheme.bodyMedium!.merge(
+        TextStyle(color: colorScheme.onPrimaryContainer)      
+    ).merge(this.textStyle);
     return Expanded(
       flex: flex,
       child: Container(
@@ -61,20 +66,44 @@ Widget getRow(BuildContext context, ThorGame game) {
     GlobalState.evaluate();
   }
 
+  var boldTextStyle = TextStyle(
+      fontWeight: FontWeight.bold,
+  );
+  var tournamentStyle = Theme.of(context).textTheme.bodySmall!.merge(
+    TextStyle(
+      color: Theme.of(context).colorScheme.onSurface
+    )
+  );
   return GestureDetector(
     onTap: playOneMove,
     onLongPress: playWholeGame,
     onDoubleTap: playWholeGame,
     behavior: HitTestBehavior.opaque,
     child: Row(
-      children: <Widget>[
-        TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played]), 4),
-        TableCase(game.year.toString(), 6),
-        TableCase(game.black.cast<Utf8>().toDartString(), 22),
-        TableCase(' ${game.score} ', 3),
-        TableCase('-', 2),
-        TableCase(' ${64 - game.score} ', 3),
-        TableCase(game.white.cast<Utf8>().toDartString(), 22),
+      children: [
+        Expanded(
+          flex: 40,
+          child: Column(
+            children: [
+              Row(
+                children: <Widget>[
+                  TableCase(game.black.cast<Utf8>().toDartString(), 24, alignment: Alignment.centerLeft, textStyle: game.score > 32 ? boldTextStyle : null),
+                  TableCase(' ${game.score} ', 4, textStyle: game.score > 32 ? boldTextStyle : null),
+                  TableCase('-', 2),
+                  TableCase(' ${64 - game.score} ', 4, textStyle: game.score < 32 ? boldTextStyle : null),
+                  TableCase(game.white.cast<Utf8>().toDartString(), 24, alignment: Alignment.centerRight, textStyle: game.score < 32 ? boldTextStyle : null),
+                ]
+              ),
+              Row(
+                children: <Widget>[
+                  TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played]), 3, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
+                  TableCase('${game.year} ${game.tournament.cast<Utf8>().toDartString()}', 20, textStyle: tournamentStyle),
+                  TableCase('', 3, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
+                ]
+              )
+            ]
+          )
+        ),
       ]
     )
   );
@@ -94,19 +123,28 @@ class ThorGamesVisualizer extends StatelessWidget {
         }
         var annotations = GlobalState.globalAnnotations.annotations!;
         var textStyle = Theme.of(context).textTheme.bodySmall!;
+        if (annotations.ref.num_example_thor_games == 0) {
+          return Text(
+              'No game',
+              style: TextStyle(
+                fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                fontWeight: FontWeight.bold,
+              ));
+        }
         return Column(
           children: [
             Container(
               alignment: Alignment.center,
-              constraints: BoxConstraints(minHeight: textStyle.fontSize! * 3),
               child: Text(
-                  'Showing ${annotations.ref.num_example_thor_games} / ${annotations.ref.num_thor_games} games',
-                  style: TextStyle(
-                    fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-                    fontWeight: FontWeight.bold,
-                  )
+                'Showing ${annotations.ref.num_example_thor_games} / ${annotations.ref.num_thor_games} games',
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer
+                )
               ),
             ),
+            Margin.internal(),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -114,7 +152,7 @@ class ThorGamesVisualizer extends StatelessWidget {
                     2 * annotations.ref.num_example_thor_games + 1,
                     (i) => i % 2 == 0 ?
                       Divider(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: Theme.of(context).colorScheme.onSurface,
                         height: 1
                       ) :
                       getRow(context, annotations.ref.example_thor_games[i ~/ 2])
