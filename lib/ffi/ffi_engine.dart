@@ -377,6 +377,20 @@ class FFIEngine {
       'GetXOTState');
   late final _GetXOTState =
       _GetXOTStatePtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
+
+  bool IsXot(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _IsXot(
+      ptr,
+    );
+  }
+
+  late final _IsXotPtr =
+      _lookup<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void>)>>(
+          'IsXot');
+  late final _IsXot =
+      _IsXotPtr.asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -424,9 +438,6 @@ final class BoardUpdate extends ffi.Struct {
 
   @ffi.Bool()
   external bool black_turn;
-
-  @ffi.Bool()
-  external bool xot;
 
   @ffi.Int()
   external int last_move;

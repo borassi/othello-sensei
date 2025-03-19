@@ -34,7 +34,7 @@ class ScoreGraph extends HideInactiveWidget {
     Color? borderColor;
     if (x == moveToHighlight) {
       color = colorScheme.onSecondaryContainer;
-    } else if (GlobalState.board.xot && x <= 8) {
+    } else if (GlobalState.isXot() && x <= 8) {
       color = colorScheme.primaryContainer;
     } else if (!GlobalState.preferences.get('Black and white bars in the graph')) {
       color = colorScheme.onPrimaryContainer;

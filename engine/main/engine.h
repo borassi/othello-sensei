@@ -169,7 +169,6 @@ class Engine {
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath,
-      Main& main,
       UpdateAnnotations update_annotations);
 
   void Start(EvaluationState* current_state,
@@ -226,8 +225,6 @@ class Engine {
 
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;
-
-  Main& main_;
 
   void EvaluateThor(const EvaluateParams& params, EvaluationState& state);
 

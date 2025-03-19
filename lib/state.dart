@@ -263,6 +263,13 @@ class GlobalState {
     GlobalState.preferences.fillEvaluateParams();
     GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
+
+  static bool isXot() {
+    if (ffiMain == nullptr) {
+      return false;
+    }
+    return GlobalState.ffiEngine.IsXot(GlobalState.ffiMain);
+  }
 }
 
 class BoardState with ChangeNotifier {
@@ -270,16 +277,14 @@ class BoardState with ChangeNotifier {
   int opponent;
   bool blackTurn;
   int lastMove;
-  bool xot;
 
-  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1, xot = false;
+  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1;
 
   void setState(BoardUpdate boardUpdate) {
     player = boardUpdate.player;
     opponent = boardUpdate.opponent;
     blackTurn = boardUpdate.black_turn;
     lastMove = boardUpdate.last_move;
-    xot = boardUpdate.xot;
     notifyListeners();
   }
 
@@ -554,7 +559,7 @@ class GlobalAnnotationState with ChangeNotifier {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
     var (allScores, lastMove) = getAllScoresAndLastMove();
-    var start = GlobalState.board.xot ? 8 : 0;
+    var start = GlobalState.isXot() ? 8 : 0;
     int lastMoveForScores =
         GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
         allScores.length : lastMove + 1;

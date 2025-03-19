@@ -79,10 +79,8 @@ Engine::Engine(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath,
-    Main& main,
     UpdateAnnotations update_annotations) :
     update_annotations_(update_annotations),
-    main_(main),
     hash_map_(),
     boards_to_evaluate_(),
     num_boards_to_evaluate_(0),

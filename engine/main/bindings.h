@@ -54,7 +54,6 @@ struct BoardUpdate {
   BitPattern player;
   BitPattern opponent;
   bool black_turn;
-  bool xot;
   int last_move;
 };
 

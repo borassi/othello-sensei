@@ -76,7 +76,7 @@ class Main {
     } else {
       non_xot_state = current_state_->LastChoice();
     }
-    if (IsXOT() && non_xot_state->NEmpties() > 52 && current_state_->NEmpties() < 52) {
+    if (IsXot() && non_xot_state->NEmpties() > 52 && current_state_->NEmpties() < 52) {
       return ToState(first_state_->ToDepth(8));
     }
     return ToState(non_xot_state);
@@ -95,10 +95,13 @@ class Main {
     return result;
   }
 
-  void SetSequence(const Sequence& moves) {
+  void SetSequence(const Sequence& moves, bool eval = false) {
     NewGame();
     for (int i = 0; i < moves.Size(); ++i) {
       PlayMove(moves.Move(i));
+      if (eval) {
+        Evaluate();
+      }
     }
   }
 
@@ -152,9 +155,9 @@ class Main {
   }
 
   void RandomXOT(bool large) {
-    XOT& xot = large ? xot_small_ : xot_large_;
+    const XOT& xot = large ? xot_small_ : xot_large_;
     Sequence sequence = xot.RandomSequence();
-    SetSequence(sequence);
+    SetSequence(sequence, true);
   }
 
   void SetXOTState(XOTState xot_state) {
@@ -162,6 +165,28 @@ class Main {
     RunSetBoard();
   }
   XOTState GetXOTState() { return xot_state_; }
+
+  bool IsXot() {
+    switch (xot_state_) {
+      case XOT_STATE_ALWAYS:
+        return true;
+      case XOT_STATE_NEVER:
+        return false;
+      case XOT_STATE_AUTOMATIC:
+        if (!first_state_) {
+          return false;
+        }
+        auto state_in_xot = first_state_->ToDepth(8);
+        if (!state_in_xot) {
+          return false;
+        }
+        if (!xot_large_.IsInListPrefix(state_in_xot->GetSequence())) {
+          return false;
+        }
+        auto [error_black, error_white] = state_in_xot->TotalError();
+        return std::max(error_black, error_white) > 5;
+    }
+  }
 
  private:
   static constexpr int kNumEvaluators = 60;
@@ -190,26 +215,7 @@ class Main {
 
   void RunSetBoard() {
     Board board = current_state_->ToBoard();
-    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), IsXOT(), current_state_->LastMove()});
-  }
-
-  bool IsXOT() {
-    switch (xot_state_) {
-      case XOT_STATE_ALWAYS:
-        return true;
-      case XOT_STATE_NEVER:
-        return false;
-      case XOT_STATE_AUTOMATIC:
-        auto state_in_xot = first_state_->ToDepth(8);
-        if (!state_in_xot) {
-          return false;
-        }
-        if (!xot_large_.IsInListPrefix(state_in_xot->GetSequence())) {
-          return false;
-        }
-        auto [error_black, error_white] = state_in_xot->TotalError();
-        return std::max(error_black, error_white) > 5;
-    }
+    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), current_state_->LastMove()});
   }
 };
 

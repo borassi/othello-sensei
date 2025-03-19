@@ -99,6 +99,9 @@ void SetXOTState(void* ptr, enum XOTState xot_state);
 EXPORT
 enum XOTState GetXOTState(void* ptr);
 
+EXPORT
+bool IsXot(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif
