@@ -35,10 +35,7 @@ class TableCase extends StatelessWidget {
   const TableCase(this.text, this.flex, {this.textStyle, super.key, this.alignment});
   @override
   Widget build(BuildContext context) {
-    var colorScheme = Theme.of(context).colorScheme;
-    var textStyle = Theme.of(context).textTheme.bodyMedium!.merge(
-        TextStyle(color: colorScheme.onPrimaryContainer)      
-    ).merge(this.textStyle);
+    var textStyle = Theme.of(context).textTheme.bodyMedium!.merge(this.textStyle);
     return Expanded(
       flex: flex,
       child: Container(
@@ -122,7 +119,6 @@ class ThorGamesVisualizer extends StatelessWidget {
           return Table();
         }
         var annotations = GlobalState.globalAnnotations.annotations!;
-        var textStyle = Theme.of(context).textTheme.bodySmall!;
         if (annotations.ref.num_example_thor_games == 0) {
           return Text(
               'No game',
@@ -140,7 +136,6 @@ class ThorGamesVisualizer extends StatelessWidget {
                 style: TextStyle(
                   fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer
                 )
               ),
             ),

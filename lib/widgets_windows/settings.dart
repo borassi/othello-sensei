@@ -265,9 +265,8 @@ class Settings extends StatelessWidget {
       title: 'Settings',
       child: Builder(
         builder: (BuildContext context) {
-          var titleStyle = TextStyle(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-            fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!
+          var titleStyle = Theme.of(context).textTheme.bodyMedium!.merge(
+            TextStyle(color: Theme.of(context).colorScheme.onSurface)
           );
           var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
           return Scaffold(

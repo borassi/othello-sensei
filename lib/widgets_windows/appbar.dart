@@ -159,6 +159,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
       ];
     }
     const padding = EdgeInsets.symmetric(horizontal: 12);
+    var textStyle = Theme.of(context).textTheme.bodyMedium;
     var row = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: icons + [
@@ -170,35 +171,37 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 Icons.more_vert_rounded,
                 color: Theme.of(context).colorScheme.onPrimaryContainer
               ),
+              tooltip: "Menu",
               onSelected: (MenuItem i) { handleMenuItem(context, i); },
               itemBuilder: (context) => [
                 PopupMenuItem<MenuItem>(
                   padding: EdgeInsets.zero,
                   onTap: () {},
                   child: PopupMenuButton<MenuItem>(
+                    tooltip: "",
                     child: Container(
                       height: kMinInteractiveDimension,
                       width: double.infinity,
                       alignment: Alignment.centerLeft,
                       padding: padding,
-                      child: Text('New game')
+                      child: Text('New game', style: textStyle),
                     ),
                     onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
                     itemBuilder: (context) => [
                       PopupMenuItem<MenuItem>(
                         padding: padding,
                         value: MenuItem.newGame,
-                        child: Text('Standard game'),
+                        child: Text('Standard game', style: textStyle),
                       ),
                       PopupMenuItem<MenuItem>(
                         padding: padding,
                         value: MenuItem.newGameXotSmall,
-                        child: Text('XOT small list'),
+                        child: Text('XOT small list', style: textStyle),
                       ),
                       PopupMenuItem<MenuItem>(
                         padding: padding,
                         value: MenuItem.newGameXotLarge,
-                        child: Text('XOT large list'),
+                        child: Text('XOT large list', style: textStyle),
                       )
                     ]
                   )
@@ -206,38 +209,39 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 PopupMenuItem<MenuItem>(
                   padding: padding,
                   value: MenuItem.copy,
-                  child: Text('Copy')),
+                  child: Text('Copy', style: textStyle)),
                 PopupMenuItem<MenuItem>(
                   padding: padding,
                   value: MenuItem.paste,
-                  child: Text('Paste')),
+                  child: Text('Paste', style: textStyle)),
                 PopupMenuItem<MenuItem>(
                   padding: padding,
                   value: MenuItem.analyze,
-                  child: Text(GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze')),
+                  child: Text(GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze', style: textStyle)),
                 PopupMenuItem<MenuItem>(
                   padding: EdgeInsets.zero,
                   onTap: () {},
                   child: PopupMenuButton<MenuItem>(
                     onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
                     padding: EdgeInsets.zero,
+                    tooltip: "",
                     child: Container(
                       height: kMinInteractiveDimension,
                       width: double.infinity,
                       alignment: Alignment.centerLeft,
                       padding: padding,
-                      child: Text('Sensei action')
+                      child: Text('Sensei action', style: textStyle)
                     ),
                     itemBuilder: (context) => [
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.senseiEvaluates,
                         checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval,
-                        child: Text('Sensei evaluates'),
+                        child: Text('Sensei evaluates', style: textStyle),
                       ),
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.senseiIsInactive,
                         checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none,
-                        child: Text('Sensei is inactive'),
+                        child: Text('Sensei is inactive', style: textStyle),
                       )
                     ]
                   )
@@ -248,35 +252,36 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: PopupMenuButton<MenuItem>(
                     padding: EdgeInsets.zero,
                     onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                    tooltip: "",
                     child: Container(
                       height: kMinInteractiveDimension,
                       width: double.infinity,
                       alignment: Alignment.centerLeft,
                       padding: padding,
-                      child: Text('XOT errors')
+                      child: Text('XOT errors', style: textStyle)
                     ),
                     itemBuilder: (context) => [
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.xotAutomatic,
                         checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_AUTOMATIC,
-                        child: Text('Automatic'),
+                        child: Text('Automatic', style: textStyle),
                       ),
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.xotAlways,
                         checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_ALWAYS,
-                        child: Text('Always XOT'),
+                        child: Text('Always XOT', style: textStyle),
                       ),
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.xotNever,
                         checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_NEVER,
-                        child: Text('Never XOT'),
+                        child: Text('Never XOT', style: textStyle),
                       )
                     ]
                   )
                 ),
-                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestBook, child: Text('Download latest book')),
-                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive')),
-                PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings')),
+                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestBook, child: Text('Download latest book', style: textStyle)),
+                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
+                PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),
               ]
             )
           )
@@ -291,7 +296,6 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         'Sensei',
         style: TextStyle(
           fontSize: 20,
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
           height: 1.0,
         ),
 

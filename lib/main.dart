@@ -79,9 +79,9 @@ class AppTheme extends StatelessWidget {
         return Theme(
           data: theme.copyWith(
             textTheme: TextTheme(
-              bodyLarge: TextStyle(fontSize: squareSize / 2.1),
-              bodyMedium: TextStyle(fontSize: squareSize / 3.9),
-              bodySmall: TextStyle(fontSize: squareSize / 6),
+              bodyLarge: TextStyle(fontSize: squareSize / 2.1, color: Theme.of(context).colorScheme.onPrimaryContainer),
+              bodyMedium: TextStyle(fontSize: squareSize / 3.9, color: Theme.of(context).colorScheme.onPrimaryContainer),
+              bodySmall: TextStyle(fontSize: squareSize / 6, color: Theme.of(context).colorScheme.onPrimaryContainer),
             ),
           ),
           child: child
