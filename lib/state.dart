@@ -550,31 +550,23 @@ class GlobalAnnotationState with ChangeNotifier {
 
   (List<double>, int) getAllScoresAndLastMove() {
     var scores = <double>[];
-    var currentMoveVar = currentMove();
-    int lastMove = -1;
     if (startAnnotations == null) {
-      return (scores, lastMove);
+      return (scores, -1);
     }
-    if (!existsAnalyzedGame()) {
-      lastMove = currentMoveVar;
-    }
-    var depth = 0;
+    var lastMove = currentMove();
     for (var annotation = startAnnotations;
          annotation != null && annotation != nullptr;
          annotation = annotation.ref.next_state_in_analysis != nullptr ?
                           annotation.ref.next_state_in_analysis :
                           annotation.ref.next_state_played) {
-      if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
+      if ([GlobalState.ffiEngine.PassMove(), GlobalState.ffiEngine.SetupBoardMove()].contains(annotation.ref.move)) {
         continue;
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
-      if (lastMove == -1 && (
-          annotation.ref.next_state_in_analysis == nullptr
-          || annotation.ref.next_state_in_analysis != annotation.ref.next_state_played
-          || depth == currentMoveVar)) {
-        lastMove = depth;
+      if (annotation.ref.next_state_in_analysis != nullptr
+          && annotation.ref.next_state_in_analysis != annotation.ref.next_state_played) {
+        lastMove = min(lastMove, annotation.ref.depth_no_pass);
       }
-      ++depth;
     }
     return (scores, lastMove);
   }
@@ -586,8 +578,8 @@ class GlobalAnnotationState with ChangeNotifier {
     var start = GlobalState.isXot() ? 8 : 0;
     int lastMoveForScores =
         GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
-        allScores.length : lastMove + 1;
-    var hasNaN = lastMoveForScores == 0;
+        allScores.length : min(allScores.length, lastMove + 1);
+    var hasNaN = false;
     var oldScore = allScores.elementAtOrNull(start) ?? double.nan;
     if (oldScore.isNaN) {
       oldScore = 0;

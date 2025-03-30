@@ -18,6 +18,7 @@
 #include "main.h"
 
 Square PassMove() { return kPassMove; }
+Square SetupBoardMove() { return kSetupBoardMove; }
 
 void* MainInit(
     char* evals_filepath,

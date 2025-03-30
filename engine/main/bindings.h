@@ -32,6 +32,7 @@ extern "C" {
 
 const Square kPassMove = 64;
 const Square kStartingPositionMove = 65;
+const Square kSetupBoardMove = 66;
 
 struct ThorSourceMetadata {
   const char* name;

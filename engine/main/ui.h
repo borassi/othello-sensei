@@ -30,6 +30,9 @@ EXPORT
 Square PassMove();
 
 EXPORT
+Square SetupBoardMove();
+
+EXPORT
 void* MainInit(
     char* evals_filepath,
     char* book_filepath,

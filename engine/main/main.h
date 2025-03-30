@@ -46,7 +46,7 @@ class Main {
       UpdateAnnotations update_annotations);
 
   void NewGame() {
-    first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0);
+    first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0, 0, false);
     [[maybe_unused]] bool new_state = ToState(first_state_.get());
     assert(new_state);
   }
@@ -62,11 +62,11 @@ class Main {
   }
 
   bool Redo() {
-    return ToState(current_state_->NextState());
+    return ToState(current_state_->NextLandable());
   }
 
   bool Undo() {
-    return ToState(current_state_->PreviousNonPass());
+    return ToState(current_state_->PreviousLandable());
   }
 
   bool ToAnalyzedGameOrLastChoice() {
@@ -124,8 +124,6 @@ class Main {
 
   void Analyze() {
     last_params_ = evaluate_params_;
-    // This also resets all the evaluations.
-    SetSequence(first_state_->GetLongestSequence());
     first_state_->SetAnalyzed();
     analyzing_ = 1;
     engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
@@ -189,13 +187,11 @@ class Main {
   }
 
   void SetSquare(int square, int value) {
-    current_state_->SetSquare(square, value);
-    RunSetBoard();
+    ToStateNoStop(current_state_->SetSquare(square, value));
   }
 
   void InvertTurn() {
-    current_state_->InvertTurn();
-    RunSetBoard();
+    ToStateNoStop(current_state_->InvertTurn());
   }
 
  private:

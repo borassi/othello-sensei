@@ -307,19 +307,24 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
 
       ),
       const Spacer()];
-    return Row(children: title + <Widget>[row]);
+    return Row(children: title + (GlobalState.setupBoardState.settingUpBoard ? [] : <Widget>[row]));
   }
 
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     return Container(
-        alignment: Alignment.center,
-        color: Theme.of(context).colorScheme.primaryContainer,
-        width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
-        // we can set width here with conditions
-        height: kToolbarHeight,
-        child: buildRow(context),
+      alignment: Alignment.center,
+      color: Theme.of(context).colorScheme.primaryContainer,
+      width: appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width,
+      // we can set width here with conditions
+      height: kToolbarHeight,
+      child: ListenableBuilder(
+        listenable: GlobalState.setupBoardState,
+        builder: (BuildContext context, Widget? widget) {
+          return buildRow(context);
+        }
+      )
     );
   }
 }

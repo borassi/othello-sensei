@@ -159,7 +159,7 @@ void TreeNode::SetChildren(const std::vector<TreeNode*>& children, const Evaluat
 double Node::RemainingWork(Eval lower, Eval upper) const {
   assert((lower - kMinEval) % 2 == 1);
   assert((upper - kMinEval) % 2 == 1);
-  assert(n_empties_ >= 0 && n_empties_ <= 60);
+  assert(n_empties_ >= 0 && n_empties_ <= 64);
   if (Node::IsSolved(lower, upper, false)) {
     return 0;
   }

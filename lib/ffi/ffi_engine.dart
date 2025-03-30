@@ -29,6 +29,11 @@ class FFIEngine {
 
   DartSquare get kStartingPositionMove => _kStartingPositionMove.value;
 
+  late final ffi.Pointer<Square> _kSetupBoardMove =
+      _lookup<Square>('kSetupBoardMove');
+
+  DartSquare get kSetupBoardMove => _kSetupBoardMove.value;
+
   int PassMove() {
     return _PassMove();
   }
@@ -36,6 +41,14 @@ class FFIEngine {
   late final _PassMovePtr =
       _lookup<ffi.NativeFunction<Square Function()>>('PassMove');
   late final _PassMove = _PassMovePtr.asFunction<int Function()>();
+
+  int SetupBoardMove() {
+    return _SetupBoardMove();
+  }
+
+  late final _SetupBoardMovePtr =
+      _lookup<ffi.NativeFunction<Square Function()>>('SetupBoardMove');
+  late final _SetupBoardMove = _SetupBoardMovePtr.asFunction<int Function()>();
 
   ffi.Pointer<ffi.Void> MainInit(
     ffi.Pointer<ffi.Char> evals_filepath,

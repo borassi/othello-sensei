@@ -57,11 +57,7 @@ void EvaluationState::SetThor(const GamesList& games) {
 EvaluationState* EvaluationState::NextState(Square move) const {
   for (const std::shared_ptr<EvaluationState>& child : children_) {
     if (child->annotations_.move == move) {
-      if (child->AfterPass()) {
-        assert(HaveToPass(child->Father()->ToBoard()));
-        return child->GetChildren()[0];
-      }
-      return child.get();
+      return child->ThisOrNextLandable();
     }
   }
   return nullptr;
@@ -89,7 +85,10 @@ void EvaluationState::SetNextStates() {
     }
 
     std::shared_ptr<EvaluationState> state = std::make_shared<EvaluationState>(
-        move, next, !BlackTurn(), Depth() + 1);
+        move, next, !BlackTurn(), Depth() + 1, annotations_.depth_no_pass + 1, false);
+    if (HaveToPass(state->ToBoard())) {
+      state->SetNextStates();
+    }
 
     children_.push_back(state);
     children.push_back(state.get());

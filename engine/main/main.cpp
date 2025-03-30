@@ -83,8 +83,9 @@ void Main::Evaluate() {
       analyzing_ = 2;
     }
   }
+  assert(analyzing_ || current_state_->IsLandable());
   engine_.Start(
-      analyzing_ ? current_state_->PreviousNonPass() : current_state_,
+      analyzing_ ? current_state_->PreviousLandable() : current_state_,
       first_state_,
       evaluate_params_,
       analyzing_);
@@ -106,12 +107,9 @@ bool Main::ToState(EvaluationState* new_state) {
 
 void Main::ToStateNoStop(EvaluationState* new_state) {
   assert(new_state);
+  assert(new_state->IsLandable());
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();
-  if (current_state_->IsPass()) {
-    ToStateNoStop(current_state_->GetChildren()[0]);
-    return;
-  }
   RunSetBoard();
 }
