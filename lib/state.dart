@@ -24,6 +24,7 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
+import 'package:othello_sensei/widgets_board/case.dart' as sensei_case;
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -49,10 +50,7 @@ void setBoard(BoardUpdate boardUpdate) {
 }
 
 int currentMove() {
-  if (GlobalState.globalAnnotations.annotations == null) {
-    return -1;
-  }
-  return 60 - GlobalState.board.emptySquares();
+  return GlobalState.globalAnnotations.annotations?.ref.depth_no_pass ?? -1;
 }
 
 void updateAnnotations(int currentThread, bool finished) {
@@ -60,10 +58,7 @@ void updateAnnotations(int currentThread, bool finished) {
   Pointer<Annotations> annotations = GlobalState.ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr ||
       !annotations.ref.valid) {
-    GlobalState.globalAnnotations.reset();
-    for (int i = 0; i < 64; ++i) {
-      GlobalState.annotations[i].clear();
-    }
+    GlobalState.resetAnnotations();
   } else {
     GlobalState.globalAnnotations.setState(annotations, startAnnotations);
     for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
@@ -117,6 +112,7 @@ void analyze() {
 
 class GlobalState {
   static var board = BoardState();
+  static var setupBoardState = SetupBoardState();
   static var actionWhenPlay = ActionWhenPlayState();
   static List<AnnotationState> annotations = List.generate(64, (index) => AnnotationState());
   static var globalAnnotations = GlobalAnnotationState();
@@ -165,10 +161,7 @@ class GlobalState {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     var localAssetPathVar = localAssetPath();
-    globalAnnotations.reset();
-    for (int i = 0; i < 64; ++i) {
-      GlobalState.annotations[i].clear();
-    }
+    GlobalState.resetAnnotations();
     thorMetadataOrNull = null;
     ffiMain = GlobalState.ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
@@ -256,8 +249,9 @@ class GlobalState {
   }
 
   static void evaluate() {
-    if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval) {
-      GlobalState.globalAnnotations.reset();
+    if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval
+        || GlobalState.setupBoardState.settingUpBoard) {
+      GlobalState.resetAnnotations();
       return;
     }
     GlobalState.preferences.fillEvaluateParams();
@@ -269,6 +263,36 @@ class GlobalState {
       return false;
     }
     return GlobalState.ffiEngine.IsXot(GlobalState.ffiMain);
+  }
+
+  static void resetAnnotations() {
+    GlobalState.globalAnnotations.reset();
+    for (int i = 0; i < 64; ++i) {
+      GlobalState.annotations[i].clear();
+    }
+  }
+}
+
+class SetupBoardState with ChangeNotifier {
+  bool settingUpBoard;
+  sensei_case.CaseState onClick;
+  bool resetState;
+
+  SetupBoardState() : settingUpBoard = false, onClick = sensei_case.CaseState.black, resetState = false;
+
+  void setSettingUpBoard(bool newValue) {
+    settingUpBoard = newValue;
+    notifyListeners();
+  }
+
+  void updateOnClick() {
+    onClick = sensei_case.CaseState.values[(onClick.index + 1) % sensei_case.CaseState.values.length];
+    notifyListeners();
+  }
+
+  void setResetState(bool newValue) {
+    resetState = newValue;
+    notifyListeners();
   }
 }
 

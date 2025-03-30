@@ -391,6 +391,68 @@ class FFIEngine {
           'IsXot');
   late final _IsXot =
       _IsXotPtr.asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
+
+  void SetBlackSquare(
+    ffi.Pointer<ffi.Void> ptr,
+    int square,
+  ) {
+    return _SetBlackSquare(
+      ptr,
+      square,
+    );
+  }
+
+  late final _SetBlackSquarePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('SetBlackSquare');
+  late final _SetBlackSquare = _SetBlackSquarePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, int)>();
+
+  void SetWhiteSquare(
+    ffi.Pointer<ffi.Void> ptr,
+    int square,
+  ) {
+    return _SetWhiteSquare(
+      ptr,
+      square,
+    );
+  }
+
+  late final _SetWhiteSquarePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('SetWhiteSquare');
+  late final _SetWhiteSquare = _SetWhiteSquarePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, int)>();
+
+  void SetEmptySquare(
+    ffi.Pointer<ffi.Void> ptr,
+    int square,
+  ) {
+    return _SetEmptySquare(
+      ptr,
+      square,
+    );
+  }
+
+  late final _SetEmptySquarePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('SetEmptySquare');
+  late final _SetEmptySquare = _SetEmptySquarePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, int)>();
+
+  void InvertTurn(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _InvertTurn(
+      ptr,
+    );
+  }
+
+  late final _InvertTurnPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'InvertTurn');
+  late final _InvertTurn =
+      _InvertTurnPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -519,6 +581,9 @@ final class Annotations extends ffi.Struct {
   @ffi.Int()
   external int depth;
 
+  @ffi.Int()
+  external int depth_no_pass;
+
   external ffi.Pointer<Annotations> father;
 
   external ffi.Pointer<Annotations> first_child;
@@ -605,6 +670,9 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Bool()
   external bool during_analysis;
+
+  @ffi.Bool()
+  external bool modified;
 }
 
 final class ThorParams extends ffi.Struct {

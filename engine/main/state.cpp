@@ -39,6 +39,7 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
 }  // anonymous namespace
 
 void EvaluationState::SetThor(const GamesList& games) {
+  assert(!IsModified());
   auto sequence = GetSequence();
 
   annotations_.num_thor_games = games.num_games;

@@ -21,7 +21,6 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../drive/drive_downloader.dart';
-import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 
@@ -40,6 +39,7 @@ enum MenuItem {
   xotAutomatic,
   xotAlways,
   xotNever,
+  setupBoard,
 }
 
 void handleMenuItem(BuildContext context, MenuItem item) async {
@@ -81,6 +81,7 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.senseiIsInactive:
       GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.none);
+      GlobalState.evaluate();
       return;
     case MenuItem.settings:
       GlobalState.stop();
@@ -88,6 +89,10 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
         context,
         MaterialPageRoute(builder: (context) => Settings()),
       );
+      return;
+    case MenuItem.setupBoard:
+      GlobalState.setupBoardState.setSettingUpBoard(true);
+      GlobalState.evaluate();
       return;
     case MenuItem.xotAlways:
       GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_ALWAYS);
@@ -175,6 +180,11 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
               onSelected: (MenuItem i) { handleMenuItem(context, i); },
               itemBuilder: (context) => [
                 PopupMenuItem<MenuItem>(
+                  padding: padding,
+                  value: MenuItem.newGame,
+                  child: Text('New game', style: textStyle),
+                ),
+                PopupMenuItem<MenuItem>(
                   padding: EdgeInsets.zero,
                   onTap: () {},
                   child: PopupMenuButton<MenuItem>(
@@ -184,24 +194,19 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                       width: double.infinity,
                       alignment: Alignment.centerLeft,
                       padding: padding,
-                      child: Text('New game', style: textStyle),
+                      child: Text('New XOT game', style: textStyle),
                     ),
                     onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
                     itemBuilder: (context) => [
                       PopupMenuItem<MenuItem>(
                         padding: padding,
-                        value: MenuItem.newGame,
-                        child: Text('Standard game', style: textStyle),
-                      ),
-                      PopupMenuItem<MenuItem>(
-                        padding: padding,
                         value: MenuItem.newGameXotSmall,
-                        child: Text('XOT small list', style: textStyle),
+                        child: Text('Small list', style: textStyle),
                       ),
                       PopupMenuItem<MenuItem>(
                         padding: padding,
                         value: MenuItem.newGameXotLarge,
-                        child: Text('XOT large list', style: textStyle),
+                        child: Text('Large list', style: textStyle),
                       )
                     ]
                   )
@@ -279,6 +284,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ]
                   )
                 ),
+                PopupMenuItem<MenuItem>(value: MenuItem.setupBoard, child: Text('Setup board', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestBook, child: Text('Download latest book', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),

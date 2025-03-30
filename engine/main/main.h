@@ -188,6 +188,16 @@ class Main {
     }
   }
 
+  void SetSquare(int square, int value) {
+    current_state_->SetSquare(square, value);
+    RunSetBoard();
+  }
+
+  void InvertTurn() {
+    current_state_->InvertTurn();
+    RunSetBoard();
+  }
+
  private:
   static constexpr int kNumEvaluators = 60;
 

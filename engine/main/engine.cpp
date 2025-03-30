@@ -192,6 +192,9 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
 }
 
 void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) {
+  if (state.IsModified()) {
+    return;
+  }
   auto filters = params.thor_filters;
   Sequence sequence = state.GetSequence();
   GamesList games;

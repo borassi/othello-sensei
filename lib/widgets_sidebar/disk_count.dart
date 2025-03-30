@@ -35,8 +35,6 @@ Widget getCase(BuildContext context, bool black) {
         Case(
           black ? CaseState.black : CaseState.white,
           255,
-          () => {},
-          () => {},
           false
         ),
         Text(
@@ -122,6 +120,7 @@ class FiltersButton extends HideInactiveWidget {
 enum DiskCountExtraContent {
   error,
   thor,
+  none,
 }
 
 class DiskCountWithExtraContent extends StatelessWidget {

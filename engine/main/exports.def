@@ -21,3 +21,8 @@ EXPORTS
     RandomXOT
     SetXOTState
     GetXOTState
+    IsXot
+    SetBlackSquare
+    SetWhiteSquare
+    SetEmptySquare
+    InvertTurn

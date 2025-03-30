@@ -17,29 +17,25 @@
 
 import 'package:flutter/material.dart';
 
-import '../widgets_spacers/app_sizes.dart';
-
 class SenseiButton extends StatelessWidget {
   final String text;
   final IconData? icon;
   final void Function() onPressed;
+  final TextStyle? textStyle;
 
   const SenseiButton(
-      {super.key, required this.text, required this.onPressed, this.icon});
+      {super.key, required this.text, required this.onPressed, this.textStyle, this.icon});
 
   @override
   Widget build(BuildContext context) {
     var textColor = Theme.of(context).colorScheme.onPrimaryContainer;
-    var textSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
+    var textStyle = Theme.of(context).textTheme.bodyMedium!.merge(this.textStyle);
     var iconSize = Theme.of(context).textTheme.bodyLarge!.fontSize!;
     Widget content;
     if (icon != null) {
       content = Icon(icon!, color: textColor, size: iconSize);
     } else {
-      content = Text(
-        text,
-        style: TextStyle(color: textColor, fontSize: textSize)
-      );
+      content = Text(text, style: textStyle);
     }
     return TextButton(
       onPressed: onPressed,

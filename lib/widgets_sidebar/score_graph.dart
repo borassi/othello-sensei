@@ -17,6 +17,8 @@
 
 
 
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +30,7 @@ class ScoreGraph extends HideInactiveWidget {
   const ScoreGraph({super.key});
 
   BarChartGroupData generateGroupData(int x, List<double> scores, ColorScheme colorScheme, double height, double width, double maxY, var moveToHighlight) {
-    var barWidth = width / 61;
+    var barWidth = width / max(61, scores.length);
     var score = x >= scores.length ? double.nan : scores[x];
     Color color = colorScheme.background;
     Color? borderColor;
@@ -95,7 +97,7 @@ class ScoreGraph extends HideInactiveWidget {
           var height = constraints.maxHeight;
 
           return BarChart(
-            swapAnimationDuration: const Duration(seconds: 0),
+            duration: const Duration(seconds: 0),
             BarChartData(
               barTouchData: BarTouchData(
                 handleBuiltInTouches: false,
@@ -133,7 +135,7 @@ class ScoreGraph extends HideInactiveWidget {
               baselineY: 0,
               borderData: FlBorderData(show: false),
               gridData: const FlGridData(show: false),
-              barGroups: List.generate(61, (i) => generateGroupData(i, scores, Theme.of(context).colorScheme, height, width, maxY + 1, move)),
+              barGroups: List.generate(max(61, scores.length), (i) => generateGroupData(i, scores, Theme.of(context).colorScheme, height, width, maxY + 1, move)),
               extraLinesData: ExtraLinesData(
                 extraLinesOnTop: false,
                 horizontalLines: List.generate(

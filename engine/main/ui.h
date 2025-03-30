@@ -102,6 +102,18 @@ enum XOTState GetXOTState(void* ptr);
 EXPORT
 bool IsXot(void* ptr);
 
+EXPORT
+void SetBlackSquare(void* ptr, int square);
+
+EXPORT
+void SetWhiteSquare(void* ptr, int square);
+
+EXPORT
+void SetEmptySquare(void* ptr, int square);
+
+EXPORT
+void InvertTurn(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

@@ -24,7 +24,6 @@ import 'package:othello_sensei/utils.dart';
 import 'package:othello_sensei/widgets_utils/hide_inactive.dart';
 
 import '../widgets_spacers/app_sizes.dart';
-import '../main.dart';
 
 enum CaseState {
   black,
@@ -117,7 +116,7 @@ class Annotations extends HideInactiveWidget {
     }
     var descendants = annotation.descendants + annotation.descendants_book;
     line3 += descendants < 100 ? descendants.toString() : prettyPrintDouble(descendants.toDouble());
-    var archive = MainApp.tabName[GlobalState.preferences.get('Active tab')] == 'Archive' && annotation.father.ref.num_thor_games > 0;
+    var archive = GlobalState.preferences.get('Active tab') == 1 && annotation.father.ref.num_thor_games > 0;
     var showExtra = archive || GlobalState.preferences.get('Show extra data in evaluate mode');
     var roundEvaluation = GlobalState.preferences.get('Round evaluations') != 'Never';
 
@@ -202,11 +201,9 @@ bool highlightCase(int index) {
 
 class Case extends StatelessWidget {
   final CaseState state;
-  final Function playMove;
-  final Function undo;
   final bool isLastMove;
   final int index;
-  const Case(this.state, this.index, this.playMove, this.undo, this.isLastMove, {super.key});
+  const Case(this.state, this.index, this.isLastMove, {super.key});
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
     Color fill;
@@ -231,10 +228,44 @@ class Case extends StatelessWidget {
     );
   }
 
+  void onTapDown() {
+    if (GlobalState.setupBoardState.settingUpBoard) {
+      switch(GlobalState.setupBoardState.onClick) {
+        case CaseState.black:
+          GlobalState.ffiEngine.SetBlackSquare(GlobalState.ffiMain, index);
+          return;
+        case CaseState.white:
+          GlobalState.ffiEngine.SetWhiteSquare(GlobalState.ffiMain, index);
+          return;
+        case CaseState.empty:
+          GlobalState.ffiEngine.SetEmptySquare(GlobalState.ffiMain, index);
+          return;
+      }
+    }
+    GlobalState.playMove(index);
+  }
+
+  void onSecondaryTapDown() {
+    if (GlobalState.setupBoardState.settingUpBoard) {
+      switch(GlobalState.setupBoardState.onClick) {
+        case CaseState.black:
+          GlobalState.ffiEngine.SetWhiteSquare(GlobalState.ffiMain, index);
+          return;
+        case CaseState.white:
+          GlobalState.ffiEngine.SetBlackSquare(GlobalState.ffiMain, index);
+          return;
+        case CaseState.empty:
+          GlobalState.ffiEngine.SetEmptySquare(GlobalState.ffiMain, index);
+          return;
+      }
+    }
+    GlobalState.undo();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge(index == 255 ? [] : [GlobalState.annotations[index], GlobalState.actionWhenPlay]),
+      listenable: index == 255 ? Listenable.merge([]) : GlobalState.annotations[index],
       builder: (BuildContext context, Widget? child) {
         var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         var colorScheme = Theme.of(context).colorScheme;
@@ -296,14 +327,14 @@ class Case extends StatelessWidget {
         if (index != 255) {
           children.add(
               ListenableBuilder(
-                listenable: Listenable.merge([GlobalState.annotations[index], GlobalState.actionWhenPlay]),
+                listenable: GlobalState.annotations[index],
                 builder: (BuildContext context, Widget? child) => Annotations(index),
               )
           );
           children.add(
             GestureDetector(
-              onTapDown: (TapDownDetails details) => playMove(),
-              onSecondaryTapDown: (TapDownDetails details) => undo(),
+              onTapDown: (TapDownDetails details) => onTapDown(),
+              onSecondaryTapDown: (TapDownDetails details) => onSecondaryTapDown(),
             )
           );
         }

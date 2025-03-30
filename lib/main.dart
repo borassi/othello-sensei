@@ -21,13 +21,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/intents.dart';
-import 'package:othello_sensei/widgets_sidebar/controls.dart';
+import 'package:othello_sensei/widgets_sidebar/setup_board.dart';
+import 'package:othello_sensei/widgets_sidebar/sidebar.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
-import 'package:othello_sensei/widgets_sidebar/disk_count.dart';
-import 'package:othello_sensei/widgets_sidebar/evaluate_stats.dart';
-import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
-import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'package:window_manager/window_manager.dart';
@@ -209,24 +206,10 @@ class MainContent extends StatelessWidget {
 }
 
 class MainApp extends StatelessWidget {
-  static const tabName = ['Evaluate', 'Archive'];
-
   const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> childrenEvaluate = [
-      const DiskCountWithExtraContent(DiskCountExtraContent.error),
-      const Margin.internal(),
-      const Expanded(child: ScoreGraph()),
-      const Margin.internal(),
-      const EvaluateStats(),
-    ];
-    List<Widget> childrenThor = [
-      const DiskCountWithExtraContent(DiskCountExtraContent.thor),
-      const Margin.internal(),
-      const Expanded(child: ThorGamesVisualizer()),
-    ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (GlobalState.preferences.get(
           'Show unsupported CPU at startup') &&
@@ -261,56 +244,16 @@ class MainApp extends StatelessWidget {
                   child: AppTheme(
                       child: MainContent(
                         const Board(),
-                        DefaultTabController(
-                          length: 2,
-                          initialIndex: 0,
-                          child: ListenableBuilder(
-                              listenable: GlobalState.preferences,
-                              builder: (BuildContext context, Widget? widget) {
-                                DefaultTabController.of(context).animateTo(
-                                    GlobalState.preferences.get('Active tab'),
-                                    duration: const Duration(seconds: 0));
-                                var childrenControls = <Widget>[];
-                                if (GlobalState.preferences.get('Controls position') == 'Side bar') {
-                                  childrenControls = [
-                                    const Margin.internal(),
-                                    const Controls(),
-                                  ];
-                                }
-                                var evaluateContent = Column(
-                                    children: childrenEvaluate + childrenControls
-                                );
-
-                                var thorContent = Column(
-                                  children: childrenThor + childrenControls,
-                                );
-                                return Scaffold(
-                                  bottomNavigationBar: TabBar(
-                                    tabs: List.generate(2, (index) => Tab(
-                                        height: Theme.of(context).extension<AppSizes>()!.squareSize,
-                                        child: Text(
-                                            tabName[index],
-                                            style: TextStyle(
-                                              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                                            )
-                                        )
-                                    )),
-                                    dividerHeight: 0,
-                                    onTap: (int index) {
-                                      GlobalState.preferences.set('Active tab', index);
-                                      GlobalState.evaluate();
-                                    },
-                                  ),
-                                  body: TabBarView(
-                                    children: [
-                                      evaluateContent,
-                                      thorContent,
-                                    ],
-                                  ),
-                                );
-                              }
-                          ),
-                        ),
+                        ListenableBuilder(
+                          listenable: GlobalState.setupBoardState,
+                          builder: (BuildContext context, Widget? widget) {
+                            if (GlobalState.setupBoardState.settingUpBoard) {
+                              return const SetupBoardControls();
+                            } else {
+                              return const Sidebar();
+                            }
+                          }
+                        )
                       )
                   )
               )

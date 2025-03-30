@@ -1,13 +1,14 @@
+Before next launch
+- P0 MED Debug wrong evaluations on Marc's phone.
+- P1 SMALL Should we show lost disks instead of error?
+- P1 SMALL Undo / redo in the side bar by default?
+
 Mac
 - P3 SMALL Fix picture on Mac launch.
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
-- P0 MED Debug wrong evaluations on Marc's phone.
-- P0 SMALL Avoid crashes on iPhone
 - P1 SMALL Avoid tooltip on the menu
-- P1 SMALL Should we show lost disks instead of error?
-- P1 SMALL Undo / redo in the side bar by default?
 - P2 MED Create smaller books.
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
@@ -18,7 +19,6 @@ Tech debt
 - P3 EASY Fix Flutter warnings.
 
 Thor
-- P2 SMALL Add tournament.
 - P2 MED Exclude games between programs.
 - P2 MED Winning percentages.
 - P3 SMALL Filter by tournament / year.
@@ -29,14 +29,11 @@ Match the features of the current app
 - P3 LARGE Study and repeat openings.
 
 Extra features:
-- P1 LARGE How easy / hard a position is.
-- P1 LARGE Expand all "interesting" lines in opening book.
-- P1 LARGE Remember opening book for player.
-- P1 EASY Save games.
+- P1 HARD Save games.
+- P2 LARGE How easy / hard a position is.
+- P2 LARGE Expand all "interesting" lines in opening book.
+- P2 LARGE Remember opening book for player.
 - P2 MED Share opening book in Google Drive.
-- P2 MED Lookup URL in Othello Quest.
-- P3 MED Customize which evaluations are shown in the square (missing positions? CI?).
-- P3 MED Manually set the board.
 - P3 LARGE Expand book on Google Cloud.
 - P4 LARGE Choose which widgets to show.
 - P4 EASY Show stats from various moves.

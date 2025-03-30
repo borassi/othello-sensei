@@ -88,6 +88,7 @@ struct Annotations {
   Square move;
   bool black_turn;
   int depth;
+  int depth_no_pass;
   struct Annotations* father;
   struct Annotations* first_child;
   struct Annotations* next_sibling;
@@ -120,6 +121,7 @@ struct Annotations {
   unsigned int num_example_thor_games;
   double thor_winning_percentage;
   bool during_analysis;
+  bool modified;
 };
 
 struct ThorParams {

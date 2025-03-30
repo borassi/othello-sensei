@@ -36,6 +36,11 @@ class EvaluationState : public TreeNode {
  public:
   EvaluationState(Square move, const Board& board, bool black_turn, int depth) :
       TreeNode() {
+    annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
+    Reset(move, board, black_turn, depth, 0, false);
+    assert(weak_lower_ == -63 && weak_upper_ == 63);
+  }
+  void Reset(Square move, const Board& board, bool black_turn, int depth, int depth_no_pass, bool modified) {
     TreeNode::Reset(board, depth, 0);
     lower_ = -64;
     upper_ = 64;
@@ -44,17 +49,17 @@ class EvaluationState : public TreeNode {
     EnlargeEvaluations();
     annotations_.move = move;
     annotations_.depth = depth_;
+    annotations_.depth_no_pass = 0;
     annotations_.black_turn = black_turn;
-    annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
     annotations_.num_example_thor_games = 0;
     annotations_.num_thor_games = 0;
     annotations_.first_child = nullptr;
     annotations_.next_sibling = nullptr;
     annotations_.during_analysis = false;
+    annotations_.modified = modified;
     SetNextStatePlayed(nullptr);
     SetNextStateInAnalysis(nullptr);
     InvalidateThis();
-    assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
   ~EvaluationState() { free(annotations_.example_thor_games); }
   EvaluationState(const EvaluationState&) = delete;
@@ -251,10 +256,8 @@ class EvaluationState : public TreeNode {
 
   EvaluationState* ToDepth(int new_depth) {
     EvaluationState* result = this;
-    assert(new_depth >= 60 - result->n_empties_);
-    // We cannot use Depth() because of passes.
     for (;
-         result != nullptr && new_depth > 60 - result->n_empties_;
+         result != nullptr && result->annotations_.depth_no_pass != new_depth;
          result = result->NextState()) {}
     return result;
   }
@@ -267,6 +270,24 @@ class EvaluationState : public TreeNode {
       }
     }
     return Sequence(moves.begin(), moves.end());
+  }
+
+  bool IsModified() const {
+    for (const EvaluationState* state = this; state != nullptr; state = state->Father()) {
+      if (state->annotations_.modified) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool AreChildrenModified() const {
+    for (const auto& child : children_) {
+      if (child->annotations_.modified) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Sequence GetSequence() const {
@@ -313,14 +334,11 @@ class EvaluationState : public TreeNode {
     UpdateSavedAnnotations();
   }
 
-  void InvalidateRecursive() {
-    if (!IsValid()) {
-      return;
-    }
-    InvalidateThis();
-    for (auto& child : children_) {
-      child->InvalidateRecursive();
-    }
+  void DeleteChildren() {
+    children_.clear();
+    TreeNode::Reset(player_, opponent_, depth_, 0);
+    SetNextStatePlayed(nullptr);
+    SetNextStateInAnalysis(nullptr);
   }
 
   void EnsureValid() {
@@ -336,7 +354,7 @@ class EvaluationState : public TreeNode {
 
   void UpdateFather() override {
     // Handle the case where we have invalid nodes intertwined with valid nodes.
-    if (!HasValidChildren()) {
+    if (!HasValidChildren() || AreChildrenModified()) {
       return;
     }
     EnsureValid();
@@ -397,16 +415,61 @@ class EvaluationState : public TreeNode {
     assert(annotations_.median_eval_best_line % 2 == 0);
   }
 
+  void SetSquare(int square, int value) {
+    BitPattern square_pattern = 1ULL << square;
+    BitPattern player = player_;
+    BitPattern opponent = opponent_;
+    bool black_turn = annotations_.black_turn;
+    bool added_disk = value != 0;
+    bool removed_disk = ((player | opponent) & square_pattern) != 0;
+    bool change_turn = (added_disk != removed_disk);
+
+    if (!annotations_.black_turn) {
+      value = -value;
+    }
+    if (value == -1) {
+      player |= square_pattern;
+      opponent &= ~square_pattern;
+    } else if (value == 1) {
+      opponent |= square_pattern;
+      player &= ~square_pattern;
+    } else {
+      player &= ~square_pattern;
+      opponent &= ~square_pattern;
+    }
+    if (change_turn) {
+      black_turn = !black_turn;
+      std::swap(player, opponent);
+    }
+    SetBoard(player, opponent, black_turn);
+  }
+
+  void InvertTurn() {
+    SetBoard(opponent_, player_, !annotations_.black_turn);
+  }
+
  private:
   Annotations annotations_;
   std::vector<std::shared_ptr<EvaluationState>> children_;
   EvaluationState* next_state_in_analysis_;
   EvaluationState* next_state_played_;
 
+  void SetBoard(BitPattern player, BitPattern opponent, bool black_turn) {
+    TreeNode* father = n_fathers_ > 0 ? fathers_[0] : nullptr;
+    DeleteChildren();
+    Reset(annotations_.move, Board(player, opponent), black_turn, depth_, annotations_.depth_no_pass, true);
+    if (father != nullptr) {
+      AddFather(father);
+    }
+    SetNextStates();
+  }
+
   void AddFather(TreeNode* father) override {
     TreeNode::AddFather(father);
     assert(n_fathers_ == 1);
     annotations_.father = &static_cast<EvaluationState*>(fathers_[0])->annotations_;
+    annotations_.depth_no_pass = annotations_.father->depth_no_pass +
+        (annotations_.move == kPassMove ? 0 : 1);
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
 

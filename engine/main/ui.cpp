@@ -83,3 +83,8 @@ void SetXOTState(void* ptr, XOTState xot_state) { static_cast<Main*>(ptr)->SetXO
 XOTState GetXOTState(void* ptr) { return static_cast<Main*>(ptr)->GetXOTState(); }
 
 bool IsXot(void* ptr) { return static_cast<Main*>(ptr)->IsXot(); }
+
+void SetBlackSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, -1); }
+void SetWhiteSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 1); }
+void SetEmptySquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 0); }
+void InvertTurn(void* ptr) { static_cast<Main*>(ptr)->InvertTurn(); }
