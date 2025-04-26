@@ -87,6 +87,7 @@ Engine::Engine(
     tree_node_supplier_(),
     last_state_(nullptr),
     last_first_state_(nullptr),
+    last_sensei_action_(SENSEI_EVALUATES),
     current_thread_(0),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
@@ -128,6 +129,22 @@ void Engine::Initialize(
 // This runs in the main thread, so that we cannot update the output afterwards.
 void Engine::Stop() {
   ++current_thread_;
+}
+
+void Engine::Start(EvaluationState* current_state,
+           std::shared_ptr<EvaluationState>& first_state,
+           const EvaluateParams& params, bool in_analysis, SenseiAction action) {
+  if (action != last_sensei_action_) {
+    last_sensei_action_ = action;
+    first_state->UpdateMoveToPlayRecursive(action, params.error_play);
+  }
+  if (!current_state->MustEvaluate(action)) {
+    update_annotations_(current_thread_ - 1, true);
+    return;
+  }
+  current_future_ = std::make_shared<std::future<void>>(std::async(
+      std::launch::async, &Engine::Run, this, ++current_thread_,
+      current_future_, current_state, first_state, params, in_analysis, action));
 }
 
 namespace {
@@ -237,14 +254,14 @@ void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) 
 void Engine::Run(
     int current_thread, std::shared_ptr<std::future<void>> last_future,
     EvaluationState* current_state, std::shared_ptr<EvaluationState> first_state,
-    EvaluateParams params, bool in_analysis) {
+    EvaluateParams params, bool in_analysis, SenseiAction action) {
   time_ = ElapsedTime();
   last_future->get();
   assert(current_state);
   if (in_analysis && current_thread == current_thread_) {
     update_annotations_(current_thread, true);
   }
-  AnalyzePosition(current_thread, current_state, first_state, params, in_analysis);
+  AnalyzePosition(current_thread, current_state, first_state, params, in_analysis, action);
 
   current_state->UpdateFathers();
   bool finished = true;
@@ -253,14 +270,33 @@ void Engine::Run(
   }
   current_state->SetDuringAnalysis(in_analysis);
   if (current_thread == current_thread_) {
-    update_annotations_(current_thread, finished && !in_analysis);
+    update_annotations_(current_thread, (finished && !in_analysis) || current_state->GetAnnotations()->move_to_play != kNoMove);
   }
 }
+
+namespace {
+double MaxTime(SenseiAction action, bool first_eval, bool in_analysis, const EvaluateParams& params) {
+  if (in_analysis) {
+    return params.max_time_analysis;
+  }
+  switch(action) {
+    case SENSEI_INACTIVE:
+      assert(false);
+      return 0;
+    case SENSEI_EVALUATES:
+      return first_eval ? params.max_time_first_eval : params.max_time_next_evals;
+    case SENSEI_PLAYS_BLACK:
+    case SENSEI_PLAYS_WHITE:
+    case SENSEI_PLAYS_BOTH:
+      return params.max_time_play;
+  }
+}
+}  // namespace
 
 void Engine::AnalyzePosition(
     int current_thread, EvaluationState* current_state,
     const std::shared_ptr<EvaluationState>& first_state,
-    const EvaluateParams& params, bool in_analysis) {
+    const EvaluateParams& params, bool in_analysis, SenseiAction action) {
   bool first_eval = false;
   if (last_state_ != current_state || last_first_state_ != first_state || !current_state->HasValidChildren()) {
     first_eval = true;
@@ -282,14 +318,7 @@ void Engine::AnalyzePosition(
     }
   }
   // We finish if we cannot get another board to work on.
-  double max_time;
-  if (in_analysis) {
-    max_time = params.max_time_analysis;
-  } else if (first_eval) {
-    max_time = params.max_time_first_eval;
-  } else {
-    max_time = params.max_time_next_evals;
-  }
+  double max_time = MaxTime(action, first_eval, in_analysis, params);
   for (int i = 0; i < num_boards_to_evaluate_; ++i) {
     BoardToEvaluate& board_to_evaluate = *boards_to_evaluate_[i];
     board_to_evaluate.EvaluateFirst(params);
@@ -303,4 +332,5 @@ void Engine::AnalyzePosition(
     board_to_evaluate->Evaluate(params);
   }
   current_state->UpdateFather();
+  current_state->UpdateMoveToPlay(action, params.error_play);
 }

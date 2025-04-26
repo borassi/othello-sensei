@@ -61,6 +61,15 @@ class Thor {
     return result;
   }
 
+  virtual std::vector<Game> GetAllGames() const {
+    std::vector<Game> result;
+    for (const auto& [_, source] : sources_) {
+      std::vector<Game> games = source->AllGames();
+      result.insert(result.end(), games.begin(), games.end());
+    }
+    return result;
+  }
+
   template<bool transpositions = true>
   GamesList GetGamesFromAllSources(
       const Sequence& sequence,

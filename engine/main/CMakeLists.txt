@@ -56,6 +56,7 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bindings
         board
+        move_selector
         sequence
         thor
         tree_node

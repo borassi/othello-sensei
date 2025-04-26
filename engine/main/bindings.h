@@ -33,6 +33,7 @@ extern "C" {
 const Square kPassMove = 64;
 const Square kStartingPositionMove = 65;
 const Square kSetupBoardMove = 66;
+const Square kNoMove = 255;
 
 struct ThorSourceMetadata {
   const char* name;
@@ -84,9 +85,18 @@ enum AnnotationsProvenance {
   GAME_OVER,
 };
 
+enum SenseiAction {
+  SENSEI_INACTIVE,
+  SENSEI_EVALUATES,
+  SENSEI_PLAYS_BLACK,
+  SENSEI_PLAYS_WHITE,
+  SENSEI_PLAYS_BOTH,
+};
+
 struct Annotations {
   // Filled when defining the annotation.
   Square move;
+  Square move_to_play;
   bool black_turn;
   int depth;
   int depth_no_pass;
@@ -138,6 +148,8 @@ struct EvaluateParams {
   double max_time_first_eval;
   double max_time_next_evals;
   double max_time_analysis;
+  double max_time_play;
+  double error_play;
   int n_threads;
   double delta;
   bool approx;

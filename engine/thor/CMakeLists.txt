@@ -120,6 +120,23 @@ target_link_libraries(
 ENDIF()
 
 add_executable(
+        thor_analyze_errors_main
+        thor_analyze_errors_main.cpp
+)
+
+target_link_libraries(
+        thor_analyze_errors_main
+        LINK_PUBLIC
+        book
+        evaluator_derivative
+        hash_map
+        parse_flags
+        pattern_evaluator
+        thor
+        xot
+)
+
+add_executable(
         thor_create_extra_files
         thor_create_extra_files.cpp
 )

@@ -33,6 +33,9 @@ enum MenuItem {
   analyze,
   senseiEvaluates,
   senseiIsInactive,
+  senseiPlaysBlack,
+  senseiPlaysWhite,
+  senseiPlaysBoth,
   downloadLatestBook,
   downloadLatestArchive,
   settings,
@@ -76,11 +79,23 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       downloadArchive(context);
       return;
     case MenuItem.senseiEvaluates:
-      GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
+      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_EVALUATES);
       GlobalState.evaluate();
       return;
     case MenuItem.senseiIsInactive:
-      GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.none);
+      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_INACTIVE);
+      GlobalState.evaluate();
+      return;
+    case MenuItem.senseiPlaysBlack:
+      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_PLAYS_BLACK);
+      GlobalState.evaluate();
+      return;
+    case MenuItem.senseiPlaysWhite:
+      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_PLAYS_WHITE);
+      GlobalState.evaluate();
+      return;
+    case MenuItem.senseiPlaysBoth:
+      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_PLAYS_BOTH);
       GlobalState.evaluate();
       return;
     case MenuItem.settings:
@@ -240,13 +255,28 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                     itemBuilder: (context) => [
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.senseiEvaluates,
-                        checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval,
+                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_EVALUATES,
                         child: Text('Sensei evaluates', style: textStyle),
                       ),
                       CheckedPopupMenuItem<MenuItem>(
                         value: MenuItem.senseiIsInactive,
-                        checked: GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.none,
+                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_INACTIVE,
                         child: Text('Sensei is inactive', style: textStyle),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiPlaysBlack,
+                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_BLACK,
+                        child: Text('Sensei plays Black', style: textStyle),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiPlaysWhite,
+                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_WHITE,
+                        child: Text('Sensei plays White', style: textStyle),
+                      ),
+                      CheckedPopupMenuItem<MenuItem>(
+                        value: MenuItem.senseiPlaysBoth,
+                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_BOTH,
+                        child: Text('Sensei plays both', style: textStyle),
                       )
                     ]
                   )

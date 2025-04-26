@@ -173,11 +173,7 @@ class Engine {
 
   void Start(EvaluationState* current_state,
              std::shared_ptr<EvaluationState>& first_state,
-             const EvaluateParams& params, bool in_analysis) {
-    current_future_ = std::make_shared<std::future<void>>(std::async(
-        std::launch::async, &Engine::Run, this, ++current_thread_,
-        current_future_, current_state, first_state, params, in_analysis));
-  }
+             const EvaluateParams& params, bool in_analysis, SenseiAction action);
 
   void StopBlocking() {
     Stop();
@@ -225,6 +221,7 @@ class Engine {
 
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;
+  SenseiAction last_sensei_action_;
 
   void EvaluateThor(const EvaluateParams& params, EvaluationState& state);
 
@@ -254,12 +251,12 @@ class Engine {
   void Run(
       int current_thread, std::shared_ptr<std::future<void>> last_future,
       EvaluationState* current_state, std::shared_ptr<EvaluationState> first_state,
-      EvaluateParams params, bool in_analysis);
+      EvaluateParams params, bool in_analysis, SenseiAction action);
 
   void AnalyzePosition(
       int current_thread, EvaluationState* current_state,
       const std::shared_ptr<EvaluationState>& first_state, const EvaluateParams& params,
-      bool in_analysis);
+      bool in_analysis, SenseiAction action);
 };
 
 #endif // OTHELLO_SENSEI_ENGINE_H

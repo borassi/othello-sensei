@@ -34,6 +34,10 @@ class FFIEngine {
 
   DartSquare get kSetupBoardMove => _kSetupBoardMove.value;
 
+  late final ffi.Pointer<Square> _kNoMove = _lookup<Square>('kNoMove');
+
+  DartSquare get kNoMove => _kNoMove.value;
+
   int PassMove() {
     return _PassMove();
   }
@@ -41,6 +45,14 @@ class FFIEngine {
   late final _PassMovePtr =
       _lookup<ffi.NativeFunction<Square Function()>>('PassMove');
   late final _PassMove = _PassMovePtr.asFunction<int Function()>();
+
+  int NoMove() {
+    return _NoMove();
+  }
+
+  late final _NoMovePtr =
+      _lookup<ffi.NativeFunction<Square Function()>>('NoMove');
+  late final _NoMove = _NoMovePtr.asFunction<int Function()>();
 
   int SetupBoardMove() {
     return _SetupBoardMove();
@@ -466,6 +478,37 @@ class FFIEngine {
           'InvertTurn');
   late final _InvertTurn =
       _InvertTurnPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void SetSenseiAction(
+    ffi.Pointer<ffi.Void> ptr,
+    SenseiAction action,
+  ) {
+    return _SetSenseiAction(
+      ptr,
+      action.value,
+    );
+  }
+
+  late final _SetSenseiActionPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Pointer<ffi.Void>, ffi.UnsignedInt)>>('SetSenseiAction');
+  late final _SetSenseiAction = _SetSenseiActionPtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, int)>();
+
+  SenseiAction GetSenseiAction(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return SenseiAction.fromValue(_GetSenseiAction(
+      ptr,
+    ));
+  }
+
+  late final _GetSenseiActionPtr = _lookup<
+          ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ffi.Void>)>>(
+      'GetSenseiAction');
+  late final _GetSenseiAction =
+      _GetSenseiActionPtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -579,6 +622,26 @@ enum AnnotationsProvenance {
       };
 }
 
+enum SenseiAction {
+  SENSEI_INACTIVE(0),
+  SENSEI_EVALUATES(1),
+  SENSEI_PLAYS_BLACK(2),
+  SENSEI_PLAYS_WHITE(3),
+  SENSEI_PLAYS_BOTH(4);
+
+  final int value;
+  const SenseiAction(this.value);
+
+  static SenseiAction fromValue(int value) => switch (value) {
+        0 => SENSEI_INACTIVE,
+        1 => SENSEI_EVALUATES,
+        2 => SENSEI_PLAYS_BLACK,
+        3 => SENSEI_PLAYS_WHITE,
+        4 => SENSEI_PLAYS_BOTH,
+        _ => throw ArgumentError("Unknown value for SenseiAction: $value"),
+      };
+}
+
 typedef Eval = ffi.Int8;
 typedef DartEval = int;
 typedef NVisited = ffi.Uint64;
@@ -587,6 +650,9 @@ typedef DartNVisited = int;
 final class Annotations extends ffi.Struct {
   @Square()
   external int move;
+
+  @Square()
+  external int move_to_play;
 
   @ffi.Bool()
   external bool black_turn;
@@ -717,6 +783,12 @@ final class EvaluateParams extends ffi.Struct {
 
   @ffi.Double()
   external double max_time_analysis;
+
+  @ffi.Double()
+  external double max_time_play;
+
+  @ffi.Double()
+  external double error_play;
 
   @ffi.Int()
   external int n_threads;

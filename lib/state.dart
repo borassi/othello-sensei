@@ -35,13 +35,6 @@ import 'ffi/ffi_engine.dart';
 import 'files.dart';
 import 'main.dart';
 
-enum ActionWhenPlay {
-  // playBlack,
-  // playWhite,
-  eval,
-  none,
-}
-
 void setBoard(BoardUpdate boardUpdate) {
   for (int i = 0; i < 64; ++i) {
     GlobalState.annotations[i].clear();
@@ -59,11 +52,15 @@ void updateAnnotations(int currentThread, bool finished) {
   if (annotations == nullptr || startAnnotations == nullptr ||
       !annotations.ref.valid) {
     GlobalState.resetAnnotations();
-  } else {
-    GlobalState.globalAnnotations.setState(annotations, startAnnotations);
-    for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
-      GlobalState.annotations[child.ref.move].setState(child.ref);
-    }
+    return;
+  }
+  if (annotations.ref.move_to_play != GlobalState.ffiEngine.NoMove()) {
+    GlobalState.playMove(annotations.ref.move_to_play);
+    assert(finished);
+  }
+  GlobalState.globalAnnotations.setState(annotations, startAnnotations);
+  for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
+    GlobalState.annotations[child.ref.move].setState(child.ref);
   }
   if (!finished) {
     GlobalState.evaluate();
@@ -106,7 +103,7 @@ void resetAnalyzedGame() {
 void analyze() {
   GlobalState.preferences.fillEvaluateParams();
   GlobalState.preferences.set('Active tab', 0);
-  GlobalState.actionWhenPlay.setActionWhenPlay(ActionWhenPlay.eval);
+  GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_EVALUATES);
   GlobalState.ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
@@ -198,7 +195,6 @@ class GlobalState {
       } else {
         undo();
       }
-      return;
     }
     evaluate();
   }
@@ -249,11 +245,6 @@ class GlobalState {
   }
 
   static void evaluate() {
-    if (GlobalState.actionWhenPlay.actionWhenPlay != ActionWhenPlay.eval
-        || GlobalState.setupBoardState.settingUpBoard) {
-      GlobalState.resetAnnotations();
-      return;
-    }
     GlobalState.preferences.fillEvaluateParams();
     GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
@@ -320,18 +311,12 @@ class BoardState with ChangeNotifier {
 }
 
 class ActionWhenPlayState with ChangeNotifier {
-  ActionWhenPlay actionWhenPlay;
-
-  ActionWhenPlayState() : actionWhenPlay = ActionWhenPlay.eval;
-
-  void setActionWhenPlay(ActionWhenPlay actionWhenPlay) {
-    this.actionWhenPlay = actionWhenPlay;
+  void setActionWhenPlay(SenseiAction action) {
+    GlobalState.ffiEngine.SetSenseiAction(GlobalState.ffiMain, action);
     notifyListeners();
   }
-
-  void rotateActions() {
-    actionWhenPlay = ActionWhenPlay.values[(actionWhenPlay.index + 1) % ActionWhenPlay.values.length];
-    notifyListeners();
+  SenseiAction getActionWhenPlay() {
+    return GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain);
   }
 }
 
@@ -368,10 +353,10 @@ class PreferencesState with ChangeNotifier {
     'Evaluate if watching an analyzed game': false,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
-    'Positions when evaluating': 100000000000,
-    // 'Positions when playing': 50000000,
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
+    'Seconds/position when playing': 1.0,
+    'Approximate game error when playing': 20.0,
     'Spend half time on positions worse by': 6.0,
     'Round evaluations': 'Never',
     'Use book': true,
@@ -430,10 +415,12 @@ class PreferencesState with ChangeNotifier {
     var params = GlobalState.ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
     params.lower = get('Lower');
     params.upper = get('Upper');
-    params.max_positions = get('Positions when evaluating');
+    params.max_positions = 100000000000;
     params.max_time_first_eval = get('Seconds until first evaluation');
     params.max_time_next_evals = get('Seconds between evaluations');
     params.max_time_analysis = get('Seconds/position in game analysis');
+    params.max_time_play = get('Seconds/position when playing');
+    params.error_play = get('Approximate game error when playing');
     params.delta = get('Spend half time on positions worse by');
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');

@@ -76,8 +76,8 @@ class Main {
     } else {
       non_xot_state = current_state_->LastChoice();
     }
-    if (IsXot() && non_xot_state->NEmpties() > 52 && current_state_->NEmpties() < 52) {
-      return ToState(first_state_->ToDepth(8));
+    if (IsXot() && non_xot_state->NEmpties() > 52) {
+      return ToState(first_state_->ToDepth(8)->ThisOrNextLandable());
     }
     return ToState(non_xot_state);
   }
@@ -126,7 +126,7 @@ class Main {
     last_params_ = evaluate_params_;
     first_state_->SetAnalyzed();
     analyzing_ = 1;
-    engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
+    engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_, sensei_action_);
   }
 
   void ResetAnalyzedGame() {
@@ -194,6 +194,9 @@ class Main {
     ToStateNoStop(current_state_->InvertTurn());
   }
 
+  void SetSenseiAction(SenseiAction action) { sensei_action_ = action; }
+  SenseiAction GetSenseiAction() { return sensei_action_; }
+
  private:
   static constexpr int kNumEvaluators = 60;
 
@@ -214,6 +217,8 @@ class Main {
 
   EvaluateParams evaluate_params_;
   EvaluateParams last_params_;
+
+  SenseiAction sensei_action_;
 
   bool ToState(EvaluationState* new_state);
 

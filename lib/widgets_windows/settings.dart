@@ -238,10 +238,11 @@ class Settings extends StatelessWidget {
     'Seconds until first evaluation',
     'Seconds between evaluations',
     'Seconds/position in game analysis',
+    'Seconds/position when playing',
+    'Approximate game error when playing',
     'Spend half time on positions worse by',
     'Use book',
     'Number of threads',
-    'Positions when evaluating',
   ];
 
   static const _unshownPreferences = [

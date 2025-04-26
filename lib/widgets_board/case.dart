@@ -76,13 +76,13 @@ class AnnotationRow extends StatelessWidget {
   }
 }
 
-class Annotations extends HideInactiveWidget {
+class Annotations extends StatelessWidget {
   final int index;
   const Annotations(this.index, {super.key});
 
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     var colorScheme = Theme.of(context).colorScheme;
     var annotations = GlobalState.annotations[index];
     if (annotations.annotations == null) {

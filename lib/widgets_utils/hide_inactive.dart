@@ -17,6 +17,7 @@
 
 
 import 'package:flutter/cupertino.dart';
+import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 
 abstract class HideInactiveWidget extends StatelessWidget {
@@ -29,7 +30,8 @@ abstract class HideInactiveWidget extends StatelessWidget {
     return ListenableBuilder(
       listenable: GlobalState.actionWhenPlay,
       builder: (BuildContext context, Widget? child) {
-        if (GlobalState.actionWhenPlay.actionWhenPlay == ActionWhenPlay.eval) {
+        if (GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_EVALUATES
+        || GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_BOTH) {
           return buildChild(context);
         }
         return Container();

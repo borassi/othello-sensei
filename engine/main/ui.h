@@ -30,6 +30,9 @@ EXPORT
 Square PassMove();
 
 EXPORT
+Square NoMove();
+
+EXPORT
 Square SetupBoardMove();
 
 EXPORT
@@ -116,6 +119,12 @@ void SetEmptySquare(void* ptr, int square);
 
 EXPORT
 void InvertTurn(void* ptr);
+
+EXPORT
+void SetSenseiAction(void* ptr, enum SenseiAction action);
+
+EXPORT
+enum SenseiAction GetSenseiAction(void* ptr);
 
 #ifdef __cplusplus
 }

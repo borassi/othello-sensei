@@ -17,6 +17,7 @@
 #include "ui.h"
 #include "main.h"
 
+Square NoMove() { return kNoMove; }
 Square PassMove() { return kPassMove; }
 Square SetupBoardMove() { return kSetupBoardMove; }
 
@@ -89,3 +90,8 @@ void SetBlackSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(
 void SetWhiteSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 1); }
 void SetEmptySquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 0); }
 void InvertTurn(void* ptr) { static_cast<Main*>(ptr)->InvertTurn(); }
+
+void SetSenseiAction(void* ptr, SenseiAction action) {
+  static_cast<Main*>(ptr)->SetSenseiAction(action);
+}
+SenseiAction GetSenseiAction(void* ptr) { return static_cast<Main*>(ptr)->GetSenseiAction(); }

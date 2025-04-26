@@ -33,7 +33,8 @@ Main::Main(
     engine_(evals_filepath, book_filepath, thor_filepath, update_annotations),
     xot_state_(XOT_STATE_AUTOMATIC),
     xot_small_(LoadTextFile(xot_small_filepath)),
-    xot_large_(LoadTextFile(xot_large_filepath)) {
+    xot_large_(LoadTextFile(xot_large_filepath)),
+    sensei_action_(SENSEI_EVALUATES) {
   srand(time(nullptr));
   PrintSupportedFeatures();
   NewGame();
@@ -83,12 +84,13 @@ void Main::Evaluate() {
       analyzing_ = 2;
     }
   }
-  assert(analyzing_ || current_state_->IsLandable());
+  assert(analyzing_ || current_state_->GetAnnotations()->move_to_play != kNoMove || current_state_->IsLandable());
   engine_.Start(
       analyzing_ ? current_state_->PreviousLandable() : current_state_,
       first_state_,
       evaluate_params_,
-      analyzing_);
+      analyzing_,
+      sensei_action_);
 }
 
 void Main::Stop() {

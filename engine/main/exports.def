@@ -1,6 +1,7 @@
 LIBRARY ui_win
 EXPORTS
     PassMove
+    NoMove
     SetupBoardMove
     MainInit
     MainGetThorMetadata
@@ -27,4 +28,5 @@ EXPORTS
     SetWhiteSquare
     SetEmptySquare
     InvertTurn
-    kP
+    SetSenseiAction
+    GetSenseiAction

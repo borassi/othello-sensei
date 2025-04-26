@@ -1,4 +1,4 @@
-Before next launch
+Just before next launch
 - P0 MED Debug wrong evaluations on Marc's phone.
 - P1 SMALL Should we show lost disks instead of error?
 - P1 SMALL Undo / redo in the side bar by default?
@@ -8,7 +8,6 @@ Mac
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
-- P1 SMALL Avoid tooltip on the menu
 - P2 MED Create smaller books.
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
@@ -25,10 +24,10 @@ Thor
 - P3 LARGE Download games during tournaments.
 
 Match the features of the current app
-- P2 MED Play.
 - P3 LARGE Study and repeat openings.
 
 Extra features:
+- P1 EASY Beginner settings.
 - P1 HARD Save games.
 - P2 LARGE How easy / hard a position is.
 - P2 LARGE Expand all "interesting" lines in opening book.
