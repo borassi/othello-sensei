@@ -85,7 +85,7 @@ void EvaluationState::SetNextStates() {
     }
 
     std::shared_ptr<EvaluationState> state = std::make_shared<EvaluationState>(
-        move, next, !BlackTurn(), Depth() + 1, annotations_.depth_no_pass + 1, false);
+        move, next, !BlackTurn(), Depth() + 1, annotations_.depth_no_pass + (flip == 0 ? 0 : 1), false);
     if (HaveToPass(state->ToBoard())) {
       state->SetNextStates();
     }
