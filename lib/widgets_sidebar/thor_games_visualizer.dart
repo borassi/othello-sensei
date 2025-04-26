@@ -71,6 +71,12 @@ Widget getRow(BuildContext context, ThorGame game) {
       color: Theme.of(context).colorScheme.onSurface
     )
   );
+  String tournament;
+  try {
+    tournament = game.tournament.cast<Utf8>().toDartString();
+  } on FormatException {
+    tournament = cStringToString(game.tournament);
+  }
   return GestureDetector(
     onTap: playOneMove,
     onLongPress: playWholeGame,
@@ -94,7 +100,7 @@ Widget getRow(BuildContext context, ThorGame game) {
               Row(
                 children: <Widget>[
                   TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played]), 3, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
-                  TableCase('${game.year} ${game.tournament.cast<Utf8>().toDartString()}', 20, textStyle: tournamentStyle),
+                  TableCase('${game.year} $tournament', 20, textStyle: tournamentStyle),
                   TableCase('', 3, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
                 ]
               )

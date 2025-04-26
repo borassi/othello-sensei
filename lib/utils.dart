@@ -15,6 +15,7 @@
  *
  */
 
+import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
@@ -171,4 +172,12 @@ double getEvalFromAnnotations(Annotations annotation, bool black, bool inError, 
     value = bestLine ? annotation.eval_best_line : annotation.eval;
   }
   return value * multiplier;
+}
+
+String cStringToString(Pointer<Char> cString) {
+  var string = '';
+  for (int i = 0; cString[i] != 0; ++i) {
+    string += String.fromCharCode(cString[i].toUnsigned(8));
+  }
+  return string;
 }
