@@ -237,7 +237,6 @@ class GlobalState {
 
   static void setCurrentMove(int currentMove) {
     GlobalState.ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
-    evaluate();
   }
 
   static void stop() {
@@ -363,6 +362,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds/position in game analysis': 1.0,
     'Analyze on paste': true,
     'Analyze on import': true,
+    'When the game ends': 'Message',
     'Approximate': false,
     'Highlight distance from best move': 1.0,
     'Best move green, other yellow': false,
@@ -383,6 +383,7 @@ class PreferencesState with ChangeNotifier {
     'Controls position': ['App bar', 'Side bar'],
     'Margin size': ['None', 'Small', 'Large', 'Coordin'],
     'Pressing « from the first position': ['Do nothing', 'Ask', 'New game'],
+    'When the game ends': ['Message', 'Analyze', 'Do nothing'],
   };
   late final SharedPreferences _preferences;
 
