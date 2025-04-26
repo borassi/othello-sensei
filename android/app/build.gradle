@@ -30,8 +30,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.othellosensei.app"
-    compileSdkVersion 34 // flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    compileSdkVersion 35 // flutter.compileSdkVersion
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
