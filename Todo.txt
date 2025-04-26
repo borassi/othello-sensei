@@ -29,6 +29,8 @@ Match the features of the current app
 Extra features:
 - P1 EASY Beginner settings.
 - P1 HARD Save games.
+- P1 MED Timer.
+- P1 EASY Add button to analyze.
 - P2 LARGE How easy / hard a position is.
 - P2 LARGE Expand all "interesting" lines in opening book.
 - P2 LARGE Remember opening book for player.
