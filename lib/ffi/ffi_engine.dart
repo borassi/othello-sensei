@@ -559,6 +559,9 @@ final class BoardUpdate extends ffi.Struct {
 
   @ffi.Int()
   external int last_move;
+
+  @ffi.Bool()
+  external bool is_game_over;
 }
 
 final class ThorGame extends ffi.Struct {

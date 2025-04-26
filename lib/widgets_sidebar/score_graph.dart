@@ -108,7 +108,9 @@ class ScoreGraph extends HideInactiveWidget {
                       event is FlPanStartEvent ||
                       event is FlPanUpdateEvent ||
                       event is FlTapDownEvent) {
-                    assert(barTouchResponse?.spot != null);
+                    if (barTouchResponse?.spot == null) {
+                      return;
+                    }
                     // Enter or move.
                     GlobalState.setCurrentMove(barTouchResponse!.spot!.spot.x.toInt());
                   } else if (

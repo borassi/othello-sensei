@@ -34,9 +34,9 @@ class SenseiDialog extends StatelessWidget {
     // causing the window to show multiple times.
     GlobalState.preferences.set('Show unsupported CPU at startup', false);
     var textTheme = Theme.of(context).textTheme.bodyMedium;
-    var highlightColor = Theme.of(context).colorScheme.onPrimaryContainer;
+    var highlightColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return AlertDialog(
-      title: title == null ? null : Text(title!, style: textTheme?.copyWith(color: highlightColor)),
+      title: title == null ? null : Center(child: Text(title!, style: textTheme?.copyWith(color: highlightColor))),
       content: content == null ? null : Text(content!, style: textTheme, softWrap: true,),
       actions: actions?.map(
         (var record) => SenseiButton(

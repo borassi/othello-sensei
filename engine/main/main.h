@@ -226,7 +226,13 @@ class Main {
 
   void RunSetBoard() {
     Board board = current_state_->ToBoard();
-    set_board_({board.Player(), board.Opponent(), current_state_->BlackTurn(), current_state_->LastMove()});
+    set_board_({
+      board.Player(),
+      board.Opponent(),
+      current_state_->BlackTurn(),
+      current_state_->LastMove(),
+      IsGameOver(current_state_->ToBoard()) && (sensei_action_ == SENSEI_PLAYS_BLACK || sensei_action_ == SENSEI_PLAYS_WHITE)
+    });
   }
 };
 
