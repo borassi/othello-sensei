@@ -163,18 +163,21 @@ class FFIEngine {
   bool PlayMove(
     ffi.Pointer<ffi.Void> ptr,
     int square,
+    bool automatic,
   ) {
     return _PlayMove(
       ptr,
       square,
+      automatic,
     );
   }
 
   late final _PlayMovePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Bool Function(ffi.Pointer<ffi.Void>, ffi.Int)>>('PlayMove');
-  late final _PlayMove =
-      _PlayMovePtr.asFunction<bool Function(ffi.Pointer<ffi.Void>, int)>();
+          ffi.Bool Function(
+              ffi.Pointer<ffi.Void>, ffi.Int, ffi.Bool)>>('PlayMove');
+  late final _PlayMove = _PlayMovePtr.asFunction<
+      bool Function(ffi.Pointer<ffi.Void>, int, bool)>();
 
   bool SetSequence(
     ffi.Pointer<ffi.Void> ptr,

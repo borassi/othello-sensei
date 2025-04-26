@@ -99,8 +99,12 @@ void updateAnnotations(int currentThread, bool finished) {
     return;
   }
   if (annotations.ref.move_to_play != GlobalState.ffiEngine.NoMove()) {
-    GlobalState.playMove(annotations.ref.move_to_play);
+    GlobalState.playMove(annotations.ref.move_to_play, true);
     assert(finished);
+  }
+  if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) != SenseiAction.SENSEI_EVALUATES) {
+    GlobalState.resetAnnotations();
+    return;
   }
   GlobalState.globalAnnotations.setState(annotations, startAnnotations);
   for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
@@ -231,9 +235,9 @@ class GlobalState {
     evaluate();
   }
 
-  static void playMove(int i) {
-    bool moved = GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i);
-    if (!moved && GlobalState.preferences.get('Use illegal moves to undo and redo')) {
+  static void playMove(int i, bool automatic) {
+    bool moved = GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i, automatic);
+    if (!moved && !automatic && GlobalState.preferences.get('Use illegal moves to undo and redo')) {
       if (i % 8 < 4) {
         redo();
       } else {

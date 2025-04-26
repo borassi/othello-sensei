@@ -51,7 +51,10 @@ class Main {
     assert(new_state);
   }
 
-  bool PlayMove(Square square) {
+  bool PlayMove(Square square, bool automatic) {
+    if (automatic != current_state_->MustPlay(sensei_action_)) {
+      return false;
+    }
     return ToState(current_state_->NextState(square));
   }
 
@@ -98,7 +101,7 @@ class Main {
   void SetSequence(const Sequence& moves, bool eval = false) {
     NewGame();
     for (int i = 0; i < moves.Size(); ++i) {
-      PlayMove(moves.Move(i));
+      ToState(current_state_->NextState(moves.Move(i)));
       if (eval) {
         Evaluate();
       }

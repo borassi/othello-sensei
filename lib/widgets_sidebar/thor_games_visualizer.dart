@@ -50,14 +50,14 @@ class TableCase extends StatelessWidget {
 Widget getRow(BuildContext context, ThorGame game) {
   void playOneMove() {
     if (game.moves_played < 60 && game.moves[game.moves_played] != 255) {
-      GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, game.moves[game.moves_played]);
+      GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, game.moves[game.moves_played], false);
     }
     GlobalState.evaluate();
   }
   void playWholeGame() {
     for (int i = game.moves_played; i < 60; ++i) {
       if (game.moves[i] != 255) {
-        GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, game.moves[i]);
+        GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, game.moves[i], false);
       }
     }
     GlobalState.evaluate();

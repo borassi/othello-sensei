@@ -258,9 +258,8 @@ void Engine::Run(
   time_ = ElapsedTime();
   last_future->get();
   assert(current_state);
-  if (in_analysis && current_thread == current_thread_) {
-    update_annotations_(current_thread, true);
-  }
+  // Useful if we are in analysis, or if we click anywhere when Sensei should play.
+  update_annotations_(current_thread, true);
   AnalyzePosition(current_thread, current_state, first_state, params, in_analysis, action);
 
   current_state->UpdateFathers();
@@ -269,7 +268,7 @@ void Engine::Run(
     finished = finished && boards_to_evaluate_[i]->Finished();
   }
   current_state->SetDuringAnalysis(in_analysis);
-  if (current_thread == current_thread_) {
+  if (current_thread == current_thread_ || current_state->GetAnnotations()->move_to_play != kNoMove) {
     update_annotations_(current_thread, (finished && !in_analysis) || current_state->GetAnnotations()->move_to_play != kNoMove);
   }
 }

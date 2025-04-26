@@ -242,7 +242,7 @@ class Case extends StatelessWidget {
           return;
       }
     }
-    GlobalState.playMove(index);
+    GlobalState.playMove(index, false);
   }
 
   void onSecondaryTapDown() {

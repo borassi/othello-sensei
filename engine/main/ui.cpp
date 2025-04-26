@@ -44,7 +44,9 @@ struct EvaluateParams* MainGetEvaluateParams(void* ptr) {
 
 void NewGame(void* ptr) { static_cast<Main*>(ptr)->NewGame(); }
 
-bool PlayMove(void* ptr, int square) { return static_cast<Main*>(ptr)->PlayMove(square); }
+bool PlayMove(void* ptr, int square, bool automatic) {
+  return static_cast<Main*>(ptr)->PlayMove(square, automatic);
+}
 
 bool SetSequence(void* ptr, char* sequence) {
   std::string sequence_string(sequence);

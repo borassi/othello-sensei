@@ -58,7 +58,7 @@ EXPORT
 void NewGame(void* ptr);
 
 EXPORT
-bool PlayMove(void* ptr, int square);
+bool PlayMove(void* ptr, int square, bool automatic);
 
 EXPORT
 bool SetSequence(void* ptr, char* sequence);
