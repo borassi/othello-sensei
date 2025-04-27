@@ -101,10 +101,10 @@ class Main {
   void SetSequence(const Sequence& moves, bool eval = false) {
     NewGame();
     for (int i = 0; i < moves.Size(); ++i) {
-      ToState(current_state_->NextState(moves.Move(i)));
       if (eval) {
         Evaluate();
       }
+      ToState(current_state_->NextState(moves.Move(i)));
     }
   }
 
