@@ -115,9 +115,7 @@ class ScoreGraph extends HideInactiveWidget {
                     GlobalState.setCurrentMove(barTouchResponse!.spot!.spot.x.toInt());
                   } else if (
                       event is FlLongPressEnd ||
-                      event is FlPanCancelEvent ||
                       event is FlPanEndEvent ||
-                      event is FlTapCancelEvent ||
                       event is FlTapUpEvent) {
                     // Exit.
                     GlobalState.evaluate();

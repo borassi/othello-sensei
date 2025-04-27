@@ -15,6 +15,7 @@
  *
  */
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
@@ -48,50 +49,52 @@ class Sidebar extends StatelessWidget {
       length: 2,
       initialIndex: 0,
       child: ListenableBuilder(
-          listenable: GlobalState.preferences,
-          builder: (BuildContext context, Widget? widget) {
-            DefaultTabController.of(context).animateTo(
-                GlobalState.preferences.get('Active tab'),
-                duration: const Duration(seconds: 0));
-            var childrenControls = <Widget>[];
-            if (GlobalState.preferences.get('Controls position') == 'Side bar') {
-              childrenControls = [
-                const Margin.internal(),
-                const Controls(),
-              ];
-            }
-            var evaluateContent = Column(
-                children: childrenEvaluate + childrenControls
-            );
-
-            var thorContent = Column(
-              children: childrenThor + childrenControls,
-            );
-            return Scaffold(
-              bottomNavigationBar: TabBar(
-                tabs: List.generate(2, (index) => Tab(
-                    height: Theme.of(context).extension<AppSizes>()!.squareSize,
-                    child: Text(
-                        tabName[index],
-                        style: TextStyle(
-                          fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                        )
-                    )
-                )),
-                dividerHeight: 0,
-                onTap: (int index) {
-                  GlobalState.preferences.set('Active tab', index);
-                  GlobalState.evaluate();
-                },
-              ),
-              body: TabBarView(
-                children: [
-                  evaluateContent,
-                  thorContent,
-                ],
-              ),
-            );
+        listenable: GlobalState.preferences,
+        builder: (BuildContext context, Widget? widget) {
+          DefaultTabController.of(context).animateTo(
+              GlobalState.preferences.get('Active tab'),
+              duration: const Duration(seconds: 0));
+          var childrenControls = <Widget>[];
+          if (GlobalState.preferences.get('Controls position') == 'Side bar') {
+            childrenControls = [
+              const Margin.internal(),
+              const Controls(),
+            ];
           }
+          var evaluateContent = Column(
+              children: childrenEvaluate + childrenControls
+          );
+
+          var thorContent = Column(
+            children: childrenThor + childrenControls,
+          );
+          return Scaffold(
+            bottomNavigationBar: TabBar(
+              tabs: List.generate(2, (index) => Tab(
+                height: Theme.of(context).extension<AppSizes>()!.squareSize,
+                child: Text(
+                  tabName[index],
+                  style: TextStyle(
+                    fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                  )
+                )
+              )),
+              physics: NeverScrollableScrollPhysics(),
+              dividerHeight: 0,
+              onTap: (int index) {
+                GlobalState.preferences.set('Active tab', index);
+                GlobalState.evaluate();
+              },
+            ),
+            body: TabBarView(
+              physics: NeverScrollableScrollPhysics(),
+              children: [
+                evaluateContent,
+                thorContent,
+              ],
+            ),
+          );
+        }
       ),
     );
   }
