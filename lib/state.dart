@@ -41,48 +41,7 @@ void setBoard(BoardUpdate boardUpdate) {
   }
   GlobalState.board.setState(boardUpdate);
   if (boardUpdate.is_game_over) {
-    var behavior = GlobalState.preferences.get('When the game ends');
-    if (behavior == 'Message') {
-      var blackDisks = GlobalState.board.blackDisks();
-      var whiteDisks = GlobalState.board.whiteDisks();
-      if (blackDisks > whiteDisks) {
-        blackDisks = 64 - whiteDisks;
-      } else if (blackDisks < whiteDisks) {
-        whiteDisks = 64 - blackDisks;
-      } else {
-        blackDisks = 32;
-        whiteDisks = 32;
-      }
-      String content = '';
-      if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) == SenseiAction.SENSEI_PLAYS_WHITE) {
-        if (blackDisks > whiteDisks) {
-          content = 'Congratulations! You win $blackDisks - $whiteDisks!';
-        } else if (blackDisks == whiteDisks) {
-          content = 'Draw!';
-        } else {
-          content = 'You lose $blackDisks - $whiteDisks!';
-        }
-      } else if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) == SenseiAction.SENSEI_PLAYS_BLACK) {
-        if (blackDisks > whiteDisks) {
-          content = 'You lose $blackDisks - $whiteDisks!';
-        } else if (blackDisks == whiteDisks) {
-          content = 'Draw!';
-        } else {
-          content = 'Congratulations! You win $blackDisks - $whiteDisks!';
-        }
-      }
-      showSenseiDialog(SenseiDialog(
-          title: 'Game over!',
-          content: content,
-          actions: [
-            (text: 'Analyze', onPressed: (context) { Navigator.pop(context, true); analyze(); }),
-            (text: 'Do nothing', onPressed: (context) { Navigator.pop(context, false); }),
-          ]));
-    } else if (behavior == 'Analyze') {
-      analyze();
-    } else {
-      assert(behavior == 'Do nothing');
-    }
+    GlobalState.board.handleGameOver();
   }
 }
 
@@ -355,6 +314,51 @@ class BoardState with ChangeNotifier {
   int blackDisks() { return bitCount(black()); }
   int whiteDisks() { return bitCount(white()); }
   int emptySquares() { return bitCount(~(player | opponent)); }
+
+  void handleGameOver() {
+    var behavior = GlobalState.preferences.get('When the game ends');
+    if (behavior == 'Message') {
+      var blackDisks = this.blackDisks();
+      var whiteDisks = this.whiteDisks();
+      if (blackDisks > whiteDisks) {
+        blackDisks = 64 - whiteDisks;
+      } else if (blackDisks < whiteDisks) {
+        whiteDisks = 64 - blackDisks;
+      } else {
+        blackDisks = 32;
+        whiteDisks = 32;
+      }
+      String content = '';
+      if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) == SenseiAction.SENSEI_PLAYS_WHITE) {
+        if (blackDisks > whiteDisks) {
+          content = 'Congratulations! You win $blackDisks - $whiteDisks!';
+        } else if (blackDisks == whiteDisks) {
+          content = 'Draw!';
+        } else {
+          content = 'You lose $blackDisks - $whiteDisks!';
+        }
+      } else if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) == SenseiAction.SENSEI_PLAYS_BLACK) {
+        if (blackDisks > whiteDisks) {
+          content = 'You lose $blackDisks - $whiteDisks!';
+        } else if (blackDisks == whiteDisks) {
+          content = 'Draw!';
+        } else {
+          content = 'Congratulations! You win $blackDisks - $whiteDisks!';
+        }
+      }
+      showSenseiDialog(SenseiDialog(
+          title: 'Game over!',
+          content: content,
+          actions: [
+            (text: 'Analyze', onPressed: (context) { Navigator.pop(context, true); analyze(); }),
+            (text: 'Do nothing', onPressed: (context) { Navigator.pop(context, false); }),
+          ]));
+    } else if (behavior == 'Analyze') {
+      analyze();
+    } else {
+      assert(behavior == 'Do nothing');
+    }
+  }
 }
 
 class ActionWhenPlayState with ChangeNotifier {
