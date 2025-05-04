@@ -27,6 +27,9 @@ TEST(MoveSelector, GetMoveMultiplier) {
   EXPECT_DOUBLE_EQ(sum_multipliers, 2);
 }
 
+TEST(MoveSelector, FindBestChildNone) {
+  EXPECT_EQ(FindNextMove({}, 2), nullptr);
+}
 
 class MoveSelectorTestClass : public testing::TestWithParam<double> {};
 

@@ -15,8 +15,8 @@
  *
  */
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_sidebar/player.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 
@@ -29,7 +29,7 @@ import 'evaluate_stats.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
-  static const tabName = ['Evaluate', 'Archive'];
+  static const tabName = ['Evaluate', 'Archive', 'Play'];
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +45,13 @@ class Sidebar extends StatelessWidget {
       const Margin.internal(),
       const Expanded(child: ThorGamesVisualizer()),
     ];
+    List<Widget> childrenPlay = [
+      const DiskCountWithExtraContent(DiskCountExtraContent.thor),
+      const Margin.internal(),
+      const Players(),
+    ];
     return DefaultTabController(
-      length: 2,
+      length: 3,
       initialIndex: 0,
       child: ListenableBuilder(
         listenable: GlobalState.preferences,
@@ -64,13 +69,15 @@ class Sidebar extends StatelessWidget {
           var evaluateContent = Column(
               children: childrenEvaluate + childrenControls
           );
-
           var thorContent = Column(
             children: childrenThor + childrenControls,
           );
+          var playContent = Column(
+            children: childrenPlay + childrenControls,
+          );
           return Scaffold(
             bottomNavigationBar: TabBar(
-              tabs: List.generate(2, (index) => Tab(
+              tabs: List.generate(3, (index) => Tab(
                 height: Theme.of(context).extension<AppSizes>()!.squareSize,
                 child: Text(
                   tabName[index],
@@ -91,6 +98,7 @@ class Sidebar extends StatelessWidget {
               children: [
                 evaluateContent,
                 thorContent,
+                playContent,
               ],
             ),
           );

@@ -38,8 +38,9 @@ ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->G
 
 void MainDelete(void* ptr) { delete static_cast<Main*>(ptr); }
 
-struct EvaluateParams* MainGetEvaluateParams(void* ptr) {
-  return &static_cast<Main*>(ptr)->GetEvaluateParams();
+void SetEvaluateParams(void* ptr, struct EvaluateParams* params) {
+  assert(params != nullptr);
+  static_cast<Main*>(ptr)->SetEvaluateParams(*params);
 }
 
 void NewGame(void* ptr) { static_cast<Main*>(ptr)->NewGame(); }
@@ -61,8 +62,8 @@ bool SetCurrentMove(void* ptr, int square) { return static_cast<Main*>(ptr)->Set
 
 bool Redo(void* ptr) { return static_cast<Main*>(ptr)->Redo(); }
 
-bool ToAnalyzedGameOrLastChoice(void* ptr) {
-  return static_cast<Main*>(ptr)->ToAnalyzedGameOrLastChoice();
+bool ToLastImportantNode(void* ptr) {
+  return static_cast<Main*>(ptr)->ToLastImportantNode();
 }
 
 void Evaluate(void* ptr) { static_cast<Main*>(ptr)->Evaluate(); }
@@ -92,8 +93,3 @@ void SetBlackSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(
 void SetWhiteSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 1); }
 void SetEmptySquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 0); }
 void InvertTurn(void* ptr) { static_cast<Main*>(ptr)->InvertTurn(); }
-
-void SetSenseiAction(void* ptr, SenseiAction action) {
-  static_cast<Main*>(ptr)->SetSenseiAction(action);
-}
-SenseiAction GetSenseiAction(void* ptr) { return static_cast<Main*>(ptr)->GetSenseiAction(); }

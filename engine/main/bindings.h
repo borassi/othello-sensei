@@ -97,15 +97,14 @@ enum SenseiAction {
 struct Annotations {
   // Filled when defining the annotation.
   Square move;
-  Square move_to_play;
   bool black_turn;
   int depth;
   int depth_no_pass;
   struct Annotations* father;
   struct Annotations* first_child;
   struct Annotations* next_sibling;
-  struct Annotations* next_state_played;
-  struct Annotations* next_state_in_analysis;
+  struct Annotations* next_state_primary;
+  struct Annotations* next_state_secondary;
   bool valid;
   // Filled when evaluating this position.
   double eval;
@@ -157,10 +156,11 @@ struct EvaluateParams {
   bool use_book;
   bool reevaluate_during_analysis;
   struct ThorParams thor_filters;
+  enum SenseiAction sensei_action;
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);
-typedef void (*UpdateAnnotations)(int, bool);
+typedef void (*UpdateAnnotations)(int, bool, int);
 
 #ifdef __cplusplus
 }

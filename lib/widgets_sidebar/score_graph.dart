@@ -24,9 +24,8 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
-import '../widgets_utils/hide_inactive.dart';
 
-class ScoreGraph extends HideInactiveWidget {
+class ScoreGraph extends StatelessWidget {
   const ScoreGraph({super.key});
 
   BarChartGroupData generateGroupData(int x, List<double> scores, ColorScheme colorScheme, double height, double width, double maxY, var moveToHighlight) {
@@ -83,7 +82,7 @@ class ScoreGraph extends HideInactiveWidget {
   }
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) => ListenableBuilder(
         listenable: GlobalState.globalAnnotations,

@@ -131,20 +131,22 @@ class FFIEngine {
   late final _MainDelete =
       _MainDeletePtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
-  ffi.Pointer<EvaluateParams> MainGetEvaluateParams(
+  void SetEvaluateParams(
     ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<EvaluateParams> params,
   ) {
-    return _MainGetEvaluateParams(
+    return _SetEvaluateParams(
       ptr,
+      params,
     );
   }
 
-  late final _MainGetEvaluateParamsPtr = _lookup<
+  late final _SetEvaluateParamsPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<EvaluateParams> Function(
-              ffi.Pointer<ffi.Void>)>>('MainGetEvaluateParams');
-  late final _MainGetEvaluateParams = _MainGetEvaluateParamsPtr.asFunction<
-      ffi.Pointer<EvaluateParams> Function(ffi.Pointer<ffi.Void>)>();
+          ffi.Void Function(ffi.Pointer<ffi.Void>,
+              ffi.Pointer<EvaluateParams>)>>('SetEvaluateParams');
+  late final _SetEvaluateParams = _SetEvaluateParamsPtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<EvaluateParams>)>();
 
   void NewGame(
     ffi.Pointer<ffi.Void> ptr,
@@ -255,19 +257,19 @@ class FFIEngine {
   late final _Redo =
       _RedoPtr.asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
 
-  bool ToAnalyzedGameOrLastChoice(
+  bool ToLastImportantNode(
     ffi.Pointer<ffi.Void> ptr,
   ) {
-    return _ToAnalyzedGameOrLastChoice(
+    return _ToLastImportantNode(
       ptr,
     );
   }
 
-  late final _ToAnalyzedGameOrLastChoicePtr =
+  late final _ToLastImportantNodePtr =
       _lookup<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void>)>>(
-          'ToAnalyzedGameOrLastChoice');
-  late final _ToAnalyzedGameOrLastChoice = _ToAnalyzedGameOrLastChoicePtr
-      .asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
+          'ToLastImportantNode');
+  late final _ToLastImportantNode = _ToLastImportantNodePtr.asFunction<
+      bool Function(ffi.Pointer<ffi.Void>)>();
 
   void Evaluate(
     ffi.Pointer<ffi.Void> ptr,
@@ -657,9 +659,6 @@ final class Annotations extends ffi.Struct {
   @Square()
   external int move;
 
-  @Square()
-  external int move_to_play;
-
   @ffi.Bool()
   external bool black_turn;
 
@@ -675,9 +674,9 @@ final class Annotations extends ffi.Struct {
 
   external ffi.Pointer<Annotations> next_sibling;
 
-  external ffi.Pointer<Annotations> next_state_played;
+  external ffi.Pointer<Annotations> next_state_primary;
 
-  external ffi.Pointer<Annotations> next_state_in_analysis;
+  external ffi.Pointer<Annotations> next_state_secondary;
 
   @ffi.Bool()
   external bool valid;
@@ -812,12 +811,18 @@ final class EvaluateParams extends ffi.Struct {
   external bool reevaluate_during_analysis;
 
   external ThorParams thor_filters;
+
+  @ffi.UnsignedInt()
+  external int sensei_actionAsInt;
+
+  SenseiAction get sensei_action => SenseiAction.fromValue(sensei_actionAsInt);
 }
 
 typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
 typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;
-typedef UpdateAnnotationsFunction = ffi.Void Function(ffi.Int, ffi.Bool);
-typedef DartUpdateAnnotationsFunction = void Function(int, bool);
+typedef UpdateAnnotationsFunction = ffi.Void Function(
+    ffi.Int, ffi.Bool, ffi.Int);
+typedef DartUpdateAnnotationsFunction = void Function(int, bool, int);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;

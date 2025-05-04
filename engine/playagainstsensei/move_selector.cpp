@@ -63,6 +63,9 @@ double GetMoveMultiplier(int move) {
 }
 
 const Node* FindNextMove(const std::vector<const Node*>& children, double expected_error) {
+  if (children.size() == 0) {
+    return nullptr;
+  }
   double best_score = DBL_MAX;
   const Node* best_child = nullptr;
   std::vector<double> errors;
@@ -113,6 +116,9 @@ const Node* FindNextMove(const std::vector<const Node*>& children, double expect
 
 const Node* FindNextMoveTotalError(const std::vector<const Node*>& children, double total_error) {
   // Max is needed in case someone sets up a board with <4 disks.
+  if (children.size() == 0) {
+    return nullptr;
+  }
   int move = std::max(0, 59 - children[0]->NEmpties());
   return FindNextMove(children, total_error * GetMoveMultiplier(move));
 }

@@ -248,6 +248,8 @@ class Settings extends StatelessWidget {
 
   static const _unshownPreferences = [
     'Active tab',
+    'Black player',
+    'White player',
   ];
 
   @override

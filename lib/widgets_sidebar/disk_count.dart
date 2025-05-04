@@ -16,7 +16,6 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/widgets_utils/hide_inactive.dart';
 
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -64,12 +63,12 @@ class DiskCount extends StatelessWidget {
   }
 }
 
-class ShowError extends HideInactiveWidget {
+class ShowError extends StatelessWidget {
   final bool black;
   const ShowError(this.black, {super.key});
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -96,11 +95,11 @@ class ShowError extends HideInactiveWidget {
 
 }
 
-class FiltersButton extends HideInactiveWidget {
+class FiltersButton extends StatelessWidget {
   const FiltersButton({super.key});
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return Expanded(
         child: SenseiButton(

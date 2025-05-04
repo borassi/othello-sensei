@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
-import '../widgets_utils/hide_inactive.dart';
 
 TableRow getRow(String name, ListenableBuilder listenable) {
   return TableRow(
@@ -65,11 +64,11 @@ String getPosPerSecText(EvaluationStats stats) {
   }
 }
 
-class EvaluateStats extends HideInactiveWidget {
+class EvaluateStats extends StatelessWidget {
   const EvaluateStats({super.key});
 
   @override
-  Widget buildChild(BuildContext context) {
+  Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge([GlobalState.globalAnnotations, GlobalState.board]),
       builder: (BuildContext context, Widget? widget) {

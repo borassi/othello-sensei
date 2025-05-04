@@ -52,7 +52,7 @@ EXPORT
 void MainDelete(void* ptr);
 
 EXPORT
-struct EvaluateParams* MainGetEvaluateParams(void* ptr);
+void SetEvaluateParams(void* ptr, struct EvaluateParams* params);
 
 EXPORT
 void NewGame(void* ptr);
@@ -76,7 +76,7 @@ EXPORT
 bool Redo(void* ptr);
 
 EXPORT
-bool ToAnalyzedGameOrLastChoice(void* ptr);
+bool ToLastImportantNode(void* ptr);
 
 EXPORT
 void Evaluate(void* ptr);

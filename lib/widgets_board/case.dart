@@ -21,7 +21,6 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
-import 'package:othello_sensei/widgets_utils/hide_inactive.dart';
 
 import '../widgets_spacers/app_sizes.dart';
 
@@ -192,8 +191,8 @@ bool highlightCase(int index) {
     return false;
   }
   if (GlobalState.preferences.get('Highlight next move in analysis')
-      && globalAnnotations.ref.next_state_in_analysis != nullptr) {
-    return globalAnnotations.ref.next_state_in_analysis.ref.move == index;
+      && globalAnnotations.ref.next_state_primary != nullptr) {
+    return globalAnnotations.ref.next_state_primary.ref.move == index;
   }
   return GlobalState.preferences.get('Highlight next moves outside analysis') &&
       annotations.first_child != nullptr && annotations.first_child.ref.valid;

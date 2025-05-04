@@ -52,37 +52,36 @@ class Main {
   }
 
   bool PlayMove(Square square, bool automatic) {
-    if (automatic != current_state_->MustPlay(sensei_action_)) {
+    if (automatic != current_state_->MustPlay(evaluate_params_.sensei_action)) {
       return false;
     }
-    return ToState(current_state_->NextState(square));
+    bool success = ToState(current_state_->NextState(square));
+    if (success && evaluate_params_.sensei_action != SENSEI_EVALUATES) {
+      current_state_->SetPrimaryLine();
+    }
+    return success;
   }
 
   bool SetCurrentMove(Square current_move) {
-    bool valid = ToState(first_state_->ToDepth(current_move));
+    bool valid = ToState(first_state_->ToDepth(current_move, evaluate_params_.sensei_action));
     current_state_->SetPlayed();
     return valid;
   }
 
   bool Redo() {
-    return ToState(current_state_->NextLandable());
+    return ToState(current_state_->NextLandable(evaluate_params_.sensei_action));
   }
 
   bool Undo() {
-    return ToState(current_state_->PreviousLandable());
+    return ToState(current_state_->PreviousLandable(evaluate_params_.sensei_action));
   }
 
-  bool ToAnalyzedGameOrLastChoice() {
-    EvaluationState* non_xot_state = nullptr;
-    if (first_state_->NextStateInAnalysis()) {
-      non_xot_state = current_state_->LastAnalyzedState();
-    } else {
-      non_xot_state = current_state_->LastChoice();
+  bool ToLastImportantNode() {
+    EvaluationState* goal = current_state_->LastImportantNode(IsXot(), first_state_->InAnalysisLine(), evaluate_params_.sensei_action);
+    if (current_state_ == goal) {
+      return false;
     }
-    if (IsXot() && non_xot_state->NEmpties() > 52) {
-      return ToState(first_state_->ToDepth(8)->ThisOrNextLandable());
-    }
-    return ToState(non_xot_state);
+    return ToState(goal);
   }
 
   void ResetEvaluations() {
@@ -121,19 +120,19 @@ class Main {
     return engine_.GetThorMetadata();
   }
 
-  EvaluateParams& GetEvaluateParams() { return evaluate_params_; }
+  void SetEvaluateParams(const EvaluateParams& params);
 
   void Evaluate();
 
   void Analyze() {
     last_params_ = evaluate_params_;
-    first_state_->SetAnalyzed();
+    current_state_->SetPrimaryLine();
     analyzing_ = 1;
-    engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_, sensei_action_);
+    engine_.Start(current_state_, first_state_, evaluate_params_, analyzing_);
   }
 
   void ResetAnalyzedGame() {
-    first_state_->SetNotAnalyzed();
+    first_state_->ResetPrimaryLine();
   }
 
   // We need a separate call to get the annotations in the UI thread, to prevent
@@ -177,7 +176,7 @@ class Main {
         if (!first_state_) {
           return false;
         }
-        auto state_in_xot = first_state_->ToDepth(8);
+        auto state_in_xot = first_state_->ToDepth(8, SENSEI_EVALUATES);
         if (!state_in_xot) {
           return false;
         }
@@ -196,9 +195,6 @@ class Main {
   void InvertTurn() {
     ToStateNoStop(current_state_->InvertTurn());
   }
-
-  void SetSenseiAction(SenseiAction action) { sensei_action_ = action; }
-  SenseiAction GetSenseiAction() { return sensei_action_; }
 
  private:
   static constexpr int kNumEvaluators = 60;
@@ -221,8 +217,6 @@ class Main {
   EvaluateParams evaluate_params_;
   EvaluateParams last_params_;
 
-  SenseiAction sensei_action_;
-
   bool ToState(EvaluationState* new_state);
 
   void ToStateNoStop(EvaluationState* new_state);
@@ -234,7 +228,7 @@ class Main {
       board.Opponent(),
       current_state_->BlackTurn(),
       current_state_->LastMove(),
-      IsGameOver(current_state_->ToBoard()) && (sensei_action_ == SENSEI_PLAYS_BLACK || sensei_action_ == SENSEI_PLAYS_WHITE)
+      IsGameOver(current_state_->ToBoard()),
     });
   }
 };

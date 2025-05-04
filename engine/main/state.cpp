@@ -57,7 +57,7 @@ void EvaluationState::SetThor(const GamesList& games) {
 EvaluationState* EvaluationState::NextState(Square move) const {
   for (const std::shared_ptr<EvaluationState>& child : children_) {
     if (child->annotations_.move == move) {
-      return child->ThisOrNextLandable();
+      return child->ThisOrNextLandable(SENSEI_EVALUATES);
     }
   }
   return nullptr;

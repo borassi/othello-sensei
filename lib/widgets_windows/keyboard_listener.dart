@@ -79,7 +79,7 @@ class MyKeyboardListener extends StatelessWidget {
             onInvoke: (RedoIntent intent) => GlobalState.redo(),
           ),
           BackIntent: CallbackAction<BackIntent>(
-            onInvoke: (BackIntent intent) => GlobalState.toAnalyzedGameOrLastChoice(),
+            onInvoke: (BackIntent intent) => GlobalState.toLastImportantNode(),
           ),
         },
         child: Focus(

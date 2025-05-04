@@ -40,7 +40,7 @@ void setBoard(BoardUpdate boardUpdate) {
     GlobalState.annotations[i].clear();
   }
   GlobalState.board.setState(boardUpdate);
-  if (boardUpdate.is_game_over) {
+  if (boardUpdate.is_game_over && GlobalState.preferences.get("Active tab") == 2) {
     GlobalState.board.handleGameOver();
   }
 }
@@ -49,7 +49,7 @@ int currentMove() {
   return GlobalState.globalAnnotations.annotations?.ref.depth_no_pass ?? -1;
 }
 
-void updateAnnotations(int currentThread, bool finished) {
+void updateAnnotations(int currentThread, bool finished, int move) {
   Pointer<Annotations> startAnnotations = GlobalState.ffiEngine.GetStartAnnotations(GlobalState.ffiMain, currentThread);
   Pointer<Annotations> annotations = GlobalState.ffiEngine.GetCurrentAnnotations(GlobalState.ffiMain, currentThread);
   if (annotations == nullptr || startAnnotations == nullptr ||
@@ -57,19 +57,18 @@ void updateAnnotations(int currentThread, bool finished) {
     GlobalState.resetAnnotations();
     return;
   }
-  if (annotations.ref.move_to_play != GlobalState.ffiEngine.NoMove()) {
-    GlobalState.playMove(annotations.ref.move_to_play, true);
-    assert(finished);
-  }
-  if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) != SenseiAction.SENSEI_EVALUATES) {
+  if (GlobalState.preferences.get("Active tab") == 2) {
     GlobalState.resetAnnotations();
-    return;
+  } else {
+    GlobalState.globalAnnotations.setState(annotations, startAnnotations);
+    for (Pointer<Annotations> child = annotations.ref.first_child; child !=
+        nullptr; child = child.ref.next_sibling) {
+      GlobalState.annotations[child.ref.move].setState(child.ref);
+    }
   }
-  GlobalState.globalAnnotations.setState(annotations, startAnnotations);
-  for (Pointer<Annotations> child = annotations.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
-    GlobalState.annotations[child.ref.move].setState(child.ref);
-  }
-  if (!finished) {
+  if (move != GlobalState.ffiEngine.NoMove()) {
+    GlobalState.playMove(move, true);
+  } else if (!finished) {
     GlobalState.evaluate();
   }
 }
@@ -108,9 +107,8 @@ void resetAnalyzedGame() {
 }
 
 void analyze() {
-  GlobalState.preferences.fillEvaluateParams();
   GlobalState.preferences.set('Active tab', 0);
-  GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_EVALUATES);
+  GlobalState.preferences.fillEvaluateParams();
   GlobalState.ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
@@ -216,8 +214,9 @@ class GlobalState {
     evaluate();
   }
 
-  static void toAnalyzedGameOrLastChoice() async {
-    if (GlobalState.board.emptySquares() == 60) {
+  static void toLastImportantNode() async {
+    bool success = GlobalState.ffiEngine.ToLastImportantNode(GlobalState.ffiMain);
+    if (!success) {
       switch (GlobalState.preferences.get('Pressing « from the first position')) {
         case 'Ask':
           if (await showSenseiDialog(SenseiDialog(
@@ -236,8 +235,6 @@ class GlobalState {
         default:
           break;
       }
-    } else {
-      GlobalState.ffiEngine.ToAnalyzedGameOrLastChoice(GlobalState.ffiMain);
     }
     evaluate();
   }
@@ -317,6 +314,9 @@ class BoardState with ChangeNotifier {
 
   void handleGameOver() {
     var behavior = GlobalState.preferences.get('When the game ends');
+    if (GlobalState.preferences.get("Active tab") != 2) {
+      return;
+    }
     if (behavior == 'Message') {
       var blackDisks = this.blackDisks();
       var whiteDisks = this.whiteDisks();
@@ -329,7 +329,7 @@ class BoardState with ChangeNotifier {
         whiteDisks = 32;
       }
       String content = '';
-      if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) == SenseiAction.SENSEI_PLAYS_WHITE) {
+      if (GlobalState.actionWhenPlay.getSenseiAction() == SenseiAction.SENSEI_PLAYS_WHITE) {
         if (blackDisks > whiteDisks) {
           content = 'Congratulations! You win $blackDisks - $whiteDisks!';
         } else if (blackDisks == whiteDisks) {
@@ -337,7 +337,7 @@ class BoardState with ChangeNotifier {
         } else {
           content = 'You lose $blackDisks - $whiteDisks!';
         }
-      } else if (GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain) == SenseiAction.SENSEI_PLAYS_BLACK) {
+      } else if (GlobalState.actionWhenPlay.getSenseiAction() == SenseiAction.SENSEI_PLAYS_BLACK) {
         if (blackDisks > whiteDisks) {
           content = 'You lose $blackDisks - $whiteDisks!';
         } else if (blackDisks == whiteDisks) {
@@ -361,13 +361,45 @@ class BoardState with ChangeNotifier {
   }
 }
 
+enum Player {
+  player,
+  sensei,
+}
+
 class ActionWhenPlayState with ChangeNotifier {
-  void setActionWhenPlay(SenseiAction action) {
-    GlobalState.ffiEngine.SetSenseiAction(GlobalState.ffiMain, action);
+  ActionWhenPlayState();
+
+  void rotatePlayer(bool black) {
+    var preferenceName = black ? "Black player" : "White player";
+    var old = GlobalState.preferences.get(preferenceName);
+    GlobalState.preferences.set(preferenceName, Player.values[(old.index + 1) % Player.values.length]);
     notifyListeners();
   }
-  SenseiAction getActionWhenPlay() {
-    return GlobalState.ffiEngine.GetSenseiAction(GlobalState.ffiMain);
+
+  SenseiAction getSenseiAction() {
+    if (GlobalState.preferences.get('Active tab') != 2) {
+      return SenseiAction.SENSEI_EVALUATES;
+    }
+    var black = GlobalState.preferences.get("Black player");
+    var white = GlobalState.preferences.get("White player");
+    switch (black) {
+      case Player.player:
+        switch (white) {
+          case Player.player:
+            return SenseiAction.SENSEI_INACTIVE;
+          case Player.sensei:
+            return SenseiAction.SENSEI_PLAYS_WHITE;
+        }
+      case Player.sensei:
+        switch (white) {
+          case Player.player:
+            return SenseiAction.SENSEI_PLAYS_BLACK;
+          case Player.sensei:
+            return SenseiAction.SENSEI_PLAYS_BOTH;
+        }
+    }
+    assert(false);
+    return SenseiAction.SENSEI_INACTIVE;
   }
 }
 
@@ -395,6 +427,7 @@ class InvalidPreferenceException implements Exception {
 }
 
 class PreferencesState with ChangeNotifier {
+  static const enumTypeToValues = {Player : Player.values};
   final Map<String, dynamic> defaultPreferences = {
     'Controls position': 'App bar',
     'Margin size': 'Small',
@@ -427,6 +460,8 @@ class PreferencesState with ChangeNotifier {
     'Use illegal moves to undo and redo': false,
     'Use disk count to undo and redo': true,
     'Pressing « from the first position': 'Ask',
+    'Black player': Player.player,
+    'White player': Player.player,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number'],
@@ -443,7 +478,8 @@ class PreferencesState with ChangeNotifier {
     for (String name in _preferences.getKeys()) {
       try {
         _checkPreferenceNameAndValue(name, _preferences.get(name));
-      } on InvalidPreferenceException {
+      } on InvalidPreferenceException catch (e) {
+        print('Invalid stored preference $name.\nError: ${e.cause}');
         if (defaultPreferences.containsKey(name)) {
           set(name, defaultPreferences[name]);
         } else {
@@ -459,13 +495,19 @@ class PreferencesState with ChangeNotifier {
   }
 
   dynamic get(String name) {
-    var value = _preferences.get(name) ?? defaultPreferences[name];
+    var defaultValue = defaultPreferences[name];
+    var value = _preferences.get(name) ?? defaultValue;
+    if (defaultValue is Enum && value is String) {
+      var possibleValues = enumTypeToValues[defaultValue.runtimeType];
+      value = possibleValues!.firstWhere((e) => e.name == value);
+    }
     _checkPreferenceNameAndValue(name, value);
     return value;
   }
 
   void fillEvaluateParams() {
-    var params = GlobalState.ffiEngine.MainGetEvaluateParams(GlobalState.ffiMain).ref;
+    var paramsPtr = malloc<EvaluateParams>();
+    EvaluateParams params = paramsPtr.ref;
     params.lower = get('Lower');
     params.upper = get('Upper');
     params.max_positions = 100000000000;
@@ -482,6 +524,10 @@ class PreferencesState with ChangeNotifier {
     params.thor_filters.max_games = 100;
     params.thor_filters.start_year = 1000;
     params.thor_filters.end_year = 3000;
+    params.sensei_actionAsInt = GlobalState.actionWhenPlay.getSenseiAction().value;
+
+    GlobalState.ffiEngine.SetEvaluateParams(GlobalState.ffiMain, paramsPtr);
+    malloc.free(paramsPtr);
   }
 
   Future<void> setAll(Map<String, dynamic> newValues) async {
@@ -505,19 +551,21 @@ class PreferencesState with ChangeNotifier {
     if (value == null) {
       return;
     }
-    switch (value.runtimeType) {
-      case bool:
-        await _preferences.setBool(name, value);
-      case int:
-        await _preferences.setInt(name, value);
-      case double:
-        await _preferences.setDouble(name, value);
-      case String:
-        await _preferences.setString(name, value);
-      case const (List<String>):
-        await _preferences.setStringList(name, value);
-      default:
-        throw InvalidPreferenceException('Invalid preference type ${value.runtimeType} for value $value');
+    if (defaultPreferences[name] is Enum) {
+      await _preferences.setString(name, (value as Enum).name);
+    } else if (value is double) {
+      await _preferences.setDouble(name, value);
+    } else if (value is String) {
+      await _preferences.setString(name, value);
+    } else if (value is int) {
+      await _preferences.setInt(name, value);
+    } else if (value is bool) {
+      await _preferences.setBool(name, value);
+    } else if (value is List<String>) {
+      await _preferences.setStringList(name, value);
+    } else {
+      throw InvalidPreferenceException(
+          'Invalid preference type ${value.runtimeType} for value $value');
     }
   }
 
@@ -533,7 +581,8 @@ class PreferencesState with ChangeNotifier {
     if (!(validValues?.contains(value) ?? true)) {
       throw InvalidPreferenceException('Invalid value $value for preference $name. Valid values: $validValues');
     }
-    if (value.runtimeType != defaultPreferences[name].runtimeType) {
+    if (value.runtimeType != defaultPreferences[name].runtimeType &&
+        !(value is String && (defaultPreferences[name] is Enum))) {
       throw InvalidPreferenceException('Invalid type ${value.runtimeType} for preference $name. Expected: ${defaultPreferences[name].runtimeType}');
     }
   }
@@ -584,7 +633,7 @@ class GlobalAnnotationState with ChangeNotifier {
   bool existsAnalyzedGame() {
     return (
         startAnnotations != null &&
-        startAnnotations!.ref.next_state_in_analysis != nullptr
+        startAnnotations!.ref.next_state_primary != nullptr
     );
   }
 
@@ -596,15 +645,15 @@ class GlobalAnnotationState with ChangeNotifier {
     var lastMove = currentMove();
     for (var annotation = startAnnotations;
          annotation != null && annotation != nullptr;
-         annotation = annotation.ref.next_state_in_analysis != nullptr ?
-                          annotation.ref.next_state_in_analysis :
-                          annotation.ref.next_state_played) {
+         annotation = annotation.ref.next_state_primary != nullptr ?
+                          annotation.ref.next_state_primary :
+                          annotation.ref.next_state_secondary) {
       if ([GlobalState.ffiEngine.PassMove(), GlobalState.ffiEngine.SetupBoardMove()].contains(annotation.ref.move)) {
         continue;
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
-      if (annotation.ref.next_state_in_analysis != nullptr
-          && annotation.ref.next_state_in_analysis != annotation.ref.next_state_played) {
+      if (annotation.ref.next_state_primary != nullptr
+          && annotation.ref.next_state_primary != annotation.ref.next_state_secondary) {
         lastMove = min(lastMove, annotation.ref.depth_no_pass);
       }
     }

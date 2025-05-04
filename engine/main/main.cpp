@@ -33,8 +33,8 @@ Main::Main(
     engine_(evals_filepath, book_filepath, thor_filepath, update_annotations),
     xot_state_(XOT_STATE_AUTOMATIC),
     xot_small_(LoadTextFile(xot_small_filepath)),
-    xot_large_(LoadTextFile(xot_large_filepath)),
-    sensei_action_(SENSEI_EVALUATES) {
+    xot_large_(LoadTextFile(xot_large_filepath)) {
+  evaluate_params_.sensei_action = SENSEI_EVALUATES;
   srand(time(nullptr));
   PrintSupportedFeatures();
   NewGame();
@@ -84,13 +84,13 @@ void Main::Evaluate() {
       analyzing_ = 2;
     }
   }
-  assert(analyzing_ || current_state_->GetAnnotations()->move_to_play != kNoMove || current_state_->IsLandable());
+  SenseiAction action = evaluate_params_.sensei_action;
+  assert(current_state_->IsLandable(action) || current_state_->MustPlay(action));
   engine_.Start(
-      analyzing_ ? current_state_->PreviousLandable() : current_state_,
+      analyzing_ ? current_state_->PreviousLandable(action) : current_state_,
       first_state_,
       evaluate_params_,
-      analyzing_,
-      sensei_action_);
+      analyzing_);
 }
 
 void Main::Stop() {
@@ -109,9 +109,37 @@ bool Main::ToState(EvaluationState* new_state) {
 
 void Main::ToStateNoStop(EvaluationState* new_state) {
   assert(new_state);
-  assert(new_state->IsLandable());
+  assert(new_state->IsLandable(evaluate_params_.sensei_action) ||
+         new_state->MustPlay(evaluate_params_.sensei_action));
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();
   RunSetBoard();
+}
+
+namespace {
+
+bool AreParamsCompatible(EvaluateParams params1, EvaluateParams params2) {
+  return
+      params1.lower == params2.lower &&
+      params1.upper == params2.upper &&
+      // Still compatible if times are different.
+      params1.error_play == params2.error_play &&
+      params1.n_threads == params2.n_threads &&
+      params1.delta == params2.delta &&
+      params1.approx == params2.approx &&
+      params1.use_book == params2.use_book &&
+      // Still compatible if reevaluate_during_analysis are different.
+      params1.thor_filters.start_year == params2.thor_filters.start_year &&
+      params1.thor_filters.end_year == params2.thor_filters.end_year &&
+      params1.thor_filters.max_games == params2.thor_filters.max_games;
+      // Still compatible if Sensei action changes.
+}
+}  // namespace
+
+void Main::SetEvaluateParams(const EvaluateParams& params) {
+  if (!AreParamsCompatible(evaluate_params_, params)) {
+    first_state_->InvalidateRecursive();
+  }
+  evaluate_params_ = params;
 }

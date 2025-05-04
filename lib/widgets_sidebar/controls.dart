@@ -39,7 +39,7 @@ class Controls extends StatelessWidget {
             child: SenseiButton(
               text: 'Back to the game / the first position',
               icon: Icons.keyboard_double_arrow_left_rounded,
-              onPressed: GlobalState.toAnalyzedGameOrLastChoice,
+              onPressed: GlobalState.toLastImportantNode,
             )
           ),
           Margin.internal(),

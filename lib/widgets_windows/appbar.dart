@@ -31,11 +31,6 @@ enum MenuItem {
   copy,
   paste,
   analyze,
-  senseiEvaluates,
-  senseiIsInactive,
-  senseiPlaysBlack,
-  senseiPlaysWhite,
-  senseiPlaysBoth,
   downloadLatestBook,
   downloadLatestArchive,
   settings,
@@ -77,26 +72,6 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
     case MenuItem.downloadLatestArchive:
       GlobalState.stop();
       downloadArchive(context);
-      return;
-    case MenuItem.senseiEvaluates:
-      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_EVALUATES);
-      GlobalState.evaluate();
-      return;
-    case MenuItem.senseiIsInactive:
-      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_INACTIVE);
-      GlobalState.evaluate();
-      return;
-    case MenuItem.senseiPlaysBlack:
-      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_PLAYS_BLACK);
-      GlobalState.evaluate();
-      return;
-    case MenuItem.senseiPlaysWhite:
-      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_PLAYS_WHITE);
-      GlobalState.evaluate();
-      return;
-    case MenuItem.senseiPlaysBoth:
-      GlobalState.actionWhenPlay.setActionWhenPlay(SenseiAction.SENSEI_PLAYS_BOTH);
-      GlobalState.evaluate();
       return;
     case MenuItem.settings:
       GlobalState.stop();
@@ -159,7 +134,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
         const SenseiIconButton(
           icon: Icons.keyboard_double_arrow_left_rounded,
           tooltip: 'Back to the game / the first position',
-          onPressed: GlobalState.toAnalyzedGameOrLastChoice,
+          onPressed: GlobalState.toLastImportantNode,
         ),
         const SenseiIconButton(
           icon: Icons.chevron_left_rounded,
@@ -238,49 +213,6 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                   padding: padding,
                   value: MenuItem.analyze,
                   child: Text(GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                  padding: EdgeInsets.zero,
-                  onTap: () {},
-                  child: PopupMenuButton<MenuItem>(
-                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
-                    padding: EdgeInsets.zero,
-                    tooltip: "",
-                    child: Container(
-                      height: kMinInteractiveDimension,
-                      width: double.infinity,
-                      alignment: Alignment.centerLeft,
-                      padding: padding,
-                      child: Text('Sensei action', style: textStyle)
-                    ),
-                    itemBuilder: (context) => [
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.senseiEvaluates,
-                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_EVALUATES,
-                        child: Text('Sensei evaluates', style: textStyle),
-                      ),
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.senseiIsInactive,
-                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_INACTIVE,
-                        child: Text('Sensei is inactive', style: textStyle),
-                      ),
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.senseiPlaysBlack,
-                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_BLACK,
-                        child: Text('Sensei plays Black', style: textStyle),
-                      ),
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.senseiPlaysWhite,
-                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_WHITE,
-                        child: Text('Sensei plays White', style: textStyle),
-                      ),
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.senseiPlaysBoth,
-                        checked: GlobalState.actionWhenPlay.getActionWhenPlay() == SenseiAction.SENSEI_PLAYS_BOTH,
-                        child: Text('Sensei plays both', style: textStyle),
-                      )
-                    ]
-                  )
-                ),
                 PopupMenuItem<MenuItem>(
                   padding: EdgeInsets.zero,
                   onTap: () {},

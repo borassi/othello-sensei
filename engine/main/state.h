@@ -49,7 +49,6 @@ class EvaluationState : public TreeNode {
     weak_upper_ = 63;
     EnlargeEvaluations();
     annotations_.move = move;
-    annotations_.move_to_play = kNoMove;
     annotations_.depth = depth_;
     annotations_.depth_no_pass = depth_no_pass;
     annotations_.black_turn = black_turn;
@@ -59,8 +58,8 @@ class EvaluationState : public TreeNode {
     annotations_.next_sibling = nullptr;
     annotations_.during_analysis = false;
     annotations_.modified = modified;
-    SetNextStatePlayed(nullptr);
-    SetNextStateInAnalysis(nullptr);
+    SetNextStateSecondary(nullptr);
+    SetNextStatePrimary(nullptr);
     InvalidateThis();
   }
   ~EvaluationState() { free(annotations_.example_thor_games); }
@@ -80,15 +79,18 @@ class EvaluationState : public TreeNode {
   bool AfterPass() const {
     return annotations_.move == kPassMove;
   }
+  double SecondsOnThisNode() { return seconds_on_this_node_; }
+  void ResetSecondsOnThisNode() { seconds_on_this_node_ = 0; }
+  void AddSecondsOnThisNode(double value) { seconds_on_this_node_ += value; }
   bool InAnalysisLine() const {
-    if (NextStateInAnalysis() != nullptr) {
+    if (next_state_primary_ != nullptr) {
       return true;
     }
     EvaluationState* father = Father();
     if (father == nullptr) {
       return false;
     }
-    return father->NextStateInAnalysis() == this;
+    return father->next_state_primary_ == this;
   }
 
   void SetLeafEval(EvalLarge leaf_eval, Square depth) override {
@@ -142,20 +144,6 @@ class EvaluationState : public TreeNode {
   void SetThor(const GamesList& games);
   bool BlackTurn() const { return annotations_.black_turn; }
 
-  // Returns:
-  // - If there is an analyzed game and this is outside the analysis, the first
-  //   ancestor in the analysis.
-  // - The first state otherwise.
-  EvaluationState* LastAnalyzedState() {
-    EvaluationState* state;
-    for (state = this; state->Father() != nullptr; state = state->Father()) {
-      if (state->next_state_in_analysis_ && !next_state_in_analysis_) {
-        return state->ThisOrPreviousLandable();
-      }
-    }
-    return state->ThisOrPreviousLandable();
-  }
-
   int NumChildrenWithDescendants() {
     int result = 0;
     for (const std::shared_ptr<EvaluationState>& child : children_) {
@@ -164,31 +152,27 @@ class EvaluationState : public TreeNode {
     return result;
   }
 
-  // Returns the first ancestor with multiple visited children.
-  EvaluationState* LastChoice() {
-    EvaluationState* state;
-    for (state = PreviousLandable(); state != nullptr; state = state->PreviousLandable()) {
-      // NOTE: we cannot assert(state->NumChildrenWithDescendants() >= 1), if the position is not
-      // evaluated, yet.
-      if (state->NumChildrenWithDescendants() > 1 || state->PreviousLandable() == nullptr) {
+  bool IsImportant(bool is_xot, bool primary_states_available, bool is_next_state_primary, SenseiAction action) {
+    if (PreviousLandable(action) == nullptr) {
+      return true;
+    }
+    if (is_xot && annotations_.depth > 8 && PreviousLandable(action)->annotations_.depth < 8) {
+      return true;
+    }
+    if (primary_states_available) {
+      return !is_next_state_primary && next_state_primary_ != nullptr;
+    } else {
+      return NumChildrenWithDescendants() > 1;
+    }
+  }
+
+  EvaluationState* LastImportantNode(bool is_xot, bool primary_states_available, SenseiAction action) {
+    for (EvaluationState* state = PreviousLandable(action); state != nullptr; state = state->PreviousLandable(action)) {
+      if (state->IsImportant(is_xot, primary_states_available, InAnalysisLine(), action)) {
         return state;
       }
     }
     return this;
-  }
-
-  EvaluationState* NextStateInAnalysis() const {
-    assert(
-      (next_state_in_analysis_ == nullptr && annotations_.next_state_in_analysis == nullptr)
-      || next_state_in_analysis_->GetAnnotations() == annotations_.next_state_in_analysis);
-    return next_state_in_analysis_;
-  }
-
-  EvaluationState* NextStatePlayed() const {
-    assert(
-      (next_state_played_ == nullptr && annotations_.next_state_played == nullptr)
-      || next_state_played_->GetAnnotations() == annotations_.next_state_played);
-    return next_state_played_;
   }
 
   void SetNumThorGames(unsigned int new_value) { annotations_.num_thor_games = new_value; }
@@ -215,38 +199,34 @@ class EvaluationState : public TreeNode {
     if (father == nullptr) {
       return;
     }
-    father->SetNextStatePlayed(this);
+    father->SetNextStateSecondary(this);
     father->SetPlayed();
   }
 
-  void SetNotAnalyzed() {
-    assert(Father() == nullptr);
-    assert(NextStateInAnalysis() != nullptr);
+  void ResetPrimaryLine() {
     EvaluationState* state;
-    for (state = NextStateInAnalysis(); state != nullptr; state = state->NextStateInAnalysis()) {
-      state->Father()->SetNextStateInAnalysis(nullptr);
+    for (state = next_state_primary_; state != nullptr; state = state->next_state_primary_) {
+      state->Father()->SetNextStatePrimary(nullptr);
     }
   }
 
-  EvaluationState* SetAnalyzed() {
-    assert(Father() == nullptr);
-    EvaluationState* state;
-    for (state = this; state->NextStatePlayed() != nullptr; state = state->NextStatePlayed()) {
-      EvaluationState* analysis_child = state->NextStatePlayed();
-      state->SetNextStateInAnalysis(analysis_child);
-      for (auto& child : state->children_) {
-        if (child.get() != analysis_child) {
-          child->DeleteChildren();
-        }
+  void SetPrimaryLine() {
+    assert(Father() != nullptr);
+    for (EvaluationState* state = this; state->Father() != nullptr; state = state->Father()) {
+      EvaluationState* father = state->Father();
+      if (father->next_state_primary_ == state) {
+        return;
+      } else if (father->next_state_primary_ != nullptr) {
+        father->next_state_primary_->ResetPrimaryLine();
       }
+      father->SetNextStatePrimary(state);
     }
-    return state;
   }
 
   EvaluationState* NextState(Square move) const;
 
   EvaluationState* NextState() const {
-    return NextStateInAnalysis() ? NextStateInAnalysis() : NextStatePlayed();
+    return next_state_primary_ ? next_state_primary_ : next_state_secondary_;
   }
 
   void SetNextStates();
@@ -259,22 +239,12 @@ class EvaluationState : public TreeNode {
     return result;
   }
 
-  EvaluationState* ToDepth(int new_depth) {
+  EvaluationState* ToDepth(int new_depth, SenseiAction action) {
     EvaluationState* result = this;
     for (;
          result != nullptr && result->annotations_.depth_no_pass != new_depth;
-         result = result->NextLandable()) {}
+         result = result->NextLandable(action)) {}
     return result;
-  }
-
-  Sequence GetLongestSequence() const {
-    std::vector<Square> moves;
-    for (const EvaluationState* state = this; state != nullptr; state = state->NextStatePlayed()) {
-      if (state->annotations_.move != kPassMove) {
-        moves.push_back(state->annotations_.move);
-      }
-    }
-    return Sequence(moves.begin(), moves.end());
   }
 
   bool IsModified() const {
@@ -296,8 +266,8 @@ class EvaluationState : public TreeNode {
     return false;
   }
 
-  bool IsLandable() const {
-    if (annotations_.move_to_play != kNoMove) {
+  bool IsLandable(SenseiAction action) const {
+    if (MustPlay(action)) {
       return false;
     }
     if (n_children_ != 1) {
@@ -307,49 +277,44 @@ class EvaluationState : public TreeNode {
     return (move != kPassMove && move != kSetupBoardMove);
   }
 
-  EvaluationState* PreviousLandable() const {
+  EvaluationState* PreviousLandable(SenseiAction action) {
     for (EvaluationState* result = Father(); result != nullptr; result = result->Father()) {
-      if (result->IsLandable()) {
+      if (result->IsLandable(action)) {
         return result;
       }
     }
     return nullptr;
   }
 
-  EvaluationState* ThisOrPreviousLandable() {
-    if (IsLandable()) {
+  EvaluationState* ThisOrPreviousLandable(SenseiAction action) {
+    if (IsLandable(action)) {
       return this;
     }
-    return PreviousLandable();
+    return PreviousLandable(action);
   }
 
   EvaluationState* GetChildForNextLandable() {
     if (children_.size() == 1) {
       return children_[0].get();
     }
-    for (const auto& child : children_) {
-      if (child->annotations_.move == annotations_.move_to_play) {
-        return child.get();
-      }
-    }
-    return nullptr;
+    return next_state_primary_;
   }
 
-  EvaluationState* ThisOrNextLandable() {
+  EvaluationState* ThisOrNextLandable(SenseiAction action) {
     for (EvaluationState* result = this; result != nullptr; result = result->GetChildForNextLandable()) {
-      if (result->IsLandable()) {
+      if (result->IsLandable(action)) {
         return result;
       }
     }
     return nullptr;
   }
 
-  EvaluationState* NextLandable() {
-    EvaluationState* result = NextState();
-    if (!result) {
+  EvaluationState* NextLandable(SenseiAction action) {
+    EvaluationState* next = NextState();
+    if (!next) {
       return nullptr;
     }
-    return result->ThisOrNextLandable();
+    return next->ThisOrNextLandable(action);
   }
 
   Sequence GetSequence() const {
@@ -365,11 +330,9 @@ class EvaluationState : public TreeNode {
     return Sequence(moves_inverted.rbegin(), moves_inverted.rend());
   }
 
-  bool MustPlay(SenseiAction action) {
+  bool MustPlay(SenseiAction action) const {
     switch(action) {
       case SENSEI_INACTIVE:
-        assert(false);
-        return 0;
       case SENSEI_EVALUATES:
         return false;
       case SENSEI_PLAYS_BLACK:
@@ -379,10 +342,6 @@ class EvaluationState : public TreeNode {
       case SENSEI_PLAYS_BOTH:
         return true;
     }
-  }
-
-  bool MustEvaluate(SenseiAction action) {
-    return action == SENSEI_EVALUATES || MustPlay(action);
   }
 
   bool InBook() const {
@@ -427,8 +386,8 @@ class EvaluationState : public TreeNode {
       is_leaf_ = true;
       TreeNode::children_ = nullptr;
     }
-    SetNextStatePlayed(nullptr);
-    SetNextStateInAnalysis(nullptr);
+    SetNextStateSecondary(nullptr);
+    SetNextStatePrimary(nullptr);
   }
 
   void EnsureValid() {
@@ -482,26 +441,16 @@ class EvaluationState : public TreeNode {
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
 
-  void UpdateMoveToPlay(SenseiAction action, double error) {
-    if (!HasValidChildren()) {
-      return;
-    }
-    if (MustPlay(action)) {
-      auto next_state_played = NextStatePlayed();
-      if (next_state_played) {
-        annotations_.move_to_play = next_state_played->annotations_.move;
-      } else if (annotations_.move_to_play == kNoMove) {
-        SetNextMove(error);
-      }
-    } else {
-      ResetNextMove();
-    }
-  }
-  void UpdateMoveToPlayRecursive(SenseiAction action, double error) {
-    UpdateMoveToPlay(action, error);
+  int ChooseRandomMoveToPlay(double error) {
+    std::vector<const Node*> children;
     for (auto& child : children_) {
-      child->UpdateMoveToPlayRecursive(action, error);
+      children.push_back((const Node*) child.get());
     }
+    const Node* best_child = FindNextMoveTotalError(children, error);
+    if (best_child == nullptr) {
+      return kNoMove;
+    }
+    return ((EvaluationState*) best_child)->Move();
   }
 
   void UpdateSavedAnnotations() {
@@ -551,11 +500,19 @@ class EvaluationState : public TreeNode {
     return SetBoard(opponent_, player_, !annotations_.black_turn);
   }
 
+  void InvalidateRecursive() {
+    InvalidateThis();
+    for (auto& child : children_) {
+      child->InvalidateRecursive();
+    }
+  }
+
  private:
   Annotations annotations_;
+  double seconds_on_this_node_;
   std::vector<std::shared_ptr<EvaluationState>> children_;
-  EvaluationState* next_state_in_analysis_;
-  EvaluationState* next_state_played_;
+  EvaluationState* next_state_primary_;
+  EvaluationState* next_state_secondary_;
 
   EvaluationState* SetBoard(BitPattern player, BitPattern opponent, bool black_turn) {
     if (HaveToPass(Board(player, opponent)) && !HaveToPass(Board(opponent, player))) {
@@ -595,6 +552,7 @@ class EvaluationState : public TreeNode {
   }
 
   void InvalidateThis() {
+    seconds_on_this_node_ = 0;
     annotations_.valid = false;
     annotations_.derived = false;
     annotations_.descendants = 0;
@@ -609,25 +567,14 @@ class EvaluationState : public TreeNode {
     }
   }
 
-  void SetNextStatePlayed(EvaluationState* new_value) {
-    next_state_played_ = new_value;
-    annotations_.next_state_played = next_state_played_ ? &next_state_played_->annotations_ : nullptr;
+  void SetNextStateSecondary(EvaluationState* new_value) {
+    next_state_secondary_ = new_value;
+    annotations_.next_state_secondary = next_state_secondary_ ? &next_state_secondary_->annotations_ : nullptr;
   }
 
-  void SetNextStateInAnalysis(EvaluationState* new_value) {
-    next_state_in_analysis_ = new_value;
-    annotations_.next_state_in_analysis = next_state_in_analysis_ ? &next_state_in_analysis_->annotations_ : nullptr;
-  }
-
-  void ResetNextMove() { annotations_.move_to_play = kNoMove; }
-
-  void SetNextMove(double error) {
-    std::vector<const Node*> children;
-    for (auto& child : children_) {
-      children.push_back((const Node*) child.get());
-    }
-    const Node* best_child = FindNextMoveTotalError(children, error);
-    annotations_.move_to_play = ((EvaluationState*) best_child)->Move();
+  void SetNextStatePrimary(EvaluationState* new_value) {
+    next_state_primary_ = new_value;
+    annotations_.next_state_primary = next_state_primary_ ? &next_state_primary_->annotations_ : nullptr;
   }
 };
 
