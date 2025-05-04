@@ -247,7 +247,6 @@ void Engine::Run(
     int current_thread, std::shared_ptr<std::future<void>> last_future,
     EvaluationState* current_state, std::shared_ptr<EvaluationState> first_state,
     EvaluateParams params, bool in_analysis) {
-  time_ = ElapsedTime();
   last_future->get();
   assert(current_state);
   // Useful if we are in analysis.
@@ -292,13 +291,13 @@ void Engine::AnalyzePosition(
     const std::shared_ptr<EvaluationState>& first_state,
     const EvaluateParams& params, bool in_analysis) {
   bool first_eval = last_state_ != current_state || last_first_state_ != first_state || !current_state->HasValidChildren();
-  double max_time = MaxTime(params.sensei_action, current_state->SecondsOnThisNode(), first_eval, in_analysis, params);
-  if (current_state->SecondsOnThisNode() > std::max(0.01, max_time - kNextEvalTime / 2)) {
+  double max_time = MaxTime(params.sensei_action, current_state->SecondsToEvaluateThisNode(), first_eval, in_analysis, params);
+  if (current_state->SecondsToEvaluateThisNode() > std::max(0.01, max_time - kNextEvalTime / 2)) {
     return;
   }
-  time_ = ElapsedTime();
+  ElapsedTime time;
   if (first_eval) {
-    current_state->ResetSecondsOnThisNode();
+    current_state->ResetSecondsToEvaluateThisNode();
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate(*current_state, params, in_analysis);
     last_state_ = current_state;
@@ -323,12 +322,12 @@ void Engine::AnalyzePosition(
   for (
       auto* board_to_evaluate = NextBoardToEvaluate(params.delta);
       board_to_evaluate != nullptr &&
-        current_state->SecondsOnThisNode() + time_.Get() < max_time - kNextEvalTime / 2 &&
+        current_state->SecondsToEvaluateThisNode() + time.Get() < max_time - kNextEvalTime / 2 &&
         current_thread_ == current_thread;
       board_to_evaluate = NextBoardToEvaluate(params.delta)) {
     board_to_evaluate->Evaluate(params);
   }
   current_state->UpdateFather();
   current_state->UpdateFathers();
-  current_state->AddSecondsOnThisNode(time_.Get());
+  current_state->AddSecondsToEvaluateThisNode(time.Get());
 }

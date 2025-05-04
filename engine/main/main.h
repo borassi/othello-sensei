@@ -34,6 +34,8 @@
 #include "../utils/misc.h"
 #include "../xot/xot.h"
 
+using namespace std::chrono_literals;
+
 class Main {
  public:
   Main(
@@ -43,7 +45,13 @@ class Main {
       const std::string& xot_small_filepath,
       const std::string& xot_large_filepath,
       SetBoard set_board,
-      UpdateAnnotations update_annotations);
+      UpdateAnnotations update_annotations,
+      UpdateTimers update_timers);
+
+  ~Main() {
+    is_being_destroyed_ = true;
+    update_timers_future_.get();
+  }
 
   void NewGame() {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0, 0, false);
@@ -196,10 +204,31 @@ class Main {
     ToStateNoStop(current_state_->InvertTurn());
   }
 
+  void RunUpdateTimers() {
+    if (!current_state_) {
+      return;
+    }
+    auto [seconds_black, seconds_white] = current_state_->SecondsParents();
+    if (current_state_->GetAnnotations()->black_turn) {
+      seconds_black += time_on_this_position_.Get();
+    } else {
+      seconds_white += time_on_this_position_.Get();
+    }
+    update_timers_(seconds_black, seconds_white);
+  }
+
+  void RunUpdateTimersThread() {
+    while (true) {
+      RunUpdateTimers();
+      std::this_thread::sleep_for(100ms);
+    }
+  }
+
  private:
   static constexpr int kNumEvaluators = 60;
 
   SetBoard set_board_;
+  UpdateTimers update_timers_;
 
   // We keep the last state used by Flutter, so that it does not get deleted
   // when Flutter is still reading it.
@@ -216,6 +245,11 @@ class Main {
 
   EvaluateParams evaluate_params_;
   EvaluateParams last_params_;
+
+  ElapsedTime time_on_this_position_;
+
+  bool is_being_destroyed_;
+  std::future<void> update_timers_future_;
 
   bool ToState(EvaluationState* new_state);
 

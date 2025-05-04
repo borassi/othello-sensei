@@ -206,8 +206,6 @@ class Engine {
   std::array<std::unique_ptr<BoardToEvaluate>, kNumEvaluators> boards_to_evaluate_;
   int num_boards_to_evaluate_;
 
-  ElapsedTime time_;
-
   std::atomic_uint32_t current_thread_;
   std::shared_ptr<std::future<void>> current_future_;
 

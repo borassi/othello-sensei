@@ -70,6 +70,7 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
+    UpdateTimers update_timers,
   ) {
     return _MainInit(
       evals_filepath,
@@ -79,6 +80,7 @@ class FFIEngine {
       xot_large_filepath,
       set_board,
       update_annotations,
+      update_timers,
     );
   }
 
@@ -91,7 +93,8 @@ class FFIEngine {
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
               SetBoard,
-              UpdateAnnotations)>>('MainInit');
+              UpdateAnnotations,
+              UpdateTimers)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
       ffi.Pointer<ffi.Void> Function(
           ffi.Pointer<ffi.Char>,
@@ -100,7 +103,8 @@ class FFIEngine {
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           SetBoard,
-          UpdateAnnotations)>();
+          UpdateAnnotations,
+          UpdateTimers)>();
 
   ffi.Pointer<ThorMetadata> MainGetThorMetadata(
     ffi.Pointer<ffi.Void> ptr,
@@ -826,3 +830,6 @@ typedef UpdateAnnotationsFunction = ffi.Void Function(
 typedef DartUpdateAnnotationsFunction = void Function(int, bool, int);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
+typedef UpdateTimersFunction = ffi.Void Function(ffi.Double, ffi.Double);
+typedef DartUpdateTimersFunction = void Function(double, double);
+typedef UpdateTimers = ffi.Pointer<ffi.NativeFunction<UpdateTimersFunction>>;

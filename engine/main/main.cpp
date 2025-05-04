@@ -25,8 +25,11 @@ Main::Main(
     const std::string& xot_small_filepath,
     const std::string& xot_large_filepath,
     SetBoard set_board,
-    UpdateAnnotations update_annotations) :
+    UpdateAnnotations update_annotations,
+    UpdateTimers update_timers) :
     set_board_(set_board),
+    update_timers_(update_timers),
+    is_being_destroyed_(false),
     current_state_(nullptr),
     last_state_flutter_(nullptr),
     analyzing_(0),
@@ -37,6 +40,7 @@ Main::Main(
   evaluate_params_.sensei_action = SENSEI_EVALUATES;
   srand(time(nullptr));
   PrintSupportedFeatures();
+  update_timers_future_ = std::async(std::launch::async, &Main::RunUpdateTimersThread, this);
   NewGame();
 }
 
@@ -111,9 +115,13 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
   assert(new_state);
   assert(new_state->IsLandable(evaluate_params_.sensei_action) ||
          new_state->MustPlay(evaluate_params_.sensei_action));
+  if (current_state_) {
+    current_state_->AddSecondsOnThisNode(time_on_this_position_.Get());
+  }
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();
+  time_on_this_position_ = ElapsedTime();
   RunSetBoard();
 }
 

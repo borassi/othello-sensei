@@ -43,7 +43,8 @@ void* MainInit(
     char* xot_small_filepath,
     char* xot_large_filepath,
     SetBoard set_board,
-    UpdateAnnotations update_annotations);
+    UpdateAnnotations update_annotations,
+    UpdateTimers update_timers);
 
 EXPORT
 struct ThorMetadata* MainGetThorMetadata(void* ptr);

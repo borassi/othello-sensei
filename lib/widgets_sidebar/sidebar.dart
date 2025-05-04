@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_sidebar/player.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
+import 'package:othello_sensei/widgets_sidebar/timer.dart';
 
 import '../state.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -49,6 +50,8 @@ class Sidebar extends StatelessWidget {
       const DiskCountWithExtraContent(DiskCountExtraContent.none),
       const Margin.internal(),
       const Players(),
+      const Margin.internal(),
+      const Timers(),
     ];
     return DefaultTabController(
       length: 3,

@@ -82,6 +82,9 @@ class EvaluationState : public TreeNode {
   double SecondsOnThisNode() { return seconds_on_this_node_; }
   void ResetSecondsOnThisNode() { seconds_on_this_node_ = 0; }
   void AddSecondsOnThisNode(double value) { seconds_on_this_node_ += value; }
+  void ResetSecondsToEvaluateThisNode() { seconds_on_this_node_ = 0; }
+  void AddSecondsToEvaluateThisNode(double value) { seconds_on_this_node_ += value; }
+  double SecondsToEvaluateThisNode() { return seconds_on_this_node_; }
   bool InAnalysisLine() const {
     if (next_state_primary_ != nullptr) {
       return true;
@@ -507,9 +510,23 @@ class EvaluationState : public TreeNode {
     }
   }
 
+  std::pair<double, double> SecondsParents() const {
+    double time_black = 0;
+    double time_white = 0;
+    for (const EvaluationState* node = this; node != nullptr; node = node->Father()) {
+      if (node->annotations_.black_turn) {
+        time_black += node->seconds_on_this_node_;
+      } else {
+        time_white += node->seconds_on_this_node_;
+      }
+    }
+    return {time_black, time_white};
+  }
+
  private:
   Annotations annotations_;
   double seconds_on_this_node_;
+  double seconds_to_evaluate_this_node_;
   std::vector<std::shared_ptr<EvaluationState>> children_;
   EvaluationState* next_state_primary_;
   EvaluationState* next_state_secondary_;
@@ -553,6 +570,7 @@ class EvaluationState : public TreeNode {
 
   void InvalidateThis() {
     seconds_on_this_node_ = 0;
+    seconds_to_evaluate_this_node_ = 0;
     annotations_.valid = false;
     annotations_.derived = false;
     annotations_.descendants = 0;

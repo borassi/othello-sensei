@@ -28,10 +28,11 @@ void* MainInit(
     char* xot_small_filepath,
     char* xot_large_filepath,
     SetBoard set_board,
-    UpdateAnnotations update_annotations) {
+    UpdateAnnotations update_annotations,
+    UpdateTimers update_timers) {
   return new Main(
       evals_filepath, book_filepath, thor_filepath, xot_small_filepath, xot_large_filepath,
-      set_board, update_annotations);
+      set_board, update_annotations, update_timers);
 }
 
 ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }

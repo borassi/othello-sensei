@@ -73,6 +73,10 @@ void updateAnnotations(int currentThread, bool finished, int move) {
   }
 }
 
+void updateTimers(double secondsBlack, double secondsWhite) {
+  GlobalState.timer.setState(secondsBlack, secondsWhite);
+}
+
 Future<void> copy() async {
   Pointer<Char> sequence = GlobalState.ffiEngine.GetSequence(GlobalState.ffiMain);
   var s = sequence.cast<Utf8>().toDartString();
@@ -127,6 +131,7 @@ class GlobalState {
   static late CpuType cpuType;
   static late String localPath;
   static final navigatorKey = GlobalKey<NavigatorState>();
+  static final TimerState timer = TimerState();
 
   static Future<void> init() async {
     final directory = await getApplicationSupportDirectory();
@@ -162,6 +167,7 @@ class GlobalState {
   static Future<void> _createMain() async {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
+    NativeCallable<UpdateTimersFunction> updateTimersCallback = NativeCallable.listener(updateTimers);
     var localAssetPathVar = localAssetPath();
     GlobalState.resetAnnotations();
     thorMetadataOrNull = null;
@@ -172,7 +178,8 @@ class GlobalState {
         join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>(),
         setBoardCallback.nativeFunction,
-        setAnnotationsCallback.nativeFunction
+        setAnnotationsCallback.nativeFunction,
+        updateTimersCallback.nativeFunction,
     );
     newGame();
   }
@@ -796,5 +803,40 @@ class ThorMetadataState with ChangeNotifier {
         getSource(i)[nextIndex[i]] = -1;
       }
     }
+  }
+}
+
+class TimerState with ChangeNotifier {
+  int secondsBlack;
+  int secondsWhite;
+
+  TimerState() : secondsBlack = 0, secondsWhite = 0;
+
+  int getSeconds(bool black) {
+    return black ? secondsBlack : secondsWhite;
+  }
+
+  String getString(bool black) {
+    int totalSeconds = getSeconds(black);
+    int minutes = (totalSeconds / 60).round();
+    int seconds = totalSeconds % 60;
+
+    if (totalSeconds > 3600) {
+      return ">1h";
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+  }
+
+  void setState(double secondsBlack, double secondsWhite) {
+    int newSecondsBlack = secondsBlack.floor();
+    int newSecondsWhite = secondsWhite.floor();
+
+    if (newSecondsBlack == secondsBlack && newSecondsWhite == secondsWhite) {
+      return;
+    }
+    this.secondsBlack = newSecondsBlack;
+    this.secondsWhite = newSecondsWhite;
+    notifyListeners();
   }
 }

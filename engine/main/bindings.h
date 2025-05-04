@@ -161,6 +161,7 @@ struct EvaluateParams {
 
 typedef void (*SetBoard)(struct BoardUpdate);
 typedef void (*UpdateAnnotations)(int, bool, int);
+typedef void (*UpdateTimers)(double, double);
 
 #ifdef __cplusplus
 }
