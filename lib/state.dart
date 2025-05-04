@@ -369,6 +369,14 @@ enum Player {
 class ActionWhenPlayState with ChangeNotifier {
   ActionWhenPlayState();
 
+  void invertPlayers() {
+    var newWhite = GlobalState.preferences.get("Black player");
+    var newBlack = GlobalState.preferences.get("White player");
+    GlobalState.preferences.set("White player", newWhite);
+    GlobalState.preferences.set("Black player", newBlack);
+    notifyListeners();
+  }
+
   void rotatePlayer(bool black) {
     var preferenceName = black ? "Black player" : "White player";
     var old = GlobalState.preferences.get(preferenceName);

@@ -46,7 +46,7 @@ class Sidebar extends StatelessWidget {
       const Expanded(child: ThorGamesVisualizer()),
     ];
     List<Widget> childrenPlay = [
-      const DiskCountWithExtraContent(DiskCountExtraContent.thor),
+      const DiskCountWithExtraContent(DiskCountExtraContent.none),
       const Margin.internal(),
       const Players(),
     ];

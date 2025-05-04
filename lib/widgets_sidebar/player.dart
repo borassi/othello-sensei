@@ -19,6 +19,8 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/utils.dart';
 
 import '../state.dart';
+import '../widgets_spacers/app_sizes.dart';
+import '../widgets_utils/misc.dart';
 
 class PlayerWidget extends StatelessWidget {
   final bool _black;
@@ -45,6 +47,18 @@ class Players extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [PlayerWidget(true), const Spacer(), PlayerWidget(false)]);
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    return Row(children: [
+      PlayerWidget(true),
+      const Spacer(),
+      SizedBox(
+        height: squareSize,
+        child: SenseiButton(
+          icon: Icons.swap_horiz,
+          onPressed: () { GlobalState.actionWhenPlay.invertPlayers(); GlobalState.evaluate(); }
+        )
+      ),
+      const Spacer(),
+      PlayerWidget(false)]);
   }
 }

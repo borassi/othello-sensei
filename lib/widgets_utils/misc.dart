@@ -18,13 +18,13 @@
 import 'package:flutter/material.dart';
 
 class SenseiButton extends StatelessWidget {
-  final String text;
+  final String? text;
   final IconData? icon;
   final void Function() onPressed;
   final TextStyle? textStyle;
 
   const SenseiButton(
-      {super.key, required this.text, required this.onPressed, this.textStyle, this.icon});
+      {super.key, this.text, required this.onPressed, this.textStyle, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class SenseiButton extends StatelessWidget {
     if (icon != null) {
       content = Icon(icon!, color: textColor, size: iconSize);
     } else {
-      content = Text(text, style: textStyle);
+      content = Text(text!, style: textStyle);
     }
     return TextButton(
       onPressed: onPressed,
