@@ -218,7 +218,7 @@ class Main {
   }
 
   void RunUpdateTimersThread() {
-    while (true) {
+    while (!is_being_destroyed_) {
       RunUpdateTimers();
       std::this_thread::sleep_for(100ms);
     }
