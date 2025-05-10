@@ -292,9 +292,6 @@ void Engine::AnalyzePosition(
     const EvaluateParams& params, bool in_analysis) {
   bool first_eval = last_state_ != current_state || last_first_state_ != first_state || !current_state->HasValidChildren();
   double max_time = MaxTime(params.sensei_action, current_state->SecondsToEvaluateThisNode(), first_eval, in_analysis, params);
-  if (current_state->SecondsToEvaluateThisNode() > std::max(0.01, max_time - kNextEvalTime / 2)) {
-    return;
-  }
   ElapsedTime time;
   if (first_eval) {
     current_state->ResetSecondsToEvaluateThisNode();
@@ -303,7 +300,11 @@ void Engine::AnalyzePosition(
     last_state_ = current_state;
     last_first_state_ = first_state;
   }
+  // We always run EvaluateThor otherwise we might return early when we changed Thor parameters.
   EvaluateThor(params, *current_state);
+  if (current_state->SecondsToEvaluateThisNode() > std::max(0.01, max_time - kNextEvalTime / 2)) {
+    return;
+  }
 
   if (current_state->MaybeSetGameOver()) {
     return;
