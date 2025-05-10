@@ -818,7 +818,7 @@ class TimerState with ChangeNotifier {
 
   String getString(bool black) {
     int totalSeconds = getSeconds(black);
-    int minutes = (totalSeconds / 60).round();
+    int minutes = (totalSeconds / 60).floor();
     int seconds = totalSeconds % 60;
 
     if (totalSeconds > 3600) {

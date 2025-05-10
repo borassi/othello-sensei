@@ -162,7 +162,6 @@ class MainContent extends StatelessWidget {
     return Container(
       color: brokenAppBar ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.primaryContainer,
       child: SafeArea(
-        bottom: false,
         child: AnnotatedRegion(
           value: SystemUiOverlayStyle(
             statusBarColor: Theme.of(context).colorScheme.primaryContainer,

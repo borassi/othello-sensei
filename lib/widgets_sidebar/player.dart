@@ -47,17 +47,8 @@ class Players extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return Row(children: [
       PlayerWidget(true),
-      const Spacer(),
-      SizedBox(
-        height: squareSize,
-        child: SenseiButton(
-          icon: Icons.swap_horiz,
-          onPressed: () { GlobalState.actionWhenPlay.invertPlayers(); GlobalState.evaluate(); }
-        )
-      ),
       const Spacer(),
       PlayerWidget(false)]);
   }
