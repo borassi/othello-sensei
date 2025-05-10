@@ -294,7 +294,6 @@ void Engine::AnalyzePosition(
   double max_time = MaxTime(params.sensei_action, current_state->SecondsToEvaluateThisNode(), first_eval, in_analysis, params);
   ElapsedTime time;
   if (first_eval) {
-    current_state->ResetSecondsToEvaluateThisNode();
     tree_node_supplier_.Reset();
     UpdateBoardsToEvaluate(*current_state, params, in_analysis);
     last_state_ = current_state;
@@ -305,7 +304,9 @@ void Engine::AnalyzePosition(
   if (current_state->SecondsToEvaluateThisNode() > std::max(0.01, max_time - kNextEvalTime / 2)) {
     return;
   }
-
+  if (first_eval) {
+    current_state->ResetSecondsToEvaluateThisNode();
+  }
   if (current_state->MaybeSetGameOver()) {
     return;
   }
