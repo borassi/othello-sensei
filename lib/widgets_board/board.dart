@@ -93,7 +93,7 @@ class Board extends StatelessWidget {
             ] +
             List.generate(4, (index) => Positioned(
               left: leftMargin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
-              top: leftMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
+              top: topMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
               child:
               Container(
                 decoration: BoxDecoration(

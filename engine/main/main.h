@@ -263,6 +263,7 @@ class Main {
       current_state_->BlackTurn(),
       current_state_->LastMove(),
       IsGameOver(current_state_->ToBoard()),
+      first_state_->GetAnnotations()
     });
   }
 };

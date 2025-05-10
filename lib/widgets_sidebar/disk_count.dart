@@ -16,6 +16,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_sidebar/player.dart';
 
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -119,6 +120,7 @@ class FiltersButton extends StatelessWidget {
 enum DiskCountExtraContent {
   error,
   thor,
+  player,
   none,
 }
 
@@ -148,6 +150,23 @@ class DiskCountWithExtraContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    List<Widget> leftContentWidget = [const Spacer()];
+    List<Widget> rightContentWidget = [const Spacer()];
+    List<Widget> centerContentWidget = [];
+    switch(extraContent) {
+      case DiskCountExtraContent.none:
+        break;
+      case DiskCountExtraContent.error:
+        leftContentWidget = [const Margin.internal(), ShowError(true), const Spacer()];
+        rightContentWidget = [const Spacer(), ShowError(false), const Margin.internal()];
+        break;
+      case DiskCountExtraContent.thor:
+        centerContentWidget = [const Margin.internal(), FiltersButton(), const Margin.internal()];
+        break;
+      case DiskCountExtraContent.player:
+        centerContentWidget = [const PlayerWidget(true), const Margin.internal(), const PlayerWidget(false)];
+        break;
+    }
     return SizedBox(
       height: squareSize,
       child: Row(
@@ -158,35 +177,17 @@ class DiskCountWithExtraContent extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTapDown: (TapDownDetails details) => maybeUndo(),
               child: Row(
-                children: <Widget>[
-                  const DiskCount(true)
-                ] + (
-                    (extraContent == DiskCountExtraContent.error) ? [
-                    const Margin.internal(),
-                    widget(context, true),
-                  ] : []
-                ) + [
-                  const Spacer(),
-                ]
+                  children: <Widget>[const DiskCount(true)] + leftContentWidget
               )
             )
           ),
-        ] + ((extraContent == DiskCountExtraContent.thor) ? [FiltersButton()] : []) + [
+        ] + centerContentWidget + [
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapDown: (TapDownDetails details) => maybeRedo(),
               child: Row(
-                children: <Widget>[
-                  const Spacer(),
-                ] + (
-                    (extraContent == DiskCountExtraContent.error) ? [
-                      widget(context, false),
-                      const Margin.internal(),
-                    ] : []
-                ) + [
-                  const DiskCount(false),
-                ]
+                  children: rightContentWidget + <Widget>[const DiskCount(false)]
               )
             )
           )

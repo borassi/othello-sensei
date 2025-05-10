@@ -16,11 +16,9 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/utils.dart';
 
 import '../state.dart';
-import '../widgets_spacers/app_sizes.dart';
-import '../widgets_utils/misc.dart';
+import '../widgets_spacers/margins.dart';
 
 class Timer extends StatelessWidget {
   final bool _black;
@@ -29,9 +27,15 @@ class Timer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var largeTextStyle = Theme.of(context).textTheme.bodyLarge;
+    var largeTextStyle = Theme.of(context).textTheme.bodyLarge!;
     return ListenableBuilder(listenable: GlobalState.timer, builder: (BuildContext context, Widget? widget) {
-      return Text(GlobalState.timer.getString(_black), style: largeTextStyle);
+      return Text(
+          GlobalState.timer.getString(_black),
+          style: largeTextStyle.merge(TextStyle(
+              height: 1.0,
+              fontWeight: FontWeight.bold)
+          )
+      );
     });
   }
 }
@@ -42,8 +46,13 @@ class Timers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
+      const Spacer(),
       Timer(true),
       const Spacer(),
-      Timer(false)]);
+      const Margin.internal(),
+      const Spacer(),
+      Timer(false),
+      const Spacer()
+    ]);
   }
 }

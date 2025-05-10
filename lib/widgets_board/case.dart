@@ -202,7 +202,8 @@ class Case extends StatelessWidget {
   final CaseState state;
   final bool isLastMove;
   final int index;
-  const Case(this.state, this.index, this.isLastMove, {super.key});
+  final double? squareSize;
+  const Case(this.state, this.index, this.isLastMove, {super.key, this.squareSize});
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
     Color fill;
@@ -266,7 +267,7 @@ class Case extends StatelessWidget {
     return ListenableBuilder(
       listenable: index == 255 ? Listenable.merge([]) : GlobalState.annotations[index],
       builder: (BuildContext context, Widget? child) {
-        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+        var squareSize = this.squareSize ?? Theme.of(context).extension<AppSizes>()!.squareSize;
         var colorScheme = Theme.of(context).colorScheme;
         List<Widget> children = [
           Container(
@@ -332,8 +333,8 @@ class Case extends StatelessWidget {
           );
           children.add(
             GestureDetector(
-              onTapDown: (TapDownDetails details) => onTapDown(),
-              onSecondaryTapDown: (TapDownDetails details) => onSecondaryTapDown(),
+              onTap: onTapDown,
+              onSecondaryTap: onSecondaryTapDown,
             )
           );
         }

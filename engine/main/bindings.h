@@ -52,14 +52,6 @@ struct ThorMetadata {
   int num_sources;
 };
 
-struct BoardUpdate {
-  BitPattern player;
-  BitPattern opponent;
-  bool black_turn;
-  int last_move;
-  bool is_game_over;
-};
-
 struct ThorGame {
   const char* black;
   const char* white;
@@ -133,6 +125,15 @@ struct Annotations {
   double thor_winning_percentage;
   bool during_analysis;
   bool modified;
+};
+
+struct BoardUpdate {
+  BitPattern player;
+  BitPattern opponent;
+  bool black_turn;
+  int last_move;
+  bool is_game_over;
+  struct Annotations* start_annotations;
 };
 
 struct ThorParams {

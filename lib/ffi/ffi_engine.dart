@@ -553,26 +553,6 @@ final class ThorMetadata extends ffi.Struct {
   external int num_sources;
 }
 
-typedef BitPattern = ffi.Uint64;
-typedef DartBitPattern = int;
-
-final class BoardUpdate extends ffi.Struct {
-  @BitPattern()
-  external int player;
-
-  @BitPattern()
-  external int opponent;
-
-  @ffi.Bool()
-  external bool black_turn;
-
-  @ffi.Int()
-  external int last_move;
-
-  @ffi.Bool()
-  external bool is_game_over;
-}
-
 final class ThorGame extends ffi.Struct {
   external ffi.Pointer<ffi.Char> black;
 
@@ -761,6 +741,28 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Bool()
   external bool modified;
+}
+
+typedef BitPattern = ffi.Uint64;
+typedef DartBitPattern = int;
+
+final class BoardUpdate extends ffi.Struct {
+  @BitPattern()
+  external int player;
+
+  @BitPattern()
+  external int opponent;
+
+  @ffi.Bool()
+  external bool black_turn;
+
+  @ffi.Int()
+  external int last_move;
+
+  @ffi.Bool()
+  external bool is_game_over;
+
+  external ffi.Pointer<Annotations> start_annotations;
 }
 
 final class ThorParams extends ffi.Struct {

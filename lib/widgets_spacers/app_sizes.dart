@@ -33,16 +33,16 @@ double getSideMargin() {
     case 'None':
       return 1;
     case 'Small':
-      return 8;
+      return 7;
     default:
-      return 16;
+      return 14;
   }
 }
 
 class AppSizes extends ThemeExtension<AppSizes> {
   static const double minFullAppBarSize = 280;
   static const double minWidth = 400;
-  static const double minHeight = 300;
+  static const double minHeight = 400;
   double height;
   double width;
   late double heightMinusBarHeight;
@@ -57,9 +57,9 @@ class AppSizes extends ThemeExtension<AppSizes> {
 
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
     sideMargin = getSideMargin();
-    margin = max(16, sideMargin);
+    margin = max(14, sideMargin);
     heightMinusBarHeight = height - appBarHeight;
-    var verticalBoardSize = min(width - 2 * sideMargin, 8 / 14 * (heightMinusBarHeight - 2 * margin));
+    var verticalBoardSize = min(width - 2 * sideMargin, 8 / 15 * (heightMinusBarHeight - 2 * margin));
     var horizontalBoardSizeFullBar = min(heightMinusBarHeight - margin - sideMargin, 8 / 16 * width - 2 * margin - sideMargin);
     var horizontalBoardSizeBrokenBar = min(height - 2 * sideMargin, 8 / 16 * width);
     if (verticalBoardSize > horizontalBoardSizeFullBar && verticalBoardSize > horizontalBoardSizeBrokenBar) {

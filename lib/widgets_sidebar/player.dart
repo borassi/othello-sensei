@@ -29,27 +29,23 @@ class PlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var largeTextStyle = Theme.of(context).textTheme.bodyLarge;
+    var largeTextStyle = Theme.of(context).textTheme.bodyMedium;
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return
       GestureDetector(
         child: ListenableBuilder(listenable: GlobalState.actionWhenPlay, builder: (BuildContext context, Widget? widget) {
           var preference = _black ? 'Black player' : 'White player';
           var text = (GlobalState.preferences.get(preference) as Player).name.capitalize();
-          return Text(text, style: largeTextStyle);
+          return SizedBox(
+              width: 2 * squareSize,
+              height: squareSize,
+              child: SenseiButton(
+                text: text,
+                textStyle: largeTextStyle,
+                onPressed: () { GlobalState.actionWhenPlay.rotatePlayer(_black); GlobalState.evaluate(); },
+              )
+          );
         }),
-        onTap: () { GlobalState.actionWhenPlay.rotatePlayer(_black); GlobalState.evaluate(); }
       );
-  }
-}
-
-class Players extends StatelessWidget {
-  const Players({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      PlayerWidget(true),
-      const Spacer(),
-      PlayerWidget(false)]);
   }
 }

@@ -297,19 +297,41 @@ class SetupBoardState with ChangeNotifier {
   }
 }
 
+class Move {
+  final int square;
+  final bool blackPlayer;
+
+  const Move(this.square, this.blackPlayer);
+}
+
 class BoardState with ChangeNotifier {
   int player;
   int opponent;
   bool blackTurn;
   int lastMove;
+  List<Move> allMoves;
 
-  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1;
+  BoardState() : player = 0, opponent = 0, blackTurn = true, lastMove = -1, allMoves = <Move>[];
 
   void setState(BoardUpdate boardUpdate) {
     player = boardUpdate.player;
     opponent = boardUpdate.opponent;
     blackTurn = boardUpdate.black_turn;
     lastMove = boardUpdate.last_move;
+    allMoves = <Move>[];
+    var oldBlack = true;
+    for (var annotation = boardUpdate.start_annotations;
+         annotation != nullptr;
+         annotation = annotation.ref.next_state_primary != nullptr ?
+         annotation.ref.next_state_primary :
+         annotation.ref.next_state_secondary) {
+      if (annotation.ref.move < 0 || annotation.ref.move >= 64) {
+        oldBlack = annotation.ref.black_turn;
+        continue;
+      }
+      allMoves.add(Move(annotation.ref.move, oldBlack));
+      oldBlack = annotation.ref.black_turn;
+    }
     notifyListeners();
   }
 

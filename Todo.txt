@@ -8,6 +8,7 @@ Mac
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
+- P0 MED Fix setup board.
 - P2 MED Create smaller books.
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
@@ -19,6 +20,7 @@ Tech debt
 
 Thor
 - P2 MED Exclude games between programs.
+- P2 MED Exclude XOT.
 - P2 MED Winning percentages.
 - P3 SMALL Filter by tournament / year.
 - P3 LARGE Download games during tournaments.
@@ -29,7 +31,6 @@ Match the features of the current app
 Extra features:
 - P1 EASY Beginner settings.
 - P1 HARD Save games.
-- P1 MED Timer.
 - P2 LARGE How easy / hard a position is.
 - P2 LARGE Expand all "interesting" lines in opening book.
 - P2 LARGE Remember opening book for player.
