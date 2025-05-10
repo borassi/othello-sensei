@@ -20,6 +20,7 @@ import 'package:othello_sensei/widgets_sidebar/player.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 import 'package:othello_sensei/widgets_sidebar/timer.dart';
+import 'package:othello_sensei/widgets_windows/appbar.dart';
 
 import '../state.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -59,6 +60,7 @@ class Sidebar extends StatelessWidget {
       child: ListenableBuilder(
         listenable: GlobalState.preferences,
         builder: (BuildContext context, Widget? widget) {
+          var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
           DefaultTabController.of(context).animateTo(
               GlobalState.preferences.get('Active tab'),
               duration: const Duration(seconds: 0));
@@ -69,14 +71,15 @@ class Sidebar extends StatelessWidget {
               const Controls(),
             ];
           }
+          var childAppBar = brokenAppBar ? <Widget>[SenseiAppBar(), const Margin.internal()] : <Widget>[];
           var evaluateContent = Column(
-              children: childrenEvaluate + childrenControls
+              children: childAppBar + childrenEvaluate + childrenControls
           );
           var thorContent = Column(
-            children: childrenThor + childrenControls,
+            children: childAppBar + childrenThor + childrenControls,
           );
           var playContent = Column(
-            children: childrenPlay + childrenControls,
+            children: childAppBar + childrenPlay + childrenControls,
           );
           return Scaffold(
             bottomNavigationBar: TabBar(

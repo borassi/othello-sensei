@@ -23,7 +23,8 @@ import 'case.dart';
 class Coordinate extends StatelessWidget {
   final bool vertical;
   final int position;
-  const Coordinate(this.vertical, this.position, {super.key});
+  final double smallSize;
+  const Coordinate(this.vertical, this.position, this.smallSize, {super.key});
   
   @override
   Widget build(BuildContext context) {
@@ -45,8 +46,8 @@ class Coordinate extends StatelessWidget {
       );
     }
     return SizedBox(
-      width: vertical ? appSizes.sideMargin : squareSize,
-      height: vertical ? squareSize : appSizes.sideMargin,
+      width: vertical ? smallSize : squareSize,
+      height: vertical ? squareSize : smallSize,
       child: contentWidget
     );
   }
@@ -60,7 +61,11 @@ class Board extends StatelessWidget {
   Widget build(BuildContext context) {
     var board = GlobalState.board;
     var colorScheme = Theme.of(context).colorScheme;
-    var margin = Theme.of(context).extension<AppSizes>()!.sideMargin;
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    var sideMargin = appSizes.sideMargin;
+    var internalMargin = appSizes.margin;
+    var leftMargin = sideMargin;
+    var topMargin = appSizes.brokenAppBar() ? sideMargin : internalMargin;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
@@ -70,20 +75,25 @@ class Board extends StatelessWidget {
             children: <Widget>[
               Table(
                 defaultColumnWidth: FixedColumnWidth(squareSize),
-                columnWidths: {0: FixedColumnWidth(margin)},
+                columnWidths: {0: FixedColumnWidth(sideMargin)},
                 children:
-                  [TableRow(children: <Widget>[Container()] + List.generate(8, (y) => Coordinate(false, y)))] +
+                  [
+                    TableRow(children: <Widget>[Container()] + List.generate(8, (y) => Coordinate(false, y, topMargin)))
+                  ] +
                   List.generate(8, (x) => TableRow(
-                    children: <Widget>[Coordinate(true, x)] + List.generate(8, (y) {
-                      var index = 63 - 8 * x - y;
-                      return Case(getState(index, board), index, index == GlobalState.board.lastMove);
-                    })
-                  ))
+                    children:
+                      <Widget>[Coordinate(true, x, sideMargin)] +
+                      List.generate(8, (y) {
+                        var index = 63 - 8 * x - y;
+                        return Case(getState(index, board), index, index == GlobalState.board.lastMove);
+                      })
+                    )
+                  )
               )
             ] +
             List.generate(4, (index) => Positioned(
-              left: margin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
-              top: margin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
+              left: leftMargin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
+              top: leftMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
               child:
               Container(
                 decoration: BoxDecoration(

@@ -128,74 +128,51 @@ class MainContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
-    bool vertical = appSizes.layout == AppLayout.vertical;
-    var boardContent = Flex(
-      mainAxisSize: MainAxisSize.min,
-      direction: vertical ? Axis.horizontal : Axis.vertical,
-      children: [board, const Margin.side()],
-    );
-    var sideContent = Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children:
-          (vertical ? <Widget>[const Margin.internal()] : (appSizes.brokenAppBar() ? <Widget>[] : <Widget>[const Margin.side()])) + <Widget>[
+    var brokenAppBar = appSizes.brokenAppBar();
+    bool vertical = appSizes.vertical();
+
+    Widget content;
+    if (vertical) {
+      content = Column(
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [board, const Margin.side()]),
+          const Margin.internal(),
           Expanded(
             child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                vertical ? const Margin.side() : const Margin.internal(),
-                Flexible(
-                  child: Container(
-                    constraints: BoxConstraints(maxWidth: 8 * appSizes.squareSize),
-                    child: sidebar,
-                  ),
-                ),
-                const Margin.side()
-              ],
-            )
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [const Margin.side(), SizedBox(width: 8 * appSizes.squareSize,child: sidebar), const Margin.side()])
           )
         ]
-      )
-    );
+      );
+    } else {
+      // content = Expanded(child: Container(color: Colors.red));
+      content = Row(
+        children: [
+          Column(children: [board, const Margin.side()]),
+          const Margin.internal(),
+          Expanded(child: Column(children: [brokenAppBar ? const Margin.side() : const Margin.internal(), Expanded(child: sidebar)])),
+          const Margin.side(),
+        ]
+      );
+    }
 
-    var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
     return Container(
-      color: brokenAppBar ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.primaryContainer,
+      color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
-        child: AnnotatedRegion(
-          value: SystemUiOverlayStyle(
-            statusBarColor: Theme.of(context).colorScheme.primaryContainer,
-            statusBarIconBrightness: Brightness.light,
-          ),
-          child: Scaffold(
-            resizeToAvoidBottomInset: false,
-            body: Row(
-              children:
-              (brokenAppBar ? <Widget>[boardContent] : <Widget>[]) +
-              <Widget>[
-                Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      Row(
-                        children: (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[])
-                            + <Widget>[const Expanded(child: SenseiAppBar())]
-                      )] +
-                      (brokenAppBar ? <Widget>[const Margin.internal()] : <Widget>[]) + [
-                      Expanded(
-                        child: Center(
-                          child: Flex(
-                            direction: Theme.of(context).extension<AppSizes>()!.vertical() ? Axis.vertical : Axis.horizontal,
-                            mainAxisSize: MainAxisSize.min,
-                            children:
-                              (!brokenAppBar ? <Widget>[boardContent] : <Widget>[]) +
-                              [sideContent]
-                          )
-                        )
-                      )
-                    ]
-                  )
-                )
-              ]
+        // If top: true, then the Container and SafeArea below do nothing.
+        // If top: false, then the Container below makes the top bar green.
+        top: brokenAppBar,
+        child: Container(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          child: SafeArea(
+            child: Scaffold(
+              body: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children:
+                  (brokenAppBar ? <Widget>[] : <Widget>[SenseiAppBar()]) +
+                      [Expanded(child: content)]
+              )
             )
           )
         )

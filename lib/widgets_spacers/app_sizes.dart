@@ -28,21 +28,20 @@ enum AppLayout {
   horizontalBrokenBar,
 }
 
-double getSideMargin(double margin) {
+double getSideMargin() {
   switch (GlobalState.preferences.get('Margin size')) {
     case 'None':
-      return 2;
+      return 1;
     case 'Small':
-      return 0.5 * margin;
+      return 8;
     default:
-      return margin;
+      return 16;
   }
 }
 
 class AppSizes extends ThemeExtension<AppSizes> {
   static const double minFullAppBarSize = 280;
-  static const double minAppBarWidth = 230;
-  static const double minWidth = minAppBarWidth;
+  static const double minWidth = 400;
   static const double minHeight = 300;
   double height;
   double width;
@@ -57,10 +56,12 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double appBarHeight;
 
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
+    sideMargin = getSideMargin();
+    margin = max(16, sideMargin);
     heightMinusBarHeight = height - appBarHeight;
-    var verticalBoardSize = min(width, 8 / 14 * heightMinusBarHeight);
-    var horizontalBoardSizeFullBar = min(heightMinusBarHeight, 8 / 15 * width);
-    var horizontalBoardSizeBrokenBar = min(min(height, 8 / 15 * width), width - minAppBarWidth);
+    var verticalBoardSize = min(width - 2 * sideMargin, 8 / 14 * (heightMinusBarHeight - 2 * margin));
+    var horizontalBoardSizeFullBar = min(heightMinusBarHeight - margin - sideMargin, 8 / 16 * width - 2 * margin - sideMargin);
+    var horizontalBoardSizeBrokenBar = min(height - 2 * sideMargin, 8 / 16 * width);
     if (verticalBoardSize > horizontalBoardSizeFullBar && verticalBoardSize > horizontalBoardSizeBrokenBar) {
       layout = AppLayout.vertical;
       boardSize = verticalBoardSize;
@@ -71,9 +72,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
       layout = AppLayout.horizontalBrokenBar;
       boardSize = horizontalBoardSizeBrokenBar;
     }
-    margin = boardSize / 20;
-    sideMargin = getSideMargin(margin);
-    squareSize = (boardSize - 2 * sideMargin) / 8;
+    squareSize = (boardSize) / 8;
     sideBarWidth = vertical() ? boardSize - 2 * sideMargin : width - boardSize - sideMargin;
     sideBarHeight = vertical() ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
   }
