@@ -28,21 +28,21 @@ enum AppLayout {
   horizontalBrokenBar,
 }
 
-double getSideMargin() {
+double getSideFraction() {
   switch (GlobalState.preferences.get('Margin size')) {
     case 'None':
-      return 1;
+      return 0;
     case 'Small':
-      return 7;
+      return 0.02;
     default:
-      return 14;
+      return 0.04;
   }
 }
 
 class AppSizes extends ThemeExtension<AppSizes> {
   static const double minFullAppBarSize = 280;
-  static const double minWidth = 400;
-  static const double minHeight = 400;
+  static const double minWidth = 300;
+  static const double minHeight = 350;
   double height;
   double width;
   late double heightMinusBarHeight;
@@ -56,12 +56,19 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double appBarHeight;
 
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
-    sideMargin = getSideMargin();
-    margin = max(14, sideMargin);
+    var sideMarginFraction = getSideFraction();
+    var internalMarginFraction = max(0.04, sideMarginFraction);
     heightMinusBarHeight = height - appBarHeight;
-    var verticalBoardSize = min(width - 2 * sideMargin, 8 / 15 * (heightMinusBarHeight - 2 * margin));
-    var horizontalBoardSizeFullBar = min(heightMinusBarHeight - margin - sideMargin, 8 / 16 * width - 2 * margin - sideMargin);
-    var horizontalBoardSizeBrokenBar = min(height - 2 * sideMargin, 8 / 16 * width);
+    var verticalBoardSize = min(
+        width / (1 + 2 * sideMarginFraction),
+        8 / 13.5 * heightMinusBarHeight / (1 + 2 * internalMarginFraction));
+    var horizontalBoardSizeFullBar = min(
+        heightMinusBarHeight / (1 + internalMarginFraction + sideMarginFraction),
+        8 / 16 * width / (1 + 2 * internalMarginFraction + sideMarginFraction)
+    );
+    var horizontalBoardSizeBrokenBar = min(
+        height / (1 + 2 * sideMarginFraction),
+        8 / 16 * width / (1 + 2 * sideMarginFraction + internalMarginFraction));
     if (verticalBoardSize > horizontalBoardSizeFullBar && verticalBoardSize > horizontalBoardSizeBrokenBar) {
       layout = AppLayout.vertical;
       boardSize = verticalBoardSize;
@@ -73,6 +80,8 @@ class AppSizes extends ThemeExtension<AppSizes> {
       boardSize = horizontalBoardSizeBrokenBar;
     }
     squareSize = (boardSize) / 8;
+    sideMargin = sideMarginFraction * boardSize;
+    margin = internalMarginFraction * boardSize;
     sideBarWidth = vertical() ? boardSize - 2 * sideMargin : width - boardSize - sideMargin;
     sideBarHeight = vertical() ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
   }

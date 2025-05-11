@@ -55,7 +55,6 @@ class Sidebar extends StatelessWidget {
       const Margin.internal(),
       const Spacer(),
       const MovesVisualizer(),
-      const Spacer(),
     ];
     return DefaultTabController(
       length: 3,

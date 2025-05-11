@@ -90,7 +90,7 @@ class MovesVisualizer extends StatelessWidget {
             var width = constraints.constrainWidth();
             var desiredMovesVisualizerSize = squareSize / 2;
             var numberPerRow = (width / desiredMovesVisualizerSize).ceil();
-            if (numberPerRow >= 40) {
+            if (numberPerRow >= 30) {
               numberPerRow = 60;
             } else if (numberPerRow >= 20) {
               numberPerRow = 30;
