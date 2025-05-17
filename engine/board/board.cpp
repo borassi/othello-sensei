@@ -20,6 +20,7 @@
 #include "board.h"
 #include "get_flip.h"
 #include "get_moves.h"
+#include "../utils/misc.h"
 
 const char kInitialBoard[] =
     "--------"
@@ -54,8 +55,9 @@ Board::Board(const std::string& board, bool player_x)
 
 Board::Board(const std::string& sequence, std::vector<Board>* previous) : Board() {
   assert(sequence.length() % 2 == 0);
-  for (int i = 0; i < sequence.length(); i += 2) {
-    Square move = MoveToSquare(sequence.substr(i, 2));
+  std::string lower = ToLower(sequence);
+  for (int i = 0; i < lower.length(); i += 2) {
+    Square move = MoveToSquare(lower.substr(i, 2));
     BitPattern flip = GetFlip(move, player_, opponent_);
     assert(flip != 0);
     if (previous) {

@@ -23,7 +23,6 @@ constexpr double kFirstEvalTime = 0.01;
 constexpr double kNextEvalTime = 0.1;
 
 void BoardToEvaluate::EvaluateBook() {
-  book_->ReloadSizes();
   auto board_in_book = book_->Get(unique_);
   if (board_in_book) {
     for (auto& [state, finished] : states_finished_) {

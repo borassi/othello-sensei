@@ -109,7 +109,7 @@ class BoardToEvaluate {
   bool started_;
   EvaluatorDerivative evaluator_;
   std::vector<std::pair<EvaluationState*, bool>> states_finished_;
-  Book<>* book_;
+  const Book<>* book_;
 
   bool Valid() const {
     for (auto& [state, _] : states_finished_) {

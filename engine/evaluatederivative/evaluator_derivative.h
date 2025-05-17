@@ -391,8 +391,11 @@ class EvaluatorDerivative {
     while (extended) {
       auto [new_weak_lower, new_weak_upper] = first_position_->ExpectedWeakLowerUpper();
 
-      new_weak_lower = std::max(lower_, new_weak_lower);
-      new_weak_upper = std::min(upper_, new_weak_upper);
+      // We need both max and min for the cases where we proved that first_position.eval > upper_ or
+      // first_position.eval < lower_. In these cases, first_position->ExpectedWeakLowerUpper() is
+      // upper_ + 1 or lower_ - 1.
+      new_weak_lower = std::max(lower_, std::min(upper_, new_weak_lower));
+      new_weak_upper = std::max(lower_, std::min(upper_, new_weak_upper));
       assert(new_weak_lower <= new_weak_upper);
 
       if (new_weak_lower < weak_lower_) {

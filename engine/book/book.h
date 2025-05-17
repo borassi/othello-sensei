@@ -225,6 +225,28 @@ Book<version>::Book(const std::string& folder) : folder_(folder), value_files_()
     index_file.close();
     ReloadSizes();
   }
+//  CODE USED TO FIX SIZES, REMOVE AFTER COMMIT.
+//  std::fstream fixed_index_file(folder + "/index_fixed.sen", std::ios::binary | std::ios::out);
+//  std::vector<char> index_file_vec = ReadFile<char>(folder_ + "/index.sen");
+//  std::cout << index_file_vec.size() << " " << OffsetToFilePosition(hash_map_size_) << "\n";
+//  fixed_index_file.write(&index_file_vec[0], OffsetToFilePosition(hash_map_size_));
+//  HashMapNode node;
+//  int num_elements = 0;
+//  std::cout << "HMS: " << hash_map_size_ << "\n";
+//  index_file = IndexFile();
+//  index_file.seekg(kOffset);
+//  for (HashMapIndex hash = 0; hash < hash_map_size_; ++hash) {
+//    index_file.read((char*) &node, sizeof(HashMapNode));
+////    std::cout << node << "\n";
+//    if (!node.IsEmpty()) {
+//      ++num_elements;
+//    }
+//  }
+//  std::cout << num_elements << "\n";
+//  book_size_ = num_elements;
+//  UpdateSizes(fixed_index_file);
+//  fixed_index_file.close();
+  assert(IsSizeOK());
 }
 
 template<int version>
@@ -335,6 +357,7 @@ void Book<version>::Commit(bool verbose) {
   if (received_signal_ != NSIG) {
     raise(received_signal_);
   }
+  assert(IsSizeOK());
 }
 
 template<int version>
@@ -368,7 +391,6 @@ void Book<version>::Commit(const BookNode& node) {
   file.close();
   assert(Get(node.ToBoard()));
   assert(!Find(node.Player(), node.Opponent()).second.IsEmpty());
-  assert(IsSizeOK());
 }
 
 template<int version>
@@ -528,6 +550,7 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
     file.seekp((uint64_t) file.tellg() - sizeof(HashMapNode));
     file.write((char*) &node_to_move, sizeof(node_to_move));
   }
+  UpdateSizes(file);
 }
 
 #endif //OTHELLOSENSEI_POSITION_TO_DATA_H

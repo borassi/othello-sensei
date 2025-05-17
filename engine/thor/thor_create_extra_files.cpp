@@ -29,18 +29,28 @@
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string input_path = parse_flags.GetFlag("input_path");
-  std::string output_path = parse_flags.GetFlag("output_path");
+  std::string output_path = parse_flags.GetFlagOrDefault("output_path", "");
   std::string xot_path = parse_flags.GetFlagOrDefault("xot_path", "");
   bool rebuild_canonicalizer = parse_flags.GetBoolFlagOrDefault("rebuild_canonicalizer", true);
   bool rebuild_games_order = parse_flags.GetBoolFlagOrDefault("rebuild_games_order", true);
   bool rebuild_games_small_hash = parse_flags.GetBoolFlagOrDefault("rebuild_games_small_hash", true);
 
-  fs::create_directories(fs::path(output_path).remove_filename());
+  if (output_path != "") {
+    fs::create_directories(fs::path(output_path).remove_filename());
+  }
 
   if (xot_path.empty()) {
-    std::cout << "No XOT path, copying...\n";
-    fs::copy(input_path, output_path, fs::copy_options::recursive);
+    if (output_path != "") {
+      std::cout << "No XOT path, copying...\n";
+      fs::copy(input_path, output_path, fs::copy_options::recursive);
+    } else {
+      std::cout << "No output path, adding files to the input path...\n";
+      output_path = input_path;
+    }
   } else {
+    if (output_path.empty()) {
+      return 1;
+    }
     std::cout << "XOT path, fixing...\n";
     XOT xot(LoadTextFile(xot_path));
     for (const auto& entry : GetAllFiles(input_path, /*include_files=*/false, /*include_directories=*/true)) {

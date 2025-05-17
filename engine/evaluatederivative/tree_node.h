@@ -430,11 +430,13 @@ class Node {
   // solved, then decreases more until becoming -inf.
   virtual double Advancement(Eval lower, Eval upper) const {
     double result = -DBL_MAX;
-    for (int i = std::max(lower_ + 1, (int) weak_lower_); i <= std::min(upper_ - 1, (int) weak_upper_); i += 2) {
+    Eval actual_lower = std::max(lower_ + 1, (int) weak_lower_);
+    Eval actual_upper = std::min(upper_ - 1, (int) weak_upper_);
+    for (int i = actual_lower; i <= actual_upper; i += 2) {
       result = std::max(result, (double) GetEvaluation(i).MaxLogDerivative());
     }
     if (result == kLogDerivativeMinusInf) {
-      result += log(RemainingWork(lower, upper)) - 1E5;
+      result += log(RemainingWork(actual_lower, actual_upper)) - 1E5;
     }
     return result;
   }

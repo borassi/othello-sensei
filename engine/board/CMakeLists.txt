@@ -52,7 +52,9 @@ target_link_libraries(
         LINK_PUBLIC
         bitpattern
         get_flip
-        get_moves)
+        get_moves
+        misc
+)
 
 IF(ENABLE_GOOGLETEST)
 add_executable(
