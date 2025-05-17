@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <iomanip>
+#include <iostream>
 #include <limits>
 
 #include "../book/book.h"
@@ -28,9 +30,33 @@
 // TODO: Fix proof / disproof number at end.
 // TODO: Test Google cloud.
 
+std::string GetBestLine(Book<>& book, const std::vector<std::string>& lines) {
+  std::string best_line = lines[0];
+  double best_advancement = -DBL_MAX;
+  std::cout << "Choosing line\n";
+  int max_line_length = 0;
+  for (const auto& line : lines) {
+    max_line_length = std::max(max_line_length, (int) line.size());
+  }
+
+  for (const auto& line : lines) {
+    auto board_in_book = book.Mutable(Board(line));
+    auto value = board_in_book->Advancement(-64, 64);
+    std::cout << "    "
+        << std::setw(max_line_length) << line << " "
+        << std::setw(10) << (int) value << " "
+        << std::setprecision(3) << board_in_book->GetEval() << "\n";
+    if (value > best_advancement) {
+      best_advancement = value;
+      best_line = line;
+    }
+  }
+  return best_line;
+}
+
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
-  std::string start_line = parse_flags.GetFlagOrDefault("start", "");
+  std::string start_lines_str = parse_flags.GetFlagOrDefault("start", "");
 //  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
   std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
   NVisited n_descendants_children = parse_flags.GetLongLongFlagOrDefault("n_descendants_children", 50 * 1000 * 1000LL);
@@ -38,6 +64,10 @@ int main(int argc, char* argv[]) {
   int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
   bool force_first_position = parse_flags.GetBoolFlagOrDefault("force_first_position", false);
 
+  std::vector<std::string> start_lines = Split(start_lines_str, ',');
+  if (start_lines.empty()) {
+    start_lines.push_back("");
+  }
   fs::create_directories(filepath);
   Book<> book(filepath);
   HashMap<kBitHashMap> hash_map;
@@ -50,23 +80,27 @@ int main(int argc, char* argv[]) {
         PatternEvaluator::Factory(evals.data()),
         static_cast<uint8_t>(i));
   }
-  if (!book.Get(Board(start_line))) {
-    if (!force_first_position) {
-      std::cout << "The node '" << start_line << "' is not in the library. Run with --force_first_position, or choose a different start.\n";
-      return 1;
+  for (const auto& start_line : start_lines) {
+    if (!book.Get(Board(start_line))) {
+      if (!force_first_position) {
+        std::cout << "The node '" << start_line
+                  << "' is not in the library. Run with --force_first_position, or choose a different start.\n";
+        return 1;
+      }
+      std::unique_ptr<TreeNode> t(new TreeNode());
+      t->Reset(Board(start_line), 1, 0);
+      t->SetLeafEval(0, 1);
+      t->UpdateLeafWeakLowerUpper(-63, 63);
+      t->AddDescendants(1);
+      book.Add(*t);
     }
-    std::unique_ptr<TreeNode> t(new TreeNode());
-    t->Reset(Board(start_line), 1, 0);
-    t->SetLeafEval(0, 1);
-    t->UpdateLeafWeakLowerUpper(-63, 63);
-    t->AddDescendants(1);
-    book.Add(*t);
   }
 
-  Eval last_eval_goal = kLessThenMinEval;
-  std::vector<Board> start_line_boards;
-  Board start_board(start_line, &start_line_boards);
   while (true) {
+    std::string start_line = GetBestLine(book, start_lines);
+    Eval last_eval_goal = kLessThenMinEval;
+    std::vector<Board> start_line_boards;
+    Board start_board(start_line, &start_line_boards);
     ElapsedTime t;
     std::vector<Book<>::BookNode*> start_line_in_book;
     for (const Board& start_line_board : start_line_boards) {
@@ -92,6 +126,7 @@ int main(int argc, char* argv[]) {
         << "Positions:             " << PrettyPrintDouble((double) book.Size()) << "\n"
         << "Descendants of start:  " << PrettyPrintDouble((double) start->GetNVisited()) << "\n"
         << "Evaluation of start:   " << std::setprecision(3) << start->GetEval() << "\n"
+        << "Advancement            " << (int) start->Advancement(-64, 64) << "\n"
         << "Missing:               " << PrettyPrintDouble(start->RemainingWork(-63, 63)) << "\n"
         << "Eval goal:             " << (int) eval_goal << "\n";
 
