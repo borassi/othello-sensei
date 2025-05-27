@@ -353,7 +353,7 @@ class DownloadSecondaryWindow extends StatelessWidget {
                                 children: [
                                   const Spacer(),
                                   Text(text, style: Theme.of(context).textTheme.bodyMedium!),
-                                  const Margin.side(),
+                                  const Margin.internal(),
                                   CircularProgressIndicator(value: progress),
                                   const Spacer(),
                                 ] + windowsHelpTextWidgets
