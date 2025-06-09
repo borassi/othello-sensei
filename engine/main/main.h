@@ -267,9 +267,7 @@ class Main {
     game_metadata_.year = game.Year();
     game_metadata_.black_disks = game.BlackDisks();
     SetSequence(game.Moves());
-    if (current_state_->Fathers().size() > 0) {
-      current_state_->SetPrimaryLine();
-    }
+    current_state_->SetPrimaryLine();
   }
 
  private:

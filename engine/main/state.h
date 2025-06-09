@@ -82,9 +82,9 @@ class EvaluationState : public TreeNode {
   double SecondsOnThisNode() { return seconds_on_this_node_; }
   void ResetSecondsOnThisNode() { seconds_on_this_node_ = 0; }
   void AddSecondsOnThisNode(double value) { seconds_on_this_node_ += value; }
-  void ResetSecondsToEvaluateThisNode() { seconds_on_this_node_ = 0; }
-  void AddSecondsToEvaluateThisNode(double value) { seconds_on_this_node_ += value; }
-  double SecondsToEvaluateThisNode() { return seconds_on_this_node_; }
+  void ResetSecondsToEvaluateThisNode() { seconds_to_evaluate_this_node_ = 0; }
+  void AddSecondsToEvaluateThisNode(double value) { seconds_to_evaluate_this_node_ += value; }
+  double SecondsToEvaluateThisNode() { return seconds_to_evaluate_this_node_; }
   bool InAnalysisLine() const {
     if (next_state_primary_ != nullptr) {
       return true;
@@ -214,7 +214,6 @@ class EvaluationState : public TreeNode {
   }
 
   void SetPrimaryLine() {
-    assert(Father() != nullptr);
     for (EvaluationState* state = this; state->Father() != nullptr; state = state->Father()) {
       EvaluationState* father = state->Father();
       if (father->next_state_primary_ == state) {
