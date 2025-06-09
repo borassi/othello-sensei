@@ -32,7 +32,7 @@
 
 std::string GetBestLine(Book<>& book, const std::vector<std::string>& lines) {
   std::string best_line = lines[0];
-  double best_advancement = -DBL_MAX;
+  double best = -DBL_MAX;
   std::cout << "Choosing line\n";
   int max_line_length = 0;
   for (const auto& line : lines) {
@@ -41,13 +41,13 @@ std::string GetBestLine(Book<>& book, const std::vector<std::string>& lines) {
 
   for (const auto& line : lines) {
     auto board_in_book = book.Mutable(Board(line));
-    auto value = board_in_book->Advancement(-64, 64);
+    auto value = board_in_book->Uncertainty();
     std::cout << "    "
         << std::setw(max_line_length) << line << " "
-        << std::setw(10) << (int) value << " "
+        << std::setw(7) << std::setprecision(2) << value << " "
         << std::setprecision(3) << board_in_book->GetEval() << "\n";
-    if (value > best_advancement) {
-      best_advancement = value;
+    if (value > best) {
+      best = value;
       best_line = line;
     }
   }
