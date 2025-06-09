@@ -30,6 +30,7 @@
 #include "../evaluatederivative/evaluator_derivative.h"
 #include "../evaluatederivative/tree_node.h"
 #include "../evaluatedepthone/pattern_evaluator.h"
+#include "../savegame/game_to_save.h"
 #include "../thor/thor.h"
 #include "../utils/misc.h"
 #include "../xot/xot.h"
@@ -57,6 +58,12 @@ class Main {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0, 0, false);
     [[maybe_unused]] bool new_state = ToState(first_state_.get());
     assert(new_state);
+    memset(game_metadata_.black, 0, 20);
+    memset(game_metadata_.white, 0, 20);
+    memset(game_metadata_.tournament, 0, 26);
+    game_metadata_.year = GetCurrentYear();
+    game_metadata_.black_disks = 64;
+    memset(game_metadata_.notes, 0, 300);
   }
 
   bool PlayMove(Square square, bool automatic) {
@@ -224,6 +231,45 @@ class Main {
     }
   }
 
+  GameMetadata* MutableGameMetadata() { return &game_metadata_; }
+
+  char* GetGameToSave() {
+    GameToSave game(
+        current_state_->GetSequence(),
+        std::string(game_metadata_.black),
+        std::string(game_metadata_.white),
+        std::string(game_metadata_.tournament),
+        std::string(game_metadata_.notes),
+        game_metadata_.year,
+        game_metadata_.black_disks);
+    std::string result = game.ToString();
+    char* result_c = (char*) malloc(sizeof(char) * (result.size() + 1));
+    memcpy(result_c, result.c_str(), result.size());
+    result_c[result.size()] = '\0';
+    return result_c;
+  }
+
+  void Open(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+      throw std::runtime_error("Could not open file: " + path);
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string content = buffer.str();
+    GameToSave game = GameToSave::FromString(content);
+    memcpy(game_metadata_.black, game.Black().c_str(), game.Black().size());
+    memcpy(game_metadata_.white, game.White().c_str(), game.White().size());
+    memcpy(game_metadata_.tournament, game.Tournament().c_str(), game.Tournament().size());
+    memcpy(game_metadata_.notes, game.Notes().c_str(), game.Notes().size());
+    game_metadata_.year = game.Year();
+    game_metadata_.black_disks = game.BlackDisks();
+    SetSequence(game.Moves());
+    if (current_state_->Fathers().size() > 0) {
+      current_state_->SetPrimaryLine();
+    }
+  }
+
  private:
   static constexpr int kNumEvaluators = 60;
 
@@ -250,6 +296,8 @@ class Main {
 
   bool is_being_destroyed_;
   std::future<void> update_timers_future_;
+
+  GameMetadata game_metadata_;
 
   bool ToState(EvaluationState* new_state);
 

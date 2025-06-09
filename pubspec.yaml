@@ -59,6 +59,9 @@ dependencies:
   android_intent_plus: ^5.2.0
   receive_sharing_intent: ^1.8.1
   receive_intent: ^0.2.5
+  file_picker: ^10.1.9
+  textfield_search: ^0.11.1
+  flutter_svg: ^2.1.0
 
 dev_dependencies:
   flutter_test:

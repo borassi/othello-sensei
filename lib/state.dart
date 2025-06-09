@@ -15,16 +15,20 @@
  *
  */
 
+import 'dart:convert';
 import 'dart:ffi';
+import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:ffi/ffi.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
 import 'package:othello_sensei/widgets_board/case.dart' as sensei_case;
+import 'package:othello_sensei/widgets_windows/save_dialog.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -127,6 +131,7 @@ class GlobalState {
   static const Main main = Main();
   static late List<ConnectivityResult> connectivity;
   static ThorMetadataState? thorMetadataOrNull;
+  static GameMetadataState gameMetadataState = GameMetadataState();
   static late FFIEngine ffiEngine;
   static late CpuType cpuType;
   static late String localPath;
@@ -173,6 +178,7 @@ class GlobalState {
     thorMetadataOrNull = null;
     ffiMain = GlobalState.ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
+        // '/home/michele/Desktop/sensei/book'.toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
         join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>(),
@@ -272,6 +278,37 @@ class GlobalState {
       GlobalState.annotations[i].clear();
     }
   }
+
+  static Future<void> setDetailsAndSave(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SaveDialogWidget()),
+    );
+  }
+
+  static Future<void> save() async {
+    var game = ffiEngine.GetGameToSave(ffiMain).cast<Utf8>().toDartString();
+    var path = await FilePicker.platform.saveFile(
+        allowedExtensions: ['txt'],
+        bytes: utf8.encode(game)
+    );
+    if (path == null) {
+      return;
+    }
+    evaluate();
+  }
+
+  static Future<void> open() async {
+    var filePickerResult = await FilePicker.platform.pickFiles(
+      allowedExtensions: ['txt']
+    );
+    if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
+      return;
+    }
+    var pathC = filePickerResult.paths[0]!.toNativeUtf8().cast<ffi.Char>();
+    ffiEngine.Open(ffiMain, pathC);
+    evaluate();
+  }
 }
 
 class SetupBoardState with ChangeNotifier {
@@ -293,6 +330,54 @@ class SetupBoardState with ChangeNotifier {
 
   void setResetState(bool newValue) {
     resetState = newValue;
+    notifyListeners();
+  }
+}
+
+class GameMetadataState with ChangeNotifier {
+  GameMetadata getMetadata() {
+    return GlobalState.ffiEngine.MutableGameMetadata(GlobalState.ffiMain).ref;
+  }
+
+  void assignToPointer(Array<Char> ptr, String string, int length) {
+    var lengthValue = min(string.length, length - 1);
+    for (int i = 0; i < lengthValue; ++i) {
+      ptr[i] = string.codeUnitAt(i);
+    }
+    ptr[lengthValue] = 0;
+  }
+
+  void setBlack(String value) {
+    assignToPointer(getMetadata().black, value, 20);
+    notifyListeners();
+  }
+
+  void setWhite(String value) {
+    assignToPointer(getMetadata().white, value, 20);
+    notifyListeners();
+  }
+
+  void setTournament(String value) {
+    assignToPointer(getMetadata().tournament, value, 26);
+    notifyListeners();
+  }
+
+  void setYear(int year) {
+    getMetadata().year = year;
+    notifyListeners();
+  }
+
+  void setScore(String score, bool black) {
+    int scoreInt;
+    try {
+      scoreInt = int.parse(score);
+    } on FormatException {
+      return;
+    }
+    getMetadata().black_disks = black ? scoreInt : 64 - scoreInt;
+  }
+
+  void finishedSetScore() {
     notifyListeners();
   }
 }

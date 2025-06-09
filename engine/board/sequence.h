@@ -79,6 +79,7 @@ struct PlayResultFetcher {
   virtual void AtFail() {
     throw InvalidSequenceException();
   }
+  virtual void AtPass() {}
 };
 
 class Sequence {
@@ -233,6 +234,8 @@ class Sequence {
 
   Board ToBoard(int i = -1) const;
 
+  std::pair<Board, bool> ToBoardAndBlackTurn(int i = -1) const;
+
   bool IsValid() const;
 
   Sequence VerticalMirror() const {
@@ -337,7 +340,9 @@ class Sequence {
   template<class T>
   T Play(PlayResultFetcher<T>* fetcher) const {
     Board b;
-    fetcher->AtBoard(b);
+    if (!fetcher->AtBoard(b)) {
+      return fetcher->Get();
+    }
     for (int i = 0; i < size_; ++i) {
       Square move = moves_[i];
       assert(move >= 0 && move < 64);
@@ -351,9 +356,12 @@ class Sequence {
       }
       b.PlayMove(flip);
       if (HaveToPass(b.Player(), b.Opponent())) {
+        fetcher->AtPass();
         b.PlayMove(0);
       }
-      fetcher->AtBoard(b);
+      if (!fetcher->AtBoard(b)) {
+        break;
+      }
     }
     return fetcher->Get();
   }

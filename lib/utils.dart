@@ -46,17 +46,28 @@ int bitCount(int x) {
 }
 
 class IntInputFormatter implements TextInputFormatter {
+  int? minValue;
+  int? maxValue;
+
+  IntInputFormatter({this.minValue, this.maxValue});
+
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text == '') {
       return newValue;
     }
     try {
-      int.parse(newValue.text);
+      var newValueInt = int.parse(newValue.text);
+      if (minValue != null && newValueInt < minValue!) {
+        return oldValue;
+      } else if (maxValue != null && newValueInt > maxValue!) {
+        return oldValue;
+      } else {
+        return newValue;
+      }
     } on FormatException {
       return oldValue;
     }
-    return newValue;
   }
 }
 

@@ -230,6 +230,21 @@ TEST(Sequence, ToBoards) {
   EXPECT_EQ(sequence.ToBoard(-3), Board());
 }
 
+TEST(Sequence, ToBoardAndBlackTurn) {
+  EXPECT_EQ(Sequence("e6f4").ToBoardAndBlackTurn(0), std::pair(Board(), true));
+  EXPECT_EQ(Sequence("").ToBoardAndBlackTurn(), std::pair(Board(), true));
+  EXPECT_EQ(Sequence("e6f4").ToBoardAndBlackTurn(1), std::pair(Board("e6"), false));
+  EXPECT_EQ(Sequence("e6f4").ToBoardAndBlackTurn(), std::pair(Board("e6f4"), true));
+  // Before pass.
+  EXPECT_EQ(
+      Sequence("e6f6g6g7g8h8c4e7e8f8g5d8").ToBoardAndBlackTurn(),
+      std::pair(Board("e6f6g6g7g8h8c4e7e8f8g5d8"), false));
+  // After pass.
+  EXPECT_EQ(
+      Sequence("e6f6g6g7g8h8c4e7e8f8g5d8h4").ToBoardAndBlackTurn(),
+      std::pair(Board("e6f6g6g7g8h8c4e7e8f8g5d8h4"), true));
+}
+
 TEST(Sequence, IsValid) {
   EXPECT_TRUE(Sequence("").IsValid());
   EXPECT_TRUE(Sequence("e6f4").IsValid());

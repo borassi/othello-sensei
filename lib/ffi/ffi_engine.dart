@@ -518,6 +518,53 @@ class FFIEngine {
       'GetSenseiAction');
   late final _GetSenseiAction =
       _GetSenseiActionPtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
+
+  ffi.Pointer<ffi.Char> GetGameToSave(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _GetGameToSave(
+      ptr,
+    );
+  }
+
+  late final _GetGameToSavePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<ffi.Void>)>>('GetGameToSave');
+  late final _GetGameToSave = _GetGameToSavePtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>)>();
+
+  void Open(
+    ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<ffi.Char> path,
+  ) {
+    return _Open(
+      ptr,
+      path,
+    );
+  }
+
+  late final _OpenPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>>('Open');
+  late final _Open = _OpenPtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>();
+
+  ffi.Pointer<GameMetadata> MutableGameMetadata(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _MutableGameMetadata(
+      ptr,
+    );
+  }
+
+  late final _MutableGameMetadataPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<GameMetadata> Function(
+              ffi.Pointer<ffi.Void>)>>('MutableGameMetadata');
+  late final _MutableGameMetadata = _MutableGameMetadataPtr.asFunction<
+      ffi.Pointer<GameMetadata> Function(ffi.Pointer<ffi.Void>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -551,6 +598,26 @@ final class ThorMetadata extends ffi.Struct {
 
   @ffi.Int()
   external int num_sources;
+}
+
+final class GameMetadata extends ffi.Struct {
+  @ffi.Array.multi([20])
+  external ffi.Array<ffi.Char> black;
+
+  @ffi.Array.multi([20])
+  external ffi.Array<ffi.Char> white;
+
+  @ffi.Array.multi([26])
+  external ffi.Array<ffi.Char> tournament;
+
+  @ffi.Array.multi([300])
+  external ffi.Array<ffi.Char> notes;
+
+  @ffi.Int()
+  external int black_disks;
+
+  @ffi.Int()
+  external int year;
 }
 
 final class ThorGame extends ffi.Struct {

@@ -127,6 +127,15 @@ void SetSenseiAction(void* ptr, enum SenseiAction action);
 EXPORT
 enum SenseiAction GetSenseiAction(void* ptr);
 
+EXPORT
+char* GetGameToSave(void* ptr);
+
+EXPORT
+void Open(void* ptr, char* path);
+
+EXPORT
+struct GameMetadata* MutableGameMetadata(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

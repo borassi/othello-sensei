@@ -121,6 +121,12 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();
+  int score = -64;
+  if (IsGameOver(current_state_->ToBoard())) {
+    score = GetEvaluationGameOver(current_state_->ToBoard().Player(), current_state_->ToBoard().Opponent());
+  }
+  int player_disks = (score + 64) / 2;
+  game_metadata_.black_disks = current_state_->BlackTurn() ? player_disks : 64 - player_disks;
   time_on_this_position_ = ElapsedTime();
   RunSetBoard();
 }

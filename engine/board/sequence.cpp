@@ -113,13 +113,15 @@ struct PlayToVector : public PlayResultFetcher<std::vector<Board>> {
   std::vector<Board> boards_;
 };
 
-struct PlayToBoard : public PlayResultFetcher<Board> {
-  PlayToBoard(int depth) : remaining_moves_(depth) {}
-  Board Get() override {
-    return result_;
+struct PlayToBoard : public PlayResultFetcher<std::pair<Board, bool>> {
+  // black_turn_ = false because we call AtBoard on the starting position.
+  PlayToBoard(int depth) : remaining_moves_(depth), black_turn_(false) {}
+  std::pair<Board, bool> Get() override {
+    return {result_, black_turn_};
   }
 
   bool AtBoard(const Board& b) override {
+    black_turn_ = !black_turn_;
     if (remaining_moves_-- == 0) {
       result_ = b;
       return false;
@@ -127,9 +129,12 @@ struct PlayToBoard : public PlayResultFetcher<Board> {
     return true;
   }
 
+  void AtPass() override { black_turn_ = !black_turn_; }
+
  private:
   int remaining_moves_;
   Board result_;
+  bool black_turn_;
 };
 
 struct PlayIsValid : public PlayResultFetcher<bool> {
@@ -147,7 +152,7 @@ std::vector<Board> Sequence::ToBoards() const {
   return Play<std::vector<Board>>(&play_to_vector);
 }
 
-Board Sequence::ToBoard(int i) const {
+std::pair<Board, bool> Sequence::ToBoardAndBlackTurn(int i) const {
   if (i < 0) {
     i += size_ + 1;
   }
@@ -155,7 +160,11 @@ Board Sequence::ToBoard(int i) const {
     throw InvalidSequenceException();
   }
   PlayToBoard play_to_board(i);
-  return Play<Board>(&play_to_board);
+  return Play<std::pair<Board, bool>>(&play_to_board);
+}
+
+Board Sequence::ToBoard(int i) const {
+  return ToBoardAndBlackTurn(i).first;
 }
 
 bool Sequence::IsValid() const {

@@ -37,7 +37,7 @@ class _SecondaryWindowMainContent extends StatelessWidget {
           width: 8 * appSizes.squareSize,
           child: Column(
             children: [
-              const Margin.side(),
+              const Margin.internal(),
               Expanded(child: child),
               const Margin.side(),
             ]
@@ -62,14 +62,16 @@ class SecondaryWindow extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvoked: onPopInvoked,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          title: Text(title),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-        body: AppTheme(child: _SecondaryWindowMainContent(child: child))
+      child: AppTheme(
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: AppBar(
+            title: Text(title),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          body: _SecondaryWindowMainContent(child: child)
+        )
       )
     );
   }

@@ -52,6 +52,15 @@ struct ThorMetadata {
   int num_sources;
 };
 
+struct GameMetadata {
+  char black[20];
+  char white[20];
+  char tournament[26];
+  char notes[300];
+  int black_disks;
+  int year;
+};
+
 struct ThorGame {
   const char* black;
   const char* white;

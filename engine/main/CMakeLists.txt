@@ -76,6 +76,7 @@ target_link_libraries( # Specifies the target library.
         book
         engine
         evaluator_derivative
+        game_to_save
         get_flip
         get_moves
         misc
