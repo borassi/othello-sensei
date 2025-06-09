@@ -28,7 +28,8 @@ TEST(GameToSave, Base) {
       "Tournament",
       "Some notes",
       2010,
-      64);
+      64,
+      "3");
   std::string result = game.ToString();
   EXPECT_EQ(GameToSave::FromString(result), game);
 }
@@ -48,7 +49,8 @@ TEST(GameToSave, MovesInPlayerName) {
       "",
       "",
       2011,
-      32));
+      32,
+      ""));
 }
 
 TEST(GameToSave, AutoBlackDisksNoGameOver) {
@@ -65,7 +67,8 @@ TEST(GameToSave, AutoBlackDisksNoGameOver) {
       "",
       "",
       2011,
-      64));
+      64,
+      ""));
 }
 
 TEST(GameToSave, AutoBlackDisksGameOver) {
@@ -82,5 +85,6 @@ TEST(GameToSave, AutoBlackDisksGameOver) {
       "",
       "",
       2011,
-      27));
+      27,
+      ""));
 }

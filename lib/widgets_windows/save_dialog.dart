@@ -30,20 +30,6 @@ import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 import '../widgets_utils/misc.dart';
 
-String _arrayToString(Array<Char> array) {
-  final stringList = <int>[];
-  var i = 0;
-  while (array[i] != 0) {
-    stringList.add(array[i]);
-    i++;
-  }
-  try {
-    return String.fromCharCodes(stringList);
-  } on ArgumentError {
-    return '';
-  }
-}
-
 class SaveDialogRow extends StatelessWidget {
   final Widget name;
   final Widget value;
@@ -107,7 +93,7 @@ class SaveDialogContent extends StatelessWidget {
           var metadata = GlobalState.gameMetadataState.getMetadata();
           Array<Char> initialValue = black ? metadata.black : metadata.white;
           return Autocomplete<String>(
-            initialValue: TextEditingValue(text: _arrayToString(initialValue)),
+            initialValue: TextEditingValue(text: cArrayToString(initialValue)),
             optionsBuilder: (TextEditingValue textEditingValue) {
               if (textEditingValue.text == '') {
                 return const Iterable<String>.empty();
@@ -168,6 +154,14 @@ class SaveDialogContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            SaveDialogRow(
+                Text("Round", style: Theme.of(context).textTheme.bodyLarge!),
+                _InputFormField(
+                  onChanged: (String value) => GlobalState.gameMetadataState.setRound(value),
+                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                )
+            ),
+            const Margin.internal(),
             SaveDialogRow(Case(CaseState.black, 255, false), playerSearch(context, true)),
             const Margin.internal(),
             SaveDialogRow(Case(CaseState.white, 255, false), playerSearch(context, false)),

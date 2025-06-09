@@ -59,6 +59,7 @@ struct GameMetadata {
   char notes[300];
   int black_disks;
   int year;
+  char round[10];
 };
 
 struct ThorGame {

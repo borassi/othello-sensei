@@ -38,7 +38,7 @@ GameToSave GameToSave::FromString(const std::string& game) {
   int first_subfield = (int) game.size();
   for (std::sregex_iterator i = game_begin; i != game_end; ++i) {
     std::smatch match = *i;
-    if (!Contains(std::vector<std::string>({"Black", "White", "Tournament", "Year", "Notes", "Black disks"}), match[1].str())) {
+    if (!Contains(std::vector<std::string>({"Black", "White", "Tournament", "Year", "Notes", "Black disks", "Round"}), match[1].str())) {
       continue;
     }
     first_subfield = std::min(first_subfield, (int) i->position());
@@ -66,11 +66,12 @@ GameToSave GameToSave::FromString(const std::string& game) {
       GetOrDefault(game_map, std::string("Tournament"), std::string("")),
       GetOrDefault(game_map, std::string("Notes"), std::string("")),
       year,
-      black_disks
+      black_disks,
+      GetOrDefault(game_map, std::string("Round"), std::string(""))
   );
 }
 
 std::ostream& operator<<(std::ostream& stream, const GameToSave& s) {
-  stream << s.ToGame().ToString();
+  stream << s.ToGame().ToString() << " (round " << s.Round() << ")";
   return stream;
 }

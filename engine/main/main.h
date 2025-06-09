@@ -63,6 +63,7 @@ class Main {
     memset(game_metadata_.tournament, 0, 26);
     game_metadata_.year = GetCurrentYear();
     game_metadata_.black_disks = 64;
+    memset(game_metadata_.round, 0, 10);
     memset(game_metadata_.notes, 0, 300);
   }
 
@@ -241,7 +242,8 @@ class Main {
         std::string(game_metadata_.tournament),
         std::string(game_metadata_.notes),
         game_metadata_.year,
-        game_metadata_.black_disks);
+        game_metadata_.black_disks,
+        game_metadata_.round);
     std::string result = game.ToString();
     char* result_c = (char*) malloc(sizeof(char) * (result.size() + 1));
     memcpy(result_c, result.c_str(), result.size());

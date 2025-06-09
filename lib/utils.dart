@@ -192,3 +192,17 @@ String cStringToString(Pointer<Char> cString) {
   }
   return string;
 }
+
+String cArrayToString(Array<Char> array) {
+  final stringList = <int>[];
+  var i = 0;
+  while (array[i] != 0) {
+    stringList.add(array[i]);
+    i++;
+  }
+  try {
+    return String.fromCharCodes(stringList);
+  } on ArgumentError {
+    return '';
+  }
+}

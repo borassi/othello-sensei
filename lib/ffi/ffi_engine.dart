@@ -618,6 +618,9 @@ final class GameMetadata extends ffi.Struct {
 
   @ffi.Int()
   external int year;
+
+  @ffi.Array.multi([10])
+  external ffi.Array<ffi.Char> round;
 }
 
 final class ThorGame extends ffi.Struct {

@@ -37,22 +37,25 @@ class GameToSave {
       const std::string& tournament,
       const std::string& notes,
       short year,
-      Eval black_disks) :
+      Eval black_disks,
+      const std::string& round) :
       moves_(moves),
       black_(black),
       white_(white),
       tournament_(tournament),
       year_(year),
       notes_(notes),
-      black_disks_(black_disks) {}
+      black_disks_(black_disks),
+      round_(round) {}
 
-  const Sequence& Moves() { return moves_; }
-  const std::string& Black() { return black_; }
-  const std::string& White() { return white_; }
-  const std::string& Tournament() { return tournament_; }
-  int Year() { return year_; }
-  const std::string& Notes() { return notes_; }
-  int BlackDisks() { return black_disks_; }
+  const std::string& Round() const { return round_; }
+  const Sequence& Moves() const { return moves_; }
+  const std::string& Black() const { return black_; }
+  const std::string& White() const { return white_; }
+  const std::string& Tournament() const { return tournament_; }
+  int Year() const { return year_; }
+  const std::string& Notes() const { return notes_; }
+  int BlackDisks() const { return black_disks_; }
 
   static GameToSave FromString(const std::string& game);
 
@@ -60,6 +63,7 @@ class GameToSave {
     std::stringstream result;
     result
         << moves_ << "\n"
+        << "Round: " << round_ << "\n"
         << "Black: " << black_ << "\n"
         << "White: " << white_ << "\n"
         << "Tournament: " << tournament_ << "\n"
@@ -71,7 +75,8 @@ class GameToSave {
   }
 
   bool operator==(const GameToSave& other) const {
-    if (black_ != other.black_ ||
+    if (round_ != other.round_ ||
+        black_ != other.black_ ||
         white_ != other.white_ ||
         tournament_ != other.tournament_ ||
         notes_ != other.notes_ ||
@@ -87,6 +92,7 @@ class GameToSave {
 
  private:
   Sequence moves_;
+  std::string round_;
   std::string black_;
   std::string white_;
   std::string tournament_;

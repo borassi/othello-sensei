@@ -289,8 +289,9 @@ class GlobalState {
   static Future<void> save() async {
     var game = ffiEngine.GetGameToSave(ffiMain).cast<Utf8>().toDartString();
     var path = await FilePicker.platform.saveFile(
-        allowedExtensions: ['txt'],
-        bytes: utf8.encode(game)
+      fileName: GlobalState.gameMetadataState.getGameName(),
+      allowedExtensions: ['txt'],
+      bytes: utf8.encode(game)
     );
     if (path == null) {
       return;
@@ -300,6 +301,7 @@ class GlobalState {
 
   static Future<void> open() async {
     var filePickerResult = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
       allowedExtensions: ['txt']
     );
     if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
@@ -367,6 +369,11 @@ class GameMetadataState with ChangeNotifier {
     notifyListeners();
   }
 
+  void setRound(String round) {
+    assignToPointer(getMetadata().round, round, 10);
+    notifyListeners();
+  }
+
   void setScore(String score, bool black) {
     int scoreInt;
     try {
@@ -379,6 +386,23 @@ class GameMetadataState with ChangeNotifier {
 
   void finishedSetScore() {
     notifyListeners();
+  }
+
+  String getGameName() {
+    var metadata = getMetadata();
+    var black = cArrayToString(metadata.black);
+    if (black == "") {
+      black = "Unknown";
+    }
+    var white = cArrayToString(metadata.white);
+    if (white == "") {
+      white = "Unknown";
+    }
+    var round = cArrayToString(metadata.round);
+    if (round != "") {
+      round += " - ";
+    }
+    return '$round$black - $white.txt';
   }
 }
 
