@@ -788,22 +788,18 @@ class GlobalAnnotationState with ChangeNotifier {
     if (startAnnotations == null) {
       return (scores, -1);
     }
-    var lastMove = currentMove();
-    for (var annotation = startAnnotations;
-         annotation != null && annotation != nullptr;
-         annotation = annotation.ref.next_state_primary != nullptr ?
-                          annotation.ref.next_state_primary :
-                          annotation.ref.next_state_secondary) {
+    var lastMove = 0;
+    bool primary = startAnnotations!.ref.next_state_primary != nullptr;
+    for (var annotation = startAnnotations!;
+         annotation != nullptr;
+         annotation = primary ? annotation.ref.next_state_primary : annotation.ref.next_state_secondary) {
       if ([GlobalState.ffiEngine.PassMove(), GlobalState.ffiEngine.SetupBoardMove()].contains(annotation.ref.move)) {
         continue;
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
-      if (annotation.ref.next_state_primary != nullptr
-          && annotation.ref.next_state_primary != annotation.ref.next_state_secondary) {
-        lastMove = min(lastMove, annotation.ref.depth_no_pass);
-      }
+      lastMove = annotation.ref.depth_no_pass;
     }
-    return (scores, lastMove);
+    return (scores, min(currentMove(), lastMove));
   }
 
   (double, double, bool) getErrors() {
