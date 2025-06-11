@@ -787,6 +787,9 @@ final class Annotations extends ffi.Struct {
   external double seconds;
 
   @NVisited()
+  external int descendants_evaluating_this;
+
+  @NVisited()
   external int descendants;
 
   @NVisited()

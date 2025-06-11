@@ -250,3 +250,21 @@ following rules:
 
 You can reset the saved evaluations by clicking "New game" or by closing the app; furthermore,
 analyzing a game resets all saved evaluations.
+
+### Why does Sensei sometimes shows too many visited positions with few empty squares?
+
+In some cases, Sensei shows a large number of visited positions: for example, with 1 empty squares,
+Sensei can show 6 visited positions when there are only 2 positions to visit (the one with the empty
+square and the finished game).
+
+This means that Sensei visited the same position multiple times, something that happens only in
+positions with few empties, for which Sensei is not fully optimized (they get solved instantaneously
+anyway).
+
+The reasons why Sensei visits the same position multiple times can be many:
+- Sensei counts two more moves after the end of the game, that correspond to two players passing
+  (only if the starting position has <6 empties).
+- Sensei re-evaluates a position with different alpha-beta pruning parameters. 
+- Sensei runs evaluations in parallel, and two evaluations happen to fall on the same positions by
+  chance.
+- Possibly other reasons.

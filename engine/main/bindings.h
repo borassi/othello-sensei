@@ -125,6 +125,7 @@ struct Annotations {
   Eval weak_lower;
   Eval weak_upper;
   double seconds;
+  NVisited descendants_evaluating_this;
   NVisited descendants;
   NVisited descendants_book;
   double missing;

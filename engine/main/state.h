@@ -368,6 +368,7 @@ class EvaluationState : public TreeNode {
     } else {
       assert(!HasValidChildren());
       assert(descendants_ >= annotations_.descendants);
+      annotations_.descendants_evaluating_this = descendants_;
       annotations_.descendants = descendants_;
       annotations_.seconds = seconds;
       annotations_.provenance = CHILD_EVALUATE;
@@ -409,7 +410,7 @@ class EvaluationState : public TreeNode {
     bool all_book_children = true;
     annotations_.eval_best_line = kLessThenMinEvalLarge;
     annotations_.median_eval_best_line = kLessThenMinEvalLarge;
-    descendants_ = 0;
+    descendants_ = annotations_.descendants_evaluating_this;
     annotations_.seconds = 0;
     for (auto& child : children_) {
       descendants_ += child->descendants_;
@@ -428,7 +429,6 @@ class EvaluationState : public TreeNode {
         all_book_children = false;
       }
     }
-    annotations_.descendants = descendants_;
     if (all_book_children) {
       annotations_.provenance = CHILD_BOOK;
     } else if (has_book_child) {
