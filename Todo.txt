@@ -34,7 +34,6 @@ Extra features:
 - P1 EASY Beginner settings.
 - P1 HARD Sync games with Drive.
 - P1 HARD Watch saved games as you watch Thor.
-- P1 EASY Get tournament from list when saving.
 - P2 LARGE How easy / hard a position is.
 - P2 LARGE Expand all "interesting" lines in opening book.
 - P2 LARGE Remember opening book for player.

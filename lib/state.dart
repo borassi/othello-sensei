@@ -15,6 +15,7 @@
  *
  */
 
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:ffi' as ffi;
@@ -859,16 +860,19 @@ class ThorMetadataState with ChangeNotifier {
   Map<String, bool> sourceToActive;
   Pointer<ThorMetadata> thorMetadata;
   Map<String, SourcePlayerIndex> playerStringToIndex;
+  List<String> tournaments;
   List<String> selectedBlacks;
   List<String> selectedWhites;
 
   ThorMetadataState() :
         thorMetadata = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
         playerStringToIndex = {},
+        tournaments = [],
         sourceToActive = {},
         selectedBlacks = [],
         selectedWhites = [] {
     var playerToSources = <String, List<SourcePlayerIndex>>{};
+    var tournamentsSet = HashSet<String>();
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
       var source = (thorMetadata.ref.sources + i).value.ref;
       sourceToActive[source.name.cast<Utf8>().toDartString()] = true;
@@ -879,7 +883,16 @@ class ThorMetadataState with ChangeNotifier {
         }
         playerToSources[player]!.add(SourcePlayerIndex(i, j));
       }
+      for (int j = 0; j < source.num_tournaments; ++j) {
+        String player = (source.players + j).value.cast<Utf8>().toDartString();
+        if (!playerToSources.containsKey(player)) {
+          playerToSources[player] = [];
+        }
+        tournamentsSet.add(cStringToString(source.tournaments[j]));
+      }
     }
+    tournaments = tournamentsSet.toList();
+    tournaments.sort();
 
     for (var playerSource in playerToSources.entries) {
       var player = playerSource.key;

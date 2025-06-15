@@ -66,6 +66,7 @@ class _InputFormField extends StatelessWidget {
   Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return TextFormField(
+        initialValue: initialValue,
         controller: controller,
         focusNode: focusNode,
         style: Theme.of(context).textTheme.bodyLarge!,
@@ -81,72 +82,74 @@ class _InputFormField extends StatelessWidget {
   }
 }
 
-class SaveDialogContent extends StatelessWidget {
+class Searchable extends StatelessWidget {
+  final String initialValue;
+  final List<String> values;
+  final void Function(String) onChanged;
 
-  Widget playerSearch(BuildContext context, bool black) {
-    var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
-    players.add("");
-    players.sort();
-    return ListenableBuilder(
-        listenable: GlobalState.gameMetadataState,
-        builder: (BuildContext context, Widget? child) {
-          var metadata = GlobalState.gameMetadataState.getMetadata();
-          Array<Char> initialValue = black ? metadata.black : metadata.white;
-          return Autocomplete<String>(
-            initialValue: TextEditingValue(text: cArrayToString(initialValue)),
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text == '') {
-                return const Iterable<String>.empty();
-              }
-              if (black) {
-                GlobalState.gameMetadataState.setBlack(textEditingValue.text);
-              } else {
-                GlobalState.gameMetadataState.setWhite(textEditingValue.text);
-              }
-              return players.where((String option) {
-                return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-              });
-            },
-            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-              return Align(
-                  alignment: Alignment.centerRight,
-                  child: _InputFormField(
-                    controller: textEditingController,
-                    focusNode: focusNode,
-                  )
-              );
-            },
-            optionsViewBuilder: (context, onSelected, options) {
-              return Align(
-                  alignment: Alignment.topLeft,
-                  child: Container(
-                    width: 7 * Theme.of(context).extension<AppSizes>()!.squareSize - Theme.of(context).extension<AppSizes>()!.margin,
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    child: ListView.builder(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: false,
-                      itemCount: options.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        final String option = options.elementAt(index);
-                        return InkWell(
-                            onTap: () {
-                              onSelected(option);
-                            },
-                            child: Row(children: [const Spacer(), Text(option, style: Theme.of(context).textTheme.bodyLarge)])
-                        );
-                      },
-                    ),
-                  )
-              );
-            },
-          );
+  const Searchable({super.key, required this.initialValue, required this.values, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Autocomplete<String>(
+      initialValue: TextEditingValue(text: initialValue),
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text == '') {
+          return const Iterable<String>.empty();
         }
+        onChanged(textEditingValue.text);
+        return values.where((String option) {
+          return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+        });
+      },
+      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+        return Align(
+            alignment: Alignment.centerRight,
+            child: _InputFormField(
+              controller: textEditingController,
+              focusNode: focusNode,
+            )
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        var itemCount = min(6, options.length);
+        var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+        return Align(
+            alignment: Alignment.topLeft,
+            child: Container(
+              width: 7 * squareSize - Theme.of(context).extension<AppSizes>()!.margin,
+              height: itemCount * squareSize,
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: ListView.builder(
+                // padding: EdgeInsets.zero,
+                // shrinkWrap: false,
+                itemCount: itemCount,
+                itemBuilder: (BuildContext context, int index) {
+                  final String option = options.elementAt(index);
+                  return SizedBox(
+                    height: squareSize,
+                    child: InkWell(
+                        onTap: () { onSelected(option); },
+                        child: Row(children: [const Spacer(), Text(option, style: Theme.of(context).textTheme.bodyLarge)])
+                    )
+                  );
+                },
+              ),
+            )
+        );
+      },
     );
   }
+}
+
+class SaveDialogContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
     var gameMetadata = GlobalState.gameMetadataState.getMetadata();
+    var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
+    var tournaments = GlobalState.thorMetadata.tournaments.toList();
+
     return Scaffold(
         resizeToAvoidBottomInset: true,
         body: SingleChildScrollView(
@@ -155,22 +158,38 @@ class SaveDialogContent extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SaveDialogRow(
-                Text("Round", style: Theme.of(context).textTheme.bodyLarge!),
-                _InputFormField(
-                  onChanged: (String value) => GlobalState.gameMetadataState.setRound(value),
-                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                Case(CaseState.black, 255, false),
+                Searchable(
+                    initialValue: cArrayToString(gameMetadata.black),
+                    values: players,
+                    onChanged: GlobalState.gameMetadataState.setBlack
                 )
             ),
             const Margin.internal(),
-            SaveDialogRow(Case(CaseState.black, 255, false), playerSearch(context, true)),
-            const Margin.internal(),
-            SaveDialogRow(Case(CaseState.white, 255, false), playerSearch(context, false)),
+            SaveDialogRow(
+                Case(CaseState.white, 255, false),
+                Searchable(
+                    initialValue: cArrayToString(gameMetadata.white),
+                    values: players,
+                    onChanged: GlobalState.gameMetadataState.setWhite
+                )
+            ),
             const Margin.internal(),
             SaveDialogRow(
                 const CaseWithCup(),
+                Searchable(
+                    initialValue: cArrayToString(gameMetadata.tournament),
+                    values: tournaments,
+                    onChanged: GlobalState.gameMetadataState.setTournament
+                )
+            ),
+            const Margin.internal(),
+            SaveDialogRow(
+                Text("Round", style: Theme.of(context).textTheme.bodyLarge!),
                 _InputFormField(
-                  onChanged: (String value) => GlobalState.gameMetadataState.setTournament(value),
-                  inputFormatters: [LengthLimitingTextInputFormatter(26)],
+                  initialValue: cArrayToString(gameMetadata.round),
+                  onChanged: GlobalState.gameMetadataState.setRound,
+                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
                 )
             ),
             const Margin.internal(),
