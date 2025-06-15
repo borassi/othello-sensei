@@ -228,40 +228,6 @@ class Case extends StatelessWidget {
     );
   }
 
-  void onTapDown() {
-    if (GlobalState.setupBoardState.settingUpBoard) {
-      switch(GlobalState.setupBoardState.onClick) {
-        case CaseState.black:
-          GlobalState.ffiEngine.SetBlackSquare(GlobalState.ffiMain, index);
-          return;
-        case CaseState.white:
-          GlobalState.ffiEngine.SetWhiteSquare(GlobalState.ffiMain, index);
-          return;
-        case CaseState.empty:
-          GlobalState.ffiEngine.SetEmptySquare(GlobalState.ffiMain, index);
-          return;
-      }
-    }
-    GlobalState.playMove(index, false);
-  }
-
-  void onSecondaryTapDown() {
-    if (GlobalState.setupBoardState.settingUpBoard) {
-      switch(GlobalState.setupBoardState.onClick) {
-        case CaseState.black:
-          GlobalState.ffiEngine.SetWhiteSquare(GlobalState.ffiMain, index);
-          return;
-        case CaseState.white:
-          GlobalState.ffiEngine.SetBlackSquare(GlobalState.ffiMain, index);
-          return;
-        case CaseState.empty:
-          GlobalState.ffiEngine.SetEmptySquare(GlobalState.ffiMain, index);
-          return;
-      }
-    }
-    GlobalState.undo();
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -332,12 +298,6 @@ class Case extends StatelessWidget {
                 listenable: GlobalState.annotations[index],
                 builder: (BuildContext context, Widget? child) => Annotations(index),
               )
-          );
-          children.add(
-            GestureDetector(
-              onTap: onTapDown,
-              onSecondaryTap: onSecondaryTapDown,
-            )
           );
         }
 

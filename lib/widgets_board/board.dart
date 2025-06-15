@@ -15,6 +15,7 @@
  *
  */
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
@@ -51,7 +52,40 @@ class Coordinate extends StatelessWidget {
       child: contentWidget
     );
   }
+}
 
+int getIndex(Offset localPosition, double sideMargin, double topMargin, double squareSize) {
+  int xSquare = ((localPosition.dx - sideMargin) / squareSize).floor();
+  int ySquare = ((localPosition.dy - topMargin) / squareSize).floor();
+  if (xSquare < 0 || ySquare < 0 || xSquare >= 8 || ySquare >= 8) {
+    return -1;
+  }
+  return (7 - xSquare) + 8 * (7 - ySquare);
+}
+
+void setUpDisk(int index, bool secondary) {
+  if (!GlobalState.setupBoardState.settingUpBoard) {
+    return;
+  }
+  var caseState = GlobalState.setupBoardState.onClick;
+  if (secondary) {
+    if (caseState == CaseState.black) {
+      caseState = CaseState.white;
+    } else if (caseState == CaseState.white) {
+      caseState = CaseState.black;
+    }
+  }
+  switch(caseState) {
+    case CaseState.black:
+      GlobalState.ffiEngine.SetBlackSquare(GlobalState.ffiMain, index);
+      return;
+    case CaseState.white:
+      GlobalState.ffiEngine.SetWhiteSquare(GlobalState.ffiMain, index);
+      return;
+    case CaseState.empty:
+      GlobalState.ffiEngine.SetEmptySquare(GlobalState.ffiMain, index);
+      return;
+  }
 }
 
 class Board extends StatelessWidget {
@@ -71,39 +105,90 @@ class Board extends StatelessWidget {
         var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         return ListenableBuilder(
           listenable: GlobalState.board,
-          builder: (BuildContext context, Widget? widget) => Stack(
-            children: <Widget>[
-              Table(
-                defaultColumnWidth: FixedColumnWidth(squareSize),
-                columnWidths: {0: FixedColumnWidth(sideMargin)},
-                children:
-                  [
-                    TableRow(children: <Widget>[Container()] + List.generate(8, (y) => Coordinate(false, y, topMargin)))
-                  ] +
-                  List.generate(8, (x) => TableRow(
-                    children:
-                      <Widget>[Coordinate(true, x, sideMargin)] +
-                      List.generate(8, (y) {
-                        var index = 63 - 8 * x - y;
-                        return Case(getState(index, board), index, index == GlobalState.board.lastMove);
-                      })
-                    )
-                  )
-              )
-            ] +
-            List.generate(4, (index) => Positioned(
-              left: leftMargin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
-              top: topMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
-              child:
-              Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.background,
-                  shape: BoxShape.circle,
+          builder: (BuildContext context, Widget? widget) => RawGestureDetector(
+            gestures: {
+              PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+                    () => PanGestureRecognizer(
+                  allowedButtonsFilter: (int buttons) { return buttons & kPrimaryButton != 0; },
                 ),
-                width: squareSize * 0.2,
-                height: squareSize * 0.2,
+                (PanGestureRecognizer instance) {
+                  instance
+                    ..onStart = (DragStartDetails details) {
+                      var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                      setUpDisk(index, false);
+                    }
+                    ..onUpdate = (DragUpdateDetails details) {
+                      var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                      setUpDisk(index, false);
+                    }
+                    ..onEnd = (DragEndDetails details) {
+                      var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                      if (!GlobalState.setupBoardState.settingUpBoard) {
+                        GlobalState.playMove(index, false);
+                      }
+                    };
+                },
+              ),
+            },
+            child: RawGestureDetector(
+              gestures: {
+                PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+                      () => PanGestureRecognizer(
+                    allowedButtonsFilter: (int buttons) { return buttons & kSecondaryButton != 0; },
+                  ),
+                      (PanGestureRecognizer instance) {
+                    instance
+                      ..onStart = (DragStartDetails details) {
+                        var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                        setUpDisk(index, true);
+                      }
+                      ..onUpdate = (DragUpdateDetails details) {
+                        var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                        setUpDisk(index, true);
+                      }
+                      ..onEnd = (DragEndDetails details) {
+                        if (!GlobalState.setupBoardState.settingUpBoard) {
+                          GlobalState.undo();
+                        }
+                      };
+                  },
+                ),
+              },
+              child: Stack(
+                children: <Widget>[
+                  Table(
+                    defaultColumnWidth: FixedColumnWidth(squareSize),
+                    columnWidths: {0: FixedColumnWidth(sideMargin)},
+                    children:
+                      [
+                        TableRow(children: <Widget>[Container()] + List.generate(8, (y) => Coordinate(false, y, topMargin)))
+                      ] +
+                      List.generate(8, (x) => TableRow(
+                        children:
+                          <Widget>[Coordinate(true, x, sideMargin)] +
+                          List.generate(8, (y) {
+                            var index = 63 - 8 * x - y;
+                            return Case(getState(index, board), index, index == GlobalState.board.lastMove);
+                          })
+                        )
+                      )
+                  )
+                ] +
+                List.generate(4, (index) => Positioned(
+                  left: leftMargin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
+                  top: topMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
+                  child:
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.background,
+                      shape: BoxShape.circle,
+                    ),
+                    width: squareSize * 0.2,
+                    height: squareSize * 0.2,
+                  )
+                ))
               )
-            ))
+            )
           )
         );
       }
