@@ -205,7 +205,7 @@ class Case extends StatelessWidget {
   final double? squareSize;
   const Case(this.state, this.index, this.isLastMove, {super.key, this.squareSize});
 
-  static Widget? getDisk(CaseState state, ColorScheme colorScheme) {
+  static Widget? getDisk(CaseState state, ColorScheme colorScheme, double squareSize) {
     Color fill;
     switch (state) {
       case CaseState.empty:
@@ -217,14 +217,14 @@ class Case extends StatelessWidget {
         fill = colorScheme.surfaceVariant;
         break;
     }
-    return Transform.scale(
-      scale: 0.9,
-      child: Container(
-        decoration: BoxDecoration(
-          color: fill,
-          shape: BoxShape.circle,
-        ),
-      )
+    return Container(
+      height: 0.9 * squareSize,
+      width: 0.9 * squareSize,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fill,
+        shape: BoxShape.circle,
+      ),
     );
   }
 
@@ -280,9 +280,9 @@ class Case extends StatelessWidget {
             ),
           )
         ];
-        Widget? disk = getDisk(state, colorScheme);
+        Widget? disk = getDisk(state, colorScheme, squareSize);
         if (disk != null) {
-          children.add(disk);
+          children.add(Center(child: disk));
         }
         if (isLastMove) {
           var color = state == CaseState.black ? colorScheme.surfaceVariant : colorScheme.surface;
@@ -290,17 +290,19 @@ class Case extends StatelessWidget {
           switch (marker) {
             case 'None':
               break;
-            case 'Number':
+            case 'Number (S)':
+            case 'Number (L)':
+              var style = marker == 'Number (S)' ? Theme.of(context).textTheme.bodyMedium! : Theme.of(context).textTheme.bodyLarge!;
               children.add(
                 Align(
                   alignment: Alignment.center,
                   child: Text(
                     '${60 - GlobalState.board.emptySquares()}',
-                    style: TextStyle(
-                      fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize!,
-                      fontWeight: FontWeight.bold,
-                      height: 1,
-                      color: color
+                    style: style.merge(
+                      TextStyle(
+                        color: color,
+                        fontWeight: marker == 'Number (S)' ? FontWeight.bold : FontWeight.normal,
+                      )
                     ),
                   )
                 )

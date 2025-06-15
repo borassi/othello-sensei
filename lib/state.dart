@@ -610,7 +610,7 @@ class PreferencesState with ChangeNotifier {
     'White player': Player.player,
   };
   static const Map<String, List<String>> preferencesValues = {
-    'Last move marker': ['None', 'Dot', 'Number'],
+    'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
     'Back button action': ['Undo', 'Close app'],
     'Round evaluations': ['Never', 'Only errors', 'Always'],
     'Controls position': ['App bar', 'Side bar'],
