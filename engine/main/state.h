@@ -574,6 +574,7 @@ class EvaluationState : public TreeNode {
     annotations_.derived = false;
     annotations_.descendants = 0;
     annotations_.descendants_book = 0;
+    annotations_.descendants_evaluating_this = 0;
     annotations_.seconds = 0;
   }
 
