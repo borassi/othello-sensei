@@ -212,6 +212,7 @@ class Settings extends StatelessWidget {
     'Margin size',
     'Last move marker',
     'Black and white bars in the graph',
+    'Show settings dialog at startup',
     'Show unsupported CPU at startup',
   ];
 
@@ -276,6 +277,7 @@ class Settings extends StatelessWidget {
           return Scaffold(
             resizeToAvoidBottomInset: true,
             body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
                   child: SingleChildScrollView(
@@ -314,19 +316,34 @@ class Settings extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Expanded(child: SenseiButton(
-                      onPressed: () { _state.reset(); },
-                      text: 'Reset to previous values',
-                    )),
+                    Expanded(
+                      child: SenseiButton(
+                        onPressed: () { _state.reset(); },
+                        text: 'To previous values',
+                        textAlign: TextAlign.center,
+                      )
+                    ),
                     const Margin.internal(),
                     Expanded(
                       child: SenseiButton(
                         onPressed: () async {
-                          await GlobalState.preferences.reset();
+                          await GlobalState.preferences.reset(false);
                           _state.reset();
                         },
-                        text: 'Reset to app defaults',
+                        text: 'To advanced settings',
+                        textAlign: TextAlign.center,
                       )
+                    ),
+                    const Margin.internal(),
+                    Expanded(
+                        child: SenseiButton(
+                          onPressed: () async {
+                            await GlobalState.preferences.reset(true);
+                            _state.reset();
+                          },
+                          text: 'To beginner settings',
+                          textAlign: TextAlign.center,
+                        )
                     ),
                   ],
                 ),

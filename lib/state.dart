@@ -609,6 +609,7 @@ class PreferencesState with ChangeNotifier {
     'Pressing « from the first position': 'Ask',
     'Black player': Player.player,
     'White player': Player.player,
+    'Show settings dialog at startup': true,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -618,6 +619,17 @@ class PreferencesState with ChangeNotifier {
     'Margin size': ['None', 'Small', 'Large', 'Coordin'],
     'Pressing « from the first position': ['Do nothing', 'Ask', 'New game'],
     'When the game ends': ['Message', 'Analyze', 'Do nothing'],
+  };
+  static const Set<String> nonResetPreferences = {
+    'Show settings dialog at startup',
+    'Show unsupported CPU at startup',
+    'Active tab',
+  };
+  final Map<String, dynamic> beginnerPreferences = {
+    'Black and white bars in the graph': true,
+    'Show extra data in evaluate mode': false,
+    'Approximate game error when playing': 50.0,
+    'Round evaluations': 'Always',
   };
   late final SharedPreferences _preferences;
 
@@ -689,8 +701,15 @@ class PreferencesState with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reset() async {
-    await setAll(defaultPreferences);
+  Future<void> reset(bool beginner) async {
+    var newPreferences = Map.of(defaultPreferences);
+    if (beginner) {
+      newPreferences.addAll(beginnerPreferences);
+    }
+    for (var preference in nonResetPreferences) {
+      newPreferences.remove(preference);
+    }
+    await setAll(newPreferences);
   }
 
   Future<void> setNoUpdate(String name, dynamic value) async {

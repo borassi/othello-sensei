@@ -120,6 +120,39 @@ class CpuErrorDialog extends StatelessWidget {
   }
 }
 
+class DecideSettingsDialog extends StatelessWidget {
+  const DecideSettingsDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // We do it this way because Flutter refresh keeps post frame callbacks,
+    // causing the window to show multiple times.
+    return SenseiDialog(
+        title: 'Choose your settings!',
+        content: 'You can always change your settings by clicking on ⋮ > Settings',
+        actions: [
+          (
+          text: 'Beginner settings',
+          onPressed: (context) async {
+            await GlobalState.preferences.reset(true);
+            await GlobalState.preferences.set('Show settings dialog at startup', false);
+            Navigator.of(context).pop();
+          },
+          ),
+          (
+          text: 'Advanced settings',
+          onPressed: (context) async {
+            await GlobalState.preferences.reset(false);
+            await GlobalState.preferences.set('Show settings dialog at startup', false);
+            Navigator.of(context).pop();
+          },
+          ),
+        ]
+    );
+  }
+}
+
+
 class MainContent extends StatelessWidget {
   final Widget board;
   final Widget sidebar;
@@ -186,13 +219,19 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (GlobalState.preferences.get(
           'Show unsupported CPU at startup') &&
           [CpuType.popcnt, CpuType.noFeature].contains(GlobalState.cpuType)) {
-        showDialog<void>(
+        await showDialog<void>(
             context: context,
             builder: (BuildContext context) => const CpuErrorDialog()
+        );
+      }
+      if (GlobalState.preferences.get('Show settings dialog at startup')) {
+        await showDialog<void>(
+            context: context,
+            builder: (BuildContext context) => const DecideSettingsDialog()
         );
       }
     });

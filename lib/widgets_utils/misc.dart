@@ -22,9 +22,10 @@ class SenseiButton extends StatelessWidget {
   final IconData? icon;
   final void Function() onPressed;
   final TextStyle? textStyle;
+  final TextAlign? textAlign;
 
   const SenseiButton(
-      {super.key, this.text, required this.onPressed, this.textStyle, this.icon});
+      {super.key, this.text, required this.onPressed, this.textStyle, this.icon, this.textAlign});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +36,7 @@ class SenseiButton extends StatelessWidget {
     if (icon != null) {
       content = Icon(icon!, color: textColor, size: iconSize);
     } else {
-      content = Text(text!, style: textStyle);
+      content = Text(text!, style: textStyle, textAlign: textAlign);
     }
     return TextButton(
       onPressed: onPressed,
