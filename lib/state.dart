@@ -808,6 +808,7 @@ class GlobalAnnotationState with ChangeNotifier {
     if (startAnnotations == null) {
       return (scores, -1);
     }
+    var moveBackToGame = 1000;
     var lastMove = 0;
     bool primary = startAnnotations!.ref.next_state_primary != nullptr;
     for (var annotation = startAnnotations!;
@@ -818,8 +819,14 @@ class GlobalAnnotationState with ChangeNotifier {
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
       lastMove = annotation.ref.depth_no_pass;
+      // During analysis, moveBackToGame is the last move in the main line.
+      if (primary &&
+          annotation.ref.next_state_primary != nullptr &&
+          annotation.ref.next_state_primary != annotation.ref.next_state_secondary) {
+        moveBackToGame = lastMove;
+      }
     }
-    return (scores, min(currentMove(), lastMove));
+    return (scores, min(currentMove(), min(moveBackToGame, lastMove)));
   }
 
   (double, double, bool) getErrors() {
