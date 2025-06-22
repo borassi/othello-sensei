@@ -205,6 +205,9 @@ class Main {
   }
 
   void SetSquare(int square, int value) {
+    if (square < 0 || square > 63) {
+      return;
+    }
     ToStateNoStop(current_state_->SetSquare(square, value));
   }
 
