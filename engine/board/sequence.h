@@ -437,6 +437,9 @@ class SequenceCanonicalizer {
         std::cout << "Preprocessing sequence " << k << " of " << sequences.size() << " after " << t.Get() << " seconds.\n" << std::flush;
       }
       for (const Board& b : sequence.ToBoards()) {
+        if (b.NEmpties() < 5) {
+          continue;
+        }
         boards[b.Unique()]++;
       }
     }
@@ -459,9 +462,28 @@ class SequenceCanonicalizer {
     for (auto it = board_to_sequences_.begin(); it != board_to_sequences_.end(); ) {
       if (it->second.size() == 1) {
         it = board_to_sequences_.erase(it);
-      } else {
-        ++it;
+        continue;
       }
+      Board previous_board(0, 0);
+      Square last_move;
+      bool same_previous_board = true;
+      for (const auto& sequence : it->second) {
+        auto boards = sequence.ToBoards();
+        Board& new_previous_board = boards[boards.size() - 2];
+        if (previous_board.Player() == 0 && previous_board.Opponent() == 0) {
+          previous_board = new_previous_board;
+          last_move = sequence.LastMove();
+        }
+        if (previous_board != new_previous_board || last_move != sequence.LastMove()) {
+          same_previous_board = false;
+          break;
+        }
+      }
+      if (same_previous_board) {
+        it = board_to_sequences_.erase(it);
+        continue;
+      }
+      ++it;
     }
   }
 

@@ -376,6 +376,36 @@ TEST(Sequence, SequenceCanonicalizerTranspositionDouble) {
   );
 }
 
+TEST(Sequence, SequenceCanonicalizerSameLastMove) {
+  // We keep the sequences even if they have the same last move.
+  std::vector<Sequence> sequences = {
+    Sequence("e6f4e3f6f5d6g4f3"),
+    Sequence("e6f6f5f4e3d6g4f3"),
+  };
+  SequenceCanonicalizer canonicalizer(sequences);
+  EXPECT_THAT(
+      canonicalizer.AllEquivalentSequences(Sequence("e6f6f5f4e3d6g4f3")),
+      UnorderedElementsAre(
+          Sequence("e6f6f5f4e3d6g4f3"),
+          Sequence("e6f4e3f6f5d6g4f3")
+      )
+  );
+}
+
+TEST(Sequence, SequenceCanonicalizerIgnoresFullGame) {
+  std::vector<Sequence> sequences = {
+    Sequence("e6f6f5d6f7f4f3g5h6f8c4h4e7d3e3g4g3d2h3h2h5h7g6f2c7b4c5b5e2c6d7c8c3b3d8e8d1f1e1c1c2b1b6b7a6a4a5a7a2b2a1a3a8g1g2b8h1g8g7h8"),
+    Sequence("e6f6f5d6c5e3d3g5d7c6e7c4g4f7b4f4h5f3g6b5e8c7e2d8a5a3b6a4a6a7c8f2d2c3b3c1d1e1c2h4h3b1g3a2g1g8f8b8b2a1b7a8f1g2h7h6h2g7h1h8"),
+  };
+  SequenceCanonicalizer canonicalizer(sequences);
+  EXPECT_THAT(
+      canonicalizer.AllEquivalentSequences(Sequence("e6f6f5d6c5e3d3g5d7c6e7c4g4f7b4f4h5f3g6b5e8c7e2d8a5a3b6a4a6a7c8f2d2c3b3c1d1e1c2h4h3b1g3a2g1g8f8b8b2a1b7a8f1g2h7h6h2g7h1h8")),
+      UnorderedElementsAre(
+          Sequence("e6f6f5d6c5e3d3g5d7c6e7c4g4f7b4f4h5f3g6b5e8c7e2d8a5a3b6a4a6a7c8f2d2c3b3c1d1e1c2h4h3b1g3a2g1g8f8b8b2a1b7a8f1g2h7h6h2g7h1h8")
+      )
+  );
+}
+
 TEST(Sequence, SequenceCanonicalizerSerialize) {
   std::vector<Sequence> sequences = {
     Sequence("e6f6f5f4e3d6c6c5"),
