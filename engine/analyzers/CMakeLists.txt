@@ -41,6 +41,24 @@ target_link_libraries(
 )
 
 add_executable(
+        test_memory_main
+        test_memory_main.cpp
+)
+
+target_link_libraries(
+        test_memory_main
+        LINK_PUBLIC
+        book
+        evaluator_alpha_beta
+        evaluator_derivative
+        hash_map
+        misc
+        parse_flags
+        pattern_evaluator
+        thor
+)
+
+add_executable(
         endgame_ffo_main
         endgame_ffo_main.cpp
 )
