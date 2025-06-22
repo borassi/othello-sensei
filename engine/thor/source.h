@@ -349,14 +349,14 @@ class Source {
   }
 
   void LoadSortedGames() {
-    std::vector<uint32_t> file = ReadFile<uint32_t>(SortedGamesPath());
-    int num_games = (int) (file.size() / game_indices_.size());
-    assert(num_games == game_getter_.NumGames());
+    std::fstream file(SortedGamesPath(), std::ios::in | std::ios::binary);
+    int num_games = game_getter_.NumGames();
+    assert(num_games == FileLength(file) / sizeof(uint32_t) / game_indices_.size());
 
     for (int i = 0; i < game_indices_.size(); ++i) {
-      std::copy(file.begin() + i * num_games,
-                file.begin() + (i+1) * num_games,
-                std::back_inserter(*game_indices_[i]));
+      std::vector<uint32_t>& game_indices = *game_indices_[i];
+      game_indices.resize(num_games);
+      file.read((char*) game_indices.data(), num_games * sizeof(uint32_t));
     }
   }
 
