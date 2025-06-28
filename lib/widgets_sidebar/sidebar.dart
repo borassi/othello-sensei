@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_sidebar/moves_visualizer.dart';
 import 'package:othello_sensei/widgets_sidebar/score_graph.dart';
+import 'package:othello_sensei/widgets_sidebar/setup_board.dart';
 import 'package:othello_sensei/widgets_sidebar/thor_games_visualizer.dart';
 import 'package:othello_sensei/widgets_sidebar/timer.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
@@ -56,11 +57,15 @@ class Sidebar extends StatelessWidget {
       const Spacer(),
       const MovesVisualizer(),
     ];
+    List<Widget> childrenSetupBoard = [
+      const DiskCountWithExtraContent(DiskCountExtraContent.none),
+      const Expanded(child: SetupBoardControls()),
+    ];
     return DefaultTabController(
       length: 3,
       initialIndex: 0,
       child: ListenableBuilder(
-        listenable: GlobalState.preferences,
+        listenable: Listenable.merge([GlobalState.preferences, GlobalState.setupBoardState]),
         builder: (BuildContext context, Widget? widget) {
           var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
           DefaultTabController.of(context).animateTo(
@@ -74,18 +79,20 @@ class Sidebar extends StatelessWidget {
             ];
           }
           var childAppBar = brokenAppBar ? <Widget>[SenseiAppBar(), const Margin.internal()] : <Widget>[];
-          var evaluateContent = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: childAppBar + childrenEvaluate + childrenControls
+          var contents = [childrenEvaluate, childrenThor, childrenPlay].map(
+              (children) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: childAppBar + children + childrenControls
+              )
           );
-          var thorContent = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: childAppBar + childrenThor + childrenControls,
-          );
-          var playContent = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: childAppBar + childrenPlay + childrenControls,
-          );
+          if (GlobalState.setupBoardState.settingUpBoard) {
+            contents = [childrenSetupBoard, childrenSetupBoard, childrenSetupBoard].map(
+                (children) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: childAppBar + children
+                )
+            );
+          }
           return Scaffold(
             bottomNavigationBar: TabBar(
               tabs: List.generate(3, (index) => Tab(
@@ -106,11 +113,7 @@ class Sidebar extends StatelessWidget {
             ),
             body: TabBarView(
               physics: NeverScrollableScrollPhysics(),
-              children: [
-                evaluateContent,
-                thorContent,
-                playContent,
-              ],
+              children: contents.toList()
             ),
           );
         }

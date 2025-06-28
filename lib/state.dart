@@ -262,6 +262,11 @@ class GlobalState {
   }
 
   static void evaluate() {
+    if (GlobalState.setupBoardState.settingUpBoard) {
+      stop();
+      GlobalState.resetAnnotations();
+      return;
+    }
     GlobalState.preferences.fillEvaluateParams();
     GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }

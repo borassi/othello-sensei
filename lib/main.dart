@@ -259,16 +259,7 @@ class MainApp extends StatelessWidget {
                   child: AppTheme(
                       child: MainContent(
                         const Board(),
-                        ListenableBuilder(
-                          listenable: GlobalState.setupBoardState,
-                          builder: (BuildContext context, Widget? widget) {
-                            if (GlobalState.setupBoardState.settingUpBoard) {
-                              return const SetupBoardControls();
-                            } else {
-                              return const Sidebar();
-                            }
-                          }
-                        )
+                        const Sidebar(),
                       )
                   )
               )

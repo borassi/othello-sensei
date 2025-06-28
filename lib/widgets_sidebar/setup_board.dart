@@ -23,7 +23,6 @@ import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import 'disk_count.dart';
 
 class SetupBoardControls extends StatelessWidget {
 
@@ -40,7 +39,6 @@ class SetupBoardControls extends StatelessWidget {
         builder: (BuildContext context, Widget? widget) => Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const DiskCountWithExtraContent(DiskCountExtraContent.none),
             const Spacer(),
             Row(
               children: [
