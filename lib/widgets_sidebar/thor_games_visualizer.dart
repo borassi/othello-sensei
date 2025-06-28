@@ -166,5 +166,4 @@ class ThorGamesVisualizer extends StatelessWidget {
       }
     );
   }
-
 }

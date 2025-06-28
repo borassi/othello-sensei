@@ -82,7 +82,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
     squareSize = (boardSize) / 8;
     sideMargin = sideMarginFraction * boardSize;
     margin = internalMarginFraction * boardSize;
-    sideBarWidth = vertical() ? boardSize - 2 * sideMargin : width - boardSize - sideMargin;
+    sideBarWidth = vertical() ? boardSize - 2 * sideMargin : width - margin - boardSize - 2 * sideMargin;
     sideBarHeight = vertical() ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
   }
 

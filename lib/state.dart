@@ -883,7 +883,8 @@ class SourcePlayerIndex {
 }
 
 class ThorMetadataState with ChangeNotifier {
-  Map<String, bool> sourceToActive;
+  String activeFolder;
+  List<String> folders;
   Pointer<ThorMetadata> thorMetadata;
   Map<String, SourcePlayerIndex> playerStringToIndex;
   List<String> tournaments;
@@ -894,14 +895,15 @@ class ThorMetadataState with ChangeNotifier {
         thorMetadata = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
         playerStringToIndex = {},
         tournaments = [],
-        sourceToActive = {},
+        folders = [],
         selectedBlacks = [],
-        selectedWhites = [] {
+        selectedWhites = [],
+        activeFolder = 'All' {
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     var tournamentsSet = HashSet<String>();
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
       var source = (thorMetadata.ref.sources + i).value.ref;
-      sourceToActive[source.name.cast<Utf8>().toDartString()] = true;
+      folders.add(source.name.cast<Utf8>().toDartString());
       for (int j = 0; j < source.num_players; ++j) {
         String player = (source.players + j).value.cast<Utf8>().toDartString();
         if (!playerToSources.containsKey(player)) {
@@ -932,27 +934,31 @@ class ThorMetadataState with ChangeNotifier {
         }
       }
     }
+    _setFilters();
   }
 
   void setSelectedBlacks(List<String> value) {
     selectedBlacks = value;
     notifyListeners();
+    _setFilters();
   }
 
   void setSelectedWhites(List<String> value) {
     selectedWhites = value;
     notifyListeners();
+    _setFilters();
   }
 
-  void setSelectedSource(String name, bool active) {
-    sourceToActive[name] = active;
+  void setActiveFolder(String name) {
+    activeFolder = name;
     notifyListeners();
+    _setFilters();
   }
 
-  void setFilters() {
+  void _setFilters() {
     for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
       ThorSourceMetadata source = (thorMetadata.ref.sources + i).value.ref;
-      source.active = sourceToActive[source.name.cast<Utf8>().toDartString()]!;
+      source.active = (activeFolder == source.name.cast<Utf8>().toDartString()) || activeFolder == 'All';
     }
     for (var (players, getSource) in [
       (selectedBlacks, (sourceIndex) => thorMetadata.ref.sources[sourceIndex].ref.selected_blacks),

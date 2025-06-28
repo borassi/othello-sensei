@@ -22,40 +22,6 @@ import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_utils/misc.dart';
-
-class ThorSourcesWidget extends StatelessWidget {
-  const ThorSourcesWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: GlobalState.thorMetadata,
-      builder: (BuildContext context, Widget? widget) {
-        var checkboxes = <Widget>[];
-        for (var iter in GlobalState.thorMetadata.sourceToActive.entries) {
-          checkboxes.add(
-            Row(
-              children: [
-                SenseiToggle(
-                  initialValue: iter.value,
-                  onChanged: (bool? newValue) {
-                    if (newValue != null) {
-                      GlobalState.thorMetadata.setSelectedSource(iter.key, newValue);
-                    }
-                  },
-                ),
-                const Margin.internal(),
-                Text(iter.key, style: Theme.of(context).textTheme.bodyMedium!),
-              ]
-            )
-          );
-        }
-        return Column(children: checkboxes);
-      }
-    );
-  }
-}
 
 class ThorFiltersWidget extends StatelessWidget {
   final double squareSize;
@@ -112,7 +78,6 @@ class ThorFiltersWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return SecondaryWindow(
       onPopInvoked: (bool didPop) {
-        GlobalState.thorMetadata.setFilters();
         GlobalState.evaluate();
       },
       title: 'Archive filters',
@@ -124,8 +89,6 @@ class ThorFiltersWidget extends StatelessWidget {
             child: IntrinsicHeight(
         child: Column(
           children: [
-            const ThorSourcesWidget(),
-            const Margin.internal(),
             Row(
               children: [
                 Case(CaseState.black, 255, false),
@@ -133,7 +96,7 @@ class ThorFiltersWidget extends StatelessWidget {
                 Expanded(child: playerSearch(context, true)),
               ]
             ),
-            const Spacer(),
+            const Margin.internal(),
             Row(
               children: [
                 Case(CaseState.white, 255, false),

@@ -75,12 +75,15 @@ class Sidebar extends StatelessWidget {
           }
           var childAppBar = brokenAppBar ? <Widget>[SenseiAppBar(), const Margin.internal()] : <Widget>[];
           var evaluateContent = Column(
-              children: childAppBar + childrenEvaluate + childrenControls
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: childAppBar + childrenEvaluate + childrenControls
           );
           var thorContent = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: childAppBar + childrenThor + childrenControls,
           );
           var playContent = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: childAppBar + childrenPlay + childrenControls,
           );
           return Scaffold(

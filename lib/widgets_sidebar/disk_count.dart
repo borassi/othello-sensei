@@ -15,6 +15,7 @@
  *
  */
 
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_sidebar/player.dart';
 
@@ -96,23 +97,65 @@ class ShowError extends StatelessWidget {
 
 }
 
+class GameFolderSearch extends StatelessWidget {
+  const GameFolderSearch({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+    var textStyle = Theme.of(context).textTheme.bodyMedium!;
+    return DropdownSearch<String>(
+      items: (f, cs) => ['All'] + GlobalState.thorMetadata.folders,
+      selectedItem: GlobalState.thorMetadata.activeFolder,
+      onChanged: (String? value) {
+        if (value != null) {
+          GlobalState.thorMetadata.setActiveFolder(value);
+          GlobalState.evaluate();
+        }
+      },
+      suffixProps: DropdownSuffixProps(
+        dropdownButtonProps: DropdownButtonProps(
+          isVisible: false
+        ),
+      ),
+      decoratorProps: DropDownDecoratorProps(
+        decoration: InputDecoration(
+            contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(squareSize / 2))
+            )
+        ),
+        expands: true,
+        baseStyle: textStyle,
+        textAlign: TextAlign.center
+      ),
+      popupProps: PopupProps.menu(
+        menuProps: MenuProps(align: MenuAlign.bottomCenter),
+        fit: FlexFit.loose,
+        itemBuilder: (context, item, isDisabled, isSelected) => Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(item, style: textStyle, textAlign: TextAlign.center),
+        ),
+      ),
+    );
+  }
+}
+
 class FiltersButton extends StatelessWidget {
   const FiltersButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-    return Expanded(
-        child: SenseiButton(
-          text: 'Filters',
-          onPressed: () {
-            GlobalState.stop();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
-            );
-          },
-        )
+    return SenseiButton(
+        text: 'Filters',
+        onPressed: () {
+          GlobalState.stop();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ThorFiltersWidget(squareSize)),
+          );
+        },
     );
   }
 }
@@ -149,49 +192,54 @@ class DiskCountWithExtraContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-    List<Widget> leftContentWidget = [const Spacer()];
-    List<Widget> rightContentWidget = [const Spacer()];
-    List<Widget> centerContentWidget = [];
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    var squareSize = appSizes.squareSize;
+    var sideBarWidth = appSizes.sideBarWidth;
+    List<Widget> content;
     switch(extraContent) {
       case DiskCountExtraContent.none:
+        content = [const Spacer()];
         break;
       case DiskCountExtraContent.error:
-        leftContentWidget = [const Margin.internal(), ShowError(true), const Spacer()];
-        rightContentWidget = [const Spacer(), ShowError(false), const Margin.internal()];
+        content = [const Margin.internal(), ShowError(true), const Spacer(), ShowError(false), const Margin.internal()];
         break;
       case DiskCountExtraContent.thor:
-        centerContentWidget = [const Margin.internal(), FiltersButton(), const Margin.internal()];
+        content = [
+          const Margin.internal(),
+          Expanded(child: GameFolderSearch()),
+          const Margin.internal(),
+          Expanded(child: FiltersButton()),
+          const Margin.internal()
+        ];
         break;
       case DiskCountExtraContent.player:
-        centerContentWidget = [const PlayerWidget(true), const Margin.internal(), const PlayerWidget(false)];
+        content = [
+          const Margin.internal(),
+          Expanded(child: PlayerWidget(true)),
+          const Margin.internal(),
+          Expanded(child: PlayerWidget(false)),
+          const Margin.internal()
+        ];
         break;
     }
     return SizedBox(
       height: squareSize,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (TapDownDetails details) => maybeUndo(),
-              child: Row(
-                  children: <Widget>[const DiskCount(true)] + leftContentWidget
-              )
-            )
-          ),
-        ] + centerContentWidget + [
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (TapDownDetails details) => maybeRedo(),
-              child: Row(
-                  children: rightContentWidget + <Widget>[const DiskCount(false)]
-              )
-            )
-          )
-        ]
+      // Should be implicit, but we set it up so that the tap down below is
+      // correct for sure.
+      width: sideBarWidth,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (TapDownDetails details) {
+          if (details.localPosition.dx < sideBarWidth / 2) {
+            maybeUndo();
+          } else {
+            maybeRedo();
+          }
+        },
+        child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[const DiskCount(true)] + content + [const DiskCount(false)]
+        )
       )
     );
   }

@@ -37,7 +37,6 @@ class PlayerWidget extends StatelessWidget {
           var preference = _black ? 'Black player' : 'White player';
           var text = (GlobalState.preferences.get(preference) as Player).name.capitalize();
           return SizedBox(
-              width: 2 * squareSize,
               height: squareSize,
               child: SenseiButton(
                 text: text,
