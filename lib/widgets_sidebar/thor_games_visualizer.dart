@@ -126,12 +126,16 @@ class ThorGamesVisualizer extends StatelessWidget {
         }
         var annotations = GlobalState.globalAnnotations.annotations!;
         if (annotations.ref.num_example_thor_games == 0) {
-          return Text(
-              'No game',
-              style: TextStyle(
-                fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                fontWeight: FontWeight.bold,
-              ));
+          return Align(
+              alignment: Alignment.topCenter,
+              child: Text(
+                'No game',
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
+                  fontWeight: FontWeight.bold,
+                )
+              )
+          );
         }
         return Column(
           children: [
