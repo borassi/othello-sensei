@@ -79,12 +79,13 @@ class EvaluationState : public TreeNode {
   bool AfterPass() const {
     return annotations_.move == kPassMove;
   }
-  double SecondsOnThisNode() { return seconds_on_this_node_; }
+  double SecondsOnThisNode() const { return seconds_on_this_node_; }
   void ResetSecondsOnThisNode() { seconds_on_this_node_ = 0; }
   void AddSecondsOnThisNode(double value) { seconds_on_this_node_ += value; }
   void ResetSecondsToEvaluateThisNode() { seconds_to_evaluate_this_node_ = 0; }
   void AddSecondsToEvaluateThisNode(double value) { seconds_to_evaluate_this_node_ += value; }
-  double SecondsToEvaluateThisNode() { return seconds_to_evaluate_this_node_; }
+  double SecondsToEvaluateThisNode() const { return seconds_to_evaluate_this_node_; }
+  int DepthNoPass() const { return annotations_.depth_no_pass; }
   bool InAnalysisLine() const {
     if (next_state_primary_ != nullptr) {
       return true;
@@ -105,9 +106,9 @@ class EvaluationState : public TreeNode {
     Eval final_eval = GetEvaluationGameOver(player_, opponent_);
     int final_eval_large = EvalToEvalLarge(final_eval);
     SetSolvedNoUpdate(final_eval_large, final_eval_large);
-    annotations_.median_eval = final_eval;
+    annotations_.median_eval = (int) final_eval;
     annotations_.eval_best_line = final_eval;
-    annotations_.median_eval_best_line = final_eval;
+    annotations_.median_eval_best_line = (int) final_eval;
     annotations_.provenance = EVALUATE;
     UpdateSavedAnnotations();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
@@ -194,7 +195,7 @@ class EvaluationState : public TreeNode {
     if (n_fathers_ == 0) {
       return nullptr;
     }
-    return static_cast<EvaluationState*>(fathers_[0]);
+    return dynamic_cast<EvaluationState*>(fathers_[0]);
   }
 
   void SetPlayed() {
@@ -595,5 +596,7 @@ class EvaluationState : public TreeNode {
     annotations_.next_state_primary = next_state_primary_ ? &next_state_primary_->annotations_ : nullptr;
   }
 };
+
+void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence);
 
 #endif // OTHELLO_SENSEI_STATE_H

@@ -565,6 +565,38 @@ class FFIEngine {
               ffi.Pointer<ffi.Void>)>>('MutableGameMetadata');
   late final _MutableGameMetadata = _MutableGameMetadataPtr.asFunction<
       ffi.Pointer<GameMetadata> Function(ffi.Pointer<ffi.Void>)>();
+
+  void PlayOneMove(
+    ffi.Pointer<ffi.Void> ptr,
+    ThorGame game,
+  ) {
+    return _PlayOneMove(
+      ptr,
+      game,
+    );
+  }
+
+  late final _PlayOneMovePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ThorGame)>>('PlayOneMove');
+  late final _PlayOneMove = _PlayOneMovePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, ThorGame)>();
+
+  void OpenThorGame(
+    ffi.Pointer<ffi.Void> ptr,
+    ThorGame game,
+  ) {
+    return _OpenThorGame(
+      ptr,
+      game,
+    );
+  }
+
+  late final _OpenThorGamePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ThorGame)>>('OpenThorGame');
+  late final _OpenThorGame = _OpenThorGamePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, ThorGame)>();
 }
 
 typedef Square = ffi.Uint8;

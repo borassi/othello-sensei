@@ -18,9 +18,7 @@
 #include "../board/get_moves.h"
 #include "../thor/thor.h"
 
-namespace {
-
-void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
+void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
   thor_game.black = game.BlackC();
   thor_game.white = game.WhiteC();
   thor_game.tournament = game.TournamentC();
@@ -35,8 +33,6 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
   }
   thor_game.moves_played = sequence.Size();
 }
-
-}  // anonymous namespace
 
 void EvaluationState::SetThor(const GamesList& games) {
   assert(!IsModified());
@@ -54,7 +50,7 @@ void EvaluationState::SetThor(const GamesList& games) {
 
   for (unsigned i = 0; i < annotations_.num_example_thor_games; ++i) {
     assert(games.examples[i].Moves().Size() >= sequence.Size());
-    ThorGameSet(games.examples[i], annotations_.example_thor_games[i], sequence);
+    GameToThorGame(games.examples[i], annotations_.example_thor_games[i], sequence);
   }
 }
 

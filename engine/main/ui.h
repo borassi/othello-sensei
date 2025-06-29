@@ -136,6 +136,12 @@ void Open(void* ptr, char* path);
 EXPORT
 struct GameMetadata* MutableGameMetadata(void* ptr);
 
+EXPORT
+void PlayOneMove(void* ptr, struct ThorGame game);
+
+EXPORT
+void OpenThorGame(void* ptr, struct ThorGame game);
+
 #ifdef __cplusplus
 }
 #endif

@@ -274,13 +274,24 @@ class Main {
     buffer << file.rdbuf();
     std::string content = buffer.str();
     GameToSave game = GameToSave::FromString(content);
-    SetSequence(game.Moves());
-    strcpy(game_metadata_.black, game.Black().c_str());
-    strcpy(game_metadata_.white, game.White().c_str());
-    strcpy(game_metadata_.tournament, game.Tournament().c_str());
+    ThorGame thor_game;
+    GameToThorGame(game.ToGame(), thor_game, Sequence());
+    OpenThorGame(thor_game);
     strcpy(game_metadata_.notes, game.Notes().c_str());
-    game_metadata_.year = game.Year();
-    game_metadata_.black_disks = game.BlackDisks();
+    strcpy(game_metadata_.round, game.Round().c_str());
+  }
+
+  void PlayOneMove(const ThorGame& game) {
+    PlayMove(game.moves[current_state_->DepthNoPass()], false);
+  }
+
+  void OpenThorGame(const ThorGame& game) {
+    SetSequence(Sequence(game.moves, 60));
+    strcpy(game_metadata_.black, game.black);
+    strcpy(game_metadata_.white, game.white);
+    strcpy(game_metadata_.tournament, game.tournament);
+    game_metadata_.year = game.year;
+    game_metadata_.black_disks = game.score;
     current_state_->SetPrimaryLine();
   }
 

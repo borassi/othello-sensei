@@ -55,7 +55,7 @@ Simplify development (extra)
 
 
 HOW TO RELEASE ON ANDROID:
-- Change the applicationId in android/app/build.gradle to remove 'dev'.
+- Change the applicationId in android/app/build.gradle.kts to remove 'dev'.
 - Change the name in android/app/src/main/AndroidManifest to remove 'Dev'.
 - Change the version in pubspec.yaml
 - Check the paths to the Drive files.
