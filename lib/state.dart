@@ -254,7 +254,6 @@ class GlobalState {
   }
 
   static void stop() {
-    print('Stop!');
     GlobalState.ffiEngine.Stop(GlobalState.ffiMain);
   }
 
@@ -264,7 +263,6 @@ class GlobalState {
       GlobalState.resetAnnotations();
       return;
     }
-    print('Evaluate!');
     GlobalState.preferences.fillEvaluateParams();
     GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
