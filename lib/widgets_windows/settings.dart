@@ -233,6 +233,7 @@ class Settings extends StatelessWidget {
     'Evaluate if watching an analyzed game',
     'Analyze on paste',
     'Analyze on import',
+    'Analyze on open',
     'When the game ends',
   ];
 

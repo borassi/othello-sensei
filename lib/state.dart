@@ -322,7 +322,11 @@ class GlobalState {
     }
     var pathC = filePickerResult.paths[0]!.toNativeUtf8().cast<ffi.Char>();
     ffiEngine.Open(ffiMain, pathC);
-    evaluate();
+    if (GlobalState.preferences.get('Analyze on open')) {
+      analyze();
+    } else {
+      evaluate();
+    }
   }
 }
 
@@ -607,6 +611,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds/position in game analysis': 1.0,
     'Analyze on paste': true,
     'Analyze on import': true,
+    'Analyze on open': true,
     'When the game ends': 'Message',
     'Approximate': false,
     'Highlight distance from best move': 1.0,
