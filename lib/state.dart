@@ -131,7 +131,7 @@ class GlobalState {
   static late Pointer<Void> ffiMain;
   static const Main main = Main();
   static late List<ConnectivityResult> connectivity;
-  static ThorMetadataState? thorMetadataOrNull;
+  static ThorMetadataState thorMetadata = ThorMetadataState();
   static GameMetadataState gameMetadataState = GameMetadataState();
   static late FFIEngine ffiEngine;
   static late CpuType cpuType;
@@ -171,12 +171,12 @@ class GlobalState {
   }
 
   static Future<void> _createMain() async {
+    thorMetadata.invalidate();
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     NativeCallable<UpdateTimersFunction> updateTimersCallback = NativeCallable.listener(updateTimers);
     var localAssetPathVar = localAssetPath();
     GlobalState.resetAnnotations();
-    thorMetadataOrNull = null;
     ffiMain = GlobalState.ffiEngine.MainInit(
         join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
         // '/home/michele/Desktop/sensei/book'.toNativeUtf8().cast<Char>(),
@@ -188,12 +188,8 @@ class GlobalState {
         setAnnotationsCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
     );
+    thorMetadata.init();
     newGame();
-  }
-
-  static ThorMetadataState get thorMetadata {
-    thorMetadataOrNull ??= ThorMetadataState();
-    return thorMetadataOrNull!;
   }
 
   static void newGameXot(bool small) async {
@@ -258,6 +254,7 @@ class GlobalState {
   }
 
   static void stop() {
+    print('Stop!');
     GlobalState.ffiEngine.Stop(GlobalState.ffiMain);
   }
 
@@ -267,6 +264,7 @@ class GlobalState {
       GlobalState.resetAnnotations();
       return;
     }
+    print('Evaluate!');
     GlobalState.preferences.fillEvaluateParams();
     GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
@@ -903,24 +901,27 @@ class SourcePlayerIndex {
 class ThorMetadataState with ChangeNotifier {
   String activeFolder;
   List<String> folders;
-  Pointer<ThorMetadata> thorMetadata;
+  Pointer<ThorMetadata>? ptr;
   Map<String, SourcePlayerIndex> playerStringToIndex;
   List<String> tournaments;
   List<String> selectedBlacks;
   List<String> selectedWhites;
 
   ThorMetadataState() :
-        thorMetadata = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain),
+        ptr = null,
         playerStringToIndex = {},
         tournaments = [],
         folders = [],
         selectedBlacks = [],
         selectedWhites = [],
-        activeFolder = 'All' {
+        activeFolder = 'All';
+
+  void init() async {
+    ptr = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain);
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     var tournamentsSet = HashSet<String>();
-    for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
-      var source = (thorMetadata.ref.sources + i).value.ref;
+    for (int i = 0; i < ptr!.ref.num_sources; ++i) {
+      var source = (ptr!.ref.sources + i).value.ref;
       folders.add(source.name.cast<Utf8>().toDartString());
       for (int j = 0; j < source.num_players; ++j) {
         String player = (source.players + j).value.cast<Utf8>().toDartString();
@@ -947,12 +948,24 @@ class ThorMetadataState with ChangeNotifier {
         playerStringToIndex[player] = indices[0];
       } else {
         for (var index in indices) {
-          var playerString = '$player / ${thorMetadata.ref.sources[index.sourceIndex].ref.name.cast<Utf8>().toDartString()}';
+          var playerString = '$player / ${ptr!.ref.sources[index.sourceIndex].ref.name.cast<Utf8>().toDartString()}';
           playerStringToIndex[playerString] = index;
         }
       }
     }
     _setFilters();
+    notifyListeners();
+  }
+
+  void invalidate() {
+    ptr = null;
+    playerStringToIndex = {};
+    tournaments = [];
+    folders = [];
+    selectedBlacks = [];
+    selectedWhites = [];
+    activeFolder = 'All';
+    notifyListeners();
   }
 
   void setSelectedBlacks(List<String> value) {
@@ -974,22 +987,25 @@ class ThorMetadataState with ChangeNotifier {
   }
 
   void _setFilters() {
-    for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
-      ThorSourceMetadata source = (thorMetadata.ref.sources + i).value.ref;
+    if (ptr == null) {
+      return;
+    }
+    for (int i = 0; i < ptr!.ref.num_sources; ++i) {
+      ThorSourceMetadata source = (ptr!.ref.sources + i).value.ref;
       source.active = (activeFolder == source.name.cast<Utf8>().toDartString()) || activeFolder == 'All';
     }
     for (var (players, getSource) in [
-      (selectedBlacks, (sourceIndex) => thorMetadata.ref.sources[sourceIndex].ref.selected_blacks),
-      (selectedWhites, (sourceIndex) => thorMetadata.ref.sources[sourceIndex].ref.selected_whites)]) {
+      (selectedBlacks, (sourceIndex) => ptr!.ref.sources[sourceIndex].ref.selected_blacks),
+      (selectedWhites, (sourceIndex) => ptr!.ref.sources[sourceIndex].ref.selected_whites)]) {
 
-      List<int> nextIndex = List.generate(thorMetadata.ref.num_sources, (index) => 0);
+      List<int> nextIndex = List.generate(ptr!.ref.num_sources, (index) => 0);
 
       for (var player in players) {
         var index = playerStringToIndex[player]!;
         var sourceIndex = index.sourceIndex;
         getSource(sourceIndex)[nextIndex[sourceIndex]++] = index.playerIndex;
       }
-      for (int i = 0; i < thorMetadata.ref.num_sources; ++i) {
+      for (int i = 0; i < ptr!.ref.num_sources; ++i) {
         getSource(i)[nextIndex[i]] = -1;
       }
     }

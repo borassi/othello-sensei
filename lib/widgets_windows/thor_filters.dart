@@ -29,51 +29,65 @@ class ThorFiltersWidget extends StatelessWidget {
   const ThorFiltersWidget(this.squareSize, {super.key});
 
   Widget playerSearch(BuildContext context, bool black) {
-    var fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
-    var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
-    players.sort();
     return ListenableBuilder(
       listenable: GlobalState.thorMetadata,
-      builder: (BuildContext context, Widget? child) => DropdownSearch<String>.multiSelection(
-        items: (filter, infiniteScrollProps) => players,
-        selectedItems: black ? GlobalState.thorMetadata.selectedBlacks : GlobalState.thorMetadata.selectedWhites,
-        popupProps: PopupPropsMultiSelection.menu(
-          showSearchBox: true,
-          fit: FlexFit.tight,
-          searchFieldProps: TextFieldProps(style: TextStyle(fontSize: fontSize)),
-          constraints: BoxConstraints(maxHeight: 8 * squareSize),
-          itemBuilder: (BuildContext context, String s, bool x, bool y) => Text(s, style: TextStyle(fontSize: fontSize)),
-          searchDelay: const Duration(seconds: 0),
-        ),
-        dropdownBuilder: (context, selectedItems) {
-          return Column(
-            children: selectedItems.map((String item) {
-              return Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  child: Text(item, style: TextStyle(fontSize: fontSize)),
-                  onPressed: () {
-                    selectedItems.remove(item);
-                    if (black) {
-                      GlobalState.thorMetadata.setSelectedBlacks(selectedItems);
-                    } else {
-                      GlobalState.thorMetadata.setSelectedWhites(selectedItems);
-                    }
-                  }),
-              );
-            }).toList()
-          );
-        },
-        onChanged: (List<String> elements) {
-          if (black) {
-            GlobalState.thorMetadata.setSelectedBlacks(elements);
-          } else {
-            GlobalState.thorMetadata.setSelectedWhites(elements);
-          }
-        },
-      )
+      builder: (BuildContext context, Widget? child) {
+        var fontSize = Theme
+            .of(context)
+            .textTheme
+            .bodyMedium!
+            .fontSize!;
+        var players = GlobalState.thorMetadata.playerStringToIndex.keys
+            .toList();
+        players.sort();
+        return DropdownSearch<String>.multiSelection(
+          items: (filter, infiniteScrollProps) => players,
+          selectedItems: black
+              ? GlobalState.thorMetadata.selectedBlacks
+              : GlobalState.thorMetadata.selectedWhites,
+          popupProps: PopupPropsMultiSelection.menu(
+            showSearchBox: true,
+            fit: FlexFit.loose,
+            searchFieldProps: TextFieldProps(
+                style: TextStyle(fontSize: fontSize)),
+            constraints: BoxConstraints(maxHeight: 8 * squareSize),
+            itemBuilder: (BuildContext context, String s, bool x, bool y) =>
+                Text(s, style: TextStyle(fontSize: fontSize)),
+            searchDelay: const Duration(seconds: 0),
+          ),
+          dropdownBuilder: (context, selectedItems) {
+            return Column(
+                children: selectedItems.map((String item) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                        child: Text(item, style: TextStyle(fontSize: fontSize)),
+                        onPressed: () {
+                          selectedItems.remove(item);
+                          if (black) {
+                            GlobalState.thorMetadata.setSelectedBlacks(
+                                selectedItems);
+                          } else {
+                            GlobalState.thorMetadata.setSelectedWhites(
+                                selectedItems);
+                          }
+                        }),
+                  );
+                }).toList()
+            );
+          },
+          onChanged: (List<String> elements) {
+            if (black) {
+              GlobalState.thorMetadata.setSelectedBlacks(elements);
+            } else {
+              GlobalState.thorMetadata.setSelectedWhites(elements);
+            }
+          },
+        );
+      }
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return SecondaryWindow(
