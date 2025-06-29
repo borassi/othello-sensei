@@ -286,29 +286,36 @@ class GlobalState {
   }
 
   static Future<void> setDetailsAndSave(BuildContext context) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SaveDialogWidget()),
-    );
+    var game = ffiEngine.GetGameToSave(ffiMain);
+    if (!game.ref.success) {
+      showSenseiDialog(SenseiDialog(
+        title: "Failed to save the game",
+        content: cArrayToString(game.ref.error),
+      ));
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SaveDialogWidget()),
+      );
+    }
+    malloc.free(game);
   }
 
   static Future<void> save() async {
-    var game = ffiEngine.GetGameToSave(ffiMain).cast<Utf8>().toDartString();
-    var path = await FilePicker.platform.saveFile(
+    var game = ffiEngine.GetGameToSave(ffiMain);
+    await FilePicker.platform.saveFile(
       fileName: GlobalState.gameMetadataState.getGameName(),
-      allowedExtensions: ['txt'],
-      bytes: utf8.encode(game)
+      allowedExtensions: ['stxt'],
+      bytes: utf8.encode(cArrayToString(game.ref.game)),
     );
-    if (path == null) {
-      return;
-    }
+    malloc.free(game);
     evaluate();
   }
 
   static Future<void> open() async {
     var filePickerResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['txt']
+      allowedExtensions: ['stxt']
     );
     if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
       return;
@@ -408,7 +415,7 @@ class GameMetadataState with ChangeNotifier {
     if (round != "") {
       round += " - ";
     }
-    return '$round$black - $white.txt';
+    return '$round$black - $white.stxt';
   }
 }
 
@@ -457,10 +464,11 @@ class BoardState with ChangeNotifier {
   int emptySquares() { return bitCount(~(player | opponent)); }
 
   void handleGameOver() {
-    var behavior = GlobalState.preferences.get('When the game ends');
-    if (GlobalState.preferences.get("Active tab") != 2) {
+    if (GlobalState.preferences.get("Active tab") != 2
+        || GlobalState.setupBoardState.settingUpBoard) {
       return;
     }
+    var behavior = GlobalState.preferences.get('When the game ends');
     if (behavior == 'Message') {
       var blackDisks = this.blackDisks();
       var whiteDisks = this.whiteDisks();

@@ -204,7 +204,10 @@ void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) 
     return;
   }
   auto filters = params.thor_filters;
-  Sequence sequence = state.GetSequence();
+  std::optional<Sequence> sequence_opt = state.GetSequence();
+  if (!sequence_opt) {
+    return;
+  }
   GamesList games;
   games.max_games = filters.max_games;
 
@@ -230,7 +233,7 @@ void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) 
 
     if (include_all_sources || !blacks.empty() || !whites.empty() || !tournaments.empty()) {
       games.Merge(thor_->GetGames(
-          source.name, sequence, filters.max_games, blacks, whites,
+          source.name, *sequence_opt, filters.max_games, blacks, whites,
           tournaments, filters.start_year, filters.end_year));
     }
   }

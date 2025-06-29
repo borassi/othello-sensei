@@ -100,16 +100,14 @@ class Main {
     return ToState(goal);
   }
 
-  void ResetEvaluations() {
-    SetSequence(current_state_->GetSequence());
-  }
-
   void Stop();
 
   char* GetSequence() {
-    std::string sequence = current_state_->GetSequence().ToString();
-    char* result = (char*) malloc(sequence.size() * sizeof(char) + 1);
-    strncpy(result, sequence.c_str(), sequence.size() + 1);
+    std::optional<Sequence> sequence_opt = current_state_->GetSequence();
+    Sequence sequence = sequence_opt ? *sequence_opt : Sequence();
+    std::string sequence_str = sequence.ToString();
+    char* result = (char*) malloc(sequence_str.size() * sizeof(char) + 1);
+    strncpy(result, sequence_str.c_str(), sequence_str.size() + 1);
     return result;
   }
 
@@ -196,7 +194,8 @@ class Main {
         if (!state_in_xot) {
           return false;
         }
-        if (!xot_large_.IsInListPrefix(state_in_xot->GetSequence())) {
+        auto sequence = state_in_xot->GetSequence();
+        if (sequence && !xot_large_.IsInListPrefix(*sequence)) {
           return false;
         }
         auto [error_black, error_white] = state_in_xot->TotalError();
@@ -237,21 +236,33 @@ class Main {
 
   GameMetadata* MutableGameMetadata() { return &game_metadata_; }
 
-  char* GetGameToSave() {
+  SaveGameOutput* GetGameToSave() {
+    auto sequence_opt = current_state_->GetSequence();
+    auto save_game_output = (SaveGameOutput*) malloc(sizeof(SaveGameOutput));
+    if (!sequence_opt) {
+      save_game_output->success = false;
+      strcpy(save_game_output->error, "Cannot save games with manual board setup (yet).");
+      return save_game_output;
+    }
     GameToSave game(
-        current_state_->GetSequence(),
+        *sequence_opt,
         std::string(game_metadata_.black),
         std::string(game_metadata_.white),
         std::string(game_metadata_.tournament),
         std::string(game_metadata_.notes),
-        game_metadata_.year,
-        game_metadata_.black_disks,
+        static_cast<short>(game_metadata_.year),
+        static_cast<Eval>(game_metadata_.black_disks),
         game_metadata_.round);
-    std::string result = game.ToString();
-    char* result_c = (char*) malloc(sizeof(char) * (result.size() + 1));
-    memcpy(result_c, result.c_str(), result.size());
-    result_c[result.size()] = '\0';
-    return result_c;
+    std::string output = game.ToString();
+    if (output.size() >= 2000) {
+      save_game_output->success = false;
+      strcpy(save_game_output->error, "Output too large (probably a bug). Please notify michele.borassi@gmail.com.");
+      return save_game_output;
+    }
+    save_game_output->success = true;
+    strcpy(save_game_output->game, output.c_str());
+    strcpy(save_game_output->error, "");
+    return save_game_output;
   }
 
   void Open(const std::string& path) {
@@ -263,13 +274,13 @@ class Main {
     buffer << file.rdbuf();
     std::string content = buffer.str();
     GameToSave game = GameToSave::FromString(content);
-    memcpy(game_metadata_.black, game.Black().c_str(), game.Black().size());
-    memcpy(game_metadata_.white, game.White().c_str(), game.White().size());
-    memcpy(game_metadata_.tournament, game.Tournament().c_str(), game.Tournament().size());
-    memcpy(game_metadata_.notes, game.Notes().c_str(), game.Notes().size());
+    SetSequence(game.Moves());
+    strcpy(game_metadata_.black, game.Black().c_str());
+    strcpy(game_metadata_.white, game.White().c_str());
+    strcpy(game_metadata_.tournament, game.Tournament().c_str());
+    strcpy(game_metadata_.notes, game.Notes().c_str());
     game_metadata_.year = game.Year();
     game_metadata_.black_disks = game.BlackDisks();
-    SetSequence(game.Moves());
     current_state_->SetPrimaryLine();
   }
 

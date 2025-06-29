@@ -71,10 +71,6 @@ bool operator!=(const EvaluateParams& lhs, const EvaluateParams& rhs) {
 }  // namespace
 
 void Main::Evaluate() {
-  if (last_params_ != evaluate_params_) {
-    last_params_ = evaluate_params_;
-    ResetEvaluations();
-  }
   if (analyzing_) {
     if (analyzing_ == 2) {
       // This changes analyzing_ to 0, but we set it below anyway.

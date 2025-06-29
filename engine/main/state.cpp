@@ -40,8 +40,12 @@ void ThorGameSet(const Game& game, ThorGame& thor_game, const Sequence& sequence
 
 void EvaluationState::SetThor(const GamesList& games) {
   assert(!IsModified());
-  auto sequence = GetSequence();
-
+  std::optional<Sequence> sequence_opt = GetSequence();
+  if (!sequence_opt) {
+    assert(false);
+    return;
+  }
+  const auto& sequence = *sequence_opt;
   annotations_.num_thor_games = games.num_games;
   annotations_.num_example_thor_games = (int) games.examples.size();
   annotations_.example_thor_games = (ThorGame*) realloc(

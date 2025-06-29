@@ -90,7 +90,7 @@ void TreeNode::SetSolved(EvalLarge lower, EvalLarge upper, const EvaluatorDeriva
 
 void TreeNode::Reset(BitPattern player, BitPattern opponent, int depth,
                      uint8_t evaluator) {
-  mutex_ = &TreeNode::mutex_at_depth_[depth][Hash<kMutexAtDepthBits>(player, opponent)];
+  mutex_ = &TreeNode::mutex_at_depth_[depth % 120][Hash<kMutexAtDepthBits>(player, opponent)];
   auto guard = GetGuard();
   ResetNoLock(player, opponent, depth, evaluator);
 }

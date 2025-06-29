@@ -519,7 +519,7 @@ class FFIEngine {
   late final _GetSenseiAction =
       _GetSenseiActionPtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 
-  ffi.Pointer<ffi.Char> GetGameToSave(
+  ffi.Pointer<SaveGameOutput> GetGameToSave(
     ffi.Pointer<ffi.Void> ptr,
   ) {
     return _GetGameToSave(
@@ -529,10 +529,10 @@ class FFIEngine {
 
   late final _GetGameToSavePtr = _lookup<
       ffi.NativeFunction<
-          ffi.Pointer<ffi.Char> Function(
+          ffi.Pointer<SaveGameOutput> Function(
               ffi.Pointer<ffi.Void>)>>('GetGameToSave');
   late final _GetGameToSave = _GetGameToSavePtr.asFunction<
-      ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Void>)>();
+      ffi.Pointer<SaveGameOutput> Function(ffi.Pointer<ffi.Void>)>();
 
   void Open(
     ffi.Pointer<ffi.Void> ptr,
@@ -641,6 +641,17 @@ final class ThorGame extends ffi.Struct {
 
   @ffi.Int()
   external int year;
+}
+
+final class SaveGameOutput extends ffi.Struct {
+  @ffi.Array.multi([2000])
+  external ffi.Array<ffi.Char> game;
+
+  @ffi.Array.multi([80])
+  external ffi.Array<ffi.Char> error;
+
+  @ffi.Bool()
+  external bool success;
 }
 
 enum XOTState {

@@ -72,6 +72,12 @@ struct ThorGame {
   int year;
 };
 
+struct SaveGameOutput {
+  char game[2000];
+  char error[80];
+  bool success;
+};
+
 enum XOTState {
   XOT_STATE_AUTOMATIC,
   XOT_STATE_ALWAYS,

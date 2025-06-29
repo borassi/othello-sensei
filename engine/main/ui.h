@@ -128,7 +128,7 @@ EXPORT
 enum SenseiAction GetSenseiAction(void* ptr);
 
 EXPORT
-char* GetGameToSave(void* ptr);
+struct SaveGameOutput* GetGameToSave(void* ptr);
 
 EXPORT
 void Open(void* ptr, char* path);

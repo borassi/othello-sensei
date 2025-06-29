@@ -319,13 +319,13 @@ class EvaluationState : public TreeNode {
     return next->ThisOrNextLandable(action);
   }
 
-  Sequence GetSequence() const {
+  std::optional<Sequence> GetSequence() const {
     std::vector<Square> moves_inverted;
     for (const EvaluationState* state = this; state->Father() != nullptr; state = state->Father()) {
       if (state->annotations_.move == kPassMove) {
         continue;
       } else if (state->annotations_.move == kSetupBoardMove) {
-        return Sequence();
+        return std::nullopt;
       }
       moves_inverted.push_back(state->annotations_.move);
     }
