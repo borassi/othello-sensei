@@ -71,6 +71,7 @@ class BookVisitorTopKValue : public BookVisitorWithProgress<kBookVersion> {
     return true;
   }
 
+  // We don't touch VisitLeaf, because we want N internal nodes + the corresponding leaves.
   void VisitLeaf(Node& node) override {}
 
   bool PreVisitInternalNode(Node& node) override {
@@ -81,7 +82,6 @@ class BookVisitorTopKValue : public BookVisitorWithProgress<kBookVersion> {
   int k_;
   double kth_value_estimate_;
   std::priority_queue<double> lowest_k_values_;
-  std::vector<Board> output_;
 };
 
 template<int version = kBookVersion>
@@ -96,38 +96,63 @@ class BookVisitorCopy : public BookVisitorMerge<version, version> {
     return error_black + error_white + BookVisitorMerge<version, version>::depth_ / 2.0;
   }
 
-  bool VisitNode(Node& node) {
-    BookVisitorMerge<version, version>::VisitNode(node);
-    return Value() < max_value_;
+  void VisitLeaf(Node& node) override {
+    ++leaves_;
+    BookVisitorMerge<version, version>::VisitLeaf(node);
+  }
+
+  bool PreVisitInternalNode(Node& node) override {
+    // This is a child of the "last node" in this sequence.
+    if (Value() > max_value_) {
+      ++internal_that_become_leaves_;
+      BookVisitorMerge<version, version>::VisitLeaf(node);
+      // NOTE: By returning false we don't post-visit.
+      return false;
+    }
+    ++internal_;
+    if (internal_ % 1000 == 0) {
+      std::cout << "New book has internal: " << internal_ << " leaves " << leaves_ << " internal that become leaves " << internal_that_become_leaves_ << "\n";
+    }
+    // Always true.
+    return BookVisitorMerge<version, version>::PreVisitInternalNode(node);
   }
 
  private:
+  int internal_ = 0;
+  int leaves_ = 0;
+  int internal_that_become_leaves_ = 0;
   double max_value_;
+  bool no_more_depth_ = true;
 };
+
+// Small: 10 MB / (50 B / positions) / 10 (positions / internal node) = 20,000
+// Medium: 10x Small
 
 int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string source_path = parse_flags.GetFlag("source_path");
-  int desired_num_nodes = parse_flags.GetIntFlag("desired_num_nodes");
   double kth_value_estimate = parse_flags.GetDoubleFlag("kth_value_estimate");
-  std::string target_path = parse_flags.GetFlag("target_path");
+  std::string target_small = parse_flags.GetFlag("target_small_path");
+  std::string target_medium = parse_flags.GetFlag("target_medium_path");
 
   Book source(source_path);
-  Book target(target_path);
 
-  BookVisitorTopKValue top_k(source, desired_num_nodes, kth_value_estimate);
+  BookVisitorTopKValue top_k(source, 200001, kth_value_estimate);
   top_k.VisitString("");
   std::vector<double> top_k_values = top_k.Values();
 
   std::cout << "Got " << top_k_values.size() << " nodes:\n";
-  for (int i = 10; i < top_k_values.size(); i *= 10) {
+  for (int i = 20; i < top_k_values.size(); i *= 10) {
     std::cout << "  Value at " << i << ": " << top_k_values[top_k_values.size() - i - 1] << "\n";
   }
   std::cout << "  Value at " << top_k_values.size() << ": " << top_k_values[0] << "\n";
 
-  // TODO: Optimize it by running in memory.
-  // TODO: Ensure that, when we include a position, we also include its children.
-  BookVisitorCopy copier(source, target, top_k_values[top_k_values.size() - 1]);
-  copier.VisitAll();
-  std::cout << "Done\n";
+  for (const auto& [size, target_path] :
+        {std::pair(20000, target_small), std::pair(200000, target_medium)}) {
+    std::cout << "Saving book with size " << size << " at " << target_path << "\n";
+    Book target(target_path);
+    target.Clean();
+    BookVisitorCopy copier(source, target, top_k_values[top_k_values.size() - size]);
+    copier.VisitAll();
+  }
 }
