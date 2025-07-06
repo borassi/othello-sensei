@@ -138,6 +138,26 @@ class Book {
     index_file.read((char*) &book_size_, sizeof(book_size_));
   }
 
+  void LoadEverythingInMemory(bool load_if(const Node& node)) {
+    for (const ValueFile& value_file : value_files_) {
+      int elements = value_file.Elements();
+      for (auto& [offset, serialized] : value_file) {
+        std::vector<CompressedFlip> father_flips;
+        Node n = Node::Deserialize(serialized, version, &father_flips);
+        if (!load_if(n)) {
+          continue;
+        }
+        auto node = std::make_unique<BookNode>(this, n);
+        modified_nodes_.insert(std::make_pair(node->ToBoard().Unique(), std::move(node)));
+      }
+    }
+    for (auto& [board, node] : modified_nodes_) {
+      if (!node->IsLeaf()) {
+        node->GetChildrenFromBook();
+      }
+    }
+  }
+
  private:
   template<int, int> friend class BookVisitorMerge;
   std::string folder_;

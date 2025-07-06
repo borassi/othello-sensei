@@ -407,3 +407,79 @@ INSTANTIATE_TEST_SUITE_P(
     BookParameterized,
     BookParameterizedFixture,
     ::testing::Values(false, true));
+
+TEST(Book, LoadEverythingInMemory) {
+  TestBook test_book;
+  Book<> book(kTempDir);
+  book.Clean();
+
+  auto e6_node = TestTreeNode(Board("e6"), 0, -63, 63, 10);
+  auto e6f4_node = TestTreeNode(Board("e6f4"), 30, -63, 63, 10);
+  auto e6f6_node = TestTreeNode(Board("e6f6"), 30, -63, 63, 10);
+  auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
+
+  auto e6 = book.Add(*e6_node);
+  auto leaf = LeafToUpdate<BookNode>::Leaf({e6});
+  book.AddChildren(Board("e6"), {*e6f4_node, *e6f6_node, *e6d6_node});
+  leaf.Finalize(30);
+
+  book.Commit();
+
+  Book<> book1(kTempDir);
+  book1.LoadEverythingInMemory([](const Node& node) { return true; });
+  EXPECT_EQ(*book1.Get(Board("e6f4")), *GetTestBookTreeNode(&test_book, Board("e6f4"), 30, -63, 63, 10));
+  EXPECT_EQ(*book1.Get(Board("e6f6")), *GetTestBookTreeNode(&test_book, Board("e6f6"), 30, -63, 63, 10));
+  EXPECT_EQ(*book1.Get(Board("e6d6")), *GetTestBookTreeNode(&test_book, Board("e6d6"), 10, -63, 63, 10));
+
+  EXPECT_FALSE(book1.Mutable(Board("e6"))->IsLeaf());
+  EXPECT_EQ(40, book1.Get(Board("e6"))->GetNVisited());
+  EXPECT_EQ(-10, book1.Get(Board("e6"))->GetEval()) << *book.Get(Board("e6"));
+
+  auto fathers = book1.Mutable(Board("e6f6"))->Fathers();
+  EXPECT_THAT(fathers, UnorderedElementsAre(*book1.Get(Board("e6"))));
+  EXPECT_THAT(
+      book.Mutable(Board("e6"))->GetChildren(),
+      UnorderedElementsAre(
+          *book1.Get(Board("e6f4")),
+          *book1.Get(Board("e6f6")),
+          *book1.Get(Board("e6d6"))));
+}
+
+TEST(Book, LoadEverythingInMemoryAndCommit) {
+  TestBook test_book;
+  Book<> book(kTempDir);
+  book.Clean();
+
+  auto e6_node = TestTreeNode(Board("e6"), 0, -63, 63, 10);
+  auto e6f4_node = TestTreeNode(Board("e6f4"), 30, -63, 63, 10);
+  auto e6f6_node = TestTreeNode(Board("e6f6"), 30, -63, 63, 10);
+  auto e6d6_node = TestTreeNode(Board("e6d6"), 10, -63, 63, 10);
+
+  auto e6 = book.Add(*e6_node);
+  auto leaf = LeafToUpdate<BookNode>::Leaf({e6});
+  book.AddChildren(Board("e6"), {*e6f4_node, *e6f6_node, *e6d6_node});
+  leaf.Finalize(30);
+
+  book.Commit();
+  Book<> book2(kTempDir);
+  book2.LoadEverythingInMemory([](const Node& node) { return true; });
+  book2.Commit();
+
+  Book<> book1(kTempDir);
+  EXPECT_EQ(*book1.Get(Board("e6f4")), *GetTestBookTreeNode(&test_book, Board("e6f4"), 30, -63, 63, 10));
+  EXPECT_EQ(*book1.Get(Board("e6f6")), *GetTestBookTreeNode(&test_book, Board("e6f6"), 30, -63, 63, 10));
+  EXPECT_EQ(*book1.Get(Board("e6d6")), *GetTestBookTreeNode(&test_book, Board("e6d6"), 10, -63, 63, 10));
+
+  EXPECT_FALSE(book1.Mutable(Board("e6"))->IsLeaf());
+  EXPECT_EQ(40, book1.Get(Board("e6"))->GetNVisited());
+  EXPECT_EQ(-10, book1.Get(Board("e6"))->GetEval()) << *book.Get(Board("e6"));
+
+  auto fathers = book1.Mutable(Board("e6f6"))->Fathers();
+  EXPECT_THAT(fathers, UnorderedElementsAre(*book1.Get(Board("e6"))));
+  EXPECT_THAT(
+      book.Mutable(Board("e6"))->GetChildren(),
+      UnorderedElementsAre(
+          *book1.Get(Board("e6f4")),
+          *book1.Get(Board("e6f6")),
+          *book1.Get(Board("e6d6"))));
+}
