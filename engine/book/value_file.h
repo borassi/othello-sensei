@@ -20,10 +20,12 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "../utils/files.h"
@@ -71,19 +73,32 @@ class ValueFile {
     return (BookFileOffset) (FileLength(file) / size_);
   }
 
-  void Print();
+  void Print() const;
 
   class Iterator {
    public:
     using iterator_category = std::forward_iterator_tag;
     using difference_type   = std::ptrdiff_t;
-    using value_type        = std::pair<int, std::vector<char>>;
+    using value_type        = std::pair<BookFileOffset, std::vector<char>>;
     using pointer           = value_type*;  // or also value_type*
     using reference         = const value_type&;  // or also value_type&
 
-    Iterator(ValueFile* file, int offset) : file_(file), current_(offset, std::vector<char>()), next_empty_(0), elements_(file->Elements()) {
-      assert (offset == 0 || offset == elements_);
+    Iterator(const ValueFile* file, BookFileOffset offset) : current_(offset, std::vector<char>()), size_(file->Size()) {
+      assert (offset == 0 || offset == file->Elements());
+
       if (offset == 0) {
+        std::fstream& fstream = file->GetFileCached();
+        file->Seek(0, fstream);
+        values_.resize(FileLength(fstream));
+        fstream.read(values_.data(), values_.size());
+
+        BookFileOffset empty = 0;
+        empty = *((BookFileOffset*) values_.data() + empty * size_);
+        empties_.insert(empty);
+        while (empty != 0) {
+          empty = *((BookFileOffset*) (values_.data() + empty * size_));
+          empties_.insert(empty);
+        }
         ToNextNonEmpty();
       }
     }
@@ -105,48 +120,38 @@ class ValueFile {
     }
 
     bool operator==(const Iterator& other) const {
-      return
-          elements_ == other.elements_
-          && current_ == other.current_
-          && file_ == other.file_
-          && next_empty_ == other.next_empty_;
+      return current_ == other.current_ && size_ == other.size_;
     }
     bool operator!=(const Iterator& other) const { return !operator==(other); }
 
    private:
-    ValueFileSize elements_;
-    std::pair<int, std::vector<char>> current_;
-    ValueFile* file_;
-    ValueFileSize next_empty_;
+    std::pair<BookFileOffset, std::vector<char>> current_;
+    std::unordered_set<BookFileOffset> empties_;
+    int size_;
+    std::vector<char> values_;
 
     void ToNextNonEmpty() {
       auto& offset = current_.first;
       auto& value = current_.second;
-      while (offset == next_empty_ && offset < elements_) {
-        std::fstream& file = file_->GetFileCached();
-        file.seekg(next_empty_);
-        file.read((char*) &next_empty_, sizeof(next_empty_));
+      while (empties_.find(offset) != empties_.end() && offset < values_.size()) {
         ++offset;
       }
-      if (offset < elements_) {
-        value = file_->Get(offset);
+      if (offset * size_ < values_.size()) {
+        value.resize(size_);
+        std::memcpy(value.data(), values_.data() + offset * size_, size_);
       } else {
         value.clear();
       }
     }
   };
 
-  Iterator begin() { return Iterator(this, 0); }
-  Iterator end() { return Iterator(this, Elements()); }
+  Iterator begin() const { return {this, 0}; }
+  Iterator end() const { return {this, Elements()}; }
 
  private:
   std::string filename_;
   ValueFileSize size_;
   mutable std::optional<std::fstream> cached_file_;
-
-  std::string Filename() const {
-    return filename_;
-  }
 
   std::fstream GetFile() const;
   std::fstream& GetFileCached() const;

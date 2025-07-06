@@ -145,3 +145,28 @@ TEST(ValueFile, Iterator) {
                   ::testing::Pair(3, values3)
               ));  value_file.Clean();
 }
+
+TEST(ValueFile, IteratorRemoveLast) {
+  ValueFile value_file(kTempFile, 9);
+  EXPECT_EQ(value_file.Elements(), 1);
+
+  std::vector<char> values1 = {0, 1, 2, 3, 4};
+  value_file.Add(values1);
+
+  std::vector<char> values2 = {1, 1, 2, 3, 4};
+  value_file.Add(values2);
+
+  std::vector<char> values3 = {1, 1, 2, 3, 3};
+  ValueFileSize offset3 = value_file.Add(values3);
+
+  value_file.Remove(offset3);
+
+  std::vector<std::pair<int, std::vector<char>>> all_elements(value_file.begin(), value_file.end());
+
+  EXPECT_THAT(all_elements,
+              ::testing::UnorderedElementsAre(
+                  ::testing::Pair(1, std::vector<char>{0, 1, 2, 3, 4, 0, 0, 0, 0}),
+                  ::testing::Pair(2, std::vector<char>{1, 1, 2, 3, 4, 0, 0, 0, 0})
+              ));
+  value_file.Clean();
+}

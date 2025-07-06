@@ -64,15 +64,15 @@ std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream& file) cons
   return result;
 }
 
-void ValueFile::Print() {
+void ValueFile::Print() const {
   std::fstream& file = GetFileCached();
   auto elements = Elements();
-  std::vector<char> content(elements);
-  file.read(&content[0], elements * sizeof(char));
+  std::vector<char> content(elements * Size());
+  file.read(&content[0], elements * Size() * sizeof(char));
   std::cout << "Value file with " << elements << " elements:";
   for (int i = 0; i < content.size(); ++i) {
-    if (i % 5 == 0) {
-      std::cout << "\n ";
+    if (i % Size() == 0) {
+      std::cout << "\n" << i / Size() << ": ";
     }
     std::cout << " " << (int) content[i];
   }
