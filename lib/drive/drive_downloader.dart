@@ -40,12 +40,20 @@ import '../main.dart';
 
 const kBaseFolderId = '1V9GKU4X30l2oppfC3dG80qFh4PHb6sUY';
 
+void downloadBookSmall(BuildContext context) {
+  _downloadMaybeWithConfirmation(context, 'book', 'Books/small_latest.tar.gz', 10, false, 258);
+}
+
+void downloadBookMedium(BuildContext context) {
+  _downloadMaybeWithConfirmation(context, 'book', 'Books/medium_latest.tar.gz', 100, false, 258);
+}
+
 void downloadBook(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'book', 'Books/latest.tar.gz', 500, 258);
+  _downloadMaybeWithConfirmation(context, 'book', 'Books/latest.tar.gz', 600, true, 258);
 }
 
 void downloadArchive(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v2.tar.gz', 150, 58);
+  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v2.tar.gz', 150, true, 58);
 }
 
 enum DialogOptions {
@@ -81,7 +89,7 @@ DialogOptions getDialogOption(List<ConnectivityResult> connectivities) {
   return DialogOptions.dialogShow;
 }
 
-void _downloadMaybeWithConfirmation(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
+void _downloadMaybeWithConfirmation(BuildContext context, String name, String path, int sizeMB, bool sizeLowerBound, int numFilesForProgress) {
   switch (getDialogOption(GlobalState.connectivity)) {
     case DialogOptions.dialogFailNoConnection:
       showSenseiDialog(SenseiDialog(title: 'Download failed', content: 'No internet connection available'));
@@ -92,6 +100,7 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
           name,
           path,
           sizeMB,
+          sizeLowerBound,
           numFilesForProgress
       );
       return;
@@ -101,30 +110,31 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
       // connection.
       // TODO: Avoid missing the connection on Linux, using Snapcraft.
       if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-        _download(context, name, path, sizeMB, numFilesForProgress);
+        _download(context, name, path, numFilesForProgress);
       } else {
-        _downloadWithConfirmation(context, name, path, sizeMB, numFilesForProgress);
+        _downloadWithConfirmation(context, name, path, sizeMB, sizeLowerBound, numFilesForProgress);
       }
       return;
     case DialogOptions.dialogSkip:
-      _download(context, name, path, sizeMB, numFilesForProgress);
+      _download(context, name, path, numFilesForProgress);
       return;
   }
 }
 
-void _download(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
-  var window = DownloadSecondaryWindow(name, path, sizeMB, numFilesForProgress);
+void _download(BuildContext context, String name, String path, int numFilesForProgress) {
+  var window = DownloadSecondaryWindow(name, path, numFilesForProgress);
   Navigator.push(context, MaterialPageRoute(builder: (context) => window));
 }
 
-void _downloadWithConfirmation(BuildContext context, String name, String path, int sizeMB, int numFilesForProgress) {
+void _downloadWithConfirmation(BuildContext context, String name, String path, int sizeMB, bool sizeLowerBound, int numFilesForProgress) {
+  var size = "${sizeLowerBound ? 'at least' : 'approximately'} $sizeMB MB";
   showDialog(
     context: context,
     barrierDismissible: false, // user must tap button!
     builder: (BuildContext childContext) => SenseiDialog(
       title: 'Downloading $name',
       content: (
-          'The $name is large (approximately ${sizeMB}MB).\n'
+          'The $name is large ($size).\n'
               'Make sure you are connected to a WiFi, or \n'
               'you are OK downloading it on your data plan.'),
       actions: [
@@ -132,7 +142,7 @@ void _downloadWithConfirmation(BuildContext context, String name, String path, i
           text: 'Download',
           onPressed: (ctx) {
             Navigator.of(ctx).pop();
-            _download(context, name, path, sizeMB, numFilesForProgress);
+            _download(context, name, path, numFilesForProgress);
           }
         ),
         (
@@ -242,7 +252,6 @@ class WindowsHelpText extends StatelessWidget {
 class DownloadSecondaryWindow extends StatelessWidget {
   final String name;
   final String path;
-  final int sizeMB;
   final int numFilesForProgressBar;
   final downloadProgress = DriveDownloaderProgress();
   final downloadFinishedHandler = DownloadFinishedHandler();
@@ -250,7 +259,7 @@ class DownloadSecondaryWindow extends StatelessWidget {
   SendPort? sendPort;
   bool stopping;
 
-  DownloadSecondaryWindow(this.name, this.path, this.sizeMB, this.numFilesForProgressBar, {super.key}) : stopping = false, sendPort = null;
+  DownloadSecondaryWindow(this.name, this.path, this.numFilesForProgressBar, {super.key}) : stopping = false, sendPort = null;
 
   Future<void> _startDownload() async {
     final resultPort = ReceivePort();

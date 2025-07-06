@@ -34,6 +34,8 @@ enum MenuItem {
   paste,
   analyze,
   downloadLatestBook,
+  downloadLatestBookMedium,
+  downloadLatestBookSmall,
   downloadLatestArchive,
   settings,
   xotAutomatic,
@@ -72,6 +74,14 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       } else {
         analyze();
       }
+      return;
+    case MenuItem.downloadLatestBookSmall:
+      GlobalState.stop();
+      downloadBook(context);
+      return;
+    case MenuItem.downloadLatestBookMedium:
+      GlobalState.stop();
+      downloadBook(context);
       return;
     case MenuItem.downloadLatestBook:
       GlobalState.stop();
@@ -263,7 +273,36 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                   )
                 ),
                 PopupMenuItem<MenuItem>(value: MenuItem.setupBoard, child: Text('Setup board', style: textStyle)),
-                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestBook, child: Text('Download latest book', style: textStyle)),
+                PopupMenuItem<MenuItem>(
+                    padding: EdgeInsets.zero,
+                    onTap: () {},
+                    child: PopupMenuButton<MenuItem>(
+                        padding: EdgeInsets.zero,
+                        onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
+                        tooltip: "",
+                        child: Container(
+                            height: kMinInteractiveDimension,
+                            width: double.infinity,
+                            alignment: Alignment.centerLeft,
+                            padding: padding,
+                            child: Text('Download latest book', style: textStyle)
+                        ),
+                        itemBuilder: (context) => [
+                          PopupMenuItem<MenuItem>(
+                            value: MenuItem.downloadLatestBook,
+                            child: Text('Large (600MB and growing)', style: textStyle),
+                          ),
+                          PopupMenuItem<MenuItem>(
+                            value: MenuItem.downloadLatestBookMedium,
+                            child: Text('Medium (~100MB)', style: textStyle),
+                          ),
+                          PopupMenuItem<MenuItem>(
+                            value: MenuItem.downloadLatestBookSmall,
+                            child: Text('Small (~10MB)', style: textStyle),
+                          )
+                        ]
+                    )
+                ),
                 PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),
               ]
