@@ -95,6 +95,8 @@ TEST(BookVisitorMerge, MergeTranspositions) {
   BookVisitorMerge(book2, book).VisitAll();
 
   EXPECT_THAT(book.Roots(), UnorderedElementsAre(Board("e6").Unique()));
+  EXPECT_EQ(*book.Get(Board("e6f4c3c4d3")), *book2.Get(Board("e6f4c3c4d3")));
+  EXPECT_EQ(*book.Get(Board("e6f4c3c4d3d6")), *book2.Get(Board("e6f4c3c4d3d6")));
 }
 
 TEST(BookVisitorMerge, ResetDescendants) {

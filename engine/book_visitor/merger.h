@@ -55,20 +55,26 @@ class BookVisitorMerge : public BookVisitorWithProgress<source_version> {
   BookTarget& destination_;
   void (*leaf_func_)(Node*);
   void (*internal_func_)(Node*);
+  std::unordered_set<Board> visited_boards_;
 
   void FirstVisit(Node& source, void (*function)(Node*)) {
+    Board board = source.ToBoard();
     auto* destination_node = destination_.Mutable(source.ToBoard());
     if (destination_node) {
-      destination_node->AddDescendants(source.GetNVisited());
-      // The min / max is computed inside these functions.
-      destination_node->SetLower(source.Lower());
-      destination_node->SetUpper(source.Upper());
+      if (visited_boards_.find(board) == visited_boards_.end()) {
+        destination_node->AddDescendants(source.GetNVisited());
+        // The min / max is computed inside these functions.
+        destination_node->SetLower(source.Lower());
+        destination_node->SetUpper(source.Upper());
+      }
     } else {
       if (function) {
         function(&source);
       }
+      // NOTE: This makes the added node always a leaf.
       destination_.AddNoRootsUpdate(source);
     }
+    visited_boards_.insert(board);
   }
 
   virtual void VisitLeaf(Node& node) override {
