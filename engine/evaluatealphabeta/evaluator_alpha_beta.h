@@ -17,7 +17,7 @@
 #define EVALUATOR_ALPHA_BETA_H
 
 #include <functional>
-#include <limits.h>
+#include <climits>
 
 #include "../board/bitpattern.h"
 #include "../evaluatedepthone/evaluator_depth_one_base.h"
@@ -89,7 +89,7 @@ enum StatsType {
 
 class Stats {
  public:
-  Stats() { Reset(); }
+  Stats() : n_visited_(), time_deepen_(0), time_next_position_(0) { Reset(); }
 
   void Reset() {
     std::fill(std::begin(n_visited_), std::end(n_visited_), 0);
@@ -132,10 +132,10 @@ class Stats {
 
 class MoveIteratorBase {
  public:
-  MoveIteratorBase(Stats* stats) : stats_(stats) {}
+  explicit MoveIteratorBase(Stats* stats) : stats_(stats) {}
   virtual void Setup(
       BitPattern player, BitPattern opponent, BitPattern last_flip, int upper,
-      HashMapEntry* const entry,
+      HashMapEntry* entry,
       EvaluatorDepthOneBase* evaluator_depth_one) = 0;
   virtual BitPattern NextFlip() = 0;
 
@@ -145,9 +145,9 @@ class MoveIteratorBase {
 
 class MoveIteratorVeryQuick : public MoveIteratorBase {
  public:
-  MoveIteratorVeryQuick(Stats* stats) : MoveIteratorBase(stats) {}
+  explicit MoveIteratorVeryQuick(Stats* stats) : player_(0), opponent_(0), candidate_moves_(), MoveIteratorBase(stats) {}
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, HashMapEntry* const entry,
+             int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -160,9 +160,9 @@ class MoveIteratorVeryQuick : public MoveIteratorBase {
 template<bool very_quick>
 class MoveIteratorQuick : public MoveIteratorBase {
  public:
-  MoveIteratorQuick(Stats* stats);
+  explicit MoveIteratorQuick(Stats* stats);
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, HashMapEntry* const entry,
+             int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
   BitPattern NextFlip() override;
 
@@ -177,10 +177,10 @@ class MoveIteratorQuick : public MoveIteratorBase {
 
 class MoveIteratorEval : public MoveIteratorBase {
  public:
-  MoveIteratorEval(Stats* stats) : MoveIteratorBase(stats), moves_() {};
+  explicit MoveIteratorEval(Stats* stats) : remaining_moves_(), empties_(), depth_one_evaluator_(), MoveIteratorBase(stats), moves_() {};
 
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
-             int upper, HashMapEntry* const entry,
+             int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one_base) override;
 
   virtual int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) = 0;
@@ -198,13 +198,13 @@ class MoveIteratorEval : public MoveIteratorBase {
 
 class MoveIteratorMinimizeOpponentMoves : public MoveIteratorEval {
  public:
-  MoveIteratorMinimizeOpponentMoves(Stats* stats) : MoveIteratorEval(stats) {};
+  explicit MoveIteratorMinimizeOpponentMoves(Stats* stats) : MoveIteratorEval(stats) {};
   int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) final;
 };
 
 class MoveIteratorDisproofNumber : public MoveIteratorEval {
  public:
-  MoveIteratorDisproofNumber(Stats* stats) : MoveIteratorEval(stats) {};
+  explicit MoveIteratorDisproofNumber(Stats* stats) : MoveIteratorEval(stats) {};
   int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) final;
 };
 
@@ -243,12 +243,12 @@ class EvaluatorAlphaBeta {
 
   template<int depth, bool passed, bool solve>
   EvalLarge EvaluateInternal(
-      const BitPattern player, const BitPattern opponent,
-      const EvalLarge lower, const EvalLarge upper,
-      const BitPattern last_flip, const BitPattern stable, int max_visited);
+      BitPattern player, BitPattern opponent,
+      EvalLarge lower, EvalLarge upper,
+      BitPattern last_flip, BitPattern stable, int max_visited);
 
-  int VisitedToDisprove(const BitPattern player, const BitPattern opponent, const EvalLarge upper);
-  int VisitedToProve(const BitPattern player, const BitPattern opponent, const EvalLarge lower);
+  int VisitedToDisprove(BitPattern player, BitPattern opponent, EvalLarge upper);
+  int VisitedToProve(BitPattern player, BitPattern opponent, EvalLarge lower);
 
   static const EvaluatorAlphaBeta::EvaluateInternalFunction solvers_[kMaxDepth];
   static const EvaluatorAlphaBeta::EvaluateInternalFunction evaluators_[kMaxDepth];

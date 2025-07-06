@@ -65,7 +65,7 @@ void MoveIteratorVeryQuick::Setup(
 BitPattern MoveIteratorVeryQuick::NextFlip() {
   BitPattern flip = 0;
   while (flip == 0 && candidate_moves_ != 0) {
-    Square move = (Square) __builtin_ctzll(candidate_moves_);
+    auto move = (Square) __builtin_ctzll(candidate_moves_);
     candidate_moves_ &= (~(1ULL << move));
     assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
@@ -79,6 +79,10 @@ BitPattern MoveIteratorVeryQuick::NextFlip() {
 template<bool very_quick>
 MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) :
     MoveIteratorBase(stats),
+    player_(),
+    opponent_(),
+    candidate_moves_(),
+    current_mask_(),
     masks_() {
   if (very_quick) {
     masks_[1] = kCornerPattern;
@@ -125,7 +129,7 @@ BitPattern MoveIteratorQuick<very_quick>::NextFlip() {
       ++current_mask_;
       mask = masks_[current_mask_];
     }
-    Square move = (Square) __builtin_ctzll(mask & candidate_moves_);
+    auto move = (Square) __builtin_ctzll(mask & candidate_moves_);
     candidate_moves_ &= (~(1ULL << move));
     assert(((1ULL << move) & (player_ | opponent_)) == 0);
     flip = GetFlip(move, player_, opponent_);
@@ -156,7 +160,7 @@ void MoveIteratorEval::Setup(
   }
   depth_one_evaluator_ = evaluator_depth_one_base;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
-    Square square = (Square) __builtin_ctzll(square_pattern);
+    auto square = (Square) __builtin_ctzll(square_pattern);
     assert(((1ULL << square) & (player | opponent)) == 0);
     flip = GetFlip(square, player, opponent);
     if (flip == 0) {
@@ -395,7 +399,7 @@ int EvaluatorAlphaBeta::VisitedToDisprove(const BitPattern player, const BitPatt
   BitPattern empties = ~(player | opponent);
   BitPattern candidate_moves = Neighbors(opponent) & empties;
   FOR_EACH_SET_BIT(candidate_moves, square_pattern) {
-    Square square = (Square) __builtin_ctzll(square_pattern);
+    auto square = (Square) __builtin_ctzll(square_pattern);
     BitPattern pattern = 1ULL << square;
     assert(((1ULL << square) & (player | opponent)) == 0);
     flip = GetFlip(square, player, opponent);
@@ -415,7 +419,6 @@ int EvaluatorAlphaBeta::VisitedToProve(const BitPattern player, const BitPattern
   return (int) ByteToProofNumber(ProofNumber(player, opponent, lower, evaluator_depth_one_->Evaluate()));
 }
 
-// clangtidy: no-warning.
 template<int depth, bool passed, bool solve>
 EvalLarge EvaluatorAlphaBeta::EvaluateInternal(
     const BitPattern player, const BitPattern opponent,

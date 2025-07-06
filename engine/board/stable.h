@@ -75,7 +75,7 @@ struct StableDisksEdge {
     return (int) (player | (opponent << 8));
   }
   
-  constexpr LastRow GetFlipOneDirection(Square x, LastRow player, LastRow opponent) {
+  static constexpr LastRow GetFlipOneDirection(Square x, LastRow player, LastRow opponent) {
     return kFlip[(x << 8) | (kOutflank[(x << 8) | opponent] & player)];
   }
 
@@ -90,7 +90,7 @@ struct StableDisksEdge {
     for (int x = 0; x < 8; ++x) {
       Square move = 1 << x;
       if ((empties & move) != 0) {
-        LastRow flip = (LastRow) (GetFlipOneDirection(x, (LastRow) player, (LastRow) opponent) | move);
+        auto flip = (LastRow) (GetFlipOneDirection(x, (LastRow) player, (LastRow) opponent) | move);
         stable = stable & ~flip & arr[Hash(opponent & ~flip, player | flip)];
         flip = (LastRow) (GetFlipBasic(x, opponent, player) | move);
         stable = stable & ~flip & arr[Hash(player & ~flip, opponent | flip)];
@@ -202,13 +202,13 @@ inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPatt
   return stable | stablePlayer;
 }
 
-forceinline(Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent));
+forceinline(int GetUpperBoundFromStable(BitPattern stable, BitPattern opponent));
 
-inline Eval GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) {
-  return (Eval) (64 - 2 * __builtin_popcountll(stable & opponent));
+inline int GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) {
+  return (64 - 2 * __builtin_popcountll(stable & opponent));
 }
 
-inline Eval GetStableDisksUpperBound(BitPattern player, BitPattern opponent) {
+inline int GetStableDisksUpperBound(BitPattern player, BitPattern opponent) {
   return GetUpperBoundFromStable(GetStableDisks(opponent, player), opponent);
 }
 

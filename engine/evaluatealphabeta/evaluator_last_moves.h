@@ -21,29 +21,29 @@
 #include "../hashmap/hash_map.h"
 #include "../utils/misc.h"
 
-forceinline(Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept);
-inline Eval EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept {
+forceinline(int EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept);
+inline int EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexcept {
   BitPattern flip = GetFlip(x, player, opponent);
-  if (__builtin_expect(flip, 1)) {
-    return (Eval) ((__builtin_popcountll(NewOpponent(flip, player)) << 1) - 64);
+  if (__builtin_expect(flip != 0, true)) {
+    return (Eval) ((__builtin_popcountll(NewOpponent(flip, player)) * 2) - 64);
   }
   flip = GetFlip(x, opponent, player);
   if (flip) {
-    return (Eval) (64 - (__builtin_popcountll(opponent | flip) << 1));
+    return (Eval) (64 - (__builtin_popcountll(opponent | flip) * 2));
   }
-  Eval playerDisks = (Eval) (__builtin_popcountll(player) << 1);
+  int playerDisks = __builtin_popcountll(player) * 2;
   return (Eval) (playerDisks - (playerDisks >= 64 ? 62 : 64));
 }
 
-forceinline(Eval EvalTwoEmptiesOrMin(
+forceinline(int EvalTwoEmptiesOrMin(
     const Square x1, const Square x2, const BitPattern player,
-    const BitPattern opponent, const Eval upper, int* const n_visited) noexcept);
+    const BitPattern opponent, const int upper, int* const n_visited) noexcept);
 
-inline Eval EvalTwoEmptiesOrMin(
+inline int EvalTwoEmptiesOrMin(
     const Square x1, const Square x2, const BitPattern player,
-    const BitPattern opponent, const Eval upper, int* const n_visited) noexcept {
+    const BitPattern opponent, const int upper, int* const n_visited) noexcept {
   (*n_visited)++;
-  Eval eval = kLessThenMinEval;
+  int eval = -66;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
     (*n_visited)++;
@@ -55,21 +55,21 @@ inline Eval EvalTwoEmptiesOrMin(
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
     (*n_visited)++;
-    return MaxEval(eval, -EvalOneEmpty(x1, NewPlayer(flip, opponent), NewOpponent(flip, player)));
+    return std::max(eval, -EvalOneEmpty(x1, NewPlayer(flip, opponent), NewOpponent(flip, player)));
   }
   return eval;
 }
 
-forceinline(Eval EvalTwoEmpties(
+forceinline(int EvalTwoEmpties(
   const Square x1, const Square x2, const BitPattern player,
-  const BitPattern opponent, const Eval lower, const Eval upper,
+  const BitPattern opponent, const int lower, const int upper,
   int* const n_visited) noexcept);
 
-inline Eval EvalTwoEmpties(
+inline int EvalTwoEmpties(
   const Square x1, const Square x2, const BitPattern player,
-  const BitPattern opponent, const Eval lower, const Eval upper,
+  const BitPattern opponent, const int lower, const int upper,
   int* const n_visited) noexcept {
-  Eval eval = EvalTwoEmptiesOrMin(x1, x2, player, opponent, upper, n_visited);
+  int eval = EvalTwoEmptiesOrMin(x1, x2, player, opponent, upper, n_visited);
   if (eval > kLessThenMinEval) {
     return eval;
   }
@@ -80,19 +80,19 @@ inline Eval EvalTwoEmpties(
   return GetEvaluationGameOver(player, opponent);
 }
 
-forceinline(Eval EvalThreeEmptiesOrMin(
+forceinline(int EvalThreeEmptiesOrMin(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
-  const Eval lower, const Eval upper,
+  const int lower, const int upper,
   int* const n_visited) noexcept);
 
-inline Eval EvalThreeEmptiesOrMin(
+inline int EvalThreeEmptiesOrMin(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
-  const Eval lower, const Eval upper,
+  const int lower, const int upper,
   int* const n_visited) noexcept {
   (*n_visited)++;
-  Eval eval = kLessThenMinEval;
+  int eval = -66;
   BitPattern flip = GetFlip(x1, player, opponent);
   if (flip != 0) {
     eval = -EvalTwoEmpties(x2, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -lower, n_visited);
@@ -102,30 +102,30 @@ inline Eval EvalThreeEmptiesOrMin(
   }
   flip = GetFlip(x2, player, opponent);
   if (flip != 0) {
-    eval = MaxEval(eval, -EvalTwoEmpties(x1, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
+    eval = std::max(eval, -EvalTwoEmpties(x1, x3, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -std::max(lower, eval), n_visited));
     if (eval >= upper) {
       return eval;
     }
   }
   flip = GetFlip(x3, player, opponent);
   if (flip != 0) {
-    return MaxEval(eval, -EvalTwoEmpties(x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -MaxEval(lower, eval), n_visited));
+    return std::max(eval, -EvalTwoEmpties(x1, x2, NewPlayer(flip, opponent), NewOpponent(flip, player), -upper, -std::max(lower, eval), n_visited));
   }
   return eval;
 }
 
-forceinline(Eval EvalThreeEmpties(
+forceinline(int EvalThreeEmpties(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
-  const Eval lower, const Eval upper,
+  const int lower, const int upper,
   int* const n_visited) noexcept);
 
-inline Eval EvalThreeEmpties(
+inline int EvalThreeEmpties(
   const Square x1, const Square x2, const Square x3,
   const BitPattern player, const BitPattern opponent,
-  const Eval lower, const Eval upper,
+  const int lower, const int upper,
   int* const n_visited) noexcept {
-  Eval eval = EvalThreeEmptiesOrMin(x1, x2, x3, player, opponent, lower, upper, n_visited);
+  int eval = EvalThreeEmptiesOrMin(x1, x2, x3, player, opponent, lower, upper, n_visited);
   if (eval > kLessThenMinEval) {
     return eval;
   }
@@ -136,17 +136,26 @@ inline Eval EvalThreeEmpties(
   return GetEvaluationGameOver(player, opponent);
 }
 
-Eval EvalFourEmpties(
-  const Square x1, const Square x2, const Square x3, const Square x4,
-  const BitPattern player, const BitPattern opponent,
-  const Eval lower, const Eval upper, const bool swap,
-  const BitPattern last_flip, const BitPattern stable,
-  int* const n_visited);
-Eval EvalFiveEmpties(
-    const BitPattern player, const BitPattern opponent,
-    const Eval lower, const Eval upper,
-    const BitPattern last_flip, const BitPattern stable,
-    int* const n_visited);
+int EvalFourEmpties(
+  Square x1, Square x2, Square x3, Square x4,
+  BitPattern player, BitPattern opponent,
+  int lower, int upper, bool swap,
+  BitPattern last_flip, BitPattern stable,
+  int* n_visited);
+int EvalFiveEmpties(
+    BitPattern player, BitPattern opponent,
+    int lower, int upper,
+    BitPattern last_flip, BitPattern stable,
+    int* n_visited);
+
+inline std::vector<Square> GetAllEmpties(BitPattern player, BitPattern opponent) {
+  std::vector<Square> result;
+  BitPattern empties = ~(player | opponent);
+  FOR_EACH_SET_BIT(empties, empty) {
+    result.push_back(__builtin_ctzll(empty));
+  }
+  return result;
+}
 
 #endif /* EVALUATOR_LAST_MOVES_H */
 
