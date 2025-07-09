@@ -110,9 +110,6 @@ class BookVisitorCopy : public BookVisitorMerge<version, version> {
       return false;
     }
     ++internal_;
-    if (internal_ % 1000 == 0) {
-      std::cout << "New book has internal: " << internal_ << " leaves " << leaves_ << " internal that become leaves " << internal_that_become_leaves_ << "\n";
-    }
     // Always true.
     return BookVisitorMerge<version, version>::PreVisitInternalNode(node);
   }
