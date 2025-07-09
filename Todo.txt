@@ -8,6 +8,7 @@ Mac
 - P4 LARGE Fix warning with multiple matching destinations.
 
 Usability / bugs
+- P1 SMALL Do not evaluate when asking for settings.
 - P2 MED Debug 64-0 score f5f6e6f4g5e7e3g6d3c5d6c6f7c4e8d2b5g3c7b4c2a5d7f2c3e2b3b6f3h4h3g4a6a4a3b1c1d1f1c8h6h5e1g1g2g8f8g7d8b8b7a2a8
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
