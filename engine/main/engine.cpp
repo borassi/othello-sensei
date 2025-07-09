@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include<math.h>
+#include<cmath>
 
 #include "main.h"
 #include "bindings.h"
@@ -61,7 +61,7 @@ void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
   }
   started_ = true;
   evaluator_.Evaluate(
-      unique_.Player(), unique_.Opponent(), params.lower, params.upper,
+      unique_.Player(), unique_.Opponent(), (Eval) params.lower, (Eval) params.upper,
       params.max_positions, kFirstEvalTime, params.n_threads,
       params.approx);
   FinalizeEvaluation();
@@ -88,6 +88,7 @@ Engine::Engine(
     last_first_state_(nullptr),
     last_sensei_action_(SENSEI_EVALUATES),
     current_thread_(0),
+    thor_metadata_(),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
         book_filepath, thor_filepath
@@ -97,20 +98,36 @@ void Engine::Initialize(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath) {
-  evals_ = std::make_unique<EvalType>(LoadEvals(evals_filepath));
-  book_ = std::make_unique<Book<kBookVersion>>(book_filepath);
-  thor_ = std::make_unique<Thor<GameGetterOnDisk>>(thor_filepath);
+  ElapsedTime t;
+  BuildEvals(evals_filepath);
+  BuildBook(book_filepath);
+  BuildThor(thor_filepath);
+  CreateBoardsToEvaluate();
+}
+
+void Engine::CreateBoardsToEvaluate() {
   for (int i = 0; i < kNumEvaluators; ++i) {
     boards_to_evaluate_[i] = std::make_unique<BoardToEvaluate>(
         book_.get(),
-        thor_.get(),
         &tree_node_supplier_, &hash_map_,
         PatternEvaluator::Factory(evals_->data()),
         static_cast<uint8_t>(i));
   }
+}
 
-  auto players = thor_->Players();
-  auto tournaments = thor_->Tournaments();
+void Engine::BuildThor(const std::string& filepath) {
+  ElapsedTime t;
+  thor_ = nullptr;
+  if (filepath != "") {
+    thor_ = std::make_unique<Thor<GameGetterOnDisk>>(filepath);
+  }
+
+  std::unordered_map<std::string, const std::vector<std::string>&> players;
+  std::unordered_map<std::string, const std::vector<std::string>&> tournaments;
+  if (thor_) {
+    players = thor_->Players();
+    tournaments = thor_->Tournaments();
+  }
   assert(players.size() == tournaments.size());
 
   thor_sources_metadata_.reserve(players.size());
@@ -200,7 +217,7 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
 }
 
 void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) {
-  if (state.IsModified()) {
+  if (state.IsModified() || thor_ == nullptr) {
     return;
   }
   auto filters = params.thor_filters;
@@ -221,20 +238,20 @@ void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) 
     std::vector<std::string> whites;
     std::vector<std::string> tournaments;
 
-    for (int i = 0; source.selected_blacks[i] >= 0; ++i) {
-      blacks.push_back(source.players[source.selected_blacks[i]]);
+    for (int j = 0; source.selected_blacks[j] >= 0; ++j) {
+      blacks.emplace_back(source.players[source.selected_blacks[j]]);
     }
-    for (int i = 0; source.selected_whites[i] >= 0; ++i) {
-      whites.push_back(source.players[source.selected_whites[i]]);
+    for (int j = 0; source.selected_whites[j] >= 0; ++j) {
+      whites.emplace_back(source.players[source.selected_whites[j]]);
     }
-    for (int i = 0; source.selected_tournaments[i] >= 0; ++i) {
-      tournaments.push_back(source.tournaments[source.selected_tournaments[i]]);
+    for (int j = 0; source.selected_tournaments[j] >= 0; ++j) {
+      tournaments.emplace_back(source.tournaments[source.selected_tournaments[j]]);
     }
 
     if (include_all_sources || !blacks.empty() || !whites.empty() || !tournaments.empty()) {
       games.Merge(thor_->GetGames(
           source.name, *sequence_opt, filters.max_games, blacks, whites,
-          tournaments, filters.start_year, filters.end_year));
+          tournaments, (short) filters.start_year, (short) filters.end_year));
     }
   }
   state.SetThor(games);

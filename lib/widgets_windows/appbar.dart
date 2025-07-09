@@ -77,11 +77,11 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.downloadLatestBookSmall:
       GlobalState.stop();
-      downloadBook(context);
+      downloadBookSmall(context);
       return;
     case MenuItem.downloadLatestBookMedium:
       GlobalState.stop();
-      downloadBook(context);
+      downloadBookMedium(context);
       return;
     case MenuItem.downloadLatestBook:
       GlobalState.stop();

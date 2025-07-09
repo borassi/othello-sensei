@@ -36,7 +36,6 @@ class BoardToEvaluate {
  public:
   BoardToEvaluate(
       Book<>* book,
-      Thor<GameGetterOnDisk>* thor,
       TreeNodeSupplier* tree_node_supplier,
       HashMap<kBitHashMap>* hash_map,
       EvaluatorFactory evaluator_depth_one_factory,
@@ -227,6 +226,15 @@ class Engine {
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath);
+
+  void BuildEvals(const std::string& filepath) {
+    evals_ = std::make_unique<EvalType>(LoadEvals(filepath));
+  }
+  void BuildBook(const std::string& filepath) {
+    book_ = std::make_unique<Book<kBookVersion>>(filepath);
+  }
+  void CreateBoardsToEvaluate();
+  void BuildThor(const std::string& filepath);
 
   void UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis);
 
