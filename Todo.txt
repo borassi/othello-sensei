@@ -29,7 +29,6 @@ Match the features of the current app
 - P3 LARGE Study and repeat openings.
 
 Extra features:
-- P1 SMALL Load book / evals / Thor in parallel at startup.
 - P1 HARD Watch saved games as you watch Thor.
 - P1 HARD Sync games with Drive.
 - P2 LARGE How easy / hard a position is.

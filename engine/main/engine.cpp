@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include<cmath>
+#include <cmath>
+#include <future>
 
 #include "engine.h"
 #include "bindings.h"
@@ -98,10 +99,12 @@ void Engine::Initialize(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath) {
-  ElapsedTime t;
-  BuildEvals(evals_filepath);
-  BuildBook(book_filepath);
-  BuildThor(thor_filepath);
+  auto future_evals = std::async(std::launch::async, &Engine::BuildEvals, this, evals_filepath);
+  auto future_book = std::async(std::launch::async, &Engine::BuildBook, this, book_filepath);
+  auto future_thor = std::async(std::launch::async, &Engine::BuildThor, this, thor_filepath);
+  future_evals.get();
+  future_book.get();
+  future_thor.get();
   CreateBoardsToEvaluate();
 }
 

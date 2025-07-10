@@ -17,6 +17,7 @@
 #ifndef OTHELLO_SENSEI_THOR_H
 #define OTHELLO_SENSEI_THOR_H
 
+#include <future>
 #include <string>
 
 #include "source.h"
@@ -27,14 +28,30 @@ class Thor {
  public:
   Thor(const std::string& folder, bool rebuild_canonicalizer = false, bool rebuild_games_order = false, bool rebuild_games_small_hash = false)
       : folder_(folder), sources_() {
+    std::vector<std::future<std::pair<std::string, std::unique_ptr<Source<GameGetter>>>>> sources_futures;
+
     for (const auto& entry : GetAllFiles(folder, /*include_files=*/false, /*include_directories=*/true)) {
-      sources_.insert({Filename(entry), std::make_unique<Source<GameGetter>>(entry, rebuild_games_order, rebuild_games_small_hash)});
+      sources_futures.push_back(std::async(std::launch::async, &Thor::LoadSource, this, entry, rebuild_games_order, rebuild_games_small_hash));
     }
+    std::unique_ptr<std::future<void>> load_canonicalizer_future = nullptr;
     if (!rebuild_canonicalizer && FileExists(CanonicalizerPath())) {
-      LoadCanonicalizer();
+      load_canonicalizer_future = std::make_unique<std::future<void>>(
+          std::async(std::launch::async, &Thor::LoadCanonicalizer, this));
+    }
+
+    for (auto& future : sources_futures) {
+      sources_.insert(std::move(future.get()));
+    }
+    if (load_canonicalizer_future != nullptr) {
+      load_canonicalizer_future.get();
     } else {
       ComputeCanonicalizer();
     }
+  }
+
+  std::pair<std::string, std::unique_ptr<Source<GameGetter>>> LoadSource(
+      const std::string& source, bool rebuild_games_order, bool rebuild_games_small_hash) {
+    return {Filename(source), std::make_unique<Source<GameGetter>>(source, rebuild_games_order, rebuild_games_small_hash)};
   }
 
   std::vector<std::string> Sources() const {
