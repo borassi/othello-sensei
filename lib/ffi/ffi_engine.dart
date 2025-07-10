@@ -728,21 +728,23 @@ enum AnnotationsProvenance {
 }
 
 enum SenseiAction {
-  SENSEI_INACTIVE(0),
-  SENSEI_EVALUATES(1),
-  SENSEI_PLAYS_BLACK(2),
-  SENSEI_PLAYS_WHITE(3),
-  SENSEI_PLAYS_BOTH(4);
+  SENSEI_INVALID_ACTION(0),
+  SENSEI_INACTIVE(1),
+  SENSEI_EVALUATES(2),
+  SENSEI_PLAYS_BLACK(3),
+  SENSEI_PLAYS_WHITE(4),
+  SENSEI_PLAYS_BOTH(5);
 
   final int value;
   const SenseiAction(this.value);
 
   static SenseiAction fromValue(int value) => switch (value) {
-        0 => SENSEI_INACTIVE,
-        1 => SENSEI_EVALUATES,
-        2 => SENSEI_PLAYS_BLACK,
-        3 => SENSEI_PLAYS_WHITE,
-        4 => SENSEI_PLAYS_BOTH,
+        0 => SENSEI_INVALID_ACTION,
+        1 => SENSEI_INACTIVE,
+        2 => SENSEI_EVALUATES,
+        3 => SENSEI_PLAYS_BLACK,
+        4 => SENSEI_PLAYS_WHITE,
+        5 => SENSEI_PLAYS_BOTH,
         _ => throw ArgumentError("Unknown value for SenseiAction: $value"),
       };
 }
