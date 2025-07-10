@@ -37,7 +37,7 @@ Main::Main(
     xot_state_(XOT_STATE_AUTOMATIC),
     xot_small_(LoadTextFile(xot_small_filepath)),
     xot_large_(LoadTextFile(xot_large_filepath)) {
-  evaluate_params_.sensei_action = SENSEI_EVALUATES;
+  evaluate_params_.sensei_action = SENSEI_INVALID_ACTION;
   srand(time(nullptr));
   PrintSupportedFeatures();
   update_timers_future_ = std::async(std::launch::async, &Main::RunUpdateTimersThread, this);
@@ -109,7 +109,9 @@ bool Main::ToState(EvaluationState* new_state) {
 
 void Main::ToStateNoStop(EvaluationState* new_state) {
   assert(new_state);
-  assert(new_state->IsLandable(evaluate_params_.sensei_action) ||
+  assert((evaluate_params_.sensei_action == SENSEI_INVALID_ACTION &&
+          current_state_ == nullptr) ||
+         new_state->IsLandable(evaluate_params_.sensei_action) ||
          new_state->MustPlay(evaluate_params_.sensei_action));
   if (current_state_) {
     current_state_->AddSecondsOnThisNode(time_on_this_position_.Get());
@@ -130,6 +132,10 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
 namespace {
 
 bool AreParamsCompatible(EvaluateParams params1, EvaluateParams params2) {
+  // To avoid a Valgrind error at startup.
+  if (params1.sensei_action == SENSEI_INVALID_ACTION || params2.sensei_action == SENSEI_INVALID_ACTION) {
+    return false;
+  }
   return
       params1.lower == params2.lower &&
       params1.upper == params2.upper &&

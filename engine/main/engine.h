@@ -158,8 +158,6 @@ class ThorSourceMetadataExtended {
   std::vector<int> selected_tournaments_;
 };
 
-class Main;
-
 bool IncludeAllSources(ThorMetadata thor_metadata);
 
 class Engine {

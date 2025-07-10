@@ -335,6 +335,8 @@ class EvaluationState : public TreeNode {
 
   bool MustPlay(SenseiAction action) const {
     switch(action) {
+      case SENSEI_INVALID_ACTION:
+        assert(false);
       case SENSEI_INACTIVE:
       case SENSEI_EVALUATES:
         return false;

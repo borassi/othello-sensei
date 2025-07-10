@@ -46,7 +46,8 @@ void EvaluationState::SetThor(const GamesList& games) {
   annotations_.num_example_thor_games = (int) games.examples.size();
   annotations_.example_thor_games = (ThorGame*) realloc(
       annotations_.example_thor_games,
-      annotations_.num_example_thor_games * sizeof(ThorGame));
+      // Avoid a realloc with size 0.
+      std::max(1U, annotations_.num_example_thor_games) * sizeof(ThorGame));
 
   for (unsigned i = 0; i < annotations_.num_example_thor_games; ++i) {
     assert(games.examples[i].Moves().Size() >= sequence.Size());

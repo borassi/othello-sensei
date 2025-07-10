@@ -95,6 +95,7 @@ enum AnnotationsProvenance {
 };
 
 enum SenseiAction {
+  SENSEI_INVALID_ACTION,
   SENSEI_INACTIVE,
   SENSEI_EVALUATES,
   SENSEI_PLAYS_BLACK,

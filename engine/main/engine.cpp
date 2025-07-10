@@ -16,7 +16,7 @@
 
 #include<cmath>
 
-#include "main.h"
+#include "engine.h"
 #include "bindings.h"
 
 constexpr double kFirstEvalTime = 0.01;
@@ -294,6 +294,8 @@ double MaxTime(SenseiAction action, double seconds_on_this_node, bool first_eval
     return params.max_time_analysis;
   }
   switch(action) {
+    case SENSEI_INVALID_ACTION:
+      assert(false);
     case SENSEI_EVALUATES:
       return first_eval ? params.max_time_first_eval : params.max_time_next_evals + seconds_on_this_node;
     case SENSEI_PLAYS_BLACK:

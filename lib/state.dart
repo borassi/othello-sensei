@@ -189,7 +189,7 @@ class GlobalState {
         updateTimersCallback.nativeFunction,
     );
     thorMetadata.init();
-    newGame();
+    evaluate();
   }
 
   static void newGameXot(bool small) async {
