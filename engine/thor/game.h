@@ -27,7 +27,7 @@
 
 class Game {
  public:
-  Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments, float priority) :
+  Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments, double priority) :
       black_(&players[(buffer[offset + 2] & 0xff) | ((buffer[offset + 3] & 0xff) << 8)]),
       white_(&players[(buffer[offset + 4] & 0xff) | ((buffer[offset + 5] & 0xff) << 8)]),
       year_(year),
@@ -40,7 +40,7 @@ class Game {
   }
 
   Game(Sequence moves, const std::string* black, const std::string* white,
-       const std::string* tournament, short year, Eval score, float priority) :
+       const std::string* tournament, short year, Eval score, double priority) :
       moves_(moves),
       black_(black),
       white_(white),
@@ -59,7 +59,7 @@ class Game {
   const char* TournamentC() const { return tournament_->c_str(); }
   short Year() const { return year_; }
   Eval Score() const { return score_; }
-  float Priority() const { return priority_; }
+  double Priority() const { return priority_; }
 
   const Sequence& Moves() const { return moves_; }
   Square Move(Square i) const { return moves_.Move(i); }
@@ -86,8 +86,8 @@ class Game {
   const std::string* black_;
   const std::string* white_;
   const std::string* tournament_;
+  double priority_;
   short year_;
-  float priority_;
   Eval score_;
 };
 

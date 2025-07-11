@@ -78,7 +78,7 @@ class Thor {
     return result;
   }
 
-  virtual std::vector<Game> GetAllGames() const {
+  std::vector<Game> GetAllGames() const {
     std::vector<Game> result;
     for (const auto& [_, source] : sources_) {
       std::vector<Game> games = source->AllGames();
@@ -159,7 +159,7 @@ class Thor {
     canonicalizer_.Load(ReadFile<char>(CanonicalizerPath()));
   }
 
-  virtual void ComputeCanonicalizer() {
+  void ComputeCanonicalizer() {
     ElapsedTime t;
     std::vector<Sequence> all_sequences;
 

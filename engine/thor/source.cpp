@@ -55,9 +55,9 @@ template<class GameGetter>
 GamesList Source<GameGetter>::GetGames(
     const Sequence& sequence,
     int max_games,
-    std::vector<std::string> blacks,
-    std::vector<std::string> whites,
-    std::vector<std::string> tournaments,
+    const std::vector<std::string>& blacks,
+    const std::vector<std::string>& whites,
+    const std::vector<std::string>& tournaments,
     short start_year,
     short end_year) const {
   assert(max_games > 0);

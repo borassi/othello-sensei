@@ -32,7 +32,7 @@ constexpr int kTournamentLength = 26;
 
 struct GameFile {
   GameFile(const std::string& path, uint32_t offset) :
-      path(path), file(path, std::ios::in | std::ios::binary), offset(offset) {
+      path(path), file(path, std::ios::in | std::ios::binary), offset(offset), num_games(0), year(0) {
     FileOffset length = FileLength(file);
     if (length % 68 != 16) {
       std::cout << "WARNING: Wrong length for Thor file " << path << ". Expected 16+68k. Got " << length << ".\n" << std::flush;
@@ -52,7 +52,8 @@ struct GameFile {
 
 class GameGetterOnDisk {
  public:
-  GameGetterOnDisk(const std::string& folder) : game_files_(), index_to_file_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN), games_cache_() {
+  explicit GameGetterOnDisk(const std::string& folder) :
+      game_files_(), index_to_file_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN), games_cache_() {
     std::set<std::string> game_files;
     auto all_files = GetAllFiles(folder, /*include_files=*/true, /*include_directories=*/false);
     // We can't use directory_iterator because it's available only from MacOS 10.15 and we want to
@@ -78,7 +79,7 @@ class GameGetterOnDisk {
     Game random_game(buffer, 0, game_files_[0].year, players_, tournaments_, 1);
     games_cache_.reserve(kHashSize);
     for (int i = 0; i < kHashSize; ++i) {
-      games_cache_.push_back({-1, random_game});
+      games_cache_.emplace_back(-1, random_game);
     }
   }
 
@@ -93,7 +94,8 @@ class GameGetterOnDisk {
     char game[68];
     file.seekg(16 + 68 * (index - game_file.offset));
     file.read(game, 68 * sizeof(char));
-    Game result(game, 0, game_file.year, players_, tournaments_, (index - game_file.offset) / (float) game_file.num_games);
+    Game result(game, 0, game_file.year, players_, tournaments_,
+         (index - game_file.offset) / (double) game_file.num_games);
     *cached = {index, result};
     return result;
   }
@@ -103,7 +105,7 @@ class GameGetterOnDisk {
     for (const GameFile& game_file : game_files_) {
       std::vector<char> games = ReadFile<char>(game_file.path);
       for (int i = 16; i < games.size(); i += 68) {
-        result.emplace_back(games.data(), i, game_file.year, players_, tournaments_, (i - 16) / (games.size() - 16.0F));
+        result.emplace_back(games.data(), i, game_file.year, players_, tournaments_, (i - 16.0) / (games.size() - 16.0));
       }
     }
     return result;
@@ -131,7 +133,7 @@ class GameGetterOnDisk {
     index_to_file_.insert(index_to_file_.end(), game_file.num_games, (int) game_files_.size() - 1);
   }
 
-  std::vector<std::string> LoadListFromFile(const std::string& filepath, int size) {
+  static std::vector<std::string> LoadListFromFile(const std::string& filepath, int size) {
     std::vector<std::string> result;
     std::ifstream file(filepath, std::ios::binary);
     std::vector<char> content = ReadFile<char>(filepath);
@@ -149,10 +151,10 @@ class GameGetterOnDisk {
 
 class GameGetterInMemory : public GameGetterOnDisk {
  public:
-  GameGetterInMemory(const std::string& folder) : GameGetterOnDisk(folder) {
+  explicit GameGetterInMemory(const std::string& folder) : GameGetterOnDisk(folder) {
     all_games_ = GetAllGames();
   }
-  virtual Game GetGame(int index) const override {
+  Game GetGame(int index) const override {
     return all_games_[index];
   }
 
@@ -170,7 +172,7 @@ class GameGetterInMemory : public GameGetterOnDisk {
 template<class T, T f(const Game&), class GameGetter>
 class CmpGameAndSequence {
  public:
-  CmpGameAndSequence(const GameGetter& game_getter) : game_getter_(game_getter) {}
+  explicit CmpGameAndSequence(const GameGetter& game_getter) : game_getter_(game_getter) {}
 
   bool operator()(int game_index1, int game_index2) {
     Game g1 = game_getter_.GetGame(game_index1);
@@ -210,8 +212,6 @@ inline std::string Tournament(const Game& g) { return g.Tournament(); }
 inline short Year(const Game& g) { return g.Year(); }
 
 template<class GameGetter>
-class CmpBySequence : public CmpGameAndSequence<bool, True, GameGetter> { using CmpGameAndSequence<bool, True, GameGetter>::CmpGameAndSequence; };
-template<class GameGetter>
 class CmpByBlack : public CmpGameAndSequence<std::string, Black, GameGetter> { using CmpGameAndSequence<std::string, Black, GameGetter>::CmpGameAndSequence; };
 template<class GameGetter>
 class CmpByWhite : public CmpGameAndSequence<std::string, White, GameGetter> { using CmpGameAndSequence<std::string, White, GameGetter>::CmpGameAndSequence; };
@@ -241,7 +241,7 @@ struct GamesInterval {
   std::vector<uint32_t>::const_iterator start;
   std::vector<uint32_t>::const_iterator end;
 
-  GamesInterval() {}
+  GamesInterval() = default;
   GamesInterval(std::vector<uint32_t>::const_iterator start,
                 std::vector<uint32_t>::const_iterator end) : start(start), end(end) {}
 };
@@ -249,8 +249,8 @@ struct GamesInterval {
 template<class GameGetter = GameGetterOnDisk>
 class Source {
  public:
-  Source(const std::string& folder, bool rebuild_games_order = false, bool rebuild_games_with_small_hash = false) :
-      folder_(folder), game_getter_(folder) {
+  explicit Source(const std::string& folder, bool rebuild_games_order = false, bool rebuild_games_with_small_hash = false) :
+      folder_(folder), game_getter_(folder), canonicalizer_() {
     ElapsedTime t;
     game_indices_ = {&game_index_by_black_, &game_index_by_white_, &game_index_by_tournament_, &game_index_by_year_};
     if (FileExists(SortedGamesPath()) && !rebuild_games_order) {
@@ -271,9 +271,9 @@ class Source {
   GamesList GetGames(
       const Sequence& sequence,
       int max_games,
-      std::vector<std::string> blacks = {},
-      std::vector<std::string> whites = {},
-      std::vector<std::string> tournaments = {},
+      const std::vector<std::string>& blacks = {},
+      const std::vector<std::string>& whites = {},
+      const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const;
 
@@ -327,7 +327,8 @@ class Source {
     while (index < file.size()) {
       uint32_t size = file[index++];
       std::vector<uint32_t>& v = games_with_small_hash_.emplace_back();
-      std::copy(file.begin() + index, file.begin() + index + size, std::back_inserter(v));
+      v.resize(file.size());
+      memcpy(v.data(), file.data() + index, size);
       index += size;
     }
   }
@@ -353,10 +354,9 @@ class Source {
     int num_games = game_getter_.NumGames();
     assert(num_games == FileLength(file) / sizeof(uint32_t) / game_indices_.size());
 
-    for (int i = 0; i < game_indices_.size(); ++i) {
-      std::vector<uint32_t>& game_indices = *game_indices_[i];
-      game_indices.resize(num_games);
-      file.read((char*) game_indices.data(), num_games * sizeof(uint32_t));
+    for (auto& game_indices : game_indices_) {
+      game_indices->resize(num_games);
+      file.read((char*) game_indices->data(), static_cast<int>(num_games * sizeof(uint32_t)));
     }
   }
 
