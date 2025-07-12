@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
 
   auto games = thor.GetGamesFromAllSources(Sequence("e6"), 10000);
 
+  ElapsedTime t;
   int i = 0;
   std::cout << games.num_games << " " << games.examples.size() << "\n";
   for (const Game& game : games.examples) {
@@ -38,4 +39,10 @@ int main(int argc, char* argv[]) {
     output << game_to_save.ToString();
     output.close();
   }
+  std::cout << "Saved in " << t.Get() << "\n";
+
+  SavedGameList source("/home/michele/Desktop/sensei/saved_games", false);
+  std::cout << "Loaded in " << t.Get() << "\n";
+  std::cout << "Num games: " << source.GetGames(Sequence("e6")).num_games << "\n";
+  std::cout << "Get games in " << t.Get();
 }

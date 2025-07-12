@@ -120,7 +120,7 @@ class Sequence {
     std::string lower_string = ToLower(string);
     std::vector<Square> result;
     Board b;
-    std::regex move_regex ("[a-h][1-8]");
+    static const std::regex move_regex ("[a-h][1-8]");
 
     for (std::sregex_iterator iter(lower_string.begin(), lower_string.end(), move_regex);
          iter != std::sregex_iterator();

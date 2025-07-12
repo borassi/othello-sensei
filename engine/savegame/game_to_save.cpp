@@ -17,6 +17,7 @@
 #include "game_to_save.h"
 #include "../board/board.h"
 #include "../board/sequence.h"
+#include "../utils/misc.h"
 
 int EstimatedScore(const Sequence& sequence) {
   auto [board, black_turn] = sequence.ToBoardAndBlackTurn();
@@ -28,47 +29,47 @@ int EstimatedScore(const Sequence& sequence) {
 
 // static
 GameToSave GameToSave::FromString(const std::string& game) {
-  std::regex word_regex("\\s*(.*):\\s*(.*)\\s*");
-
-  auto game_begin =
-      std::sregex_iterator(game.begin(), game.end(), word_regex);
-  auto game_end = std::sregex_iterator();
   std::unordered_map<std::string, std::string> game_map;
 
-  int first_subfield = (int) game.size();
-  for (std::sregex_iterator i = game_begin; i != game_end; ++i) {
-    std::smatch match = *i;
-    if (!Contains(std::vector<std::string>({"Black", "White", "Tournament", "Year", "Notes", "Black disks", "Round"}), match[1].str())) {
+  std::string moves;
+  for (const std::string& line : Split(game, '\n')) {
+    auto colon_position = line.find(':');
+    if (colon_position == -1) {
+      moves += line;
       continue;
     }
-    first_subfield = std::min(first_subfield, (int) i->position());
-    game_map[match[1].str()] = match[2].str();
+    std::string key = LeftStrip(RightStrip(line.substr(0, colon_position)));
+    if (!Contains(std::vector<std::string>({"Black", "White", "Tournament", "Year", "Notes", "Black disks", "Round"}), key)) {
+      continue;
+    }
+    std::string value = LeftStrip(RightStrip(line.substr(colon_position + 1)));
+    game_map[key] = value;
   }
-  Sequence sequence = Sequence::ParseFromString(first_subfield == -1 ? game : game.substr(0, first_subfield));
+  Sequence sequence = Sequence::ParseFromString(moves);
 
   int black_disks;
   try {
     black_disks = stoi(GetOrDefault(game_map, std::string("Black disks"), std::string("")));
-  } catch (std::invalid_argument) {
+  } catch (const std::invalid_argument&) {
     black_disks = EstimatedScore(sequence);
   }
   int year;
   try {
     year = stoi(GetOrDefault(game_map, std::string("Year"), std::string("")));
-  } catch (std::invalid_argument) {
+  } catch (const std::invalid_argument&) {
     year = GetCurrentYear();
   }
 
-  return GameToSave(
+  return {
       sequence,
       GetOrDefault(game_map, std::string("Black"), std::string("")),
       GetOrDefault(game_map, std::string("White"), std::string("")),
       GetOrDefault(game_map, std::string("Tournament"), std::string("")),
       GetOrDefault(game_map, std::string("Notes"), std::string("")),
-      year,
-      black_disks,
+      static_cast<short>(year),
+      static_cast<Eval>(black_disks),
       GetOrDefault(game_map, std::string("Round"), std::string(""))
-  );
+  };
 }
 
 std::ostream& operator<<(std::ostream& stream, const GameToSave& s) {
