@@ -88,3 +88,16 @@ TEST(GameToSave, AutoBlackDisksGameOver) {
       27,
       ""));
 }
+
+TEST(GameToSave, FromToGame) {
+  GameToSave game(
+      Sequence("e6f4c3"),
+      "Black player",
+      "White player",
+      "Tournament",
+      "",
+      2010,
+      64,
+      "");
+  EXPECT_EQ(GameToSave::FromGame(game.ToGame()), game);
+}

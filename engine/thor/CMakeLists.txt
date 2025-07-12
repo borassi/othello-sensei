@@ -63,6 +63,7 @@ target_link_libraries(
         get_flip
         get_moves
         misc
+        saved_game_list
         source
 )
 
@@ -192,3 +193,16 @@ IF(ENABLE_GOOGLETEST)
             -no-pie
     )
 ENDIF()
+
+add_executable(
+        thor_to_saved_games_main
+        thor_to_saved_games_main.cpp
+)
+
+target_link_libraries(
+        thor_to_saved_games_main
+        LINK_PUBLIC
+        game_to_save
+        parse_flags
+        thor
+)

@@ -21,12 +21,17 @@
 #include <string>
 
 #include "source.h"
+#include "../savegame/saved_game_list.h"
 #include "../utils/files.h"
 
 template<class GameGetter = GameGetterOnDisk>
 class Thor {
  public:
-  Thor(const std::string& folder, bool rebuild_canonicalizer = false, bool rebuild_games_order = false, bool rebuild_games_small_hash = false)
+  Thor(
+      const std::string& folder,
+      bool rebuild_canonicalizer = false,
+      bool rebuild_games_order = false,
+      bool rebuild_games_small_hash = false)
       : folder_(folder), sources_() {
     std::vector<std::future<std::pair<std::string, std::unique_ptr<Source<GameGetter>>>>> sources_futures;
 
@@ -96,7 +101,7 @@ class Thor {
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const {
-    GamesList games;
+    GamesList games {.max_games = max_games};
     for (const auto& [source_name, _] : sources_) {
       GamesList new_games = GetGames<transpositions>(
           source_name, sequence, max_games, blacks, whites, tournaments, start_year, end_year);
@@ -153,6 +158,7 @@ class Thor {
  private:
   std::string folder_;
   std::unordered_map<std::string, std::unique_ptr<Source<GameGetter>>> sources_;
+  std::vector<SavedGameList> sources_saved_;
   SequenceCanonicalizer canonicalizer_;
 
   void LoadCanonicalizer() {

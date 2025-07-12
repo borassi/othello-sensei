@@ -32,21 +32,21 @@ class GameToSave {
  public:
   GameToSave(
       const Sequence& moves,
-      const std::string& black,
-      const std::string& white,
-      const std::string& tournament,
-      const std::string& notes,
+      std::string black,
+      std::string white,
+      std::string tournament,
+      std::string notes,
       short year,
       Eval black_disks,
-      const std::string& round) :
+      std::string round) :
       moves_(moves),
-      black_(black),
-      white_(white),
-      tournament_(tournament),
+      black_(std::move(black)),
+      white_(std::move(white)),
+      tournament_(std::move(tournament)),
       year_(year),
-      notes_(notes),
+      notes_(std::move(notes)),
       black_disks_(black_disks),
-      round_(round) {}
+      round_(std::move(round)) {}
 
   const std::string& Round() const { return round_; }
   const Sequence& Moves() const { return moves_; }
@@ -86,8 +86,18 @@ class GameToSave {
     return moves_ == other.moves_;
   }
 
-  Game ToGame() const {
-    return Game(moves_, &black_, &white_, &tournament_, year_, black_disks_, 0);
+  Game ToGame(const std::string* black = nullptr, const std::string* white = nullptr, const std::string* tournament = nullptr) const {
+    auto final_black = black == nullptr ? &black_ : black;
+    auto final_white = white == nullptr ? &white_ : white;
+    auto final_tournament = tournament == nullptr ? &tournament_ : tournament;
+    assert(*final_black == black_);
+    assert(*final_white == white_);
+    assert(*final_tournament == tournament_);
+    return {moves_, final_black, final_white, final_tournament, year_, black_disks_, 0};
+  }
+
+  static GameToSave FromGame(const Game& game) {
+    return {game.Moves(), game.Black(), game.White(), game.Tournament(), "", game.Year(), game.Score(), ""};
   }
 
  private:
