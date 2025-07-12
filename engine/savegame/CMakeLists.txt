@@ -44,3 +44,36 @@ IF(ENABLE_GOOGLETEST)
             -no-pie
     )
 ENDIF()
+
+add_library(
+        saved_game_list
+        saved_game_list.h
+        saved_game_list.cpp
+)
+
+target_link_libraries(
+        saved_game_list
+        LINK_PRIVATE
+        files
+        game
+        game_to_save
+        sequence
+        thor
+)
+
+IF(ENABLE_GOOGLETEST)
+    add_executable(
+            saved_game_list_test
+            saved_game_list_test.cpp
+    )
+
+    target_link_libraries(
+            saved_game_list_test
+            LINK_PRIVATE
+            saved_game_list
+            GTest::gmock
+            GTest::gtest
+            GTest::gtest_main
+            -no-pie
+    )
+ENDIF()
