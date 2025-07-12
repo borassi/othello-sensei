@@ -173,6 +173,16 @@ TEST(Sequence, ParseFromString) {
   EXPECT_EQ(Sequence::ParseFromString("E6 F4 e6 \n3.c3"), Sequence("e6f4c3"));
 }
 
+TEST(Sequence, StartsWith) {
+  Sequence sequence("e6f4c3c4d3");
+  EXPECT_TRUE(sequence.StartsWith(Sequence("")));
+  EXPECT_TRUE(sequence.StartsWith(Sequence("e6f4")));
+  EXPECT_TRUE(sequence.StartsWith(Sequence("e6f4c3c4d3")));
+  EXPECT_FALSE(sequence.StartsWith(Sequence("e6f4c3c4d3d6")));
+  EXPECT_FALSE(sequence.StartsWith(Sequence("e6f6")));
+  EXPECT_FALSE(sequence.StartsWith(Sequence("f5")));
+}
+
 TEST(Sequence, FromThor) {
   Square sequence[60] = {65, 46, 33, 43, 34};
   EXPECT_EQ(Sequence::FromThor(sequence), Sequence("e6f4c3c4d3"));

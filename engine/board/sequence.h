@@ -38,8 +38,8 @@ struct ThorSquareToSquare {
   Square square_to_thor[64];
 
   constexpr ThorSquareToSquare() : square(), square_to_thor() {
-    for (int i = 0; i < 256; ++i) {
-      square[i] = kNoSquare;
+    for (auto& x : square) {
+      x = kNoSquare;
     }
     for (int i = 0; i < 64; ++i) {
       Square thor_square = (8 - i % 8) + (8 - i / 8) * 10;
@@ -50,7 +50,6 @@ struct ThorSquareToSquare {
 };
 
 constexpr ThorSquareToSquare kThorSquareToSquare;
-const std::string kWrongSequence = "Wrong sequence";
 
 class InvalidSequenceException : public std::exception {};
 
@@ -228,7 +227,7 @@ class Sequence {
   inline bool operator!=(const Sequence& rhs) const { return !(*this == rhs); }
 
   Square* Moves() const { return moves_; }
-  const Square Size() const { return size_; }
+  Square Size() const { return size_; }
 
   std::vector<Board> ToBoards() const;
 
@@ -307,7 +306,7 @@ class Sequence {
     moves_[Size() - 1] = move;
   }
 
-  bool Extend(Sequence suffix) {
+  bool Extend(const Sequence& suffix) {
     int size = Size();
     if (size + suffix.Size() > 60) {
       return false;
@@ -319,6 +318,11 @@ class Sequence {
 
   void RemoveLastMove() { UpdateSize(size_ - 1); }
 
+  bool StartsWith(const Sequence& s) const {
+    return
+        Size() >= s.Size() &&
+        memcmp(moves_, s.moves_, s.Size() * sizeof(Square)) == 0;
+  }
  private:
   Square* moves_;
   Square size_;
