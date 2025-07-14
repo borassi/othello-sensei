@@ -87,6 +87,19 @@ target_link_libraries(
 ENDIF()
 
 add_library(
+        generic_source
+        generic_source.h
+        generic_source.cpp
+)
+
+target_link_libraries(
+        generic_source
+        LINK_PUBLIC
+        game
+        sequence
+)
+
+add_library(
         source
         source.h
         source.cpp
@@ -97,6 +110,7 @@ target_link_libraries(
         LINK_PUBLIC
         files
         game
+        generic_source
         sequence
 )
 

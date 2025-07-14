@@ -15,3 +15,68 @@
  */
 
 #include "saved_game_list.h"
+
+GamesList SavedGameList::GetGames(
+    const Sequence& sequence,
+    int max_games,
+    const std::vector<std::string>& blacks,
+    const std::vector<std::string>& whites,
+    const std::vector<std::string>& tournaments,
+    short start_year,
+    short end_year) const {
+  Sequence canonical = sequence.ToCanonicalGame();
+  GamesList result {.num_games = 0, .max_games = max_games};
+  int sequence_size = sequence.Size();
+  for (auto& game : games_) {
+    if ((!blacks.empty() && !Contains(blacks, game.Black())) ||
+        (!whites.empty() && !Contains(whites, game.White())) ||
+        (!tournaments.empty() && !Contains(tournaments, game.Tournament())) ||
+        game.Year() < start_year || game.Year() > end_year ||
+        !game.Moves().StartsWith(canonical)) {
+      continue;
+    }
+    result.next_moves[game.Moves().Move(sequence_size)]++;
+    ++result.num_games;
+    if (result.examples.size() < max_games) {
+      result.examples.push_back(game);
+    }
+  }
+  return result;
+}
+
+void SavedGameList::LoadFolder(
+    const std::string& folder,
+    std::unordered_map<std::string, int>& players_to_index,
+    std::unordered_map<std::string, int>& tournaments_to_index,
+    std::vector<std::pair<fs::file_time_type, GameToSave>>& games_to_save,
+    int max_games) {
+  if (games_to_save.size() >= max_games) {
+    return;
+  }
+  for (const std::string& path : GetAllFiles(folder, true, true)) {
+    if (fs::is_directory(path)) {
+      LoadFolder(path, players_to_index, tournaments_to_index, games_to_save, max_games);
+      continue;
+    }
+    if (!EndsWith(ToLower(path), ".stxt")) {
+      continue;
+    }
+    auto time = fs::last_write_time(path);
+    auto game = GameToSave::FromString(LoadTextFile(path));
+    for (const auto& player : {game.Black(), game.White()}) {
+      auto [iterator, inserted] = players_to_index.insert({player, players_.size()});
+      if (inserted) {
+        players_.push_back(player);
+      }
+    }
+    auto tournament = game.Tournament();
+    auto [iterator, inserted] = tournaments_to_index.insert({tournament, tournaments_.size()});
+    if (inserted) {
+      tournaments_.push_back(tournament);
+    }
+    games_to_save.push_back({time, std::move(game)});
+    if (games_to_save.size() >= max_games) {
+      return;
+    }
+  }
+}

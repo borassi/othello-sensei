@@ -177,3 +177,51 @@ TEST_F(ThorTest, Save) {
   EXPECT_EQ(games.num_games, 2);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
 }
+
+TEST_F(ThorTest, FileSources) {
+  auto base_folder = kThorTestData + "/thor_with_file_sources";
+  fs::create_directories(base_folder);
+  Thor thor(base_folder);
+  for (int i = 0; i < 3; ++i) {
+    std::string folder = base_folder + "/SavedGames" + std::to_string(i);
+    fs::create_directories(folder);
+    GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
+    std::ofstream file(folder + "/game.stxt");
+    file << game.ToString();
+    file.close();
+    thor.AddFileSource(folder);
+  }
+  auto games = thor.GetGamesFromAllSources(Sequence("e6"));
+  EXPECT_EQ(games.num_games, 3);
+}
+
+TEST_F(ThorTest, FileSourcesSameName) {
+  fs::create_directories(kThorTestData);
+  Thor thor(kThorTestData);
+  for (const std::string folder_name : {"Thor", "VeryLongFolderLong1", "VeryLongFolderLong2"}) {
+    std::string folder = kThorTestData + "/" + folder_name;
+    fs::create_directories(folder);
+    GameToSave game(Sequence("e6f4"), "B" + folder, "W", "T", "N", 2022, 64, "R");
+    std::ofstream file(folder + "/game.stxt");
+    file << game.ToString();
+    file.close();
+    thor.AddFileSource(folder);
+  }
+  EXPECT_THAT(thor.Sources(), UnorderedElementsAre("Thor", "PlayOK", "Thor_1", "VeryLongFolderL", "VeryLongFolderL_1"));
+}
+
+TEST_F(ThorTest, FileSourcesReload) {
+  auto base_folder = kThorTestData + "/thor_with_file_sources";
+  fs::create_directories(base_folder);
+  Thor thor(base_folder);
+  for (int i = 0; i < 3; ++i) {
+    std::string folder = base_folder + "/SavedGames" + std::to_string(i);
+    fs::create_directories(folder);
+    GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
+    std::ofstream file(folder + "/game.stxt");
+    file << game.ToString();
+    file.close();
+    ASSERT_TRUE(thor.AddFileSource(folder));
+  }
+  Thor thor1(base_folder);
+}

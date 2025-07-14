@@ -27,16 +27,29 @@
 template<class GameGetter = GameGetterOnDisk>
 class Thor {
  public:
+  static constexpr std::string_view kSavedGamesListFilename = "saved_games_folders.txt";
+  static constexpr int kMaxNumFolders = 20;
+
   Thor(
       const std::string& folder,
       bool rebuild_canonicalizer = false,
       bool rebuild_games_order = false,
       bool rebuild_games_small_hash = false)
       : folder_(folder), sources_() {
-    std::vector<std::future<std::pair<std::string, std::unique_ptr<Source<GameGetter>>>>> sources_futures;
+    std::vector<std::future<std::pair<std::string, std::unique_ptr<GenericSource>>>> sources_futures;
 
-    for (const auto& entry : GetAllFiles(folder, /*include_files=*/false, /*include_directories=*/true)) {
-      sources_futures.push_back(std::async(std::launch::async, &Thor::LoadSource, this, entry, rebuild_games_order, rebuild_games_small_hash));
+    for (const auto& entry : GetAllFiles(folder, /*include_files=*/true, /*include_directories=*/true)) {
+      if (fs::is_directory(entry)) {
+        sources_futures.push_back(
+            std::move(std::async(std::launch::async, &Thor::LoadSource, this, entry, rebuild_games_order,
+                       rebuild_games_small_hash)));
+      } else if (fs::path(entry).filename() == kSavedGamesListFilename) {
+        for (const std::string& saved_game_folder : Split(LoadTextFile(entry), '\n')) {
+          sources_futures.push_back(
+              std::move(std::async(
+                  std::launch::async, &Thor::LoadSavedGameList, this, saved_game_folder)));
+        }
+      }
     }
     std::unique_ptr<std::future<void>> load_canonicalizer_future = nullptr;
     if (!rebuild_canonicalizer && FileExists(CanonicalizerPath())) {
@@ -45,7 +58,11 @@ class Thor {
     }
 
     for (auto& future : sources_futures) {
-      sources_.insert(std::move(future.get()));
+      auto tmp = std::move(future);
+      auto pair = tmp.get();
+      if (pair.second != nullptr) {
+        sources_.insert(std::move(pair));
+      }
     }
     if (load_canonicalizer_future != nullptr) {
       load_canonicalizer_future.get();
@@ -54,13 +71,46 @@ class Thor {
     }
   }
 
-  std::pair<std::string, std::unique_ptr<Source<GameGetter>>> LoadSource(
+  bool AddFileSource(const std::string& folder) {
+    auto value = LoadSavedGameList(folder);
+    if (value.second == nullptr) {
+      return false;
+    }
+    std::fstream saved_games_list(folder_ + "/" + std::string(kSavedGamesListFilename));
+    saved_games_list << folder << "\n";
+    sources_.insert(std::move(value));
+    return true;
+  }
+
+  std::pair<std::string, std::unique_ptr<GenericSource>> LoadSavedGameList(
+      const std::string& path) {
+    if (!fs::exists(path) || !fs::is_directory(path)) {
+      return {"", nullptr};
+    }
+    std::unique_ptr<GenericSource> result(new SavedGameList(path));
+    if (result->NumGames() == 0) {
+      return {"", nullptr};
+    }
+    std::string name = fs::path(path).filename().string().substr(0, 15);
+    int i = 1;
+    while (Contains(sources_, name)) {
+      name += "_" + std::to_string(i++);
+    }
+    return {name, std::move(result)};
+  }
+
+  std::pair<std::string, std::unique_ptr<GenericSource>> LoadSource(
       const std::string& source, bool rebuild_games_order, bool rebuild_games_small_hash) {
-    return {Filename(source), std::make_unique<Source<GameGetter>>(source, rebuild_games_order, rebuild_games_small_hash)};
+    std::unique_ptr<GenericSource> result(new Source<GameGetter>(source, rebuild_games_order, rebuild_games_small_hash));
+    if (result->NumGames() == 0) {
+      return {"", nullptr};
+    }
+    return {fs::path(source).filename(), std::move(result)};
   }
 
   std::vector<std::string> Sources() const {
     std::vector<std::string> result;
+    result.reserve(sources_.size());
     for (const auto& [name, _] : sources_) {
       result.push_back(name);
     }
@@ -115,9 +165,9 @@ class Thor {
       const std::string& source,
       const Sequence& sequence,
       int max_games = 1,
-      std::vector<std::string> blacks = {},
-      std::vector<std::string> whites = {},
-      std::vector<std::string> tournaments = {},
+      const std::vector<std::string>& blacks = {},
+      const std::vector<std::string>& whites = {},
+      const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const {
     assert(max_games > 0);  // Otherwise the Rotate() does not know how to rotate.
@@ -144,21 +194,20 @@ class Thor {
   void SaveCanonicalizer() {
     std::ofstream file(CanonicalizerPath(), std::ios::binary);
     std::vector<char> serialized = canonicalizer_.Serialize();
-    file.write((char*) serialized.data(), serialized.size() * sizeof(Square));
+    file.write((char*) serialized.data(),
+               static_cast<int>(serialized.size()) * sizeof(Square));
   }
 
   void SaveAll() {
     SaveCanonicalizer();
     for (const auto& [_, source] : sources_) {
-      source->SaveSortedGames();
-      source->SaveGamesSmallHash();
+      source->Save();
     }
   }
 
  private:
   std::string folder_;
-  std::unordered_map<std::string, std::unique_ptr<Source<GameGetter>>> sources_;
-  std::vector<SavedGameList> sources_saved_;
+  std::unordered_map<std::string, std::unique_ptr<GenericSource>> sources_;
   SequenceCanonicalizer canonicalizer_;
 
   void LoadCanonicalizer() {

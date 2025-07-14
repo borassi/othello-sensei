@@ -59,10 +59,11 @@ TEST_F(SavedGamesListTest, Basic) {
       "Round 1");
   SaveGame(game, "game.stxt");
 
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("Tournament 1"));
   EXPECT_THAT(source.Players(), UnorderedElementsAre("Black 1", "White 1"));
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
+  EXPECT_EQ(source.NumGames(), 1);
   EXPECT_EQ(games.max_games, 10);
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game.ToGame()));
@@ -72,7 +73,7 @@ TEST_F(SavedGamesListTest, Basic) {
 TEST_F(SavedGamesListTest, LongerThanGame) {
   GameToSave game(Sequence("e6f4c3c4d3"), "B", "W", "T", "N", 2022, 34,"R");
   SaveGame(game, "game.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6f4c3c4d3d6"), 10);
   EXPECT_EQ(games.num_games, 0);
 }
@@ -80,7 +81,7 @@ TEST_F(SavedGamesListTest, LongerThanGame) {
 TEST_F(SavedGamesListTest, AsLongAsGame) {
   GameToSave game(Sequence("e6f4c3c4d3"), "B", "W", "T", "N", 2022, 34,"R");
   SaveGame(game, "game.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game.ToGame()));
@@ -90,7 +91,7 @@ TEST_F(SavedGamesListTest, AsLongAsGame) {
 TEST_F(SavedGamesListTest, Canonical) {
   GameToSave game(Sequence("f5d6c3d3c4"), "B", "W", "T", "N", 2022, 34,"R");
   SaveGame(game, "game.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game.ToGame()));
@@ -102,7 +103,7 @@ TEST_F(SavedGamesListTest, ByBlack) {
   SaveGame(game1, "game1.stxt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game2.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {"B1"});
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame()));
@@ -113,7 +114,7 @@ TEST_F(SavedGamesListTest, ByWhite) {
   SaveGame(game1, "game1.stxt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game2.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {}, {"W2"});
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game2.ToGame()));
@@ -124,7 +125,7 @@ TEST_F(SavedGamesListTest, ByTournament) {
   SaveGame(game1, "game1.stxt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game2.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {}, {}, {"T1"});
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame()));
@@ -137,7 +138,7 @@ TEST_F(SavedGamesListTest, ByYear) {
   SaveGame(game2, "game2.stxt");
   GameToSave game3(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2023, 34, "R");
   SaveGame(game3, "game3.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {}, {}, {}, 2022, 2022);
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game2.ToGame()));
@@ -146,13 +147,16 @@ TEST_F(SavedGamesListTest, ByYear) {
 TEST_F(SavedGamesListTest, SameExampleOrder) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
   SaveGame(game1, "game_c_1.stxt");
+  sleep(1);
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game_a_2.stxt");
+  sleep(1);
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W3", "T2", "N", 2023, 34, "R");
   SaveGame(game3, "game_b_3.stxt");
+  sleep(1);
   GameToSave game4(Sequence("e6f4c3c4d3"), "B4", "W4", "T2", "N", 2023, 34, "R");
   SaveGame(game4, "game_d_4.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10);
   EXPECT_EQ(games.num_games, 4);
   EXPECT_THAT(games.examples, ElementsAre(game4.ToGame(), game3.ToGame(), game2.ToGame(), game1.ToGame()));
@@ -161,35 +165,19 @@ TEST_F(SavedGamesListTest, SameExampleOrder) {
 TEST_F(SavedGamesListTest, FiltersLastModified) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
   SaveGame(game1, "game_c_1.stxt");
+  sleep(1);
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game_a_2.stxt");
+  sleep(1);
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W3", "T2", "N", 2023, 34, "R");
   SaveGame(game3, "game_b_3.stxt");
+  sleep(1);
   GameToSave game4(Sequence("e6f4c3c4d3"), "B4", "W4", "T2", "N", 2023, 34, "R");
   SaveGame(game4, "game_d_4.stxt");
-  SavedGameList source(kTestFolder, false);
+  SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 2);
   EXPECT_EQ(games.num_games, 4);
   EXPECT_THAT(games.examples, ElementsAre(game4.ToGame(), game3.ToGame()));
-}
-
-TEST_F(SavedGamesListTest, NotRecursiveIgnoresSubfolders) {
-  fs::create_directories(kTestFolder + "/subfolder1");
-  fs::create_directories(kTestFolder + "/subfolder2");
-
-  GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W", "T1", "N", 2022, 34,"R");
-  GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W", "T2", "N", 2022, 34,"R");
-  GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W", "T3", "N", 2022, 34,"R");
-  SaveGame(game1, "game.stxt");
-  SaveGame(game2, "subfolder1/game.stxt");
-  SaveGame(game3, "subfolder2/game.stxt");
-
-  SavedGameList source(kTestFolder, false);
-  EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("T1"));
-  EXPECT_THAT(source.Players(), UnorderedElementsAre("B1", "W"));
-  auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
-  EXPECT_EQ(games.num_games, 1);
-  EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame()));
 }
 
 TEST_F(SavedGamesListTest, Recursive) {
@@ -203,10 +191,25 @@ TEST_F(SavedGamesListTest, Recursive) {
   SaveGame(game2, "subfolder1/game.stxt");
   SaveGame(game3, "subfolder2/game.stxt");
 
-  SavedGameList source(kTestFolder, true);
+  SavedGameList source(kTestFolder);
   EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("T1", "T2", "T3"));
   EXPECT_THAT(source.Players(), UnorderedElementsAre("B1", "B2", "B3", "W"));
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
   EXPECT_EQ(games.num_games, 3);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame(), game2.ToGame(), game3.ToGame()));
+}
+
+TEST_F(SavedGamesListTest, MaxGames) {
+  GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W", "T1", "N", 2022, 34,"R");
+  GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W", "T2", "N", 2022, 34,"R");
+  GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W", "T3", "N", 2022, 34,"R");
+  SaveGame(game1, "game1.stxt");
+  SaveGame(game2, "game2.stxt");
+  SaveGame(game3, "game3.stxt");
+
+  SavedGameList source(kTestFolder, 2);
+  EXPECT_EQ(source.Tournaments().size(), 2);
+  EXPECT_THAT(source.Players().size(), 3);
+  auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
+  EXPECT_EQ(games.num_games, 2);
 }

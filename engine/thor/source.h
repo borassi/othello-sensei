@@ -22,10 +22,11 @@
 #include <cstring>
 #include <random>
 
+#include "game.h"
+#include "generic_source.h"
 #include "../board/sequence.h"
 #include "../main/bindings.h"
 #include "../utils/files.h"
-#include "game.h"
 
 constexpr int kPlayerLength = 20;
 constexpr int kTournamentLength = 26;
@@ -68,6 +69,11 @@ class GameGetterOnDisk {
       } else if (EndsWith(ToLower(entry), ".wtb")) {
         game_files.insert(entry);
       }
+    }
+    if (game_files.empty() || players_.empty() || tournaments_.empty()) {
+      min_year_ = 0;
+      max_year_ = 0;
+      return;
     }
     for (const auto& game_file : game_files) {
       LoadGames(game_file);
@@ -172,10 +178,13 @@ struct GamesInterval {
 };
 
 template<class GameGetter = GameGetterOnDisk>
-class Source {
+class Source : public GenericSource {
  public:
   explicit Source(const std::string& folder, bool rebuild_games_order = false, bool rebuild_games_with_small_hash = false) :
       folder_(folder), game_getter_(folder), canonicalizer_() {
+    if (game_getter_.NumGames() == 0) {
+      return;
+    }
     ElapsedTime t;
     game_indices_ = {&game_index_by_black_, &game_index_by_white_, &game_index_by_tournament_, &game_index_by_year_};
     if (FileExists(SortedGamesPath()) && !rebuild_games_order) {
@@ -190,8 +199,8 @@ class Source {
     }
   }
 
-  const std::vector<std::string>& Tournaments() const { return game_getter_.Tournaments(); }
-  const std::vector<std::string>& Players() const { return game_getter_.Players(); }
+  const std::vector<std::string>& Tournaments() const override { return game_getter_.Tournaments(); }
+  const std::vector<std::string>& Players() const override { return game_getter_.Players(); }
 
   GamesList GetGames(
       const Sequence& sequence,
@@ -200,13 +209,20 @@ class Source {
       const std::vector<std::string>& whites = {},
       const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) const;
+      short end_year = SHRT_MAX) const override;
 
-  std::vector<Game> AllGames() const { return game_getter_.GetAllGames(); }
+  virtual int NumGames() const override { return game_getter_.NumGames(); }
+
+  std::vector<Game> AllGames() const override { return game_getter_.GetAllGames(); }
 
   std::string SortedGamesPath() const { return folder_ + "/games_order.sen"; }
 
   std::string GamesSmallHashPath() const { return folder_ + "/games_with_small_hash.sen"; }
+
+  void Save() const override {
+    SaveSortedGames();
+    SaveGamesSmallHash();
+  }
 
   void SaveSortedGames() const {
     std::ofstream file(SortedGamesPath(), std::ios::binary);
