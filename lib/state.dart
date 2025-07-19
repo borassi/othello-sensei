@@ -99,6 +99,7 @@ Future<void> setGameOrError(String? game, String preference) async {
   }
   var gameC = game.toNativeUtf8().cast<Char>();
   var success = GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+  malloc.free(gameC);
   if (!success) {
     await showSenseiDialog(SenseiDialog(title: 'Not a game', content: game));
     return;
@@ -177,17 +178,20 @@ class GlobalState {
     NativeCallable<UpdateTimersFunction> updateTimersCallback = NativeCallable.listener(updateTimers);
     var localAssetPathVar = localAssetPath();
     GlobalState.resetAnnotations();
+    var evaluatorC = join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>();
+    var bookC = join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>();
+    var archiveC = join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>();
+    var xotSmallC = join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>();
+    var xotLargeC = join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>();
     ffiMain = GlobalState.ffiEngine.MainInit(
-        join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>(),
-        // '/home/michele/Desktop/sensei/book'.toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>(),
-        join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>(),
+        evaluatorC, bookC, archiveC, xotSmallC, xotLargeC,
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
     );
+    for (var ptr in [evaluatorC, bookC, archiveC, xotSmallC, xotLargeC]) {
+      malloc.free(ptr);
+    }
     thorMetadata.init();
     evaluate();
   }
@@ -318,6 +322,7 @@ class GlobalState {
     }
     var pathC = filePickerResult.paths[0]!.toNativeUtf8().cast<ffi.Char>();
     ffiEngine.Open(ffiMain, pathC);
+    malloc.free(pathC);
     if (GlobalState.preferences.get('Analyze on open')) {
       analyze();
     } else {
