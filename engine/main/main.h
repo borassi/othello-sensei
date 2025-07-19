@@ -43,6 +43,7 @@ class Main {
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath,
+      const std::string& saved_games_filepath,
       const std::string& xot_small_filepath,
       const std::string& xot_large_filepath,
       SetBoard set_board,
@@ -293,6 +294,14 @@ class Main {
     game_metadata_.year = game.year;
     game_metadata_.black_disks = game.score;
     current_state_->SetPrimaryLine();
+  }
+
+  void SetFileSources(const std::vector<std::string>& sources) {
+    engine_.StartSetFileSources(sources);
+  }
+
+  bool ReloadSource(const std::string& source) {
+    return engine_.ReloadSource(source);
   }
 
  private:

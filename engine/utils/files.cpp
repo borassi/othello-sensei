@@ -70,7 +70,8 @@ std::vector<std::string> GetAllFiles(const std::string& directory, bool include_
     }
   }
 #else
-  for (const auto& entry : fs::directory_iterator(directory)) {
+  std::error_code error;
+  for (const auto& entry : fs::directory_iterator(directory, error)) {
     if ((entry.is_regular_file() && include_files) || (entry.is_directory() && include_directories)) {
       result.push_back(entry.path().string());
     }
@@ -90,6 +91,9 @@ std::string Filename(const std::string& filepath) {
 
 std::string LoadTextFile(const std::string& filepath) {
   std::ifstream ifstream(filepath);
+  if (!ifstream.is_open()) {
+    return "";
+  }
   return std::string(std::istreambuf_iterator<char>(ifstream),
                      std::istreambuf_iterator<char>());
 }

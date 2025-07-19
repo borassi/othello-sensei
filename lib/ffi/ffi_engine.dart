@@ -66,6 +66,7 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> evals_filepath,
     ffi.Pointer<ffi.Char> book_filepath,
     ffi.Pointer<ffi.Char> thor_filepath,
+    ffi.Pointer<ffi.Char> saved_games_filepath,
     ffi.Pointer<ffi.Char> xot_small_filepath,
     ffi.Pointer<ffi.Char> xot_large_filepath,
     SetBoard set_board,
@@ -76,6 +77,7 @@ class FFIEngine {
       evals_filepath,
       book_filepath,
       thor_filepath,
+      saved_games_filepath,
       xot_small_filepath,
       xot_large_filepath,
       set_board,
@@ -92,11 +94,13 @@ class FFIEngine {
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
               ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
               SetBoard,
               UpdateAnnotations,
               UpdateTimers)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
       ffi.Pointer<ffi.Void> Function(
+          ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
@@ -597,6 +601,43 @@ class FFIEngine {
           ffi.Void Function(ffi.Pointer<ffi.Void>, ThorGame)>>('OpenThorGame');
   late final _OpenThorGame = _OpenThorGamePtr.asFunction<
       void Function(ffi.Pointer<ffi.Void>, ThorGame)>();
+
+  void SetFileSources(
+    ffi.Pointer<ffi.Void> ptr,
+    int num_folders,
+    ffi.Pointer<ffi.Pointer<ffi.Char>> folders,
+  ) {
+    return _SetFileSources(
+      ptr,
+      num_folders,
+      folders,
+    );
+  }
+
+  late final _SetFileSourcesPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int,
+              ffi.Pointer<ffi.Pointer<ffi.Char>>)>>('SetFileSources');
+  late final _SetFileSources = _SetFileSourcesPtr.asFunction<
+      void Function(
+          ffi.Pointer<ffi.Void>, int, ffi.Pointer<ffi.Pointer<ffi.Char>>)>();
+
+  bool ReloadSource(
+    ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<ffi.Char> file,
+  ) {
+    return _ReloadSource(
+      ptr,
+      file,
+    );
+  }
+
+  late final _ReloadSourcePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Bool Function(
+              ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>>('ReloadSource');
+  late final _ReloadSource = _ReloadSourcePtr.asFunction<
+      bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -604,6 +645,8 @@ typedef DartSquare = int;
 
 final class ThorSourceMetadata extends ffi.Struct {
   external ffi.Pointer<ffi.Char> name;
+
+  external ffi.Pointer<ffi.Char> folder;
 
   external ffi.Pointer<ffi.Pointer<ffi.Char>> players;
 
@@ -623,6 +666,9 @@ final class ThorSourceMetadata extends ffi.Struct {
 
   @ffi.Bool()
   external bool active;
+
+  @ffi.Bool()
+  external bool is_saved_games_folder;
 }
 
 final class ThorMetadata extends ffi.Struct {

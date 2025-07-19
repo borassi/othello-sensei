@@ -18,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/widgets_windows/saved_games_folders.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../drive/drive_downloader.dart';
@@ -42,6 +43,7 @@ enum MenuItem {
   xotAlways,
   xotNever,
   setupBoard,
+  editSavedGamesFolders,
 }
 
 void handleMenuItem(BuildContext context, MenuItem item) async {
@@ -110,6 +112,13 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.xotNever:
       GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_NEVER);
+      return;
+    case MenuItem.editSavedGamesFolders:
+      GlobalState.stop();
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SavedGamesFoldersWindow()),
+      );
       return;
   }
 }
@@ -305,6 +314,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),
+                PopupMenuItem<MenuItem>(value: MenuItem.editSavedGamesFolders, child: Text('Edit saved games folders', style: textStyle)),
               ]
             )
           )

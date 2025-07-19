@@ -27,6 +27,10 @@ String localAssetPath() {
   return join(GlobalState.localPath, "assets");
 }
 
+String localSavedGamesFoldersPath() {
+  return join(GlobalState.localPath, "saved_games_folders.txt");
+}
+
 String localTempPath() {
   return join(GlobalState.localPath, "tmp");
 }

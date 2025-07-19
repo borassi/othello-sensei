@@ -29,7 +29,7 @@ class SavedGameList : public GenericSource {
  public:
   static constexpr int kDefaultMaxGames = 2000;
 
-  SavedGameList(const std::string& folder, int max_games = kDefaultMaxGames) {
+  SavedGameList(const std::string& folder, int max_games = kDefaultMaxGames) : folder_(folder) {
     std::unordered_map<std::string, int> players_to_index;
     std::unordered_map<std::string, int> tournaments_to_index;
     std::vector<std::pair<fs::file_time_type, GameToSave>> games_to_save;
@@ -54,6 +54,8 @@ class SavedGameList : public GenericSource {
 
   const std::vector<std::string>& Players() const override { return players_; }
   const std::vector<std::string>& Tournaments() const override { return tournaments_; }
+  GenericSourceType GetType() const override { return SOURCE_TYPE_SAVED_GAMES; }
+  std::string GetFolder() const override { return folder_; }
 
   GamesList GetGames(
       const Sequence& sequence,
@@ -69,6 +71,7 @@ class SavedGameList : public GenericSource {
   std::vector<Game> AllGames() const override { return games_; }
 
  private:
+  std::string folder_;
   std::vector<Game> games_;
   std::vector<std::string> players_;
   std::vector<std::string> tournaments_;

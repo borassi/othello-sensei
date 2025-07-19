@@ -79,6 +79,7 @@ Engine::Engine(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath,
+    const std::string& saved_games_filepath,
     UpdateAnnotations update_annotations) :
     update_annotations_(update_annotations),
     hash_map_(),
@@ -92,16 +93,17 @@ Engine::Engine(
     thor_metadata_(),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
-        book_filepath, thor_filepath
+        book_filepath, thor_filepath, saved_games_filepath
     ))) {}
 
 void Engine::Initialize(
     const std::string& evals_filepath,
     const std::string& book_filepath,
-    const std::string& thor_filepath) {
+    const std::string& thor_filepath,
+    const std::string& saved_games_filepath) {
   auto future_evals = std::async(std::launch::async, &Engine::BuildEvals, this, evals_filepath);
   auto future_book = std::async(std::launch::async, &Engine::BuildBook, this, book_filepath);
-  auto future_thor = std::async(std::launch::async, &Engine::BuildThor, this, thor_filepath);
+  auto future_thor = std::async(std::launch::async, &Engine::BuildThor, this, thor_filepath, saved_games_filepath);
   future_evals.get();
   future_book.get();
   future_thor.get();
@@ -118,31 +120,25 @@ void Engine::CreateBoardsToEvaluate() {
   }
 }
 
-void Engine::BuildThor(const std::string& filepath) {
-  ElapsedTime t;
-  thor_ = nullptr;
-  if (filepath != "") {
-    thor_ = std::make_unique<Thor<GameGetterOnDisk>>(filepath);
-  }
-
-  std::unordered_map<std::string, const std::vector<std::string>&> players;
-  std::unordered_map<std::string, const std::vector<std::string>&> tournaments;
-  if (thor_) {
-    players = thor_->Players();
-    tournaments = thor_->Tournaments();
-  }
-  assert(players.size() == tournaments.size());
-
-  thor_sources_metadata_.reserve(players.size());
-  for (const auto& [source_name, source_players] : players) {
-    const auto& source_tournaments = tournaments.at(source_name);
-
+void Engine::BuildThorSourceMetadata() {
+  thor_sources_metadata_.clear();
+  thor_sources_metadata_extended_.clear();
+  thor_sources_metadata_.reserve(thor_->Sources().size());
+  for (auto& source : thor_->Sources()) {
     thor_sources_metadata_extended_.push_back(
-        std::make_unique<ThorSourceMetadataExtended>(source_name, source_players, source_tournaments));
+        std::make_unique<ThorSourceMetadataExtended>(source, thor_->GetSource(source)));
     thor_sources_metadata_.push_back(thor_sources_metadata_extended_.back()->GetThorSourceMetadata());
   }
   thor_metadata_.sources = thor_sources_metadata_.data();
   thor_metadata_.num_sources = (int) thor_sources_metadata_.size();
+}
+
+void Engine::BuildThor(const std::string& filepath, const std::string& saved_games_filepath) {
+  thor_ = nullptr;
+  if (filepath.empty()) {
+    thor_ = std::make_unique<Thor<GameGetterOnDisk>>(filepath, saved_games_filepath);
+  }
+  BuildThorSourceMetadata();
 }
 
 // This runs in the main thread, so that we cannot update the output afterwards.

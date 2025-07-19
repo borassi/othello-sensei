@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   std::string output_folder = parse_flags.GetFlag("output_folder");
 
   fs::create_directories(fs::path(output_folder));
-  Thor thor(thor_path);
+  Thor thor(thor_path, "/tmp/saved_files.txt");
 
   auto games = thor.GetGamesFromAllSources(Sequence("e6"), 10000);
 

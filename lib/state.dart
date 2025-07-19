@@ -181,15 +181,17 @@ class GlobalState {
     var evaluatorC = join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>();
     var bookC = join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>();
     var archiveC = join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>();
+    var localSavedGamesFoldersPathC = localSavedGamesFoldersPath().toNativeUtf8().cast<Char>();
     var xotSmallC = join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>();
     var xotLargeC = join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>();
     ffiMain = GlobalState.ffiEngine.MainInit(
-        evaluatorC, bookC, archiveC, xotSmallC, xotLargeC,
+        evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC, xotSmallC, xotLargeC,
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
     );
-    for (var ptr in [evaluatorC, bookC, archiveC, xotSmallC, xotLargeC]) {
+    for (var ptr in [evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC,
+                     xotSmallC, xotLargeC]) {
       malloc.free(ptr);
     }
     thorMetadata.init();
@@ -904,6 +906,7 @@ class SourcePlayerIndex {
 class ThorMetadataState with ChangeNotifier {
   String activeFolder;
   List<String> folders;
+  List<String> gameFolders;
   Pointer<ThorMetadata>? ptr;
   Map<String, SourcePlayerIndex> playerStringToIndex;
   List<String> tournaments;
@@ -915,6 +918,7 @@ class ThorMetadataState with ChangeNotifier {
         playerStringToIndex = {},
         tournaments = [],
         folders = [],
+        gameFolders = [],
         selectedBlacks = [],
         selectedWhites = [],
         activeFolder = 'All';
@@ -926,15 +930,19 @@ class ThorMetadataState with ChangeNotifier {
     for (int i = 0; i < ptr!.ref.num_sources; ++i) {
       var source = (ptr!.ref.sources + i).value.ref;
       folders.add(source.name.cast<Utf8>().toDartString());
+      if (source.is_saved_games_folder) {
+        print(source.folder);
+        gameFolders.add(cStringToString(source.folder));
+      }
       for (int j = 0; j < source.num_players; ++j) {
-        String player = (source.players + j).value.cast<Utf8>().toDartString();
+        String player = cStringToString((source.players + j).value);
         if (!playerToSources.containsKey(player)) {
           playerToSources[player] = [];
         }
         playerToSources[player]!.add(SourcePlayerIndex(i, j));
       }
       for (int j = 0; j < source.num_tournaments; ++j) {
-        String player = (source.players + j).value.cast<Utf8>().toDartString();
+        String player = cStringToString((source.players + j).value);
         if (!playerToSources.containsKey(player)) {
           playerToSources[player] = [];
         }
@@ -965,6 +973,7 @@ class ThorMetadataState with ChangeNotifier {
     playerStringToIndex = {};
     tournaments = [];
     folders = [];
+    gameFolders = [];
     selectedBlacks = [];
     selectedWhites = [];
     activeFolder = 'All';

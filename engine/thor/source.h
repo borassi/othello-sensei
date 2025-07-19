@@ -211,13 +211,17 @@ class Source : public GenericSource {
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const override;
 
-  virtual int NumGames() const override { return game_getter_.NumGames(); }
+  int NumGames() const override { return game_getter_.NumGames(); }
 
   std::vector<Game> AllGames() const override { return game_getter_.GetAllGames(); }
 
   std::string SortedGamesPath() const { return folder_ + "/games_order.sen"; }
 
   std::string GamesSmallHashPath() const { return folder_ + "/games_with_small_hash.sen"; }
+
+  GenericSourceType GetType() const override { return SOURCE_TYPE_GAME_ARCHIVE; }
+
+  std::string GetFolder() const override { return folder_; }
 
   void Save() const override {
     SaveSortedGames();

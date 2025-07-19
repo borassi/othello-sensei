@@ -22,6 +22,7 @@ Main::Main(
     const std::string& evals_filepath,
     const std::string& book_filepath,
     const std::string& thor_filepath,
+    const std::string& saved_games_filepath,
     const std::string& xot_small_filepath,
     const std::string& xot_large_filepath,
     SetBoard set_board,
@@ -33,7 +34,7 @@ Main::Main(
     current_state_(nullptr),
     last_state_flutter_(nullptr),
     analyzing_(0),
-    engine_(evals_filepath, book_filepath, thor_filepath, update_annotations),
+    engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations),
     xot_state_(XOT_STATE_AUTOMATIC),
     xot_small_(LoadTextFile(xot_small_filepath)),
     xot_large_(LoadTextFile(xot_large_filepath)) {

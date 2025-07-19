@@ -23,7 +23,10 @@
 #include "thor_test_utils.h"
 
 using ::testing::Pair;
+using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
+
+const std::string kSavedFilesPath = kThorTestData + "/saved_files_path.txt";
 
 class ThorTest : public testing::Test {
   void SetUp() override {
@@ -99,7 +102,7 @@ class ThorTest : public testing::Test {
 };
 
 TEST_F(ThorTest, Metadata) {
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   EXPECT_THAT(thor.Sources(), UnorderedElementsAre("Thor", "PlayOK"));
   EXPECT_THAT(thor.Tournaments(), UnorderedElementsAre(
       Pair("Thor", std::vector<std::string>{"tournament0", "tournament1"}),
@@ -111,7 +114,7 @@ TEST_F(ThorTest, Metadata) {
 
 TEST_F(ThorTest, SingleSource) {
   fs::remove_all(kThorTestData + "/PlayOK");
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGames("Thor", Sequence("e6"));
   EXPECT_EQ(games.num_games, 7);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(
@@ -121,27 +124,27 @@ TEST_F(ThorTest, SingleSource) {
 
 TEST_F(ThorTest, SingleSourceTranspositions) {
   fs::remove_all(kThorTestData + "/PlayOK");
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGames("Thor", Sequence("e6f4c3c4d3"));
   EXPECT_EQ(games.num_games, 2);
 }
 
 TEST_F(ThorTest, SingleSourceNoTranspositions) {
   fs::remove_all(kThorTestData + "/PlayOK");
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGames</*transpositions=*/false>("Thor", Sequence("e6f4c3c4d3"));
   EXPECT_EQ(games.num_games, 1);
 }
 
 TEST_F(ThorTest, AllSources) {
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGamesFromAllSources(Sequence("e6f4c3c4d3"));
   EXPECT_EQ(games.num_games, 4);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 4)));
 }
 
 TEST_F(ThorTest, AllSourcesNoTranspositions) {
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGamesFromAllSources</*transpositions=*/false>(Sequence("e6f4c3c4d3"));
   EXPECT_EQ(games.num_games, 2);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 2)));
@@ -149,14 +152,14 @@ TEST_F(ThorTest, AllSourcesNoTranspositions) {
 
 TEST_F(ThorTest, Rotations) {
   fs::remove_all(kThorTestData + "/PlayOK");
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGames("Thor", Sequence("d3c3c4e3"));
   EXPECT_EQ(games.num_games, 2);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
 }
 
 TEST_F(ThorTest, ManyFiles) {
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGames("Thor", Sequence("d3c3c4e3"));
   EXPECT_EQ(games.num_games, 2);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
@@ -166,10 +169,10 @@ TEST_F(ThorTest, ManyFiles) {
 }
 
 TEST_F(ThorTest, Save) {
-  Thor thor1(kThorTestData);
+  Thor thor1(kThorTestData, kSavedFilesPath);
   thor1.SaveAll();
   // TODO: Verify that we actually don't recompute anything.
-  Thor thor(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
   auto games = thor.GetGames("Thor", Sequence("d3c3c4e3"));
   EXPECT_EQ(games.num_games, 2);
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(52, 1), Pair(34, 1)));
@@ -181,47 +184,155 @@ TEST_F(ThorTest, Save) {
 TEST_F(ThorTest, FileSources) {
   auto base_folder = kThorTestData + "/thor_with_file_sources";
   fs::create_directories(base_folder);
-  Thor thor(base_folder);
+  Thor thor(base_folder, kSavedFilesPath);
+  std::vector<std::string> folders;
   for (int i = 0; i < 3; ++i) {
     std::string folder = base_folder + "/SavedGames" + std::to_string(i);
+    folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
     std::ofstream file(folder + "/game.stxt");
     file << game.ToString();
     file.close();
-    thor.AddFileSource(folder);
   }
+  thor.SetFileSources(folders);
   auto games = thor.GetGamesFromAllSources(Sequence("e6"));
   EXPECT_EQ(games.num_games, 3);
 }
 
 TEST_F(ThorTest, FileSourcesSameName) {
   fs::create_directories(kThorTestData);
-  Thor thor(kThorTestData);
-  for (const std::string folder_name : {"Thor", "VeryLongFolderLong1", "VeryLongFolderLong2"}) {
+  Thor thor(kThorTestData, kSavedFilesPath);
+  std::vector<std::string> folders;
+  for (const std::string folder_name : {"Thor", "VeryLongFolderLong1", "VeryLongFolderLong2", "VeryLongFolderLong3"}) {
     std::string folder = kThorTestData + "/" + folder_name;
+    folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + folder, "W", "T", "N", 2022, 64, "R");
     std::ofstream file(folder + "/game.stxt");
     file << game.ToString();
     file.close();
-    thor.AddFileSource(folder);
   }
-  EXPECT_THAT(thor.Sources(), UnorderedElementsAre("Thor", "PlayOK", "Thor_1", "VeryLongFolderL", "VeryLongFolderL_1"));
+  thor.SetFileSources(folders);
+  EXPECT_THAT(thor.Sources(), ElementsAre("Thor", "PlayOK", "Thor_1", "VeryLongFolderL", "VeryLongFolderL_1", "VeryLongFolderL_2"));
 }
 
 TEST_F(ThorTest, FileSourcesReload) {
-  auto base_folder = kThorTestData + "/thor_with_file_sources";
-  fs::create_directories(base_folder);
-  Thor thor(base_folder);
+  fs::create_directories(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
+  std::vector<std::string> folders;
   for (int i = 0; i < 3; ++i) {
-    std::string folder = base_folder + "/SavedGames" + std::to_string(i);
+    std::string folder = kThorTestData + "/../SavedGames" + std::to_string(i);
+    folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
     std::ofstream file(folder + "/game.stxt");
     file << game.ToString();
     file.close();
-    ASSERT_TRUE(thor.AddFileSource(folder));
   }
-  Thor thor1(base_folder);
+  thor.SetFileSources(folders);
+  Thor thor1(kThorTestData, kSavedFilesPath);
+  EXPECT_THAT(thor1.Sources(), ElementsAre("Thor", "PlayOK", "SavedGames0", "SavedGames1", "SavedGames2"));
+  // 13 original + 3 saved
+  auto games = thor.GetGamesFromAllSources(Sequence("e6"));
+  EXPECT_EQ(games.num_games, 16);
+}
+
+TEST_F(ThorTest, FileSourcesRemove) {
+  fs::create_directories(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
+  std::vector<std::string> folders;
+  for (int i = 0; i < 3; ++i) {
+    std::string folder = kThorTestData + "/SavedGames" + std::to_string(i);
+    folders.push_back(folder);
+    fs::create_directories(folder);
+    GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
+    std::ofstream file(folder + "/game.stxt");
+    file << game.ToString();
+    file.close();
+  }
+  thor.SetFileSources(folders);
+  thor.SetFileSources({folders[1], folders[0]});
+  EXPECT_THAT(thor.Sources(), ElementsAre("Thor", "PlayOK", "SavedGames1", "SavedGames0"));
+  auto games = thor.GetGamesFromAllSources(Sequence("e6"));
+  EXPECT_EQ(games.num_games, 15);
+}
+
+TEST_F(ThorTest, ReloadSource) {
+  fs::create_directories(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
+  std::vector<std::string> folders;
+  for (int i = 0; i < 3; ++i) {
+    std::string folder = kThorTestData + "/VeryLongFolderLong" + std::to_string(i);
+    folders.push_back(folder);
+    fs::create_directories(folder);
+    GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
+    std::ofstream file(folder + "/game.stxt");
+    file << game.ToString();
+    file.close();
+  }
+  thor.SetFileSources(folders);
+
+  for (int i = 0; i < 3; ++i) {
+    std::string folder = kThorTestData + "/VeryLongFolderLong" + std::to_string(i);
+    GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
+    std::ofstream file(folder + "/game1.stxt");
+    file << game.ToString();
+    file.close();
+  }
+  EXPECT_TRUE(thor.ReloadSource(kThorTestData + "/VeryLongFolderLong1/game1.stxt"));
+  EXPECT_THAT(thor.Sources(), ElementsAre("Thor", "PlayOK", "VeryLongFolderL", "VeryLongFolderL_1", "VeryLongFolderL_2"));
+  auto games_no_reload = thor.GetGames("VeryLongFolderL", Sequence("e6"));
+  auto games = thor.GetGames("VeryLongFolderL_1", Sequence("e6"));
+  EXPECT_EQ(games_no_reload.num_games, 1);
+  EXPECT_EQ(games.num_games, 2);
+}
+
+TEST_F(ThorTest, ReloadSourceNotExisting) {
+  fs::create_directories(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
+  std::string folder = kThorTestData + "/Folder";
+  fs::create_directories(folder);
+  GameToSave game(Sequence("e6f4"), "B", "W", "T", "N", 2022, 64, "R");
+  std::ofstream file(folder + "/game.stxt");
+  file << game.ToString();
+  file.close();
+  thor.SetFileSources({folder});
+  EXPECT_FALSE(thor.ReloadSource(kThorTestData + "/FolderNotExisting/game1.stxt"));
+  EXPECT_THAT(thor.Sources(), ElementsAre("Thor", "PlayOK", "Folder"));
+  EXPECT_EQ(thor.GetGames("Folder", Sequence("e6")).num_games, 1);
+}
+
+TEST_F(ThorTest, ReloadSourceComplexPath) {
+  fs::create_directories(kThorTestData);
+  Thor thor(kThorTestData, kSavedFilesPath);
+  std::string folder = kThorTestData + "/Folder";
+  fs::create_directories(folder);
+  GameToSave game(Sequence("e6f4"), "B", "W", "T", "N", 2022, 64, "R");
+  std::ofstream file(folder + "/game.stxt");
+  file << game.ToString();
+  file.close();
+  thor.SetFileSources({folder});
+
+  std::ofstream file1(folder + "/game1.stxt");
+  file1 << game.ToString();
+  file1.close();
+  EXPECT_TRUE(thor.ReloadSource(kThorTestData + "/Folder/.././Folder/game1.stxt"));
+  EXPECT_EQ(thor.GetGames("Folder", Sequence("e6")).num_games, 2);
+}
+
+TEST_F(ThorTest, ReloadSourceEmpty) {
+  auto base_folder = kThorTestData + "/thor_with_file_sources";
+  fs::create_directories(base_folder);
+  Thor thor(base_folder, kSavedFilesPath);
+  std::string folder = base_folder + "/Folder";
+  fs::create_directories(folder);
+  GameToSave game(Sequence("e6f4"), "B", "W", "T", "N", 2022, 64, "R");
+  std::ofstream file(folder + "/game.stxt");
+  thor.SetFileSources({folder});
+
+  fs::remove(folder + "/game.stxt");
+  EXPECT_TRUE(thor.ReloadSource(folder + "/game.stxt"));
+  EXPECT_THAT(thor.Sources(), ElementsAre("Folder"));
+  EXPECT_EQ(thor.GetGamesFromAllSources(Sequence("e6")).num_games, 0);
 }

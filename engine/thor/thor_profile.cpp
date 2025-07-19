@@ -28,7 +28,7 @@ void ProfileThor(const std::string& path) {
   }
 
   ElapsedTime load_time;
-  Thor<GameGetterOnDisk> thor(path);
+  Thor<GameGetterOnDisk> thor(path, path + "/saved_files.txt");
   std::cout << "Thor loaded in " << load_time.Get() << " sec.\n";
   int tmp = 0;
   ElapsedTime fetch_time;

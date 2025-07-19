@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
   output_file.open(output_path);
 
   HashMap<kBitHashMap> hash_map;
-  Thor<GameGetterInMemory> thor(input_path);
+  Thor<GameGetterInMemory> thor(input_path, "/tmp/saved_files.txt");
   auto evals = LoadEvals();
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()));

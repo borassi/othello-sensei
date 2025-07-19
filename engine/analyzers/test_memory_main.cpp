@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
   std::unique_ptr<Book<>> book = nullptr;
 
   if (include_thor) {
-    thor = std::make_unique<Thor<>>("assets/archive");
+    thor = std::make_unique<Thor<>>("assets/archive", "/tmp/saved_games.txt");
   }
   if (include_evaluator) {
     evals = std::make_unique<EvalType>(EvalType(LoadEvals()));

@@ -60,6 +60,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Thor<GameGetterInMemory> thor(output_path, rebuild_canonicalizer, rebuild_games_order, rebuild_games_small_hash);
+  Thor<GameGetterInMemory> thor(output_path, "/tmp/saved_files.txt", rebuild_canonicalizer, rebuild_games_order, rebuild_games_small_hash);
   thor.SaveAll();
 }

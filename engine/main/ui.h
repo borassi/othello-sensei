@@ -40,6 +40,7 @@ void* MainInit(
     char* evals_filepath,
     char* book_filepath,
     char* thor_filepath,
+    char* saved_games_filepath,
     char* xot_small_filepath,
     char* xot_large_filepath,
     SetBoard set_board,
@@ -141,6 +142,12 @@ void PlayOneMove(void* ptr, struct ThorGame game);
 
 EXPORT
 void OpenThorGame(void* ptr, struct ThorGame game);
+
+EXPORT
+void SetFileSources(void* ptr, int num_folders, char** folders);
+
+EXPORT
+bool ReloadSource(void* ptr, char* file);
 
 #ifdef __cplusplus
 }

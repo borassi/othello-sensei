@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
   int max_error = parse_flags.GetIntFlagOrDefault("max_error",  20);
 
   ExpandBookThorMain expander(filepath);
-  Thor thor(kAssetFilepath);
+  Thor thor(kAssetFilepath, "/tmp/saved_files.txt");
   for (int year = start_year; year >= end_year; --year) {
     Sequence sequence("e6");
     GamesList games = thor.GetGames("thor", sequence, INT_MAX, {}, {}, {}, year);

@@ -22,6 +22,11 @@
 #include "game.h"
 #include "../board/sequence.h"
 
+enum GenericSourceType {
+  SOURCE_TYPE_GAME_ARCHIVE,
+  SOURCE_TYPE_SAVED_GAMES
+};
+
 class GenericSource {
  public:
   virtual ~GenericSource() = default;
@@ -38,6 +43,8 @@ class GenericSource {
   virtual int NumGames() const = 0;
   virtual void Save() const {};
   virtual std::vector<Game> AllGames() const = 0;
+  virtual GenericSourceType GetType() const = 0;
+  virtual std::string GetFolder() const = 0;
 };
 
 

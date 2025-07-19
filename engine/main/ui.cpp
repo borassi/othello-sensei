@@ -25,14 +25,15 @@ void* MainInit(
     char* evals_filepath,
     char* book_filepath,
     char* thor_filepath,
+    char* saved_games_filepath,
     char* xot_small_filepath,
     char* xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
     UpdateTimers update_timers) {
   return new Main(
-      evals_filepath, book_filepath, thor_filepath, xot_small_filepath, xot_large_filepath,
-      set_board, update_annotations, update_timers);
+      evals_filepath, book_filepath, thor_filepath, saved_games_filepath, xot_small_filepath,
+      xot_large_filepath, set_board, update_annotations, update_timers);
 }
 
 ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
@@ -99,3 +100,14 @@ void Open(void* ptr, char* path) { static_cast<Main*>(ptr)->Open(path); }
 void PlayOneMove(void* ptr, struct ThorGame game) { static_cast<Main*>(ptr)->PlayOneMove(game); }
 void OpenThorGame(void* ptr, struct ThorGame game) { static_cast<Main*>(ptr)->OpenThorGame(game); }
 GameMetadata* MutableGameMetadata(void* ptr) { return static_cast<Main*>(ptr)->MutableGameMetadata(); }
+
+void SetFileSources(void* ptr, int num_folders, char** folders) {
+  std::vector<std::string> folders_vector;
+  folders_vector.reserve(num_folders);
+  for (int i = 0; i < num_folders; ++i) {
+    folders_vector.emplace_back(folders[i]);
+  }
+  static_cast<Main*>(ptr)->SetFileSources(folders_vector);
+}
+
+bool ReloadSource(void* ptr, char* file) { return static_cast<Main*>(ptr)->ReloadSource(file); }

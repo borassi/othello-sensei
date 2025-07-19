@@ -37,6 +37,7 @@ const Square kNoMove = 255;
 
 struct ThorSourceMetadata {
   const char* name;
+  const char* folder;
   const char** players;
   int num_players;
   const char** tournaments;
@@ -45,6 +46,7 @@ struct ThorSourceMetadata {
   int* selected_whites;
   int* selected_tournaments;
   bool active;
+  bool is_saved_games_folder;
 };
 
 struct ThorMetadata {

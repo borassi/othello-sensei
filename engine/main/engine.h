@@ -123,20 +123,26 @@ class BoardToEvaluate {
 class ThorSourceMetadataExtended {
  public:
   ThorSourceMetadataExtended(const ThorSourceMetadataExtended&) = delete;
-  ThorSourceMetadataExtended(const std::string& name, const std::vector<std::string>& players, const std::vector<std::string>& tournaments) : name_(name) {
-    players_.reserve(players.size());
-    for (const std::string& player : players) {
+  ThorSourceMetadataExtended(const std::string& name, const GenericSource& source) : name_(name), folder_(source.GetFolder()) {
+    const auto& players = source.Players();
+    selected_blacks_.reserve(players.size() + 1);
+    selected_whites_.reserve(players.size() + 1);
+    for (const std::string& player: players) {
       players_.push_back(player.c_str());
       selected_blacks_.push_back(-1);
       selected_whites_.push_back(-1);
     }
-    tournaments_.reserve(tournaments.size());
-    for (const std::string& tournament : tournaments) {
+    selected_blacks_.push_back(-1);
+    selected_whites_.push_back(-1);
+    const auto& tournaments = source.Tournaments();
+    for (const std::string& tournament: tournaments) {
       tournaments_.push_back(tournament.c_str());
       selected_tournaments_.push_back(-1);
     }
+    selected_tournaments_.push_back(-1);
     thor_source_metadata_.active = true;
     thor_source_metadata_.name = name_.c_str();
+    thor_source_metadata_.folder = folder_.c_str();
     thor_source_metadata_.players = players_.data();
     thor_source_metadata_.num_players = (int) players_.size();
     thor_source_metadata_.tournaments = tournaments_.data();
@@ -144,6 +150,7 @@ class ThorSourceMetadataExtended {
     thor_source_metadata_.selected_blacks = selected_blacks_.data();
     thor_source_metadata_.selected_whites = selected_whites_.data();
     thor_source_metadata_.selected_tournaments = selected_tournaments_.data();
+    thor_source_metadata_.is_saved_games_folder = source.GetType() == SOURCE_TYPE_SAVED_GAMES;
   }
 
   ThorSourceMetadata* GetThorSourceMetadata() { return &thor_source_metadata_; }
@@ -151,6 +158,7 @@ class ThorSourceMetadataExtended {
  private:
   ThorSourceMetadata thor_source_metadata_;
   std::string name_;
+  std::string folder_;
   std::vector<const char*> players_;
   std::vector<const char*> tournaments_;
   std::vector<int> selected_blacks_;
@@ -166,6 +174,7 @@ class Engine {
       const std::string& evals_filepath,
       const std::string& book_filepath,
       const std::string& thor_filepath,
+      const std::string& saved_games_filepath,
       UpdateAnnotations update_annotations);
 
   void Start(EvaluationState* current_state,
@@ -188,6 +197,17 @@ class Engine {
     Stop();
     current_future_->wait();
     return &thor_metadata_;
+  }
+
+  void StartSetFileSources(const std::vector<std::string>& sources) {
+    current_future_ = std::make_shared<std::future<void>>(std::async(
+        std::launch::async, &Engine::RunSetFileSources, this, sources, current_future_));
+  }
+
+  bool ReloadSource(const std::string& file) {
+    Stop();
+    current_future_->wait();
+    return thor_->ReloadSource(file);
   }
 
   uint32_t CurrentThread() { return current_thread_.load(); }
@@ -218,12 +238,21 @@ class Engine {
   EvaluationState* last_state_;
   SenseiAction last_sensei_action_;
 
+  void RunSetFileSources(const std::vector<std::string>& sources, std::shared_ptr<std::future<void>> last_future) {
+    last_future.get();
+    thor_->SetFileSources(sources);
+    BuildThorSourceMetadata();
+  }
+
+  void BuildThorSourceMetadata();
+
   void EvaluateThor(const EvaluateParams& params, EvaluationState& state);
 
   void Initialize(
       const std::string& evals_filepath,
       const std::string& book_filepath,
-      const std::string& thor_filepath);
+      const std::string& thor_filepath,
+      const std::string& saved_games_filepath);
 
   void BuildEvals(const std::string& filepath) {
     evals_ = std::make_unique<EvalType>(LoadEvals(filepath));
@@ -232,7 +261,7 @@ class Engine {
     book_ = std::make_unique<Book<kBookVersion>>(filepath);
   }
   void CreateBoardsToEvaluate();
-  void BuildThor(const std::string& filepath);
+  void BuildThor(const std::string& filepath, const std::string& saved_games_filepath);
 
   void UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis);
 

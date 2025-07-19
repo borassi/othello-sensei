@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
   std::string output_path = parse_flags.GetFlag("output_path");
 
   Book book(book_path);
-  Thor<GameGetterInMemory> archive(archive_path);
+  Thor<GameGetterInMemory> archive(archive_path, output_path + "/saved_games_filepath.txt");
 
   BookVisitorStats visitor(book, archive, output_path);
   visitor.VisitString("");

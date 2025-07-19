@@ -63,11 +63,25 @@ TEST_F(SavedGamesListTest, Basic) {
   EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("Tournament 1"));
   EXPECT_THAT(source.Players(), UnorderedElementsAre("Black 1", "White 1"));
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
+  EXPECT_EQ(source.GetFolder(), kTestFolder);
   EXPECT_EQ(source.NumGames(), 1);
   EXPECT_EQ(games.max_games, 10);
   EXPECT_EQ(games.num_games, 1);
   EXPECT_THAT(games.examples, UnorderedElementsAre(game.ToGame()));
   EXPECT_THAT(games.next_moves, UnorderedElementsAre(Pair(20, 1)));
+}
+
+TEST_F(SavedGamesListTest, Invalid) {
+  SavedGameList source(kTestFolder + "/IAmNotADirectory");
+  EXPECT_THAT(source.Tournaments(), ::testing::IsEmpty());
+  EXPECT_THAT(source.Players(), ::testing::IsEmpty());
+  EXPECT_EQ(source.GetFolder(), kTestFolder + "/IAmNotADirectory");
+  EXPECT_EQ(source.NumGames(), 0);
+  auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
+  EXPECT_EQ(games.max_games, 10);
+  EXPECT_EQ(games.num_games, 0);
+  EXPECT_THAT(games.examples, ::testing::IsEmpty());
+  EXPECT_THAT(games.next_moves, ::testing::IsEmpty());
 }
 
 TEST_F(SavedGamesListTest, LongerThanGame) {
