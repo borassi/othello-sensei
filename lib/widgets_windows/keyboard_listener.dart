@@ -41,6 +41,13 @@ class RedoIntent extends Intent {
 class BackIntent extends Intent {
   const BackIntent();
 }
+class SaveIntent extends Intent {
+  const SaveIntent();
+}
+class OpenIntent extends Intent {
+  const OpenIntent();
+}
+
 
 
 class MyKeyboardListener extends StatelessWidget {
@@ -56,6 +63,8 @@ class MyKeyboardListener extends StatelessWidget {
         SingleActivator(LogicalKeyboardKey.keyC, control: !isMac, meta: isMac): CopyIntent(),
         SingleActivator(LogicalKeyboardKey.keyV, control: !isMac, meta: isMac): PasteIntent(),
         SingleActivator(LogicalKeyboardKey.keyN, control: !isMac, meta: isMac): NewGameIntent(),
+        SingleActivator(LogicalKeyboardKey.keyS, control: !isMac, meta: isMac): SaveIntent(),
+        SingleActivator(LogicalKeyboardKey.keyO, control: !isMac, meta: isMac): OpenIntent(),
         SingleActivator(LogicalKeyboardKey.arrowLeft): UndoIntent(),
         SingleActivator(LogicalKeyboardKey.arrowRight): RedoIntent(),
         SingleActivator(LogicalKeyboardKey.arrowUp): BackIntent(),
@@ -80,6 +89,12 @@ class MyKeyboardListener extends StatelessWidget {
           ),
           BackIntent: CallbackAction<BackIntent>(
             onInvoke: (BackIntent intent) => GlobalState.toLastImportantNode(),
+          ),
+          SaveIntent: CallbackAction<SaveIntent>(
+            onInvoke: (SaveIntent intent) => GlobalState.setDetailsAndSave(context),
+          ),
+          OpenIntent: CallbackAction<OpenIntent>(
+            onInvoke: (OpenIntent intent) => GlobalState.open(),
           ),
         },
         child: Focus(
