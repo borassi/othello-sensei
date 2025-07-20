@@ -950,6 +950,7 @@ class ThorMetadataState with ChangeNotifier {
   List<String> gameFolders;
   Pointer<ThorMetadata>? ptr;
   Map<String, SourcePlayerIndex> playerStringToIndex;
+  List<String> players;
   List<String> tournaments;
   List<String> selectedBlacks;
   List<String> selectedWhites;
@@ -957,6 +958,7 @@ class ThorMetadataState with ChangeNotifier {
   ThorMetadataState() :
         ptr = null,
         playerStringToIndex = {},
+        players = [],
         tournaments = [],
         folders = [],
         gameFolders = [],
@@ -995,6 +997,7 @@ class ThorMetadataState with ChangeNotifier {
     for (var playerSource in playerToSources.entries) {
       var player = playerSource.key;
       var indices = playerSource.value;
+      players.add(player);
       if (indices.length == 1) {
         playerStringToIndex[player] = indices[0];
       } else {
@@ -1010,6 +1013,7 @@ class ThorMetadataState with ChangeNotifier {
 
   void invalidate() {
     ptr = null;
+    players = [];
     playerStringToIndex = {};
     tournaments = [];
     folders = [];

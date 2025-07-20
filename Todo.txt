@@ -3,7 +3,6 @@ Just before next launch
 - P1 SMALL Should we show lost disks instead of error?
 - P1 SMALL Undo / redo in the side bar by default?
 - P0 TINY Limit number of folders.
-- P0 TINY Save does not show the source of the player name.
 - P0 TINY Limit applies also to non-game files and folders.
 - P1 SMALL Fix GDK warning on Linux.
 

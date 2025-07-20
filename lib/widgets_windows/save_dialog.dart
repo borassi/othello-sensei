@@ -149,7 +149,7 @@ class SaveDialogContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var gameMetadata = GlobalState.gameMetadataState.getMetadata();
-    var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
+    var players = GlobalState.thorMetadata.players;
     var tournaments = GlobalState.thorMetadata.tournaments.toList();
 
     return Scaffold(
