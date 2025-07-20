@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   std::cout << games.num_games << " " << games.examples.size() << "\n";
   for (const Game& game : games.examples) {
     GameToSave game_to_save = GameToSave::FromGame(game);
-    std::ofstream output(output_folder + "/" + std::to_string(i++) + " - " + game_to_save.Black() + " - " + game_to_save.White() + ".stxt");
+    std::ofstream output(output_folder + "/" + std::to_string(i++) + " - " + game_to_save.Black() + " - " + game_to_save.White() + ".sensei.txt");
     output << game_to_save.ToString();
     output.close();
   }

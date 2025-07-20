@@ -191,7 +191,7 @@ TEST_F(ThorTest, FileSources) {
     folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
-    std::ofstream file(folder + "/game.stxt");
+    std::ofstream file(folder + "/game.sensei.txt");
     file << game.ToString();
     file.close();
   }
@@ -209,7 +209,7 @@ TEST_F(ThorTest, FileSourcesSameName) {
     folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + folder, "W", "T", "N", 2022, 64, "R");
-    std::ofstream file(folder + "/game.stxt");
+    std::ofstream file(folder + "/game.sensei.txt");
     file << game.ToString();
     file.close();
   }
@@ -226,7 +226,7 @@ TEST_F(ThorTest, FileSourcesReload) {
     folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
-    std::ofstream file(folder + "/game.stxt");
+    std::ofstream file(folder + "/game.sensei.txt");
     file << game.ToString();
     file.close();
   }
@@ -247,7 +247,7 @@ TEST_F(ThorTest, FileSourcesRemove) {
     folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
-    std::ofstream file(folder + "/game.stxt");
+    std::ofstream file(folder + "/game.sensei.txt");
     file << game.ToString();
     file.close();
   }
@@ -267,7 +267,7 @@ TEST_F(ThorTest, ReloadSource) {
     folders.push_back(folder);
     fs::create_directories(folder);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
-    std::ofstream file(folder + "/game.stxt");
+    std::ofstream file(folder + "/game.sensei.txt");
     file << game.ToString();
     file.close();
   }
@@ -276,11 +276,11 @@ TEST_F(ThorTest, ReloadSource) {
   for (int i = 0; i < 3; ++i) {
     std::string folder = kThorTestData + "/VeryLongFolderLong" + std::to_string(i);
     GameToSave game(Sequence("e6f4"), "B" + std::to_string(i), "W", "T", "N", 2022, 64, "R");
-    std::ofstream file(folder + "/game1.stxt");
+    std::ofstream file(folder + "/game1.sensei.txt");
     file << game.ToString();
     file.close();
   }
-  EXPECT_TRUE(thor.ReloadSource(kThorTestData + "/VeryLongFolderLong1/game1.stxt"));
+  EXPECT_TRUE(thor.ReloadSource(kThorTestData + "/VeryLongFolderLong1/game1.sensei.txt"));
   EXPECT_THAT(thor.Sources(), ElementsAre("Thor", "PlayOK", "VeryLongFolderL", "VeryLongFolderL_1", "VeryLongFolderL_2"));
   auto games_no_reload = thor.GetGames("VeryLongFolderL", Sequence("e6"));
   auto games = thor.GetGames("VeryLongFolderL_1", Sequence("e6"));
@@ -294,11 +294,11 @@ TEST_F(ThorTest, ReloadSourceNotExisting) {
   std::string folder = kThorTestData + "/Folder";
   fs::create_directories(folder);
   GameToSave game(Sequence("e6f4"), "B", "W", "T", "N", 2022, 64, "R");
-  std::ofstream file(folder + "/game.stxt");
+  std::ofstream file(folder + "/game.sensei.txt");
   file << game.ToString();
   file.close();
   thor.SetFileSources({folder});
-  EXPECT_FALSE(thor.ReloadSource(kThorTestData + "/FolderNotExisting/game1.stxt"));
+  EXPECT_FALSE(thor.ReloadSource(kThorTestData + "/FolderNotExisting/game1.sensei.txt"));
   EXPECT_THAT(thor.Sources(), ElementsAre("Thor", "PlayOK", "Folder"));
   EXPECT_EQ(thor.GetGames("Folder", Sequence("e6")).num_games, 1);
 }
@@ -309,15 +309,15 @@ TEST_F(ThorTest, ReloadSourceComplexPath) {
   std::string folder = kThorTestData + "/Folder";
   fs::create_directories(folder);
   GameToSave game(Sequence("e6f4"), "B", "W", "T", "N", 2022, 64, "R");
-  std::ofstream file(folder + "/game.stxt");
+  std::ofstream file(folder + "/game.sensei.txt");
   file << game.ToString();
   file.close();
   thor.SetFileSources({folder});
 
-  std::ofstream file1(folder + "/game1.stxt");
+  std::ofstream file1(folder + "/game1.sensei.txt");
   file1 << game.ToString();
   file1.close();
-  EXPECT_TRUE(thor.ReloadSource(kThorTestData + "/Folder/.././Folder/game1.stxt"));
+  EXPECT_TRUE(thor.ReloadSource(kThorTestData + "/Folder/.././Folder/game1.sensei.txt"));
   EXPECT_EQ(thor.GetGames("Folder", Sequence("e6")).num_games, 2);
 }
 
@@ -328,11 +328,11 @@ TEST_F(ThorTest, ReloadSourceEmpty) {
   std::string folder = base_folder + "/Folder";
   fs::create_directories(folder);
   GameToSave game(Sequence("e6f4"), "B", "W", "T", "N", 2022, 64, "R");
-  std::ofstream file(folder + "/game.stxt");
+  std::ofstream file(folder + "/game.sensei.txt");
   thor.SetFileSources({folder});
 
-  fs::remove(folder + "/game.stxt");
-  EXPECT_TRUE(thor.ReloadSource(folder + "/game.stxt"));
+  fs::remove(folder + "/game.sensei.txt");
+  EXPECT_TRUE(thor.ReloadSource(folder + "/game.sensei.txt"));
   EXPECT_THAT(thor.Sources(), ElementsAre("Folder"));
   EXPECT_EQ(thor.GetGamesFromAllSources(Sequence("e6")).num_games, 0);
 }

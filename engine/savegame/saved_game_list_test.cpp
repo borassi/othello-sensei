@@ -58,7 +58,7 @@ TEST_F(SavedGamesListTest, Basic) {
       2022,
       34,
       "Round 1");
-  SaveGame(game, "game.stxt");
+  SaveGame(game, "game.sensei.txt");
 
   SavedGameList source(kTestFolder);
   EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("Tournament 1"));
@@ -87,7 +87,7 @@ TEST_F(SavedGamesListTest, Invalid) {
 
 TEST_F(SavedGamesListTest, LongerThanGame) {
   GameToSave game(Sequence("e6f4c3c4d3"), "B", "W", "T", "N", 2022, 34,"R");
-  SaveGame(game, "game.stxt");
+  SaveGame(game, "game.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6f4c3c4d3d6"), 10);
   EXPECT_EQ(games.num_games, 0);
@@ -95,7 +95,7 @@ TEST_F(SavedGamesListTest, LongerThanGame) {
 
 TEST_F(SavedGamesListTest, AsLongAsGame) {
   GameToSave game(Sequence("e6f4c3c4d3"), "B", "W", "T", "N", 2022, 34,"R");
-  SaveGame(game, "game.stxt");
+  SaveGame(game, "game.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
   EXPECT_EQ(games.num_games, 1);
@@ -105,7 +105,7 @@ TEST_F(SavedGamesListTest, AsLongAsGame) {
 
 TEST_F(SavedGamesListTest, Canonical) {
   GameToSave game(Sequence("f5d6c3d3c4"), "B", "W", "T", "N", 2022, 34,"R");
-  SaveGame(game, "game.stxt");
+  SaveGame(game, "game.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
   EXPECT_EQ(games.num_games, 1);
@@ -115,9 +115,9 @@ TEST_F(SavedGamesListTest, Canonical) {
 
 TEST_F(SavedGamesListTest, ByBlack) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
-  SaveGame(game1, "game1.stxt");
+  SaveGame(game1, "game1.sensei.txt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
-  SaveGame(game2, "game2.stxt");
+  SaveGame(game2, "game2.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {"B1"});
   EXPECT_EQ(games.num_games, 1);
@@ -126,9 +126,9 @@ TEST_F(SavedGamesListTest, ByBlack) {
 
 TEST_F(SavedGamesListTest, ByWhite) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
-  SaveGame(game1, "game1.stxt");
+  SaveGame(game1, "game1.sensei.txt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
-  SaveGame(game2, "game2.stxt");
+  SaveGame(game2, "game2.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {}, {"W2"});
   EXPECT_EQ(games.num_games, 1);
@@ -137,9 +137,9 @@ TEST_F(SavedGamesListTest, ByWhite) {
 
 TEST_F(SavedGamesListTest, ByTournament) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
-  SaveGame(game1, "game1.stxt");
+  SaveGame(game1, "game1.sensei.txt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
-  SaveGame(game2, "game2.stxt");
+  SaveGame(game2, "game2.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {}, {}, {"T1"});
   EXPECT_EQ(games.num_games, 1);
@@ -148,11 +148,11 @@ TEST_F(SavedGamesListTest, ByTournament) {
 
 TEST_F(SavedGamesListTest, ByYear) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
-  SaveGame(game1, "game1.stxt");
+  SaveGame(game1, "game1.sensei.txt");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
-  SaveGame(game2, "game2.stxt");
+  SaveGame(game2, "game2.sensei.txt");
   GameToSave game3(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2023, 34, "R");
-  SaveGame(game3, "game3.stxt");
+  SaveGame(game3, "game3.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10, {}, {}, {}, 2022, 2022);
   EXPECT_EQ(games.num_games, 1);
@@ -161,16 +161,16 @@ TEST_F(SavedGamesListTest, ByYear) {
 
 TEST_F(SavedGamesListTest, SameExampleOrder) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
-  SaveGame(game1, "game_c_1.stxt");
+  SaveGame(game1, "game_c_1.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
-  SaveGame(game2, "game_a_2.stxt");
+  SaveGame(game2, "game_a_2.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W3", "T2", "N", 2023, 34, "R");
-  SaveGame(game3, "game_b_3.stxt");
+  SaveGame(game3, "game_b_3.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game4(Sequence("e6f4c3c4d3"), "B4", "W4", "T2", "N", 2023, 34, "R");
-  SaveGame(game4, "game_d_4.stxt");
+  SaveGame(game4, "game_d_4.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 10);
   EXPECT_EQ(games.num_games, 4);
@@ -179,16 +179,16 @@ TEST_F(SavedGamesListTest, SameExampleOrder) {
 
 TEST_F(SavedGamesListTest, FiltersLastModified) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
-  SaveGame(game1, "game_c_1.stxt");
+  SaveGame(game1, "game_c_1.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
-  SaveGame(game2, "game_a_2.stxt");
+  SaveGame(game2, "game_a_2.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W3", "T2", "N", 2023, 34, "R");
-  SaveGame(game3, "game_b_3.stxt");
+  SaveGame(game3, "game_b_3.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game4(Sequence("e6f4c3c4d3"), "B4", "W4", "T2", "N", 2023, 34, "R");
-  SaveGame(game4, "game_d_4.stxt");
+  SaveGame(game4, "game_d_4.sensei.txt");
   SavedGameList source(kTestFolder);
   auto games = source.GetGames(Sequence("e6"), 2);
   EXPECT_EQ(games.num_games, 4);
@@ -202,9 +202,9 @@ TEST_F(SavedGamesListTest, Recursive) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W", "T1", "N", 2022, 34,"R");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W", "T2", "N", 2022, 34,"R");
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W", "T3", "N", 2022, 34,"R");
-  SaveGame(game1, "game.stxt");
-  SaveGame(game2, "subfolder1/game.stxt");
-  SaveGame(game3, "subfolder2/game.stxt");
+  SaveGame(game1, "game.sensei.txt");
+  SaveGame(game2, "subfolder1/game.sensei.txt");
+  SaveGame(game3, "subfolder2/game.sensei.txt");
 
   SavedGameList source(kTestFolder);
   EXPECT_THAT(source.Tournaments(), UnorderedElementsAre("T1", "T2", "T3"));
@@ -218,9 +218,9 @@ TEST_F(SavedGamesListTest, MaxGames) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W", "T1", "N", 2022, 34,"R");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W", "T2", "N", 2022, 34,"R");
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W", "T3", "N", 2022, 34,"R");
-  SaveGame(game1, "game1.stxt");
-  SaveGame(game2, "game2.stxt");
-  SaveGame(game3, "game3.stxt");
+  SaveGame(game1, "game1.sensei.txt");
+  SaveGame(game2, "game2.sensei.txt");
+  SaveGame(game3, "game3.sensei.txt");
 
   SavedGameList source(kTestFolder, 2);
   EXPECT_EQ(source.Tournaments().size(), 2);
@@ -233,12 +233,12 @@ TEST_F(SavedGamesListTest, MaxGamesWithOtherFiles) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W", "T1", "N", 2022, 34,"R");
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W", "T2", "N", 2022, 34,"R");
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W", "T3", "N", 2022, 34,"R");
-  SaveGame(game1, "game1.stxt");
-  SaveGame(game2, "game2.stxt");
-  SaveGame(game3, "game3.stxt");
+  SaveGame(game1, "game1.sensei.txt");
+  SaveGame(game2, "game2.sensei.txt");
+  SaveGame(game3, "game3.sensei.txt");
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   fs::create_directories(kTestFolder + "/test_dir");
-  SaveGame(game1, "game3_not_stxt.ext");
+  SaveGame(game1, "game3_not_sensei.txt.ext");
 
   SavedGameList source(kTestFolder, 4);
   EXPECT_EQ(source.Tournaments().size(), 2);

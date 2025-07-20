@@ -61,7 +61,7 @@ void SavedGameList::LoadFolder(
       LoadFolder(path, players_to_index, tournaments_to_index, games_to_save, remaining_steps);
       continue;
     }
-    if (!EndsWith(ToLower(path), ".stxt")) {
+    if (!EndsWith(ToLower(path), ".sensei.txt")) {
       continue;
     }
     auto time = fs::last_write_time(path);

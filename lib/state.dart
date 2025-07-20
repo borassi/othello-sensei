@@ -309,7 +309,8 @@ class GlobalState {
     String? file = await FilePicker.platform.saveFile(
       initialDirectory: GlobalState.thorMetadata.gameFolders.elementAtOrNull(0),
       fileName: GlobalState.gameMetadataState.getGameName(),
-      allowedExtensions: ['stxt'],
+      type: FileType.custom,
+      allowedExtensions: ['txt'],
       bytes: utf8.encode(cArrayToString(game.ref.game)),
     );
     malloc.free(game);
@@ -357,7 +358,7 @@ class GlobalState {
   static Future<void> open() async {
     var filePickerResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['stxt']
+      allowedExtensions: ['txt']
     );
     if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
       return;
@@ -462,7 +463,7 @@ class GameMetadataState with ChangeNotifier {
     if (round != "") {
       round += " - ";
     }
-    return '$round$black - $white.stxt';
+    return '$round$black - $white.sensei.txt';
   }
 }
 
