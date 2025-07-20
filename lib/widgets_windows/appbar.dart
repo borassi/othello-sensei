@@ -314,7 +314,7 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),
-                PopupMenuItem<MenuItem>(value: MenuItem.editSavedGamesFolders, child: Text('Edit saved games folders', style: textStyle)),
+                PopupMenuItem<MenuItem>(value: MenuItem.editSavedGamesFolders, child: Text('Edit archive folders', style: textStyle)),
               ]
             )
           )

@@ -212,6 +212,7 @@ class Settings extends StatelessWidget {
     'Margin size',
     'Last move marker',
     'Black and white bars in the graph',
+    'Show dialog on save outside archive',
     'Show settings dialog at startup',
     'Show unsupported CPU at startup',
   ];

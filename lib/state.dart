@@ -30,6 +30,7 @@ import 'package:flutter/services.dart';
 import 'package:othello_sensei/utils.dart';
 import 'package:othello_sensei/widgets_board/case.dart' as sensei_case;
 import 'package:othello_sensei/widgets_windows/save_dialog.dart';
+import 'package:othello_sensei/widgets_windows/saved_games_folders.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -305,12 +306,51 @@ class GlobalState {
 
   static Future<void> save() async {
     var game = ffiEngine.GetGameToSave(ffiMain);
-    await FilePicker.platform.saveFile(
+    String? file = await FilePicker.platform.saveFile(
+      initialDirectory: GlobalState.thorMetadata.gameFolders.elementAtOrNull(0),
       fileName: GlobalState.gameMetadataState.getGameName(),
       allowedExtensions: ['stxt'],
       bytes: utf8.encode(cArrayToString(game.ref.game)),
     );
     malloc.free(game);
+    if (file != null) {
+      var fileC = file.toNativeUtf8().cast<Char>();
+      GlobalState.thorMetadata.invalidate();
+      bool reloaded = GlobalState.ffiEngine.ReloadSource(GlobalState.ffiMain, fileC);
+      GlobalState.thorMetadata.init();
+      malloc.free(fileC);
+      if (!reloaded &&
+          GlobalState.preferences.get('Show dialog on save outside archive')) {
+        var folder = getContainingFolder(file);
+        var actions = [
+          (text: 'OK - do not show again', onPressed: (ctx) {
+            GlobalState.preferences.set('Show dialog on save outside archive', false);
+            Navigator.pop(ctx);
+          }),
+          (text: 'OK - show again next time', onPressed: (ctx) { Navigator.pop(ctx); }),
+        ];
+        if (folder != null) {
+          var folderName = basename(folder);
+          actions.add((
+              text: 'Add folder $folderName to the archive',
+              onPressed: (ctx) {
+                setFileSources(GlobalState.thorMetadata.gameFolders + [folder]);
+                Navigator.pop(ctx);
+              }
+          ));
+        }
+        await showSenseiDialog(
+            SenseiDialog(
+              title: 'Saved game outside the archive folders',
+              content: (
+                'You can open the game manually, but you will not see it in '
+                'the Archive tab. You can always change the archive folders '
+                'by clicking ⋮ > Edit archive folders.'),
+              actions: actions,
+            )
+        );
+      }
+    }
     evaluate();
   }
 
@@ -631,6 +671,7 @@ class PreferencesState with ChangeNotifier {
     'Black player': Player.player,
     'White player': Player.player,
     'Show settings dialog at startup': true,
+    'Show dialog on save outside archive': true,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -931,7 +972,6 @@ class ThorMetadataState with ChangeNotifier {
       var source = (ptr!.ref.sources + i).value.ref;
       folders.add(source.name.cast<Utf8>().toDartString());
       if (source.is_saved_games_folder) {
-        print(source.folder);
         gameFolders.add(cStringToString(source.folder));
       }
       for (int j = 0; j < source.num_players; ++j) {

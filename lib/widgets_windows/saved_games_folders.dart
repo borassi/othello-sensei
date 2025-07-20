@@ -65,6 +65,21 @@ class _GameFolderRow extends StatelessWidget {
 
 }
 
+void setFileSources(List<String> folders) {
+  Pointer<Pointer<Char>> foldersC = malloc(folders.length);
+  for (int i = 0; i < folders.length; ++i) {
+    String folder = folders[i];
+    foldersC[i] = folder.toNativeUtf8().cast<Char>();
+  }
+  GlobalState.thorMetadata.invalidate();
+  GlobalState.ffiEngine.SetFileSources(GlobalState.ffiMain, folders.length, foldersC);
+  for (int i = 0; i < folders.length; ++i) {
+    malloc.free(foldersC[i]);
+  }
+  malloc.free(foldersC);
+  GlobalState.thorMetadata.init();
+}
+
 class SavedGamesFoldersWindow extends StatefulWidget {
   @override
   State<StatefulWidget> createState() { return _SavedGamesFoldersWindowState(); }
@@ -73,7 +88,7 @@ class SavedGamesFoldersWindow extends StatefulWidget {
 class _SavedGamesFoldersWindowState extends State<SavedGamesFoldersWindow> {
   final List<String> _folders;
 
-  _SavedGamesFoldersWindowState() : _folders = GlobalState.thorMetadata.gameFolders.toList();
+  _SavedGamesFoldersWindowState() : _folders = GlobalState.thorMetadata.gameFolders;
 
   void _addItem() async {
     var filePickerResult = await FilePicker.platform.getDirectoryPath();
@@ -103,18 +118,7 @@ class _SavedGamesFoldersWindowState extends State<SavedGamesFoldersWindow> {
   Widget build(BuildContext context) {
     return SecondaryWindow(
         onPopInvoked: (bool didPop) {
-          Pointer<Pointer<Char>> foldersC = malloc(_folders.length);
-          for (int i = 0; i < _folders.length; ++i) {
-            String folder = _folders[i];
-            foldersC[i] = folder.toNativeUtf8().cast<Char>();
-          }
-          GlobalState.thorMetadata.invalidate();
-          GlobalState.ffiEngine.SetFileSources(GlobalState.ffiMain, _folders.length, foldersC);
-          for (int i = 0; i < _folders.length; ++i) {
-            malloc.free(foldersC[i]);
-          }
-          malloc.free(foldersC);
-          GlobalState.thorMetadata.init();
+          setFileSources(_folders);
           GlobalState.evaluate();
         },
         title: 'Saved games folders',

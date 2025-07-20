@@ -20,6 +20,7 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
+import 'package:path/path.dart';
 
 import 'ffi/ffi_engine.dart';
 
@@ -205,4 +206,28 @@ String cArrayToString(Array<Char> array) {
   } on ArgumentError {
     return '';
   }
+}
+
+// Returns the name of the containing folder of a given file path.
+//
+// Example:
+// If filePath is '/home/user/documents/report.txt',
+// this function will return '/home/user/documents'.
+String? getContainingFolder(String filePath) {
+  if (filePath.isEmpty) {
+    return null;
+  }
+
+  // Normalize the path to handle different path separators and redundancies
+  String normalizedPath = normalize(filePath);
+
+  // Get the directory part of the path
+  String directoryPath = dirname(normalizedPath);
+
+  // If the directory path is empty or just a root, there's no containing folder name
+  if (directoryPath.isEmpty || directoryPath == current || directoryPath == separator) {
+    return null;
+  }
+
+  return directoryPath;
 }
