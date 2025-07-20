@@ -22,6 +22,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_utils/misc.dart';
 import 'package:othello_sensei/widgets_windows/secondary_window.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 
 import '../state.dart';
 import '../widgets_spacers/app_sizes.dart';
@@ -38,6 +39,15 @@ class SquareHeightWidget extends StatelessWidget {
   }
 }
 
+class _HalfMargin extends StatelessWidget {
+  const _HalfMargin();
+
+  @override
+  Widget build(BuildContext context) {
+    var margin = Theme.of(context).extension<AppSizes>()!.margin / 2;
+    return SizedBox(height: margin, width: margin);
+  }
+}
 class _GameFolderRow extends StatelessWidget {
   final String item;
   final void Function() onDelete;
@@ -81,6 +91,8 @@ void setFileSources(List<String> folders) {
 }
 
 class SavedGamesFoldersWindow extends StatefulWidget {
+  const SavedGamesFoldersWindow({super.key});
+
   @override
   State<StatefulWidget> createState() { return _SavedGamesFoldersWindowState(); }
 }
@@ -91,13 +103,31 @@ class _SavedGamesFoldersWindowState extends State<SavedGamesFoldersWindow> {
   _SavedGamesFoldersWindowState() : _folders = GlobalState.thorMetadata.gameFolders;
 
   void _addItem() async {
+    if (_folders.length >= 20) {
+      await showSenseiDialog(
+        SenseiDialog(
+          title: 'You can add at most 20 archive folders',
+          content: (
+              'You can always add a "parent" folder, and create as many '
+              'subfolders as you want inside it.'
+          )
+        )
+      );
+      return;
+    }
     var filePickerResult = await FilePicker.platform.getDirectoryPath();
     if (filePickerResult == null || filePickerResult.isEmpty) {
       return;
     }
-    if (!_folders.contains(filePickerResult)) {
-      setState(() { _folders.add(filePickerResult); });
+    if (_folders.contains(filePickerResult)) {
+      await showSenseiDialog(
+          SenseiDialog(
+              content: 'Folder $filePickerResult is already an archive folder.'
+          )
+      );
+      return;
     }
+    setState(() { _folders.add(filePickerResult); });
   }
 
   void _removeItem(int index) {
@@ -131,6 +161,7 @@ class _SavedGamesFoldersWindowState extends State<SavedGamesFoldersWindow> {
                 icon: Icons.add,
               ),
             ),
+            const _HalfMargin(),
             Expanded(
               child: ReorderableListView.builder(
                 buildDefaultDragHandles: false, // <--- Add this

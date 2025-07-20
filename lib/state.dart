@@ -329,7 +329,7 @@ class GlobalState {
           }),
           (text: 'OK - show again next time', onPressed: (ctx) { Navigator.pop(ctx); }),
         ];
-        if (folder != null) {
+        if (folder != null && GlobalState.thorMetadata.gameFolders.length < 20) {
           var folderName = basename(folder);
           actions.add((
               text: 'Add folder $folderName to the archive',
