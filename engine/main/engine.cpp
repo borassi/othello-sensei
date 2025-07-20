@@ -123,7 +123,6 @@ void Engine::CreateBoardsToEvaluate() {
 void Engine::BuildThorSourceMetadata() {
   thor_sources_metadata_.clear();
   thor_sources_metadata_extended_.clear();
-  thor_sources_metadata_.reserve(thor_->Sources().size());
   for (auto& source : thor_->Sources()) {
     thor_sources_metadata_extended_.push_back(
         std::make_unique<ThorSourceMetadataExtended>(source, thor_->GetSource(source)));
@@ -136,8 +135,9 @@ void Engine::BuildThorSourceMetadata() {
 void Engine::BuildThor(const std::string& filepath, const std::string& saved_games_filepath) {
   thor_ = nullptr;
   if (filepath.empty()) {
-    thor_ = std::make_unique<Thor<GameGetterOnDisk>>(filepath, saved_games_filepath);
+    return;
   }
+  thor_ = std::make_unique<Thor<GameGetterOnDisk>>(filepath, saved_games_filepath);
   BuildThorSourceMetadata();
 }
 

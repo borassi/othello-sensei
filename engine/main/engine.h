@@ -207,7 +207,9 @@ class Engine {
   bool ReloadSource(const std::string& file) {
     Stop();
     current_future_->wait();
-    return thor_->ReloadSource(file);
+    bool success = thor_->ReloadSource(file);
+    BuildThorSourceMetadata();
+    return success;
   }
 
   uint32_t CurrentThread() { return current_thread_.load(); }
