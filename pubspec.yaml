@@ -91,8 +91,6 @@ flutter:
   assets:
     - assets/pattern_evaluator.dat
     - assets/archive/
-    - assets/archive_small/
-    - assets/archive_small/Thor/
     - assets/archive/Thor/
     - assets/book/
     - assets/icons/

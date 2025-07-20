@@ -263,7 +263,7 @@ class Settings extends StatelessWidget {
     nerdPreferences.removeAll(_behaviorPreferences);
     nerdPreferences.removeAll(_enginePreferences);
     nerdPreferences.removeAll(_unshownPreferences);
-    var appearancePreferences = _appearancePreferences;
+    var appearancePreferences = List<String>.of(_appearancePreferences);
     if (Platform.isAndroid) {
       appearancePreferences.remove('Show dialog on save outside archive');
     }
@@ -294,7 +294,7 @@ class Settings extends StatelessWidget {
                         Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Appearance', style: titleStyle)),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
+                          children: appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
                         Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
                         Column(
