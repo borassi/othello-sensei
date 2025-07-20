@@ -15,6 +15,8 @@
  *
  */
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
@@ -314,8 +316,12 @@ class SenseiAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
                 PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),
-                PopupMenuItem<MenuItem>(value: MenuItem.editSavedGamesFolders, child: Text('Edit archive folders', style: textStyle)),
-              ]
+              ] + (
+                  Platform.isAndroid ? [] :
+                  [
+                    PopupMenuItem<MenuItem>(value: MenuItem.editSavedGamesFolders, child: Text('Edit archive folders', style: textStyle)),
+                  ]
+              )
             )
           )
         )

@@ -672,7 +672,7 @@ class PreferencesState with ChangeNotifier {
     'Black player': Player.player,
     'White player': Player.player,
     'Show settings dialog at startup': true,
-    'Show dialog on save outside archive': true,
+    'Show dialog on save outside archive': !Platform.isAndroid,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -698,6 +698,10 @@ class PreferencesState with ChangeNotifier {
 
   PreferencesState._initialize(this._preferences) {
     for (String name in _preferences.getKeys()) {
+      if (Platform.isAndroid && name == 'Show dialog on save outside archive') {
+        set(name, defaultPreferences[name]);
+        continue;
+      }
       try {
         _checkPreferenceNameAndValue(name, _preferences.get(name));
       } on InvalidPreferenceException catch (e) {

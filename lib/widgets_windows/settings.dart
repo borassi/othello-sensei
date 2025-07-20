@@ -263,6 +263,10 @@ class Settings extends StatelessWidget {
     nerdPreferences.removeAll(_behaviorPreferences);
     nerdPreferences.removeAll(_enginePreferences);
     nerdPreferences.removeAll(_unshownPreferences);
+    var appearancePreferences = _appearancePreferences;
+    if (Platform.isAndroid) {
+      appearancePreferences.remove('Show dialog on save outside archive');
+    }
 
     return SecondaryWindow(
       onPopInvoked: (bool didPop) {
