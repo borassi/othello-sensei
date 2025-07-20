@@ -49,13 +49,16 @@ void SavedGameList::LoadFolder(
     std::unordered_map<std::string, int>& players_to_index,
     std::unordered_map<std::string, int>& tournaments_to_index,
     std::vector<std::pair<fs::file_time_type, GameToSave>>& games_to_save,
-    int max_games) {
-  if (games_to_save.size() >= max_games) {
+    int* remaining_steps) {
+  if (*remaining_steps <= 0) {
     return;
   }
-  for (const std::string& path : GetAllFiles(folder, true, true)) {
+  for (const std::string& path : GetAllFilesMostRecentFirst(folder, true, true)) {
+    if ((*remaining_steps)-- <= 0) {
+      return;
+    }
     if (fs::is_directory(path)) {
-      LoadFolder(path, players_to_index, tournaments_to_index, games_to_save, max_games);
+      LoadFolder(path, players_to_index, tournaments_to_index, games_to_save, remaining_steps);
       continue;
     }
     if (!EndsWith(ToLower(path), ".stxt")) {
@@ -75,8 +78,5 @@ void SavedGameList::LoadFolder(
       tournaments_.push_back(tournament);
     }
     games_to_save.push_back({time, std::move(game)});
-    if (games_to_save.size() >= max_games) {
-      return;
-    }
   }
 }

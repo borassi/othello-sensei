@@ -49,6 +49,55 @@ FileOffset FileLength(std::fstream& file) {
   return (FileOffset) result;
 }
 
+namespace {
+// Structure to hold file system entry information for sorting
+struct FileWithWriteTime {
+  std::string path;
+  fs::file_time_type last_write_time;
+
+  // Custom comparison operator for sorting in decreasing order of modification time
+  bool operator>(const FileWithWriteTime& other) const {
+    return last_write_time > other.last_write_time;
+  }
+};
+}  // namespace
+
+/**
+ * @brief Fetches paths of file system entries (files and directories) in a given directory,
+ * sorted in decreasing order of modification time.
+ *
+ * @param directoryPath The path to the directory to search.
+ * @return A vector of strings representing the paths, sorted by modification time (newest first).
+ * Returns an empty vector if the directory does not exist or is not accessible.
+ */
+std::vector<std::string> GetAllFilesMostRecentFirst(const std::string& directory, bool include_files, bool include_directories) {
+  std::vector<FileWithWriteTime> entries;
+  std::vector<std::string> sortedPaths;
+  fs::path dir_path(directory);
+
+  try {
+    for (const auto& path : GetAllFiles(directory, include_files, include_directories)) {
+      try {
+        entries.push_back({.path = path, .last_write_time = fs::last_write_time(path)});
+      } catch (const fs::filesystem_error& e) {
+        std::cerr << "Error accessing entry " << path << ": " << e.what() << std::endl;
+      }
+    }
+
+    // Sort the temporary entries vector using the custom comparison operator
+    std::sort(entries.begin(), entries.end(), std::greater<FileWithWriteTime>());
+
+    // Extract just the paths into the result vector
+    for (const auto& entry : entries) {
+      sortedPaths.push_back(entry.path);
+    }
+  } catch (const fs::filesystem_error& e) {
+    std::cerr << "Error iterating directory " << directory << ": " << e.what() << std::endl;
+  }
+
+  return sortedPaths;
+}
+
 std::vector<std::string> GetAllFiles(const std::string& directory, bool include_files, bool include_directories) {
   std::vector<std::string> result;
 #if __APPLE__

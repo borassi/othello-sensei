@@ -17,6 +17,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <string>
+#include <thread>     // For std::this_thread::sleep_for
 
 #include "../board/sequence.h"
 #include "../utils/files.h"
@@ -161,13 +162,13 @@ TEST_F(SavedGamesListTest, ByYear) {
 TEST_F(SavedGamesListTest, SameExampleOrder) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
   SaveGame(game1, "game_c_1.stxt");
-  sleep(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game_a_2.stxt");
-  sleep(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W3", "T2", "N", 2023, 34, "R");
   SaveGame(game3, "game_b_3.stxt");
-  sleep(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game4(Sequence("e6f4c3c4d3"), "B4", "W4", "T2", "N", 2023, 34, "R");
   SaveGame(game4, "game_d_4.stxt");
   SavedGameList source(kTestFolder);
@@ -179,13 +180,13 @@ TEST_F(SavedGamesListTest, SameExampleOrder) {
 TEST_F(SavedGamesListTest, FiltersLastModified) {
   GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W1", "T1", "N", 2021, 34, "R");
   SaveGame(game1, "game_c_1.stxt");
-  sleep(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W2", "T2", "N", 2022, 34, "R");
   SaveGame(game2, "game_a_2.stxt");
-  sleep(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W3", "T2", "N", 2023, 34, "R");
   SaveGame(game3, "game_b_3.stxt");
-  sleep(1);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   GameToSave game4(Sequence("e6f4c3c4d3"), "B4", "W4", "T2", "N", 2023, 34, "R");
   SaveGame(game4, "game_d_4.stxt");
   SavedGameList source(kTestFolder);
@@ -222,6 +223,24 @@ TEST_F(SavedGamesListTest, MaxGames) {
   SaveGame(game3, "game3.stxt");
 
   SavedGameList source(kTestFolder, 2);
+  EXPECT_EQ(source.Tournaments().size(), 2);
+  EXPECT_THAT(source.Players().size(), 3);
+  auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
+  EXPECT_EQ(games.num_games, 2);
+}
+
+TEST_F(SavedGamesListTest, MaxGamesWithOtherFiles) {
+  GameToSave game1(Sequence("e6f4c3c4d3"), "B1", "W", "T1", "N", 2022, 34,"R");
+  GameToSave game2(Sequence("e6f4c3c4d3"), "B2", "W", "T2", "N", 2022, 34,"R");
+  GameToSave game3(Sequence("e6f4c3c4d3"), "B3", "W", "T3", "N", 2022, 34,"R");
+  SaveGame(game1, "game1.stxt");
+  SaveGame(game2, "game2.stxt");
+  SaveGame(game3, "game3.stxt");
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  fs::create_directories(kTestFolder + "/test_dir");
+  SaveGame(game1, "game3_not_stxt.ext");
+
+  SavedGameList source(kTestFolder, 4);
   EXPECT_EQ(source.Tournaments().size(), 2);
   EXPECT_THAT(source.Players().size(), 3);
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);

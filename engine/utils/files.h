@@ -50,6 +50,8 @@ std::vector<T> ReadFile(const std::string& filename) {
   return result;
 }
 
+std::vector<std::string> GetAllFilesMostRecentFirst(const std::string& directory, bool include_files, bool include_directories);
+
 std::vector<std::string> GetAllFiles(const std::string& directory, bool include_files, bool include_directories);
 
 bool FileExists(const std::string& filename);

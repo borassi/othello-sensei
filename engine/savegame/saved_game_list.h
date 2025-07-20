@@ -33,7 +33,7 @@ class SavedGameList : public GenericSource {
     std::unordered_map<std::string, int> players_to_index;
     std::unordered_map<std::string, int> tournaments_to_index;
     std::vector<std::pair<fs::file_time_type, GameToSave>> games_to_save;
-    LoadFolder(folder, players_to_index, tournaments_to_index, games_to_save, max_games);
+    LoadFolder(folder, players_to_index, tournaments_to_index, games_to_save, &max_games);
 
     std::sort(
         games_to_save.begin(),
@@ -81,7 +81,7 @@ class SavedGameList : public GenericSource {
       std::unordered_map<std::string, int>& players_to_index,
       std::unordered_map<std::string, int>& tournaments_to_index,
       std::vector<std::pair<fs::file_time_type, GameToSave>>& games_to_save,
-      int max_games);
+      int* remaining_steps);
 };
 
 #endif //OTHELLO_SENSEI_SAVED_GAME_LIST_H
