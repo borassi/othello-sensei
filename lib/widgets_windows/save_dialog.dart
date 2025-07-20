@@ -86,8 +86,9 @@ class Searchable extends StatelessWidget {
   final String initialValue;
   final List<String> values;
   final void Function(String) onChanged;
+  final List<TextInputFormatter>? inputFormatters;
 
-  const Searchable({super.key, required this.initialValue, required this.values, required this.onChanged});
+  const Searchable({super.key, required this.initialValue, required this.values, required this.onChanged, this.inputFormatters});
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +109,7 @@ class Searchable extends StatelessWidget {
             child: _InputFormField(
               controller: textEditingController,
               focusNode: focusNode,
+              inputFormatters: inputFormatters,
             )
         );
       },
@@ -162,7 +164,8 @@ class SaveDialogContent extends StatelessWidget {
                 Searchable(
                     initialValue: cArrayToString(gameMetadata.black),
                     values: players,
-                    onChanged: GlobalState.gameMetadataState.setBlack
+                    onChanged: GlobalState.gameMetadataState.setBlack,
+                    inputFormatters: [LengthLimitingTextInputFormatter(20)],
                 )
             ),
             const Margin.internal(),
@@ -171,7 +174,8 @@ class SaveDialogContent extends StatelessWidget {
                 Searchable(
                     initialValue: cArrayToString(gameMetadata.white),
                     values: players,
-                    onChanged: GlobalState.gameMetadataState.setWhite
+                    onChanged: GlobalState.gameMetadataState.setWhite,
+                    inputFormatters: [LengthLimitingTextInputFormatter(20)],
                 )
             ),
             const Margin.internal(),
@@ -180,7 +184,8 @@ class SaveDialogContent extends StatelessWidget {
                 Searchable(
                     initialValue: cArrayToString(gameMetadata.tournament),
                     values: tournaments,
-                    onChanged: GlobalState.gameMetadataState.setTournament
+                    onChanged: GlobalState.gameMetadataState.setTournament,
+                    inputFormatters: [LengthLimitingTextInputFormatter(26)],
                 )
             ),
             const Margin.internal(),
