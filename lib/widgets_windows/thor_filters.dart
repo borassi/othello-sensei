@@ -21,7 +21,9 @@ import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 
 import '../state.dart';
 import '../widgets_board/case.dart';
+import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_utils/misc.dart';
 
 class ThorFiltersWidget extends StatelessWidget {
   final double squareSize;
@@ -97,31 +99,41 @@ class ThorFiltersWidget extends StatelessWidget {
       title: 'Archive filters',
       child: LayoutBuilder(
         builder: (context, constraint) {
+          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
           return SingleChildScrollView(
             child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraint.maxHeight),
             child: IntrinsicHeight(
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Case(CaseState.black, 255, false),
-                const Margin.internal(),
-                Expanded(child: playerSearch(context, true)),
-              ]
-            ),
-            const Margin.internal(),
-            Row(
-              children: [
-                Case(CaseState.white, 255, false),
-                const Margin.internal(),
-                Expanded(child: playerSearch(context, false)),
-              ]
-            ),
-            const Spacer(),
-          ],
-        )
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Case(CaseState.black, 255, false),
+                      const Margin.internal(),
+                      Expanded(child: playerSearch(context, true)),
+                    ]
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Case(CaseState.white, 255, false),
+                      const Margin.internal(),
+                      Expanded(child: playerSearch(context, false)),
+                    ]
+                  ),
+                  const Spacer(flex: 1),
+                  SizedBox(
+                      height: squareSize,
+                      child: SenseiButton(text: "OK", onPressed: () {Navigator.pop(context);})
+                  ),
+                ],
+              )
+            )
+          )
+        );
+        }
       )
-    ));
-  }));}
+    );
+  }
 }
