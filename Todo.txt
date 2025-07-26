@@ -1,4 +1,6 @@
 Just before next launch
+- P0 SMALL Move during game.
+- P0 SMALL Space in Thor.
 - P1 MED Debug Thor load failure on Marc's phone.
 - P1 SMALL Should we show lost disks instead of error?
 - P1 SMALL Undo / redo in the side bar by default?

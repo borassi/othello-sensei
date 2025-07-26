@@ -178,15 +178,21 @@ class MainContent extends StatelessWidget {
         ]
       );
     } else {
-      // content = Expanded(child: Container(color: Colors.red));
-      content = Row(
-        children: [
-          Column(children: [board, const Margin.side()]),
-          const Margin.internal(),
-          Expanded(child: Column(children: [brokenAppBar ? const Margin.side() : const Margin.internal(), Expanded(child: sidebar)])),
+      var children = [
+        Column(children: [board, const Margin.side()]),
+        const Margin.internal(),
+        Expanded(child: Column(children: [brokenAppBar ? const Margin.side() : const Margin.internal(), Expanded(child: sidebar)])),
+        const Margin.side(),
+      ];
+      if (GlobalState.preferences.get("Board on the right in horizontal mode")) {
+        children = [
           const Margin.side(),
-        ]
-      );
+          Expanded(child: Column(children: [brokenAppBar ? const Margin.side() : const Margin.internal(), Expanded(child: sidebar)])),
+          const Margin.internal(),
+          Column(children: [board, const Margin.side()]),
+        ];
+      }
+      content = Row(children: children);
     }
 
     return Container(

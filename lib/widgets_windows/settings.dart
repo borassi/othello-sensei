@@ -215,6 +215,7 @@ class Settings extends StatelessWidget {
     'Show dialog on save outside archive',
     'Show settings dialog at startup',
     'Show unsupported CPU at startup',
+    'Board on the right in horizontal mode',
   ];
 
   static const _evalPreferences = [

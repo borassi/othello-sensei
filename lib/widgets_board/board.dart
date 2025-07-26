@@ -98,98 +98,110 @@ class Board extends StatelessWidget {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     var sideMargin = appSizes.sideMargin;
     var internalMargin = appSizes.margin;
-    var leftMargin = sideMargin;
-    var topMargin = appSizes.brokenAppBar() ? sideMargin : internalMargin;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
         return ListenableBuilder(
           listenable: GlobalState.board,
-          builder: (BuildContext context, Widget? widget) => RawGestureDetector(
-            gestures: {
-              PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
-                    () => PanGestureRecognizer(
-                  allowedButtonsFilter: (int buttons) { return buttons & kPrimaryButton != 0; },
-                ),
-                (PanGestureRecognizer instance) {
-                  instance
-                    ..onStart = (DragStartDetails details) {
-                      var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
-                      setUpDisk(index, false);
-                    }
-                    ..onUpdate = (DragUpdateDetails details) {
-                      var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
-                      setUpDisk(index, false);
-                    }
-                    ..onEnd = (DragEndDetails details) {
-                      var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
-                      if (!GlobalState.setupBoardState.settingUpBoard) {
-                        GlobalState.playMove(index, false);
-                      }
-                    };
-                },
-              ),
-            },
-            child: RawGestureDetector(
-              gestures: {
-                PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
-                      () => PanGestureRecognizer(
-                    allowedButtonsFilter: (int buttons) { return buttons & kSecondaryButton != 0; },
-                  ),
-                      (PanGestureRecognizer instance) {
-                    instance
-                      ..onStart = (DragStartDetails details) {
-                        var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
-                        setUpDisk(index, true);
-                      }
-                      ..onUpdate = (DragUpdateDetails details) {
-                        var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
-                        setUpDisk(index, true);
-                      }
-                      ..onEnd = (DragEndDetails details) {
-                        if (!GlobalState.setupBoardState.settingUpBoard) {
-                          GlobalState.undo();
-                        }
-                      };
-                  },
-                ),
-              },
-              child: Stack(
-                children: <Widget>[
-                  Table(
-                    defaultColumnWidth: FixedColumnWidth(squareSize),
-                    columnWidths: {0: FixedColumnWidth(sideMargin)},
-                    children:
-                      [
-                        TableRow(children: <Widget>[Container()] + List.generate(8, (y) => Coordinate(false, y, topMargin)))
-                      ] +
-                      List.generate(8, (x) => TableRow(
-                        children:
-                          <Widget>[Coordinate(true, x, sideMargin)] +
-                          List.generate(8, (y) {
-                            var index = 63 - 8 * x - y;
-                            return Case(getState(index, board), index, index == GlobalState.board.lastMove);
-                          })
-                        )
-                      )
-                  )
-                ] +
-                List.generate(4, (index) => Positioned(
-                  left: leftMargin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
-                  top: topMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
-                  child:
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.background,
-                      shape: BoxShape.circle,
+          builder: (BuildContext context, Widget? widget) {
+            bool horizontal = (
+                Theme.of(context).extension<AppSizes>()!.layout == AppLayout.horizontalBrokenBar ||
+                Theme.of(context).extension<AppSizes>()!.layout == AppLayout.horizontalFullBar);
+            var rightCoordinates = horizontal && GlobalState.preferences.get("Board on the right in horizontal mode");
+            var leftMargin = rightCoordinates ? 0.0 : sideMargin;
+            var topMargin = appSizes.brokenAppBar() ? sideMargin : internalMargin;
+            return RawGestureDetector(
+                gestures: {
+                  PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+                        () => PanGestureRecognizer(
+                      allowedButtonsFilter: (int buttons) { return buttons & kPrimaryButton != 0; },
                     ),
-                    width: squareSize * 0.2,
-                    height: squareSize * 0.2,
-                  )
-                ))
-              )
-            )
-          )
+                        (PanGestureRecognizer instance) {
+                      instance
+                        ..onStart = (DragStartDetails details) {
+                          var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                          setUpDisk(index, false);
+                        }
+                        ..onUpdate = (DragUpdateDetails details) {
+                          var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                          setUpDisk(index, false);
+                        }
+                        ..onEnd = (DragEndDetails details) {
+                          var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                          if (!GlobalState.setupBoardState.settingUpBoard) {
+                            GlobalState.playMove(index, false);
+                          }
+                        };
+                    },
+                  ),
+                },
+                child: RawGestureDetector(
+                    gestures: {
+                      PanGestureRecognizer: GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
+                            () => PanGestureRecognizer(
+                          allowedButtonsFilter: (int buttons) { return buttons & kSecondaryButton != 0; },
+                        ),
+                            (PanGestureRecognizer instance) {
+                          instance
+                            ..onStart = (DragStartDetails details) {
+                              var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                              setUpDisk(index, true);
+                            }
+                            ..onUpdate = (DragUpdateDetails details) {
+                              var index = getIndex(details.localPosition, leftMargin, topMargin, squareSize);
+                              setUpDisk(index, true);
+                            }
+                            ..onEnd = (DragEndDetails details) {
+                              if (!GlobalState.setupBoardState.settingUpBoard) {
+                                GlobalState.undo();
+                              }
+                            };
+                        },
+                      ),
+                    },
+                    child: Stack(
+                        children: <Widget>[
+                          Table(
+                              defaultColumnWidth: FixedColumnWidth(squareSize),
+                              columnWidths: {(rightCoordinates ? 8 : 0): FixedColumnWidth(sideMargin)},
+                              children:
+                              [
+                                TableRow(
+                                  children:
+                                    (rightCoordinates ? <Widget>[] : <Widget>[Container()]) +
+                                    List.generate(8, (y) => Coordinate(false, y, topMargin)) +
+                                    (rightCoordinates ? <Widget>[Container()] : <Widget>[])
+                                )
+                              ] +
+                                  List.generate(8, (x) => TableRow(
+                                      children:
+                                      (rightCoordinates ? <Widget>[] : <Widget>[Coordinate(true, x, sideMargin)]) +
+                                          List.generate(8, (y) {
+                                            var index = 63 - 8 * x - y;
+                                            return Case(getState(index, board), index, index == GlobalState.board.lastMove);
+                                          }) +
+                                      (rightCoordinates ? <Widget>[Coordinate(true, x, sideMargin)] : <Widget>[])
+                                  )
+                                  )
+                          )
+                        ] +
+                            List.generate(4, (index) => Positioned(
+                                left: leftMargin + (2-0.1) * squareSize + (index % 2) * 4 * squareSize,
+                                top: topMargin + (2-0.1) * squareSize + (index ~/ 2) * 4 * squareSize,
+                                child:
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.background,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  width: squareSize * 0.2,
+                                  height: squareSize * 0.2,
+                                )
+                            ))
+                    )
+                )
+            );
+          }
         );
       }
     );

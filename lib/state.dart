@@ -645,6 +645,7 @@ class PreferencesState with ChangeNotifier {
     'Evaluate if watching an analyzed game': false,
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
+    'Board on the right in horizontal mode': false,
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Seconds/position when playing': 1.0,
