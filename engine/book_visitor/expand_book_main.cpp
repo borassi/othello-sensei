@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <format>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -42,10 +43,10 @@ std::string GetBestLine(Book<>& book, const std::vector<std::string>& lines) {
   for (const auto& line : lines) {
     auto board_in_book = book.Mutable(Board(line));
     auto value = board_in_book->Uncertainty();
-    std::cout << "    "
-        << std::setw(max_line_length) << line << " "
-        << std::setw(7) << std::setprecision(2) << value << " "
-        << std::setprecision(3) << board_in_book->GetEval() << "\n";
+    char format_value_eval[13];
+    sprintf(format_value_eval, "%.2f  %+.2f", value, board_in_book->GetEval());
+    std::cout << "  "
+        << std::setw(max_line_length) << line << "  " << format_value_eval << "\n";
     if (value > best) {
       best = value;
       best_line = line;

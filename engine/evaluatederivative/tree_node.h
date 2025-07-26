@@ -275,7 +275,7 @@ class Node {
       e_x += 2 * prob;
       e_x2 += 4 * i * prob; // (i+1)^2 - (i-1)^2
     }
-    return sqrt(e_x2 - e_x * e_x);
+    return (e_x2 - e_x * e_x) / 4;
   }
 
   const Evaluation& GetEvaluation(int eval_goal) const {
