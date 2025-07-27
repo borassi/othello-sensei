@@ -195,13 +195,13 @@ TEST(BookVisitor, WorksWithPass) {
   book.AddChildren(before_pass, {*TestTreeNode(after_pass, 0, -63, 63, 10)});
 
   BookVisitorToVectorNoTransposition visitor(book);
-  visitor.VisitSequence(sequence);
+  visitor.VisitSequence(Sequence(sequence));
   EXPECT_THAT(visitor.Get(), ::testing::IsSupersetOf({
-      VisitedNode{*book.Get(start), FIRST_VISIT, sequence},
-      VisitedNode{*book.Get(before_pass), FIRST_VISIT, sequence + "e8"},
-      VisitedNode{*book.Get(after_pass), LEAF, sequence + "e8"},
-      VisitedNode{*book.Get(before_pass), LAST_VISIT, sequence + "e8"},
-      VisitedNode{*book.Get(start), LAST_VISIT, sequence}
+      VisitedNode{*book.Get(start), FIRST_VISIT, Sequence(sequence)},
+      VisitedNode{*book.Get(before_pass), FIRST_VISIT, Sequence(sequence + "e8")},
+      VisitedNode{*book.Get(after_pass), LEAF, Sequence(sequence + "e8")},
+      VisitedNode{*book.Get(before_pass), LAST_VISIT, Sequence(sequence + "e8")},
+      VisitedNode{*book.Get(start), LAST_VISIT, Sequence(sequence)}
   }));
   CheckVectorHasRightOrder(visitor.Get());
 }
