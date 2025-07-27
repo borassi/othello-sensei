@@ -56,6 +56,10 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double appBarHeight;
 
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
+    // Pixel Fold (very square) is 785/851 = 0.92 -> horizontal.
+    // Most "square" tablet is 4/3 = 0.75 -> vertical.
+    // We choose a 0.88 ratio to discriminate.
+    bool vertical = width < 0.88 * height;
     var sideMarginFraction = getSideFraction();
     var internalMarginFraction = max(0.04, sideMarginFraction);
     heightMinusBarHeight = height - appBarHeight;
@@ -64,12 +68,13 @@ class AppSizes extends ThemeExtension<AppSizes> {
         8 / 13.5 * heightMinusBarHeight / (1 + 2 * internalMarginFraction));
     var horizontalBoardSizeFullBar = min(
         heightMinusBarHeight / (1 + internalMarginFraction + sideMarginFraction),
-        8 / 16 * width / (1 + 2 * internalMarginFraction + sideMarginFraction)
+        8 / 16 * width / (1 + sideMarginFraction + internalMarginFraction / 2.0)
     );
     var horizontalBoardSizeBrokenBar = min(
         height / (1 + 2 * sideMarginFraction),
-        8 / 16 * width / (1 + 2 * sideMarginFraction + internalMarginFraction));
-    if (verticalBoardSize > horizontalBoardSizeFullBar && verticalBoardSize > horizontalBoardSizeBrokenBar) {
+        8 / 16 * width / (1 + sideMarginFraction + internalMarginFraction / 2.0)
+    );
+    if (vertical) {
       layout = AppLayout.vertical;
       boardSize = verticalBoardSize;
     } else if (horizontalBoardSizeFullBar >= horizontalBoardSizeBrokenBar - appBarHeight / 2 || height > appBarHeight * 9) {
@@ -82,8 +87,8 @@ class AppSizes extends ThemeExtension<AppSizes> {
     squareSize = (boardSize) / 8;
     sideMargin = sideMarginFraction * boardSize;
     margin = internalMarginFraction * boardSize;
-    sideBarWidth = vertical() ? boardSize - 2 * sideMargin : width - margin - boardSize - 2 * sideMargin;
-    sideBarHeight = vertical() ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
+    sideBarWidth = vertical ? boardSize - 2 * sideMargin : width - margin - boardSize - 2 * sideMargin;
+    sideBarHeight = vertical ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
   }
 
   bool vertical() {
