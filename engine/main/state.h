@@ -236,6 +236,7 @@ class EvaluationState : public TreeNode {
 
   std::vector<EvaluationState*> GetChildren() const {
     std::vector<EvaluationState*> result;
+    result.reserve(children_.size());
     for (const std::shared_ptr<EvaluationState>& child : children_) {
       result.push_back(child.get());
     }
@@ -245,7 +246,7 @@ class EvaluationState : public TreeNode {
   EvaluationState* ToDepth(int new_depth, SenseiAction action) {
     EvaluationState* result = this;
     for (;
-         result != nullptr && result->annotations_.depth_no_pass != new_depth;
+         result != nullptr && result->annotations_.depth_no_pass < new_depth;
          result = result->NextLandable(action)) {}
     return result;
   }
@@ -280,7 +281,7 @@ class EvaluationState : public TreeNode {
     return (move != kPassMove && move != kSetupBoardMove);
   }
 
-  EvaluationState* PreviousLandable(SenseiAction action) {
+  EvaluationState* PreviousLandable(SenseiAction action) const {
     for (EvaluationState* result = Father(); result != nullptr; result = result->Father()) {
       if (result->IsLandable(action)) {
         return result;
@@ -312,7 +313,7 @@ class EvaluationState : public TreeNode {
     return nullptr;
   }
 
-  EvaluationState* NextLandable(SenseiAction action) {
+  EvaluationState* NextLandable(SenseiAction action) const {
     EvaluationState* next = NextState();
     if (!next) {
       return nullptr;
@@ -448,6 +449,7 @@ class EvaluationState : public TreeNode {
 
   int ChooseRandomMoveToPlay(double error) {
     std::vector<const Node*> children;
+    children.reserve(children_.size());
     for (auto& child : children_) {
       children.push_back((const Node*) child.get());
     }

@@ -57,7 +57,7 @@ class Main {
 
   void NewGame() {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0, 0, false);
-    [[maybe_unused]] bool new_state = ToState(first_state_.get());
+    [[maybe_unused]] bool new_state = ToState(first_state_.get(), false);
     assert(new_state);
     memset(game_metadata_.black, 0, 20);
     memset(game_metadata_.white, 0, 20);
@@ -72,25 +72,25 @@ class Main {
     if (automatic != current_state_->MustPlay(evaluate_params_.sensei_action)) {
       return false;
     }
-    bool success = ToState(current_state_->NextState(square));
+    bool success = ToState(current_state_->NextState(square), true);
     if (success && evaluate_params_.sensei_action != SENSEI_EVALUATES) {
       current_state_->SetPrimaryLine();
     }
     return success;
   }
 
-  bool SetCurrentMove(Square current_move) {
-    bool valid = ToState(first_state_->ToDepth(current_move, evaluate_params_.sensei_action));
+  bool SetCurrentMove(Square depth) {
+    bool valid = ToState(first_state_->ToDepth(depth, evaluate_params_.sensei_action), false);
     current_state_->SetPlayed();
     return valid;
   }
 
   bool Redo() {
-    return ToState(current_state_->NextLandable(evaluate_params_.sensei_action));
+    return ToState(current_state_->NextLandable(evaluate_params_.sensei_action), false);
   }
 
   bool Undo() {
-    return ToState(current_state_->PreviousLandable(evaluate_params_.sensei_action));
+    return ToState(current_state_->PreviousLandable(evaluate_params_.sensei_action), false);
   }
 
   bool ToLastImportantNode() {
@@ -98,7 +98,7 @@ class Main {
     if (current_state_ == goal) {
       return false;
     }
-    return ToState(goal);
+    return ToState(goal, false);
   }
 
   void Stop();
@@ -118,7 +118,7 @@ class Main {
       if (eval) {
         Evaluate();
       }
-      ToState(current_state_->NextState(moves.Move(i)));
+      ToState(current_state_->NextState(moves.Move(i)), false);
     }
   }
 
@@ -177,7 +177,7 @@ class Main {
 
   void SetXOTState(XOTState xot_state) {
     xot_state_ = xot_state;
-    RunSetBoard();
+    RunSetBoard(false);
   }
   XOTState GetXOTState() { return xot_state_; }
 
@@ -208,11 +208,11 @@ class Main {
     if (square < 0 || square > 63) {
       return;
     }
-    ToStateNoStop(current_state_->SetSquare(square, value));
+    ToStateNoStop(current_state_->SetSquare(square, value), false);
   }
 
   void InvertTurn() {
-    ToStateNoStop(current_state_->InvertTurn());
+    ToStateNoStop(current_state_->InvertTurn(), false);
   }
 
   void RunUpdateTimers() {
@@ -333,18 +333,18 @@ class Main {
 
   GameMetadata game_metadata_;
 
-  bool ToState(EvaluationState* new_state);
+  bool ToState(EvaluationState* new_state, bool handle_game_over);
 
-  void ToStateNoStop(EvaluationState* new_state);
+  void ToStateNoStop(EvaluationState* new_state, bool handle_game_over);
 
-  void RunSetBoard() {
+  void RunSetBoard(bool handle_game_over) {
     Board board = current_state_->ToBoard();
     set_board_({
       board.Player(),
       board.Opponent(),
       current_state_->BlackTurn(),
       current_state_->LastMove(),
-      IsGameOver(current_state_->ToBoard()),
+      handle_game_over && IsGameOver(current_state_->ToBoard()),
       first_state_->GetAnnotations()
     });
   }

@@ -152,7 +152,7 @@ struct BoardUpdate {
   BitPattern opponent;
   bool black_turn;
   int last_move;
-  bool is_game_over;
+  bool handle_game_over;
   struct Annotations* start_annotations;
 };
 

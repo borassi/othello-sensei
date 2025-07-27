@@ -46,7 +46,7 @@ void setBoard(BoardUpdate boardUpdate) {
     GlobalState.annotations[i].clear();
   }
   GlobalState.board.setState(boardUpdate);
-  if (boardUpdate.is_game_over && GlobalState.preferences.get("Active tab") == 2) {
+  if (boardUpdate.handle_game_over) {
     GlobalState.board.handleGameOver();
   }
 }
@@ -256,8 +256,8 @@ class GlobalState {
     evaluate();
   }
 
-  static void setCurrentMove(int currentMove) {
-    GlobalState.ffiEngine.SetCurrentMove(GlobalState.ffiMain, currentMove);
+  static void setCurrentMove(int depth) {
+    GlobalState.ffiEngine.SetCurrentMove(GlobalState.ffiMain, depth);
   }
 
   static void stop() {

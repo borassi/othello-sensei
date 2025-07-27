@@ -99,16 +99,16 @@ void Main::Stop() {
   engine_.Stop();
 }
 
-bool Main::ToState(EvaluationState* new_state) {
+bool Main::ToState(EvaluationState* new_state, bool handle_game_over) {
   if (!new_state) {
     return false;
   }
   Stop();
-  ToStateNoStop(new_state);
+  ToStateNoStop(new_state, handle_game_over);
   return true;
 }
 
-void Main::ToStateNoStop(EvaluationState* new_state) {
+void Main::ToStateNoStop(EvaluationState* new_state, bool handle_game_over) {
   assert(new_state);
   assert((evaluate_params_.sensei_action == SENSEI_INVALID_ACTION &&
           current_state_ == nullptr) ||
@@ -127,7 +127,7 @@ void Main::ToStateNoStop(EvaluationState* new_state) {
   int player_disks = (score + 64) / 2;
   game_metadata_.black_disks = current_state_->BlackTurn() ? player_disks : 64 - player_disks;
   time_on_this_position_ = ElapsedTime();
-  RunSetBoard();
+  RunSetBoard(handle_game_over);
 }
 
 namespace {

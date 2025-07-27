@@ -60,7 +60,7 @@ char* GetSequence(void* ptr) { return static_cast<Main*>(ptr)->GetSequence(); }
 
 bool Undo(void* ptr) { return static_cast<Main*>(ptr)->Undo(); }
 
-bool SetCurrentMove(void* ptr, int square) { return static_cast<Main*>(ptr)->SetCurrentMove(square); }
+bool SetCurrentMove(void* ptr, int depth) { return static_cast<Main*>(ptr)->SetCurrentMove(depth); }
 
 bool Redo(void* ptr) { return static_cast<Main*>(ptr)->Redo(); }
 

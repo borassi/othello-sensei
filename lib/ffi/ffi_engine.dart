@@ -924,7 +924,7 @@ final class BoardUpdate extends ffi.Struct {
   external int last_move;
 
   @ffi.Bool()
-  external bool is_game_over;
+  external bool handle_game_over;
 
   external ffi.Pointer<Annotations> start_annotations;
 }

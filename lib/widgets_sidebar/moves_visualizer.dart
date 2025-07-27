@@ -31,8 +31,8 @@ void setMove(dynamic update, double size, int elementsPerRow) {
   } else {
     return;
   }
-  var move = (y / size).floor() * elementsPerRow + (x / size).floor();
-  GlobalState.setCurrentMove(move);
+  var depth = (y / size).floor() * elementsPerRow + (x / size).floor();
+  GlobalState.setCurrentMove(depth);
 }
 
 class MovesVisualizerCase extends StatelessWidget {
