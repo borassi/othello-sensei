@@ -38,7 +38,7 @@ class _SecondaryWindowMainContent extends StatelessWidget {
           child: Column(
             children: [
               const Margin.internal(),
-              Expanded(child: child),
+              Expanded(child: SafeArea(child: child)),
               const Margin.side(),
             ]
           )

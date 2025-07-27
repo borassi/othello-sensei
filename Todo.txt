@@ -61,8 +61,8 @@ HOW TO RELEASE ON ANDROID:
 - Upload build/app/outputs/bundle/release/app-release.aab to https://play.google.com/console/u/0/developers/7776248980242675505/app/4976314818508265057
 
 HOW TO RELEASE ON LINUX:
-- rm -Rf build && snapcraft clean && snapcraft --debug && sudo snap install ./othello-sensei_1.0.1_amd64.snap --dangerous && othello-sensei
-- snapcraft upload --release=beta othello-sensei_1.0.1_amd64.snap
+- rm -Rf build && snapcraft clean && snapcraft --debug && sudo snap install ./othello-sensei_2.0.0_amd64.snap --dangerous && othello-sensei
+- snapcraft upload --release=beta othello-sensei_2.0.0_amd64.snap
 
 HOW TO RELEASE ON WINDOWS (APP STORE):
 - Check that the link on Windows Defender in drive_downloader is updated.
