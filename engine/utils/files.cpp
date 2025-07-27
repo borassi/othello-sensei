@@ -78,7 +78,7 @@ std::vector<std::string> GetAllFilesMostRecentFirst(const std::string& directory
   try {
     for (const auto& path : GetAllFiles(directory, include_files, include_directories)) {
       try {
-        entries.push_back({.path = path, .last_write_time = fs::last_write_time(path)});
+        entries.push_back({path, fs::last_write_time(path)});
       } catch (const fs::filesystem_error& e) {
         std::cerr << "Error accessing entry " << path << ": " << e.what() << std::endl;
       }

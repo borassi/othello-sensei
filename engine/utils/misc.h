@@ -173,8 +173,4 @@ constexpr std::size_t CombineHashes(std::size_t h1, std::size_t h2) {
   return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
 }
 
-// Same as std::hash for Linux and Mac.
-// We need consistent hashes for different operating systems, so we re-implement it here.
-std::size_t HashString(const std::string& s);
-
 #endif  // UTILS_MISC_H

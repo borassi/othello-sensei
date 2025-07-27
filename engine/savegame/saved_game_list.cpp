@@ -25,7 +25,9 @@ GamesList SavedGameList::GetGames(
     short start_year,
     short end_year) const {
   Sequence canonical = sequence.ToCanonicalGame();
-  GamesList result {.num_games = 0, .max_games = max_games};
+  GamesList result;
+  result.num_games = 0;
+  result.max_games = max_games;
   int sequence_size = sequence.Size();
   for (auto& game : games_) {
     if ((!blacks.empty() && !Contains(blacks, game.Black())) ||

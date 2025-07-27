@@ -62,7 +62,7 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__ -mbmi2 -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
+        "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
 )
 
 IF (PROFILE)
@@ -84,7 +84,6 @@ add_subdirectory(hashmap)
 add_subdirectory(main)
 add_subdirectory(playagainstsensei)
 add_subdirectory(savegame)
-add_subdirectory(third_party)
 add_subdirectory(thor)
 add_subdirectory(utils)
 add_subdirectory(xot)

@@ -176,7 +176,9 @@ class Thor {
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const {
-    GamesList games {.max_games = max_games};
+    GamesList games;
+    games.num_games = 0;
+    games.max_games = max_games;
     for (const auto& [source_name, _] : sources_) {
       GamesList new_games = GetGames<transpositions>(
           source_name, sequence, max_games, blacks, whites, tournaments, start_year, end_year);

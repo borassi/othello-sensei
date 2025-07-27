@@ -22,7 +22,6 @@
 #include <time.h>
 #include "constants.h"
 #include "misc.h"
-#include "../third_party/utility.h"
 
 ElapsedTime::ElapsedTime() : start_(std::chrono::system_clock::now()) {}
 
@@ -151,8 +150,4 @@ void PrintSupportedFeatures() {
 #else
   std::cout << "Not using BMI2 instructions\n" << std::flush;
 #endif
-}
-
-size_t HashString(const std::string& s) {
-  return murmur2_or_cityhash<std::size_t>()(s.c_str(), s.length());
 }

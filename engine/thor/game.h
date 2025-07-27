@@ -92,19 +92,6 @@ class Game {
   Eval score_;
 };
 
-namespace std {
-  template<>
-  struct hash<Game> {
-    std::size_t operator()(const Game& g) const {
-      std::size_t hash = std::hash<Sequence>()(g.Moves());
-      hash = CombineHashes(hash, HashString(g.Black()));
-      hash = CombineHashes(hash, HashString(g.White()));
-      hash = CombineHashes(hash, HashString(g.Tournament()));
-      return hash;
-    }
-  };
-}
-
 struct GamesList {
   int num_games = 0;
   std::vector<Game> examples;
