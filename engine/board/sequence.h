@@ -84,14 +84,14 @@ struct PlayResultFetcher {
 class Sequence {
  public:
   Sequence() : Sequence(0) {}
-  Sequence(const std::string& moves);
+  explicit Sequence(const std::string& moves);
 
   Sequence(const Square* moves, size_t size) : Sequence((Square) size) {
     assert(size <= 64);
     memcpy(moves_, moves, size_ * sizeof(Square));
   }
 
-  Sequence(const std::vector<Square>& moves) : Sequence(moves.data(), moves.size()) {}
+  explicit Sequence(const std::vector<Square>& moves) : Sequence(moves.data(), moves.size()) {}
   Sequence(const Sequence& other) : Sequence(other.moves_, other.size_) {}
 
   template <typename Iterator>
@@ -143,7 +143,7 @@ class Sequence {
     return Sequence(result);
   }
 
-  static Sequence FromThor(Square* moves) {
+  static Sequence FromThor(const Square* moves) {
     Sequence result(60);
     for (int i = 0; i < 60; ++i) {
       Square move = moves[i];
@@ -168,7 +168,7 @@ class Sequence {
 
   Sequence Subsequence(int size) const {
     assert(size <= Size());
-    return Sequence(moves_, size);
+    return {moves_, (size_t) size};
   }
 
   Square LastMove() const { return moves_[size_ - 1]; }
@@ -327,7 +327,7 @@ class Sequence {
   Square* moves_;
   Square size_;
 
-  Sequence(int size) : size_(size) {
+  explicit Sequence(int size) : size_(size) {
     assert(size >= 0);
     assert(size <= 64);
     moves_ = size_ == 0 ? nullptr : (Square*) malloc(size_ * sizeof(Square));
@@ -377,7 +377,7 @@ namespace std {
     std::size_t operator()(const Sequence& s) const {
       std::size_t hash = murmur64(42);
       int last_quick = s.Size() - s.Size() % 8;
-      for (int64_t* position = (int64_t*) s.Moves(); position < (int64_t*) (s.Moves() + last_quick); ++position) {
+      for (auto* position = (int64_t*) s.Moves(); position < (int64_t*) (s.Moves() + last_quick); ++position) {
         hash = CombineHashes(hash, murmur64(*position));
       }
       for (Square* position = s.Moves() + last_quick; position < s.Moves() + s.Size(); ++position) {
@@ -390,27 +390,11 @@ namespace std {
 
 std::ostream& operator<<(std::ostream& stream, const Sequence& s);
 
-struct cmpBoard {
-  bool operator()(const Board& b1, const Board& b2) const {
-    if (b1.NEmpties() > b2.NEmpties()) {
-      return true;
-    } else if (b1.NEmpties() < b2.NEmpties()) {
-      return false;
-    }
-    if (b1.Player() < b2.Player()) {
-      return true;
-    } else if (b1.Player() > b2.Player()) {
-      return false;
-    }
-    return b1.Opponent() < b2.Opponent();
-  }
-};
-
 class SequenceCanonicalizer {
  public:
-  SequenceCanonicalizer() {}
+  SequenceCanonicalizer() = default;
 
-  SequenceCanonicalizer(const std::vector<Sequence>& sequences) : SequenceCanonicalizer() {
+  explicit SequenceCanonicalizer(const std::vector<Sequence>& sequences) : SequenceCanonicalizer() {
     AddAll(sequences);
   }
 
@@ -426,7 +410,7 @@ class SequenceCanonicalizer {
       std::vector<Sequence>& sequences = board_to_sequences_[board];
       sequences.reserve(n_sequences);
       for (int i = 0; i < n_sequences; ++i) {
-        sequences.push_back(Sequence((Square*) it, size));
+        sequences.emplace_back(Sequence((Square*) it, size));
         it += size;
       }
     }
@@ -455,10 +439,10 @@ class SequenceCanonicalizer {
       for (const Board& b : sequence.ToBoards()) {
         Board unique = b.Unique();
         if (boards[unique] > 1) {
-          std::vector<Sequence>& sequences = board_to_sequences_.insert({unique, std::vector<Sequence>()}).first->second;
+          std::vector<Sequence>& new_sequences = board_to_sequences_.insert({unique, std::vector<Sequence>()}).first->second;
           Sequence subsequence = sequence.Subsequence(60 - b.NEmpties());
-          if (!Contains(sequences, subsequence)) {
-            sequences.push_back(subsequence);
+          if (!Contains(new_sequences, subsequence)) {
+            new_sequences.push_back(subsequence);
           }
         }
       }
@@ -472,8 +456,8 @@ class SequenceCanonicalizer {
       Square last_move;
       bool same_previous_board = true;
       for (const auto& sequence : it->second) {
-        auto boards = sequence.ToBoards();
-        Board& new_previous_board = boards[boards.size() - 2];
+        auto boards_in_sequence = sequence.ToBoards();
+        Board& new_previous_board = boards_in_sequence[boards.size() - 2];
         if (previous_board.Player() == 0 && previous_board.Opponent() == 0) {
           previous_board = new_previous_board;
           last_move = sequence.LastMove();
@@ -520,7 +504,7 @@ class SequenceCanonicalizer {
       result.insert(result.end(), (char*) &board, (char*) &board + sizeof(Board));
       int n_sequences = (int) sequences.size();
       result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(int));
-      result.push_back(sequences.begin()->Size());
+      result.push_back((char) sequences.begin()->Size());
       for (const Sequence& sequence : sequences) {
         result.insert(result.end(), sequence.Moves(), sequence.Moves() + sequence.Size());
       }

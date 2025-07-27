@@ -80,7 +80,7 @@ Sequence Sequence::RandomSequence(int size) {
   Board b;
   for (int i = 0; i < size; ++i) {
     auto flips = GetAllMovesWithPass(b.Player(), b.Opponent());
-    if (flips.size() == 0) {
+    if (flips.empty()) {
       return RandomSequence(size);
     }
     BitPattern flip = flips[rand() % flips.size()];
@@ -115,7 +115,7 @@ struct PlayToVector : public PlayResultFetcher<std::vector<Board>> {
 
 struct PlayToBoard : public PlayResultFetcher<std::pair<Board, bool>> {
   // black_turn_ = false because we call AtBoard on the starting position.
-  PlayToBoard(int depth) : remaining_moves_(depth), black_turn_(false) {}
+  explicit PlayToBoard(int depth) : remaining_moves_(depth), black_turn_(false) {}
   std::pair<Board, bool> Get() override {
     return {result_, black_turn_};
   }

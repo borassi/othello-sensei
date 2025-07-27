@@ -224,7 +224,7 @@ class Thor {
     std::ofstream file(CanonicalizerPath(), std::ios::binary);
     std::vector<char> serialized = canonicalizer_.Serialize();
     file.write((char*) serialized.data(),
-               static_cast<int>(serialized.size()) * sizeof(Square));
+               (int) (serialized.size() * sizeof(Square)));
   }
 
   void SaveAll() {
