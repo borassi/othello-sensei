@@ -80,8 +80,7 @@ class SetupBoardControls extends StatelessWidget {
                 text: 'Done',
                 textStyle: Theme.of(context).textTheme.bodyLarge,
               )
-            ),
-            const Margin.side()
+            )
           ]
         )
     );

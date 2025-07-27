@@ -203,6 +203,7 @@ class Case extends StatelessWidget {
   final bool isLastMove;
   final int index;
   final double? squareSize;
+  static const double kBorderWidth = 0.5;
   const Case(this.state, this.index, this.isLastMove, {super.key, this.squareSize});
 
   static Widget? getDisk(CaseState state, ColorScheme colorScheme, double squareSize) {
@@ -241,7 +242,7 @@ class Case extends StatelessWidget {
               color: highlightCase(index) ? colorScheme.secondaryContainer : colorScheme.primaryContainer,
               border: Border.all(
                 color: colorScheme.background,
-                width: 0.5,
+                width: kBorderWidth,
               ),
             ),
           )

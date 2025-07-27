@@ -178,18 +178,36 @@ class MainContent extends StatelessWidget {
         ]
       );
     } else {
+      var sidebarColumn = Expanded(
+          child: Column(
+              children: [
+                brokenAppBar ? const Margin.side() : const Margin.internal(),
+                Expanded(child: sidebar),
+              ]
+          )
+      );
+      double availableHeight = appSizes.height - (brokenAppBar ? 0 : appSizes.appBarHeight);
+      bool spaceAroundBoard = availableHeight > appSizes.boardSize + appSizes.margin + appSizes.squareSize;
+      var boardColumn = Column(
+          children: [
+              spaceAroundBoard ? const Spacer() : Container(),
+              board,
+              const Spacer(),
+              spaceAroundBoard ? SizedBox(height: appSizes.squareSize) : Container(),
+          ]
+      );
       var children = [
-        Column(children: [board, const Margin.side()]),
+        boardColumn,
         const Margin.internal(),
-        Expanded(child: Column(children: [brokenAppBar ? const Margin.side() : const Margin.internal(), Expanded(child: sidebar)])),
+        sidebarColumn,
         const Margin.side(),
       ];
       if (GlobalState.preferences.get("Board on the right in horizontal mode")) {
         children = [
           const Margin.side(),
-          Expanded(child: Column(children: [brokenAppBar ? const Margin.side() : const Margin.internal(), Expanded(child: sidebar)])),
+          sidebarColumn,
           const Margin.internal(),
-          Column(children: [board, const Margin.side()]),
+          boardColumn,
         ];
       }
       content = Row(children: children);

@@ -24,6 +24,7 @@ import 'package:othello_sensei/widgets_sidebar/timer.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 
 import '../state.dart';
+import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 import 'controls.dart';
@@ -61,6 +62,7 @@ class Sidebar extends StatelessWidget {
       const DiskCountWithExtraContent(DiskCountExtraContent.none),
       const Expanded(child: SetupBoardControls()),
     ];
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
     return DefaultTabController(
       length: 3,
       initialIndex: 0,
@@ -78,20 +80,30 @@ class Sidebar extends StatelessWidget {
               const Controls(),
             ];
           }
-          var childAppBar = brokenAppBar ? <Widget>[SenseiAppBar(), const Margin.internal()] : <Widget>[];
-          var contents = [childrenEvaluate, childrenThor, childrenPlay].map(
-              (children) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: childAppBar + children + childrenControls
+          var childAppBar = brokenAppBar ? <Widget>[const SizedBox(height: Case.kBorderWidth), SenseiAppBar(), const Margin.internal()] : <Widget>[];
+          List<Widget> contents = [childrenEvaluate, childrenThor, childrenPlay].map(
+              (children) => Center(
+                  child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: children == childrenThor ? double.infinity : appSizes.boardSize - 2 * Case.kBorderWidth),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: childAppBar + children + childrenControls
+                      ),
+                  ),
               )
-          );
+          ).toList();
           if (GlobalState.setupBoardState.settingUpBoard) {
             contents = [childrenSetupBoard, childrenSetupBoard, childrenSetupBoard].map(
-                (children) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: childAppBar + children
+                (children) => Center(
+                    child: ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: appSizes.boardSize - 2 * Case.kBorderWidth),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: childAppBar + children + childrenControls
+                        ),
+                    )
                 )
-            );
+            ).toList();
           }
           return Scaffold(
             bottomNavigationBar: TabBar(
