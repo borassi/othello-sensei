@@ -457,7 +457,7 @@ class SequenceCanonicalizer {
       bool same_previous_board = true;
       for (const auto& sequence : it->second) {
         auto boards_in_sequence = sequence.ToBoards();
-        Board& new_previous_board = boards_in_sequence[boards.size() - 2];
+        Board& new_previous_board = boards_in_sequence[boards_in_sequence.size() - 2];
         if (previous_board.Player() == 0 && previous_board.Opponent() == 0) {
           previous_board = new_previous_board;
           last_move = sequence.LastMove();
