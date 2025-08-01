@@ -87,7 +87,7 @@ class ScoreGraph extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) => ListenableBuilder(
         listenable: GlobalState.globalAnnotations,
         builder: (BuildContext context, Widget? widget) {
-          var (scores, move) = GlobalState.globalAnnotations.getAllScoresAndLastMove();
+          var (scores, lastMove) = GlobalState.globalAnnotations.getAllScoresAndLastMove();
           var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
           maxY = (maxY / 10).ceilToDouble() * 10;
           var horizontalLinesSpace = maxY / 2;
@@ -110,8 +110,10 @@ class ScoreGraph extends StatelessWidget {
                     if (barTouchResponse?.spot == null) {
                       return;
                     }
-                    // Enter or move.
-                    GlobalState.setCurrentMove(barTouchResponse!.spot!.spot.x.toInt());
+                    var move = barTouchResponse!.spot!.spot.x.toInt();
+                    if (move < scores.length) {
+                      GlobalState.setCurrentMove(move);
+                    }
                   } else if (
                       event is FlLongPressEnd ||
                       event is FlPanEndEvent ||
@@ -146,7 +148,7 @@ class ScoreGraph extends StatelessWidget {
               baselineY: 0,
               borderData: FlBorderData(show: false),
               gridData: const FlGridData(show: false),
-              barGroups: List.generate(max(61, scores.length), (i) => generateGroupData(i, scores, Theme.of(context).colorScheme, height, width, maxY + 1, move)),
+              barGroups: List.generate(max(61, scores.length), (i) => generateGroupData(i, scores, Theme.of(context).colorScheme, height, width, maxY + 1, lastMove)),
               extraLinesData: ExtraLinesData(
                 extraLinesOnTop: false,
                 horizontalLines: List.generate(

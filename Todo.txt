@@ -12,20 +12,12 @@ Usability / bugs
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
 
-Tech debt
-- P2 EASY Unify SetBoard and SetAnnotations.
-- P2 MED Move business logic to C++ code.
-- P3 EASY Fix Flutter warnings.
-
 Thor
 - P2 MED Exclude games between programs.
 - P2 MED Exclude XOT.
 - P2 MED Winning percentages.
 - P3 SMALL Filter by tournament / year.
 - P3 LARGE Download games during tournaments.
-
-Match the features of the current app
-- P3 LARGE Study and repeat openings.
 
 Extra features:
 - P2 HARD Sync games with Drive.
