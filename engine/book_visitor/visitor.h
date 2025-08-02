@@ -29,7 +29,7 @@ class BookVisitor {
   typedef Book<version> Book;
   typedef typename Book::BookNode BookNode;
 
-  BookVisitor(const Book& book) : book_(book), depth_(0) {
+  BookVisitor(const Book& book) : book_(book), depth_(0), evaluations_at_depth_() {
     for (int i = 0; i < 120; ++i) {
       evaluations_at_depth_[i] = 0;
     }
@@ -169,6 +169,12 @@ class BookVisitorWithProgress : public BookVisitor<kBookVersion> {
     visited_at_depth_[depth_] += book_.Get(board)->GetNVisited();
     visited_at_depth_[depth_ + 1] = 0;
     evaluations_at_depth_[depth_] = 0;
+  }
+
+  virtual void VisitSequence(const Sequence& sequence) override {
+    to_be_visited_ = book_.Get(sequence.ToBoard())->GetNVisited();
+    sequence_ = sequence;
+    Visit(sequence.ToBoard());
   }
 
  protected:

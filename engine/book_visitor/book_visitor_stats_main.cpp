@@ -32,8 +32,7 @@ class BookVisitorStats : public BookVisitorWithProgress<kBookVersion> {
 
   BookVisitorStats(const Book& book, const Thor<GameGetterInMemory>& archive, const std::string& output_path) :
       BookVisitorWithProgress(book),
-      archive_(archive),
-      thor_games_(0) {
+      archive_(archive) {
     // 8754564 / 286170000
     std::cout << "Archive games: "
               << archive_.GetGamesFromAllSources(Sequence(""), 1).num_games << "\n";
@@ -81,7 +80,6 @@ class BookVisitorStats : public BookVisitorWithProgress<kBookVersion> {
 
  private:
   const Thor<GameGetterInMemory>& archive_;
-  NVisited thor_games_;
   std::ofstream output_;
 };
 
@@ -91,7 +89,7 @@ int main(int argc, char* argv[]) {
   std::string archive_path = parse_flags.GetFlag("archive_path");
   std::string output_path = parse_flags.GetFlag("output_path");
 
-  Book book(book_path);
+  const Book book(book_path);
   Thor<GameGetterInMemory> archive(archive_path, output_path + "/saved_games_filepath.txt");
 
   BookVisitorStats visitor(book, archive, output_path);

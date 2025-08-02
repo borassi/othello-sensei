@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <format>
 #include <iomanip>
 #include <iostream>
 #include <limits>

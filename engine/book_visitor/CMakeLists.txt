@@ -123,6 +123,27 @@ target_link_libraries(
 )
 
 add_executable(
+        expand_book_auto_main
+        expand_book_auto_main.cpp
+)
+
+target_link_libraries(
+        expand_book_auto_main
+        LINK_PRIVATE
+        book
+        evaluator_alpha_beta
+        evaluator_derivative
+        files
+        hash_map
+        misc
+        parse_flags
+        pattern_evaluator
+        thor
+        tree_node
+        visitor
+)
+
+add_executable(
         merge_books_main
         merge_books_main.cpp
 )
