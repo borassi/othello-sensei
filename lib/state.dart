@@ -650,6 +650,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds between evaluations': 1.0,
     'Seconds/position when playing': 1.0,
     'Approximate game error when playing': 20.0,
+    'Maximum error / move when playing': 4.0,
     'Spend half time on positions worse by': 6.0,
     'Round evaluations': 'Never',
     'Use book': true,
@@ -693,6 +694,7 @@ class PreferencesState with ChangeNotifier {
     'Black and white bars in the graph': true,
     'Show extra data in evaluate mode': false,
     'Approximate game error when playing': 50.0,
+    'Maximum error / move when playing': 10.0,
     'Round evaluations': 'Always',
   };
   late final SharedPreferences _preferences;
@@ -743,6 +745,7 @@ class PreferencesState with ChangeNotifier {
     params.max_time_analysis = get('Seconds/position in game analysis');
     params.max_time_play = get('Seconds/position when playing');
     params.error_play = get('Approximate game error when playing');
+    params.max_error_move_play = get('Maximum error / move when playing');
     params.delta = get('Spend half time on positions worse by');
     params.n_threads = get('Number of threads');
     params.approx = get('Approximate');

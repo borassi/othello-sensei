@@ -119,6 +119,7 @@ class SettingsTileWithTextForm extends StatelessWidget {
 }
 
 Widget getCardSettings(String name, BuildContext context, SettingsLocalState state) {
+  bool signed = {'Lower', 'Upper'}.contains(name);
   var value = state.updates[name] ?? GlobalState.preferences.get(name);
   onChanged(newValue) {
     state.set(name, newValue);
@@ -176,8 +177,8 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
             onChanged(newValue == '' ? null : int.parse(newValue));
           }
         },
-        keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: false),
-        inputFormatters: [IntInputFormatter()],
+        keyboardType: TextInputType.numberWithOptions(signed: signed, decimal: false),
+        inputFormatters: [IntInputFormatter(minValue: signed ? null : 0)],
       );
     case double:
       return SettingsTileWithTextForm(
@@ -188,8 +189,8 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
             onChanged(newValue == '' ? null : double.parse(newValue));
           }
         },
-        keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true),
-        inputFormatters: [DoubleInputFormatter()],
+        keyboardType: TextInputType.numberWithOptions(signed: signed, decimal: true),
+        inputFormatters: [DoubleInputFormatter(minValue: signed ? null : 0)],
       );
     case String:
       return SettingsTileWithTextForm(
@@ -245,6 +246,7 @@ class Settings extends StatelessWidget {
     'Seconds/position in game analysis',
     'Seconds/position when playing',
     'Approximate game error when playing',
+    'Maximum error / move when playing',
     'Spend half time on positions worse by',
     'Use book',
     'Number of threads',

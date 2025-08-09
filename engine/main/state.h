@@ -447,13 +447,13 @@ class EvaluationState : public TreeNode {
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
 
-  int ChooseRandomMoveToPlay(double error) {
+  int ChooseRandomMoveToPlay(double error, double max_error) {
     std::vector<const Node*> children;
     children.reserve(children_.size());
     for (auto& child : children_) {
       children.push_back((const Node*) child.get());
     }
-    const Node* best_child = FindNextMoveTotalError(children, error);
+    const Node* best_child = FindNextMoveTotalError(children, error, max_error);
     if (best_child == nullptr) {
       return kNoMove;
     }

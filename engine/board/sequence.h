@@ -277,6 +277,9 @@ class Sequence {
   }
 
   std::string ToString() const {
+    if (size_ == 0) {
+      return "";
+    }
     std::stringstream stream;
     for (int i = 0; i < Size(); ++i) {
       Square s = moves_[i];
@@ -335,7 +338,7 @@ class Sequence {
 
   void UpdateSize(Square new_size) {
     if (new_size > size_) {
-      moves_ = (Square*) realloc(moves_, new_size);
+      moves_ = (Square*) realloc(moves_, std::max(1, (int) new_size));
     }
     size_ = new_size;
   }

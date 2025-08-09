@@ -35,9 +35,9 @@ double GetMoveMultiplier(int move);
 // - The probability of making a mistake of X disks decreases exponentially with X, which is
 //   something we see in real games.
 // - The probability of a better move is always higher than the probability of a worse move.
-const Node* FindNextMove(const std::vector<const Node*>& children, double expected_error);
+const Node* FindNextMove(const std::vector<const Node*>& children, double expected_error, double max_error);
 
 // Same as FindNextMove, but rescales the total_error so that that's the error at the end of the game.
-const Node* FindNextMoveTotalError(const std::vector<const Node*>& children, double total_error);
+const Node* FindNextMoveTotalError(const std::vector<const Node*>& children, double total_error, double max_error);
 
 #endif  // OTHELLO_SENSEI_PLAYAGAINSTSENSEI_MOVE_SELECTOR_H

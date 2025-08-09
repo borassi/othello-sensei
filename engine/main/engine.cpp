@@ -275,7 +275,7 @@ void Engine::Run(
 
   int move = kNoMove;
   if (current_state->MustPlay(params.sensei_action)) {
-    move = current_state->ChooseRandomMoveToPlay(params.error_play);
+    move = current_state->ChooseRandomMoveToPlay(params.error_play, params.max_error_move_play);
   }
   bool finished = true;
   for (int i = 0; i < num_boards_to_evaluate_; ++i) {

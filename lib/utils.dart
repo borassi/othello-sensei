@@ -73,17 +73,28 @@ class IntInputFormatter implements TextInputFormatter {
 }
 
 class DoubleInputFormatter implements TextInputFormatter {
+  int? minValue;
+  int? maxValue;
+
+  DoubleInputFormatter({this.minValue, this.maxValue});
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text == '') {
       return newValue;
     }
+    double newValueDouble;
     try {
-      double.parse(newValue.text);
+      newValueDouble = double.parse(newValue.text);
     } on FormatException {
       return oldValue;
     }
-    return newValue;
+    if (minValue != null && newValueDouble < minValue!) {
+      return oldValue;
+    } else if (maxValue != null && newValueDouble > maxValue!) {
+      return oldValue;
+    } else {
+      return newValue;
+    }
   }
 }
 

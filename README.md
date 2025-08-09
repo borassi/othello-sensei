@@ -64,10 +64,12 @@ applications.
 
 ## After the installation
 
-1. Download the latest book from the menu.
-2. Download the latest archive from the menu.
-3. Open the settings and customize the app as you prefer. Examples:
+1. Choose between beginner and advanced settings.
+2. Download the latest book from the menu.
+3. Download the latest archive from the menu.
+4. Open the settings and customize the app as you prefer. Examples:
    - Reduce or increase margins.
+   - Set the error when playing.
    - Round the evaluations.
    - Hide extra evaluation information.
    - Enable undo or redo when clicking on illegal moves.
@@ -268,3 +270,23 @@ The reasons why Sensei visits the same position multiple times can be many:
 - Sensei runs evaluations in parallel, and two evaluations happen to fall on the same positions by
   chance.
 - Possibly other reasons.
+
+### How do 'Approximate game error when playing' and  'Maximum error / move when playing' work?
+
+If you play against Sensei and you set Approximate game error when playing = 50, Sensei will lose 50
+disks on average, over the whole game (i.e., the "Error" box will show 50 on average). As it's
+random, in a single game it might be more or less, depending on the behavior of the random number
+generator.
+
+If you set Maximum error / move when playing = 8, Sensei will also never make a mistake of >8 disks,
+to avoid that Sensei plays unreasonable moves with a low probability. We suggest to set Maximum
+error / move when playing around 1/5 of Approximate game error when playing (e.g., Game error = 50,
+move error = 10).
+
+Sometimes, Sensei cannot fulfill both constraints, for example because Maximum error / move when
+playing = 1 and Approximate game error when playing = 50 (there are at most 30 moves, so the error
+will be at most 30). In this case, Sensei will try to maximize the total error under the
+constraints:
+- The probability to play a better move is always higher or equal to the probability to play a worse
+  move.
+- Sensei will never make a mistake larger than Maximum error / move when playing.

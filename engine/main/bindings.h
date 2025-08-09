@@ -171,6 +171,7 @@ struct EvaluateParams {
   double max_time_analysis;
   double max_time_play;
   double error_play;
+  double max_error_move_play;
   int n_threads;
   double delta;
   bool approx;

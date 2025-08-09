@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
           children_pointer.push_back(&child);
           best_eval = std::min(best_eval, child.GetEval());
         }
-        const Node* best_node = FindNextMoveTotalError(children_pointer, error);
+        const Node* best_node = FindNextMoveTotalError(children_pointer, error, error / 3.0);
         board = best_node->ToBoard();
         if (black_turn) {
           error_black += best_node->GetEval() - best_eval;

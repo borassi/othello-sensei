@@ -62,32 +62,35 @@ double GetMoveMultiplier(int move) {
   return kErrorPercentage[move] * 2;
 }
 
-const Node* FindNextMove(const std::vector<const Node*>& children, double expected_error) {
-  if (children.size() == 0) {
+const Node* FindNextMove(const std::vector<const Node*>& children, double expected_error, double max_error) {
+  if (children.empty()) {
     return nullptr;
   }
-  double best_score = DBL_MAX;
   const Node* best_child = nullptr;
   std::vector<double> errors;
+  std::vector<const Node*> child_for_error;
   double best_eval = DBL_MAX;
 
   for (const auto& child : children) {
     double eval = child->GetEval();
-    errors.push_back(eval);
     if (eval < best_eval) {
       best_eval = eval;
       best_child = child;
     }
   }
-  for (auto& error : errors) {
-    error -= best_eval;
+  for (const auto& child : children) {
+    double error = child->GetEval() - best_eval;
+    if (error <= std::max(0.01, max_error)) {
+      errors.push_back(error);
+      child_for_error.push_back(child);
+    }
   }
   // Binary search to find a lambda corresponding to the right error.
   double l = 0;    // all moves same probability.
   double u = 100;  // a move with error 0.01 has probability 1/e.
   if (GetExpectedError(errors, l) <= expected_error) {
     // All moves are so good that we can't achieve the expected error. Choose a random move.
-    return children[rand() % children.size()];
+    return child_for_error[rand() % child_for_error.size()];
   } else if (GetExpectedError(errors, u) >= expected_error) {
     // The error is so small that we can just pick the best move.
     return best_child;
@@ -107,18 +110,18 @@ const Node* FindNextMove(const std::vector<const Node*>& children, double expect
   for (int i = 0; i < errors.size(); ++i) {
     point -= GetWeight(errors[i], lambda);
     if (point <= 0) {
-      return children[i];
+      return child_for_error[i];
     }
   }
-  return children[0];
+  return child_for_error[0];
   assert(false);
 }
 
-const Node* FindNextMoveTotalError(const std::vector<const Node*>& children, double total_error) {
+const Node* FindNextMoveTotalError(const std::vector<const Node*>& children, double total_error, double max_error) {
   // Max is needed in case someone sets up a board with <4 disks.
   if (children.size() == 0) {
     return nullptr;
   }
   int move = std::max(0, 59 - children[0]->NEmpties());
-  return FindNextMove(children, total_error * GetMoveMultiplier(move));
+  return FindNextMove(children, total_error * GetMoveMultiplier(move), max_error);
 }

@@ -965,6 +965,9 @@ final class EvaluateParams extends ffi.Struct {
   @ffi.Double()
   external double error_play;
 
+  @ffi.Double()
+  external double max_error_move_play;
+
   @ffi.Int()
   external int n_threads;
 

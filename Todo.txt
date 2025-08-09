@@ -2,6 +2,7 @@ Just before next launch
 - P1 MED Debug Thor load failure on Marc's phone.
 - P1 SMALL Fix GDK warning on Linux.
 - P1 MED Enable picking a directory in Linux.
+- P1 MED Time controls.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.
