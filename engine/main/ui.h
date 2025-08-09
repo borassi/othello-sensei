@@ -149,6 +149,9 @@ void SetFileSources(void* ptr, int num_folders, char** folders);
 EXPORT
 bool ReloadSource(void* ptr, char* file);
 
+EXPORT
+void SetCountingTime(void* ptr, bool value);
+
 #ifdef __cplusplus
 }
 #endif

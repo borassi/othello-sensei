@@ -83,6 +83,15 @@ void updateTimers(double secondsBlack, double secondsWhite) {
   GlobalState.timer.setState(secondsBlack, secondsWhite);
 }
 
+void stopCountingTime() {
+  GlobalState.ffiEngine.SetCountingTime(GlobalState.ffiMain, false);
+}
+
+void setCountingTime() {
+  var activeTab = GlobalState.preferences.get('Active tab');
+  GlobalState.ffiEngine.SetCountingTime(GlobalState.ffiMain, activeTab == 2);
+}
+
 Future<void> copy() async {
   Pointer<Char> sequence = GlobalState.ffiEngine.GetSequence(GlobalState.ffiMain);
   var s = sequence.cast<Utf8>().toDartString();
@@ -210,6 +219,7 @@ class GlobalState {
   }
 
   static void playMove(int i, bool automatic) {
+    setCountingTime();
     bool moved = GlobalState.ffiEngine.PlayMove(GlobalState.ffiMain, i, automatic);
     if (!moved && !automatic && GlobalState.preferences.get('Use illegal moves to undo and redo')) {
       if (i % 8 < 4) {
@@ -262,6 +272,7 @@ class GlobalState {
 
   static void stop() {
     GlobalState.ffiEngine.Stop(GlobalState.ffiMain);
+    stopCountingTime();
   }
 
   static void evaluate() {

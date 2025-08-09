@@ -69,6 +69,7 @@ class Sidebar extends StatelessWidget {
       child: ListenableBuilder(
         listenable: Listenable.merge([GlobalState.preferences, GlobalState.setupBoardState]),
         builder: (BuildContext context, Widget? widget) {
+          setCountingTime();
           var brokenAppBar = Theme.of(context).extension<AppSizes>()!.brokenAppBar();
           DefaultTabController.of(context).animateTo(
               GlobalState.preferences.get('Active tab'),

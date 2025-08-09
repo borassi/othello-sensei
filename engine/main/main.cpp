@@ -37,7 +37,8 @@ Main::Main(
     engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations),
     xot_state_(XOT_STATE_AUTOMATIC),
     xot_small_(LoadTextFile(xot_small_filepath)),
-    xot_large_(LoadTextFile(xot_large_filepath)) {
+    xot_large_(LoadTextFile(xot_large_filepath)),
+    time_on_this_position_(std::nullopt) {
   evaluate_params_.sensei_action = SENSEI_INVALID_ACTION;
   srand(time(nullptr));
   PrintSupportedFeatures();
@@ -108,15 +109,25 @@ bool Main::ToState(EvaluationState* new_state, bool handle_game_over) {
   return true;
 }
 
+void Main::SetCountingTimeNoLock(bool value) {
+  if (current_state_ && time_on_this_position_) {
+    current_state_->AddSecondsOnThisNode(time_on_this_position_->Get());
+  }
+  if (value) {
+    time_on_this_position_ = ElapsedTime();
+  } else {
+    time_on_this_position_ = std::nullopt;
+  }
+}
+
 void Main::ToStateNoStop(EvaluationState* new_state, bool handle_game_over) {
+  std::lock_guard<std::mutex> guard(time_on_this_position_mutex_);
   assert(new_state);
   assert((evaluate_params_.sensei_action == SENSEI_INVALID_ACTION &&
           current_state_ == nullptr) ||
          new_state->IsLandable(evaluate_params_.sensei_action) ||
          new_state->MustPlay(evaluate_params_.sensei_action));
-  if (current_state_) {
-    current_state_->AddSecondsOnThisNode(time_on_this_position_.Get());
-  }
+  SetCountingTimeNoLock(time_on_this_position_ != std::nullopt);
   current_state_ = new_state;
   current_state_->SetPlayed();
   current_state_->SetNextStates();
@@ -126,7 +137,6 @@ void Main::ToStateNoStop(EvaluationState* new_state, bool handle_game_over) {
   }
   int player_disks = (score + 64) / 2;
   game_metadata_.black_disks = current_state_->BlackTurn() ? player_disks : 64 - player_disks;
-  time_on_this_position_ = ElapsedTime();
   RunSetBoard(handle_game_over);
 }
 

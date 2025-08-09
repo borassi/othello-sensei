@@ -111,3 +111,4 @@ void SetFileSources(void* ptr, int num_folders, char** folders) {
 }
 
 bool ReloadSource(void* ptr, char* file) { return static_cast<Main*>(ptr)->ReloadSource(file); }
+void SetCountingTime(void* ptr, bool value) { static_cast<Main*>(ptr)->SetCountingTime(value); }

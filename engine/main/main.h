@@ -216,14 +216,17 @@ class Main {
   }
 
   void RunUpdateTimers() {
+    std::lock_guard<std::mutex> guard(time_on_this_position_mutex_);
     if (!current_state_) {
       return;
     }
     auto [seconds_black, seconds_white] = current_state_->SecondsParents();
-    if (current_state_->GetAnnotations()->black_turn) {
-      seconds_black += time_on_this_position_.Get();
-    } else {
-      seconds_white += time_on_this_position_.Get();
+    if (time_on_this_position_) {
+      if (current_state_->GetAnnotations()->black_turn) {
+        seconds_black += time_on_this_position_->Get();
+      } else {
+        seconds_white += time_on_this_position_->Get();
+      }
     }
     update_timers_(seconds_black, seconds_white);
   }
@@ -234,6 +237,12 @@ class Main {
       std::this_thread::sleep_for(100ms);
     }
   }
+
+  void SetCountingTime(bool value) {
+    std::lock_guard<std::mutex> guard(time_on_this_position_mutex_);
+    SetCountingTimeNoLock(value);
+  }
+  void SetCountingTimeNoLock(bool value);
 
   GameMetadata* MutableGameMetadata() { return &game_metadata_; }
 
@@ -326,7 +335,8 @@ class Main {
   EvaluateParams evaluate_params_;
   EvaluateParams last_params_;
 
-  ElapsedTime time_on_this_position_;
+  std::optional<ElapsedTime> time_on_this_position_;
+  std::mutex time_on_this_position_mutex_;
 
   bool is_being_destroyed_;
   std::future<void> update_timers_future_;
@@ -344,7 +354,7 @@ class Main {
       board.Opponent(),
       current_state_->BlackTurn(),
       current_state_->LastMove(),
-      handle_game_over && IsGameOver(current_state_->ToBoard()),
+      handle_game_over && IsGameOver(board),
       first_state_->GetAnnotations()
     });
   }

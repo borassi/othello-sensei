@@ -294,26 +294,63 @@ class MainApp extends StatelessWidget {
 
 }
 
-class Main extends StatelessWidget {
+class Main extends StatefulWidget {
   const Main({super.key});
+
+  @override
+  State<StatefulWidget> createState() {
+    return _MainState();
+  }
+}
+
+class _MainState extends State<Main> with WidgetsBindingObserver {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        setCountingTime();
+        break;
+      case AppLifecycleState.detached:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        stopCountingTime();
+        break;
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: GlobalState.navigatorKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Sensei',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-          secondaryContainer: const Color(0xff00731b),  // primary: 0xff005313
-          onSecondaryContainer: const Color(0xffeedd33),
-          surface: const Color(0xff222222),
-          surfaceVariant: const Color(0xfff9f9f9),
-          brightness: Brightness.dark),
-        useMaterial3: true,
-      ),
-      home: const MainApp()
+        navigatorKey: GlobalState.navigatorKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Sensei',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.green,
+              secondaryContainer: const Color(0xff00731b),  // primary: 0xff005313
+              onSecondaryContainer: const Color(0xffeedd33),
+              surface: const Color(0xff222222),
+              surfaceVariant: const Color(0xfff9f9f9),
+              brightness: Brightness.dark),
+          useMaterial3: true,
+        ),
+        home: const MainApp()
     );
   }
+
 }

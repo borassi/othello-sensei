@@ -638,6 +638,23 @@ class FFIEngine {
               ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>>('ReloadSource');
   late final _ReloadSource = _ReloadSourcePtr.asFunction<
       bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>();
+
+  void SetCountingTime(
+    ffi.Pointer<ffi.Void> ptr,
+    bool value,
+  ) {
+    return _SetCountingTime(
+      ptr,
+      value,
+    );
+  }
+
+  late final _SetCountingTimePtr = _lookup<
+          ffi
+          .NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Bool)>>(
+      'SetCountingTime');
+  late final _SetCountingTime = _SetCountingTimePtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, bool)>();
 }
 
 typedef Square = ffi.Uint8;

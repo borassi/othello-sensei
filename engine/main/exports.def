@@ -27,3 +27,4 @@ EXPORTS
     SetWhiteSquare
     SetEmptySquare
     InvertTurn
+    SetCountingTime
