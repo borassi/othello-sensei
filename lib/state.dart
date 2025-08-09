@@ -685,6 +685,7 @@ class PreferencesState with ChangeNotifier {
     'Black player': Player.player,
     'White player': Player.player,
     'Show settings dialog at startup': true,
+    'Timer (minutes, 0 for no countdown)': 0.0,
     'Show dialog on save outside archive': !Platform.isAndroid,
   };
   static const Map<String, List<String>> preferencesValues = {
@@ -1100,11 +1101,17 @@ class TimerState with ChangeNotifier {
 
   String getString(bool black) {
     int totalSeconds = getSeconds(black);
+    var availableSeconds = 60 * GlobalState.preferences.get('Timer (minutes, 0 for no countdown)');
+    if (availableSeconds > 0) {
+      totalSeconds = (availableSeconds - totalSeconds).toInt();
+    }
     int minutes = (totalSeconds / 60).floor();
     int seconds = totalSeconds % 60;
 
     if (totalSeconds > 3600) {
       return ">1h";
+    } else if (totalSeconds < 0) {
+      return "--:--";
     } else {
       return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }

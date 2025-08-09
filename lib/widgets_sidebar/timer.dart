@@ -15,10 +15,14 @@
  *
  */
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../state.dart';
+import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_utils/misc.dart';
 
 class Timer extends StatelessWidget {
   final bool _black;
@@ -28,7 +32,7 @@ class Timer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var largeTextStyle = Theme.of(context).textTheme.bodyLarge!;
-    return ListenableBuilder(listenable: GlobalState.timer, builder: (BuildContext context, Widget? widget) {
+    return ListenableBuilder(listenable: Listenable.merge([GlobalState.preferences, GlobalState.timer]), builder: (BuildContext context, Widget? widget) {
       return Text(
           GlobalState.timer.getString(_black),
           style: largeTextStyle.merge(TextStyle(
@@ -40,19 +44,30 @@ class Timer extends StatelessWidget {
   }
 }
 
+void addToTimer(double minutes) {
+  var currentTime = GlobalState.preferences.get('Timer (minutes, 0 for no countdown)');
+  var newTime = max(0.0, min(currentTime + minutes, 60.0));
+  GlobalState.preferences.set('Timer (minutes, 0 for no countdown)', newTime);
+}
+
 class Timers extends StatelessWidget {
   const Timers({super.key});
 
   @override
   Widget build(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return Row(children: [
+      SizedBox(height: squareSize, width: squareSize, child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(-1))),
+      const Margin.internal(),
       const Spacer(),
       Timer(true),
       const Spacer(),
       const Margin.internal(),
       const Spacer(),
       Timer(false),
-      const Spacer()
+      const Spacer(),
+      const Margin.internal(),
+      SizedBox(height: squareSize, width: squareSize, child: SenseiButton(icon: Icons.add, onPressed: () => addToTimer(1))),
     ]);
   }
 }

@@ -212,6 +212,7 @@ class Settings extends StatelessWidget {
     'Controls position',
     'Margin size',
     'Last move marker',
+    'Timer (minutes, 0 for no countdown)',
     'Black and white bars in the graph',
     'Show dialog on save outside archive',
     'Show settings dialog at startup',
