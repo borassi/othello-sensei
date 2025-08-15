@@ -80,7 +80,8 @@ Engine::Engine(
     const std::string& book_filepath,
     const std::string& thor_filepath,
     const std::string& saved_games_filepath,
-    UpdateAnnotations update_annotations) :
+    UpdateAnnotations update_annotations,
+    SendMessage send_message) :
     update_annotations_(update_annotations),
     hash_map_(),
     boards_to_evaluate_(),
@@ -91,6 +92,7 @@ Engine::Engine(
     last_sensei_action_(SENSEI_EVALUATES),
     current_thread_(0),
     thor_metadata_(),
+    send_message_(send_message),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
         book_filepath, thor_filepath, saved_games_filepath

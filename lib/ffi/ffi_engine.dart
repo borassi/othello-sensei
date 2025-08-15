@@ -72,6 +72,7 @@ class FFIEngine {
     SetBoard set_board,
     UpdateAnnotations update_annotations,
     UpdateTimers update_timers,
+    SendMessage send_message,
   ) {
     return _MainInit(
       evals_filepath,
@@ -83,6 +84,7 @@ class FFIEngine {
       set_board,
       update_annotations,
       update_timers,
+      send_message,
     );
   }
 
@@ -97,7 +99,8 @@ class FFIEngine {
               ffi.Pointer<ffi.Char>,
               SetBoard,
               UpdateAnnotations,
-              UpdateTimers)>>('MainInit');
+              UpdateTimers,
+              SendMessage)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
       ffi.Pointer<ffi.Void> Function(
           ffi.Pointer<ffi.Char>,
@@ -108,7 +111,8 @@ class FFIEngine {
           ffi.Pointer<ffi.Char>,
           SetBoard,
           UpdateAnnotations,
-          UpdateTimers)>();
+          UpdateTimers,
+          SendMessage)>();
 
   ffi.Pointer<ThorMetadata> MainGetThorMetadata(
     ffi.Pointer<ffi.Void> ptr,
@@ -655,6 +659,23 @@ class FFIEngine {
       'SetCountingTime');
   late final _SetCountingTime = _SetCountingTimePtr.asFunction<
       void Function(ffi.Pointer<ffi.Void>, bool)>();
+
+  void BuildThor(
+    ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<ffi.Char> folder,
+  ) {
+    return _BuildThor(
+      ptr,
+      folder,
+    );
+  }
+
+  late final _BuildThorPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>>('BuildThor');
+  late final _BuildThor = _BuildThorPtr.asFunction<
+      void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -1019,3 +1040,6 @@ typedef UpdateAnnotations
 typedef UpdateTimersFunction = ffi.Void Function(ffi.Double, ffi.Double);
 typedef DartUpdateTimersFunction = void Function(double, double);
 typedef UpdateTimers = ffi.Pointer<ffi.NativeFunction<UpdateTimersFunction>>;
+typedef SendMessageFunction = ffi.Void Function(ffi.Pointer<ffi.Char>);
+typedef DartSendMessageFunction = void Function(ffi.Pointer<ffi.Char>);
+typedef SendMessage = ffi.Pointer<ffi.NativeFunction<SendMessageFunction>>;

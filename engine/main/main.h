@@ -48,7 +48,8 @@ class Main {
       const std::string& xot_large_filepath,
       SetBoard set_board,
       UpdateAnnotations update_annotations,
-      UpdateTimers update_timers);
+      UpdateTimers update_timers,
+      SendMessage send_message);
 
   ~Main() {
     is_being_destroyed_ = true;

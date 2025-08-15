@@ -132,6 +132,10 @@ void analyze() {
   GlobalState.ffiEngine.Analyze(GlobalState.ffiMain);
 }
 
+void sendMessage(Pointer<Char> message) async {
+  await showSenseiDialog(SenseiDialog(content: cStringToString(message)));
+}
+
 class GlobalState {
   static var board = BoardState();
   static var setupBoardState = SetupBoardState();
@@ -186,6 +190,7 @@ class GlobalState {
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
     NativeCallable<UpdateTimersFunction> updateTimersCallback = NativeCallable.listener(updateTimers);
+    NativeCallable<SendMessageFunction> sendMessageCallback = NativeCallable.listener(sendMessage);
     var localAssetPathVar = localAssetPath();
     GlobalState.resetAnnotations();
     var evaluatorC = join(localAssetPathVar, 'pattern_evaluator.dat').toNativeUtf8().cast<Char>();
@@ -199,6 +204,7 @@ class GlobalState {
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
+        sendMessageCallback.nativeFunction
     );
     for (var ptr in [evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC,
                      xotSmallC, xotLargeC]) {

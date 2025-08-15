@@ -168,6 +168,8 @@ class ThorSourceMetadataExtended {
 
 bool IncludeAllSources(ThorMetadata thor_metadata);
 
+using namespace std::chrono_literals;
+
 class Engine {
  public:
   Engine(
@@ -175,7 +177,8 @@ class Engine {
       const std::string& book_filepath,
       const std::string& thor_filepath,
       const std::string& saved_games_filepath,
-      UpdateAnnotations update_annotations);
+      UpdateAnnotations update_annotations,
+      SendMessage send_message);
 
   void Start(EvaluationState* current_state,
              std::shared_ptr<EvaluationState>& first_state,
@@ -218,6 +221,7 @@ class Engine {
   static constexpr int kNumEvaluators = 60;
 
   UpdateAnnotations update_annotations_;
+  SendMessage send_message_;
 
   std::unique_ptr<EvalType> evals_;
   HashMap<kBitHashMap> hash_map_;
