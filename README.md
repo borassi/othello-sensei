@@ -278,15 +278,15 @@ disks on average, over the whole game (i.e., the "Error" box will show 50 on ave
 random, in a single game it might be more or less, depending on the behavior of the random number
 generator.
 
-If you set Maximum error / move when playing = 8, Sensei will also never make a mistake of >8 disks,
-to avoid that Sensei plays unreasonable moves with a low probability. We suggest to set Maximum
-error / move when playing around 1/5 of Approximate game error when playing (e.g., Game error = 50,
-move error = 10).
+If you set Maximum error / move when playing = 12, Sensei will also never make a mistake of >12
+disks,  to avoid that Sensei plays very unreasonable moves (albeit with a low probability). We
+suggest to set it around 12, to avoid unreasonable moves but still give Sensei some wiggle room to
+achieve the approximate error.
 
-Sometimes, Sensei cannot fulfill both constraints, for example because Maximum error / move when
-playing = 1 and Approximate game error when playing = 50 (there are at most 30 moves, so the error
-will be at most 30). In this case, Sensei will try to maximize the total error under the
-constraints:
+Sometimes, Sensei cannot fulfill both constraints: for example, in an extreme case, if Maximum error
+/ move when playing is 1 and Approximate game error when playing is 50 (there are at most 30 moves,
+so the error  can be at most 30). In this case, Sensei will try to maximize the total error under
+the constraints:
 - The probability to play a better move is always higher or equal to the probability to play a worse
   move.
 - Sensei will never make a mistake larger than Maximum error / move when playing.

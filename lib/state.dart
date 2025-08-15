@@ -667,7 +667,7 @@ class PreferencesState with ChangeNotifier {
     'Seconds between evaluations': 1.0,
     'Seconds/position when playing': 1.0,
     'Approximate game error when playing': 20.0,
-    'Maximum error / move when playing': 4.0,
+    'Maximum error / move when playing': 12.0,
     'Spend half time on positions worse by': 6.0,
     'Round evaluations': 'Never',
     'Use book': true,
@@ -712,7 +712,6 @@ class PreferencesState with ChangeNotifier {
     'Black and white bars in the graph': true,
     'Show extra data in evaluate mode': false,
     'Approximate game error when playing': 50.0,
-    'Maximum error / move when playing': 10.0,
     'Round evaluations': 'Always',
   };
   late final SharedPreferences _preferences;
