@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ class BoardToEvaluate {
       uint8_t index) :
       book_(book),
       started_(false),
+      stoppable_(false),
       evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
 
   bool Finished() const {
@@ -69,7 +70,7 @@ class BoardToEvaluate {
   }
 
   void AddState(EvaluationState* state, bool finished) {
-    states_finished_.push_back({state, finished});
+    states_finished_.emplace_back(state, finished);
   }
 
   void UpdateWithThor(std::unordered_map<Square, int> next_moves) {
@@ -99,7 +100,7 @@ class BoardToEvaluate {
     }
     auto first_position = evaluator_.GetFirstPosition();
     assert(first_position);
-    return pow(2, -first_position->GetEval() / delta) / first_position->GetNVisited();
+    return pow(2, -first_position->GetEval() / delta) / (double) first_position->GetNVisited();
   }
 
  private:
@@ -123,7 +124,8 @@ class BoardToEvaluate {
 class ThorSourceMetadataExtended {
  public:
   ThorSourceMetadataExtended(const ThorSourceMetadataExtended&) = delete;
-  ThorSourceMetadataExtended(const std::string& name, const GenericSource& source) : name_(name), folder_(source.GetFolder()) {
+  ThorSourceMetadataExtended(const std::string& name, const GenericSource& source) : name_(name), folder_(source.GetFolder()),
+                                                                                     thor_source_metadata_() {
     const auto& players = source.Players();
     selected_blacks_.reserve(players.size() + 1);
     selected_whites_.reserve(players.size() + 1);
@@ -178,6 +180,7 @@ class Engine {
       const std::string& thor_filepath,
       const std::string& saved_games_filepath,
       UpdateAnnotations update_annotations,
+      SetThorMetadata set_thor_metadata,
       SendMessage send_message);
 
   void Start(EvaluationState* current_state,
@@ -195,12 +198,6 @@ class Engine {
   }
 
   void Stop();
-
-  ThorMetadata* GetThorMetadata() {
-    Stop();
-    current_future_->wait();
-    return &thor_metadata_;
-  }
 
   void StartSetFileSources(const std::vector<std::string>& sources) {
     current_future_ = std::make_shared<std::future<void>>(std::async(
@@ -221,6 +218,7 @@ class Engine {
   static constexpr int kNumEvaluators = 60;
 
   UpdateAnnotations update_annotations_;
+  SetThorMetadata set_thor_metadata_;
   SendMessage send_message_;
 
   std::unique_ptr<EvalType> evals_;
@@ -245,7 +243,7 @@ class Engine {
   SenseiAction last_sensei_action_;
 
   void RunSetFileSources(const std::vector<std::string>& sources, std::shared_ptr<std::future<void>> last_future) {
-    last_future.get();
+    last_future->get();
     thor_->SetFileSources(sources);
     BuildThorSourceMetadata();
   }

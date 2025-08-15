@@ -30,14 +30,14 @@ void* MainInit(
     char* xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
+    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message) {
   return new Main(
       evals_filepath, book_filepath, thor_filepath, saved_games_filepath, xot_small_filepath,
-      xot_large_filepath, set_board, update_annotations, update_timers, send_message);
+      xot_large_filepath, set_board, update_annotations, set_thor_metadata, update_timers,
+      send_message);
 }
-
-ThorMetadata* MainGetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
 
 void MainDelete(void* ptr) { delete static_cast<Main*>(ptr); }
 

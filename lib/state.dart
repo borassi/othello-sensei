@@ -189,6 +189,7 @@ class GlobalState {
     thorMetadata.invalidate();
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
+    NativeCallable<SetThorMetadataFunction> setThorMetadataCallback = NativeCallable.listener(setThorMetadata);
     NativeCallable<UpdateTimersFunction> updateTimersCallback = NativeCallable.listener(updateTimers);
     NativeCallable<SendMessageFunction> sendMessageCallback = NativeCallable.listener(sendMessage);
     var localAssetPathVar = localAssetPath();
@@ -203,6 +204,7 @@ class GlobalState {
         evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC, xotSmallC, xotLargeC,
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction,
+        setThorMetadataCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
         sendMessageCallback.nativeFunction
     );
@@ -210,7 +212,6 @@ class GlobalState {
                      xotSmallC, xotLargeC]) {
       malloc.free(ptr);
     }
-    thorMetadata.init();
     evaluate();
   }
 
@@ -335,7 +336,6 @@ class GlobalState {
       var fileC = file.toNativeUtf8().cast<Char>();
       GlobalState.thorMetadata.invalidate();
       bool reloaded = GlobalState.ffiEngine.ReloadSource(GlobalState.ffiMain, fileC);
-      GlobalState.thorMetadata.init();
       malloc.free(fileC);
       if (!reloaded &&
           GlobalState.preferences.get('Show dialog on save outside archive')) {
@@ -971,6 +971,10 @@ class SourcePlayerIndex {
   SourcePlayerIndex(this.sourceIndex, this.playerIndex);
 }
 
+void setThorMetadata(Pointer<ThorMetadata> ptr) {
+  GlobalState.thorMetadata.set(ptr);
+}
+
 class ThorMetadataState with ChangeNotifier {
   String activeFolder;
   List<String> folders;
@@ -993,12 +997,12 @@ class ThorMetadataState with ChangeNotifier {
         selectedWhites = [],
         activeFolder = 'All';
 
-  void init() async {
-    ptr = GlobalState.ffiEngine.MainGetThorMetadata(GlobalState.ffiMain);
+  void set(ffi.Pointer<ThorMetadata> ptr) async {
+    this.ptr = ptr;
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     var tournamentsSet = HashSet<String>();
-    for (int i = 0; i < ptr!.ref.num_sources; ++i) {
-      var source = (ptr!.ref.sources + i).value.ref;
+    for (int i = 0; i < ptr.ref.num_sources; ++i) {
+      var source = (ptr.ref.sources + i).value.ref;
       folders.add(source.name.cast<Utf8>().toDartString());
       if (source.is_saved_games_folder) {
         gameFolders.add(cStringToString(source.folder));
@@ -1029,7 +1033,7 @@ class ThorMetadataState with ChangeNotifier {
         playerStringToIndex[player] = indices[0];
       } else {
         for (var index in indices) {
-          var playerString = '$player / ${ptr!.ref.sources[index.sourceIndex].ref.name.cast<Utf8>().toDartString()}';
+          var playerString = '$player / ${ptr.ref.sources[index.sourceIndex].ref.name.cast<Utf8>().toDartString()}';
           playerStringToIndex[playerString] = index;
         }
       }

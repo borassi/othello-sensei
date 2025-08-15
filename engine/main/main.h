@@ -48,6 +48,7 @@ class Main {
       const std::string& xot_large_filepath,
       SetBoard set_board,
       UpdateAnnotations update_annotations,
+      SetThorMetadata set_thor_metadata,
       UpdateTimers update_timers,
       SendMessage send_message);
 
@@ -130,10 +131,6 @@ class Main {
     }
     SetSequence(moves);
     return true;
-  }
-
-  ThorMetadata* GetThorMetadata() {
-    return engine_.GetThorMetadata();
   }
 
   void SetEvaluateParams(const EvaluateParams& params);

@@ -45,11 +45,9 @@ void* MainInit(
     char* xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
+    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message);
-
-EXPORT
-struct ThorMetadata* MainGetThorMetadata(void* ptr);
 
 EXPORT
 void MainDelete(void* ptr);

@@ -81,8 +81,10 @@ Engine::Engine(
     const std::string& thor_filepath,
     const std::string& saved_games_filepath,
     UpdateAnnotations update_annotations,
+    SetThorMetadata set_thor_metadata,
     SendMessage send_message) :
     update_annotations_(update_annotations),
+    set_thor_metadata_(set_thor_metadata),
     hash_map_(),
     boards_to_evaluate_(),
     num_boards_to_evaluate_(0),
@@ -106,6 +108,7 @@ void Engine::Initialize(
   auto future_evals = std::async(std::launch::async, &Engine::BuildEvals, this, evals_filepath);
   auto future_book = std::async(std::launch::async, &Engine::BuildBook, this, book_filepath);
   auto future_thor = std::async(std::launch::async, &Engine::BuildThor, this, thor_filepath, saved_games_filepath);
+
   future_evals.get();
   future_book.get();
   future_thor.get();
@@ -132,6 +135,7 @@ void Engine::BuildThorSourceMetadata() {
   }
   thor_metadata_.sources = thor_sources_metadata_.data();
   thor_metadata_.num_sources = (int) thor_sources_metadata_.size();
+  set_thor_metadata_(&thor_metadata_);
 }
 
 void Engine::BuildThor(const std::string& filepath, const std::string& saved_games_filepath) {

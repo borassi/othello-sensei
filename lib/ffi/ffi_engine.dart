@@ -71,6 +71,7 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
+    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message,
   ) {
@@ -83,6 +84,7 @@ class FFIEngine {
       xot_large_filepath,
       set_board,
       update_annotations,
+      set_thor_metadata,
       update_timers,
       send_message,
     );
@@ -99,6 +101,7 @@ class FFIEngine {
               ffi.Pointer<ffi.Char>,
               SetBoard,
               UpdateAnnotations,
+              SetThorMetadata,
               UpdateTimers,
               SendMessage)>>('MainInit');
   late final _MainInit = _MainInitPtr.asFunction<
@@ -111,23 +114,9 @@ class FFIEngine {
           ffi.Pointer<ffi.Char>,
           SetBoard,
           UpdateAnnotations,
+          SetThorMetadata,
           UpdateTimers,
           SendMessage)>();
-
-  ffi.Pointer<ThorMetadata> MainGetThorMetadata(
-    ffi.Pointer<ffi.Void> ptr,
-  ) {
-    return _MainGetThorMetadata(
-      ptr,
-    );
-  }
-
-  late final _MainGetThorMetadataPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<ThorMetadata> Function(
-              ffi.Pointer<ffi.Void>)>>('MainGetThorMetadata');
-  late final _MainGetThorMetadata = _MainGetThorMetadataPtr.asFunction<
-      ffi.Pointer<ThorMetadata> Function(ffi.Pointer<ffi.Void>)>();
 
   void MainDelete(
     ffi.Pointer<ffi.Void> ptr,
@@ -659,23 +648,6 @@ class FFIEngine {
       'SetCountingTime');
   late final _SetCountingTime = _SetCountingTimePtr.asFunction<
       void Function(ffi.Pointer<ffi.Void>, bool)>();
-
-  void BuildThor(
-    ffi.Pointer<ffi.Void> ptr,
-    ffi.Pointer<ffi.Char> folder,
-  ) {
-    return _BuildThor(
-      ptr,
-      folder,
-    );
-  }
-
-  late final _BuildThorPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Void Function(
-              ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>>('BuildThor');
-  late final _BuildThor = _BuildThorPtr.asFunction<
-      void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)>();
 }
 
 typedef Square = ffi.Uint8;
@@ -1033,13 +1005,17 @@ typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
 typedef DartSetBoardFunction = void Function(BoardUpdate);
 typedef SetBoard = ffi.Pointer<ffi.NativeFunction<SetBoardFunction>>;
 typedef UpdateAnnotationsFunction = ffi.Void Function(
-    ffi.Int, ffi.Bool, ffi.Int);
+    ffi.UnsignedInt, ffi.Bool, ffi.Int);
 typedef DartUpdateAnnotationsFunction = void Function(int, bool, int);
 typedef UpdateAnnotations
     = ffi.Pointer<ffi.NativeFunction<UpdateAnnotationsFunction>>;
 typedef UpdateTimersFunction = ffi.Void Function(ffi.Double, ffi.Double);
 typedef DartUpdateTimersFunction = void Function(double, double);
 typedef UpdateTimers = ffi.Pointer<ffi.NativeFunction<UpdateTimersFunction>>;
+typedef SetThorMetadataFunction = ffi.Void Function(ffi.Pointer<ThorMetadata>);
+typedef DartSetThorMetadataFunction = void Function(ffi.Pointer<ThorMetadata>);
+typedef SetThorMetadata
+    = ffi.Pointer<ffi.NativeFunction<SetThorMetadataFunction>>;
 typedef SendMessageFunction = ffi.Void Function(ffi.Pointer<ffi.Char>);
 typedef DartSendMessageFunction = void Function(ffi.Pointer<ffi.Char>);
 typedef SendMessage = ffi.Pointer<ffi.NativeFunction<SendMessageFunction>>;

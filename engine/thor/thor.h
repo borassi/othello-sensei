@@ -118,6 +118,9 @@ class Thor {
   FutureVector LoadAllSavedGameLists() {
     FutureVector futures;
     for (const std::string& saved_game_folder : Split(LoadTextFile(saved_files_path_), '\n')) {
+      if (saved_game_folder.empty()) {
+        continue;
+      }
       futures.push_back(
           std::move(std::async(
               std::launch::async, &Thor::LoadSavedGameList, this, saved_game_folder)));

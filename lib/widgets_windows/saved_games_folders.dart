@@ -87,7 +87,6 @@ void setFileSources(List<String> folders) {
     malloc.free(foldersC[i]);
   }
   malloc.free(foldersC);
-  GlobalState.thorMetadata.init();
 }
 
 class SavedGamesFoldersWindow extends StatefulWidget {

@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/saved_games_folders.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../drive/drive_downloader.dart';
@@ -116,11 +117,15 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_NEVER);
       return;
     case MenuItem.editSavedGamesFolders:
-      GlobalState.stop();
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => SavedGamesFoldersWindow()),
-      );
+      if (GlobalState.thorMetadata.ptr != null) {
+        GlobalState.stop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SavedGamesFoldersWindow()),
+        );
+      } else {
+        showSenseiDialog(SenseiDialog(content: 'Cannot edit the archive folders while the archive is loading. Please retry in a few seconds.'));
+      }
       return;
   }
 }
