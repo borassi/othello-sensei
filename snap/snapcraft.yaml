@@ -71,7 +71,8 @@ parts:
       cp /root/parts/engine-bmi2/build/build/main/libui.so final_lib/libui-bmi2.so
       cp /root/parts/engine-popcnt/build/build/main/libui.so final_lib/libui-popcnt.so
       cp lib/libflutter_linux_gtk.so final_lib
-      cp lib/libscreen_retriever_plugin.so final_lib
+      cp lib/libscreen_retriever_linux_plugin.so final_lib
+      cp lib/liburl_launcher_linux_plugin.so final_lib
       cp lib/libwindow_manager_plugin.so final_lib
       cp lib/libui.so final_lib
       cp lib/libcpu_adapter.so final_lib
