@@ -96,10 +96,10 @@ class Searchable extends StatelessWidget {
     return Autocomplete<String>(
       initialValue: TextEditingValue(text: initialValue),
       optionsBuilder: (TextEditingValue textEditingValue) {
+        onChanged(textEditingValue.text);
         if (textEditingValue.text == '') {
           return const Iterable<String>.empty();
         }
-        onChanged(textEditingValue.text);
         return values.where((String option) {
           return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
         });
