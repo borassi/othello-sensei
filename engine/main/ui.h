@@ -122,12 +122,6 @@ EXPORT
 void InvertTurn(void* ptr);
 
 EXPORT
-void SetSenseiAction(void* ptr, enum SenseiAction action);
-
-EXPORT
-enum SenseiAction GetSenseiAction(void* ptr);
-
-EXPORT
 struct SaveGameOutput* GetGameToSave(void* ptr);
 
 EXPORT
@@ -144,9 +138,6 @@ void OpenThorGame(void* ptr, struct ThorGame game);
 
 EXPORT
 void SetFileSources(void* ptr, int num_folders, char** folders);
-
-EXPORT
-bool ReloadSource(void* ptr, char* file);
 
 EXPORT
 void SetCountingTime(void* ptr, bool value);

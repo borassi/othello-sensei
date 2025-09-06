@@ -16,6 +16,7 @@ EXPORTS
     ToLastImportantNode
     Evaluate
     Analyze
+    ResetAnalyzedGame
     GetCurrentAnnotations
     GetStartAnnotations
     Stop
@@ -27,4 +28,10 @@ EXPORTS
     SetWhiteSquare
     SetEmptySquare
     InvertTurn
+    GetGameToSave
+    Open
+    MutableGameMetadata
+    PlayOneMove
+    OpenThorGame
+    SetFileSources
     SetCountingTime
