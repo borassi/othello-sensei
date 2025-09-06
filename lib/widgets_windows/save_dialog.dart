@@ -77,7 +77,8 @@ class _InputFormField extends StatelessWidget {
             contentPadding: EdgeInsets.fromLTRB(0, 0, 0, squareSize * 0.1),
             isDense: true,
             enabledBorder: InputBorder.none
-        )
+        ),
+        autocorrect: false,
       );
   }
 }
@@ -95,10 +96,10 @@ class Searchable extends StatelessWidget {
     return Autocomplete<String>(
       initialValue: TextEditingValue(text: initialValue),
       optionsBuilder: (TextEditingValue textEditingValue) {
+        onChanged(textEditingValue.text);
         if (textEditingValue.text == '') {
           return const Iterable<String>.empty();
         }
-        onChanged(textEditingValue.text);
         return values.where((String option) {
           return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
         });
@@ -279,6 +280,7 @@ class SaveDialogWidget extends StatelessWidget {
     return SecondaryWindow(
       onPopInvoked: (bool didPop) {},
       title: 'Game data',
+      sideMarginAlwaysLarge: true,
       child: SaveDialogContent()
     );
   }

@@ -181,7 +181,7 @@ template<class GameGetter = GameGetterOnDisk>
 class Source : public GenericSource {
  public:
   explicit Source(const std::string& folder, bool rebuild_games_order = false, bool rebuild_games_with_small_hash = false) :
-      folder_(folder), game_getter_(folder), canonicalizer_() {
+      folder_(folder), game_getter_(folder) {
     if (game_getter_.NumGames() == 0) {
       return;
     }
@@ -247,7 +247,6 @@ class Source : public GenericSource {
  private:
   std::string folder_;
   GameGetter game_getter_;
-  SequenceCanonicalizer* canonicalizer_;
 
   std::vector<uint32_t> game_index_by_black_;
   std::vector<uint32_t> game_index_by_white_;
@@ -272,8 +271,8 @@ class Source : public GenericSource {
     while (index < file.size()) {
       uint32_t size = file[index++];
       std::vector<uint32_t>& v = games_with_small_hash_.emplace_back();
-      v.resize(file.size());
-      memcpy(v.data(), file.data() + index, size);
+      v.resize(size);
+      memcpy(v.data(), file.data() + index, size * sizeof(uint32_t));
       index += size;
     }
   }
