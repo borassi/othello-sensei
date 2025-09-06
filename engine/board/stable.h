@@ -205,7 +205,7 @@ inline BitPattern GetStableDisks(BitPattern player, BitPattern opponent, BitPatt
 forceinline(int GetUpperBoundFromStable(BitPattern stable, BitPattern opponent));
 
 inline int GetUpperBoundFromStable(BitPattern stable, BitPattern opponent) {
-  return (64 - 2 * __builtin_popcountll(stable & opponent));
+  return (64 - 2 * (int) __builtin_popcountll(stable & opponent));
 }
 
 inline int GetStableDisksUpperBound(BitPattern player, BitPattern opponent) {

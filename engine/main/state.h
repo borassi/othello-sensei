@@ -347,6 +347,9 @@ class EvaluationState : public TreeNode {
         return !annotations_.black_turn;
       case SENSEI_PLAYS_BOTH:
         return true;
+      default:
+        assert(false);
+        return false;
     }
   }
 

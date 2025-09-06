@@ -185,7 +185,7 @@ class Main {
         return true;
       case XOT_STATE_NEVER:
         return false;
-      case XOT_STATE_AUTOMATIC:
+      case XOT_STATE_AUTOMATIC: {
         if (!first_state_) {
           return false;
         }
@@ -199,6 +199,10 @@ class Main {
         }
         auto [error_black, error_white] = state_in_xot->TotalError();
         return std::max(error_black, error_white) > 5;
+      }
+      default:
+        assert(false);
+        return false;
     }
   }
 
@@ -249,7 +253,8 @@ class Main {
     auto save_game_output = (SaveGameOutput*) malloc(sizeof(SaveGameOutput));
     if (!sequence_opt) {
       save_game_output->success = false;
-      strcpy(save_game_output->error, "Cannot save games with manual board setup (yet).");
+      static const std::string kErrorNoSequence = "Cannot save games with manual board setup (yet).";
+      strncpy(save_game_output->error, kErrorNoSequence.c_str(), kErrorNoSequence.size() + 1);
       return save_game_output;
     }
     GameToSave game(
@@ -264,12 +269,13 @@ class Main {
     std::string output = game.ToString();
     if (output.size() >= 2000) {
       save_game_output->success = false;
-      strcpy(save_game_output->error, "Output too large (probably a bug). Please notify michele.borassi@gmail.com.");
+      static const std::string kErrorLargeOutput = "Output too large (probably a bug). Please notify michele.borassi@gmail.com.";
+      strncpy(save_game_output->error, kErrorLargeOutput.c_str(), kErrorLargeOutput.size() + 1);
       return save_game_output;
     }
     save_game_output->success = true;
-    strcpy(save_game_output->game, output.c_str());
-    strcpy(save_game_output->error, "");
+    strncpy(save_game_output->game, output.c_str(), output.size() + 1);
+    strncpy(save_game_output->error, "", 1);
     return save_game_output;
   }
 
@@ -285,8 +291,8 @@ class Main {
     ThorGame thor_game;
     GameToThorGame(game.ToGame(), thor_game, Sequence());
     OpenThorGame(thor_game);
-    strcpy(game_metadata_.notes, game.Notes().c_str());
-    strcpy(game_metadata_.round, game.Round().c_str());
+    strncpy(game_metadata_.notes, game.Notes().c_str(), game.Notes().size() + 1);
+    strncpy(game_metadata_.round, game.Round().c_str(), game.Round().size() + 1);
   }
 
   void PlayOneMove(const ThorGame& game) {
@@ -295,9 +301,9 @@ class Main {
 
   void OpenThorGame(const ThorGame& game) {
     SetSequence(Sequence(game.moves, 60));
-    strcpy(game_metadata_.black, game.black);
-    strcpy(game_metadata_.white, game.white);
-    strcpy(game_metadata_.tournament, game.tournament);
+    strncpy(game_metadata_.black, game.black, 20);
+    strncpy(game_metadata_.white, game.white, 20);
+    strncpy(game_metadata_.tournament, game.tournament, 26);
     game_metadata_.year = game.year;
     game_metadata_.black_disks = game.score;
     current_state_->SetPrimaryLine();

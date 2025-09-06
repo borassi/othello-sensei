@@ -66,7 +66,7 @@ class SavedGameList : public GenericSource {
       short start_year = SHRT_MIN,
       short end_year = SHRT_MAX) const override;
 
-  int NumGames() const override { return games_.size(); }
+  int NumGames() const override { return (int) games_.size(); }
 
   std::vector<Game> AllGames() const override { return games_; }
 

@@ -64,7 +64,7 @@ FindXOTFileResults FixXOTSource(
   for (const std::string& input_filepath : GetAllFiles(input_folder, /*include_files=*/true, /*include_directories=*/false)) {
     fs::path output_filepath = fs::path(output_folder) / fs::path(input_filepath).filename();
     if (EndsWith(ToLower(input_filepath), ".wtb")) {
-      results.Merge(FixXOTFile(xot, input_filepath, output_filepath));
+      results.Merge(FixXOTFile(xot, input_filepath, output_filepath.string()));
     } else {
       fs::copy(input_filepath, output_filepath);
     }

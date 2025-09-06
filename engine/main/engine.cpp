@@ -308,6 +308,9 @@ double MaxTime(SenseiAction action, double seconds_on_this_node, bool first_eval
     case SENSEI_PLAYS_BOTH:
     case SENSEI_INACTIVE:
       return params.max_time_play;
+    default:
+      assert(false);
+      return params.max_time_first_eval;
   }
 }
 }  // namespace

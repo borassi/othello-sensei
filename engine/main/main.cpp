@@ -42,7 +42,7 @@ Main::Main(
     xot_large_(LoadTextFile(xot_large_filepath)),
     time_on_this_position_(std::nullopt) {
   evaluate_params_.sensei_action = SENSEI_INVALID_ACTION;
-  srand(time(nullptr));
+  srand((int) time(nullptr));
   PrintSupportedFeatures();
   update_timers_future_ = std::async(std::launch::async, &Main::RunUpdateTimersThread, this);
   NewGame();

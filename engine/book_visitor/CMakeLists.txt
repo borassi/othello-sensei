@@ -66,6 +66,7 @@ add_library(
 target_link_libraries(
         merger
         LINK_PRIVATE
+        book
         visitor
 )
 

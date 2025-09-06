@@ -28,7 +28,7 @@ GamesList SavedGameList::GetGames(
   GamesList result;
   result.num_games = 0;
   result.max_games = max_games;
-  int sequence_size = sequence.Size();
+  int sequence_size = (int) sequence.Size();
   for (auto& game : games_) {
     if ((!blacks.empty() && !Contains(blacks, game.Black())) ||
         (!whites.empty() && !Contains(whites, game.White())) ||
@@ -39,7 +39,7 @@ GamesList SavedGameList::GetGames(
     }
     result.next_moves[game.Moves().Move(sequence_size)]++;
     ++result.num_games;
-    if (result.examples.size() < max_games) {
+    if ((int) result.examples.size() < max_games) {
       result.examples.push_back(game);
     }
   }

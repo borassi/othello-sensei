@@ -31,7 +31,7 @@ inline int EvalOneEmpty(Square x, BitPattern player, BitPattern opponent) noexce
   if (flip) {
     return (Eval) (64 - (__builtin_popcountll(opponent | flip) * 2));
   }
-  int playerDisks = __builtin_popcountll(player) * 2;
+  int playerDisks = (int) __builtin_popcountll(player) * 2;
   return (Eval) (playerDisks - (playerDisks >= 64 ? 62 : 64));
 }
 
@@ -152,7 +152,7 @@ inline std::vector<Square> GetAllEmpties(BitPattern player, BitPattern opponent)
   std::vector<Square> result;
   BitPattern empties = ~(player | opponent);
   FOR_EACH_SET_BIT(empties, empty) {
-    result.push_back(__builtin_ctzll(empty));
+    result.push_back((Square) __builtin_ctzll(empty));
   }
   return result;
 }

@@ -20,16 +20,10 @@
 template<int source_version = kBookVersion, int target_version = kBookVersion>
 class BookVisitorMerge : public BookVisitorWithProgress<source_version> {
  public:
-  typedef BookVisitor<source_version> BookVisitor;
-  typedef Book<source_version> BookSource;
-  typedef Book<target_version> BookTarget;
-  typedef typename BookSource::BookNode BookNodeSource;
-  typedef typename BookTarget::BookNode BookNodeTarget;
-  using BookVisitor::book_;
 
   BookVisitorMerge(
-      const BookSource& source,
-      BookTarget& destination,
+      const Book<1>& source,
+      Book<1>& destination,
       void (*leaf_func)(Node*) = nullptr,
       void (*internal_func)(Node*) = nullptr) :
       BookVisitorWithProgress<source_version>(source),
@@ -38,7 +32,7 @@ class BookVisitorMerge : public BookVisitorWithProgress<source_version> {
       internal_func_(internal_func) {
     // This avoids adding a lot of roots and removing them afterwards (to avoid
     // memory problems).
-    for (const auto& root: book_.Roots()) {
+    for (const auto& root : BookVisitor<source_version>::book_.Roots()) {
       Board unique = root.Unique();
       if (!destination_.Get(unique)) {
         destination_.roots_.insert(unique);

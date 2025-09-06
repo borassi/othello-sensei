@@ -70,7 +70,7 @@ class BookVisitor {
       if (!seen_boards.insert(child.Unique()).second) {
         continue;
       }
-      Square move = __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
+      Square move = (Square) __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
       if (flip != 0) {
         sequence_.AddMove(move);
       }
@@ -158,7 +158,7 @@ class BookVisitorWithProgress : public BookVisitor<kBookVersion> {
       NVisited visited = GetVisited();
       double time = time_.Get();
       double total_time = time / visited * to_be_visited_;
-      std::cout << "Done " << PrettyPrintDouble(visited) << " of " << PrettyPrintDouble(to_be_visited_) << "\n";
+      std::cout << "Done " << PrettyPrintDouble((double) visited) << " of " << PrettyPrintDouble((double) to_be_visited_) << "\n";
       std::cout << "  Sequence: " << sequence_ << "\n";
       std::cout << "  Total time: " << total_time << "\n";
       std::cout << "  Remaining time: " << total_time - time << "\n";
@@ -182,7 +182,7 @@ class BookVisitorWithProgress : public BookVisitor<kBookVersion> {
   using BookVisitor::depth_;
 
   NVisited GetVisited() {
-    NVisited visited;
+    NVisited visited = 0;
     for (int i = 0; i < 120; ++i) {
       visited += visited_at_depth_[i];
     }

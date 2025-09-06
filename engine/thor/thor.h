@@ -54,20 +54,25 @@ class Thor {
     ParseGameListFutures(saved_games_futures);
 
     if (load_canonicalizer_future != nullptr) {
-      load_canonicalizer_future.get();
+      try {
+        (void) load_canonicalizer_future.get();  // Silence a warning.
+      } catch (const std::exception& e) {
+        std::cerr << "Caught exception when loading canonicalizer: " << e.what() << std::endl;
+        throw; // Re-raises the original exception
+      }
     } else {
       ComputeCanonicalizer();
     }
   }
 
   bool ReloadSource(const std::string& file) {
-    std::string file_canonical = fs::weakly_canonical(file);
+    std::string file_canonical = fs::weakly_canonical(file).string();
     bool reloaded = false;
     for (auto& [source_name, source] : sources_) {
       if (source->GetType() != SOURCE_TYPE_SAVED_GAMES) {
         continue;
       }
-      std::string source_canonical = fs::weakly_canonical(source->GetFolder());
+      std::string source_canonical = fs::weakly_canonical(source->GetFolder()).string();
       if (source_canonical.back() != fs::path::preferred_separator) {
         source_canonical += fs::path::preferred_separator;
       }
@@ -138,7 +143,7 @@ class Thor {
   std::pair<std::string, std::unique_ptr<GenericSource>> LoadSource(
       const std::string& source, bool rebuild_games_order, bool rebuild_games_small_hash) {
     std::unique_ptr<GenericSource> result(new Source<GameGetter>(source, rebuild_games_order, rebuild_games_small_hash));
-    return {fs::path(source).filename(), std::move(result)};
+    return {fs::path(source).filename().string(), std::move(result)};
   }
 
   std::vector<std::string> Sources() const {
