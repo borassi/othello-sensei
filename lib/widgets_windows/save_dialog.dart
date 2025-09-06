@@ -279,6 +279,7 @@ class SaveDialogWidget extends StatelessWidget {
     return SecondaryWindow(
       onPopInvoked: (bool didPop) {},
       title: 'Game data',
+      sideMarginAlwaysLarge: true,
       child: SaveDialogContent()
     );
   }

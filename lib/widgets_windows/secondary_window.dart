@@ -23,18 +23,19 @@ import '../widgets_spacers/margins.dart';
 
 class _SecondaryWindowMainContent extends StatelessWidget {
   final Widget child;
+  final bool sideMarginAlwaysLarge;
 
-  const _SecondaryWindowMainContent({required this.child});
+  const _SecondaryWindowMainContent({required this.child, required this.sideMarginAlwaysLarge});
 
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     return Row(
       children: [
-        const Margin.side(),
+        sideMarginAlwaysLarge ? const Margin.internal() : const Margin.side(),
         const Spacer(),
         SizedBox(
-          width: 8 * appSizes.squareSize,
+          width: 8 * appSizes.squareSize - (sideMarginAlwaysLarge ? 2 * (appSizes.margin - appSizes.sideMargin) : 0),
           child: Column(
             children: [
               const Margin.internal(),
@@ -44,7 +45,7 @@ class _SecondaryWindowMainContent extends StatelessWidget {
           )
         ),
         const Spacer(),
-        const Margin.side(),
+        sideMarginAlwaysLarge ? const Margin.internal() : const Margin.side(),
       ]
     );
   }
@@ -55,8 +56,9 @@ class SecondaryWindow extends StatelessWidget {
   final Function(bool)? onPopInvoked;
   final String title;
   final Widget child;
+  final bool sideMarginAlwaysLarge;
 
-  const SecondaryWindow({super.key, required this.title, required this.child, this.onPopInvoked});
+  const SecondaryWindow({super.key, required this.title, required this.child, this.onPopInvoked, this.sideMarginAlwaysLarge = false});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +72,7 @@ class SecondaryWindow extends StatelessWidget {
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
-          body: _SecondaryWindowMainContent(child: child)
+          body: _SecondaryWindowMainContent(sideMarginAlwaysLarge: sideMarginAlwaysLarge, child: child)
         )
       )
     );

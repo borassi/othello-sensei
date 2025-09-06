@@ -1,7 +1,6 @@
 Just before next launch
 - P1 MED Debug Thor load failure on Marc's phone.
 - P1 MED Enable picking a directory in Linux.
-- P0 More margins on the save window
 - P0 Large archive is slow
 - P0 A few moves change the missing disks in the first move
 - P0 Disable autocorrect in archive and save
