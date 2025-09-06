@@ -61,13 +61,7 @@ class Main {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0, 0, false);
     [[maybe_unused]] bool new_state = ToState(first_state_.get(), false);
     assert(new_state);
-    memset(game_metadata_.black, 0, 20);
-    memset(game_metadata_.white, 0, 20);
-    memset(game_metadata_.tournament, 0, 26);
-    game_metadata_.year = GetCurrentYear();
-    game_metadata_.black_disks = 64;
-    memset(game_metadata_.round, 0, 10);
-    memset(game_metadata_.notes, 0, 300);
+    ResetGameMetadata();
   }
 
   bool PlayMove(Square square, bool automatic) {
@@ -146,6 +140,7 @@ class Main {
 
   void ResetAnalyzedGame() {
     first_state_->ResetPrimaryLine();
+    ResetGameMetadata();
   }
 
   // We need a separate call to get the annotations in the UI thread, to prevent
@@ -355,6 +350,16 @@ class Main {
       handle_game_over && IsGameOver(board),
       first_state_->GetAnnotations()
     });
+  }
+
+  void ResetGameMetadata() {
+    memset(game_metadata_.black, 0, 20);
+    memset(game_metadata_.white, 0, 20);
+    memset(game_metadata_.tournament, 0, 26);
+    game_metadata_.year = GetCurrentYear();
+    game_metadata_.black_disks = 64;
+    memset(game_metadata_.round, 0, 10);
+    memset(game_metadata_.notes, 0, 300);
   }
 };
 
