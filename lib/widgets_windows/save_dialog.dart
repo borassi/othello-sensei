@@ -77,7 +77,8 @@ class _InputFormField extends StatelessWidget {
             contentPadding: EdgeInsets.fromLTRB(0, 0, 0, squareSize * 0.1),
             isDense: true,
             enabledBorder: InputBorder.none
-        )
+        ),
+        autocorrect: false,
       );
   }
 }
