@@ -437,32 +437,6 @@ class FFIEngine {
   late final _InvertTurn =
       _InvertTurnPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
-  void SetSenseiAction(ffi.Pointer<ffi.Void> ptr, SenseiAction action) {
-    return _SetSenseiAction(ptr, action.value);
-  }
-
-  late final _SetSenseiActionPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.UnsignedInt)
-        >
-      >('SetSenseiAction');
-  late final _SetSenseiAction =
-      _SetSenseiActionPtr.asFunction<
-        void Function(ffi.Pointer<ffi.Void>, int)
-      >();
-
-  SenseiAction GetSenseiAction(ffi.Pointer<ffi.Void> ptr) {
-    return SenseiAction.fromValue(_GetSenseiAction(ptr));
-  }
-
-  late final _GetSenseiActionPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ffi.Void>)>
-      >('GetSenseiAction');
-  late final _GetSenseiAction =
-      _GetSenseiActionPtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
-
   ffi.Pointer<SaveGameOutput> GetGameToSave(ffi.Pointer<ffi.Void> ptr) {
     return _GetGameToSave(ptr);
   }
@@ -561,18 +535,18 @@ class FFIEngine {
         )
       >();
 
-  bool ReloadSource(ffi.Pointer<ffi.Void> ptr, ffi.Pointer<ffi.Char> file) {
-    return _ReloadSource(ptr, file);
+  bool ReloadSourceUi(ffi.Pointer<ffi.Void> ptr, ffi.Pointer<ffi.Char> file) {
+    return _ReloadSourceUi(ptr, file);
   }
 
-  late final _ReloadSourcePtr =
+  late final _ReloadSourceUiPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
         >
-      >('ReloadSource');
-  late final _ReloadSource =
-      _ReloadSourcePtr.asFunction<
+      >('ReloadSourceUi');
+  late final _ReloadSourceUi =
+      _ReloadSourceUiPtr.asFunction<
         bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
       >();
 

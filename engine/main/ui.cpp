@@ -111,5 +111,5 @@ void SetFileSources(void* ptr, int num_folders, char** folders) {
   static_cast<Main*>(ptr)->SetFileSources(folders_vector);
 }
 
-bool ReloadSource(void* ptr, const char* file) { return static_cast<Main*>(ptr)->ReloadSource(file); }
+bool ReloadSourceUi(void* ptr, const char* file) { return static_cast<Main*>(ptr)->ReloadSource(file); }
 void SetCountingTime(void* ptr, bool value) { static_cast<Main*>(ptr)->SetCountingTime(value); }

@@ -335,7 +335,7 @@ class GlobalState {
     if (file != null) {
       var fileC = file.toNativeUtf8().cast<Char>();
       GlobalState.thorMetadata.invalidate();
-      bool reloaded = GlobalState.ffiEngine.ReloadSource(GlobalState.ffiMain, fileC);
+      bool reloaded = GlobalState.ffiEngine.ReloadSourceUi(GlobalState.ffiMain, fileC);
       malloc.free(fileC);
       if (!reloaded &&
           GlobalState.preferences.get('Show dialog on save outside archive')) {
