@@ -35,13 +35,16 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+        }
     }
 
     signingConfigs {
         create("release") {
             keyAlias = keystoreProperties ["keyAlias"] as String
             keyPassword = keystoreProperties ["keyPassword"] as String
-            storeFile = file(keystoreProperties ["storeFile"])
+            storeFile = keystoreProperties ["storeFile"]?.let { file(it) }
             storePassword = keystoreProperties ["storePassword"] as String
         }
     }
