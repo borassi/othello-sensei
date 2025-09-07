@@ -40,10 +40,10 @@ class BoardToEvaluate {
       HashMap<kBitHashMap>* hash_map,
       EvaluatorFactory evaluator_depth_one_factory,
       uint8_t index) :
-      book_(book),
-      started_(false),
       stoppable_(false),
-      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index) {}
+      started_(false),
+      evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index),
+      book_(book) {}
 
   bool Finished() const {
     for (auto& [_, finished] : states_finished_) {
@@ -124,8 +124,8 @@ class BoardToEvaluate {
 class ThorSourceMetadataExtended {
  public:
   ThorSourceMetadataExtended(const ThorSourceMetadataExtended&) = delete;
-  ThorSourceMetadataExtended(const std::string& name, const GenericSource& source) : name_(name), folder_(source.GetFolder()),
-                                                                                     thor_source_metadata_() {
+  ThorSourceMetadataExtended(const std::string& name, const GenericSource& source) :
+      thor_source_metadata_(), name_(name), folder_(source.GetFolder()) {
     const auto& players = source.Players();
     selected_blacks_.reserve(players.size() + 1);
     selected_whites_.reserve(players.size() + 1);
@@ -219,7 +219,7 @@ class Engine {
 
   UpdateAnnotations update_annotations_;
   SetThorMetadata set_thor_metadata_;
-  SendMessage send_message_;
+  [[maybe_unused]] SendMessage send_message_;
 
   std::unique_ptr<EvalType> evals_;
   HashMap<kBitHashMap> hash_map_;
@@ -240,7 +240,6 @@ class Engine {
 
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;
-  SenseiAction last_sensei_action_;
 
   void RunSetFileSources(const std::vector<std::string>& sources, std::shared_ptr<std::future<void>> last_future) {
     last_future->get();

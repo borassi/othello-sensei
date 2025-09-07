@@ -40,13 +40,13 @@ class GameToSave {
       Eval black_disks,
       std::string round) :
       moves_(moves),
+      round_(std::move(round)),
       black_(std::move(black)),
       white_(std::move(white)),
       tournament_(std::move(tournament)),
-      year_(year),
       notes_(std::move(notes)),
-      black_disks_(black_disks),
-      round_(std::move(round)) {}
+      year_(year),
+      black_disks_(black_disks) {}
 
   const std::string& Round() const { return round_; }
   const Sequence& Moves() const { return moves_; }

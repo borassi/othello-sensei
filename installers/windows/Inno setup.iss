@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Othello Sensei"
-#define MyAppVersion "1.0.4"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "Michele Borassi"
 #define MyAppURL "https://github.com/borassi/othello-sensei/blob/stable/README.md"
 #define MyAppExeName "othello_sensei.exe"

@@ -28,6 +28,12 @@
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		7A10109F27424E0ABD419B85 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 71A9A613A1FB8D668256D231 /* Pods_Runner.framework */; };
+		CD18F3F12E6CC02A00E1A6C8 /* move_selector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD18F3EF2E6CC02A00E1A6C8 /* move_selector.cpp */; };
+		CD18F3F22E6CC02A00E1A6C8 /* move_selector.h in Sources */ = {isa = PBXBuildFile; fileRef = CD18F3F02E6CC02A00E1A6C8 /* move_selector.h */; };
+		CD18F3F72E6CC03F00E1A6C8 /* game_to_save.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD18F3F32E6CC03F00E1A6C8 /* game_to_save.cpp */; };
+		CD18F3F82E6CC03F00E1A6C8 /* saved_game_list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD18F3F42E6CC03F00E1A6C8 /* saved_game_list.cpp */; };
+		CD18F3F92E6CC03F00E1A6C8 /* game_to_save.h in Sources */ = {isa = PBXBuildFile; fileRef = CD18F3F52E6CC03F00E1A6C8 /* game_to_save.h */; };
+		CD18F3FA2E6CC03F00E1A6C8 /* saved_game_list.h in Sources */ = {isa = PBXBuildFile; fileRef = CD18F3F62E6CC03F00E1A6C8 /* saved_game_list.h */; };
 		CD1DEAC02CA995AC00FC1250 /* endgame_ffo.h in Sources */ = {isa = PBXBuildFile; fileRef = CD1DE98B2CA9950B00FC1250 /* endgame_ffo.h */; };
 		CD1DEAC52CA995F900FC1250 /* bitpattern.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD1DE9912CA9950B00FC1250 /* bitpattern.cpp */; };
 		CD1DEAC62CA995F900FC1250 /* bitpattern.h in Sources */ = {isa = PBXBuildFile; fileRef = CD1DE9922CA9950B00FC1250 /* bitpattern.h */; };
@@ -168,6 +174,12 @@
 		7E9920EE05C7446A3C532CD2 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		A3919B3486DCAA5AB6E90AF0 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		CD18F3EF2E6CC02A00E1A6C8 /* move_selector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = move_selector.cpp; path = ../engine/playagainstsensei/move_selector.cpp; sourceTree = "<group>"; };
+		CD18F3F02E6CC02A00E1A6C8 /* move_selector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = move_selector.h; path = ../engine/playagainstsensei/move_selector.h; sourceTree = "<group>"; };
+		CD18F3F32E6CC03F00E1A6C8 /* game_to_save.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = game_to_save.cpp; path = ../engine/savegame/game_to_save.cpp; sourceTree = "<group>"; };
+		CD18F3F42E6CC03F00E1A6C8 /* saved_game_list.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = saved_game_list.cpp; path = ../engine/savegame/saved_game_list.cpp; sourceTree = "<group>"; };
+		CD18F3F52E6CC03F00E1A6C8 /* game_to_save.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = game_to_save.h; path = ../engine/savegame/game_to_save.h; sourceTree = "<group>"; };
+		CD18F3F62E6CC03F00E1A6C8 /* saved_game_list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = saved_game_list.h; path = ../engine/savegame/saved_game_list.h; sourceTree = "<group>"; };
 		CD1DE9882CA9950B00FC1250 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		CD1DE9892CA9950B00FC1250 /* collect_examples.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = collect_examples.cpp; sourceTree = "<group>"; };
 		CD1DE98A2CA9950B00FC1250 /* endgame_ffo_main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = endgame_ffo_main.cpp; sourceTree = "<group>"; };
@@ -360,6 +372,12 @@
 		33CC10E42044A3C60003C045 = {
 			isa = PBXGroup;
 			children = (
+				CD18F3F52E6CC03F00E1A6C8 /* game_to_save.h */,
+				CD18F3F32E6CC03F00E1A6C8 /* game_to_save.cpp */,
+				CD18F3F62E6CC03F00E1A6C8 /* saved_game_list.h */,
+				CD18F3F42E6CC03F00E1A6C8 /* saved_game_list.cpp */,
+				CD18F3F02E6CC02A00E1A6C8 /* move_selector.h */,
+				CD18F3EF2E6CC02A00E1A6C8 /* move_selector.cpp */,
 				CD1DEA222CA9950B00FC1250 /* engine */,
 				33FAB671232836740065AC1E /* Runner */,
 				33CEB47122A05771004F2AC0 /* Flutter */,
@@ -373,7 +391,7 @@
 		33CC10EE2044A3C60003C045 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				33CC10ED2044A3C60003C045 /* Othello Sensei.app */,
+				33CC10ED2044A3C60003C045 /* Runner.app */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -923,6 +941,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD18F3F72E6CC03F00E1A6C8 /* game_to_save.cpp in Sources */,
+				CD18F3F82E6CC03F00E1A6C8 /* saved_game_list.cpp in Sources */,
+				CD18F3F92E6CC03F00E1A6C8 /* game_to_save.h in Sources */,
+				CD18F3FA2E6CC03F00E1A6C8 /* saved_game_list.h in Sources */,
+				CD18F3F12E6CC02A00E1A6C8 /* move_selector.cpp in Sources */,
+				CD18F3F22E6CC02A00E1A6C8 /* move_selector.h in Sources */,
 				CD1DEAFD2CA9986100FC1250 /* prob_combiners.cpp in Sources */,
 				CD1DEAFE2CA9986100FC1250 /* prob_combiners.h in Sources */,
 				CD1DEAFF2CA9986100FC1250 /* tree_node.cpp in Sources */,
@@ -1124,7 +1148,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				NS_BLOCK_ASSERTIONS = YES;
 				OTHER_SWIFT_FLAGS = "";
@@ -1151,7 +1175,6 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = D284R47M4F;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTING_SEARCH_PATHS = NO;
@@ -1164,10 +1187,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 2.0.0;
 				NS_BLOCK_ASSERTIONS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
-				PRODUCT_NAME = "Othello Sensei";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
@@ -1183,6 +1206,7 @@
 		};
 		33CC10F92044A3C60003C045 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -1222,7 +1246,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				NS_BLOCK_ASSERTIONS = NO;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1274,7 +1298,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				NS_BLOCK_ASSERTIONS = YES;
 				"OTHER_CPLUSPLUSFLAGS[arch=*]" = "-DNDEBUG";
@@ -1303,7 +1327,6 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = D284R47M4F;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTING_SEARCH_PATHS = NO;
@@ -1315,10 +1338,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 2.0.0;
 				NS_BLOCK_ASSERTIONS = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
-				PRODUCT_NAME = "Othello Sensei";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1339,7 +1362,6 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = D284R47M4F;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_TESTING_SEARCH_PATHS = NO;
@@ -1352,10 +1374,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 2.0.0;
 				NS_BLOCK_ASSERTIONS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
-				PRODUCT_NAME = "Othello Sensei";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};

@@ -22,7 +22,6 @@ import 'package:othello_sensei/widgets_utils/misc.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
-import '../widgets_spacers/margins.dart';
 
 class SetupBoardControls extends StatelessWidget {
 

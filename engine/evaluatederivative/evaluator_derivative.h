@@ -75,9 +75,9 @@ struct TupleHasher
 class TreeNodeSupplier {
  public:
   TreeNodeSupplier() :
-      first_valid_index_(1),
+      tree_node_index_(kHashMapSize),
       num_nodes_(0),
-      tree_node_index_(kHashMapSize) {
+      first_valid_index_(1) {
     tree_nodes_ = new TreeNode[kDerivativeEvaluatorSize];
     FullResetHashMap();
   }

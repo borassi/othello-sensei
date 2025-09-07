@@ -38,10 +38,10 @@ class EvaluationState : public TreeNode {
   EvaluationState(Square move, const Board& board, bool black_turn, int depth, int depth_no_pass, bool modified) :
       TreeNode() {
     annotations_.example_thor_games = (ThorGame*) malloc(sizeof(ThorGame));
-    Reset(move, board, black_turn, depth, depth_no_pass, modified);
+    ResetState(move, board, black_turn, depth, depth_no_pass, modified);
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
-  void Reset(Square move, const Board& board, bool black_turn, int depth, int depth_no_pass, bool modified) {
+  void ResetState(Square move, const Board& board, bool black_turn, int depth, int depth_no_pass, bool modified) {
     TreeNode::Reset(board, depth, 0);
     lower_ = -64;
     upper_ = 64;
@@ -558,7 +558,7 @@ class EvaluationState : public TreeNode {
       TreeNode* father = n_fathers_ > 0 ? fathers_[0] : nullptr;
       Annotations* next_sibling = annotations_.next_sibling;
       DeleteChildren();
-      Reset(annotations_.move, Board(player, opponent), black_turn, depth_, annotations_.depth_no_pass, true);
+      ResetState(annotations_.move, Board(player, opponent), black_turn, depth_, annotations_.depth_no_pass, true);
       if (father != nullptr) {
         AddFather(father);
       }

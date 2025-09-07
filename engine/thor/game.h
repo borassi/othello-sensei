@@ -28,13 +28,13 @@
 class Game {
  public:
   Game(char* buffer, int offset, short year, const std::vector<std::string>& players, const std::vector<std::string>& tournaments, double priority) :
+      moves_(Sequence::FromThor((Square*) buffer + offset + 8)),
       black_(&players[(buffer[offset + 2] & 0xff) | ((buffer[offset + 3] & 0xff) << 8)]),
       white_(&players[(buffer[offset + 4] & 0xff) | ((buffer[offset + 5] & 0xff) << 8)]),
-      year_(year),
       tournament_(&tournaments[(buffer[offset] & 0xff) | ((buffer[offset + 1] & 0xff) << 8)]),
-      score_(buffer[offset + 6]),
-      moves_(Sequence::FromThor((Square*) buffer + offset + 8)),
-      priority_(priority) {
+      priority_(priority),
+      year_(year),
+      score_(buffer[offset + 6]) {
     assert(priority_ >= 0 && priority_ <= 1);
     moves_.ToCanonicalGameInplace();
   }
@@ -45,9 +45,9 @@ class Game {
       black_(black),
       white_(white),
       tournament_(tournament),
+      priority_(priority),
       year_(year),
-      score_(score),
-      priority_(priority) {
+      score_(score) {
     assert(priority_ >= 0 && priority_ <= 1);
     moves_.ToCanonicalGameInplace();
   }

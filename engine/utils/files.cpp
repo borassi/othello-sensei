@@ -66,7 +66,9 @@ struct FileWithWriteTime {
  * @brief Fetches paths of file system entries (files and directories) in a given directory,
  * sorted in decreasing order of modification time.
  *
- * @param directoryPath The path to the directory to search.
+ * @param directory The path to the directory to search.
+ * @param include_files Whether to include files.
+ * @param include_directories Whether to include directories.
  * @return A vector of strings representing the paths, sorted by modification time (newest first).
  * Returns an empty vector if the directory does not exist or is not accessible.
  */

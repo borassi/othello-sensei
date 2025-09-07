@@ -199,7 +199,7 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
         onChanged: onChanged,
       );
     default:
-      throw Exception('Invalid preference type ${value.runtimeType} for value ${value}');
+      throw Exception('Invalid preference type ${value.runtimeType} for value $value');
   }
 }
 
