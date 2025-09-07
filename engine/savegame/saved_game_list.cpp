@@ -69,13 +69,13 @@ void SavedGameList::LoadFolder(
     auto time = fs::last_write_time(path);
     auto game = GameToSave::FromString(LoadTextFile(path));
     for (const auto& player : {game.Black(), game.White()}) {
-      auto [iterator, inserted] = players_to_index.insert({player, players_.size()});
+      auto [iterator, inserted] = players_to_index.insert({player, (int) players_.size()});
       if (inserted) {
         players_.push_back(player);
       }
     }
     auto tournament = game.Tournament();
-    auto [iterator, inserted] = tournaments_to_index.insert({tournament, tournaments_.size()});
+    auto [iterator, inserted] = tournaments_to_index.insert({tournament, (int) tournaments_.size()});
     if (inserted) {
       tournaments_.push_back(tournament);
     }

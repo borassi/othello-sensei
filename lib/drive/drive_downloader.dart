@@ -212,7 +212,7 @@ class WindowsHelpText extends StatelessWidget {
           const TextSpan(
             text: (
                 ' (section Virus & threat protection\n'
-                '        settings).\n'
+                '        settings > Exclusions).\n'
                 '     2. After clicking "Add an exclusion", select "Process".\n'
                 '     3. Enter process name "othello_sensei.exe".\n'
                 '     4. The download will become much faster (no need to restart it).\n'

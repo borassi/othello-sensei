@@ -58,6 +58,8 @@ HOW TO RELEASE ON LINUX:
 
 HOW TO RELEASE ON WINDOWS (APP STORE):
 - Check that the link on Windows Defender in drive_downloader is updated.
+- Change msix version in pubspec.yaml.
+- Ensure the BMI2 and POPCNT lines in windows/CMakeLists.txt are enabled
 - flutter build windows
 - Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
 - Comment the BMI2 line in windows/CMakeLists.txt

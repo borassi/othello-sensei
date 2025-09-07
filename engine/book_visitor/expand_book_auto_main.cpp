@@ -133,7 +133,7 @@ std::string GetBestBoard(Book<>& book, const std::vector<BoardWithStats>& boards
     auto uncertainty = board_in_book->Uncertainty();
     auto value = board.GetValue(uncertainty);
     char format_value_eval[39];
-    sprintf(format_value_eval, "%6.2f  %5d  %6.2f  %8.6f  %+2.2f", board.error, board.depth, uncertainty, value, board_in_book->GetEval());
+    snprintf(format_value_eval, 39, "%6.2f  %5d  %6.2f  %8.6f  %+2.2f", board.error, board.depth, uncertainty, value, board_in_book->GetEval());
     std::cout << "  "
         << std::setw(max_line_length) << board.line << "  " << format_value_eval << "\n";
     if (value < best) {

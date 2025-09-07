@@ -43,7 +43,7 @@ std::string GetBestLine(Book<>& book, const std::vector<std::string>& lines) {
     auto board_in_book = book.Mutable(Board(line));
     auto value = board_in_book->Uncertainty();
     char format_value_eval[13];
-    sprintf(format_value_eval, "%.2f  %+.2f", value, board_in_book->GetEval());
+    snprintf(format_value_eval, 13, "%.2f  %+.2f", value, board_in_book->GetEval());
     std::cout << "  "
         << std::setw(max_line_length) << line << "  " << format_value_eval << "\n";
     if (value > best) {
