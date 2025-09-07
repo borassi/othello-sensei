@@ -1,6 +1,8 @@
 Just before next launch
 - P1 MED Debug Thor load failure on Marc's phone.
 - P1 MED Enable picking a directory in Linux.
+- P0 SMALL Debug save fails on Mac.
+- P0 MED Make the release work on iOS.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.
