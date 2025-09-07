@@ -140,7 +140,7 @@ EXPORT
 void SetFileSources(void* ptr, int num_folders, char** folders);
 
 EXPORT
-bool ReloadSourceUi(void* ptr, char* file);
+bool ReloadSourceUi(void* ptr, const char* file);
 
 EXPORT
 void SetCountingTime(void* ptr, bool value);

@@ -26,11 +26,13 @@ class BookVisitorMerge : public BookVisitorWithProgress<source_version> {
 
   BookVisitorMerge(
       const BookSource& source,
-      BookTarget& destination) :
+      BookTarget& destination,
+      void (*leaf_func)(Node*) = nullptr,
+      void (*internal_func)(Node*) = nullptr) :
       Base(source),
       destination_(destination),
-      leaf_func_(nullptr),
-      internal_func_(nullptr) {
+      leaf_func_(leaf_func),
+      internal_func_(internal_func) {
     // This avoids adding a lot of roots and removing them afterwards (to avoid
     // memory problems).
     for (const auto& root : ::BookVisitor<source_version>::book_.Roots()) {
@@ -42,7 +44,7 @@ class BookVisitorMerge : public BookVisitorWithProgress<source_version> {
   }
 
   virtual void VisitAll() override {
-    BookVisitor::VisitAll();
+    ::BookVisitor<source_version>::VisitAll();
     destination_.Commit();
   }
 
