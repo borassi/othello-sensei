@@ -145,7 +145,8 @@ class MoveIteratorBase {
 
 class MoveIteratorVeryQuick : public MoveIteratorBase {
  public:
-  explicit MoveIteratorVeryQuick(Stats* stats) : player_(0), opponent_(0), candidate_moves_(), MoveIteratorBase(stats) {}
+  explicit MoveIteratorVeryQuick(Stats* stats) : MoveIteratorBase(stats), player_(0), opponent_(0), candidate_moves_() {}
+  virtual ~MoveIteratorVeryQuick() {}
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
              int upper, HashMapEntry* entry,
              EvaluatorDepthOneBase* evaluator_depth_one) override;
@@ -160,6 +161,7 @@ class MoveIteratorVeryQuick : public MoveIteratorBase {
 template<bool very_quick>
 class MoveIteratorQuick : public MoveIteratorBase {
  public:
+  virtual ~MoveIteratorQuick() {}
   explicit MoveIteratorQuick(Stats* stats);
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
              int upper, HashMapEntry* entry,
@@ -177,7 +179,7 @@ class MoveIteratorQuick : public MoveIteratorBase {
 
 class MoveIteratorEval : public MoveIteratorBase {
  public:
-  explicit MoveIteratorEval(Stats* stats) : remaining_moves_(), empties_(), depth_one_evaluator_(), MoveIteratorBase(stats), moves_() {};
+  explicit MoveIteratorEval(Stats* stats) : MoveIteratorBase(stats), moves_(), remaining_moves_(), empties_(), depth_one_evaluator_() {};
 
   void Setup(BitPattern player, BitPattern opponent, BitPattern last_flip,
              int upper, HashMapEntry* entry,
@@ -198,12 +200,14 @@ class MoveIteratorEval : public MoveIteratorBase {
 
 class MoveIteratorMinimizeOpponentMoves : public MoveIteratorEval {
  public:
+  virtual ~MoveIteratorMinimizeOpponentMoves() {}
   explicit MoveIteratorMinimizeOpponentMoves(Stats* stats) : MoveIteratorEval(stats) {};
   int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) final;
 };
 
 class MoveIteratorDisproofNumber : public MoveIteratorEval {
  public:
+  virtual ~MoveIteratorDisproofNumber() {}
   explicit MoveIteratorDisproofNumber(Stats* stats) : MoveIteratorEval(stats) {};
   int Eval(BitPattern player, BitPattern opponent, BitPattern flip, int upper, Square square, Square empties) final;
 };

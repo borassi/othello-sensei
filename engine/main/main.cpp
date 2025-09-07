@@ -32,47 +32,21 @@ Main::Main(
     SendMessage send_message) :
     set_board_(set_board),
     update_timers_(update_timers),
-    is_being_destroyed_(false),
-    current_state_(nullptr),
     last_state_flutter_(nullptr),
-    analyzing_(0),
-    engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations, set_thor_metadata, send_message),
-    xot_state_(XOT_STATE_AUTOMATIC),
+    current_state_(nullptr),
     xot_small_(LoadTextFile(xot_small_filepath)),
     xot_large_(LoadTextFile(xot_large_filepath)),
-    time_on_this_position_(std::nullopt) {
+    xot_state_(XOT_STATE_AUTOMATIC),
+    engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations, set_thor_metadata, send_message),
+    analyzing_(0),
+    time_on_this_position_(std::nullopt),
+    is_being_destroyed_(false) {
   evaluate_params_.sensei_action = SENSEI_INVALID_ACTION;
   srand((int) time(nullptr));
   PrintSupportedFeatures();
   update_timers_future_ = std::async(std::launch::async, &Main::RunUpdateTimersThread, this);
   NewGame();
 }
-
-namespace {
-bool operator==(const EvaluateParams& lhs, const EvaluateParams& rhs) {
-  return std::forward_as_tuple(
-      lhs.lower,
-      lhs.upper,
-      lhs.approx,
-      lhs.use_book,
-      lhs.thor_filters.max_games,
-      lhs.thor_filters.start_year,
-      lhs.thor_filters.end_year
-  ) == std::forward_as_tuple(
-      rhs.lower,
-      rhs.upper,
-      rhs.approx,
-      rhs.use_book,
-      rhs.thor_filters.max_games,
-      rhs.thor_filters.start_year,
-      rhs.thor_filters.end_year
-  );
-}
-
-bool operator!=(const EvaluateParams& lhs, const EvaluateParams& rhs) {
-  return !(lhs == rhs);
-}
-}  // namespace
 
 void Main::Evaluate() {
   if (analyzing_) {

@@ -14,7 +14,6 @@
  * limitations under the License.
  *
  */
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -40,13 +39,13 @@ String versionFilePath() {
 }
 
 Future<void> copyAssetsToLocalPath() async {
-  final manifestContent = await rootBundle.loadString('AssetManifest.json');
-  final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+  final assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+  final assets = assetManifest.listAssets();
   var directory = Directory(localAssetPath());
   if (directory.existsSync()) {
     directory.deleteSync(recursive: true);
   }
-  for (var path in manifestMap.keys) {
+  for (var path in assets) {
     // Avoid copying .DS_Store in Mac as it causes a failure.
     if (basename(path).startsWith('.')) {
       continue;

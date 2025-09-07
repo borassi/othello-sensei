@@ -64,17 +64,17 @@ class Node {
  public:
   Node() :
       evaluations_(nullptr),
-      is_leaf_(true),
       leaf_eval_(kLessThenMinEvalLarge),
-      evaluator_(255) {}
+      evaluator_(255),
+      is_leaf_(true) {}
 
   Node(const Node& other) :
-      // We need to set evaluations_ to nullptr otherwise it tries to free it.
-      evaluations_(nullptr),
-      is_leaf_(other.is_leaf_),
       player_(other.player_),
       opponent_(other.opponent_),
-      n_empties_(other.n_empties_) {
+      evaluations_(nullptr),
+      n_empties_(other.n_empties_),
+      // We need to set evaluations_ to nullptr otherwise it tries to free it.
+      is_leaf_(other.is_leaf_) {
     FromOther(other);
   }
 
@@ -82,7 +82,7 @@ class Node {
   // (which creates an infinite loop). The pointers do the trick.
   Node(const Node* const other) : Node(*other) {}
 
-  ~Node() {
+  virtual ~Node() {
     if (evaluations_ != nullptr) {
       free(evaluations_);
     }
@@ -553,17 +553,17 @@ class TreeNode : public Node {
   TreeNode(const Node& node) :
       Node(node),
       children_(nullptr),
-      n_children_(0),
       fathers_(nullptr),
       n_fathers_(0),
+      n_children_(0),
       n_threads_working_(0) {}
 
   TreeNode() :
       Node(),
       children_(nullptr),
-      n_children_(0),
       fathers_(nullptr),
       n_fathers_(0),
+      n_children_(0),
       n_threads_working_(0) {}
 
   ~TreeNode() {

@@ -21,7 +21,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/intents.dart';
-import 'package:othello_sensei/widgets_sidebar/setup_board.dart';
 import 'package:othello_sensei/widgets_sidebar/sidebar.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';

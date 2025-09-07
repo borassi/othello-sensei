@@ -46,9 +46,10 @@ constexpr HashMapIndex kOffset = 2 * sizeof(HashMapIndex) / sizeof(char);
 #ifdef _MSC_VER
 __pragma(pack(push, 1));
 #endif
+
 class HashMapNode {
  public:
-  HashMapNode() : size_byte_(0), offset_(0) {}
+  HashMapNode() : offset_(0), size_byte_(0) {}
   HashMapNode(int size, BookFileOffset offset) : offset_(offset) {
     size_byte_ = SizeToByte(size);
   }
@@ -107,8 +108,8 @@ class Book {
     HashMapNode node = Find(unique.Player(), unique.Opponent()).second;
     if (!node.IsEmpty()) {
       std::vector<char> serialized = GetValueFile(node).Get(node.Offset());
-      std::unique_ptr<BookNode> node = BookNode::Deserialize(this, serialized);
-      iterator = modified_nodes_.insert(std::make_pair(unique, std::move(node))).first;
+      std::unique_ptr<BookNode> book_node = BookNode::Deserialize(this, serialized);
+      iterator = modified_nodes_.insert(std::make_pair(unique, std::move(book_node))).first;
       return iterator->second.get();
     }
     return nullptr;
@@ -140,7 +141,6 @@ class Book {
 
   void LoadEverythingInMemory(bool load_if(const Node& node)) {
     for (const ValueFile& value_file : value_files_) {
-      int elements = value_file.Elements();
       for (auto& [offset, serialized] : value_file) {
         std::vector<CompressedFlip> father_flips;
         Node n = Node::Deserialize(serialized, version, &father_flips);
@@ -557,8 +557,8 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
     --extra_buffer;
   }
 
-  for (const HashMapNode& node_to_move : add_elements) {
-    std::vector<char> v = GetValueFile(node_to_move).Get(node_to_move.Offset());
+  for (const HashMapNode& add_element : add_elements) {
+    std::vector<char> v = GetValueFile(add_element).Get(add_element.Offset());
     Board board = Board::Deserialize(v.begin());
     HashMapIndex hash = RepositionHash(HashFull(board.Player(), board.Opponent()));
     HashMapNode board_in_position;
@@ -568,7 +568,7 @@ void Book<version>::Resize(std::fstream& file, std::vector<HashMapNode> add_elem
       file.read((char*) &board_in_position, sizeof(board_in_position));
     }
     file.seekp((uint64_t) file.tellg() - sizeof(HashMapNode));
-    file.write((char*) &node_to_move, sizeof(node_to_move));
+    file.write((char*) &add_element, sizeof(add_element));
   }
   UpdateSizes(file);
 }

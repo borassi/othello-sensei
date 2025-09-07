@@ -241,12 +241,12 @@ values. For example, on the sequence e6, Sensei will decide to evaluate e6f4 by 
 following rules:
 
 1. If you never played e6 before, Sensei will always evaluate e6f4.
-1. If you already played e6f4 (e.g., you clicked "e6", "f4", "Undo"), Sensei will always reuse past
+2. If you already played e6f4 (e.g., you clicked "e6", "f4", "Undo"), Sensei will always reuse past
    evaluations (otherwise, there will be a mismatch between the newly computed value of e6f4 and
    the stored values of the children of e6f4).
-1. If you already played e6 but not e6f4 (e.g., you clicked "e6", "Undo", "e6" again):
+3. If you already played e6 but not e6f4 (e.g., you clicked "e6", "Undo", "e6" again):
    1. If e6 is part of an analyzed game, Sensei will always reuse past evaluations.
-   1. Else it will start a new evaluation, but it will update the score of e6f4 only when the new
+   2. Else it will start a new evaluation, but it will update the score of e6f4 only when the new
       evaluation is better than the past evaluation (e.g., if the past evaluation took 5 seconds,
       Sensei will update the evaluation only after 5 seconds or more).
 

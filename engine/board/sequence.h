@@ -456,7 +456,7 @@ class SequenceCanonicalizer {
         continue;
       }
       Board previous_board(0, 0);
-      Square last_move;
+      Square last_move = kNoSquare;
       bool same_previous_board = true;
       for (const auto& sequence : it->second) {
         auto boards_in_sequence = sequence.ToBoards();

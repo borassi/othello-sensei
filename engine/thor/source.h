@@ -54,7 +54,7 @@ struct GameFile {
 class GameGetterOnDisk {
  public:
   explicit GameGetterOnDisk(const std::string& folder) :
-      game_files_(), index_to_file_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN), games_cache_() {
+      game_files_(), index_to_file_(), games_cache_(), min_year_(SHRT_MAX), max_year_(SHRT_MIN) {
     std::set<std::string> game_files;
     auto all_files = GetAllFiles(folder, /*include_files=*/true, /*include_directories=*/false);
     // We can't use directory_iterator because it's available only from MacOS 10.15 and we want to
@@ -280,7 +280,6 @@ class Source : public GenericSource {
   void ComputeGamesSmallHash() {
     ElapsedTime t1;
     games_with_small_hash_.resize(IncludeProbabilityToHashIndex(1 - 0.5 / game_index_by_year_.size()));
-    std::size_t max_hash = std::numeric_limits<std::size_t>::max();
     GameGetterInMemory game_getter(folder_);
 
     for (uint32_t i = 0; i < game_index_by_year_.size(); ++i) {

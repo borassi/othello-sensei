@@ -54,7 +54,7 @@ struct std::hash<TrainingBoard> {
 class TrainingFeature {
  public:
   static constexpr float beta_1 = 0.9F;
-  TrainingFeature() : value_(0), update_(0), m_t_(0), n_appearences_(0) {}
+  TrainingFeature() : value_(0), m_t_(0) {}
 
   float GetValue() const { return value_; }
 
@@ -71,10 +71,8 @@ class TrainingFeature {
   }
 
  private:
-  int n_appearences_;
   float value_;
   float m_t_;
-  float update_;
 };
 
 class CategoricalRegression {

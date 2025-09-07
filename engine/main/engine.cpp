@@ -85,20 +85,19 @@ Engine::Engine(
     SendMessage send_message) :
     update_annotations_(update_annotations),
     set_thor_metadata_(set_thor_metadata),
+    send_message_(send_message),
     hash_map_(),
+    tree_node_supplier_(),
     boards_to_evaluate_(),
     num_boards_to_evaluate_(0),
-    tree_node_supplier_(),
-    last_state_(nullptr),
-    last_first_state_(nullptr),
-    last_sensei_action_(SENSEI_EVALUATES),
     current_thread_(0),
-    thor_metadata_(),
-    send_message_(send_message),
     current_future_(std::make_shared<std::future<void>>(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
         book_filepath, thor_filepath, saved_games_filepath
-    ))) {}
+    ))),
+    thor_metadata_(),
+    last_first_state_(nullptr),
+    last_state_(nullptr) {}
 
 void Engine::Initialize(
     const std::string& evals_filepath,

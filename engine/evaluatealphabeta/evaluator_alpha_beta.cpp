@@ -82,8 +82,8 @@ MoveIteratorQuick<very_quick>::MoveIteratorQuick(Stats* stats) :
     player_(),
     opponent_(),
     candidate_moves_(),
-    current_mask_(),
-    masks_() {
+    masks_(),
+    current_mask_() {
   if (very_quick) {
     masks_[1] = kCornerPattern;
     masks_[3] = kCentralPattern;
@@ -362,8 +362,8 @@ EvaluatorAlphaBeta::EvaluatorAlphaBeta(
     HashMap<kBitHashMap>* hash_map,
     const EvaluatorFactory& evaluator_depth_one_factory) :
     hash_map_(hash_map),
-    stats_(),
-    evaluator_depth_one_(evaluator_depth_one_factory()) {
+    evaluator_depth_one_(evaluator_depth_one_factory()),
+    stats_() {
   for (int depth = 0; depth < 64; ++depth) {
     for (bool solve : {true, false}) {
       for (bool unlikely : {true, false}) {
