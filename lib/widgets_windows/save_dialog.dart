@@ -256,8 +256,8 @@ class SaveDialogContent extends StatelessWidget {
                 height: max(48, Theme.of(context).extension<AppSizes>()!.squareSize),
                 child: SenseiButton(
                   onPressed: () async {
-                    await GlobalState.save();
                     Navigator.pop(context);
+                    await GlobalState.save();
                   },
                   text: "Save",
                   textStyle: Theme.of(context).textTheme.bodyLarge,

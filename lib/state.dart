@@ -332,7 +332,7 @@ class GlobalState {
       bytes: utf8.encode(cArrayToString(game.ref.game)),
     );
     malloc.free(game);
-    if (file != null) {
+    if (file != null && canLookupFiles()) {
       var fileC = file.toNativeUtf8().cast<Char>();
       GlobalState.thorMetadata.invalidate();
       bool reloaded = GlobalState.ffiEngine.ReloadSourceUi(GlobalState.ffiMain, fileC);
