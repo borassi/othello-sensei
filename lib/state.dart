@@ -651,6 +651,10 @@ class InvalidPreferenceException implements Exception {
   InvalidPreferenceException(this.cause);
 }
 
+bool canLookupFiles() {
+  return Platform.isLinux || Platform.isWindows;
+}
+
 class PreferencesState with ChangeNotifier {
   static const enumTypeToValues = {Player : Player.values};
   final Map<String, dynamic> defaultPreferences = {
@@ -692,7 +696,7 @@ class PreferencesState with ChangeNotifier {
     'White player': Player.player,
     'Show settings dialog at startup': true,
     'Timer (minutes, 0 for no countdown)': 0.0,
-    'Show dialog on save outside archive': !Platform.isAndroid,
+    'Show dialog on save outside archive': canLookupFiles(),
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -718,7 +722,7 @@ class PreferencesState with ChangeNotifier {
 
   PreferencesState._initialize(this._preferences) {
     for (String name in _preferences.getKeys()) {
-      if (Platform.isAndroid && name == 'Show dialog on save outside archive') {
+      if (!canLookupFiles() && name == 'Show dialog on save outside archive') {
         set(name, defaultPreferences[name]);
         continue;
       }
