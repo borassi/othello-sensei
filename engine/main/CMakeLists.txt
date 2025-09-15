@@ -100,3 +100,7 @@ target_link_libraries( # Specifies the target library.
         bindings
         main
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    target_link_options(ui PRIVATE "-Wl,-z,max-page-size=16384")
+endif()

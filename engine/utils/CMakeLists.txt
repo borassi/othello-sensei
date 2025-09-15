@@ -22,14 +22,6 @@ target_link_libraries(
         files
         misc
 )
-#
-#IF(ANDROID)
-#target_link_libraries(
-#        files
-#        android
-#        log
-#)
-#ENDIF()
 
 add_library(
         cpu_adapter
@@ -37,6 +29,10 @@ add_library(
         cpu_adapter.h
         cpu_adapter.cpp
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    target_link_options(cpu_adapter PRIVATE "-Wl,-z,max-page-size=16384")
+endif()
 
 add_library(
         functions
