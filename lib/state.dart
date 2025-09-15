@@ -915,7 +915,7 @@ class GlobalAnnotationState with ChangeNotifier {
       if (primary &&
           annotation.ref.next_state_primary != nullptr &&
           annotation.ref.next_state_primary != annotation.ref.next_state_secondary) {
-        moveBackToGame = lastMove;
+        moveBackToGame = min(moveBackToGame, lastMove);
       }
     }
     return (scores, min(currentMove(), min(moveBackToGame, lastMove)));
