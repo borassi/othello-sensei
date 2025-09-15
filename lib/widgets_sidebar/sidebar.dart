@@ -100,7 +100,7 @@ class Sidebar extends StatelessWidget {
                         constraints: BoxConstraints(maxHeight: appSizes.boardSize - 2 * Case.kBorderWidth),
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: childAppBar + children + childrenControls
+                            children: childAppBar + children
                         ),
                     )
                 )
