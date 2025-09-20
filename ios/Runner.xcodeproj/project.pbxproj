@@ -17,6 +17,12 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		C27C672236EBF6BD58BABAA1 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3FC9E79566422933C8B99B96 /* Pods_RunnerTests.framework */; };
+		CD300FE12E7F07A5004936EF /* move_selector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD300FDF2E7F07A5004936EF /* move_selector.cpp */; };
+		CD300FE22E7F07A5004936EF /* move_selector.h in Sources */ = {isa = PBXBuildFile; fileRef = CD300FE02E7F07A5004936EF /* move_selector.h */; };
+		CD300FE72E7F07C6004936EF /* saved_game_list.h in Sources */ = {isa = PBXBuildFile; fileRef = CD300FE32E7F07C6004936EF /* saved_game_list.h */; };
+		CD300FE82E7F07C6004936EF /* saved_game_list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD300FE42E7F07C6004936EF /* saved_game_list.cpp */; };
+		CD300FE92E7F07C6004936EF /* game_to_save.h in Sources */ = {isa = PBXBuildFile; fileRef = CD300FE52E7F07C6004936EF /* game_to_save.h */; };
+		CD300FEA2E7F07C6004936EF /* game_to_save.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD300FE62E7F07C6004936EF /* game_to_save.cpp */; };
 		CD3DF9662CE12CE3000E5098 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD3DF9652CE12CE3000E5098 /* ShareViewController.swift */; };
 		CD3DF9692CE12CE3000E5098 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = CD3DF9682CE12CE3000E5098 /* Base */; };
 		CD3DF96D2CE12CE3000E5098 /* Share Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CD3DF9632CE12CE3000E5098 /* Share Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -131,6 +137,12 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C97F7318638E3F090E37A970 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		CD300FDF2E7F07A5004936EF /* move_selector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = move_selector.cpp; path = ../engine/playagainstsensei/move_selector.cpp; sourceTree = "<group>"; };
+		CD300FE02E7F07A5004936EF /* move_selector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = move_selector.h; path = ../engine/playagainstsensei/move_selector.h; sourceTree = "<group>"; };
+		CD300FE32E7F07C6004936EF /* saved_game_list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = saved_game_list.h; path = ../engine/savegame/saved_game_list.h; sourceTree = "<group>"; };
+		CD300FE42E7F07C6004936EF /* saved_game_list.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = saved_game_list.cpp; path = ../engine/savegame/saved_game_list.cpp; sourceTree = "<group>"; };
+		CD300FE52E7F07C6004936EF /* game_to_save.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = game_to_save.h; path = ../engine/savegame/game_to_save.h; sourceTree = "<group>"; };
+		CD300FE62E7F07C6004936EF /* game_to_save.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = game_to_save.cpp; path = ../engine/savegame/game_to_save.cpp; sourceTree = "<group>"; };
 		CD3DF95B2CE116F2000E5098 /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		CD3DF95C2CE11702000E5098 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		CD3DF9632CE12CE3000E5098 /* Share Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Share Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -334,6 +346,12 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
+				CD300FE52E7F07C6004936EF /* game_to_save.h */,
+				CD300FE62E7F07C6004936EF /* game_to_save.cpp */,
+				CD300FE32E7F07C6004936EF /* saved_game_list.h */,
+				CD300FE42E7F07C6004936EF /* saved_game_list.cpp */,
+				CD300FE02E7F07A5004936EF /* move_selector.h */,
+				CD300FDF2E7F07A5004936EF /* move_selector.cpp */,
 				CDA310102CB19610006E46F5 /* engine */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
@@ -941,6 +959,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD300FE72E7F07C6004936EF /* saved_game_list.h in Sources */,
+				CD300FE82E7F07C6004936EF /* saved_game_list.cpp in Sources */,
+				CD300FE92E7F07C6004936EF /* game_to_save.h in Sources */,
+				CD300FEA2E7F07C6004936EF /* game_to_save.cpp in Sources */,
+				CD300FE12E7F07A5004936EF /* move_selector.cpp in Sources */,
+				CD300FE22E7F07A5004936EF /* move_selector.h in Sources */,
 				CDA310562CB19610006E46F5 /* state.cpp in Sources */,
 				CDA310312CB19610006E46F5 /* endgame_time.cpp in Sources */,
 				CDA3105A2CB19610006E46F5 /* game.cpp in Sources */,
@@ -1077,6 +1101,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1085,9 +1110,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CPLUSPLUSFLAGS = "-DIOS";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1233,10 +1257,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CPLUSPLUSFLAGS = "-DIOS";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1282,6 +1305,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1290,9 +1314,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Othello Sensei";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_CPLUSPLUSFLAGS = "-DIOS";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
