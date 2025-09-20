@@ -62,7 +62,7 @@ ENDIF()
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -Ofast -DNDEBUG -funroll-loops -fomit-frame-pointer"
+        "${CMAKE_CXX_FLAGS_RELEASE} -pedantic -pipe -O3 -ffast-math -DNDEBUG -funroll-loops -fomit-frame-pointer"
 )
 
 IF (PROFILE)

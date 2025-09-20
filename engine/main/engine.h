@@ -18,7 +18,8 @@
 #define OTHELLO_SENSEI_ENGINE_H
 
 #include <list>
-
+#include <chrono>
+#include <thread>
 #include "bindings.h"
 #include "state.h"
 
@@ -189,7 +190,7 @@ class Engine {
 
   void StopBlocking() {
     Stop();
-    current_future_->wait();
+    current_future_.wait();
   }
 
   void RunUpdateAnnotations() {
@@ -200,13 +201,13 @@ class Engine {
   void Stop();
 
   void StartSetFileSources(const std::vector<std::string>& sources) {
-    current_future_ = std::make_shared<std::future<void>>(std::async(
-        std::launch::async, &Engine::RunSetFileSources, this, sources, current_future_));
+    current_future_ = std::async(
+        std::launch::async, &Engine::RunSetFileSources, this, sources, current_future_).share();
   }
 
   bool ReloadSource(const std::string& file) {
     Stop();
-    current_future_->wait();
+    current_future_.wait();
     bool success = thor_->ReloadSource(file);
     BuildThorSourceMetadata();
     return success;
@@ -228,7 +229,7 @@ class Engine {
   int num_boards_to_evaluate_;
 
   std::atomic_uint32_t current_thread_;
-  std::shared_ptr<std::future<void>> current_future_;
+  std::shared_future<void> current_future_;
 
   std::unique_ptr<Book<kBookVersion>> book_;
 
@@ -241,8 +242,8 @@ class Engine {
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;
 
-  void RunSetFileSources(const std::vector<std::string>& sources, std::shared_ptr<std::future<void>> last_future) {
-    last_future->get();
+  void RunSetFileSources(const std::vector<std::string>& sources, std::shared_future<void> last_future) {
+    last_future.get();
     thor_->SetFileSources(sources);
     BuildThorSourceMetadata();
   }
@@ -285,7 +286,7 @@ class Engine {
 
   // NOTE: Pass variables by value, to avoid concurrent modifications.
   void Run(
-      int current_thread, std::shared_ptr<std::future<void>> last_future,
+      int current_thread, std::shared_future<void> last_future,
       EvaluationState* current_state, std::shared_ptr<EvaluationState> first_state,
       EvaluateParams params, bool in_analysis);
 

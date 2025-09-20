@@ -91,10 +91,10 @@ Engine::Engine(
     boards_to_evaluate_(),
     num_boards_to_evaluate_(0),
     current_thread_(0),
-    current_future_(std::make_shared<std::future<void>>(std::async(
+    current_future_(std::async(
         std::launch::async, &Engine::Initialize, this, evals_filepath,
         book_filepath, thor_filepath, saved_games_filepath
-    ))),
+    ).share()),
     thor_metadata_(),
     last_first_state_(nullptr),
     last_state_(nullptr) {}
@@ -154,9 +154,15 @@ void Engine::Stop() {
 void Engine::Start(EvaluationState* current_state,
            std::shared_ptr<EvaluationState>& first_state,
            const EvaluateParams& params, bool in_analysis) {
-  current_future_ = std::make_shared<std::future<void>>(std::async(
+  // Propagate errors to the main thread.
+  auto status = current_future_.wait_for(std::chrono::seconds(0));
+  if (status == std::future_status::ready) {
+    current_future_.get();
+  }
+
+  current_future_ = std::async(
       std::launch::async, &Engine::Run, this, ++current_thread_,
-      current_future_, current_state, first_state, params, in_analysis));
+      current_future_, current_state, first_state, params, in_analysis).share();
 }
 
 namespace {
@@ -267,10 +273,10 @@ void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) 
 
 // NOTE: Pass variables by value, to avoid concurrent modifications.
 void Engine::Run(
-    int current_thread, std::shared_ptr<std::future<void>> last_future,
+    int current_thread, std::shared_future<void> last_future,
     EvaluationState* current_state, std::shared_ptr<EvaluationState> first_state,
     EvaluateParams params, bool in_analysis) {
-  last_future->get();
+  last_future.get();
   assert(current_state);
   // Useful if we are in analysis.
   if (current_thread == current_thread_ && in_analysis) {
