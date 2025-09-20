@@ -156,7 +156,7 @@
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
 		335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeneratedPluginRegistrant.swift; sourceTree = "<group>"; };
-		33CC10ED2044A3C60003C045 /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		33CC10ED2044A3C60003C045 /* Othello Sensei.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Othello Sensei.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		33CC10F22044A3C60003C045 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Runner/Assets.xcassets; sourceTree = "<group>"; };
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -391,7 +391,7 @@
 		33CC10EE2044A3C60003C045 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				33CC10ED2044A3C60003C045 /* Runner.app */,
+				33CC10ED2044A3C60003C045 /* Othello Sensei.app */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -736,7 +736,7 @@
 			);
 			name = Runner;
 			productName = Runner;
-			productReference = 33CC10ED2044A3C60003C045 /* Runner.app */;
+			productReference = 33CC10ED2044A3C60003C045 /* Othello Sensei.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1142,14 +1142,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				FLUTTER_APPLICATION_PATH = /Users/micheleborassi/AndroidStudioProjects/othellosensei;
-				FLUTTER_BUILD_DIR = build;
-				FLUTTER_BUILD_NAME = 2.0.0;
-				FLUTTER_BUILD_NUMBER = 57;
-				FLUTTER_ROOT = /Users/micheleborassi/development/flutter/;
-				FLUTTER_TARGET = lib/main.dart;
 				GCC_C_LANGUAGE_STANDARD = c17;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
@@ -1158,6 +1152,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				NS_BLOCK_ASSERTIONS = YES;
+				OTHER_CFLAGS = "-ffast-math";
 				OTHER_SWIFT_FLAGS = "";
 				PACKAGE_CONFIG = /Users/micheleborassi/AndroidStudioProjects/othellosensei/.dart_tool/package_config.json;
 				PODS_BUILD_DIR = build;
@@ -1204,10 +1199,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 2.0.0;
 				NS_BLOCK_ASSERTIONS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
@@ -1253,12 +1246,6 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				FLUTTER_APPLICATION_PATH = /Users/micheleborassi/AndroidStudioProjects/othellosensei;
-				FLUTTER_BUILD_DIR = build;
-				FLUTTER_BUILD_NAME = 2.0.0;
-				FLUTTER_BUILD_NUMBER = 57;
-				FLUTTER_ROOT = /Users/micheleborassi/development/flutter/;
-				FLUTTER_TARGET = lib/main.dart;
 				GCC_C_LANGUAGE_STANDARD = c17;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -1324,14 +1311,8 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				FLUTTER_APPLICATION_PATH = /Users/micheleborassi/AndroidStudioProjects/othellosensei;
-				FLUTTER_BUILD_DIR = build;
-				FLUTTER_BUILD_NAME = 2.0.0;
-				FLUTTER_BUILD_NUMBER = 57;
-				FLUTTER_ROOT = /Users/micheleborassi/development/flutter/;
-				FLUTTER_TARGET = lib/main.dart;
 				GCC_C_LANGUAGE_STANDARD = c17;
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
@@ -1340,6 +1321,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				NS_BLOCK_ASSERTIONS = YES;
+				OTHER_CFLAGS = "-ffast-math";
 				OTHER_SWIFT_FLAGS = "";
 				PACKAGE_CONFIG = /Users/micheleborassi/AndroidStudioProjects/othellosensei/.dart_tool/package_config.json;
 				PODS_BUILD_DIR = build;
@@ -1385,10 +1367,8 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 2.0.0;
 				NS_BLOCK_ASSERTIONS = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1421,11 +1401,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.15;
-				MARKETING_VERSION = 2.0.0;
 				NS_BLOCK_ASSERTIONS = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.othellosensei.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
