@@ -33,7 +33,8 @@ constexpr int kTournamentLength = 26;
 
 struct GameFile {
   GameFile(const std::string& path, uint32_t offset) :
-      path(path), file(path, std::ios::in | std::ios::binary), offset(offset), num_games(0), year(0) {
+      path(path), offset(offset), num_games(0), year(0) {
+    std::fstream file = File();
     FileOffset length = FileLength(file);
     if (length % 68 != 16) {
       std::cout << "WARNING: Wrong length for Thor file " << path << ". Expected 16+68k. Got " << length << ".\n" << std::flush;
@@ -44,8 +45,10 @@ struct GameFile {
     file.read((char*) &year, sizeof(year));
   }
 
+  std::fstream File() {
+    return std::fstream(path, std::ios::in | std::ios::binary);
+  }
   std::string path;
-  std::fstream file;
   uint32_t offset;
   uint32_t num_games;
   short year;
@@ -79,7 +82,7 @@ class GameGetterOnDisk {
       LoadGames(game_file);
     }
     char buffer[68];
-    auto& file = game_files_[0].file;
+    auto file = game_files_[0].File();
     file.seekg(16);
     file.read(buffer, 68 * sizeof(char));
     Game random_game(buffer, 0, game_files_[0].year, players_, tournaments_, 1);
@@ -96,7 +99,7 @@ class GameGetterOnDisk {
       return cached->second;
     }
     GameFile& game_file = game_files_[index_to_file_[index]];
-    auto& file = game_file.file;
+    auto file = game_file.File();
     char game[68];
     file.seekg(16 + 68 * (index - game_file.offset));
     file.read(game, 68 * sizeof(char));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 Michele Borassi
+ * Copyright 2022-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <cerrno>   // Required for errno
+#include <cstring>  // Required for strerror
+#include <sstream>
 
 #include "value_file.h"
 
@@ -53,8 +57,8 @@ std::vector<char> ValueFile::Remove(BookFileOffset offset) {
 }
 
 std::vector<char> ValueFile::Get(BookFileOffset offset) const {
-  std::fstream& file = GetFileCached();
-  return Get(offset, file);
+  std::shared_ptr<std::fstream> file = GetFileCached();
+  return Get(offset, *file);
 }
 
 std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream& file) const {
@@ -65,10 +69,10 @@ std::vector<char> ValueFile::Get(BookFileOffset offset, std::fstream& file) cons
 }
 
 void ValueFile::Print() const {
-  std::fstream& file = GetFileCached();
+  std::shared_ptr<std::fstream> file = GetFileCached();
   auto elements = Elements();
   std::vector<char> content(elements * Size());
-  file.read(&content[0], elements * Size() * sizeof(char));
+  file->read(&content[0], elements * Size() * sizeof(char));
   std::cout << "Value file with " << elements << " elements:";
   for (int i = 0; i < content.size(); ++i) {
     if (i % Size() == 0) {
@@ -80,15 +84,26 @@ void ValueFile::Print() const {
 }
 
 std::fstream ValueFile::GetFile() const {
-  cached_file_ = std::nullopt;
+  cached_file_ = nullptr;
   return std::fstream(filename_, std::ios::binary | std::ios::out | std::ios::in);
 }
 
-std::fstream& ValueFile::GetFileCached() const {
-  if (!cached_file_.has_value()) {
-    cached_file_ = std::make_optional(GetFile());
+std::shared_ptr<std::fstream> ValueFile::GetFileCached() const {
+  if (cached_file_ != nullptr) {
+    return cached_file_;
   }
-  return *cached_file_;
+  // We can't use GetFile() because the fstream must be on the stack and not on the heap.
+  auto file = std::make_shared<std::fstream>(filename_, std::ios::binary | std::ios::in);
+  if (!file->is_open()) {
+    std::stringstream error;
+    error << "Error opening file: " << strerror(errno) << " (code: " << errno << ")";
+    throw std::invalid_argument(error.str());
+  }
+  if (FileLength(*file) <= size_) {
+    return file;
+  }
+  cached_file_ = std::move(file);
+  return cached_file_;
 }
 
 void ValueFile::Seek(BookFileOffset offset, std::fstream& file) const {

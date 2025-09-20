@@ -42,7 +42,7 @@ constexpr ValueFileSize kMinValueFileSize = sizeof(BookFileOffset);
 //   next Add() calls.
 class ValueFile {
  public:
-  ValueFile(std::string filename, ValueFileSize size) : filename_(filename), size_(size) {
+  ValueFile(std::string filename, ValueFileSize size) : filename_(filename), size_(size), cached_file_(nullptr) {
     assert(size >= kMinValueFileSize);
     CreateFileIfNotExists(filename_);
     if (Elements() == 0) {
@@ -69,8 +69,8 @@ class ValueFile {
   }
 
   BookFileOffset Elements() const {
-    std::fstream& file = GetFileCached();
-    return (BookFileOffset) (FileLength(file) / size_);
+    std::shared_ptr<std::fstream> file = GetFileCached();
+    return (BookFileOffset) (FileLength(*file) / size_);
   }
 
   void Print() const;
@@ -87,10 +87,10 @@ class ValueFile {
       assert (offset == 0 || offset == file->Elements());
 
       if (offset == 0) {
-        std::fstream& fstream = file->GetFileCached();
-        file->Seek(0, fstream);
-        values_.resize(FileLength(fstream));
-        fstream.read(values_.data(), values_.size());
+        std::shared_ptr<std::fstream> fstream = file->GetFileCached();
+        file->Seek(0, *fstream);
+        values_.resize(FileLength(*fstream));
+        fstream->read(values_.data(), values_.size());
 
         BookFileOffset empty = 0;
         empty = *((BookFileOffset*) values_.data() + empty * size_);
@@ -151,10 +151,10 @@ class ValueFile {
  private:
   std::string filename_;
   ValueFileSize size_;
-  mutable std::optional<std::fstream> cached_file_;
+  mutable std::shared_ptr<std::fstream> cached_file_;
 
   std::fstream GetFile() const;
-  std::fstream& GetFileCached() const;
+  std::shared_ptr<std::fstream> GetFileCached() const;
   std::vector<char> Get(BookFileOffset offset, std::fstream& file) const;
   void Seek(BookFileOffset offset, std::fstream& file) const;
   void SetAsEmpty(BookFileOffset offset, BookFileOffset next_empty, std::fstream& file);
