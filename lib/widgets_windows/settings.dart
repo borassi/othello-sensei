@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright (c) 2024-2025. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
@@ -341,8 +341,9 @@ class Settings extends StatelessWidget {
                     Expanded(
                       child: SenseiButton(
                         onPressed: () async {
-                          await GlobalState.preferences.reset(false);
-                          _state.reset();
+                          for (var preference in GlobalState.preferences.getDefault(false).entries) {
+                            _state.set(preference.key, preference.value);
+                          }
                         },
                         text: 'To advanced settings',
                         textAlign: TextAlign.center,
@@ -352,8 +353,9 @@ class Settings extends StatelessWidget {
                     Expanded(
                         child: SenseiButton(
                           onPressed: () async {
-                            await GlobalState.preferences.reset(true);
-                            _state.reset();
+                            for (var preference in GlobalState.preferences.getDefault(true).entries) {
+                              _state.set(preference.key, preference.value);
+                            }
                           },
                           text: 'To beginner settings',
                           textAlign: TextAlign.center,

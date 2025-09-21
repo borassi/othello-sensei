@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023. Michele Borassi
+ * Copyright (c) 2023-2025. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the 'License');
  * you may not use this file except in compliance with the License.
@@ -793,15 +793,27 @@ class PreferencesState with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reset(bool beginner) async {
-    var newPreferences = Map.of(defaultPreferences);
+  Future<void> resetBeginnerOnly() async {
+    await setAll(beginnerPreferences);
+  }
+
+  Future<void> resetAdvancedOnly() async {
+    var newPreferences = Map.fromEntries(
+      beginnerPreferences.entries
+          .map((entry) => MapEntry(entry.key, defaultPreferences[entry.key])),
+    );
+    await setAll(newPreferences);
+  }
+
+  Map<String, dynamic> getDefault(bool beginner) {
+    var result = Map.of(defaultPreferences);
     if (beginner) {
-      newPreferences.addAll(beginnerPreferences);
+      result.addAll(beginnerPreferences);
     }
     for (var preference in nonResetPreferences) {
-      newPreferences.remove(preference);
+      result.remove(preference);
     }
-    await setAll(newPreferences);
+    return result;
   }
 
   Future<void> setNoUpdate(String name, dynamic value) async {

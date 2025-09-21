@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright (c) 2024-2025. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,19 +131,19 @@ class DecideSettingsDialog extends StatelessWidget {
         content: 'You can always change your settings by clicking on ⋮ > Settings',
         actions: [
           (
-          text: 'Beginner settings',
+          text: 'Beginner',
           onPressed: (context) async {
-            await GlobalState.preferences.reset(true);
-            await GlobalState.preferences.set('Show settings dialog at startup', false);
             Navigator.of(context).pop();
+            await GlobalState.preferences.resetBeginnerOnly();
+            await GlobalState.preferences.set('Show settings dialog at startup', false);
           },
           ),
           (
-          text: 'Advanced settings',
+          text: 'Advanced',
           onPressed: (context) async {
-            await GlobalState.preferences.reset(false);
-            await GlobalState.preferences.set('Show settings dialog at startup', false);
             Navigator.of(context).pop();
+            await GlobalState.preferences.resetAdvancedOnly();
+            await GlobalState.preferences.set('Show settings dialog at startup', false);
           },
           ),
         ]
