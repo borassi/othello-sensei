@@ -71,7 +71,7 @@ class SettingsTile extends StatelessWidget {
     var style = Theme.of(context).textTheme.bodyMedium!;
 
     return Container(
-      height: max(48, squareSize * 0.75),
+      height: max(kMinInteractiveDimension, squareSize * 0.75),
       alignment: Alignment.center,
       child: ListTile(
         dense: true,
@@ -125,34 +125,38 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
     state.set(name, newValue);
   }
   var values = PreferencesState.preferencesValues[name];
+  var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
   if (values != null) {
     return SettingsTile(
       name: name,
       child: ListenableBuilder(
         listenable: state,
         builder: (BuildContext context, Widget? widget) => DropdownButton<String>(
-          value: state.get(name),
-          isExpanded: true,
-          onChanged: (String? value) {
-            // This is called when the user selects an item.
-            if (value != null) {
-              onChanged(value);
-            }
-          },
-          items: values.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  value,
-                  style: Theme.of(context).textTheme.bodyMedium!,
-                  textAlign: TextAlign.right
-                ),
-              )
-            );
-          }).toList(),
-        )
+              value: state.get(name),
+              itemHeight: max(kMinInteractiveDimension, squareSize * 0.75),
+              isExpanded: true,
+              isDense: true,
+              style: Theme.of(context).textTheme.bodyMedium!,
+              onChanged: (String? value) {
+                // This is called when the user selects an item.
+                if (value != null) {
+                  onChanged(value);
+                }
+              },
+              items: values.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      value,
+                      style: Theme.of(context).textTheme.bodyMedium!,
+                      textAlign: TextAlign.right
+                    ),
+                  )
+                );
+              }).toList(),
+            )
       )
     );
   }
