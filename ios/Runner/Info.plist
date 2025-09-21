@@ -61,5 +61,7 @@
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>This app saves and loads game files. iOS requires this permission to use the file browser, but your photos will not be accessed.</string>
 </dict>
 </plist>
