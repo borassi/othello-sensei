@@ -139,6 +139,6 @@ msix_config:
   publisher: CN=F10E1E82-784B-4079-9516-F34256330A33
   publisher_display_name: Michele Borassi
   identity_name: MicheleBorassi.OthelloSensei
-  msix_version: 2.0.0.0
+  msix_version: 2.0.0.1
   logo_path: assets/icons/icon_512x512.png
   enable_at_startup: false
