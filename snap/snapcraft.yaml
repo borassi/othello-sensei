@@ -8,8 +8,13 @@
 
 name: othello-sensei
 version: 2.0.0
+title: Othello Sensei
 summary: Othello Sensei
 description: A strong, responsive, and user-friendly Othello engine for advanced players
+donation:
+  - https://github.com/borassi/othello-sensei/blob/stable/README.md#can-i-make-a-donation
+issues: https://github.com/borassi/othello-sensei/issues
+website: https://github.com/borassi/othello-sensei/blob/stable/README.md
 
 contact: michele.borassi@gmail.com
 icon: assets/icons/icon_512x512.png
