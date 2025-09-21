@@ -23,6 +23,7 @@ import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 import 'package:othello_sensei/widgets_windows/settings.dart';
 
 import '../drive/drive_downloader.dart';
+import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 
@@ -149,6 +150,68 @@ class SenseiIconButton extends StatelessWidget {
   }
 }
 
+PopupMenuButton<MenuItem> _buildMenu({
+  required BuildContext context,
+  required List<PopupMenuItem<MenuItem>> items,
+  required double width,
+  String? tooltip,
+  Icon? icon,
+  String? text,
+  int depth = 0}) {
+  var textStyle = Theme.of(context).textTheme.bodyMedium;
+  return PopupMenuButton<MenuItem>(
+    icon: icon,
+    constraints: BoxConstraints.tightFor(width: width),
+    onSelected: (MenuItem i) {
+      for (int j = 0; j < depth; ++j) {
+        Navigator.pop(context);
+      }
+      handleMenuItem(context, i);
+    },
+    itemBuilder: (context) => items,
+    tooltip: tooltip ?? "",
+    child: icon != null ? null : Align(
+      alignment: Alignment.centerLeft,
+      child: Row(children: [const Margin.internal(), Text(text ?? "", style: textStyle)])
+    ),
+  );
+}
+
+PopupMenuItem<MenuItem> _buildMenuItem(BuildContext context, {MenuItem? menuItem, String? text, Widget? child, bool? checked}) {
+  var textStyle = Theme.of(context).textTheme.bodyMedium;
+  var height = Theme.of(context).extension<AppSizes>()!.squareSize;
+  List<Widget> checkBoxChildren;
+  if (checked == null) {
+    checkBoxChildren = [];
+  } else if (checked) {
+    checkBoxChildren = [Icon(Icons.check_box, size: textStyle!.fontSize, color: Theme.of(context).colorScheme.onPrimaryContainer)];
+  } else {
+    checkBoxChildren = [Icon(Icons.check_box_outline_blank, size: textStyle!.fontSize, color: Theme.of(context).colorScheme.onPrimaryContainer)];
+  }
+  child = child ?? Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: checkBoxChildren +
+        [
+          const Margin.internal(),
+          Expanded(child: Text(
+              text ?? camelCaseToSpaces(menuItem?.name ?? ''),
+              style: textStyle
+          ))
+        ],
+      )
+  );
+  return PopupMenuItem<MenuItem>(
+    padding: EdgeInsets.zero,
+    value: menuItem,
+    child: SizedBox(
+        height: height,
+        width: 4 * height,
+        child: child
+    ),
+  );
+}
+
 class SenseiAppBar extends StatelessWidget {
 
   const SenseiAppBar({super.key});
@@ -182,144 +245,91 @@ class SenseiAppBar extends StatelessWidget {
         ),
       ];
     }
-    const padding = EdgeInsets.symmetric(horizontal: 12);
-    var textStyle = Theme.of(context).textTheme.bodyMedium;
+    var menuItemHeight = Theme.of(context).extension<AppSizes>()!.squareSize;
     var row = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: icons + [
         ListenableBuilder(
           listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations]),
           builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
-            child: PopupMenuButton<MenuItem>(
+            child: _buildMenu(
+              tooltip: "Menu",
+              context: context,
               icon: Icon(
                 Icons.more_vert_rounded,
                 color: Theme.of(context).colorScheme.onPrimaryContainer
               ),
-              tooltip: "Menu",
-              onSelected: (MenuItem i) { handleMenuItem(context, i); },
-              itemBuilder: (context) => [
-                PopupMenuItem<MenuItem>(
-                  padding: padding,
-                  value: MenuItem.newGame,
-                  child: Text('New game', style: textStyle),
-                ),
-                PopupMenuItem<MenuItem>(
-                  padding: EdgeInsets.zero,
-                  onTap: () {},
-                  child: PopupMenuButton<MenuItem>(
-                    tooltip: "",
-                    child: Container(
-                      height: kMinInteractiveDimension,
-                      width: double.infinity,
-                      alignment: Alignment.centerLeft,
-                      padding: padding,
-                      child: Text('New XOT game', style: textStyle),
-                    ),
-                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
-                    itemBuilder: (context) => [
-                      PopupMenuItem<MenuItem>(
-                        padding: padding,
-                        value: MenuItem.newGameXotSmall,
-                        child: Text('Small list', style: textStyle),
-                      ),
-                      PopupMenuItem<MenuItem>(
-                        padding: padding,
-                        value: MenuItem.newGameXotLarge,
-                        child: Text('Large list', style: textStyle),
-                      )
-                    ]
+              width: 4 * menuItemHeight,
+              items: [
+                _buildMenuItem(context, menuItem: MenuItem.newGame),
+                _buildMenuItem(
+                  context,
+                  child: _buildMenu(
+                    context: context,
+                    width: 3 * menuItemHeight,
+                    depth: 1,
+                    items: [
+                      _buildMenuItem(context, menuItem: MenuItem.newGameXotSmall, text: 'Small list'),
+                      _buildMenuItem(context, menuItem: MenuItem.newGameXotLarge, text: 'Large list'),
+                    ],
+                    text:'New XOT game',
                   )
                 ),
-                PopupMenuItem<MenuItem>(
-                    padding: padding,
-                    value: MenuItem.open,
-                    child: Text('Open', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                    padding: padding,
-                    value: MenuItem.save,
-                    child: Text('Save', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                  padding: padding,
-                  value: MenuItem.copy,
-                  child: Text('Copy', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                  padding: padding,
-                  value: MenuItem.paste,
-                  child: Text('Paste', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                  padding: padding,
-                  value: MenuItem.analyze,
-                  child: Text(GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                  padding: EdgeInsets.zero,
-                  onTap: () {},
-                  child: PopupMenuButton<MenuItem>(
-                    padding: EdgeInsets.zero,
-                    onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
-                    tooltip: "",
-                    child: Container(
-                      height: kMinInteractiveDimension,
-                      width: double.infinity,
-                      alignment: Alignment.centerLeft,
-                      padding: padding,
-                      child: Text('XOT errors', style: textStyle)
-                    ),
-                    itemBuilder: (context) => [
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.xotAutomatic,
-                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_AUTOMATIC,
-                        child: Text('Automatic', style: textStyle),
-                      ),
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.xotAlways,
-                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_ALWAYS,
-                        child: Text('Always XOT', style: textStyle),
-                      ),
-                      CheckedPopupMenuItem<MenuItem>(
-                        value: MenuItem.xotNever,
-                        checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_NEVER,
-                        child: Text('Never XOT', style: textStyle),
-                      )
-                    ]
-                  )
-                ),
-                PopupMenuItem<MenuItem>(value: MenuItem.setupBoard, child: Text('Setup board', style: textStyle)),
-                PopupMenuItem<MenuItem>(
-                    padding: EdgeInsets.zero,
-                    onTap: () {},
-                    child: PopupMenuButton<MenuItem>(
-                        padding: EdgeInsets.zero,
-                        onSelected: (MenuItem i) { Navigator.pop(context); handleMenuItem(context, i); },
-                        tooltip: "",
-                        child: Container(
-                            height: kMinInteractiveDimension,
-                            width: double.infinity,
-                            alignment: Alignment.centerLeft,
-                            padding: padding,
-                            child: Text('Download latest book', style: textStyle)
+                _buildMenuItem(context, menuItem: MenuItem.open),
+                _buildMenuItem(context, menuItem: MenuItem.save),
+                _buildMenuItem(context, menuItem: MenuItem.copy),
+                _buildMenuItem(context, menuItem: MenuItem.paste),
+                _buildMenuItem(context, menuItem: MenuItem.analyze, text: GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze'),
+                _buildMenuItem(
+                    context,
+                    child: _buildMenu(
+                      context: context,
+                      width: 3 * menuItemHeight,
+                      text: 'XOT errors',
+                      depth: 1,
+                      items: [
+                        _buildMenuItem(
+                            context,
+                            menuItem: MenuItem.xotAutomatic,
+                            checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_AUTOMATIC,
+                            text: 'Automatic',
                         ),
-                        itemBuilder: (context) => [
-                          PopupMenuItem<MenuItem>(
-                            value: MenuItem.downloadLatestBook,
-                            child: Text('Large (600MB and growing)', style: textStyle),
-                          ),
-                          PopupMenuItem<MenuItem>(
-                            value: MenuItem.downloadLatestBookMedium,
-                            child: Text('Medium (~100MB)', style: textStyle),
-                          ),
-                          PopupMenuItem<MenuItem>(
-                            value: MenuItem.downloadLatestBookSmall,
-                            child: Text('Small (~10MB)', style: textStyle),
-                          )
-                        ]
+                        _buildMenuItem(
+                          context,
+                          menuItem: MenuItem.xotAlways,
+                          checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_ALWAYS,
+                          text: 'Always XOT',
+                        ),
+                        _buildMenuItem(
+                          context,
+                          menuItem: MenuItem.xotNever,
+                          checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_NEVER,
+                          text: 'Never XOT',
+                        ),
+                      ]
                     )
                 ),
-                PopupMenuItem<MenuItem>(value: MenuItem.downloadLatestArchive, child: Text('Download latest archive', style: textStyle)),
-                PopupMenuItem<MenuItem>(value: MenuItem.settings, child: Text('Settings', style: textStyle)),
+                _buildMenuItem(context, menuItem: MenuItem.setupBoard),
+                _buildMenuItem(
+                    context,
+                    child: _buildMenu(
+                        depth: 1,
+                        context: context,
+                        items: [
+                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBook, text: 'Large (>700MB)'),
+                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBookMedium, text: 'Medium (~100MB)'),
+                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBookSmall, text: 'Small (~10MB)'),
+                        ],
+                        width: 3 * menuItemHeight,
+                        text: 'Download latest book'
+                    ),
+                ),
+                _buildMenuItem(context, menuItem: MenuItem.downloadLatestArchive),
+                _buildMenuItem(context, menuItem: MenuItem.settings),
               ] + (
                   canLookupFiles() ?
                   [
-                    PopupMenuItem<MenuItem>(value: MenuItem.editSavedGamesFolders, child: Text('Edit archive folders', style: textStyle)),
+                    _buildMenuItem(context, menuItem: MenuItem.editSavedGamesFolders, text: 'Edit archive folders'),
                   ] : []
               )
             )

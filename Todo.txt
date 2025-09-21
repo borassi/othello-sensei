@@ -1,7 +1,7 @@
 Just before next launch
 - P1 MED Debug Thor load failure on Marc's phone.
-- P1 MED Enable picking a directory in Linux.
-- P0 MED Make the release work on iOS.
+- P0 SMALL Improve settings visualization on a large screen.
+- P0 SMALL Set beginner / advanced settings.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.
@@ -35,7 +35,6 @@ Extra features:
 Simplify development (match the Java app)
 - P3 MED Show evaluations instead of evaluating.
 - P3 MED Evaluate just the current position.
-- P3 EASY Reset hash maps.
 - P4 EASY Show stats on multiple evaluations (including derivative).
 - P4 EASY Load positions from FFO.
 - P5 LARGE Add tests for EvaluatorDerivative.
