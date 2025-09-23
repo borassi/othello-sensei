@@ -87,31 +87,31 @@ class BookVisitorTopKValue : public BookVisitorWithProgress<kBookVersion> {
 template<int version = kBookVersion>
 class BookVisitorCopy : public BookVisitorMerge<version, version> {
  public:
-  BookVisitorCopy(const Book<version>& source, Book<version>& destination, double max_value) :
+  BookVisitorCopy(const ::Book<version>& source, ::Book<version>& destination, double max_value) :
       max_value_(max_value), BookVisitorMerge<version, version>(source, destination) {}
 
  protected:
   double Value() {
-    auto [error_black, error_white] = BookVisitor<version>::GetErrors();
-    return error_black + error_white + BookVisitorMerge<version, version>::depth_ / 2.0;
+    auto [error_black, error_white] = ::BookVisitor<version>::GetErrors();
+    return error_black + error_white + ::BookVisitorMerge<version, version>::depth_ / 2.0;
   }
 
   void VisitLeaf(Node& node) override {
     ++leaves_;
-    BookVisitorMerge<version, version>::VisitLeaf(node);
+    ::BookVisitorMerge<version, version>::VisitLeaf(node);
   }
 
   bool PreVisitInternalNode(Node& node) override {
     // This is a child of the "last node" in this sequence.
     if (Value() > max_value_) {
       ++internal_that_become_leaves_;
-      BookVisitorMerge<version, version>::VisitLeaf(node);
+      ::BookVisitorMerge<version, version>::VisitLeaf(node);
       // NOTE: By returning false we don't post-visit.
       return false;
     }
     ++internal_;
     // Always true.
-    return BookVisitorMerge<version, version>::PreVisitInternalNode(node);
+    return ::BookVisitorMerge<version, version>::PreVisitInternalNode(node);
   }
 
  private:

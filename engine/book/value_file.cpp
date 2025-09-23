@@ -15,8 +15,8 @@
  */
 
 #include <cerrno>   // Required for errno
-#include <cstring>  // Required for strerror
 #include <sstream>
+#include <system_error> // Required for std::system_category
 
 #include "value_file.h"
 
@@ -96,7 +96,7 @@ std::shared_ptr<std::fstream> ValueFile::GetFileCached() const {
   auto file = std::make_shared<std::fstream>(filename_, std::ios::binary | std::ios::in);
   if (!file->is_open()) {
     std::stringstream error;
-    error << "Error opening file: " << strerror(errno) << " (code: " << errno << ")";
+    error << "Error opening file: " << std::system_category().message(errno) << " (code: " << errno << ")";
     throw std::invalid_argument(error.str());
   }
   if (FileLength(*file) <= size_) {
