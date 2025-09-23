@@ -60,9 +60,12 @@ class SettingsLocalState with ChangeNotifier {
 
 class SettingsTile extends StatelessWidget {
   final String name;
-  final Widget child;
+  final SettingsLocalState state;
+  // We can't just pass the widget because we need to recompute it when the
+  // settings change.
+  final Widget Function() childBuilder;
 
-  const SettingsTile({required this.name, required this.child, super.key});
+  const SettingsTile({required this.name, required this.childBuilder, required this.state, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +83,10 @@ class SettingsTile extends StatelessWidget {
         trailing: Container(
           alignment: Alignment.centerRight,
           width: 2 * squareSize,
-          child: child,
+          child: ListenableBuilder(
+            listenable: state,
+            builder: (BuildContext context, Widget? widget) => childBuilder()
+          ),
         )
       ),
     );
@@ -101,7 +107,8 @@ class SettingsTileWithTextForm extends StatelessWidget {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return SettingsTile(
       name: name,
-      child: TextFormField(
+      state: state,
+      childBuilder: () => TextFormField(
         style: Theme.of(context).textTheme.bodyMedium!,
         decoration: InputDecoration(
           contentPadding: EdgeInsets.fromLTRB(0, 0, 0, squareSize * 0.1),
@@ -129,34 +136,32 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
   if (values != null) {
     return SettingsTile(
       name: name,
-      child: ListenableBuilder(
-        listenable: state,
-        builder: (BuildContext context, Widget? widget) => DropdownButton<String>(
-              value: state.get(name),
-              itemHeight: max(kMinInteractiveDimension, squareSize * 0.75),
-              isExpanded: true,
-              isDense: true,
-              style: Theme.of(context).textTheme.bodyMedium!,
-              onChanged: (String? value) {
-                // This is called when the user selects an item.
-                if (value != null) {
-                  onChanged(value);
-                }
-              },
-              items: values.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      value,
-                      style: Theme.of(context).textTheme.bodyMedium!,
-                      textAlign: TextAlign.right
-                    ),
-                  )
-                );
-              }).toList(),
+      state: state,
+      childBuilder: () => DropdownButton<String>(
+        value: state.get(name),
+        itemHeight: max(kMinInteractiveDimension, squareSize * 0.75),
+        isExpanded: true,
+        isDense: true,
+        style: Theme.of(context).textTheme.bodyMedium!,
+        onChanged: (String? value) {
+          // This is called when the user selects an item.
+          if (value != null) {
+            onChanged(value);
+          }
+        },
+        items: values.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium!,
+                textAlign: TextAlign.right
+              ),
             )
+          );
+        }).toList(),
       )
     );
   }
@@ -164,12 +169,10 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
     case bool:
       return SettingsTile(
         name: name,
-        child: ListenableBuilder(
-          listenable: state,
-          builder: (BuildContext context, Widget? widget) => SenseiToggle(
+        state: state,
+        childBuilder: () => SenseiToggle(
             initialValue: state.get(name),
             onChanged: onChanged
-          )
         )
       );
     case int:

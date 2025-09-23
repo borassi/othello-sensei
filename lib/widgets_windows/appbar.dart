@@ -325,13 +325,14 @@ class SenseiAppBar extends StatelessWidget {
                     ),
                 ),
                 _buildMenuItem(context, menuItem: MenuItem.downloadLatestArchive),
-                _buildMenuItem(context, menuItem: MenuItem.settings),
               ] + (
                   canLookupFiles() ?
                   [
                     _buildMenuItem(context, menuItem: MenuItem.editSavedGamesFolders, text: 'Edit archive folders'),
                   ] : []
-              )
+              ) + [
+                _buildMenuItem(context, menuItem: MenuItem.settings),
+              ]
             )
           )
         )
