@@ -189,7 +189,7 @@ class Main {
           return false;
         }
         auto sequence = state_in_xot->GetSequence();
-        if (sequence && !xot_large_.IsInListPrefix(*sequence)) {
+        if (!(sequence && xot_large_.IsInListPrefix(*sequence))) {
           return false;
         }
         auto [error_black, error_white] = state_in_xot->TotalError();
