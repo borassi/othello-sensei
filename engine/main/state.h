@@ -244,7 +244,7 @@ class EvaluationState : public TreeNode {
   }
 
   EvaluationState* ToDepth(int new_depth, SenseiAction action) {
-    EvaluationState* result = this;
+    EvaluationState* result = ThisOrNextLandable(action);
     for (;
          result != nullptr && result->annotations_.depth_no_pass < new_depth;
          result = result->NextLandable(action)) {}
