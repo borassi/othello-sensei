@@ -43,7 +43,7 @@ void BoardToEvaluate::FinalizeEvaluation() {
     if (evaluator_.GetStatus() == SOLVED) {
       finished = true;
     }
-    assert(!state->HasValidChildren());
+    assert(!state->HasValidChildren() || state->IsBeforeModification());
     if (!state->IsValid() || state->GetNVisited() < first_position.GetNVisited()) {
       state->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
     } else {
@@ -172,6 +172,9 @@ bool MustBeEvaluated(
     const EvaluationState& child,
     const EvaluateParams& params,
     bool in_analysis) {
+  if (child.IsBeforeModification()) {
+    return true;
+  }
   if (!child.IsValid()) {
     assert(!child.HasValidChildren());
     return true;

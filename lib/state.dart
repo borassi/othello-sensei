@@ -918,7 +918,11 @@ class GlobalAnnotationState with ChangeNotifier {
     for (var annotation = startAnnotations!;
          annotation != nullptr;
          annotation = primary ? annotation.ref.next_state_primary : annotation.ref.next_state_secondary) {
-      if ([GlobalState.ffiEngine.PassMove(), GlobalState.ffiEngine.SetupBoardMove()].contains(annotation.ref.move)) {
+      if (annotation.ref.move == GlobalState.ffiEngine.SetupBoardMove()) {
+        assert(scores.isNotEmpty);
+        scores[scores.length - 1] = getEvalFromAnnotations(annotation.ref, true, true, bestLine: true);
+        continue;
+      } else if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
         continue;
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));

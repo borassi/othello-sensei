@@ -368,19 +368,19 @@ class EvaluationState : public TreeNode {
       annotations_.descendants_book = descendants_;
       descendants_ = annotations_.descendants;
       annotations_.provenance = BOOK;
-      if (HasValidChildren()) {
+      if (HasValidChildren() && !IsBeforeModification()) {
         UpdateFather();
         return;
       }
     } else {
-      assert(!HasValidChildren());
+      assert(!HasValidChildren() || IsBeforeModification());
       assert(descendants_ >= annotations_.descendants);
       annotations_.descendants_evaluating_this = descendants_;
       annotations_.descendants = descendants_;
       annotations_.seconds = seconds;
       annotations_.provenance = CHILD_EVALUATE;
     }
-    assert(!HasValidChildren());
+    assert(!HasValidChildren() || IsBeforeModification());
     annotations_.eval_best_line = GetEval();
     annotations_.median_eval = GetPercentileLower(0.5) - 1;
     annotations_.median_eval_best_line = annotations_.median_eval;
@@ -468,8 +468,8 @@ class EvaluationState : public TreeNode {
     annotations_.leaf_eval = LeafEval();
     annotations_.prob_lower_eval = SolveProbabilityLower(-65);
     annotations_.prob_upper_eval = SolveProbabilityUpper(65);
-    annotations_.proof_number_lower = annotations_.median_eval == -64 ? 0 : RemainingWork(-63, annotations_.median_eval - 1);
-    annotations_.disproof_number_upper = annotations_.median_eval == 64 ? 0 : RemainingWork(annotations_.median_eval + 1, 63);
+    annotations_.proof_number_lower = annotations_.median_eval == -64 ? 0 : RemainingWork(-63, (Eval) (annotations_.median_eval - 1));
+    annotations_.disproof_number_upper = annotations_.median_eval == 64 ? 0 : RemainingWork((Eval) (annotations_.median_eval + 1), 63);
     annotations_.lower = Lower();
     annotations_.upper = Upper();
     annotations_.weak_lower = WeakLower();
