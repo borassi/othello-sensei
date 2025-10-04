@@ -290,3 +290,55 @@ the constraints:
 - The probability to play a better move is always higher or equal to the probability to play a worse
   move.
 - Sensei will never make a mistake larger than Maximum error / move when playing.
+
+### How do I compile the program from source?
+
+NOTE: These instructions are not fully tested, so please let me know if you find difficulties and
+I'll update them.
+
+1. Install [Clang](https://clang.llvm.org/get_started.html) (for Linux),
+   [XCode](https://apps.apple.com/us/app/xcode/id497799835?mt=12) (for Mac), or
+   [Visual Studio](https://docs.flutter.dev/platform-integration/windows/setup) (for Windows).
+2. Install [CMake](https://cmake.org/download/).
+3. Install the [GitHub command line](https://github.com/cli/cli#installation).
+4. Install [Android Studio](https://developer.android.com/studio/install) and the
+   [Flutter](https://docs.flutter.dev/tools/android-studio) plugin (skip if you just want to run the
+   C++ code from the command line).
+5. Open a terminal and use the `cd` command to enter the folder in which you want to download the
+   repository (mine is /home/michele/AndroidStudioProjects).
+6. Download the repository with the command `gh repo clone borassi/othello-sensei` (web link:
+   https://github.com/borassi/othello-sensei).
+7. Test if you can run the FFO test by running the following commands in a terminal:
+   $ cd othello-sensei
+   $ cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Debug
+   $ cmake --build build --parallel=HOW_MANY_THREADS_YOU_HAVE --target=endgame_ffo_main
+   $ ./build/analyzers/endgame_ffo_main
+8. Open Android Studio and click File > New > New Flutter project, and follow the instructions to
+   create a Flutter project. Run it to see if it works.
+9. Click File > Open and select the othello-sensei folder. Run the project.
+
+#### Troubleshooting
+
+If Flutter misbehaves, try running `flutter doctor` and fix all mistakes.
+
+If Android Studio doesn't work, try running the application from the command line with
+`flutter run`.
+
+If the Mac compilation is failing, open the `othello-sensei/macos` project in XCode. You can change
+the compilation flags and parameters there.
+
+If the engine is slow, it might be because of compilation flags (in particular, `-D__POPCNT__` and
+`-mbmi2` have a large effect). You can fix them as follows:
+-  **Linux**: Open engine/CMakeLists.txt and add `-mbmi2 -D__POPCNT__` to
+   `CMAKE_CXX_FLAGS_RELEASE`. Alternatively, add `-march=native` to create an executable that is
+   specifically optimized for your CPU (but it might not work on other CPUs).
+-  **Mac**: Set `-D__POPCNT__` in XCode. Most Macs don't support `-mbmi2`, and Sensei will be
+   slower (we hope to fix it in a future release).
+-  **Windows**: Ensure that `-D__POPCNT__` and `/arch:AVX2 -D__BMI2__` are enabled in
+   `windows/CMakeLists.txt`.
+
+For any other issue, you can ask [Gemini](https://gemini.google.com/). Make sure you use the Pro
+model and always add `Give me specific instructions for Flutter` to the prompt (often Gemini gives
+generic responses that don't work for a Flutter app).
+
+If also Gemini fails, write me at michele.borassi@gmail.com.
