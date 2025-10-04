@@ -41,7 +41,8 @@ struct BoardWithStats {
 
   double GetValue(double new_uncertainty) const {
     // We add - because the priority queue is a max-heap.
-    return -pow(2, -error / 2.0 - depth / 4.0) * new_uncertainty;
+    // Old: return -pow(2, -error / 2.0 - depth / 4.0) * new_uncertainty;
+    return -pow(2, -error / 2.0 - depth / 8.0) * std::min(0.2, new_uncertainty);
   }
 
   double GetValue() const {
@@ -185,8 +186,8 @@ int main(int argc, char* argv[]) {
 
   for (int step = 0; true; ++step) {
     std::cout << "Step "<< step << "\n";
-    if (step % 200 == 0) {
-      BookVisitorBestLines visitor(book, archive, 20, min_games);
+    if (step % 300 == 0) {
+      BookVisitorBestLines visitor(book, archive, 90, min_games);
       visitor.VisitString(start_line);
       BestPositionsPriorityQueue best_boards_queue = visitor.Get();
       best_boards.clear();
