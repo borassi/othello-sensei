@@ -120,3 +120,18 @@ target_link_libraries(
         evaluator_alpha_beta
         pattern_evaluator
 )
+
+add_executable(
+        position_to_thor_scores_main
+        position_to_thor_scores_main.cpp
+)
+
+target_link_libraries(
+        position_to_thor_scores_main
+        LINK_PRIVATE
+        board
+        book
+        misc
+        parse_flags
+        thor
+)
