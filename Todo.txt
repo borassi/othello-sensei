@@ -1,6 +1,5 @@
 For next launch
 - P0 MED Show book evaluations when the book is "larger" than the children.
-- P0 SMALL Fix bug with Chinese characters.
 - P1 MED Debug Thor load failure on Marc's phone.
 - P1 MED List of games in Android.
 - P1 MED List of games in iOS / Mac.

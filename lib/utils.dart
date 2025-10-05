@@ -15,6 +15,7 @@
  *
  */
 
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:math';
 
@@ -94,6 +95,32 @@ class DoubleInputFormatter implements TextInputFormatter {
       return oldValue;
     } else {
       return newValue;
+    }
+  }
+}
+
+class Utf8LengthLimitingTextInputFormatter extends TextInputFormatter {
+  Utf8LengthLimitingTextInputFormatter(this.maxBytes);
+
+  final int maxBytes;
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue,
+      TextEditingValue newValue) {
+    // Mimic `truncateAfterCompositionEnds`:
+    // If the user is still composing (e.g., with an IME), don't interfere.
+    if (newValue.composing.isValid) {
+      return newValue;
+    }
+
+    final newText = newValue.text;
+    final byteLength = utf8.encode(newText).length;
+
+    // We use < because we want to leave one space for \0.
+    if (byteLength < maxBytes) {
+      return newValue;
+    } else {
+      return oldValue;
     }
   }
 }
@@ -197,26 +224,36 @@ double getEvalFromAnnotations(Annotations annotation, bool black, bool inError, 
   return value * multiplier;
 }
 
-String cStringToString(Pointer<Char> cString) {
-  var string = '';
-  for (int i = 0; cString[i] != 0; ++i) {
-    string += String.fromCharCode(cString[i].toUnsigned(8));
+String _uint8ListToString(Uint8List list) {
+  try {
+    return utf8.decode(list);
+  } on FormatException {
+    var string = '';
+    for (int i in list) {
+      string += String.fromCharCode(i.toUnsigned(8));
+    }
+    return string;
   }
-  return string;
 }
 
-String cArrayToString(Array<Char> array) {
-  final stringList = <int>[];
-  var i = 0;
-  while (array[i] != 0) {
-    stringList.add(array[i]);
-    i++;
+String cStringToString(Pointer<Char> cString) {
+  var length = 0;
+  while (cString[length] != 0) {
+    length++;
   }
-  try {
-    return String.fromCharCodes(stringList);
-  } on ArgumentError {
-    return '';
+  return _uint8ListToString(cString.cast<Uint8>().asTypedList(length));
+}
+
+String cArrayToString(Array<Char> cString) {
+  var length = 0;
+  while (cString[length] != 0) {
+    length++;
   }
+  var list = Uint8List(length);
+  for (int i = 0; i < length; ++i) {
+    list[i] = cString[i].toUnsigned(8);
+  }
+  return _uint8ListToString(list);
 }
 
 // Returns the name of the containing folder of a given file path.

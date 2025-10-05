@@ -59,9 +59,12 @@ dependencies:
   android_intent_plus: ^5.2.0
   receive_sharing_intent: ^1.8.1
   receive_intent: ^0.2.5
-  file_picker: ^10.1.9
+  # TODO: update after fixing the https://github.com/miguelpruivo/flutter_file_picker/issues/1893
+  # and https://github.com/miguelpruivo/flutter_file_picker/issues/1894
+  file_picker: 10.2.4
   textfield_search: ^0.11.1
   flutter_svg: ^2.1.0
+  flutter_acrylic: ^1.1.4
 
 dev_dependencies:
   flutter_test:

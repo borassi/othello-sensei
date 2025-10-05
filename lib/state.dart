@@ -330,6 +330,7 @@ class GlobalState {
       type: FileType.custom,
       allowedExtensions: ['txt'],
       bytes: utf8.encode(cArrayToString(game.ref.game)),
+      lockParentWindow: true,
     );
     malloc.free(game);
     if (file != null && canLookupFiles()) {
@@ -375,7 +376,8 @@ class GlobalState {
   static Future<void> open() async {
     var filePickerResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['txt']
+      allowedExtensions: ['txt'],
+      lockParentWindow: true,
     );
     if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
       return;
@@ -420,9 +422,11 @@ class GameMetadataState with ChangeNotifier {
   }
 
   void assignToPointer(Array<Char> ptr, String string, int length) {
-    var lengthValue = min(string.length, length - 1);
+    final utf8Bytes = utf8.encode(string);
+    var lengthValue = min(utf8Bytes.length, length - 1);
+    print(string);
     for (int i = 0; i < lengthValue; ++i) {
-      ptr[i] = string.codeUnitAt(i);
+      ptr[i] = utf8Bytes[i];
     }
     ptr[lengthValue] = 0;
   }

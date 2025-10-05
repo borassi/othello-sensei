@@ -165,7 +165,7 @@ class SaveDialogContent extends StatelessWidget {
                     initialValue: cArrayToString(gameMetadata.black),
                     values: players,
                     onChanged: GlobalState.gameMetadataState.setBlack,
-                    inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                    inputFormatters: [Utf8LengthLimitingTextInputFormatter(20)],
                 )
             ),
             const Margin.internal(),
@@ -175,7 +175,7 @@ class SaveDialogContent extends StatelessWidget {
                     initialValue: cArrayToString(gameMetadata.white),
                     values: players,
                     onChanged: GlobalState.gameMetadataState.setWhite,
-                    inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                    inputFormatters: [Utf8LengthLimitingTextInputFormatter(20)],
                 )
             ),
             const Margin.internal(),
@@ -185,7 +185,7 @@ class SaveDialogContent extends StatelessWidget {
                     initialValue: cArrayToString(gameMetadata.tournament),
                     values: tournaments,
                     onChanged: GlobalState.gameMetadataState.setTournament,
-                    inputFormatters: [LengthLimitingTextInputFormatter(26)],
+                    inputFormatters: [Utf8LengthLimitingTextInputFormatter(26)],
                 )
             ),
             const Margin.internal(),
@@ -194,7 +194,7 @@ class SaveDialogContent extends StatelessWidget {
                 _InputFormField(
                   initialValue: cArrayToString(gameMetadata.round),
                   onChanged: GlobalState.gameMetadataState.setRound,
-                  inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                  inputFormatters: [Utf8LengthLimitingTextInputFormatter(10)],
                 )
             ),
             const Margin.internal(),
@@ -204,7 +204,7 @@ class SaveDialogContent extends StatelessWidget {
                   initialValue: gameMetadata.year.toString(),
                   onChanged: (String year) => GlobalState.gameMetadataState.setYear(int.parse(year)),
                   keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                  inputFormatters: [LengthLimitingTextInputFormatter(4), IntInputFormatter()],
+                  inputFormatters: [Utf8LengthLimitingTextInputFormatter(4), IntInputFormatter()],
                 )
             ),
             const Margin.internal(),
@@ -228,7 +228,7 @@ class SaveDialogContent extends StatelessWidget {
                                 textAlign: TextAlign.left,
                                 onTapAlwaysCalled: true,
                                 keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                                inputFormatters: [LengthLimitingTextInputFormatter(2), IntInputFormatter(minValue: 0, maxValue: 64)],
+                                inputFormatters: [Utf8LengthLimitingTextInputFormatter(2), IntInputFormatter(minValue: 0, maxValue: 64)],
                               )
                           )
                       ),
@@ -244,7 +244,7 @@ class SaveDialogContent extends StatelessWidget {
                                 onChanged: (String value) => GlobalState.gameMetadataState.setScore(value, false),
                                 textAlign: TextAlign.right,
                                 keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                                inputFormatters: [LengthLimitingTextInputFormatter(2), IntInputFormatter()],
+                                inputFormatters: [Utf8LengthLimitingTextInputFormatter(2), IntInputFormatter()],
                               )
                           )
                       )

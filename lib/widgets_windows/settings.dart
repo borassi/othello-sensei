@@ -119,7 +119,7 @@ class SettingsTileWithTextForm extends StatelessWidget {
         controller: state.getTextEditingController(name),
         textAlign: TextAlign.right,
         keyboardType: keyboardType,
-        inputFormatters: (inputFormatters ?? []) + [LengthLimitingTextInputFormatter(12)],
+        inputFormatters: (inputFormatters ?? []) + [Utf8LengthLimitingTextInputFormatter(12)],
       )
     );
   }
