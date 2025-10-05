@@ -1,5 +1,10 @@
-Just before next launch
+For next launch
+- P0 MED Show book evaluations when the book is "larger" than the children.
+- P0 SMALL Fix bug with Chinese characters.
 - P1 MED Debug Thor load failure on Marc's phone.
+- P1 MED List of games in Android.
+- P1 MED List of games in iOS / Mac.
+- P1 LARGE How easy / hard a position is.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.
@@ -9,22 +14,16 @@ Usability / bugs
 - P2 MED Debug 64-0 score f5f6e6f4g5e7e3g6d3c5d6c6f7c4e8d2b5g3c7b4c2a5d7f2c3e2b3b6f3h4h3g4a6a4a3b1c1d1f1c8h6h5e1g1g2g8f8g7d8b8b7a2a8
 - P2 LARGE Download in background.
 - P2 MED Fix accessibility issues.
+- P2 SMALL Menu bar in non-phone versions.
 
 Thor
-- P2 MED Exclude games between programs.
-- P2 MED Exclude XOT.
-- P2 MED Winning percentages.
-- P3 SMALL Filter by tournament / year.
 - P3 LARGE Download games during tournaments.
 
 Extra features:
 - P2 HARD Sync games with Drive.
-- P2 LARGE How easy / hard a position is.
-- P2 LARGE Expand all "interesting" lines in opening book.
 - P2 LARGE Remember opening book for player.
 - P2 MED Share opening book in Google Drive.
 - P3 MED Read games from Othello Quest.
-- P3 LARGE Expand book on Google Cloud.
 - P4 LARGE Choose which widgets to show.
 - P4 EASY Show stats from various moves.
 - P4 LARGE Get board state from pictures.
