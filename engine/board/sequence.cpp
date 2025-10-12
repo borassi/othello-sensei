@@ -113,6 +113,26 @@ struct PlayToVector : public PlayResultFetcher<std::vector<Board>> {
   std::vector<Board> boards_;
 };
 
+struct PlayToBoardsAndBlackTurns : public PlayResultFetcher<std::vector<std::pair<Board, bool>>> {
+  explicit PlayToBoardsAndBlackTurns() : boards_(), black_turn_(false) {}
+
+  std::vector<std::pair<Board, bool>> Get() override {
+    return std::move(boards_);
+  }
+
+  bool AtBoard(const Board& b) override {
+    black_turn_ = !black_turn_;
+    boards_.emplace_back(b, black_turn_);
+    return true;
+  }
+
+  void AtPass() override { black_turn_ = !black_turn_; }
+
+ private:
+  std::vector<std::pair<Board, bool>> boards_;
+  bool black_turn_;
+};
+
 struct PlayToBoard : public PlayResultFetcher<std::pair<Board, bool>> {
   // black_turn_ = false because we call AtBoard on the starting position.
   explicit PlayToBoard(int depth) : remaining_moves_(depth), black_turn_(false) {}
@@ -150,6 +170,11 @@ struct PlayIsValid : public PlayResultFetcher<bool> {
 std::vector<Board> Sequence::ToBoards() const {
   PlayToVector play_to_vector;
   return Play<std::vector<Board>>(&play_to_vector);
+}
+
+std::vector<std::pair<Board, bool>> Sequence::ToBoardsAndBlackTurns() const {
+  PlayToBoardsAndBlackTurns play_to_vector;
+  return Play<std::vector<std::pair<Board, bool>>>(&play_to_vector);
 }
 
 std::pair<Board, bool> Sequence::ToBoardAndBlackTurn(int i) const {

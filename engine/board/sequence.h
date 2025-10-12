@@ -231,6 +231,8 @@ class Sequence {
 
   std::vector<Board> ToBoards() const;
 
+  std::vector<std::pair<Board, bool>> ToBoardsAndBlackTurns() const;
+
   Board ToBoard(int i = -1) const;
 
   std::pair<Board, bool> ToBoardAndBlackTurn(int i = -1) const;

@@ -20,6 +20,7 @@
 #include "sequence.h"
 
 using ::testing::ElementsAre;
+using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 
 TEST(Sequence, MoveMirror) {
@@ -238,6 +239,30 @@ TEST(Sequence, ToBoards) {
   EXPECT_EQ(sequence.ToBoard(-1), Board("e6f4"));
   EXPECT_EQ(sequence.ToBoard(-2), Board("e6"));
   EXPECT_EQ(sequence.ToBoard(-3), Board());
+}
+
+TEST(Sequence, ToBoardsAndBlackTurns) {
+  EXPECT_THAT(
+      Sequence("e6f6g6g7f5f4h8h7g4d6g5h4h6g8f8h5h3").ToBoardsAndBlackTurns(),
+      ElementsAre(Pair(Board(), true),
+                  Pair(Board("e6"), false),
+                  Pair(Board("e6f6"), true),
+                  Pair(Board("e6f6g6"), false),
+                  Pair(Board("e6f6g6g7"), true),
+                  Pair(Board("e6f6g6g7f5"), false),
+                  Pair(Board("e6f6g6g7f5f4"), true),
+                  Pair(Board("e6f6g6g7f5f4h8"), false),
+                  Pair(Board("e6f6g6g7f5f4h8h7"), true),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4"), false),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6"), true),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5"), false),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5h4"), true),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5h4h6"), false),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5h4h6g8"), true),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5h4h6g8f8"), true),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5h4h6g8f8h5"), true),
+                  Pair(Board("e6f6g6g7f5f4h8h7g4d6g5h4h6g8f8h5h3"), false)
+  ));
 }
 
 TEST(Sequence, ToBoardAndBlackTurn) {
