@@ -16,7 +16,6 @@
  */
 
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +25,7 @@ import '../state.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import '../widgets_utils/misc.dart';
 
 class SettingsLocalState with ChangeNotifier {
@@ -69,25 +69,28 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-    var margin = Theme.of(context).extension<AppSizes>()!.margin;
-    var style = Theme.of(context).textTheme.bodyMedium!;
+    var appSizes = Theme.of(context).extension<AppSizes>()!;
+    var availableWidth = appSizes.secondaryWindowWidth - appSizes.margin - (Platform.isIOS || Platform.isAndroid ? 0 : 12);
+    var nameWidth = 0.72 * availableWidth;
+    var valueWidth = 0.28 * availableWidth;
+    var minButtonSize = appSizes.minButtonSize;
 
     return Container(
-      height: max(kMinInteractiveDimension, squareSize * 0.75),
+      height: minButtonSize,
       alignment: Alignment.center,
-      child: ListTile(
-        dense: true,
-        contentPadding: EdgeInsets.fromLTRB(margin, 0, 0, 0),
-        title: Text(name, style: style),
-        trailing: Container(
-          alignment: Alignment.centerRight,
-          width: 2 * squareSize,
-          child: ListenableBuilder(
-            listenable: state,
-            builder: (BuildContext context, Widget? widget) => childBuilder()
-          ),
-        )
+      child: Row(
+        children: [
+          const Margin.internal(),
+          MediumText(name, width: nameWidth, alignment: Alignment.centerLeft),
+          Container(
+            alignment: Alignment.centerRight,
+            width: valueWidth,
+            child: ListenableBuilder(
+                listenable: state,
+                builder: (BuildContext context, Widget? widget) => childBuilder()
+            ),
+          )
+        ]
       ),
     );
   }
@@ -104,17 +107,10 @@ class SettingsTileWithTextForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return SettingsTile(
       name: name,
       state: state,
-      childBuilder: () => TextFormField(
-        style: Theme.of(context).textTheme.bodyMedium!,
-        decoration: InputDecoration(
-          contentPadding: EdgeInsets.fromLTRB(0, 0, 0, squareSize * 0.1),
-          isDense: true,
-          enabledBorder: InputBorder.none
-        ),
+      childBuilder: () => SenseiTextFormField(
         onChanged: onChanged,
         controller: state.getTextEditingController(name),
         textAlign: TextAlign.right,
@@ -132,37 +128,36 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
     state.set(name, newValue);
   }
   var values = PreferencesState.preferencesValues[name];
-  var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
+  var appSizes = Theme.of(context).extension<AppSizes>()!;
+  var availableWidth = appSizes.secondaryWindowWidth - appSizes.margin - (Platform.isIOS || Platform.isAndroid ? 0 : 12);
+  var valueWidth = 0.25 * availableWidth;
+  var minButtonSize = Theme.of(context).extension<AppSizes>()!.minButtonSize;
   if (values != null) {
     return SettingsTile(
-      name: name,
-      state: state,
-      childBuilder: () => DropdownButton<String>(
-        value: state.get(name),
-        itemHeight: max(kMinInteractiveDimension, squareSize * 0.75),
-        isExpanded: true,
-        isDense: true,
-        style: Theme.of(context).textTheme.bodyMedium!,
-        onChanged: (String? value) {
-          // This is called when the user selects an item.
-          if (value != null) {
-            onChanged(value);
-          }
-        },
-        items: values.map((String value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                value,
-                style: Theme.of(context).textTheme.bodyMedium!,
-                textAlign: TextAlign.right
-              ),
-            )
-          );
-        }).toList(),
-      )
+        name: name,
+        state: state,
+        childBuilder: () => DropdownButtonFormField<String>(
+            itemHeight: minButtonSize,
+            initialValue: state.get(name),
+            isExpanded: true,
+            onChanged: (String? value) {
+              // This is called when the user selects an item.
+              if (value != null) {
+                onChanged(value);
+              }
+            },
+            selectedItemBuilder: (BuildContext context) {
+              return values.map((String value) {
+                return MediumText(value, alignment: Alignment.centerRight, width: valueWidth, height: minButtonSize);
+              }).toList();
+            },
+            items: values.map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: MediumText(value, alignment: Alignment.centerRight, width: valueWidth, height: minButtonSize),
+              );
+            }).toList(),
+          )
     );
   }
   switch (value.runtimeType) {
@@ -287,10 +282,10 @@ class Settings extends StatelessWidget {
       title: 'Settings',
       child: Builder(
         builder: (BuildContext context) {
+          var minButtonSize = Theme.of(context).extension<AppSizes>()!.minButtonSize;
           var titleStyle = Theme.of(context).textTheme.bodyMedium!.merge(
-            TextStyle(color: Theme.of(context).colorScheme.onSurface)
+              TextStyle(color: Theme.of(context).colorScheme.onSurface)
           );
-          var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
           return Scaffold(
             resizeToAvoidBottomInset: true,
             body: Column(
@@ -302,27 +297,27 @@ class Settings extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Appearance', style: titleStyle)),
+                        MediumText('Appearance', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Evaluation', style: titleStyle)),
+                        MediumText('Evaluation', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Behavior', style: titleStyle)),
+                        MediumText('Behavior', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _behaviorPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Engine', style: titleStyle)),
+                        MediumText('Engine', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
                         Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: _enginePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        Container(height: 0.75 * squareSize, alignment: Alignment.centerLeft, child: Text('Stuff for nerds', style: titleStyle)),
+                        MediumText('Stuff for nerds', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()
@@ -336,8 +331,7 @@ class Settings extends StatelessWidget {
                     Expanded(
                       child: SenseiButton(
                         onPressed: () { _state.reset(); },
-                        text: 'To previous values',
-                        textAlign: TextAlign.center,
+                        text: 'To previous\nvalues',
                       )
                     ),
                     const Margin.internal(),
@@ -348,22 +342,20 @@ class Settings extends StatelessWidget {
                             _state.set(preference.key, preference.value);
                           }
                         },
-                        text: 'To advanced settings',
-                        textAlign: TextAlign.center,
+                        text: 'To advanced\nsettings',
                       )
                     ),
                     const Margin.internal(),
                     Expanded(
-                        child: SenseiButton(
-                          onPressed: () async {
-                            for (var preference in GlobalState.preferences.getDefault(true).entries) {
-                              _state.set(preference.key, preference.value);
-                            }
-                          },
-                          text: 'To beginner settings',
-                          textAlign: TextAlign.center,
-                        )
-                    ),
+                      child: SenseiButton(
+                        onPressed: () async {
+                          for (var preference in GlobalState.preferences.getDefault(true).entries) {
+                            _state.set(preference.key, preference.value);
+                          }
+                        },
+                        text: 'To beginner\nsettings',
+                      )
+                    )
                   ],
                 ),
               ]

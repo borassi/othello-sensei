@@ -37,6 +37,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../env.dart';
 import '../files.dart';
 import '../main.dart';
+import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/misc.dart';
 
 const kBaseFolderId = '1V9GKU4X30l2oppfC3dG80qFh4PHb6sUY';
 
@@ -187,6 +189,9 @@ class WindowsHelpText extends StatelessWidget {
   Widget build(BuildContext context) {
     return SelectableText.rich(
       TextSpan(
+        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+          fontSize: 16,
+        ),
         children: <TextSpan>[
           const TextSpan(
             text: (
@@ -202,7 +207,6 @@ class WindowsHelpText extends StatelessWidget {
           TextSpan(
             text: 'instructions',
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
               color: Colors.blue,
               decoration: TextDecoration.underline,
             ),
@@ -221,7 +225,6 @@ class WindowsHelpText extends StatelessWidget {
           TextSpan(
             text: 'folder',
             style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
               color: Colors.blue,
               decoration: TextDecoration.underline,
             ),
@@ -324,7 +327,7 @@ class DownloadSecondaryWindow extends StatelessWidget {
             child: Scaffold(
                 appBar: AppBar(
                   automaticallyImplyLeading: true,
-                  title: Text('Downloading $name'),
+                  title: WindowTitle('Downloading $name'),
                   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
@@ -361,7 +364,7 @@ class DownloadSecondaryWindow extends StatelessWidget {
                             return Column(
                                 children: [
                                   const Spacer(),
-                                  Text(text, style: Theme.of(context).textTheme.bodyMedium!),
+                                  MediumText(text),
                                   const Margin.internal(),
                                   CircularProgressIndicator(value: progress),
                                   const Spacer(),

@@ -424,7 +424,6 @@ class GameMetadataState with ChangeNotifier {
   void assignToPointer(Array<Char> ptr, String string, int length) {
     final utf8Bytes = utf8.encode(string);
     var lengthValue = min(utf8Bytes.length, length - 1);
-    print(string);
     for (int i = 0; i < lengthValue; ++i) {
       ptr[i] = utf8Bytes[i];
     }

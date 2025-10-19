@@ -20,9 +20,11 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 
 import '../state.dart';
+import '../utils.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import '../widgets_utils/misc.dart';
 
 class ThorFiltersWidget extends StatelessWidget {
@@ -34,16 +36,19 @@ class ThorFiltersWidget extends StatelessWidget {
     return ListenableBuilder(
       listenable: GlobalState.thorMetadata,
       builder: (BuildContext context, Widget? child) {
-        var fontSize = Theme
-            .of(context)
-            .textTheme
-            .bodyMedium!
-            .fontSize!;
-        var players = GlobalState.thorMetadata.playerStringToIndex.keys
-            .toList();
+        var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
+        var style = Theme.of(context).textTheme.bodyMedium!;
         players.sort();
+        void updateItems(List<String> items) {
+          if (black) {
+            GlobalState.thorMetadata.setSelectedBlacks(items);
+          } else {
+            GlobalState.thorMetadata.setSelectedWhites(items);
+          }
+        }
         return DropdownSearch<String>.multiSelection(
           items: (filter, infiniteScrollProps) => players,
+          autoValidateMode: AutovalidateMode.always,
           selectedItems: black
               ? GlobalState.thorMetadata.selectedBlacks
               : GlobalState.thorMetadata.selectedWhites,
@@ -51,14 +56,28 @@ class ThorFiltersWidget extends StatelessWidget {
             showSearchBox: true,
             fit: FlexFit.loose,
             searchFieldProps: TextFieldProps(
-              style: TextStyle(fontSize: fontSize),
+              style: style.merge(TextStyle(fontSize: AnyText.mediumGroup.fontSize)),
               autocorrect: false,
               autofocus: true,
             ),
             constraints: BoxConstraints(maxHeight: 8 * squareSize),
             itemBuilder: (BuildContext context, String s, bool x, bool y) =>
-                Text(s, style: TextStyle(fontSize: fontSize)),
+                Row(
+                    children: [
+                      const Margin.internal(),
+                      MediumText(s, height: minButtonSize(context), alignment: Alignment.centerLeft)
+                    ]
+                ),
+            emptyBuilder: (context, searchEntry) {
+              return MediumText("No data found", height: minButtonSize(context), alignment: Alignment.centerLeft);
+            },
             searchDelay: const Duration(seconds: 0),
+            onItemAdded: (List<String> currentItems, String itemAdded) {
+              updateItems(currentItems);
+            },
+            onItemRemoved: (List<String> currentItems, String itemAdded) {
+              updateItems(currentItems);
+            }
           ),
           dropdownBuilder: (context, selectedItems) {
             return Column(
@@ -66,27 +85,14 @@ class ThorFiltersWidget extends StatelessWidget {
                   return Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                        child: Text(item, style: TextStyle(fontSize: fontSize)),
+                        child: MediumText(item, height: minButtonSize(context), alignment: Alignment.centerLeft),
                         onPressed: () {
                           selectedItems.remove(item);
-                          if (black) {
-                            GlobalState.thorMetadata.setSelectedBlacks(
-                                selectedItems);
-                          } else {
-                            GlobalState.thorMetadata.setSelectedWhites(
-                                selectedItems);
-                          }
+                          updateItems(selectedItems);
                         }),
                   );
                 }).toList()
             );
-          },
-          onChanged: (List<String> elements) {
-            if (black) {
-              GlobalState.thorMetadata.setSelectedBlacks(elements);
-            } else {
-              GlobalState.thorMetadata.setSelectedWhites(elements);
-            }
           },
         );
       }

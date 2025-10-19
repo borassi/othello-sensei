@@ -24,6 +24,7 @@ import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import '../widgets_utils/misc.dart';
 import '../widgets_windows/thor_filters.dart';
 
@@ -38,14 +39,9 @@ Widget getCase(BuildContext context, bool black) {
           255,
           false
         ),
-        Text(
+        LargeText(
           text,
-          style: TextStyle(
-              fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize,
-              fontWeight: FontWeight.bold,
-              height: 1,
-              color: textColor,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, height: 1, color: textColor),
         )
       ]
   );
@@ -75,18 +71,14 @@ class ShowError extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Spacer(),
-        Text("Error", style: Theme.of(context).textTheme.bodySmall),
+        SmallText("Error"),
         const Spacer(),
         ListenableBuilder(
           listenable: GlobalState.globalAnnotations,
           builder: (BuildContext context, Widget? widget) {
             var (errorBlack, errorWhite, hasNaN) = GlobalState.globalAnnotations.getErrors();
-            return Text(
+            return LargeText(
               (hasNaN ? "≥" : "") + formatEval(black ? errorBlack : errorWhite, true),
-              style: TextStyle(
-                fontSize: Theme.of(context).textTheme.bodyLarge!.fontSize!,
-                height: 1.0
-              )
             );
           }
         ),
@@ -113,10 +105,12 @@ class GameFolderSearch extends StatelessWidget {
           GlobalState.evaluate();
         }
       },
+      dropdownBuilder: (BuildContext context, String? s) {
+        return MediumText(s);
+      },
+      // Hide the vertical triangle on the right.
       suffixProps: DropdownSuffixProps(
-        dropdownButtonProps: DropdownButtonProps(
-          isVisible: false
-        ),
+        dropdownButtonProps: DropdownButtonProps(isVisible: false),
       ),
       decoratorProps: DropDownDecoratorProps(
         decoration: InputDecoration(
@@ -132,10 +126,8 @@ class GameFolderSearch extends StatelessWidget {
       popupProps: PopupProps.menu(
         menuProps: MenuProps(align: MenuAlign.bottomCenter),
         fit: FlexFit.loose,
-        itemBuilder: (context, item, isDisabled, isSelected) => Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(item, style: textStyle, textAlign: TextAlign.center),
-        ),
+        itemBuilder: (context, item, isDisabled, isSelected) =>
+            MediumText(item, height: minButtonSize(context)),
       ),
     );
   }

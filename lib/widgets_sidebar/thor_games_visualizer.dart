@@ -18,32 +18,27 @@
 
 import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 
 import '../ffi/ffi_engine.dart';
 import '../state.dart';
 import '../utils.dart';
+import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
 
 class TableCase extends StatelessWidget {
   final String text;
   final int flex;
-  final Alignment? alignment;
+  final Alignment alignment;
   final TextStyle? textStyle;
+  final TextType textType;
 
-  const TableCase(this.text, this.flex, {this.textStyle, super.key, this.alignment});
+  const TableCase(this.text, this.flex, {this.textType = TextType.medium, this.textStyle, this.alignment = Alignment.center, super.key});
   @override
   Widget build(BuildContext context) {
-    var textStyle = Theme.of(context).textTheme.bodyMedium!.merge(this.textStyle);
-    return Expanded(
-      flex: flex,
-      child: Container(
-        alignment: alignment ?? Alignment.center,
-        constraints: BoxConstraints(minHeight: textStyle.fontSize! * 2),
-        child: Text(text, style: textStyle),
-      )
-    );
+    var totalWidth = Theme.of(context).extension<AppSizes>()!.sideBarWidth;
+    return AnyText(textType, text, alignment: alignment, width: totalWidth * flex / 58, style: textStyle);
   }
 }
 
@@ -57,52 +52,39 @@ Widget getRow(BuildContext context, ThorGame game) {
     GlobalState.evaluate();
   }
 
-  var boldTextStyle = TextStyle(
-      fontWeight: FontWeight.bold,
-  );
-  var tournamentStyle = Theme.of(context).textTheme.bodySmall!.merge(
-    TextStyle(
+  var boldTextStyle = TextStyle(fontWeight: FontWeight.bold);
+  var tournamentStyle = TextStyle(
       color: Theme.of(context).colorScheme.onSurface
-    )
   );
-  String tournament;
-  try {
-    tournament = game.tournament.cast<Utf8>().toDartString();
-  } on FormatException {
-    tournament = cStringToString(game.tournament);
-  }
+  String tournament = cStringToString(game.tournament);
   return GestureDetector(
     onTap: playOneMove,
     onLongPress: playWholeGame,
     // onDoubleTap: playWholeGame,
     behavior: HitTestBehavior.opaque,
-    child: Row(
+    child: SizedBox(height: minButtonSize(context), child: Column(
       children: [
-        Expanded(
-          flex: 40,
-          child: Column(
-            children: [
-              Row(
-                children: <Widget>[
-                  TableCase(game.black.cast<Utf8>().toDartString(), 24, alignment: Alignment.centerLeft, textStyle: game.score > 32 ? boldTextStyle : null),
-                  TableCase(' ${game.score} ', 4, textStyle: game.score > 32 ? boldTextStyle : null),
-                  TableCase('-', 2),
-                  TableCase(' ${64 - game.score} ', 4, textStyle: game.score < 32 ? boldTextStyle : null),
-                  TableCase(game.white.cast<Utf8>().toDartString(), 24, alignment: Alignment.centerRight, textStyle: game.score < 32 ? boldTextStyle : null),
-                ]
-              ),
-              Row(
-                children: <Widget>[
-                  TableCase(game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played]), 3, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
-                  TableCase('${game.year} $tournament', 20, textStyle: tournamentStyle),
-                  TableCase('', 3, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
-                ]
-              )
-            ]
-          )
+        const Spacer(),
+        Row(
+          children: <Widget>[
+            TableCase(cStringToString(game.black), 24, alignment: Alignment.centerLeft, textStyle: game.score > 32 ? boldTextStyle : null),
+            TableCase(' ${game.score} ', 4, textStyle: game.score > 32 ? boldTextStyle : null),
+            TableCase('-', 2),
+            TableCase(' ${64 - game.score} ', 4, textStyle: game.score < 32 ? boldTextStyle : null),
+            TableCase(cStringToString(game.white), 24, alignment: Alignment.centerRight, textStyle: game.score < 32 ? boldTextStyle : null),
+          ]
         ),
+        const Spacer(),
+        Row(
+          children: <Widget>[
+            TableCase(textType: TextType.small, game.moves_played == 60 ? '--' : moveToString(game.moves[game.moves_played]), 6, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
+            TableCase(textType: TextType.small, '${game.year} $tournament', 46, textStyle: tournamentStyle),
+            TableCase(textType: TextType.small, '', 6, alignment: Alignment.centerLeft, textStyle: tournamentStyle),
+          ]
+        ),
+        const Spacer(),
       ]
-    )
+    ))
   );
 }
 
@@ -122,12 +104,9 @@ class ThorGamesVisualizer extends StatelessWidget {
         if (annotations.ref.num_example_thor_games == 0) {
           return Align(
               alignment: Alignment.topCenter,
-              child: Text(
+              child: MediumText(
                 'No game',
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                  fontWeight: FontWeight.bold,
-                )
+                style: TextStyle(fontWeight: FontWeight.bold)
               )
           );
         }
@@ -135,12 +114,9 @@ class ThorGamesVisualizer extends StatelessWidget {
           children: [
             Container(
               alignment: Alignment.center,
-              child: Text(
+              child: MediumText(
                 'Showing ${annotations.ref.num_example_thor_games} / ${annotations.ref.num_thor_games} games',
-                style: TextStyle(
-                  fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                  fontWeight: FontWeight.bold,
-                )
+                style: TextStyle(fontWeight: FontWeight.bold)
               ),
             ),
             Margin.internal(),

@@ -16,35 +16,49 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/utils.dart';
+
+import '../widgets_spacers/text_size_groups.dart';
 
 class SenseiButton extends StatelessWidget {
   final String? text;
   final IconData? icon;
+  final double? iconSize;
   final void Function() onPressed;
   final TextStyle? textStyle;
-  final TextAlign? textAlign;
+  final TextType? textType;
+  final bool intrinsicSize;
 
   const SenseiButton(
-      {super.key, this.text, required this.onPressed, this.textStyle, this.icon, this.textAlign});
+      {super.key, this.text, required this.onPressed, this.textStyle, this.icon, this.iconSize, this.textType, this.intrinsicSize = false});
 
   @override
   Widget build(BuildContext context) {
     var textColor = Theme.of(context).colorScheme.onPrimaryContainer;
-    var textStyle = Theme.of(context).textTheme.bodyMedium!.merge(this.textStyle);
-    var iconSize = Theme.of(context).textTheme.bodyLarge!.fontSize!;
     Widget content;
     if (icon != null) {
-      content = Icon(icon!, color: textColor, size: iconSize);
+      content = Icon(icon, color: textColor, size: iconSize);
+    } else if (text != null) {
+      content = AnyText(
+          textType ?? TextType.medium,
+          text!,
+          intrinsicSize: intrinsicSize,
+          style: textStyle,
+          alignment: Alignment.center,
+          maxLines: 3);
     } else {
-      content = Text(text!, style: textStyle, textAlign: textAlign);
+      throw Exception('Error: button without icon or text.');
     }
-    return TextButton(
-      onPressed: onPressed,
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(
-          Theme.of(context).colorScheme.primaryContainer)
-      ),
-      child: Semantics(label: text, child: content)
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: minButtonSize(context)),
+      child: TextButton(
+          onPressed: onPressed,
+          style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(
+                  Theme.of(context).colorScheme.primaryContainer)
+          ),
+          child: Semantics(label: text, child: content)
+      )
     );
   }
 }
@@ -61,5 +75,16 @@ class SenseiToggle extends StatelessWidget {
       value: initialValue,
       onChanged: onChanged,
     );
+  }
+}
+
+class WindowTitle extends StatelessWidget {
+  final String text;
+
+  const WindowTitle(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, textAlign: TextAlign.left, style: TextStyle(fontSize: 20, height: 1.0));
   }
 }

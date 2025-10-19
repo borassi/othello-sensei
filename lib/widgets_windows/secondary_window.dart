@@ -16,37 +16,40 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_utils/misc.dart';
 
 import '../main.dart';
 import '../widgets_spacers/app_sizes.dart';
+import '../widgets_spacers/hidden_items_for_size.dart';
 import '../widgets_spacers/margins.dart';
 
 class _SecondaryWindowMainContent extends StatelessWidget {
   final Widget child;
-  final bool sideMarginAlwaysLarge;
 
-  const _SecondaryWindowMainContent({required this.child, required this.sideMarginAlwaysLarge});
+  const _SecondaryWindowMainContent({required this.child});
 
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
-    return Row(
-      children: [
-        sideMarginAlwaysLarge ? const Margin.internal() : const Margin.side(),
-        const Spacer(),
-        SizedBox(
-          width: 8 * appSizes.squareSize - (sideMarginAlwaysLarge ? 2 * (appSizes.margin - appSizes.sideMargin) : 0),
-          child: Column(
-            children: [
-              const Margin.internal(),
-              Expanded(child: SafeArea(child: child)),
-              const Margin.side(),
-            ]
-          )
-        ),
-        const Spacer(),
-        sideMarginAlwaysLarge ? const Margin.internal() : const Margin.side(),
-      ]
+    return SafeArea(
+      child: Row(
+        children: [
+          const Margin.side(),
+          const Spacer(),
+          SizedBox(
+            width: appSizes.secondaryWindowWidth,
+            child: Column(
+              children: [
+                const Margin.internal(),
+                Expanded(child: child),
+                const Margin.side(),
+              ]
+            )
+          ),
+          const Spacer(),
+          const Margin.side(),
+        ]
+      )
     );
   }
 
@@ -56,9 +59,8 @@ class SecondaryWindow extends StatelessWidget {
   final Function(bool)? onPopInvoked;
   final String title;
   final Widget child;
-  final bool sideMarginAlwaysLarge;
 
-  const SecondaryWindow({super.key, required this.title, required this.child, this.onPopInvoked, this.sideMarginAlwaysLarge = false});
+  const SecondaryWindow({super.key, required this.title, required this.child, this.onPopInvoked});
 
   @override
   Widget build(BuildContext context) {
@@ -68,11 +70,11 @@ class SecondaryWindow extends StatelessWidget {
         child: Scaffold(
           resizeToAvoidBottomInset: false,
           appBar: AppBar(
-            title: Text(title),
+            title: WindowTitle(title),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
-          body: _SecondaryWindowMainContent(sideMarginAlwaysLarge: sideMarginAlwaysLarge, child: child)
+          body: HiddenItemsForSize(_SecondaryWindowMainContent(child: child))
         )
       )
     );

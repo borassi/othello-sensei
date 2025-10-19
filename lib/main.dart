@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/intents.dart';
 import 'package:othello_sensei/widgets_sidebar/sidebar.dart';
+import 'package:othello_sensei/widgets_spacers/hidden_items_for_size.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
@@ -71,16 +72,13 @@ class AppTheme extends StatelessWidget {
           ],
         );
 
-        var squareSize = theme.extension<AppSizes>()!.squareSize;
         return Theme(
           data: theme.copyWith(
             textTheme: TextTheme(
-              bodyLarge: TextStyle(fontSize: squareSize / 2.1, color: Theme.of(context).colorScheme.onPrimaryContainer),
-              bodyMedium: TextStyle(fontSize: squareSize / 3.9, color: Theme.of(context).colorScheme.onPrimaryContainer),
-              bodySmall: TextStyle(fontSize: squareSize / 6, color: Theme.of(context).colorScheme.onPrimaryContainer),
+              bodyMedium: TextStyle(fontSize: 100, height: 1, color: Theme.of(context).colorScheme.onPrimaryContainer),
             ),
           ),
-          child: child
+          child: HiddenItemsForSize(child)
         );
       }
     );

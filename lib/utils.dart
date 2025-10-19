@@ -19,8 +19,10 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/widgets_spacers/app_sizes.dart';
 import 'package:path/path.dart';
 
 import 'ffi/ffi_engine.dart';
@@ -278,4 +280,12 @@ String? getContainingFolder(String filePath) {
   }
 
   return directoryPath;
+}
+
+double squareSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()?.squareSize ?? kMinInteractiveDimension;
+}
+
+double minButtonSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()?.minButtonSize ?? kMinInteractiveDimension;
 }

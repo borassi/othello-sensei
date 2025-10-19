@@ -23,6 +23,7 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
 import '../widgets_spacers/app_sizes.dart';
+import '../widgets_spacers/text_size_groups.dart';
 
 enum CaseState {
   black,
@@ -44,31 +45,58 @@ String getRemaining(double prob, double proof) {
   }
 }
 
-class AnnotationRow extends StatelessWidget {
+class AnnotationFirstRow extends StatelessWidget {
   final String text;
-  final TextStyle style;
+  final Color color;
+  final bool large;
 
-  const AnnotationRow({required this.text, required this.style, super.key});
+  const AnnotationFirstRow({required this.text, required this.color, required this.large, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize - 3;
+    Widget widget;
+    if (large) {
+      widget = LargeText(
+          text,
+          width: squareSize,
+          height: squareSize,
+          style: TextStyle(fontWeight: FontWeight.bold, color: color)
+      );
+    } else {
+      widget = MediumText(
+          text,
+          width: squareSize,
+          style: TextStyle(fontWeight: FontWeight.bold, color: color)
+      );
+    }
+    return Center(child: widget);
+  }
+
+}
+
+class AnnotationOtherRows extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const AnnotationOtherRows({required this.text, required this.color, super.key});
 
   @override
   Widget build(BuildContext context) {
     var texts = text.split(' ');
+    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize - 3;
+
     if (texts.length == 1) {
-      return Text(text.replaceAll('_', ' '), style: style);
+      return SmallText(text.replaceAll('_', ' '), style: TextStyle(color: color));
     } else {
       assert(texts.length == 2);
       return Row(
         children: [
-          Expanded(
-            child: Center(
-              child: Text(texts[0], style: style)
-            )
-          ),
-          Expanded(
-            child: Center(
-              child: Text(texts[1], style: style)
-            )
-          ),
+          const Spacer(),
+          SmallText(texts[0], width: squareSize / 2, style: TextStyle(color: color)),
+          const Spacer(),
+          SmallText(texts[1], width: squareSize / 2, style: TextStyle(color: color)),
+          const Spacer(),
         ]
       );
     }
@@ -85,7 +113,7 @@ class Annotations extends StatelessWidget {
     var colorScheme = Theme.of(context).colorScheme;
     var annotations = GlobalState.annotations[index];
     if (annotations.annotations == null) {
-      return const Text("");
+      return Container();
     }
     var annotation = annotations.annotations!;
     var eval = annotations.getEval(false);
@@ -128,55 +156,24 @@ class Annotations extends StatelessWidget {
       line2 = "${getRemaining(annotation.prob_upper_eval, annotation.disproof_number_upper)} ${getRemaining(annotation.prob_lower_eval, annotation.proof_number_lower)}";
     }
 
-    var extraInfo = <Widget>[];
+    var lines = <Widget>[
+      const Spacer(flex: 10),
+      AnnotationFirstRow(text: line1, color: color, large: roundEvaluation && !showExtra),
+      const Spacer(flex: 5),
+    ];
     if (showExtra) {
-      extraInfo = <Widget>[
-        AnnotationRow(
-          text: line2,
-          style: TextStyle(
-            fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-            color: color,
-            height: 1.6,
-          ),
-        ),
-        AnnotationRow(
-          text: line3,
-          style: TextStyle(
-            fontSize: Theme.of(context).textTheme.bodySmall!.fontSize,
-            color: color,
-            height: 1,
-          ),
-        )
+      lines += <Widget>[
+        AnnotationOtherRows(text: line2, color: color),
+        const Spacer(flex: 5),
+        AnnotationOtherRows(text: line3, color: color),
+        const Spacer(flex: 10),
       ];
     }
-    var mainFontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
-    if (roundEvaluation && !showExtra) {
-      mainFontSize = Theme.of(context).textTheme.bodyLarge!.fontSize!;
-    }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                line1,
-                style: TextStyle(
-                  fontSize: mainFontSize,
-                  fontWeight: FontWeight.bold,
-                  height: 1,
-                  color: color
-                ),
-              ),
-              // Hack: the font ascent and descent are different and this is the
-              // only way to center the numbers AFAIK.
-              SizedBox(height: mainFontSize * 0.03),
-            ] + extraInfo
-          )
-        );
-      }
+    return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: lines
     );
   }
 }
@@ -232,7 +229,10 @@ class Case extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: index == 255 ? Listenable.merge([]) : GlobalState.annotations[index],
+      listenable:
+          index == 255 ?
+          GlobalState.globalAnnotations :
+          Listenable.merge([GlobalState.globalAnnotations, GlobalState.annotations[index]]),
       builder: (BuildContext context, Widget? child) {
         var squareSize = this.squareSize ?? Theme.of(context).extension<AppSizes>()!.squareSize;
         var colorScheme = Theme.of(context).colorScheme;
@@ -259,20 +259,17 @@ class Case extends StatelessWidget {
               break;
             case 'Number (S)':
             case 'Number (L)':
-              var style = marker == 'Number (S)' ? Theme.of(context).textTheme.bodyMedium! : Theme.of(context).textTheme.bodyLarge!;
               children.add(
-                Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${60 - GlobalState.board.emptySquares()}',
-                    style: style.merge(
-                      TextStyle(
-                        color: color,
-                        fontWeight: marker == 'Number (S)' ? FontWeight.bold : FontWeight.normal,
+                  Center(
+                      child: AnyText(
+                        marker == 'Number (S)' ? TextType.medium : TextType.large,
+                        '${60 - GlobalState.board.emptySquares()}',
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: marker == 'Number (S)' ? FontWeight.bold : FontWeight.normal,
+                        ),
                       )
-                    ),
                   )
-                )
               );
               break;
             case 'Dot':

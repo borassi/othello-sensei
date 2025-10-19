@@ -27,6 +27,7 @@ import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import 'controls.dart';
 import 'disk_count.dart';
 import 'evaluate_stats.dart';
@@ -110,11 +111,8 @@ class Sidebar extends StatelessWidget {
             bottomNavigationBar: TabBar(
               tabs: List.generate(3, (index) => Tab(
                 height: Theme.of(context).extension<AppSizes>()!.squareSize,
-                child: Text(
+                child: MediumText(
                   tabName[index],
-                  style: TextStyle(
-                    fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize,
-                  )
                 )
               )),
               physics: NeverScrollableScrollPhysics(),

@@ -54,6 +54,8 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double margin;
   late double sideMargin;
   late double appBarHeight;
+  late double secondaryWindowWidth;
+  late double minButtonSize;
 
   AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
     // Pixel Fold (very square) is 785/851 = 0.92 -> horizontal.
@@ -89,6 +91,8 @@ class AppSizes extends ThemeExtension<AppSizes> {
     margin = internalMarginFraction * boardSize;
     sideBarWidth = vertical ? boardSize - 2 * sideMargin : width - margin - boardSize - 2 * sideMargin;
     sideBarHeight = vertical ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
+    secondaryWindowWidth = 8 * squareSize;
+    minButtonSize = max(kMinInteractiveDimension, 0.8 * squareSize);
   }
 
   bool vertical() {

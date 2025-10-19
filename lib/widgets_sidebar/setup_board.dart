@@ -22,6 +22,7 @@ import 'package:othello_sensei/widgets_utils/misc.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
+import '../widgets_spacers/text_size_groups.dart';
 
 class SetupBoardControls extends StatelessWidget {
 
@@ -41,7 +42,7 @@ class SetupBoardControls extends StatelessWidget {
             const Spacer(),
             Row(
               children: [
-                Text('On click:', style: Theme.of(context).textTheme.bodyLarge),
+                LargeText('On click:'),
                 const Spacer(),
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -53,7 +54,7 @@ class SetupBoardControls extends StatelessWidget {
             const Spacer(),
             Row(
               children: [
-                Text('Turn:', style: Theme.of(context).textTheme.bodyLarge),
+                LargeText('Turn:'),
                 const Spacer(),
                 GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -68,7 +69,7 @@ class SetupBoardControls extends StatelessWidget {
                 child: SenseiButton(
                   onPressed: () { GlobalState.newGame(); },
                   text: 'Reset',
-                  textStyle: Theme.of(context).textTheme.bodyLarge,
+                  textType: TextType.large,
                 )
             ),
             const Spacer(),
@@ -77,7 +78,7 @@ class SetupBoardControls extends StatelessWidget {
               child: SenseiButton(
                 onPressed: () { GlobalState.setupBoardState.setSettingUpBoard(false); GlobalState.evaluate(); },
                 text: 'Done',
-                textStyle: Theme.of(context).textTheme.bodyLarge,
+                textType: TextType.large,
               )
             )
           ]

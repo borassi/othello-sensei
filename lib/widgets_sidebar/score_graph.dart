@@ -24,6 +24,25 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
+import '../widgets_spacers/text_size_groups.dart';
+
+class GraphTickLabel extends StatelessWidget {
+  final double x;
+
+  const GraphTickLabel(this.x, {super.key});
+
+  static double getWidth(BuildContext context) {
+    return 0.8 * squareSize(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MediumText(
+        x > 0 ? 'B+${x.toStringAsFixed(0)}' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)}'),
+        width: getWidth(context)
+    );
+  }
+}
 
 class ScoreGraph extends StatelessWidget {
   const ScoreGraph({super.key});
@@ -91,7 +110,7 @@ class ScoreGraph extends StatelessWidget {
           var maxY = maxIgnoreNaN((scores + [10]).reduce(maxIgnoreNaN), -(scores + [-10]).reduce(minIgnoreNaN));
           maxY = (maxY / 10).ceilToDouble() * 10;
           var horizontalLinesSpace = maxY / 2;
-          var textSpace = Theme.of(context).textTheme.bodyMedium!.fontSize! * 2.8;
+          var textSpace = GraphTickLabel.getWidth(context);
           var width = (constraints.maxWidth - textSpace);
           var height = constraints.maxHeight;
 
@@ -130,11 +149,9 @@ class ScoreGraph extends StatelessWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     interval: horizontalLinesSpace,
-                    getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? const Text('') : Align(
+                    getTitlesWidget: (double x, TitleMeta meta) => x % 5 != 0 ? MediumText('') : Align(
                       alignment: Alignment.center,
-                      child: Text(
-                          x > 0 ? 'B+${x.toStringAsFixed(0)}' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)}'),
-                          style: Theme.of(context).textTheme.bodyMedium!)
+                      child: GraphTickLabel(x)
                     ),
                     reservedSize: textSpace,
                   )

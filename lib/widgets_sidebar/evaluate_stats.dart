@@ -19,11 +19,12 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
+import '../widgets_spacers/text_size_groups.dart';
 
 TableRow getRow(String name, ListenableBuilder listenable) {
   return TableRow(
     children: <Widget>[
-      TableCell(child: Text(name)),
+      TableCell(child: MediumText(name)),
       TableCell(
         child: Align(
           alignment: Alignment.centerRight,
@@ -78,16 +79,17 @@ class EvaluateStats extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(getPositionsText(stats)),
+                MediumText(getPositionsText(stats)),
                 const Spacer(),
-                Text(getTimeText(stats)),
+                MediumText(getTimeText(stats)),
               ]
             ),
+            SizedBox(height: 10),
             Row(
                 children: [
-                  Text(getPosPerSecText(stats)),
+                  MediumText(getPosPerSecText(stats)),
                   const Spacer(),
-                  Text("Empties: ${GlobalState.board.emptySquares()}")
+                  MediumText("Empties: ${GlobalState.board.emptySquares()}")
                 ]
             ),
           ]
@@ -95,13 +97,4 @@ class EvaluateStats extends StatelessWidget {
       }
     );
   }
-}
-
-class TextListenable extends ListenableBuilder {
-  TextListenable({super.key, required super.listenable, required String? Function() textFunction}) : super(
-      builder: (BuildContext context, Widget? widget) => Text(textFunction() ?? "-"));
-}
-
-class TextAnnotationListenable extends TextListenable {
-  TextAnnotationListenable({required textFunction}) : super(listenable: GlobalState.globalAnnotations, textFunction: textFunction);
 }

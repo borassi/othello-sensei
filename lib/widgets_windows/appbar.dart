@@ -26,6 +26,8 @@ import '../drive/drive_downloader.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/misc.dart';
 
 enum MenuItem {
   newGame,
@@ -158,7 +160,6 @@ PopupMenuButton<MenuItem> _buildMenu({
   Icon? icon,
   String? text,
   int depth = 0}) {
-  var textStyle = Theme.of(context).textTheme.bodyMedium;
   return PopupMenuButton<MenuItem>(
     icon: icon,
     constraints: BoxConstraints.tightFor(width: width),
@@ -172,21 +173,20 @@ PopupMenuButton<MenuItem> _buildMenu({
     tooltip: tooltip ?? "",
     child: icon != null ? null : Align(
       alignment: Alignment.centerLeft,
-      child: Row(children: [const Margin.internal(), Text(text ?? "", style: textStyle)])
+      child: Row(children: [const Margin.internal(), MediumText(text ?? "", alignment: Alignment.centerLeft)])
     ),
   );
 }
 
 PopupMenuItem<MenuItem> _buildMenuItem(BuildContext context, {MenuItem? menuItem, String? text, Widget? child, bool? checked}) {
-  var textStyle = Theme.of(context).textTheme.bodyMedium;
   var height = Theme.of(context).extension<AppSizes>()!.squareSize;
   List<Widget> checkBoxChildren;
   if (checked == null) {
     checkBoxChildren = [];
   } else if (checked) {
-    checkBoxChildren = [Icon(Icons.check_box, size: textStyle!.fontSize, color: Theme.of(context).colorScheme.onPrimaryContainer)];
+    checkBoxChildren = [Icon(Icons.check_box, color: Theme.of(context).colorScheme.onPrimaryContainer)];
   } else {
-    checkBoxChildren = [Icon(Icons.check_box_outline_blank, size: textStyle!.fontSize, color: Theme.of(context).colorScheme.onPrimaryContainer)];
+    checkBoxChildren = [Icon(Icons.check_box_outline_blank, color: Theme.of(context).colorScheme.onPrimaryContainer)];
   }
   child = child ?? Align(
       alignment: Alignment.centerLeft,
@@ -194,9 +194,9 @@ PopupMenuItem<MenuItem> _buildMenuItem(BuildContext context, {MenuItem? menuItem
         children: checkBoxChildren +
         [
           const Margin.internal(),
-          Expanded(child: Text(
+          Expanded(child: MediumText(
               text ?? camelCaseToSpaces(menuItem?.name ?? ''),
-              style: textStyle
+              alignment: Alignment.centerLeft
           ))
         ],
       )
@@ -342,13 +342,7 @@ class SenseiAppBar extends StatelessWidget {
     var busyWidth = showIcons ? AppSizes.minFullAppBarSize : 0;
     var title = availableWidth < busyWidth ? <Widget>[const Spacer()] : <Widget>[
       const Margin.side(),
-      Text(
-        'Sensei',
-        style: TextStyle(
-          fontSize: 20,
-          height: 1.0,
-        ),
-      ),
+      WindowTitle('Sensei'),
       const Spacer()];
     return SizedBox(
         height: kToolbarHeight,

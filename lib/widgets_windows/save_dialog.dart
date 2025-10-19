@@ -27,6 +27,7 @@ import '../widgets_board/case.dart';
 import '../widgets_board/case_with_cup.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import '../widgets_utils/misc.dart';
 
 class SaveDialogRow extends StatelessWidget {
@@ -56,27 +57,19 @@ class _InputFormField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final TextEditingController? controller;
   final FocusNode? focusNode;
-  final String? initialValue;
   final TextInputType? keyboardType;
 
-  const _InputFormField({this.onChanged, this.inputFormatters, this.controller, this.focusNode, this.initialValue, this.keyboardType});
+  const _InputFormField({this.onChanged, this.inputFormatters, this.controller, this.focusNode, this.keyboardType});
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
-    return TextFormField(
-        initialValue: initialValue,
+    return SenseiTextFormField(
+        type: TextType.large,
         controller: controller,
         focusNode: focusNode,
-        style: Theme.of(context).textTheme.bodyLarge!,
         onChanged: onChanged,
         textAlign: TextAlign.right,
-        inputFormatters: inputFormatters,
-        decoration: InputDecoration(
-            contentPadding: EdgeInsets.fromLTRB(0, 0, 0, squareSize * 0.1),
-            isDense: true,
-            enabledBorder: InputBorder.none
-        ),
+        inputFormatters: inputFormatters ?? [],
         autocorrect: false,
       );
   }
@@ -132,7 +125,7 @@ class Searchable extends StatelessWidget {
                     height: squareSize,
                     child: InkWell(
                         onTap: () { onSelected(option); },
-                        child: Row(children: [const Spacer(), Text(option, style: Theme.of(context).textTheme.bodyLarge)])
+                        child: Row(children: [const Spacer(), LargeText(option)])
                     )
                   );
                 },
@@ -190,26 +183,26 @@ class SaveDialogContent extends StatelessWidget {
             ),
             const Margin.internal(),
             SaveDialogRow(
-                Text("Round", style: Theme.of(context).textTheme.bodyLarge!),
+                LargeText("Round"),
                 _InputFormField(
-                  initialValue: cArrayToString(gameMetadata.round),
+                  controller: TextEditingController(text: cArrayToString(gameMetadata.round)),
                   onChanged: GlobalState.gameMetadataState.setRound,
-                  inputFormatters: [Utf8LengthLimitingTextInputFormatter(10)],
+                  inputFormatters: [Utf8LengthLimitingTextInputFormatter(11)],
                 )
             ),
             const Margin.internal(),
             SaveDialogRow(
-                Text("Year", style: Theme.of(context).textTheme.bodyLarge!),
+                LargeText("Year"),
                 _InputFormField(
-                  initialValue: gameMetadata.year.toString(),
+                  controller: TextEditingController(text: gameMetadata.year.toString()),
                   onChanged: (String year) => GlobalState.gameMetadataState.setYear(int.parse(year)),
                   keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                  inputFormatters: [Utf8LengthLimitingTextInputFormatter(4), IntInputFormatter()],
+                  inputFormatters: [Utf8LengthLimitingTextInputFormatter(5), IntInputFormatter()],
                 )
             ),
             const Margin.internal(),
             SaveDialogRow(
-                Text("Score", style: Theme.of(context).textTheme.bodyLarge!),
+                LargeText("Score"),
                 Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -218,33 +211,33 @@ class SaveDialogContent extends StatelessWidget {
                           width: 0.8 * Theme.of(context).extension<AppSizes>()!.squareSize,
                           child: ListenableBuilder(
                               listenable: GlobalState.gameMetadataState,
-                              builder: (context, widget) => TextFormField(
+                              builder: (context, widget) => SenseiTextFormField(
+                                type: TextType.large,
                                 key: Key('Score black: ${gameMetadata.black_disks.toString()}'), // To update the form
-                                initialValue: gameMetadata.black_disks.toString(),
-                                style: Theme.of(context).textTheme.bodyLarge!,
+                                controller: TextEditingController(text: gameMetadata.black_disks.toString()),
                                 onChanged: (String value) => GlobalState.gameMetadataState.setScore(value, true),
                                 onEditingComplete: GlobalState.gameMetadataState.finishedSetScore,
                                 onTapOutside: (unused) => GlobalState.gameMetadataState.finishedSetScore(),
                                 textAlign: TextAlign.left,
                                 onTapAlwaysCalled: true,
                                 keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                                inputFormatters: [Utf8LengthLimitingTextInputFormatter(2), IntInputFormatter(minValue: 0, maxValue: 64)],
+                                inputFormatters: [Utf8LengthLimitingTextInputFormatter(3), IntInputFormatter(minValue: 0, maxValue: 64)],
                               )
                           )
                       ),
-                      Text("-", style: Theme.of(context).textTheme.bodyLarge!),
+                      LargeText("-"),
                       SizedBox(
                           width: 0.8 * Theme.of(context).extension<AppSizes>()!.squareSize,
                           child: ListenableBuilder(
                               listenable: GlobalState.gameMetadataState,
-                              builder: (context, widget) => TextFormField(
+                              builder: (context, widget) => SenseiTextFormField(
+                                type: TextType.large,
                                 key: Key('Score white: ${gameMetadata.black_disks.toString()}'), // To update the form
-                                initialValue: (64 - gameMetadata.black_disks).toString(),
-                                style: Theme.of(context).textTheme.bodyLarge!,
+                                controller: TextEditingController(text: (64 - gameMetadata.black_disks).toString()),
                                 onChanged: (String value) => GlobalState.gameMetadataState.setScore(value, false),
                                 textAlign: TextAlign.right,
                                 keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
-                                inputFormatters: [Utf8LengthLimitingTextInputFormatter(2), IntInputFormatter()],
+                                inputFormatters: [Utf8LengthLimitingTextInputFormatter(3), IntInputFormatter()],
                               )
                           )
                       )
@@ -255,12 +248,12 @@ class SaveDialogContent extends StatelessWidget {
             SizedBox(
                 height: max(48, Theme.of(context).extension<AppSizes>()!.squareSize),
                 child: SenseiButton(
+                  textType: TextType.large,
                   onPressed: () async {
                     Navigator.pop(context);
                     await GlobalState.save();
                   },
                   text: "Save",
-                  textStyle: Theme.of(context).textTheme.bodyLarge,
                 )
             )
           ],
@@ -279,7 +272,6 @@ class SaveDialogWidget extends StatelessWidget {
     return SecondaryWindow(
       onPopInvoked: (bool didPop) {},
       title: 'Game data',
-      sideMarginAlwaysLarge: true,
       child: SaveDialogContent()
     );
   }

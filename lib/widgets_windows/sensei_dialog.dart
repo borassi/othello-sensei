@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/state.dart';
 
 import '../main.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import '../widgets_utils/misc.dart';
 
 class SenseiDialog extends StatelessWidget {
@@ -33,15 +34,15 @@ class SenseiDialog extends StatelessWidget {
     // We do it this way because Flutter refresh keeps post frame callbacks,
     // causing the window to show multiple times.
     GlobalState.preferences.set('Show unsupported CPU at startup', false);
-    var textTheme = Theme.of(context).textTheme.bodyMedium;
     var highlightColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return AlertDialog(
-      title: title == null ? null : Center(child: Text(title!, style: textTheme?.copyWith(color: highlightColor))),
-      content: content == null ? null : Text(content!, style: textTheme, softWrap: true,),
+      title: title == null ? null : Center(child: MediumText(title!, intrinsicSize: true, style: TextStyle(color: highlightColor))),
+      content: content == null ? null : MediumText(content!, intrinsicSize: true, maxLines: 200,),
       actions: actions?.map(
         (var record) => SenseiButton(
           text: record.text,
           onPressed: () => record.onPressed(context),
+          intrinsicSize: true,
         )
       ).toList(),
       buttonPadding: const EdgeInsets.symmetric(horizontal: 8.0),

@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import '../state.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
+import '../widgets_spacers/text_size_groups.dart';
 import '../widgets_utils/misc.dart';
 
 class Timer extends StatelessWidget {
@@ -31,14 +32,10 @@ class Timer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var largeTextStyle = Theme.of(context).textTheme.bodyLarge!;
     return ListenableBuilder(listenable: Listenable.merge([GlobalState.preferences, GlobalState.timer]), builder: (BuildContext context, Widget? widget) {
-      return Text(
+      return LargeText(
           GlobalState.timer.getString(_black),
-          style: largeTextStyle.merge(TextStyle(
-              height: 1.0,
-              fontWeight: FontWeight.bold)
-          )
+          style: TextStyle(fontWeight: FontWeight.bold)
       );
     });
   }
@@ -57,7 +54,11 @@ class Timers extends StatelessWidget {
   Widget build(BuildContext context) {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     return Row(children: [
-      SizedBox(height: squareSize, width: squareSize, child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(-1))),
+      SizedBox(
+        height: squareSize,
+        width: squareSize,
+        child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(1), iconSize: 0.6 * squareSize),
+      ),
       const Margin.internal(),
       const Spacer(),
       Timer(true),
@@ -67,7 +68,11 @@ class Timers extends StatelessWidget {
       Timer(false),
       const Spacer(),
       const Margin.internal(),
-      SizedBox(height: squareSize, width: squareSize, child: SenseiButton(icon: Icons.add, onPressed: () => addToTimer(1))),
+      SizedBox(
+        height: squareSize,
+        width: squareSize,
+        child: SenseiButton(icon: Icons.add, onPressed: () => addToTimer(1), iconSize: 0.6 * squareSize),
+      )
     ]);
   }
 }
