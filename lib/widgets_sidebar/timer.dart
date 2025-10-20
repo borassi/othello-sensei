@@ -57,7 +57,7 @@ class Timers extends StatelessWidget {
       SizedBox(
         height: squareSize,
         width: squareSize,
-        child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(1), iconSize: 0.6 * squareSize),
+        child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(-1), iconSize: 0.6 * squareSize),
       ),
       const Margin.internal(),
       const Spacer(),

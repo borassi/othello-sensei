@@ -37,7 +37,7 @@ class SenseiButton extends StatelessWidget {
     var textColor = Theme.of(context).colorScheme.onPrimaryContainer;
     Widget content;
     if (icon != null) {
-      content = Icon(icon, color: textColor, size: iconSize);
+      content = Icon(icon, color: textColor, size: iconSize, applyTextScaling: false);
     } else if (text != null) {
       content = AnyText(
           textType ?? TextType.medium,
