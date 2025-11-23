@@ -19,7 +19,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../state.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import 'case.dart';
 
 class Coordinate extends StatelessWidget {
@@ -42,9 +42,10 @@ class Coordinate extends StatelessWidget {
     if (GlobalState.preferences.get('Margin size') == 'Coordin') {
       contentWidget = MediumText(content);
     }
-    return SizedBox(
+    return Container(
       width: vertical ? smallSize : squareSize,
       height: vertical ? squareSize : smallSize,
+      alignment: Alignment.center,
       child: contentWidget
     );
   }

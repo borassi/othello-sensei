@@ -22,7 +22,7 @@ import 'package:flutter/material.dart';
 import '../state.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
 class Timer extends StatelessWidget {
@@ -57,7 +57,7 @@ class Timers extends StatelessWidget {
       SizedBox(
         height: squareSize,
         width: squareSize,
-        child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(-1), iconSize: 0.6 * squareSize),
+        child: SenseiButton(icon: Icons.remove, onPressed: () => addToTimer(-1), iconSize: iconSize(context)),
       ),
       const Margin.internal(),
       const Spacer(),
@@ -71,7 +71,7 @@ class Timers extends StatelessWidget {
       SizedBox(
         height: squareSize,
         width: squareSize,
-        child: SenseiButton(icon: Icons.add, onPressed: () => addToTimer(1), iconSize: 0.6 * squareSize),
+        child: SenseiButton(icon: Icons.add, onPressed: () => addToTimer(1), iconSize: iconSize(context)),
       )
     ]);
   }

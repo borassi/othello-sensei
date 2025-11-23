@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright (c) 2024-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_spacers/text_sizes.dart';
 
 import '../state.dart';
 
@@ -45,6 +46,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
   static const double minHeight = 350;
   double height;
   double width;
+  TextStyle textStyle;
   late double heightMinusBarHeight;
   late double boardSize;
   late AppLayout layout;
@@ -56,8 +58,11 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double appBarHeight;
   late double secondaryWindowWidth;
   late double minButtonSize;
+  late double smallTextSize;
+  late double mediumTextSize;
+  late double largeTextSize;
 
-  AppSizes(this.height, this.width) : appBarHeight = AppBar().preferredSize.height {
+  AppSizes(this.height, this.width, this.textStyle) : appBarHeight = AppBar().preferredSize.height {
     // Pixel Fold (very square) is 785/851 = 0.92 -> horizontal.
     // Most "square" tablet is 4/3 = 0.75 -> vertical.
     // We choose a 0.88 ratio to discriminate.
@@ -67,7 +72,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
     heightMinusBarHeight = height - appBarHeight;
     var verticalBoardSize = min(
         width / (1 + 2 * sideMarginFraction),
-        8 / 13.5 * heightMinusBarHeight / (1 + 2 * internalMarginFraction));
+        8 / 14 * heightMinusBarHeight / (1 + 2 * internalMarginFraction));
     var horizontalBoardSizeFullBar = min(
         heightMinusBarHeight / (1 + internalMarginFraction + sideMarginFraction),
         8 / 16 * width / (1 + sideMarginFraction + internalMarginFraction / 2.0)
@@ -93,6 +98,10 @@ class AppSizes extends ThemeExtension<AppSizes> {
     sideBarHeight = vertical ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
     secondaryWindowWidth = 8 * squareSize;
     minButtonSize = max(kMinInteractiveDimension, 0.8 * squareSize);
+    appBarHeight = max(appBarHeight, minButtonSize);
+    smallTextSize = calculateSmallTextSize(squareSize, textStyle);
+    mediumTextSize = calculateMediumTextSize(squareSize, textStyle);
+    largeTextSize = calculateLargeTextSize(squareSize, textStyle);
   }
 
   bool vertical() {
@@ -105,7 +114,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
 
   @override
   AppSizes copyWith({double? height, double? width}) {
-    return AppSizes(height ?? this.height, width ?? this.width);
+    return AppSizes(height ?? this.height, width ?? this.width, textStyle);
   }
 
   @override
@@ -113,6 +122,41 @@ class AppSizes extends ThemeExtension<AppSizes> {
     if (other is! AppSizes) {
       return this;
     }
-    return AppSizes(height * t + other.height * (1-t), width * t + other.width * (1-t));
+    return AppSizes(height * t + other.height * (1-t), width * t + other.width * (1-t), textStyle);
   }
+}
+
+double textSize(BuildContext context, TextType type) {
+  switch (type) {
+    case TextType.small:
+      return smallTextSize(context);
+    case TextType.medium:
+      return mediumTextSize(context);
+    case TextType.large:
+      return largeTextSize(context);
+  }
+}
+
+double largeTextSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()!.largeTextSize;
+}
+
+double mediumTextSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()!.mediumTextSize;
+}
+
+double smallTextSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()!.smallTextSize;
+}
+
+double squareSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()?.squareSize ?? kMinInteractiveDimension;
+}
+
+double minButtonSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()?.minButtonSize ?? kMinInteractiveDimension;
+}
+
+double iconSize(BuildContext context) {
+  return Theme.of(context).extension<AppSizes>()?.largeTextSize ?? (kMinInteractiveDimension * 0.8);
 }

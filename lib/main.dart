@@ -22,7 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/intents.dart';
 import 'package:othello_sensei/widgets_sidebar/sidebar.dart';
-import 'package:othello_sensei/widgets_spacers/hidden_items_for_size.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
@@ -67,7 +66,8 @@ class AppTheme extends StatelessWidget {
           extensions: <ThemeExtension<AppSizes>>[
             AppSizes(
               constraints.maxHeight - MediaQuery.of(context).viewPadding.top - MediaQuery.of(context).viewPadding.bottom,
-              constraints.maxWidth - MediaQuery.of(context).viewPadding.left - MediaQuery.of(context).viewPadding.right
+              constraints.maxWidth - MediaQuery.of(context).viewPadding.left - MediaQuery.of(context).viewPadding.right,
+              Theme.of(context).textTheme.bodyMedium!
             )
           ],
         );
@@ -78,7 +78,7 @@ class AppTheme extends StatelessWidget {
               bodyMedium: TextStyle(fontSize: 100, height: 1, color: Theme.of(context).colorScheme.onPrimaryContainer),
             ),
           ),
-          child: HiddenItemsForSize(child)
+          child: child
         );
       }
     );
@@ -244,16 +244,10 @@ class MainApp extends StatelessWidget {
       if (GlobalState.preferences.get(
           'Show unsupported CPU at startup') &&
           [CpuType.popcnt, CpuType.noFeature].contains(GlobalState.cpuType)) {
-        await showDialog<void>(
-            context: context,
-            builder: (BuildContext context) => const CpuErrorDialog()
-        );
+        await showSenseiDialog(CpuErrorDialog());
       }
       if (GlobalState.preferences.get('Show settings dialog at startup')) {
-        await showDialog<void>(
-            context: context,
-            builder: (BuildContext context) => const DecideSettingsDialog()
-        );
+        await showSenseiDialog(DecideSettingsDialog());
       }
     });
     return ListenableBuilder(

@@ -25,20 +25,16 @@ import '../state.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
 class SettingsLocalState with ChangeNotifier {
   final Map<String, dynamic> updates = {};
-  final Map<String, TextEditingController> controllers = {};
 
   SettingsLocalState();
 
   void reset() {
     updates.clear();
-    for (var name in controllers.keys) {
-      getTextEditingController(name);
-    }
     notifyListeners();
   }
   void set(String name, dynamic value) {
@@ -47,14 +43,6 @@ class SettingsLocalState with ChangeNotifier {
   }
   dynamic get(String name) {
     return updates[name] ?? GlobalState.preferences.get(name) ?? GlobalState.preferences.defaultPreferences[name];
-  }
-  TextEditingController getTextEditingController(String name) {
-    var result = controllers.putIfAbsent(name, () => TextEditingController());
-    var value = get(name).toString();
-    if (result.text != value) {
-      result.text = value;
-    }
-    return result;
   }
 }
 
@@ -70,9 +58,9 @@ class SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
-    var availableWidth = appSizes.secondaryWindowWidth - appSizes.margin - (Platform.isIOS || Platform.isAndroid ? 0 : 12);
-    var nameWidth = 0.72 * availableWidth;
-    var valueWidth = 0.28 * availableWidth;
+    var availableWidth = appSizes.secondaryWindowWidth - 2 * appSizes.margin - (Platform.isIOS || Platform.isAndroid ? 0 : 12);
+    var nameWidth = 0.75 * availableWidth;
+    var valueWidth = 0.25 * availableWidth;
     var minButtonSize = appSizes.minButtonSize;
 
     return Container(
@@ -81,15 +69,16 @@ class SettingsTile extends StatelessWidget {
       child: Row(
         children: [
           const Margin.internal(),
-          MediumText(name, width: nameWidth, alignment: Alignment.centerLeft),
+          Container(width: nameWidth, alignment: Alignment.centerLeft, child: MediumText(name)),
           Container(
-            alignment: Alignment.centerRight,
+            alignment: Alignment.center,
             width: valueWidth,
             child: ListenableBuilder(
                 listenable: state,
                 builder: (BuildContext context, Widget? widget) => childBuilder()
             ),
-          )
+          ),
+          const Margin.internal()
         ]
       ),
     );
@@ -111,9 +100,9 @@ class SettingsTileWithTextForm extends StatelessWidget {
       name: name,
       state: state,
       childBuilder: () => SenseiTextFormField(
-        onChanged: onChanged,
-        controller: state.getTextEditingController(name),
-        textAlign: TextAlign.right,
+        initialText: state.get(name).toString(),
+        onSubmitted: onChanged,
+        textAlign: TextAlign.center,
         keyboardType: keyboardType,
         inputFormatters: (inputFormatters ?? []) + [Utf8LengthLimitingTextInputFormatter(12)],
       )
@@ -128,18 +117,25 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
     state.set(name, newValue);
   }
   var values = PreferencesState.preferencesValues[name];
-  var appSizes = Theme.of(context).extension<AppSizes>()!;
-  var availableWidth = appSizes.secondaryWindowWidth - appSizes.margin - (Platform.isIOS || Platform.isAndroid ? 0 : 12);
-  var valueWidth = 0.25 * availableWidth;
-  var minButtonSize = Theme.of(context).extension<AppSizes>()!.minButtonSize;
+  var dropdownHeight = minButtonSize(context);
   if (values != null) {
     return SettingsTile(
         name: name,
         state: state,
-        childBuilder: () => DropdownButtonFormField<String>(
-            itemHeight: minButtonSize,
-            initialValue: state.get(name),
+        childBuilder: () => InputDecorator(
+            decoration: const InputDecoration(
+              // Control the vertical gap between text and line here:
+              contentPadding: EdgeInsets.symmetric(vertical: -30, horizontal: 0),
+
+              // Use UnderlineInputBorder for a single line, or OutlineInputBorder for a box
+              border: UnderlineInputBorder(),
+            ),
+            child: DropdownButtonHideUnderline(child: DropdownButton<String>(
+            itemHeight: dropdownHeight,
+            value: state.get(name),
             isExpanded: true,
+            icon: const SizedBox.shrink(),
+            iconSize: 0,
             onChanged: (String? value) {
               // This is called when the user selects an item.
               if (value != null) {
@@ -148,17 +144,17 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
             },
             selectedItemBuilder: (BuildContext context) {
               return values.map((String value) {
-                return MediumText(value, alignment: Alignment.centerRight, width: valueWidth, height: minButtonSize);
+                return Center(child: MediumText(value));
               }).toList();
             },
             items: values.map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
-                child: MediumText(value, alignment: Alignment.centerRight, width: valueWidth, height: minButtonSize),
+                child: Center(child: MediumText(value))
               );
             }).toList(),
           )
-    );
+    )));
   }
   switch (value.runtimeType) {
     case bool:
@@ -202,6 +198,25 @@ Widget getCardSettings(String name, BuildContext context, SettingsLocalState sta
       );
     default:
       throw Exception('Invalid preference type ${value.runtimeType} for value $value');
+  }
+}
+
+class SettingsHeader extends StatelessWidget {
+  final String text;
+
+  const SettingsHeader(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var minButtonSize = Theme.of(context).extension<AppSizes>()!.minButtonSize;
+    var titleStyle = Theme.of(context).textTheme.bodyMedium!.merge(
+        TextStyle(color: Theme.of(context).colorScheme.onSurface)
+    );
+    return Container(
+        height: minButtonSize,
+        alignment: Alignment.centerLeft,
+        child: MediumText('Appearance', style: titleStyle)
+    );
   }
 }
 
@@ -282,10 +297,6 @@ class Settings extends StatelessWidget {
       title: 'Settings',
       child: Builder(
         builder: (BuildContext context) {
-          var minButtonSize = Theme.of(context).extension<AppSizes>()!.minButtonSize;
-          var titleStyle = Theme.of(context).textTheme.bodyMedium!.merge(
-              TextStyle(color: Theme.of(context).colorScheme.onSurface)
-          );
           return Scaffold(
             resizeToAvoidBottomInset: true,
             body: Column(
@@ -297,27 +308,27 @@ class Settings extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        MediumText('Appearance', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
+                        const SettingsHeader('Appearance'),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: appearancePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        MediumText('Evaluation', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
+                        const SettingsHeader('Evaluation'),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _evalPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        MediumText('Behavior', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
+                        const SettingsHeader('Behavior'),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _behaviorPreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        MediumText('Engine', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
+                        const SettingsHeader('Engine'),
                         Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: _enginePreferences.map((s) => getCardSettings(s, context, _state)).toList()
                         ),
-                        MediumText('Stuff for nerds', height: minButtonSize, alignment: Alignment.centerLeft, style: titleStyle),
+                        const SettingsHeader('Stuff for nerds'),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: nerdPreferences.map((s) => getCardSettings(s, context, _state)).toList()

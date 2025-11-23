@@ -24,7 +24,8 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_spacers/app_sizes.dart';
+import '../widgets_utils/text.dart';
 
 class GraphTickLabel extends StatelessWidget {
   final double x;
@@ -32,14 +33,13 @@ class GraphTickLabel extends StatelessWidget {
   const GraphTickLabel(this.x, {super.key});
 
   static double getWidth(BuildContext context) {
-    return 0.8 * squareSize(context);
+    return 0.85 * squareSize(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return MediumText(
         x > 0 ? 'B+${x.toStringAsFixed(0)}' : (x == 0 ? '+0 ' : 'W+${(-x).toStringAsFixed(0)}'),
-        width: getWidth(context)
     );
   }
 }

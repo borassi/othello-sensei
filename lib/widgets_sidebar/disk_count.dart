@@ -24,7 +24,7 @@ import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
 import '../state.dart';
 import '../widgets_board/case.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 import '../widgets_windows/thor_filters.dart';
 
@@ -106,7 +106,7 @@ class GameFolderSearch extends StatelessWidget {
         }
       },
       dropdownBuilder: (BuildContext context, String? s) {
-        return MediumText(s);
+        return Center(child: MediumText(s));
       },
       // Hide the vertical triangle on the right.
       suffixProps: DropdownSuffixProps(
@@ -127,7 +127,10 @@ class GameFolderSearch extends StatelessWidget {
         menuProps: MenuProps(align: MenuAlign.bottomCenter),
         fit: FlexFit.loose,
         itemBuilder: (context, item, isDisabled, isSelected) =>
-            MediumText(item, height: minButtonSize(context)),
+            SizedBox(
+              height: minButtonSize(context),
+              child: Center(child: MediumText(item))
+            ),
       ),
     );
   }

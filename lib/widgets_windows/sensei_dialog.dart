@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/state.dart';
 
 import '../main.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
 class SenseiDialog extends StatelessWidget {
@@ -37,7 +37,7 @@ class SenseiDialog extends StatelessWidget {
     var highlightColor = Theme.of(context).colorScheme.onSurfaceVariant;
     return AlertDialog(
       title: title == null ? null : Center(child: MediumText(title!, intrinsicSize: true, style: TextStyle(color: highlightColor))),
-      content: content == null ? null : MediumText(content!, intrinsicSize: true, maxLines: 200,),
+      content: content == null ? null : MediumText(content!, intrinsicSize: true,),
       actions: actions?.map(
         (var record) => SenseiButton(
           text: record.text,
@@ -50,7 +50,7 @@ class SenseiDialog extends StatelessWidget {
   }
 }
 
-Future<dynamic> showSenseiDialog(SenseiDialog dialog) async {
+Future<dynamic> showSenseiDialog(Widget dialog) async {
   BuildContext? context = GlobalState.navigatorKey.currentContext;
   if (context != null) {
     return await showDialog(

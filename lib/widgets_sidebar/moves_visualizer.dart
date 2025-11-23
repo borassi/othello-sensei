@@ -21,7 +21,7 @@ import '../state.dart';
 import '../utils.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 
 void setMove(dynamic update, double size, int elementsPerRow) {
   double x;
@@ -60,14 +60,17 @@ class MovesVisualizerCase extends StatelessWidget {
             false,
             squareSize: size,
           ),
-          MediumText(
+          Container(
+            height: size,
+            width: size,
+            alignment: Alignment.center,
+            child: MediumText(
               move == null ? "" : moveToString(move!.square),
-              height: size,
-              width: size,
               style: TextStyle(
                   color: textColor,
                   fontWeight: FontWeight.bold
               )
+            )
           ),
         ]
     );

@@ -463,9 +463,6 @@ class GameMetadataState with ChangeNotifier {
       return;
     }
     getMetadata().black_disks = black ? scoreInt : 64 - scoreInt;
-  }
-
-  void finishedSetScore() {
     notifyListeners();
   }
 

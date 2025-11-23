@@ -20,14 +20,13 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/utils.dart';
 import 'package:othello_sensei/widgets_utils/misc.dart';
 import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
 
 import '../state.dart';
 import '../widgets_spacers/app_sizes.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 
 class SquareHeightWidget extends StatelessWidget {
   final Widget child;
@@ -68,7 +67,7 @@ class _GameFolderRow extends StatelessWidget {
       // crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(child: Align(alignment: Alignment.centerLeft, child: MediumText(item))),
-            SquareHeightWidget(child: SenseiButton(icon: Icons.delete, iconSize: 0.4 * squareSize(context), onPressed: onDelete)),
+            SquareHeightWidget(child: SenseiButton(icon: Icons.delete, iconSize: iconSize(context), onPressed: onDelete)),
           ]
         )
       )
@@ -160,7 +159,7 @@ class _SavedGamesFoldersWindowState extends State<SavedGamesFoldersWindow> {
               child: SenseiButton( // Here's the new add button
                 onPressed: _addItem,
                 icon: Icons.add,
-                iconSize: 0.6 * squareSize(context)
+                iconSize: iconSize(context)
               ),
             ),
             const _HalfMargin(),

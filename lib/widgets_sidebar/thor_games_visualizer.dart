@@ -25,7 +25,8 @@ import '../state.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
+import '../widgets_spacers/text_sizes.dart';
 
 class TableCase extends StatelessWidget {
   final String text;
@@ -38,7 +39,11 @@ class TableCase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var totalWidth = Theme.of(context).extension<AppSizes>()!.sideBarWidth;
-    return AnyText(textType, text, alignment: alignment, width: totalWidth * flex / 58, style: textStyle);
+    return Container(
+      width: totalWidth * flex / 58,
+      alignment: alignment,
+      child: AnyText(textType, text, style: textStyle)
+    );
   }
 }
 

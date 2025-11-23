@@ -27,7 +27,7 @@ import '../state.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import 'controls.dart';
 import 'disk_count.dart';
 import 'evaluate_stats.dart';

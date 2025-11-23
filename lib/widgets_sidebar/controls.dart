@@ -32,37 +32,41 @@ class Controls extends StatelessWidget {
     var appSizes = Theme.of(context).extension<AppSizes>()!;
     return SizedBox(
       height: appSizes.squareSize,
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
             child: SenseiButton(
               text: 'Back to the game / the first position',
               icon: Icons.keyboard_double_arrow_left_rounded,
+              iconSize: iconSize(context),
               onPressed: GlobalState.toLastImportantNode,
             )
           ),
-          Margin.internal(),
+          const Margin.internal(),
           Expanded(
             child: SenseiButton(
               text: 'Undo',
               icon: Icons.chevron_left_rounded,
+              iconSize: iconSize(context),
               onPressed: GlobalState.undo,
             ),
           ),
-          Margin.internal(),
+          const Margin.internal(),
           Expanded(
             child: SenseiButton(
               text: 'Redo',
               icon: Icons.chevron_right_rounded,
+              iconSize: iconSize(context),
               onPressed: GlobalState.redo,
             ),
           ),
-          Margin.internal(),
+          const Margin.internal(),
           Expanded(
             child: SenseiButton(
               text: 'Stop',
               icon: Icons.stop_rounded,
+              iconSize: iconSize(context),
               onPressed: GlobalState.stop,
             ),
           ),

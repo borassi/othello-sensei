@@ -26,7 +26,7 @@ import '../drive/drive_downloader.dart';
 import '../utils.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
 enum MenuItem {
@@ -110,12 +110,15 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       return;
     case MenuItem.xotAlways:
       GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_ALWAYS);
+      GlobalState.evaluate();
       return;
     case MenuItem.xotAutomatic:
       GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_AUTOMATIC);
+      GlobalState.evaluate();
       return;
     case MenuItem.xotNever:
       GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_NEVER);
+      GlobalState.evaluate();
       return;
     case MenuItem.editSavedGamesFolders:
       if (GlobalState.thorMetadata.ptr != null) {
@@ -173,7 +176,11 @@ PopupMenuButton<MenuItem> _buildMenu({
     tooltip: tooltip ?? "",
     child: icon != null ? null : Align(
       alignment: Alignment.centerLeft,
-      child: Row(children: [const Margin.internal(), MediumText(text ?? "", alignment: Alignment.centerLeft)])
+      child: Row(children: [
+        const Margin.internal(),
+        MediumText(text ?? ""),
+        const Spacer()
+      ])
     ),
   );
 }
@@ -194,10 +201,10 @@ PopupMenuItem<MenuItem> _buildMenuItem(BuildContext context, {MenuItem? menuItem
         children: checkBoxChildren +
         [
           const Margin.internal(),
-          Expanded(child: MediumText(
+          MediumText(
               text ?? camelCaseToSpaces(menuItem?.name ?? ''),
-              alignment: Alignment.centerLeft
-          ))
+          ),
+          const Spacer(),
         ],
       )
   );
@@ -345,8 +352,8 @@ class SenseiAppBar extends StatelessWidget {
       WindowTitle('Sensei'),
       const Spacer()];
     return SizedBox(
-        height: kToolbarHeight,
-        child: Row(children: title + (GlobalState.setupBoardState.settingUpBoard ? [] : <Widget>[row]))
+        height: appSizes.appBarHeight,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: title + (GlobalState.setupBoardState.settingUpBoard ? [] : <Widget>[row]))
     );
   }
 

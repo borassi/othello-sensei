@@ -20,11 +20,10 @@ import 'package:flutter/material.dart';
 import 'package:othello_sensei/widgets_windows/secondary_window.dart';
 
 import '../state.dart';
-import '../utils.dart';
 import '../widgets_board/case.dart';
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_spacers/margins.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
 class ThorFiltersWidget extends StatelessWidget {
@@ -36,7 +35,9 @@ class ThorFiltersWidget extends StatelessWidget {
     return ListenableBuilder(
       listenable: GlobalState.thorMetadata,
       builder: (BuildContext context, Widget? child) {
-        var players = GlobalState.thorMetadata.playerStringToIndex.keys.toList();
+        var buttonHeight = minButtonSize(context);
+        var players = GlobalState.thorMetadata.playerStringToIndex.keys
+            .toList();
         var style = Theme.of(context).textTheme.bodyMedium!;
         players.sort();
         void updateItems(List<String> items) {
@@ -56,20 +57,32 @@ class ThorFiltersWidget extends StatelessWidget {
             showSearchBox: true,
             fit: FlexFit.loose,
             searchFieldProps: TextFieldProps(
-              style: style.merge(TextStyle(fontSize: AnyText.mediumGroup.fontSize)),
+              textAlignVertical: TextAlignVertical.center,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+              ),
+              style: style.merge(TextStyle(fontSize: mediumTextSize(context))),
               autocorrect: false,
               autofocus: true,
             ),
             constraints: BoxConstraints(maxHeight: 8 * squareSize),
             itemBuilder: (BuildContext context, String s, bool x, bool y) =>
                 Row(
-                    children: [
-                      const Margin.internal(),
-                      MediumText(s, height: minButtonSize(context), alignment: Alignment.centerLeft)
-                    ]
+                  children: [
+                    const Margin.internal(),
+                    Container(
+                      height: buttonHeight,
+                      alignment: Alignment.center,
+                      child: MediumText(s),
+                    ),
+                  ],
                 ),
             emptyBuilder: (context, searchEntry) {
-              return MediumText("No data found", height: minButtonSize(context), alignment: Alignment.centerLeft);
+              return Container(
+                height: buttonHeight,
+                alignment: Alignment.center,
+                child: MediumText("No data found"),
+              );
             },
             searchDelay: const Duration(seconds: 0),
             onItemAdded: (List<String> currentItems, String itemAdded) {
@@ -77,25 +90,29 @@ class ThorFiltersWidget extends StatelessWidget {
             },
             onItemRemoved: (List<String> currentItems, String itemAdded) {
               updateItems(currentItems);
-            }
+            },
           ),
           dropdownBuilder: (context, selectedItems) {
+            if (selectedItems.isEmpty) {
+              return SizedBox(height: buttonHeight);
+            }
             return Column(
-                children: selectedItems.map((String item) {
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                        child: MediumText(item, height: minButtonSize(context), alignment: Alignment.centerLeft),
-                        onPressed: () {
-                          selectedItems.remove(item);
-                          updateItems(selectedItems);
-                        }),
-                  );
-                }).toList()
+              children: selectedItems.map((String item) {
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: SenseiButton(
+                    text: item,
+                    onPressed: () {
+                      selectedItems.remove(item);
+                      updateItems(selectedItems);
+                    },
+                  ),
+                );
+              }).toList(),
             );
           },
         );
-      }
+      },
     );
   }
 
@@ -111,38 +128,43 @@ class ThorFiltersWidget extends StatelessWidget {
           var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
           return SingleChildScrollView(
             child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraint.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Case(CaseState.black, 255, false),
-                      const Margin.internal(),
-                      Expanded(child: playerSearch(context, true)),
-                    ]
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Case(CaseState.white, 255, false),
-                      const Margin.internal(),
-                      Expanded(child: playerSearch(context, false)),
-                    ]
-                  ),
-                  const Spacer(flex: 1),
-                  SizedBox(
+              constraints: BoxConstraints(minHeight: constraint.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Case(CaseState.black, 255, false),
+                        const Margin.internal(),
+                        Expanded(child: playerSearch(context, true)),
+                      ],
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Case(CaseState.white, 255, false),
+                        const Margin.internal(),
+                        Expanded(child: playerSearch(context, false)),
+                      ],
+                    ),
+                    const Spacer(flex: 1),
+                    SizedBox(
                       height: squareSize,
-                      child: SenseiButton(text: "OK", onPressed: () {Navigator.pop(context);})
-                  ),
-                ],
-              )
-            )
-          )
-        );
-        }
-      )
+                      child: SenseiButton(
+                        text: "OK",
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

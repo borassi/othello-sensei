@@ -37,7 +37,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../env.dart';
 import '../files.dart';
 import '../main.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
 const kBaseFolderId = '1V9GKU4X30l2oppfC3dG80qFh4PHb6sUY';

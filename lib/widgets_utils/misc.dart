@@ -16,9 +16,10 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:othello_sensei/utils.dart';
 
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_spacers/app_sizes.dart' as app_sizes;
+import 'text.dart';
+import '../widgets_spacers/text_sizes.dart';
 
 class SenseiButton extends StatelessWidget {
   final String? text;
@@ -36,24 +37,27 @@ class SenseiButton extends StatelessWidget {
   Widget build(BuildContext context) {
     var textColor = Theme.of(context).colorScheme.onPrimaryContainer;
     Widget content;
+    WidgetStateProperty<EdgeInsetsGeometry>? padding;
     if (icon != null) {
-      content = Icon(icon, color: textColor, size: iconSize, applyTextScaling: false);
+      content = Icon(icon, color: textColor, size: iconSize ?? app_sizes.iconSize(context), applyTextScaling: false);
+      padding = WidgetStateProperty.all(EdgeInsetsGeometry.zero);
     } else if (text != null) {
       content = AnyText(
           textType ?? TextType.medium,
           text!,
-          intrinsicSize: intrinsicSize,
           style: textStyle,
-          alignment: Alignment.center,
+          textAlign: TextAlign.center,
+          intrinsicSize: true,
           maxLines: 3);
     } else {
       throw Exception('Error: button without icon or text.');
     }
     return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: minButtonSize(context)),
+      constraints: BoxConstraints(minHeight: app_sizes.minButtonSize(context)),
       child: TextButton(
           onPressed: onPressed,
           style: ButtonStyle(
+              padding: padding,
               backgroundColor: WidgetStateProperty.all(
                   Theme.of(context).colorScheme.primaryContainer)
           ),
@@ -85,6 +89,6 @@ class WindowTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, textAlign: TextAlign.left, style: TextStyle(fontSize: 20, height: 1.0));
+    return Text(text, style: TextStyle(fontSize: 24, height: 1.0));
   }
 }

@@ -20,7 +20,6 @@ import 'package:othello_sensei/widgets_utils/misc.dart';
 
 import '../main.dart';
 import '../widgets_spacers/app_sizes.dart';
-import '../widgets_spacers/hidden_items_for_size.dart';
 import '../widgets_spacers/margins.dart';
 
 class _SecondaryWindowMainContent extends StatelessWidget {
@@ -67,15 +66,15 @@ class SecondaryWindow extends StatelessWidget {
     return PopScope(
       onPopInvoked: onPopInvoked,
       child: AppTheme(
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          appBar: AppBar(
-            title: WindowTitle(title),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-          body: HiddenItemsForSize(_SecondaryWindowMainContent(child: child))
-        )
+          child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              appBar: AppBar(
+                title: WindowTitle(title),
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              body: _SecondaryWindowMainContent(child: child)
+          )
       )
     );
   }

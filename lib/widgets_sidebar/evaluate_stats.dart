@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 
 import '../state.dart';
 import '../utils.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
 
 TableRow getRow(String name, ListenableBuilder listenable) {
   return TableRow(

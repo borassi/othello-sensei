@@ -23,7 +23,8 @@ import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
 import '../widgets_spacers/app_sizes.dart';
-import '../widgets_spacers/text_size_groups.dart';
+import '../widgets_utils/text.dart';
+import '../widgets_spacers/text_sizes.dart';
 
 enum CaseState {
   black,
@@ -54,19 +55,15 @@ class AnnotationFirstRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize - 3;
     Widget widget;
     if (large) {
       widget = LargeText(
           text,
-          width: squareSize,
-          height: squareSize,
           style: TextStyle(fontWeight: FontWeight.bold, color: color)
       );
     } else {
       widget = MediumText(
           text,
-          width: squareSize,
           style: TextStyle(fontWeight: FontWeight.bold, color: color)
       );
     }
@@ -84,7 +81,6 @@ class AnnotationOtherRows extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var texts = text.split(' ');
-    var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize - 3;
 
     if (texts.length == 1) {
       return SmallText(text.replaceAll('_', ' '), style: TextStyle(color: color));
@@ -93,9 +89,9 @@ class AnnotationOtherRows extends StatelessWidget {
       return Row(
         children: [
           const Spacer(),
-          SmallText(texts[0], width: squareSize / 2, style: TextStyle(color: color)),
+          SmallText(texts[0], style: TextStyle(color: color)),
           const Spacer(),
-          SmallText(texts[1], width: squareSize / 2, style: TextStyle(color: color)),
+          SmallText(texts[1], style: TextStyle(color: color)),
           const Spacer(),
         ]
       );
@@ -159,16 +155,16 @@ class Annotations extends StatelessWidget {
     var lines = <Widget>[
       const Spacer(flex: 10),
       AnnotationFirstRow(text: line1, color: color, large: roundEvaluation && !showExtra),
-      const Spacer(flex: 5),
     ];
     if (showExtra) {
       lines += <Widget>[
+        const Spacer(flex: 5),
         AnnotationOtherRows(text: line2, color: color),
         const Spacer(flex: 5),
         AnnotationOtherRows(text: line3, color: color),
-        const Spacer(flex: 10),
       ];
     }
+    lines += <Widget>[const Spacer(flex: 10)];
 
     return Column(
         mainAxisAlignment: MainAxisAlignment.center,
