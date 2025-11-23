@@ -89,6 +89,24 @@ class WindowTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: TextStyle(fontSize: 24, height: 1.0));
+    return LayoutBuilder(
+        builder: (context, constraints) {
+          final textPainter = TextPainter(
+            text: TextSpan(
+              text: text,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 24),
+            ),
+            textScaler: MediaQuery.textScalerOf(context),
+            textDirection: TextDirection.ltr,
+            maxLines: 1,
+          );
+          textPainter.layout(maxWidth: constraints.maxWidth);
+          if (textPainter.didExceedMaxLines ||
+              textPainter.height > constraints.maxHeight) {
+            return SizedBox();
+          }
+          return Text(text, maxLines: 1, style: TextStyle(fontSize: 24, height: 1.0));
+        }
+    );
   }
 }

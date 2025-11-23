@@ -46,7 +46,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
   static const double minHeight = 350;
   double height;
   double width;
-  TextStyle textStyle;
+  BuildContext context;
   late double heightMinusBarHeight;
   late double boardSize;
   late AppLayout layout;
@@ -62,7 +62,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
   late double mediumTextSize;
   late double largeTextSize;
 
-  AppSizes(this.height, this.width, this.textStyle) : appBarHeight = AppBar().preferredSize.height {
+  AppSizes(this.height, this.width, this.context) : appBarHeight = AppBar().preferredSize.height {
     // Pixel Fold (very square) is 785/851 = 0.92 -> horizontal.
     // Most "square" tablet is 4/3 = 0.75 -> vertical.
     // We choose a 0.88 ratio to discriminate.
@@ -99,9 +99,9 @@ class AppSizes extends ThemeExtension<AppSizes> {
     secondaryWindowWidth = 8 * squareSize;
     minButtonSize = max(kMinInteractiveDimension, 0.8 * squareSize);
     appBarHeight = max(appBarHeight, minButtonSize);
-    smallTextSize = calculateSmallTextSize(squareSize, textStyle);
-    mediumTextSize = calculateMediumTextSize(squareSize, textStyle);
-    largeTextSize = calculateLargeTextSize(squareSize, textStyle);
+    smallTextSize = calculateSmallTextSize(squareSize, context);
+    mediumTextSize = calculateMediumTextSize(squareSize, context);
+    largeTextSize = calculateLargeTextSize(squareSize, context);
   }
 
   bool vertical() {
@@ -114,7 +114,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
 
   @override
   AppSizes copyWith({double? height, double? width}) {
-    return AppSizes(height ?? this.height, width ?? this.width, textStyle);
+    return AppSizes(height ?? this.height, width ?? this.width, context);
   }
 
   @override
@@ -122,7 +122,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
     if (other is! AppSizes) {
       return this;
     }
-    return AppSizes(height * t + other.height * (1-t), width * t + other.width * (1-t), textStyle);
+    return AppSizes(height * t + other.height * (1-t), width * t + other.width * (1-t), context);
   }
 }
 

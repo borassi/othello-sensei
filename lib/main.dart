@@ -67,7 +67,7 @@ class AppTheme extends StatelessWidget {
             AppSizes(
               constraints.maxHeight - MediaQuery.of(context).viewPadding.top - MediaQuery.of(context).viewPadding.bottom,
               constraints.maxWidth - MediaQuery.of(context).viewPadding.left - MediaQuery.of(context).viewPadding.right,
-              Theme.of(context).textTheme.bodyMedium!
+              context
             )
           ],
         );

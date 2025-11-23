@@ -345,12 +345,7 @@ class SenseiAppBar extends StatelessWidget {
         )
       ]
     );
-    var availableWidth = appSizes.brokenAppBar() ? appSizes.sideBarWidth : appSizes.width;
-    var busyWidth = showIcons ? AppSizes.minFullAppBarSize : 0;
-    var title = availableWidth < busyWidth ? <Widget>[const Spacer()] : <Widget>[
-      const Margin.side(),
-      WindowTitle('Sensei'),
-      const Spacer()];
+    var title = <Widget>[Expanded(child: WindowTitle('Sensei'))];
     return SizedBox(
         height: appSizes.appBarHeight,
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: title + (GlobalState.setupBoardState.settingUpBoard ? [] : <Widget>[row]))

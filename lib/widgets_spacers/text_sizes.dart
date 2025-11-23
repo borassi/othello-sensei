@@ -29,20 +29,21 @@ String _generateNumbers(int value, int beforeDecimal, int afterDecimal) {
 
 class FontSizeCalculator {
   double fontSize;
+  BuildContext context;
 
-  FontSizeCalculator() : fontSize = 100;
+  FontSizeCalculator(this.context) : fontSize = 100;
 
   bool _fontSizeFits(
       String text,
-      TextStyle style,
       double size,
       BoxConstraints constraints,
       int maxLines) {
     final textPainter = TextPainter(
       text: TextSpan(
         text: text,
-        style: style.copyWith(fontSize: size),
+        style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: size),
       ),
+      textScaler: MediaQuery.textScalerOf(context),
       textDirection: TextDirection.ltr,
       maxLines: maxLines,
     );
@@ -53,20 +54,19 @@ class FontSizeCalculator {
 
   void addConstraint(
       String text,
-      TextStyle style,
       BoxConstraints constraints,
       int maxLines) {
     if (text.isEmpty ||
-        _fontSizeFits(text, style, fontSize, constraints, maxLines)) {
+        _fontSizeFits(text, fontSize, constraints, maxLines)) {
       return;
     }
     double low = 0;
     double high = fontSize;
     while (high > low + 0.2) {
-      assert(_fontSizeFits(text, style, low, constraints, maxLines));
-      assert(!_fontSizeFits(text, style, high, constraints, maxLines));
+      assert(_fontSizeFits(text, low, constraints, maxLines));
+      assert(!_fontSizeFits(text, high, constraints, maxLines));
       final mid = low + (high - low) / 2;
-      if (_fontSizeFits(text, style, mid, constraints, maxLines)) {
+      if (_fontSizeFits(text, mid, constraints, maxLines)) {
         low = mid;
       } else {
         high = mid;
@@ -80,8 +80,8 @@ BoxConstraints squareConstraints(double squareSize) {
   return BoxConstraints(maxHeight: squareSize - 3, maxWidth: squareSize - 3);
 }
 
-double calculateLargeTextSize(double squareSize, TextStyle style) {
-  var calculator = FontSizeCalculator();
+double calculateLargeTextSize(double squareSize, BuildContext context) {
+  var calculator = FontSizeCalculator(context);
   BoxConstraints constraints = squareConstraints(squareSize);
 
   for (int i = 0; i < 10; ++i) {
@@ -89,18 +89,16 @@ double calculateLargeTextSize(double squareSize, TextStyle style) {
       // Evaluate.
       calculator.addConstraint(
           '$prepend${_generateNumbers(i, 2, 0)}',
-          style,
           constraints,
           1);
     }
   }
-  for (int i = 0; i < 10; ++i) {
-  }
+  print('large ${calculator.fontSize}');
   return calculator.fontSize;
 }
 
-double calculateMediumTextSize(double squareSize, TextStyle style) {
-  var calculator = FontSizeCalculator();
+double calculateMediumTextSize(double squareSize, BuildContext context) {
+  var calculator = FontSizeCalculator(context);
   BoxConstraints constraints = squareConstraints(squareSize);
 
   for (int i = 0; i < 10; ++i) {
@@ -108,7 +106,6 @@ double calculateMediumTextSize(double squareSize, TextStyle style) {
     for (String prepend in ['+', '-']) {
       calculator.addConstraint(
           '$prepend${_generateNumbers(i, 2, 2)}',
-          style,
           constraints,
           1);
     }
@@ -116,7 +113,6 @@ double calculateMediumTextSize(double squareSize, TextStyle style) {
       // Archive.
       calculator.addConstraint(
           '${_generateNumbers(i, 3, 0)}$append',
-          style,
           constraints,
           1);
     }
@@ -124,8 +120,8 @@ double calculateMediumTextSize(double squareSize, TextStyle style) {
   return calculator.fontSize;
 }
 
-double calculateSmallTextSize(double squareSize, TextStyle style) {
-  var calculator = FontSizeCalculator();
+double calculateSmallTextSize(double squareSize, BuildContext context) {
+  var calculator = FontSizeCalculator(context);
   BoxConstraints constraints = BoxConstraints(maxWidth: squareSize / 2 - 3);
 
   for (int i = 0; i < 10; ++i) {
@@ -133,18 +129,15 @@ double calculateSmallTextSize(double squareSize, TextStyle style) {
       // Second or third line.
       calculator.addConstraint(
           '${_generateNumbers(i, 3, 0)}$append',
-          style,
           constraints,
           1);
       calculator.addConstraint(
           '${_generateNumbers(i, 1, 1)}$append',
-          style,
           constraints,
           1);
     }
     calculator.addConstraint(
         '${_generateNumbers(i, 2, 0)}%',
-        style,
         constraints,
         1);
   }
