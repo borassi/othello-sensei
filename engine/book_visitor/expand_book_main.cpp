@@ -96,9 +96,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  Eval last_eval_goal = kLessThenMinEval;
+  std::string last_start_line = "";
   while (true) {
     std::string start_line = GetBestLine(book, start_lines);
-    Eval last_eval_goal = kLessThenMinEval;
     std::vector<Board> start_line_boards;
     Board start_board(start_line, &start_line_boards);
     ElapsedTime t;
@@ -120,7 +121,7 @@ int main(int argc, char* argv[]) {
     tree_node_supplier.Reset();
     NVisited n_visited = 0;
     // TODO: Avoid duplication with BestDescendant.
-    Eval eval_goal = start->NextPositionEvalGoal(0, 1, start->SolveProbability(-63, 63) > 0.05 ? kLessThenMinEval : last_eval_goal);
+    Eval eval_goal = start->NextPositionEvalGoal(0, 1, start->SolveProbability(-63, 63) > 0.05 || start_line != last_start_line ? kLessThenMinEval : last_eval_goal);
     std::cout
         << "Expanding line:        " << start_line << "\n"
         << "Positions:             " << PrettyPrintDouble((double) book.Size()) << "\n"
@@ -134,6 +135,7 @@ int main(int argc, char* argv[]) {
     assert(leaf_ptr);
     auto leaf = *leaf_ptr;
     last_eval_goal = eval_goal;
+    last_start_line = start_line;
     bool solved = false;
     int alpha = leaf.Alpha();
     int beta = leaf.Beta();

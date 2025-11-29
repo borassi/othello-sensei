@@ -42,7 +42,7 @@ struct BoardWithStats {
   double GetValue(double new_uncertainty) const {
     // We add - because the priority queue is a max-heap.
     // Old: return -pow(2, -error / 2.0 - depth / 4.0) * new_uncertainty;
-    return -pow(2, -error / 2.0 - depth / 8.0) * std::min(0.2, new_uncertainty);
+    return -pow(2, -error / 2.0 - depth / 8.0) * std::min(0.3, new_uncertainty);
   }
 
   double GetValue() const {

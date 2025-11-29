@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 5; ++i) {
       double error_black = 0;
       double error_white = 0;
+      double expected_error_other = rand() % 70;
       bool black_turn = true;
       Board board;
       while (!IsGameOver(board)) {
@@ -63,7 +64,7 @@ int main(int argc, char* argv[]) {
           children_pointer.push_back(&child);
           best_eval = std::min(best_eval, child.GetEval());
         }
-        const Node* best_node = FindNextMoveTotalError(children_pointer, error, error / 3.0);
+        const Node* best_node = FindNextMoveTotalError(children_pointer, (black_turn == (i % 2 == 0)) ? error : expected_error_other, 999999999);
         board = best_node->ToBoard();
         if (black_turn) {
           error_black += best_node->GetEval() - best_eval;
@@ -72,7 +73,7 @@ int main(int argc, char* argv[]) {
         }
         black_turn = !black_turn;
       }
-      std::cout << ", " << error_black << ", " << error_white << std::flush;
+      std::cout << ", " << ((i % 2 == 0) ? error_black : error_white) << std::flush;
     }
     std::cout << "\n" << std::flush;
   }
