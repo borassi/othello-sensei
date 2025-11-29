@@ -93,7 +93,6 @@ double calculateLargeTextSize(double squareSize, BuildContext context) {
           1);
     }
   }
-  print('large ${calculator.fontSize}');
   return calculator.fontSize;
 }
 
