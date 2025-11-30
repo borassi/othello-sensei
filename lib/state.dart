@@ -641,8 +641,8 @@ class AnnotationState with ChangeNotifier {
     notifyListeners();
   }
 
-  double getEval(bool inError) {
-    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn, inError);
+  double getEval() {
+    return getEvalFromAnnotations(annotations!, annotations!.father.ref.black_turn);
   }
 }
 
@@ -895,7 +895,7 @@ class GlobalAnnotationState with ChangeNotifier {
          child = child.ref.next_sibling) {
       bestEval = max(bestEval, -getEvalFromAnnotations(
           child.ref,
-          child.ref.black_turn, false));
+          child.ref.black_turn));
     }
     notifyListeners();
   }
@@ -920,12 +920,12 @@ class GlobalAnnotationState with ChangeNotifier {
          annotation = primary ? annotation.ref.next_state_primary : annotation.ref.next_state_secondary) {
       if (annotation.ref.move == GlobalState.ffiEngine.SetupBoardMove()) {
         assert(scores.isNotEmpty);
-        scores[scores.length - 1] = getEvalFromAnnotations(annotation.ref, true, true, bestLine: true);
+        scores[scores.length - 1] = getEvalFromAnnotations(annotation.ref, true, bestLine: true);
         continue;
       } else if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
         continue;
       }
-      scores.add(getEvalFromAnnotations(annotation.ref, true, true, bestLine: true));
+      scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
       lastMove = annotation.ref.depth_no_pass;
       // During analysis, moveBackToGame is the last move in the main line.
       if (primary &&

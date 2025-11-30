@@ -112,7 +112,7 @@ class Annotations extends StatelessWidget {
       return Container();
     }
     var annotation = annotations.annotations!;
-    var eval = annotations.getEval(false);
+    var eval = annotations.getEval();
     var bestEval = GlobalState.globalAnnotations.bestEval;
 
     var delta = GlobalState.preferences.get('Highlight distance from best move');

@@ -206,20 +206,20 @@ String formatEval(double eval, bool inError, {int roundIfGE = 100}) {
   return eval.toStringAsFixed(roundEvaluations(inError) || eval.abs() >= roundIfGE ? 0 : 2);
 }
 
-double getEvalFromAnnotations(Annotations annotation, bool black, bool inError, {bool bestLine = false}) {
+double getEvalFromAnnotations(Annotations annotation, bool black, {bool bestLine = false}) {
   if (!annotation.valid) {
     return double.nan;
   }
   double multiplier = (annotation.black_turn == black ? 1 : -1);
   double value;
-  if (roundEvaluations(inError)) {
-    if (bestLine) {
-      value = annotation.median_eval_best_line.toDouble();
-    } else {
-      value = annotation.median_eval.toDouble();
-    }
+  bool round = roundEvaluations(bestLine);
+  if (bestLine) {
+    value = round ? annotation.median_eval_best_line.toDouble() : annotation.eval_best_line;
+  } else if (annotation.descendants < annotation.descendants_book
+      && annotation.eval_book >= -64) {
+    value = round ? annotation.median_eval_book.toDouble() : annotation.eval_book;
   } else {
-    value = bestLine ? annotation.eval_best_line : annotation.eval;
+    value = round ? annotation.median_eval.toDouble() : annotation.eval;
   }
   return value * multiplier;
 }

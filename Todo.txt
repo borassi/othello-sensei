@@ -1,9 +1,5 @@
 For next launch
-- P0 MED Show book evaluations when the book is "larger" than the children.
 - P1 MED Debug Thor load failure on Marc's phone.
-- P1 MED List of games in Android.
-- P1 MED List of games in iOS / Mac.
-- P1 LARGE How easy / hard a position is.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.
@@ -19,6 +15,9 @@ Thor
 - P3 LARGE Download games during tournaments.
 
 Extra features:
+- P1 MED List of games in Android.
+- P1 MED List of games in iOS / Mac.
+- P1 LARGE How easy / hard a position is.
 - P2 HARD Sync games with Drive.
 - P2 LARGE Remember opening book for player.
 - P2 MED Share opening book in Google Drive.

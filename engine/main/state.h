@@ -109,6 +109,8 @@ class EvaluationState : public TreeNode {
     annotations_.median_eval = (int) final_eval;
     annotations_.eval_best_line = final_eval;
     annotations_.median_eval_best_line = (int) final_eval;
+    annotations_.eval_book = kLessThenMinEval;
+    annotations_.median_eval_book = kLessThenMinEval;
     annotations_.provenance = EVALUATE;
     UpdateSavedAnnotations();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
@@ -364,6 +366,8 @@ class EvaluationState : public TreeNode {
   void SetAnnotations(const Node& node, bool book, double seconds) {
     CopyAndEnlargeToAllEvals(node);
     if (book) {
+      annotations_.eval_book = node.GetEval();
+      annotations_.median_eval_book = node.GetPercentileLower(0.5) - 1;
       // descendants_book are just copied from the book; descendants are updated, instead.
       annotations_.descendants_book = descendants_;
       descendants_ = annotations_.descendants;
@@ -375,6 +379,8 @@ class EvaluationState : public TreeNode {
     } else {
       assert(!HasValidChildren() || IsBeforeModification());
       assert(descendants_ >= annotations_.descendants);
+      annotations_.eval_book = kLessThenMinEval;
+      annotations_.median_eval_book = kLessThenMinEval;
       annotations_.descendants_evaluating_this = descendants_;
       annotations_.descendants = descendants_;
       annotations_.seconds = seconds;
