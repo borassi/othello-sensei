@@ -20,6 +20,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_color_utilities/hct/hct.dart';
+import 'package:material_color_utilities/palettes/core_palette.dart';
 import 'package:othello_sensei/intents.dart';
 import 'package:othello_sensei/widgets_sidebar/sidebar.dart';
 import 'package:othello_sensei/widgets_windows/appbar.dart';
@@ -323,25 +325,48 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
     }
   }
 
+  Color setTone(Color color, {double? hue, double? chroma, double? tone}) {
+    final hct = Hct.fromInt(color.toARGB32());
+    final newHct = Hct.from(hue ?? hct.hue, chroma ?? hct.chroma, tone ?? hct.tone);
+    return Color(newHct.toInt());
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        navigatorKey: GlobalState.navigatorKey,
-        debugShowCheckedModeBanner: false,
-        title: 'Sensei',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.green,
-              secondaryContainer: const Color(0xff00731b),  // primary: 0xff005313
-              onSecondaryContainer: const Color(0xffeedd33),
-              surface: const Color(0xff222222),
-              surfaceVariant: const Color(0xfff9f9f9),
-              brightness: Brightness.dark),
-          useMaterial3: true,
-        ),
-        home: const MainApp()
-    );
+    return ListenableBuilder(
+        listenable: GlobalState.preferences,
+        builder: (context, widget) {
+      final CorePalette yellowPalette = CorePalette.of(Colors.yellow.toARGB32());
+      var baseColorScheme = ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          brightness: Brightness.dark);
+      double boardTone = 30;
+      if (GlobalState.preferences.get('Board color') == 'Very light') {
+        boardTone = 40;
+      } else if (GlobalState.preferences.get('Board color') == 'Light') {
+        boardTone = 35;
+      } else if (GlobalState.preferences.get('Board color') == 'Dark') {
+        boardTone = 25;
+      }
+
+      var colorScheme = ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          primaryContainer: setTone(baseColorScheme.primaryContainer, chroma: 70, tone: boardTone),
+          secondaryContainer: setTone(baseColorScheme.primaryContainer, chroma: 70, tone: boardTone + 10),
+          onSecondaryContainer: Color(yellowPalette.primary.get(90)),
+          brightness: Brightness.dark);
+
+      return MaterialApp(
+          navigatorKey: GlobalState.navigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Sensei',
+          theme: ThemeData(
+            colorScheme: colorScheme,
+            useMaterial3: true,
+          ),
+          home: const MainApp()
+      );
+    });
   }
 
 }

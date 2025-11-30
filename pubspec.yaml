@@ -66,6 +66,7 @@ dependencies:
   flutter_svg: ^2.1.0
   flutter_acrylic: ^1.1.4
   auto_size_text: ^3.0.0
+  material_color_utilities: ^0.11.1
 
 dev_dependencies:
   flutter_test:

@@ -208,7 +208,7 @@ class Case extends StatelessWidget {
         fill = colorScheme.surface;
         break;
       case CaseState.white:
-        fill = colorScheme.surfaceVariant;
+        fill = colorScheme.inverseSurface;
         break;
     }
     return Container(
@@ -237,7 +237,7 @@ class Case extends StatelessWidget {
             decoration: BoxDecoration(
               color: highlightCase(index) ? colorScheme.secondaryContainer : colorScheme.primaryContainer,
               border: Border.all(
-                color: colorScheme.background,
+                color: colorScheme.surface,
                 width: kBorderWidth,
               ),
             ),
@@ -248,7 +248,7 @@ class Case extends StatelessWidget {
           children.add(Center(child: disk));
         }
         if (isLastMove) {
-          var color = state == CaseState.black ? colorScheme.surfaceVariant : colorScheme.surface;
+          var color = state == CaseState.black ? colorScheme.inverseSurface : colorScheme.surface;
           var marker = GlobalState.preferences.get('Last move marker');
           switch (marker) {
             case 'None':

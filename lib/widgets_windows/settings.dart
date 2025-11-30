@@ -215,7 +215,7 @@ class SettingsHeader extends StatelessWidget {
     return Container(
         height: minButtonSize,
         alignment: Alignment.centerLeft,
-        child: MediumText('Appearance', style: titleStyle)
+        child: MediumText(text, style: titleStyle)
     );
   }
 }
@@ -235,6 +235,7 @@ class Settings extends StatelessWidget {
     'Show settings dialog at startup',
     'Show unsupported CPU at startup',
     'Board on the right in horizontal mode',
+    'Board color',
   ];
 
   static const _evalPreferences = [

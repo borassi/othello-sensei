@@ -667,6 +667,7 @@ class PreferencesState with ChangeNotifier {
     'Back button action': 'Undo',
     'Number of threads': Platform.numberOfProcessors,
     'Board on the right in horizontal mode': false,
+    'Board color': 'Medium',
     'Seconds until first evaluation': 0.1,
     'Seconds between evaluations': 1.0,
     'Seconds/position when playing': 1.0,
@@ -706,6 +707,7 @@ class PreferencesState with ChangeNotifier {
     'Margin size': ['None', 'Small', 'Large', 'Coordin'],
     'Pressing « from the first position': ['Do nothing', 'Ask', 'New game'],
     'When the game ends': ['Message', 'Analyze', 'Do nothing'],
+    'Board color': ['Very light', 'Light', 'Medium', 'Dark'],
   };
   static const Set<String> nonResetPreferences = {
     'Show settings dialog at startup',

@@ -50,7 +50,7 @@ class ScoreGraph extends StatelessWidget {
   BarChartGroupData generateGroupData(int x, List<double> scores, ColorScheme colorScheme, double height, double width, double maxY, var moveToHighlight) {
     var barWidth = width / max(61, scores.length);
     var score = x >= scores.length ? double.nan : scores[x];
-    Color color = colorScheme.background;
+    Color color;
     Color? borderColor;
     if (x == moveToHighlight) {
       color = colorScheme.onSecondaryContainer;
@@ -61,9 +61,9 @@ class ScoreGraph extends StatelessWidget {
     } else {
       if (score > 1) {
         color = colorScheme.surface;
-        borderColor = colorScheme.surfaceVariant;
+        borderColor = colorScheme.inverseSurface;
       } else if (score < -1) {
-        color = colorScheme.surfaceVariant;
+        color = colorScheme.inverseSurface;
       } else {
         color = colorScheme.onPrimaryContainer;
       }
@@ -171,7 +171,7 @@ class ScoreGraph extends StatelessWidget {
                 horizontalLines: List.generate(
                   5, (i) => HorizontalLine(
                     y: (i - 2) * horizontalLinesSpace,
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(context).colorScheme.inverseSurface,
                     dashArray: i == 2 ? null : [1, 3],
                     strokeWidth: 1,
                   ),

@@ -49,7 +49,7 @@ class MovesVisualizerCase extends StatelessWidget {
     var textColor = colorScheme.surface;
 
     if (move != null) {
-      textColor = move!.blackPlayer ? colorScheme.surfaceVariant : colorScheme.surface;
+      textColor = move!.blackPlayer ? colorScheme.inverseSurface : colorScheme.surface;
     }
     return Stack(
         alignment: AlignmentDirectional.center,

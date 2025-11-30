@@ -34,7 +34,7 @@ class SenseiDialog extends StatelessWidget {
     // We do it this way because Flutter refresh keeps post frame callbacks,
     // causing the window to show multiple times.
     GlobalState.preferences.set('Show unsupported CPU at startup', false);
-    var highlightColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    var highlightColor = Theme.of(context).colorScheme.onSurface;
     return AlertDialog(
       title: title == null ? null : Center(child: MediumText(title!, intrinsicSize: true, style: TextStyle(color: highlightColor))),
       content: content == null ? null : MediumText(content!, intrinsicSize: true,),
