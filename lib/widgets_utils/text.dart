@@ -101,7 +101,8 @@ class LargeText extends AnyText {
 class SenseiTextFormField extends StatefulWidget {
   final void Function(String) onSubmitted;
   final TextType type;
-  final String initialText;
+  final TextEditingController? controller;
+  final FocusNode? focusNode;
   final TextStyle? style;
   final TextAlign? textAlign;
   final TextInputType? keyboardType;
@@ -111,7 +112,8 @@ class SenseiTextFormField extends StatefulWidget {
   const SenseiTextFormField({
     required this.onSubmitted,
     this.type = TextType.medium,
-    this.initialText = "",
+    this.controller,
+    this.focusNode,
     this.style,
     this.textAlign,
     this.keyboardType,
@@ -125,22 +127,26 @@ class SenseiTextFormField extends StatefulWidget {
 }
 
 class _SenseiTextFormFieldState extends State<SenseiTextFormField> {
-  final TextEditingController _controller = TextEditingController();
-  final _focusNode = FocusNode();
+// Internal fallbacks
+  TextEditingController? _internalController;
+  FocusNode? _internalFocusNode;
+
+  // Getters to determine which one to use
+  TextEditingController get _controller => widget.controller ?? (_internalController ??= TextEditingController());
+  FocusNode get _focusNode => widget.focusNode ?? (_internalFocusNode ??= FocusNode());
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    _controller.text = widget.initialText;
   }
 
   @override
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     _onSubmitted(_controller.text);
-    _controller.dispose();
-    _focusNode.dispose();
+    _internalController?.dispose();
+    _internalFocusNode?.dispose();
     super.dispose();
   }
 

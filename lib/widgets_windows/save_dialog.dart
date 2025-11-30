@@ -57,12 +57,16 @@ class _InputFormField extends StatelessWidget {
   final void Function(String) onChanged;
   final List<TextInputFormatter>? inputFormatters;
   final TextInputType? keyboardType;
+  final TextEditingController controller;
+  final FocusNode? focusNode;
 
-  const _InputFormField({required this.onChanged, this.inputFormatters, this.keyboardType});
+  const _InputFormField({required this.onChanged, required this.controller, this.focusNode, this.inputFormatters, this.keyboardType});
 
   @override
   Widget build(BuildContext context) {
     return SenseiTextFormField(
+        controller: controller,
+        focusNode: focusNode,
         type: TextType.large,
         onSubmitted: onChanged,
         textAlign: TextAlign.right,
@@ -97,6 +101,8 @@ class Searchable extends StatelessWidget {
         return Align(
             alignment: Alignment.centerRight,
             child: _InputFormField(
+              controller: textEditingController,
+              focusNode: focusNode,
               onChanged: onChanged,
               inputFormatters: inputFormatters,
             )
@@ -181,6 +187,7 @@ class SaveDialogContent extends StatelessWidget {
             SaveDialogRow(
                 LargeText("Round"),
                 _InputFormField(
+                  controller: TextEditingController(text: cArrayToString(gameMetadata.round)),
                   onChanged: GlobalState.gameMetadataState.setRound,
                   inputFormatters: [Utf8LengthLimitingTextInputFormatter(11)],
                 )
@@ -189,6 +196,7 @@ class SaveDialogContent extends StatelessWidget {
             SaveDialogRow(
                 LargeText("Year"),
                 _InputFormField(
+                  controller: TextEditingController(text: gameMetadata.year.toString()),
                   onChanged: (String year) => GlobalState.gameMetadataState.setYear(int.parse(year)),
                   keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
                   inputFormatters: [Utf8LengthLimitingTextInputFormatter(5), IntInputFormatter()],
@@ -208,7 +216,7 @@ class SaveDialogContent extends StatelessWidget {
                               builder: (context, widget) => SenseiTextFormField(
                                 type: TextType.large,
                                 key: Key('Score black: ${gameMetadata.black_disks.toString()}'), // To update the form
-                                initialText: gameMetadata.black_disks.toString(),
+                                controller: TextEditingController(text: gameMetadata.black_disks.toString()),
                                 onSubmitted: (String value) => GlobalState.gameMetadataState.setScore(value, true),
                                 textAlign: TextAlign.left,
                                 keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),
@@ -224,7 +232,7 @@ class SaveDialogContent extends StatelessWidget {
                               builder: (context, widget) => SenseiTextFormField(
                                 type: TextType.large,
                                 key: Key('Score white: ${gameMetadata.black_disks.toString()}'), // To update the form
-                                initialText: (64 - gameMetadata.black_disks).toString(),
+                                controller: TextEditingController(text: (64 - gameMetadata.black_disks).toString()),
                                 onSubmitted: (String value) => GlobalState.gameMetadataState.setScore(value, false),
                                 textAlign: TextAlign.right,
                                 keyboardType: TextInputType.numberWithOptions(signed: false, decimal: false),

@@ -100,7 +100,7 @@ class SettingsTileWithTextForm extends StatelessWidget {
       name: name,
       state: state,
       childBuilder: () => SenseiTextFormField(
-        initialText: state.get(name).toString(),
+        controller: TextEditingController(text: state.get(name).toString()),
         onSubmitted: onChanged,
         textAlign: TextAlign.center,
         keyboardType: keyboardType,
