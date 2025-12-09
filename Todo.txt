@@ -1,5 +1,6 @@
 For next launch
 - P1 MED Debug Thor load failure on Marc's phone.
+- P0 SMALL Fix update fathers in the book.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.
@@ -49,8 +50,8 @@ HOW TO RELEASE ON ANDROID:
 HOW TO RELEASE ON LINUX:
 - Rollback the file_picker package.
 - Remove -D__POPCNT__ -mbmi2 from CMAKE_CXX_FLAGS_RELEASE in engine/CMakeLists.txt.
-- rm -Rf build && snapcraft clean && snapcraft pack --debug && sudo snap install ./othello-sensei_2.0.0_amd64.snap --dangerous && othello-sensei
-- snapcraft upload --release=beta othello-sensei_2.0.0_amd64.snap
+- rm -Rf build && snapcraft clean && snapcraft pack --debug && sudo snap install ./othello-sensei_2.1.0_amd64.snap --dangerous && othello-sensei
+- snapcraft upload --release=beta othello-sensei_2.1.0_amd64.snap
 
 HOW TO RELEASE ON WINDOWS (APP STORE):
 - Check that the link on Windows Defender in drive_downloader is updated.

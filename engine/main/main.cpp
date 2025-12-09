@@ -49,12 +49,13 @@ Main::Main(
 }
 
 void Main::Evaluate() {
+  SenseiAction action = evaluate_params_.sensei_action;
   if (analyzing_) {
     if (analyzing_ == 2) {
       // This changes analyzing_ to 0, but we set it below anyway.
       Undo();
     }
-    if (!current_state_->Father()) {
+    if (!current_state_->PreviousLandable(action)) {
       analyzing_ = 0;
       engine_.RunUpdateAnnotations();
       return;
@@ -62,7 +63,6 @@ void Main::Evaluate() {
       analyzing_ = 2;
     }
   }
-  SenseiAction action = evaluate_params_.sensei_action;
   assert(current_state_->IsLandable(action) || current_state_->MustPlay(action));
   engine_.Start(
       analyzing_ ? current_state_->PreviousLandable(action) : current_state_,
