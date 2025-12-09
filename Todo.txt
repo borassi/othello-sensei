@@ -19,6 +19,7 @@ Extra features:
 - P1 MED List of games in Android.
 - P1 MED List of games in iOS / Mac.
 - P1 LARGE How easy / hard a position is.
+- P1 MED Manually import a book.
 - P2 HARD Sync games with Drive.
 - P2 LARGE Remember opening book for player.
 - P2 MED Share opening book in Google Drive.
