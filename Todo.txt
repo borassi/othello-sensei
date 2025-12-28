@@ -1,5 +1,7 @@
 For next launch
+- P0 LARGE Debug crashes on iOS (https://github.com/borassi/othello-sensei/issues/2).
 - P1 MED Debug Thor load failure on Marc's phone.
+- P2 MED Open .pgn files to support vint.ee.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.

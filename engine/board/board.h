@@ -18,6 +18,7 @@
 #define BOARD_H
 
 #include <array>
+#include <optional>
 #include "bitpattern.h"
 #include "get_flip.h"
 
@@ -30,6 +31,7 @@ class Board {
   Board(const std::string& board, bool player_black);
   Board(const std::string& sequence, std::vector<Board>* previous = nullptr);
   Board();
+  static std::optional<std::pair<Board, bool>> FromString(const std::string& board);
 
   BitPattern Player() const {
     return player_;

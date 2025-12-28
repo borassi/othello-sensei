@@ -57,6 +57,10 @@ bool SetSequence(void* ptr, char* sequence) {
   return static_cast<Main*>(ptr)->SetSequence(sequence_string);
 }
 
+bool PasteBoard(void* ptr, char* board) {
+  return static_cast<Main*>(ptr)->PasteBoard(board);
+}
+
 char* GetSequence(void* ptr) { return static_cast<Main*>(ptr)->GetSequence(); }
 
 bool Undo(void* ptr) { return static_cast<Main*>(ptr)->Undo(); }

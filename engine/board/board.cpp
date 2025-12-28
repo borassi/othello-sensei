@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include "board.h"
 #include "get_flip.h"
@@ -74,6 +75,33 @@ Board::Board(const std::string& sequence, std::vector<Board>* previous) : Board(
 }
 
 Board::Board() : Board(kInitialBoard, true) {}
+
+// static
+std::optional<std::pair<Board, bool>> Board::FromString(const std::string& board) {
+  std::string board_single_char = board;
+  board_single_char = std::regex_replace(board_single_char, std::regex("[XxBb*]"), "X");
+  board_single_char = std::regex_replace(board_single_char, std::regex("[OoWw]"), "O");
+  board_single_char = std::regex_replace(board_single_char, std::regex("[\\-.]"), "-");
+
+  std::regex re(R"(((?:\s*[XO\-]){64})(\s+([XO]))?)");
+  std::smatch m;
+
+  if (!std::regex_search(board_single_char, m, re)) {
+    return std::nullopt;
+  }
+
+  std::string board_substring = m[1].str();
+  std::string turn = m[2].str();
+  std::string parsed_board = std::regex_replace(board_substring, std::regex("\\s+"), "");
+
+  bool black_turn;
+  if (turn.empty()) {
+    black_turn = Board(parsed_board, true).NEmpties() % 2 == 0;
+  } else {
+    black_turn = turn[turn.length() - 1] == 'X';
+  }
+  return std::pair<Board, bool>({parsed_board, black_turn}, black_turn);
+}
 
 Board RandomBoard() {
   double percentage_player = (double) std::rand() / RAND_MAX;

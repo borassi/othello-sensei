@@ -542,15 +542,6 @@ class EvaluationState : public TreeNode {
     return {time_black, time_white};
   }
 
- private:
-  Annotations annotations_;
-  double seconds_on_this_node_;
-  double seconds_to_evaluate_this_node_;
-  std::vector<std::shared_ptr<EvaluationState>> children_;
-  EvaluationState* next_state_primary_;
-  EvaluationState* next_state_secondary_;
-  bool is_book_leaf_;
-
   EvaluationState* SetBoard(BitPattern player, BitPattern opponent, bool black_turn) {
     if (HaveToPass(Board(player, opponent)) && !HaveToPass(Board(opponent, player))) {
       black_turn = !black_turn;
@@ -580,6 +571,15 @@ class EvaluationState : public TreeNode {
       return this;
     }
   }
+
+ private:
+  Annotations annotations_;
+  double seconds_on_this_node_;
+  double seconds_to_evaluate_this_node_;
+  std::vector<std::shared_ptr<EvaluationState>> children_;
+  EvaluationState* next_state_primary_;
+  EvaluationState* next_state_secondary_;
+  bool is_book_leaf_;
 
   void AddFather(TreeNode* father) override {
     TreeNode::AddFather(father);

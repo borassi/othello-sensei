@@ -21,6 +21,10 @@
 #include "board.h"
 #include "get_moves.h"
 
+using ::testing::Eq;
+using ::testing::Optional;
+using ::testing::Pair;
+
 TEST(Board, Basic) {
   std::string board_string = "--------"
                              "--------"
@@ -67,13 +71,13 @@ TEST(Board, Sequence) {
 
 TEST(Board, BoardsFromSequenceEmpty) {
   std::vector<Board> previous;
-  Board b("", &previous);
+  Board("", &previous);
   EXPECT_THAT(previous, ::testing::ElementsAre());
 }
 
 TEST(Board, BoardsFromSequenceBase) {
   std::vector<Board> previous;
-  Board b("e6f4c3c4d3", &previous);
+  Board("e6f4c3c4d3", &previous);
   EXPECT_THAT(
       previous,
       ::testing::ElementsAre(
@@ -108,7 +112,7 @@ TEST(Board, BoardsFromSequencePass) {
 
 TEST(Board, BoardsFromSequencePass1) {
   std::vector<Board> previous;
-  Board b("e6f6g6f4f5g7f7h7h8d6h6g8f8g5", &previous);
+  Board("e6f6g6f4f5g7f7h7h8d6h6g8f8g5", &previous);
   Board result_after_pass = Board("e6f6g6f4f5g7f7h7h8d6h6g8f8");
   EXPECT_THAT(
       previous,
@@ -161,4 +165,159 @@ TEST(SerializedBoard, Serialize) {
     const auto serialized = b.Serialize();
     EXPECT_EQ(b, Board::Deserialize(serialized.begin()));
   }
+}
+
+TEST(Board, FromStringStandard) {
+  std::string board_string = "X---XX--"
+                             "-O------"
+                             "--------"
+                             "--------"
+                             "--XX----"
+                             "--------"
+                             "----OOO-"
+                             "-------O";
+  for (char b : {'X', 'x', '*', 'B', 'b'}) {
+    for (char w : {'O', 'o', 'W', 'w'}) {
+      for (char e : {'.', '-'}) {
+        for (const std::string& with_player : {"", "  X", "\nO", " -"}) {
+          std::string board_string_modified = board_string + with_player;
+          bool black_turn = (with_player != "\nO");
+          std::replace(board_string_modified.begin(), board_string_modified.end(), 'X', b);
+          std::replace(board_string_modified.begin(), board_string_modified.end(), 'O', w);
+          std::replace(board_string_modified.begin(), board_string_modified.end(), '-', e);
+          ASSERT_THAT(
+              Board::FromString(board_string_modified),
+              Optional(Pair(Board(board_string, black_turn), black_turn))
+          );
+        }
+      }
+    }
+  }
+}
+
+TEST(Board, FromStringWithSpaces) {
+  std::string board_string = "X--  -XX--\n"
+                             "-O--- ---\n"
+                             "----  ----\n"
+                             "---- ----\n"
+                             "- -XX----\n"
+                             "-------  -\n  "
+                             "-  ---OOO-\n"
+                             "-----  --O";
+  EXPECT_THAT(Board::FromString(board_string), Optional(Pair(Board("X---XX--"
+                                                            "-O------"
+                                                            "--------"
+                                                            "--------"
+                                                            "--XX----"
+                                                            "--------"
+                                                            "----OOO-"
+                                                            "-------O", true), true)));
+}
+
+TEST(Board, FromStringWithCharsBeforeAfter) {
+  std::string board_string = "ABOOXXCDEX---XX--\n"
+                             "-O------\n"
+                             "--------\n"
+                             "--------\n"
+                             "--XX----\n"
+                             "--------\n"
+                             "----OOO-\n"
+                             "-------OOXHIJK";
+  EXPECT_THAT(Board::FromString(board_string), Optional(Pair(Board("X---XX--"
+                                                          "-O------"
+                                                          "--------"
+                                                          "--------"
+                                                          "--XX----"
+                                                          "--------"
+                                                          "----OOO-"
+                                                          "-------O", true), true)));
+}
+
+TEST(Board, FromStringWithDifferentChars) {
+  std::string board_string = "X---Xx--\n"
+                             "-O------\n"
+                             "--------\n"
+                             "--------\n"
+                             "--XX----\n"
+                             "--------\n"
+                             "----OOO-\n"
+                             "-------O";
+  EXPECT_THAT(Board::FromString(board_string), Optional(Pair(Board("X---XX--"
+                                                          "-O------"
+                                                          "--------"
+                                                          "--------"
+                                                          "--XX----"
+                                                          "--------"
+                                                          "----OOO-"
+                                                          "-------O", true), true)));
+}
+
+TEST(Board, FromStringWithDifferentCharsInTurn) {
+  std::string board_string = "X---XX--\n"
+                             "-O------\n"
+                             "--------\n"
+                             "--------\n"
+                             "--XX----\n"
+                             "--------\n"
+                             "----OOO-\n"
+                             "-------O o";
+  EXPECT_THAT(Board::FromString(board_string), Optional(Pair(Board("X---XX--"
+                                                          "-O------"
+                                                          "--------"
+                                                          "--------"
+                                                          "--XX----"
+                                                          "--------"
+                                                          "----OOO-"
+                                                          "-------O", false), false)));
+}
+
+TEST(Board, FromStringWithDifferentCharsInTurn2) {
+  std::string board_string = "X---XX--\n"
+                             "--------\n"
+                             "--------\n"
+                             "--------\n"
+                             "--XXX---\n"
+                             "--------\n"
+                             "--------\n"
+                             "-------- o";
+  EXPECT_THAT(Board::FromString(board_string), Optional(Pair(Board("X---XX--"
+                                                          "--------"
+                                                          "--------"
+                                                          "--------"
+                                                          "--XXX---"
+                                                          "--------"
+                                                          "--------"
+                                                          "--------", false), false)));
+}
+
+TEST(Board, FromStringFindsTheTurnAutomatically) {
+  std::string board_string = "X--OXX--\n"
+                             "--------\n"
+                             "--------\n"
+                             "--------\n"
+                             "--XXX---\n"
+                             "--------\n"
+                             "--------\n"
+                             "-------- A";
+  EXPECT_THAT(Board::FromString(board_string), Optional(Pair(Board("X--OXX--"
+                                                                   "--------"
+                                                                   "--------"
+                                                                   "--------"
+                                                                   "--XXX---"
+                                                                   "--------"
+                                                                   "--------"
+                                                                   "--------", false), false)));
+}
+
+
+TEST(Board, FromStringWithInterleavedChars) {
+  std::string board_string = "X---XX--A\n"
+                             "-O------\n"
+                             "--------\n"
+                             "--------\n"
+                             "--XX----\n"
+                             "--------\n"
+                             "----OO--\n"
+                             "-------O";
+  EXPECT_EQ(Board::FromString(board_string), std::nullopt);
 }

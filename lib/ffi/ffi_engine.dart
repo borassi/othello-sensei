@@ -198,6 +198,21 @@ class FFIEngine {
         bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
       >();
 
+  bool PasteBoard(ffi.Pointer<ffi.Void> ptr, ffi.Pointer<ffi.Char> sequence) {
+    return _PasteBoard(ptr, sequence);
+  }
+
+  late final _PasteBoardPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
+        >
+      >('PasteBoard');
+  late final _PasteBoard =
+      _PasteBoardPtr.asFunction<
+        bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
+      >();
+
   ffi.Pointer<ffi.Char> GetSequence(ffi.Pointer<ffi.Void> ptr) {
     return _GetSequence(ptr);
   }

@@ -9,6 +9,7 @@ EXPORTS
     NewGame
     PlayMove
     SetSequence
+    PasteBoard
     GetSequence
     Undo
     SetCurrentMove

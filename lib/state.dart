@@ -109,9 +109,12 @@ Future<void> setGameOrError(String? game, String preference) async {
   }
   var gameC = game.toNativeUtf8().cast<Char>();
   var success = GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+  if (!success) {
+    success = GlobalState.ffiEngine.PasteBoard(GlobalState.ffiMain, gameC);
+  }
   malloc.free(gameC);
   if (!success) {
-    await showSenseiDialog(SenseiDialog(title: 'Not a game', content: game));
+    await showSenseiDialog(SenseiDialog(title: 'Not a game or a board', content: game));
     return;
   }
   if (GlobalState.preferences.get(preference)) {

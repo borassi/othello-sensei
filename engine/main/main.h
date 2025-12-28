@@ -18,6 +18,7 @@
 #define OTHELLO_SENSEI_MAIN_H
 
 #include <list>
+#include <optional>
 
 #include "bindings.h"
 #include "engine.h"
@@ -124,6 +125,17 @@ class Main {
       return false;
     }
     SetSequence(moves);
+    return true;
+  }
+
+  bool PasteBoard(const std::string& board) {
+    std::optional<std::pair<Board, bool>> parsed = Board::FromString(board);
+    if (!parsed) {
+      return false;
+    }
+    auto& [result_board, result_turn] = *parsed;
+    NewGame();
+    ToState(current_state_->SetBoard(result_board.Player(), result_board.Opponent(), result_turn), false);
     return true;
   }
 

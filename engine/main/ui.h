@@ -65,6 +65,9 @@ EXPORT
 bool SetSequence(void* ptr, char* sequence);
 
 EXPORT
+bool PasteBoard(void* ptr, char* sequence);
+
+EXPORT
 char* GetSequence(void* ptr);
 
 EXPORT
