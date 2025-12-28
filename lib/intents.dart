@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright (c) 2024-2025 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,26 @@
  */
 
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
+import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:receive_intent/receive_intent.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:uri_content/uri_content.dart';
 
 Future<bool> maybeForwardIntent() async {
   if (!Platform.isAndroid) {
     return false;
   }
   final intent = await ReceiveIntent.getInitialIntent();
-  if (intent == null || intent.fromPackageName == null) {
+  if (intent == null || intent.fromPackageName == null || intent.action != 'android.intent.action.SEND') {
     return false;
   }
   SystemNavigator.pop();
@@ -45,9 +50,46 @@ Future<bool> maybeForwardIntent() async {
   return true;
 }
 
-void _handleIntentAndroid(Intent? intent) {
+Future<String> _resolveToRealFilePath(String uriString) async {
+  final uri = Uri.parse(uriString);
+
+  // If it's already a file:// URI, just return the path
+  if (uri.scheme == 'file') {
+    return uri.toFilePath();
+  }
+
+  // If content://, copy it to a temp file
+  final bytes = await uri.getContent(); // Reads content into memory
+  final tempDir = await getTemporaryDirectory();
+
+  // Create a temp file with a specific extension if needed by C++
+  final tempFile = File('${tempDir.path}/temp_import.pgn');
+  await tempFile.writeAsBytes(bytes);
+
+  return tempFile.path;
+}
+
+void _handleIntentAndroid(Intent? intent) async {
   if (intent == null) {
     return;
+  }
+  // 1. Check for file URI in data (Open) or STREAM (Share)
+  final uriString = intent.data ?? intent.extra?['android.intent.extra.STREAM'];
+
+  if (uriString != null) {
+    try {
+      var pathC = (await _resolveToRealFilePath(uriString)).toNativeUtf8().cast<Char>();
+      GlobalState.ffiEngine.Open(GlobalState.ffiMain, pathC);
+      malloc.free(pathC);
+      if (GlobalState.preferences.get('Analyze on open')) {
+        analyze();
+      } else {
+        GlobalState.evaluate();
+      }
+      return;
+    } catch (e) {
+      showSenseiDialog(SenseiDialog(title: 'Error when opening file $uriString', content: e.toString()));
+    }
   }
   var game = intent.extra?['android.intent.extra.TEXT'];
   setGameOrError(game, 'Analyze on import');

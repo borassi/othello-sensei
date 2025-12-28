@@ -379,7 +379,7 @@ class GlobalState {
   static Future<void> open() async {
     var filePickerResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['txt'],
+      allowedExtensions: ['txt', 'pgn'],
       lockParentWindow: true,
     );
     if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
