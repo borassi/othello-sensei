@@ -215,9 +215,6 @@ double getEvalFromAnnotations(Annotations annotation, bool black, {bool bestLine
   bool round = roundEvaluations(bestLine);
   if (bestLine) {
     value = round ? annotation.median_eval_best_line.toDouble() : annotation.eval_best_line;
-  } else if (annotation.descendants < annotation.descendants_book
-      && annotation.eval_book >= -64) {
-    value = round ? annotation.median_eval_book.toDouble() : annotation.eval_book;
   } else {
     value = round ? annotation.median_eval.toDouble() : annotation.eval;
   }

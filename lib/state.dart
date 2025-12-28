@@ -969,6 +969,7 @@ class GlobalAnnotationState with ChangeNotifier {
   }
 
    EvaluationStats getEvaluationStats() {
+    // NOTE: We need to iterate over the children to avoid the current position.
     if (annotations == null) {
       return EvaluationStats(0, 0, 0);
     }

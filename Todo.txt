@@ -1,6 +1,5 @@
 For next launch
 - P1 MED Debug Thor load failure on Marc's phone.
-- P0 SMALL Fix update fathers in the book.
 
 Mac
 - P3 SMALL Fix picture on Mac launch.

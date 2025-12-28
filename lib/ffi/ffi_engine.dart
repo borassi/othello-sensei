@@ -753,9 +753,6 @@ final class Annotations extends ffi.Struct {
   external double eval;
 
   @ffi.Double()
-  external double eval_book;
-
-  @ffi.Double()
   external double leaf_eval;
 
   @ffi.Double()
@@ -763,9 +760,6 @@ final class Annotations extends ffi.Struct {
 
   @ffi.Int()
   external int median_eval;
-
-  @ffi.Int()
-  external int median_eval_book;
 
   @ffi.Int()
   external int median_eval_best_line;

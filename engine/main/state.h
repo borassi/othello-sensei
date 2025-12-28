@@ -48,6 +48,7 @@ class EvaluationState : public TreeNode {
     weak_lower_ = -63;
     weak_upper_ = 63;
     EnlargeEvaluations();
+    is_book_leaf_ = false;
     annotations_.move = move;
     annotations_.depth = depth_;
     annotations_.depth_no_pass = depth_no_pass;
@@ -106,11 +107,7 @@ class EvaluationState : public TreeNode {
     Eval final_eval = GetEvaluationGameOver(player_, opponent_);
     int final_eval_large = EvalToEvalLarge(final_eval);
     SetSolvedNoUpdate(final_eval_large, final_eval_large);
-    annotations_.median_eval = (int) final_eval;
-    annotations_.eval_best_line = final_eval;
-    annotations_.median_eval_best_line = (int) final_eval;
-    annotations_.eval_book = kLessThenMinEval;
-    annotations_.median_eval_book = kLessThenMinEval;
+    is_book_leaf_ = false;
     annotations_.provenance = EVALUATE;
     UpdateSavedAnnotations();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
@@ -366,32 +363,22 @@ class EvaluationState : public TreeNode {
   void SetAnnotations(const Node& node, bool book, double seconds) {
     CopyAndEnlargeToAllEvals(node);
     if (book) {
-      annotations_.eval_book = node.GetEval();
-      annotations_.median_eval_book = node.GetPercentileLower(0.5) - 1;
+      is_book_leaf_ = node.IsLeaf();
       // descendants_book are just copied from the book; descendants are updated, instead.
       annotations_.descendants_book = descendants_;
       descendants_ = annotations_.descendants;
       annotations_.provenance = BOOK;
-      if (HasValidChildren() && !IsBeforeModification()) {
-        UpdateFather();
-        return;
-      }
     } else {
       assert(!HasValidChildren() || IsBeforeModification());
       assert(descendants_ >= annotations_.descendants);
-      annotations_.eval_book = kLessThenMinEval;
-      annotations_.median_eval_book = kLessThenMinEval;
+      is_book_leaf_ = false;
       annotations_.descendants_evaluating_this = descendants_;
       annotations_.descendants = descendants_;
       annotations_.seconds = seconds;
       annotations_.provenance = CHILD_EVALUATE;
     }
-    assert(!HasValidChildren() || IsBeforeModification());
-    annotations_.eval_best_line = GetEval();
-    annotations_.median_eval = GetPercentileLower(0.5) - 1;
-    annotations_.median_eval_best_line = annotations_.median_eval;
+    UpdateFather();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
-    UpdateSavedAnnotations();
   }
 
   void DeleteChildren() {
@@ -409,16 +396,13 @@ class EvaluationState : public TreeNode {
   void EnsureValid() {
     if (!IsValid()) {
       leaf_eval_ = 0;
+      annotations_.valid = true;
     }
+    assert(IsValid());
   }
 
-  void UpdateFather() override {
-    // Handle the case where we have invalid nodes intertwined with valid nodes.
-    if (!HasValidChildren() || IsBeforeModification()) {
-      return;
-    }
-    EnsureValid();
-    TreeNode::UpdateFather();
+  void UpdateEvalBestLine() {
+    assert(CanUpdateFather());
     bool has_book_child = annotations_.descendants_book > 0;
     bool all_book_children = true;
     annotations_.eval_best_line = kLessThenMinEvalLarge;
@@ -449,7 +433,24 @@ class EvaluationState : public TreeNode {
     } else {
       annotations_.provenance = CHILD_EVALUATE;
     }
-    annotations_.median_eval = GetPercentileLower(0.5) - 1;
+  }
+
+  bool CanUpdateFather() {
+    return HasValidChildren() && !IsBeforeModification();
+  }
+
+  void UpdateFather() override {
+    // Do not update if we should keep this as a leaf.
+    if (!CanUpdateFather()) {
+      UpdateSavedAnnotations();
+      return;
+    }
+    if (!is_book_leaf_ || annotations_.descendants_book < annotations_.descendants) {
+      EnsureValid();
+      TreeNode::UpdateFather();
+    }
+    assert(IsValid());
+    UpdateEvalBestLine();
     UpdateSavedAnnotations();
     assert(annotations_.median_eval % 2 == 0);
     assert(annotations_.median_eval_best_line % 2 == 0);
@@ -471,6 +472,7 @@ class EvaluationState : public TreeNode {
 
   void UpdateSavedAnnotations() {
     annotations_.eval = GetEval();
+    annotations_.median_eval = GetPercentileLower(0.5) - 1;
     annotations_.leaf_eval = LeafEval();
     annotations_.prob_lower_eval = SolveProbabilityLower(-65);
     annotations_.prob_upper_eval = SolveProbabilityUpper(65);
@@ -483,6 +485,10 @@ class EvaluationState : public TreeNode {
     annotations_.descendants = GetNVisited();
     annotations_.missing = Node::IsSolved() ? 0 : RemainingWork(-63, 63);
     annotations_.valid = true;
+    if (!CanUpdateFather()) {
+      annotations_.eval_best_line = annotations_.eval;
+      annotations_.median_eval_best_line = annotations_.median_eval;
+    }
     assert(annotations_.median_eval % 2 == 0);
     assert(annotations_.median_eval_best_line % 2 == 0);
   }
@@ -543,6 +549,7 @@ class EvaluationState : public TreeNode {
   std::vector<std::shared_ptr<EvaluationState>> children_;
   EvaluationState* next_state_primary_;
   EvaluationState* next_state_secondary_;
+  bool is_book_leaf_;
 
   EvaluationState* SetBoard(BitPattern player, BitPattern opponent, bool black_turn) {
     if (HaveToPass(Board(player, opponent)) && !HaveToPass(Board(opponent, player))) {

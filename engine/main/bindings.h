@@ -119,11 +119,9 @@ struct Annotations {
   bool valid;
   // Filled when evaluating this position.
   double eval;
-  double eval_book;
   double leaf_eval;
   double eval_best_line;
   int median_eval;
-  int median_eval_book;
   int median_eval_best_line;
   enum AnnotationsProvenance provenance;
   bool derived;  // If true, ignore it for time and descendants.
