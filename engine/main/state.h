@@ -378,6 +378,7 @@ class EvaluationState : public TreeNode {
       annotations_.provenance = CHILD_EVALUATE;
     }
     UpdateFather();
+    UpdateSavedAnnotations();
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
 
@@ -442,7 +443,6 @@ class EvaluationState : public TreeNode {
   void UpdateFather() override {
     // Do not update if we should keep this as a leaf.
     if (!CanUpdateFather()) {
-      UpdateSavedAnnotations();
       return;
     }
     if (!is_book_leaf_ || annotations_.descendants_book < annotations_.descendants) {
