@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.1.0+73
+version: 2.1.0+74
 
 environment:
   sdk: ^3.8.1
@@ -61,7 +61,7 @@ dependencies:
   receive_intent: ^0.2.5
   # TODO: update after fixing the https://github.com/miguelpruivo/flutter_file_picker/issues/1893
   # and https://github.com/miguelpruivo/flutter_file_picker/issues/1894
-  file_picker: ^10.2.4
+  file_picker: 10.2.1
   textfield_search: ^0.11.1
   flutter_svg: ^2.1.0
   flutter_acrylic: ^1.1.4
