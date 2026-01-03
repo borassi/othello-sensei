@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 Michele Borassi
+ * Copyright 2023-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -296,7 +296,7 @@ class Main {
     std::string content = buffer.str();
     GameToSave game = GameToSave::FromString(content);
     ThorGame thor_game;
-    GameToThorGame(game.ToGame(), thor_game, Sequence());
+    GameToThorGame(game.ToGame(), thor_game, Sequence(), /*match_current_transposition=*/false);
     OpenThorGame(thor_game);
     strncpy(game_metadata_.notes, game.Notes().c_str(), game.Notes().size() + 1);
     strncpy(game_metadata_.round, game.Round().c_str(), game.Round().size() + 1);

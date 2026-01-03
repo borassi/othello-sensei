@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 Michele Borassi
+ * Copyright 2024-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -617,6 +617,7 @@ class EvaluationState : public TreeNode {
   }
 };
 
-void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence);
+void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence,
+                    bool match_current_transposition);
 
 #endif // OTHELLO_SENSEI_STATE_H

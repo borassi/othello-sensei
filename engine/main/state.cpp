@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Michele Borassi
+ * Copyright 2024-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@
 #include "../board/get_moves.h"
 #include "../thor/thor.h"
 
-void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence) {
+void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence,
+                    bool match_current_transposition) {
   thor_game.black = game.BlackC();
   thor_game.white = game.WhiteC();
   thor_game.tournament = game.TournamentC();
@@ -26,7 +27,7 @@ void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& seque
   thor_game.year = game.Year();
   auto game_sequence = game.Moves().Subsequence(sequence.Size());
   assert(game.Moves().Size() >= sequence.Size());
-  int transposition = sequence.GetTransposition(game_sequence);
+  int transposition = match_current_transposition ? sequence.GetTransposition(game_sequence) : 0;
   for (int i = 0; i < 60; ++i) {
     thor_game.moves[i] = TransposeMove(game.Moves().Move(i), transposition);
     assert(thor_game.moves[i] == kNoSquare || (thor_game.moves[i] >= 0 && thor_game.moves[i] <= 63));
@@ -51,7 +52,7 @@ void EvaluationState::SetThor(const GamesList& games) {
 
   for (unsigned i = 0; i < annotations_.num_example_thor_games; ++i) {
     assert(games.examples[i].Moves().Size() >= sequence.Size());
-    GameToThorGame(games.examples[i], annotations_.example_thor_games[i], sequence);
+    GameToThorGame(games.examples[i], annotations_.example_thor_games[i], sequence, /*match_current_transposition=*/false);
   }
 }
 
