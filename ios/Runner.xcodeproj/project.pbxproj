@@ -66,6 +66,7 @@
 		CDA3106F2CB19610006E46F5 /* serializable_boolean_vector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA3100A2CB19610006E46F5 /* serializable_boolean_vector.cpp */; };
 		CDA310702CB19610006E46F5 /* types.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA3100C2CB19610006E46F5 /* types.cpp */; };
 		D0CA9314A0201C5A3E9B98CA /* Pods_Share_Extension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56DC272BC8FD5408D506F9C9 /* Pods_Share_Extension.framework */; };
+		E144B2F024955CBE5BB39733 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = DB6EDE9D04CDDB091E28158A /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,6 +294,7 @@
 		CDA3100C2CB19610006E46F5 /* types.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = types.cpp; sourceTree = "<group>"; };
 		CDA3100D2CB19610006E46F5 /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
 		CDA3100F2CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		DB6EDE9D04CDDB091E28158A /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		E87E452273E22BE2D4EF5209 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -360,6 +362,7 @@
 				97C146EF1CF9000F007C117D /* Products */,
 				E622B6E1E09B8F9140863EF8 /* Pods */,
 				F5C605052171737B5AE0B040 /* Frameworks */,
+				DB6EDE9D04CDDB091E28158A /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -711,6 +714,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				55DC80F88EB325CA7D983A7F /* [CP] Copy Pods Resources */,
 				0DC07D6D724E7E2D967A94E0 /* [CP] Embed Pods Frameworks */,
+				CD6018792F09866D006C4984 /* Crashlytics */,
 			);
 			buildRules = (
 			);
@@ -799,6 +803,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				E144B2F024955CBE5BB39733 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -943,6 +948,26 @@
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
+		};
+		CD6018792F09866D006C4984 /* Crashlytics */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"$(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
+			);
+			name = Crashlytics;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/FirebaseCrashlytics/run\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

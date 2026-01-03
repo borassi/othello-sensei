@@ -17,7 +17,10 @@
 
 import 'dart:core';
 import 'dart:io';
+import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_color_utilities/hct/hct.dart';
@@ -32,6 +35,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'ffi/ffi_bridge.dart';
 import 'files.dart';
+import 'firebase_options.dart';
 import 'widgets_board/board.dart';
 import 'widgets_spacers/app_sizes.dart';
 import 'widgets_spacers/margins.dart';
@@ -39,6 +43,17 @@ import 'widgets_windows/keyboard_listener.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 1. Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 2. Pass all fatal Flutter errors to Crashlytics
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+  // 3. Pass all async errors (like FFI/Native failures) to Crashlytics
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
   maybeForwardIntent();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
@@ -46,10 +61,13 @@ void main() async {
   await GlobalState.init();
   await handleIntent();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    WindowManager.instance.setMinimumSize(const Size(AppSizes.minWidth, AppSizes.minHeight));
+    WindowManager.instance.setMinimumSize(
+      const Size(AppSizes.minWidth, AppSizes.minHeight),
+    );
     if (!Platform.isMacOS) {
       WindowManager.instance.setIcon(
-          join(localAssetPath(), 'icons/icon_512x512.png'));
+        join(localAssetPath(), 'icons/icon_512x512.png'),
+      );
     }
   }
   runApp(GlobalState.main);
@@ -67,22 +85,30 @@ class AppTheme extends StatelessWidget {
         var theme = Theme.of(context).copyWith(
           extensions: <ThemeExtension<AppSizes>>[
             AppSizes(
-              constraints.maxHeight - MediaQuery.of(context).viewPadding.top - MediaQuery.of(context).viewPadding.bottom,
-              constraints.maxWidth - MediaQuery.of(context).viewPadding.left - MediaQuery.of(context).viewPadding.right,
-              context
-            )
+              constraints.maxHeight -
+                  MediaQuery.of(context).viewPadding.top -
+                  MediaQuery.of(context).viewPadding.bottom,
+              constraints.maxWidth -
+                  MediaQuery.of(context).viewPadding.left -
+                  MediaQuery.of(context).viewPadding.right,
+              context,
+            ),
           ],
         );
 
         return Theme(
           data: theme.copyWith(
             textTheme: TextTheme(
-              bodyMedium: TextStyle(fontSize: 100, height: 1, color: Theme.of(context).colorScheme.onPrimaryContainer),
+              bodyMedium: TextStyle(
+                fontSize: 100,
+                height: 1,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
             ),
           ),
-          child: child
+          child: child,
         );
-      }
+      },
     );
   }
 }
@@ -96,15 +122,18 @@ class CpuErrorDialog extends StatelessWidget {
     // causing the window to show multiple times.
     GlobalState.preferences.set('Show unsupported CPU at startup', false);
     return SenseiDialog(
-      content: (
-        'Your CPU does not support the commands '
-        '${GlobalState.cpuType == CpuType.popcnt ? "BMI2" : "POPCNT and BMI2"}.'
-        ' Sensei will work, but the evaluation will be slower.'),
+      content:
+          ('Your CPU does not support the commands '
+          '${GlobalState.cpuType == CpuType.popcnt ? "BMI2" : "POPCNT and BMI2"}.'
+          ' Sensei will work, but the evaluation will be slower.'),
       actions: [
         (
           text: 'OK - show again next time',
           onPressed: (context) {
-            GlobalState.preferences.set('Show unsupported CPU at startup', true);
+            GlobalState.preferences.set(
+              'Show unsupported CPU at startup',
+              true,
+            );
             Navigator.of(context).pop();
           },
         ),
@@ -114,7 +143,7 @@ class CpuErrorDialog extends StatelessWidget {
             Navigator.of(context).pop();
           },
         ),
-      ]
+      ],
     );
   }
 }
@@ -127,30 +156,36 @@ class DecideSettingsDialog extends StatelessWidget {
     // We do it this way because Flutter refresh keeps post frame callbacks,
     // causing the window to show multiple times.
     return SenseiDialog(
-        title: 'Choose your settings!',
-        content: 'You can always change your settings by clicking on ⋮ > Settings',
-        actions: [
-          (
+      title: 'Choose your settings!',
+      content:
+          'You can always change your settings by clicking on ⋮ > Settings',
+      actions: [
+        (
           text: 'Beginner',
           onPressed: (context) async {
             Navigator.of(context).pop();
             await GlobalState.preferences.resetBeginnerOnly();
-            await GlobalState.preferences.set('Show settings dialog at startup', false);
+            await GlobalState.preferences.set(
+              'Show settings dialog at startup',
+              false,
+            );
           },
-          ),
-          (
+        ),
+        (
           text: 'Advanced',
           onPressed: (context) async {
             Navigator.of(context).pop();
             await GlobalState.preferences.resetAdvancedOnly();
-            await GlobalState.preferences.set('Show settings dialog at startup', false);
+            await GlobalState.preferences.set(
+              'Show settings dialog at startup',
+              false,
+            );
           },
-          ),
-        ]
+        ),
+      ],
     );
   }
 }
-
 
 class MainContent extends StatelessWidget {
   final Widget board;
@@ -167,33 +202,46 @@ class MainContent extends StatelessWidget {
     if (vertical) {
       content = Column(
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [board, const Margin.side()]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [board, const Margin.side()],
+          ),
           const Margin.internal(),
           Expanded(
             child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [const Margin.side(), SizedBox(width: 8 * appSizes.squareSize,child: sidebar), const Margin.side()])
-          )
-        ]
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Margin.side(),
+                SizedBox(width: 8 * appSizes.squareSize, child: sidebar),
+                const Margin.side(),
+              ],
+            ),
+          ),
+        ],
       );
     } else {
       var sidebarColumn = Expanded(
-          child: Column(
-              children: [
-                brokenAppBar ? const Margin.side() : const Margin.internal(),
-                Expanded(child: sidebar),
-              ]
-          )
-      );
-      double availableHeight = appSizes.height - (brokenAppBar ? 0 : appSizes.appBarHeight);
-      bool spaceAroundBoard = availableHeight > appSizes.boardSize + appSizes.margin + appSizes.squareSize;
-      var boardColumn = Column(
+        child: Column(
           children: [
-              spaceAroundBoard ? const Spacer() : Container(),
-              board,
-              const Spacer(),
-              spaceAroundBoard ? SizedBox(height: appSizes.squareSize) : Container(),
-          ]
+            brokenAppBar ? const Margin.side() : const Margin.internal(),
+            Expanded(child: sidebar),
+          ],
+        ),
+      );
+      double availableHeight =
+          appSizes.height - (brokenAppBar ? 0 : appSizes.appBarHeight);
+      bool spaceAroundBoard =
+          availableHeight >
+          appSizes.boardSize + appSizes.margin + appSizes.squareSize;
+      var boardColumn = Column(
+        children: [
+          spaceAroundBoard ? const Spacer() : Container(),
+          board,
+          const Spacer(),
+          spaceAroundBoard
+              ? SizedBox(height: appSizes.squareSize)
+              : Container(),
+        ],
       );
       var children = [
         boardColumn,
@@ -201,7 +249,9 @@ class MainContent extends StatelessWidget {
         sidebarColumn,
         const Margin.side(),
       ];
-      if (GlobalState.preferences.get("Board on the right in horizontal mode")) {
+      if (GlobalState.preferences.get(
+        "Board on the right in horizontal mode",
+      )) {
         children = [
           const Margin.side(),
           sidebarColumn,
@@ -226,13 +276,13 @@ class MainContent extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children:
-                  (brokenAppBar ? <Widget>[] : <Widget>[SenseiAppBar()]) +
-                      [Expanded(child: content)]
-              )
-            )
-          )
-        )
-      )
+                    (brokenAppBar ? <Widget>[] : <Widget>[SenseiAppBar()]) +
+                    [Expanded(child: content)],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -243,8 +293,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (GlobalState.preferences.get(
-          'Show unsupported CPU at startup') &&
+      if (GlobalState.preferences.get('Show unsupported CPU at startup') &&
           [CpuType.popcnt, CpuType.noFeature].contains(GlobalState.cpuType)) {
         await showSenseiDialog(CpuErrorDialog());
       }
@@ -253,38 +302,45 @@ class MainApp extends StatelessWidget {
       }
     });
     return ListenableBuilder(
-        listenable: GlobalState.preferences,
-        builder: (BuildContext context, Widget? widget) {
-          return PopScope(
-              canPop: false,
-              onPopInvokedWithResult: (bool didPop, dynamic result) async {
-                if (GlobalState.preferences.get('Back button action') == 'Undo') {
-                  GlobalState.undo();
-                } else {
-                  if (await showDialog(context: context, builder: (ctx) => SenseiDialog(
-                    title: 'Close the app?',
-                    actions: [
-                      (text: 'Yes', onPressed: (ctx) { Navigator.pop(ctx, true); }),
-                      (text: 'No', onPressed: (ctx) { Navigator.pop(ctx, false); }),
-                    ]
-                  ))) {
-                    SystemNavigator.pop();
-                  }
-                }
-              },
-              child: MyKeyboardListener(
-                  child: AppTheme(
-                      child: MainContent(
-                        const Board(),
-                        const Sidebar(),
-                      )
-                  )
-              )
-          );
-        }
+      listenable: GlobalState.preferences,
+      builder: (BuildContext context, Widget? widget) {
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (bool didPop, dynamic result) async {
+            if (GlobalState.preferences.get('Back button action') == 'Undo') {
+              GlobalState.undo();
+            } else {
+              if (await showDialog(
+                context: context,
+                builder: (ctx) => SenseiDialog(
+                  title: 'Close the app?',
+                  actions: [
+                    (
+                      text: 'Yes',
+                      onPressed: (ctx) {
+                        Navigator.pop(ctx, true);
+                      },
+                    ),
+                    (
+                      text: 'No',
+                      onPressed: (ctx) {
+                        Navigator.pop(ctx, false);
+                      },
+                    ),
+                  ],
+                ),
+              )) {
+                SystemNavigator.pop();
+              }
+            }
+          },
+          child: MyKeyboardListener(
+            child: AppTheme(child: MainContent(const Board(), const Sidebar())),
+          ),
+        );
+      },
     );
   }
-
 }
 
 class Main extends StatefulWidget {
@@ -297,7 +353,6 @@ class Main extends StatefulWidget {
 }
 
 class _MainState extends State<Main> with WidgetsBindingObserver {
-
   @override
   void initState() {
     super.initState();
@@ -327,46 +382,59 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
 
   Color setTone(Color color, {double? hue, double? chroma, double? tone}) {
     final hct = Hct.fromInt(color.toARGB32());
-    final newHct = Hct.from(hue ?? hct.hue, chroma ?? hct.chroma, tone ?? hct.tone);
+    final newHct = Hct.from(
+      hue ?? hct.hue,
+      chroma ?? hct.chroma,
+      tone ?? hct.tone,
+    );
     return Color(newHct.toInt());
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-        listenable: GlobalState.preferences,
-        builder: (context, widget) {
-      final CorePalette yellowPalette = CorePalette.of(Colors.yellow.toARGB32());
-      var baseColorScheme = ColorScheme.fromSeed(
+      listenable: GlobalState.preferences,
+      builder: (context, widget) {
+        final CorePalette yellowPalette = CorePalette.of(
+          Colors.yellow.toARGB32(),
+        );
+        var baseColorScheme = ColorScheme.fromSeed(
           seedColor: Colors.green,
-          brightness: Brightness.dark);
-      double boardTone = 30;
-      if (GlobalState.preferences.get('Board color') == 'Very light') {
-        boardTone = 40;
-      } else if (GlobalState.preferences.get('Board color') == 'Light') {
-        boardTone = 35;
-      } else if (GlobalState.preferences.get('Board color') == 'Dark') {
-        boardTone = 25;
-      }
+          brightness: Brightness.dark,
+        );
+        double boardTone = 30;
+        if (GlobalState.preferences.get('Board color') == 'Very light') {
+          boardTone = 40;
+        } else if (GlobalState.preferences.get('Board color') == 'Light') {
+          boardTone = 35;
+        } else if (GlobalState.preferences.get('Board color') == 'Dark') {
+          boardTone = 25;
+        }
 
-      var colorScheme = ColorScheme.fromSeed(
+        var colorScheme = ColorScheme.fromSeed(
           seedColor: Colors.green,
-          primaryContainer: setTone(baseColorScheme.primaryContainer, chroma: 70, tone: boardTone),
-          secondaryContainer: setTone(baseColorScheme.primaryContainer, chroma: 70, tone: boardTone + 10),
+          primaryContainer: setTone(
+            baseColorScheme.primaryContainer,
+            chroma: 70,
+            tone: boardTone,
+          ),
+          secondaryContainer: setTone(
+            baseColorScheme.primaryContainer,
+            chroma: 70,
+            tone: boardTone + 10,
+          ),
           onSecondaryContainer: Color(yellowPalette.primary.get(90)),
-          brightness: Brightness.dark);
+          brightness: Brightness.dark,
+        );
 
-      return MaterialApp(
+        return MaterialApp(
           navigatorKey: GlobalState.navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'Sensei',
-          theme: ThemeData(
-            colorScheme: colorScheme,
-            useMaterial3: true,
-          ),
-          home: const MainApp()
-      );
-    });
+          theme: ThemeData(colorScheme: colorScheme, useMaterial3: true),
+          home: const MainApp(),
+        );
+      },
+    );
   }
-
 }
