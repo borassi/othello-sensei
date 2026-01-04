@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright (c) 2024-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class SenseiDialog extends StatelessWidget {
     var highlightColor = Theme.of(context).colorScheme.onSurface;
     return AlertDialog(
       title: title == null ? null : Center(child: MediumText(title!, intrinsicSize: true, style: TextStyle(color: highlightColor))),
-      content: content == null ? null : MediumText(content!, intrinsicSize: true,),
+      content: content == null ? null : MediumText(content!, intrinsicSize: true, maxLines: 1000,),
       actions: actions?.map(
         (var record) => SenseiButton(
           text: record.text,
