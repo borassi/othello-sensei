@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "443354199186",
+    "project_id": "othello-sensei-3d82a",
+    "storage_bucket": "othello-sensei-3d82a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443354199186:android:8eaccc0a516c2d1314224b",
+        "android_client_info": {
+          "package_name": "com.othellosensei.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdhHK6SfvwV_OlUyXX9QUMaO3sbnPbov4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443354199186:android:f7c33d411c6e532914224b",
+        "android_client_info": {
+          "package_name": "com.othellosensei.app.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdhHK6SfvwV_OlUyXX9QUMaO3sbnPbov4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
