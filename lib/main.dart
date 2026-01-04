@@ -41,10 +41,25 @@ import 'widgets_spacers/app_sizes.dart';
 import 'widgets_spacers/margins.dart';
 import 'widgets_windows/keyboard_listener.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> initializeFirebase() async {
   // 1. Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    // Try to initialize. If it works, great.
+    // If it fails because it already exists, the catch block handles it.
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (e) {
+    if (e.code == 'duplicate-app') {
+      // This is fine. It means the native side initialized it already.
+      debugPrint("Firebase already initialized natively.");
+    } else {
+      rethrow; // If it's a different error, we want to crash/know about it.
+    }
+  } catch (e) {
+    // Catch-all for other non-Firebase exceptions
+    debugPrint("Firebase init error: $e");
+  }
 
   // 2. Pass all fatal Flutter errors to Crashlytics
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
@@ -54,6 +69,13 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isAndroid || Platform.isIOS) {
+    await initializeFirebase();
+  }
   maybeForwardIntent();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();

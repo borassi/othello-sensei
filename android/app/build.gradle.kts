@@ -9,11 +9,23 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.firebase.crashlytics")
 }
+dependencies {
+    // Import the BoM for the Firebase platform
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
 
+    // Add the dependencies for the Crashlytics and Analytics libraries
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics-ndk:20.0.3")
+}
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties().apply {
-    load(FileInputStream(keystorePropertiesFile))
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
 }
 
 android {
@@ -32,8 +44,6 @@ android {
 
     defaultConfig {
         applicationId = "com.othellosensei.app.dev"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
@@ -42,16 +52,22 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties ["keyAlias"] as String
-            keyPassword = keystoreProperties ["keyPassword"] as String
-            storeFile = keystoreProperties ["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties ["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as? String ?: ""
+            keyPassword = keystoreProperties["keyPassword"] as? String ?: ""
+            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as? String ?: ""
         }
     }
 
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
+            withGroovyBuilder {
+                "firebaseCrashlytics" {
+                    "nativeSymbolUploadEnabled"(true)
+                    "unstrippedNativeLibsDir"(file("build/intermediates/merged_native_libs/release/out/lib"))
+                }
+            }
         }
     }
 
