@@ -376,6 +376,17 @@ class GlobalState {
     evaluate();
   }
 
+  static void openPath(String path) {
+    var pathC = path.toNativeUtf8().cast<ffi.Char>();
+    ffiEngine.Open(ffiMain, pathC);
+    malloc.free(pathC);
+    if (GlobalState.preferences.get('Analyze on open')) {
+      analyze();
+    } else {
+      evaluate();
+    }
+  }
+
   static Future<void> open() async {
     var filePickerResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -385,14 +396,7 @@ class GlobalState {
     if (filePickerResult == null || filePickerResult.paths.isEmpty || filePickerResult.paths[0] == null) {
       return;
     }
-    var pathC = filePickerResult.paths[0]!.toNativeUtf8().cast<ffi.Char>();
-    ffiEngine.Open(ffiMain, pathC);
-    malloc.free(pathC);
-    if (GlobalState.preferences.get('Analyze on open')) {
-      analyze();
-    } else {
-      evaluate();
-    }
+    openPath(filePickerResult.paths[0]!);
   }
 }
 

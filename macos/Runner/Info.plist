@@ -32,5 +32,47 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Othello Game Record</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.apple.chess.pgn</string>
+                <string>public.plain-text</string>
+                <string>com.othellosensei.pgn</string> </array>
+        </dict>
+    </array>
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.othellosensei.pgn</string>
+            <key>UTTypeDescription</key>
+            <string>Othello Game Record</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.plain-text</string>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>pgn</string>
+                </array>
+                <key>public.mime-type</key>
+                <array>
+                    <string>application/x-chess-pgn</string>
+                    <string>application/pgn</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
 </dict>
 </plist>

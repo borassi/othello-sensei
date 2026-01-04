@@ -22,6 +22,7 @@ import 'dart:io';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/material.dart' as material;
 import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/widgets_windows/sensei_dialog.dart';
@@ -95,6 +96,31 @@ void _handleIntentAndroid(Intent? intent) async {
   setGameOrError(game, 'Analyze on import');
 }
 
+// Must match the name in macos/Runner/AppDelegate.swift
+const _fileChannel = MethodChannel('com.othellosensei.app/files');
+
+void handleIntentMacOS() {
+  // 1. Warm Start: Listen for files opened while app is running
+  _fileChannel.setMethodCallHandler((call) async {
+    if (call.method == 'onFileOpened' && call.arguments is String) {
+      GlobalState.openPath(call.arguments);
+    }
+  });
+
+  // 2. Cold Start: Check if the app was started by a file
+  // Wait for the first frame to ensure the UI is ready for navigation
+  material.WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      final initialPath = await _fileChannel.invokeMethod<String>('getInitialFile');
+      if (initialPath != null && initialPath.isNotEmpty) {
+        GlobalState.openPath(initialPath);
+      }
+    } catch (e) {
+      print("Error checking initial file: $e");
+    }
+  });
+}
+
 void _handleIntentIOS(List<SharedMediaFile>? intents) {
   if (intents == null || intents.isEmpty) {
     ReceiveSharingIntent.instance.reset();
@@ -120,5 +146,7 @@ Future<void> handleIntent() async {
     await handleIntentAndroid();
   } else if (Platform.isIOS) {
     await handleIntentIOS();
+  } else if (Platform.isMacOS) {
+    handleIntentMacOS();
   }
 }

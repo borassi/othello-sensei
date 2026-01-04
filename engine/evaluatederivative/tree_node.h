@@ -783,7 +783,11 @@ class TreeNode : public Node {
 
   bool IsSolved(Eval lower, Eval upper, bool approx) const override {
     auto guard = GetGuard();
-    return Node::IsSolved(lower, upper, approx);
+    return Node::IsSolved(
+        // In rare race conditions, lower_ and upper_ might have changed after lo.
+        MaxEval(lower_ + 1, lower),
+        MinEval(upper_ - 1, upper),
+        approx);
   }
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
