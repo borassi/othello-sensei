@@ -296,7 +296,8 @@ class Main {
     std::string content = buffer.str();
     GameToSave game = GameToSave::FromString(content);
     ThorGame thor_game;
-    GameToThorGame(game.ToGame(), thor_game, Sequence(), /*match_current_transposition=*/false);
+    // The game does not get rotated because the sequence is empty.
+    GameToThorGame(game.ToGame(/*canonicalize=*/false), thor_game, Sequence());
     OpenThorGame(thor_game);
     strncpy(game_metadata_.notes, game.Notes().c_str(), game.Notes().size() + 1);
     strncpy(game_metadata_.round, game.Round().c_str(), game.Round().size() + 1);

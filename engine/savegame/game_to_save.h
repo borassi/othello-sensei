@@ -86,14 +86,14 @@ class GameToSave {
     return moves_ == other.moves_;
   }
 
-  Game ToGame(const std::string* black = nullptr, const std::string* white = nullptr, const std::string* tournament = nullptr) const {
+  Game ToGame(bool canonicalize, const std::string* black = nullptr, const std::string* white = nullptr, const std::string* tournament = nullptr) const {
     auto final_black = black == nullptr ? &black_ : black;
     auto final_white = white == nullptr ? &white_ : white;
     auto final_tournament = tournament == nullptr ? &tournament_ : tournament;
     assert(*final_black == black_);
     assert(*final_white == white_);
     assert(*final_tournament == tournament_);
-    return {moves_, final_black, final_white, final_tournament, year_, black_disks_, 0};
+    return {moves_, final_black, final_white, final_tournament, year_, black_disks_, 0, canonicalize};
   }
 
   static GameToSave FromGame(const Game& game) {

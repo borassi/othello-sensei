@@ -73,6 +73,6 @@ GameToSave GameToSave::FromString(const std::string& game) {
 }
 
 std::ostream& operator<<(std::ostream& stream, const GameToSave& s) {
-  stream << s.ToGame().ToString() << " (round " << s.Round() << ")";
+  stream << s.ToGame(/*canonicalize=*/false).ToString() << " (round " << s.Round() << ")";
   return stream;
 }

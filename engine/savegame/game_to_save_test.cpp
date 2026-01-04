@@ -99,5 +99,19 @@ TEST(GameToSave, FromToGame) {
       2010,
       64,
       "");
-  EXPECT_EQ(GameToSave::FromGame(game.ToGame()), game);
+  EXPECT_EQ(GameToSave::FromGame(game.ToGame(/*canonicalize=*/false)), game);
+  EXPECT_EQ(GameToSave::FromGame(game.ToGame(/*canonicalize=*/true)), game);
+}
+
+TEST(GameToSave, FromToGameDoesNotCanonicalize) {
+GameToSave game(
+    Sequence("d3c3c4"),
+    "Black player",
+    "White player",
+    "Tournament",
+    "",
+    2010,
+    64,
+    "");
+EXPECT_EQ(GameToSave::FromGame(game.ToGame(/*canonicalize=*/false)), game);
 }

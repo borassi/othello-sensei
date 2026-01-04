@@ -1,5 +1,6 @@
 For next launch
 - P0 LARGE Debug crashes on iOS (https://github.com/borassi/othello-sensei/issues/2).
+- P0 SMALL Enable Firebase everywhere or at least make it compile.
 - P1 MED Debug Thor load failure on Marc's phone.
 
 Mac

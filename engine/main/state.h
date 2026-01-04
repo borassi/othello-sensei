@@ -617,7 +617,6 @@ class EvaluationState : public TreeNode {
   }
 };
 
-void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence,
-                    bool match_current_transposition);
+void GameToThorGame(const Game& game, ThorGame& thor_game, const Sequence& sequence);
 
 #endif // OTHELLO_SENSEI_STATE_H

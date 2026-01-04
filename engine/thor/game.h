@@ -40,7 +40,7 @@ class Game {
   }
 
   Game(Sequence moves, const std::string* black, const std::string* white,
-       const std::string* tournament, short year, Eval score, double priority) :
+       const std::string* tournament, short year, Eval score, double priority, bool canonicalize = true) :
       moves_(moves),
       black_(black),
       white_(white),
@@ -49,7 +49,9 @@ class Game {
       year_(year),
       score_(score) {
     assert(priority_ >= 0 && priority_ <= 1);
-    moves_.ToCanonicalGameInplace();
+    if (canonicalize) {
+      moves_.ToCanonicalGameInplace();
+    }
   }
 
   std::string Black() const { return *black_; }

@@ -44,6 +44,7 @@ class SavedGameList : public GenericSource {
     for (const auto& [unused_time, game_to_save] : games_to_save) {
       games_.push_back(
           game_to_save.ToGame(
+              /*canonicalize=*/true,
               &players_[players_to_index[game_to_save.Black()]],
               &players_[players_to_index[game_to_save.White()]],
               &tournaments_[tournaments_to_index[game_to_save.Tournament()]]
