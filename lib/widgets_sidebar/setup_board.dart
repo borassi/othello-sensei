@@ -15,8 +15,8 @@
  *
  */
 
-
 import 'package:flutter/material.dart';
+import 'package:othello_sensei/widgets_spacers/margins.dart';
 import 'package:othello_sensei/widgets_utils/misc.dart';
 
 import '../state.dart';
@@ -26,7 +26,6 @@ import '../widgets_utils/text.dart';
 import '../widgets_spacers/text_sizes.dart';
 
 class SetupBoardControls extends StatelessWidget {
-
   const SetupBoardControls({super.key});
 
   @override
@@ -34,56 +33,75 @@ class SetupBoardControls extends StatelessWidget {
     var squareSize = Theme.of(context).extension<AppSizes>()!.squareSize;
     var blackDisk = Case(CaseState.black, 255, false);
     var whiteDisk = Case(CaseState.white, 255, false);
-    return
-      ListenableBuilder(
-        listenable: Listenable.merge([GlobalState.setupBoardState, GlobalState.board]),
-        builder: (BuildContext context, Widget? widget) => Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Spacer(),
-            Row(
-              children: [
-                LargeText('On click:'),
-                const Spacer(),
-                GestureDetector(
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        GlobalState.setupBoardState,
+        GlobalState.board,
+      ]),
+      builder: (BuildContext context, Widget? widget) => Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Spacer(),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () { GlobalState.setupBoardState.updateOnClick(); },
-                  child: Case(GlobalState.setupBoardState.onClick, 255, false)
+                  onTap: () {
+                    GlobalState.setupBoardState.updateOnClick();
+                  },
+                  child: Row(
+                    children: [
+                      Case(GlobalState.setupBoardState.onClick, 255, false),
+                      LargeText(' on click'),
+                      const Spacer(),
+                    ],
+                  ),
                 ),
-              ]
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                LargeText('Turn:'),
-                const Spacer(),
-                GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () { GlobalState.ffiEngine.InvertTurn(GlobalState.ffiMain); },
-                    child: GlobalState.board.blackTurn ? blackDisk : whiteDisk
+              ),
+              const Margin.internal(),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    GlobalState.ffiEngine.InvertTurn(GlobalState.ffiMain);
+                  },
+                  child: Row(
+                    children: [
+                      const Spacer(),
+                      LargeText('turn '),
+                      GlobalState.board.blackTurn ? blackDisk : whiteDisk,
+                    ],
+                  ),
                 ),
-              ]
+              ),
+            ],
+          ),
+          const Spacer(),
+          Container(
+            constraints: BoxConstraints.expand(height: squareSize),
+            child: SenseiButton(
+              onPressed: () {
+                GlobalState.newGame();
+              },
+              text: 'Reset',
+              textType: TextType.large,
             ),
-            const Spacer(),
-            Container(
-                constraints: BoxConstraints.expand(height: squareSize),
-                child: SenseiButton(
-                  onPressed: () { GlobalState.newGame(); },
-                  text: 'Reset',
-                  textType: TextType.large,
-                )
+          ),
+          const Spacer(),
+          Container(
+            constraints: BoxConstraints.expand(height: squareSize),
+            child: SenseiButton(
+              onPressed: () {
+                GlobalState.setupBoardState.setSettingUpBoard(false);
+                GlobalState.evaluate();
+              },
+              text: 'Done',
+              textType: TextType.large,
             ),
-            const Spacer(),
-            Container(
-              constraints: BoxConstraints.expand(height: squareSize),
-              child: SenseiButton(
-                onPressed: () { GlobalState.setupBoardState.setSettingUpBoard(false); GlobalState.evaluate(); },
-                text: 'Done',
-                textType: TextType.large,
-              )
-            )
-          ]
-        )
+          ),
+        ],
+      ),
     );
   }
 }
