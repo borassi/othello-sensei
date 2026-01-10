@@ -72,7 +72,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
     heightMinusBarHeight = height - appBarHeight;
     var verticalBoardSize = min(
         width / (1 + 2 * sideMarginFraction),
-        8 / 14 * heightMinusBarHeight / (1 + 2 * internalMarginFraction));
+        8 / 13 * heightMinusBarHeight / (1 + 2 * internalMarginFraction));
     var horizontalBoardSizeFullBar = min(
         heightMinusBarHeight / (1 + internalMarginFraction + sideMarginFraction),
         8 / 16 * width / (1 + sideMarginFraction + internalMarginFraction / 2.0)
