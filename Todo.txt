@@ -1,6 +1,5 @@
 For next launch
 - P0 LARGE Debug crashes on iOS (https://github.com/borassi/othello-sensei/issues/2).
-- P0 SMALL Enable Firebase everywhere or at least make it compile.
 - P1 MED Debug Thor load failure on Marc's phone.
 
 Mac
@@ -46,7 +45,7 @@ HOW TO RELEASE ON ANDROID:
 - Change the name in android/app/src/main/AndroidManifest to remove 'Dev'.
 - Change the version in pubspec.yaml
 - Check the paths to the Drive files.
-- $ flutter build appbundle
+- $ flutter build appbundle --split-debug-info=./debug-info && firebase crashlytics:symbols:upload --app=1:443354199186:android:8eaccc0a516c2d1314224b ./debug-info
 - Upload build/app/outputs/bundle/release/app-release.aab to https://play.google.com/console/u/0/developers/7776248980242675505/app/4976314818508265057
 
 HOW TO RELEASE ON LINUX:
