@@ -1,14 +1,16 @@
 # Project-level configuration.
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(othello_sensei LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+# --- START FIX FOR FIREBASE ---
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "othello_sensei")
-
-SET(CMAKE_CXX_STANDARD 17)
 
 #SET(
 #        CMAKE_CXX_FLAGS_RELEASE
@@ -37,9 +39,9 @@ endif()
 
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /fp:fast /GS- /MT")
 # Uncomment for POPCNT CPUs.
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__")
+# SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__")
 # Uncomment for AVX2 CPUs.
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:AVX2 -D__BMI2__")
+# SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:AVX2 -D__BMI2__")
 
 # Define settings for the Profile build mode.
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
