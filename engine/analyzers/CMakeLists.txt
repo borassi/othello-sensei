@@ -59,6 +59,25 @@ target_link_libraries(
 )
 
 add_executable(
+        evaluate_cli_main
+        evaluate_cli_main.cpp
+)
+
+target_link_libraries(
+        evaluate_cli_main
+        LINK_PUBLIC
+        board
+        evaluator_alpha_beta
+        evaluator_derivative
+        hash_map
+        load_training_set
+        misc
+        parse_flags
+        pattern_evaluator
+        sequence
+)
+
+add_executable(
         endgame_ffo_main
         endgame_ffo_main.cpp
 )
