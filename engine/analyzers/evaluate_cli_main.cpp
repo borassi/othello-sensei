@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+// Usage:
+//
+// cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-mbmi2 -mpopcnt" \
+//   && cmake --build build --parallel=12 --target=evaluate_cli_main \
+//   && ./build/analyzers/evaluate_cli_main --board=F5D6C3D3C4F4F6G5E6D7C7G6E3C6C5B6F7F3G4B5E7F2B4H5E2F8G3H4F1E8 --n_threads=16
+//
+// cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-mbmi2 -mpopcnt" \
+//   && cmake --build build --parallel=12 --target=evaluate_cli_main \
+//   && ./build/analyzers/evaluate_cli_main --board="..................OOOX....XOXO...OOOXXOO.OOXXXXO..XOOX.....XXXX." --n_threads=16
+
 #include "endgame_ffo.h"
 
 #include <array>
