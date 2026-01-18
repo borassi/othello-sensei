@@ -291,8 +291,8 @@ class Settings extends StatelessWidget {
     }
 
     return SecondaryWindow(
-      onPopInvoked: (bool didPop) {
-        GlobalState.preferences.setAll(_state.updates);
+      onPopInvoked: (bool didPop) async {
+        await GlobalState.preferences.setAll(_state.updates);
         GlobalState.evaluate();
       },
       title: 'Settings',
