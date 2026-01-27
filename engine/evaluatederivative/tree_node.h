@@ -626,7 +626,12 @@ class TreeNode : public Node {
 
   void UpdateFathers() {
     // Use an index to avoid co-modification (if some other thread adds fathers in the meantime).
-    for (unsigned int i = 0; i < n_fathers_; ++i) {
+    unsigned int n_fathers;
+    {
+      auto guard = GetGuard();
+      n_fathers = n_fathers_;
+    }
+    for (unsigned int i = 0; i < n_fathers; ++i) {
       TreeNode* father = fathers_[i];
       assert(!father->IsLeaf());
       father->UpdateFather();
