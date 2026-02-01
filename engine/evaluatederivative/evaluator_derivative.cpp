@@ -55,8 +55,8 @@ void EvaluatorThread::Run() {
     last_eval_goal = leaf.EvalGoal() * (node->Depth() % 2 == 0 ? 1 : -1);
     assert(leaf.Alpha() <= leaf.EvalGoal() && leaf.EvalGoal() <= leaf.Beta());
     assert(node->IsLeaf());
-    if (leaf.Leaf()->ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->num_tree_nodes_, first_position->GetNVisited())) {
-      n_visited = SolvePosition(leaf, (int) std::max(50000.0, leaf.Leaf()->RemainingWork(leaf.Alpha(), leaf.Beta())));
+    if (node->TreeNode::ToBeSolved(leaf.Alpha(), leaf.Beta(), evaluator_->num_tree_nodes_, first_position->GetNVisited())) {
+      n_visited = SolvePosition(leaf, (int) std::max(50000.0, node->TreeNode::RemainingWork(leaf.Alpha(), leaf.Beta())));
     } else {
       n_visited = AddChildren(leaf);
     }
@@ -89,7 +89,7 @@ NVisited EvaluatorThread::AddChildren(const TreeNodeLeafToUpdate& leaf) {
   evaluator_depth_one_->Invert();
   EvalLarge child_eval_goal = -EvalToEvalLarge(leaf.EvalGoal());
   int depth;
-  double remaining_work = node->RemainingWork(leaf.Alpha(), leaf.Beta());
+  double remaining_work = node->TreeNode::RemainingWork(leaf.Alpha(), leaf.Beta());
 
   for (int i = 0; i < moves.size(); ++i) {
     BitPattern flip = moves[i];

@@ -441,7 +441,7 @@ class Node {
     return result;
   }
 
-  double RemainingWork(Eval lower, Eval upper) const;
+  double RemainingWork(int lower, int upper) const;
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
     double remaining_work = RemainingWork(lower, upper);
