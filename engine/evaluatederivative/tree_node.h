@@ -444,7 +444,7 @@ class Node {
   double RemainingWork(int lower, int upper) const;
 
   bool ToBeSolved(Eval lower, Eval upper, int num_tree_nodes, NVisited total_visited) {
-    double remaining_work = RemainingWork(lower, upper);
+    double remaining_work = RemainingWork((int) lower, (int) upper);
     EvalLarge delta = std::max(EvalToEvalLarge(lower) - leaf_eval_, leaf_eval_ - EvalToEvalLarge(upper));
 
     double mult = 1;

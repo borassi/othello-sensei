@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
   std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   eval too_early nextgood nextbad\n";
   srand(42);
   //  std::cout << " num empties        t       nVisPos   nVisPos/sec   nStored n/nodes   n/mid     avgbatch  eval       last5  vquick  quick1  quick2   moves    pass   nodes \n";
-  for (int step = 0; step < 10000; ++step) {
+  for (int step = 0; step < 1; ++step) {
   if (rand() % 10 == 0) {
     tree_node_supplier.Reset();
     hash_map.Reset();

@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
   ParseFlags parse_flags(argc, argv);
   std::string start_lines_str = parse_flags.GetFlagOrDefault("start", "");
 //  std::string start_line = parse_flags.GetFlagOrDefault("start", "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5h5f2h4c7g6e7a4a3a2");
-  std::string filepath = parse_flags.GetFlagOrDefault("folder", kBookFilepath);
+  std::string filepath = parse_flags.GetFlag("book_path");
   NVisited n_descendants_children = parse_flags.GetLongLongFlagOrDefault("n_descendants_children", 50 * 1000 * 1000LL);
   NVisited n_descendants_solve = parse_flags.GetLongLongFlagOrDefault("n_descendants_solve",  4 * 1000 * 1000 * 1000LL);
   int n_threads = parse_flags.GetIntFlagOrDefault("n_threads", std::thread::hardware_concurrency());
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
         static_cast<uint8_t>(i));
   }
   for (const auto& start_line : start_lines) {
-    if (!book.Get(Board(start_line))) {
+    if (!book.Get(Board(start_line).Unique())) {
       if (!force_first_position) {
         std::cout << "The node '" << start_line
                   << "' is not in the library. Run with --force_first_position, or choose a different start.\n";

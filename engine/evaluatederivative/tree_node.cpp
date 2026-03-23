@@ -164,9 +164,9 @@ double Node::RemainingWork(int lower, int upper) const {
     return 0;
   }
   int weak_lower = std::max(lower_ + 1, (int) weak_lower_);
-  int weak_upper = std::max(upper_ - 1, (int) weak_upper_);
+  int weak_upper = std::min(upper_ - 1, (int) weak_upper_);
   lower = std::max(lower, weak_lower);
-  upper = std::max(upper, weak_upper);
+  upper = std::min(upper, weak_upper);
   int disproof = GetPercentileLower(0.5F);
   int proof = disproof - 2;
 
