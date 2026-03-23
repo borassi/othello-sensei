@@ -21,8 +21,6 @@
 
 #ifdef _MSC_VER
 #include <immintrin.h>
-// From https://stackoverflow.com/a/78599923.
-#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
 
 #ifdef __POPCNT__
 #define __builtin_popcountll _mm_popcnt_u64

@@ -6,15 +6,24 @@ project(runner LANGUAGES CXX)
 # work.
 #
 # Any new source files that you add to the application should be added here.
-add_executable(${BINARY_NAME} WIN32
-  "flutter_window.cpp"
-  "main.cpp"
-  "utils.cpp"
-  "win32_window.cpp"
-  "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
-  "Runner.rc"
-  "runner.exe.manifest"
-)
+
+if(BUILD_WITH_FLUTTER)
+    add_executable(${BINARY_NAME} WIN32
+        "flutter_window.cpp"
+        "main.cpp"
+        "utils.cpp"
+        "win32_window.cpp"
+        "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
+        "Runner.rc"
+        "runner.exe.manifest"
+    )
+else()
+    add_executable(${BINARY_NAME} WIN32
+        "main.cpp"
+        "utils.cpp"
+        "win32_window.cpp"
+    )
+endif()
 
 # Apply the standard set of build settings. This can be removed for applications
 # that need different build settings.
@@ -57,7 +66,9 @@ add_subdirectory(../../engine/utils utils)
 add_subdirectory(../../engine/xot xot)
 
 # Run the Flutter tool portions of the build. This must not be removed.
-add_dependencies(${BINARY_NAME} flutter_assemble)
+if(BUILD_WITH_FLUTTER)
+    add_dependencies(${BINARY_NAME} flutter_assemble)
+endif()
 
 add_library(
         cpu_adapter_win

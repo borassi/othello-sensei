@@ -5,7 +5,9 @@ project(othello_sensei LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 # --- START FIX FOR FIREBASE ---
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(BUILD_WITH_FLUTTER "Build with Flutter GUI and dependencies" ON)
 
+# From https://stackoverflow.com/a/78599923.
 add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 # The name of the executable created for the application. Change this to change
@@ -21,7 +23,7 @@ set(BINARY_NAME "othello_sensei")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
-cmake_policy(VERSION 3.14...3.25)
+cmake_policy(VERSION 3.5)
 
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -39,9 +41,9 @@ endif()
 
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /fp:fast /GS- /MT")
 # Uncomment for POPCNT CPUs.
-# SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D__POPCNT__")
 # Uncomment for AVX2 CPUs.
-# SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:AVX2 -D__BMI2__")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /arch:AVX2 -D__BMI2__")
 
 # Define settings for the Profile build mode.
 set(CMAKE_EXE_LINKER_FLAGS_PROFILE "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
@@ -66,8 +68,10 @@ function(APPLY_STANDARD_SETTINGS TARGET)
 endfunction()
 
 # Flutter library and tool build rules.
-set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
-add_subdirectory(${FLUTTER_MANAGED_DIR})
+if(BUILD_WITH_FLUTTER)
+  set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
+  add_subdirectory(${FLUTTER_MANAGED_DIR})
+endif()
 
 SET(ENABLE_GOOGLETEST FALSE)
 # Application build; see runner/CMakeLists.txt.
@@ -76,7 +80,12 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
-include(flutter/generated_plugins.cmake)
+if(BUILD_WITH_FLUTTER)
+  if(POLICY CMP0079)
+    cmake_policy(SET CMP0079 NEW)
+  endif()
+  include(flutter/generated_plugins.cmake)
+endif()
 
 
 # === Installation ===
@@ -96,11 +105,14 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
-install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
-  COMPONENT Runtime)
+if(BUILD_WITH_FLUTTER)
+  install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
+    COMPONENT Runtime)
 
-install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-  COMPONENT Runtime)
+  install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
+
 
 if(PLUGIN_BUNDLED_LIBRARIES)
   install(FILES "${PLUGIN_BUNDLED_LIBRARIES}"
@@ -125,6 +137,9 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
 # Install the AOT library on non-Debug builds only.
-install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
-  CONFIGURATIONS Profile;Release
-  COMPONENT Runtime)
+
+if(BUILD_WITH_FLUTTER)
+  install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
+    CONFIGURATIONS Profile;Release
+    COMPONENT Runtime)
+endif()
