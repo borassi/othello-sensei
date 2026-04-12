@@ -140,7 +140,15 @@ class ThorFiltersWidget extends StatelessWidget {
                         Expanded(child: playerSearch(context, true)),
                       ],
                     ),
-                    const Spacer(),
+                    const Margin.internal(),
+                    SizedBox(
+                      height: squareSize,
+                      child: SenseiButton(
+                        icon: Icons.swap_vert,
+                        onPressed: GlobalState.thorMetadata.swapBlackWhite,
+                      ),
+                    ),
+                    const Margin.internal(),
                     Row(
                       children: [
                         Case(CaseState.white, 255, false),
@@ -148,7 +156,7 @@ class ThorFiltersWidget extends StatelessWidget {
                         Expanded(child: playerSearch(context, false)),
                       ],
                     ),
-                    const Spacer(flex: 1),
+                    const Spacer(),
                     SizedBox(
                       height: squareSize,
                       child: SenseiButton(

@@ -1128,6 +1128,14 @@ class ThorMetadataState with ChangeNotifier {
       }
     }
   }
+
+  void swapBlackWhite() {
+    var tmp = List.of(selectedBlacks);
+    selectedBlacks = selectedWhites;
+    selectedWhites = tmp;
+    notifyListeners();
+    _setFilters();
+  }
 }
 
 class TimerState with ChangeNotifier {
