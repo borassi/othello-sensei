@@ -739,8 +739,11 @@ typedef NVisited = ffi.Uint64;
 typedef DartNVisited = int;
 
 final class Annotations extends ffi.Struct {
-  @Square()
-  external int move;
+  @ffi.Array.multi([8])
+  external ffi.Array<Square> moves;
+
+  @ffi.Int()
+  external int num_moves;
 
   @ffi.Bool()
   external bool black_turn;

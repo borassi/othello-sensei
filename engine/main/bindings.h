@@ -107,7 +107,8 @@ enum SenseiAction {
 
 struct Annotations {
   // Filled when defining the annotation.
-  Square move;
+  Square moves[8];  // Usually only the first one is valid, except the first move and the diagonal.
+  int num_moves;  // Usually 1.
   bool black_turn;
   int depth;
   int depth_no_pass;

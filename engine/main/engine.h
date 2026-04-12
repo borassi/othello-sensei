@@ -46,42 +46,19 @@ class BoardToEvaluate {
       evaluator_(tree_node_supplier, hash_map, evaluator_depth_one_factory, index),
       book_(book) {}
 
-  bool Finished() const {
-    for (auto& [_, finished] : states_finished_) {
-      if (!finished) {
-        return false;
-      }
-    }
-    return true;
-  }
+  bool Finished() const { return finished_; }
 
-  void Reset(Board unique) {
-    unique_ = unique;
+  void Reset(EvaluationState* state, bool finished) {
     started_ = false;
-    states_finished_.clear();
+    state_ = state;
+    finished_ = finished;
   }
-
-  bool HasMove(Square move) const {
-    for (auto& [state, _] : states_finished_) {
-      if (state->Move() == move) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  void AddState(EvaluationState* state, bool finished) {
-    states_finished_.emplace_back(state, finished);
-  }
-
   void UpdateWithThor(std::unordered_map<Square, int> next_moves) {
     int num_thor_games = 0;
-    for (auto& [state, _] : states_finished_) {
-      num_thor_games += next_moves[state->Move()];
+    for (int i = 0; i < state_->GetAnnotations()->num_moves; ++i) {
+      num_thor_games += next_moves[state_->GetAnnotations()->moves[i]];
     }
-    for (auto& [state, _] : states_finished_) {
-      state->SetNumThorGames(num_thor_games);
-    }
+    state_->SetNumThorGames(num_thor_games);
   }
 
   void EvaluateBook();
@@ -92,10 +69,8 @@ class BoardToEvaluate {
 
   void FinalizeEvaluation();
 
-  const Board& Unique() const { return unique_; }
-
   double Priority(double delta) const {
-    assert(!states_finished_.empty());
+    assert(state_ != nullptr);
     if (Finished()) {
       return -DBL_MAX;
     }
@@ -106,19 +81,14 @@ class BoardToEvaluate {
 
  private:
   std::atomic_bool stoppable_;
-  Board unique_;
   bool started_;
   EvaluatorDerivative evaluator_;
-  std::vector<std::pair<EvaluationState*, bool>> states_finished_;
+  EvaluationState* state_;
+  bool finished_;
   const Book<>* book_;
 
   bool Valid() const {
-    for (auto& [state, _] : states_finished_) {
-      if (!state->IsValid()) {
-        return false;
-      }
-    }
-    return true;
+    return state_ != nullptr && state_->IsValid();
   }
 };
 

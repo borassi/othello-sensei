@@ -69,7 +69,9 @@ void updateAnnotations(int currentThread, bool finished, int move) {
     GlobalState.globalAnnotations.setState(annotations, startAnnotations);
     for (Pointer<Annotations> child = annotations.ref.first_child; child !=
         nullptr; child = child.ref.next_sibling) {
-      GlobalState.annotations[child.ref.move].setState(child.ref);
+      for (int i = 0; i < child.ref.num_moves; ++i) {
+        GlobalState.annotations[child.ref.moves[i]].setState(child.ref);
+      }
     }
   }
   if (move != GlobalState.ffiEngine.NoMove()) {
@@ -519,11 +521,11 @@ class BoardState with ChangeNotifier {
          annotation = annotation.ref.next_state_primary != nullptr ?
          annotation.ref.next_state_primary :
          annotation.ref.next_state_secondary) {
-      if (annotation.ref.move < 0 || annotation.ref.move >= 64) {
+      if (annotation.ref.moves[0] < 0 || annotation.ref.moves[0] > 63) {
         oldBlack = annotation.ref.black_turn;
         continue;
       }
-      allMoves.add(Move(annotation.ref.move, oldBlack));
+      allMoves.add(Move(annotation.ref.moves[0], oldBlack));
       oldBlack = annotation.ref.black_turn;
     }
     notifyListeners();
@@ -927,11 +929,11 @@ class GlobalAnnotationState with ChangeNotifier {
     for (var annotation = startAnnotations!;
          annotation != nullptr;
          annotation = primary ? annotation.ref.next_state_primary : annotation.ref.next_state_secondary) {
-      if (annotation.ref.move == GlobalState.ffiEngine.SetupBoardMove()) {
+      if (annotation.ref.moves[0] == GlobalState.ffiEngine.SetupBoardMove()) {
         assert(scores.isNotEmpty);
         scores[scores.length - 1] = getEvalFromAnnotations(annotation.ref, true, bestLine: true);
         continue;
-      } else if (annotation.ref.move == GlobalState.ffiEngine.PassMove()) {
+      } else if (annotation.ref.moves[0] == GlobalState.ffiEngine.PassMove()) {
         continue;
       }
       scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));

@@ -56,6 +56,8 @@ target_link_libraries( # Specifies the target library.
         LINK_PUBLIC
         bindings
         board
+        get_flip
+        get_moves
         move_selector
         sequence
         thor

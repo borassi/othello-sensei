@@ -24,31 +24,31 @@ constexpr double kFirstEvalTime = 0.01;
 constexpr double kNextEvalTime = 0.1;
 
 void BoardToEvaluate::EvaluateBook() {
-  auto board_in_book = book_->Get(unique_);
+  auto board_in_book = book_->Get(state_->ToBoard().Unique());
   if (board_in_book) {
-    for (auto& [state, finished] : states_finished_) {
-      // If it has valid children, we only add the book descendants.
-      state->SetAnnotations(*board_in_book, true, 0);
-      finished = true;
-    }
+    // If it has valid children, we only add the book descendants.
+    state_->SetAnnotations(*board_in_book, true, 0);
+    finished_ = true;
   }
 }
 
 void BoardToEvaluate::FinalizeEvaluation() {
   const TreeNode& first_position = *evaluator_.GetFirstPosition();
-  for (auto& [state, finished] : states_finished_) {
-    if (finished) {
-      continue;
-    }
-    if (evaluator_.GetStatus() == SOLVED) {
-      finished = true;
-    }
-    assert(!state->HasValidChildren() || state->IsBeforeModification());
-    if (!state->IsValid() || state->GetNVisited() < first_position.GetNVisited()) {
-      state->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
-    } else {
-      assert(state->IsValid());
-    }
+  assert(state_ != nullptr);
+  if (finished_) {
+    return;
+  }
+  if (evaluator_.GetStatus() == SOLVED) {
+    finished_ = true;
+  }
+  if (state_->HasValidChildren()) {
+    std::cout << state_->ToBoard() << "\n" << std::flush;
+  }
+  assert(!state_->HasValidChildren() || state_->IsBeforeModification());
+  if (!state_->IsValid() || state_->GetNVisited() < first_position.GetNVisited()) {
+    state_->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
+  } else {
+    assert(state_->IsValid());
   }
 }
 
@@ -56,13 +56,14 @@ void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
   if (Finished()) {
     return;
   }
+  Board board = state_->ToBoard();
   if (started_) {
-    assert(evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == unique_);
+    assert(evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == board);
     return;
   }
   started_ = true;
   evaluator_.Evaluate(
-      unique_.Player(), unique_.Opponent(), (Eval) params.lower, (Eval) params.upper,
+      board.Player(), board.Opponent(), (Eval) params.lower, (Eval) params.upper,
       params.max_positions, kFirstEvalTime, params.n_threads,
       params.approx);
   FinalizeEvaluation();
@@ -70,7 +71,7 @@ void BoardToEvaluate::EvaluateFirst(const EvaluateParams& params) {
 
 void BoardToEvaluate::Evaluate(const EvaluateParams& params) {
   assert(started_);
-  assert(evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == unique_);
+  assert(evaluator_.GetFirstPosition() && evaluator_.GetFirstPosition()->ToBoard() == state_->ToBoard());
   evaluator_.ContinueEvaluate(params.max_positions, kNextEvalTime, params.n_threads);
   FinalizeEvaluation();
 }
@@ -195,27 +196,8 @@ void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams
   num_boards_to_evaluate_ = 0;
 
   for (EvaluationState* child : state.GetChildren()) {
-    Board unique = child->ToBoard().Unique();
-    // Create or get the BoardToEvaluate.
-    BoardToEvaluate* board_to_evaluate = nullptr;
-    bool found = false;
-    for (int i = 0; i < num_boards_to_evaluate_; ++i) {
-      BoardToEvaluate* b = boards_to_evaluate_[i].get();
-      if (b->Unique() == unique) {
-        board_to_evaluate = b;
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      board_to_evaluate = boards_to_evaluate_[num_boards_to_evaluate_++].get();
-      board_to_evaluate->Reset(unique);
-    } else {
-      assert(board_to_evaluate);
-      child->SetDerived(true);
-    }
     bool finished = !MustBeEvaluated(state, *child, params, in_analysis);
-    board_to_evaluate->AddState(child, finished);
+    boards_to_evaluate_[num_boards_to_evaluate_++]->Reset(child, finished);
   }
 }
 

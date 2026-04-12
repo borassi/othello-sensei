@@ -73,6 +73,7 @@ DialogOptions toDialogOption(ConnectivityResult connectivity) {
     case ConnectivityResult.wifi:
       return DialogOptions.dialogSkip;
     case ConnectivityResult.mobile:
+    case ConnectivityResult.satellite:
       return DialogOptions.dialogShow;
     case ConnectivityResult.other:
       return DialogOptions.dialogShowMobileOnly;

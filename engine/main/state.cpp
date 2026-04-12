@@ -55,14 +55,79 @@ void EvaluationState::SetThor(const GamesList& games) {
   }
 }
 
+void EvaluationState::ExecuteTransposition(int transposition) {
+  Board transposition_board = ToBoard().AllTranspositions()[transposition];
+  player_ = transposition_board.Player();
+  opponent_ = transposition_board.Opponent();
+  for (int i = 0; i < annotations_.num_moves; ++i) {
+    if (annotations_.moves[i] >= 0 && annotations_.moves[i] <= 63) {
+      annotations_.moves[i] = TransposeMove(annotations_.moves[i], transposition);
+    }
+  }
+}
+
+namespace {
+int GetTransposition(Board original, Board transposed) {
+  auto original_transpositions = original.AllTranspositions();
+  for (int i = 0; i < original_transpositions.size(); ++i) {
+    if (original_transpositions[i] == transposed) {
+      return i;
+    }
+  }
+  assert(false);
+  return 0;
+}
+}
+
 EvaluationState* EvaluationState::NextState(Square move) const {
   for (const std::shared_ptr<EvaluationState>& child : children_) {
-    if (child->annotations_.move == move) {
-      return child->ThisOrNextLandable(SENSEI_EVALUATES);
+    for (int i = 0; i < child->annotations_.num_moves; ++i) {
+      if (child->annotations_.moves[i] == move) {
+        if (i != 0) {
+          // NOTE: We can't just run ExecuteTransposition, because one of the moves might map to a
+          // non-move. Counterexample:
+          // XOOOOOO-
+          // O------O
+          // O------O
+          // O------O
+          // O------O
+          // O------O
+          // O------O
+          // -OOOOOO-
+          // Here, playing H1 and A8 yield the same position, but if we just run
+          // ExecuteTransposition we map A8 to H8 which is not a legal move.
+          Board new_board = ToBoard();
+          new_board.PlayMove(GetFlip(move, new_board.Player(), new_board.Opponent()));
+          int transposition = GetTransposition(child->ToBoard(), new_board);
+          assert(transposition != 0);
+          child->ExecuteTranspositionRecursive(transposition);
+          child->player_ = new_board.Player();
+          child->opponent_ = new_board.Opponent();
+          std::swap(child->annotations_.moves[0], child->annotations_.moves[i]);
+        }
+        return child->ThisOrNextLandable(SENSEI_EVALUATES);
+      }
     }
   }
   return nullptr;
 }
+
+namespace {
+
+EvaluationState* TranspositionChild(const std::vector<std::shared_ptr<EvaluationState>> children, const Board& board) {
+  std::vector<Board> all_transpositions = board.AllTranspositions();
+  for (const auto& child : children) {
+    Board child_board = child->ToBoard();
+    for (int i = 0; i < all_transpositions.size(); ++i) {
+      if (child_board == all_transpositions[i]) {
+        return child.get();
+      }
+    }
+  }
+  return nullptr;
+}
+
+}  // namespace
 
 void EvaluationState::SetNextStates() {
   if (!IsLeaf()) {
@@ -79,12 +144,18 @@ void EvaluationState::SetNextStates() {
     Board next = board.Next(flip);
     Square move;
     if (flip == 0) {
+      assert(flips.size() == 1);
       assert(!IsGameOver(next));
       move = kPassMove;
     } else {
       move = (Square) __builtin_ctzll(SquareFromFlip(flip, board.Player(), board.Opponent()));
     }
 
+    EvaluationState* transposition_child = TranspositionChild(children_, next);
+    if (transposition_child != nullptr) {
+      transposition_child->AddMove(move);
+      continue;
+    }
     std::shared_ptr<EvaluationState> state = std::make_shared<EvaluationState>(
         move, next, !BlackTurn(), Depth() + 1, annotations_.depth_no_pass + (flip == 0 ? 0 : 1), false);
     if (HaveToPass(state->ToBoard())) {

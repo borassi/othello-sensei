@@ -49,7 +49,8 @@ class EvaluationState : public TreeNode {
     weak_upper_ = 63;
     EnlargeEvaluations();
     is_book_leaf_ = false;
-    annotations_.move = move;
+    annotations_.num_moves = 0;
+    AddMove(move);
     annotations_.depth = depth_;
     annotations_.depth_no_pass = depth_no_pass;
     annotations_.black_turn = black_turn;
@@ -66,20 +67,17 @@ class EvaluationState : public TreeNode {
   ~EvaluationState() { free(annotations_.example_thor_games); }
   EvaluationState(const EvaluationState&) = delete;
 
-  Square Move() const { return annotations_.move; }
-  Square LastMove() const { return Move() == kPassMove ? Father()->Move() : Move(); }
+  Square FirstMove() const { return annotations_.moves[0]; }
+  Square LastMove() const { return FirstMove() == kPassMove ? Father()->FirstMove() : FirstMove(); }
   Annotations* GetAnnotations() { return &annotations_; }
   const Annotations* GetAnnotations() const { return &annotations_; }
   bool IsValid() const { return annotations_.valid; }
-  void SetDerived(bool new_value) { annotations_.derived = new_value; }
   double Seconds() const { return annotations_.seconds; }
   bool IsPass() const {
-    return children_.size() == 1 && children_[0]->annotations_.move == kPassMove;
+    return children_.size() == 1 && children_[0]->annotations_.moves[0] == kPassMove;
   }
   void SetDuringAnalysis(bool value) { annotations_.during_analysis = value; }
-  bool AfterPass() const {
-    return annotations_.move == kPassMove;
-  }
+  bool AfterPass() const { return annotations_.moves[0] == kPassMove; }
   double SecondsOnThisNode() const { return seconds_on_this_node_; }
   void ResetSecondsOnThisNode() { seconds_on_this_node_ = 0; }
   void AddSecondsOnThisNode(double value) { seconds_on_this_node_ += value; }
@@ -276,7 +274,7 @@ class EvaluationState : public TreeNode {
     if (n_children_ != 1) {
       return true;
     }
-    Square move = children_[0]->Move();
+    Square move = children_[0]->FirstMove();
     return (move != kPassMove && move != kSetupBoardMove);
   }
 
@@ -323,12 +321,12 @@ class EvaluationState : public TreeNode {
   std::optional<Sequence> GetSequence() const {
     std::vector<Square> moves_inverted;
     for (const EvaluationState* state = this; state->Father() != nullptr; state = state->Father()) {
-      if (state->annotations_.move == kPassMove) {
+      if (state->annotations_.moves[0] == kPassMove) {
         continue;
-      } else if (state->annotations_.move == kSetupBoardMove) {
+      } else if (state->annotations_.moves[0] == kSetupBoardMove) {
         return std::nullopt;
       }
-      moves_inverted.push_back(state->annotations_.move);
+      moves_inverted.push_back(state->annotations_.moves[0]);
     }
     return Sequence(moves_inverted.rbegin(), moves_inverted.rend());
   }
@@ -467,7 +465,8 @@ class EvaluationState : public TreeNode {
     if (best_child == nullptr) {
       return kNoMove;
     }
-    return ((EvaluationState*) best_child)->Move();
+    auto* annotations = ((EvaluationState*) best_child)->GetAnnotations();
+    return annotations->moves[rand() % annotations->num_moves];
   }
 
   void UpdateSavedAnnotations() {
@@ -562,7 +561,8 @@ class EvaluationState : public TreeNode {
       TreeNode* father = n_fathers_ > 0 ? fathers_[0] : nullptr;
       Annotations* next_sibling = annotations_.next_sibling;
       DeleteChildren();
-      ResetState(annotations_.move, Board(player, opponent), black_turn, depth_, annotations_.depth_no_pass, true);
+      assert(FirstMove() == kSetupBoardMove);
+      ResetState(kSetupBoardMove, Board(player, opponent), black_turn, depth_, annotations_.depth_no_pass, true);
       if (father != nullptr) {
         AddFather(father);
       }
@@ -581,6 +581,14 @@ class EvaluationState : public TreeNode {
   EvaluationState* next_state_secondary_;
   bool is_book_leaf_;
 
+  void ExecuteTranspositionRecursive(int transposition) {
+    for (auto& child : children_) {
+      child->ExecuteTransposition(transposition);
+      child->ExecuteTranspositionRecursive(transposition);
+    }
+  }
+  void ExecuteTransposition(int transposition);
+
   void AddFather(TreeNode* father) override {
     TreeNode::AddFather(father);
     assert(n_fathers_ == 1);
@@ -588,11 +596,14 @@ class EvaluationState : public TreeNode {
     assert(weak_lower_ == -63 && weak_upper_ == 63);
   }
 
+  void AddMove(Square move) {
+    annotations_.moves[annotations_.num_moves++] = move;
+  }
+
   void InvalidateThis() {
     seconds_on_this_node_ = 0;
     seconds_to_evaluate_this_node_ = 0;
     annotations_.valid = false;
-    annotations_.derived = false;
     annotations_.descendants = 0;
     annotations_.descendants_book = 0;
     annotations_.descendants_evaluating_this = 0;
