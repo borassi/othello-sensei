@@ -300,19 +300,32 @@ I'll update them.
    [XCode](https://apps.apple.com/us/app/xcode/id497799835?mt=12) (for Mac), or
    [Visual Studio](https://docs.flutter.dev/platform-integration/windows/setup) (for Windows).
 2. Install [CMake](https://cmake.org/download/).
-3. Install the [GitHub command line](https://github.com/cli/cli#installation).
-4. Install [Android Studio](https://developer.android.com/studio/install) and the
-   [Flutter](https://docs.flutter.dev/tools/android-studio) plugin (skip if you just want to run the
+3. Install [Git](https://git-scm.com/install/) and the [GitHub command line](https://github.com/cli/cli#installation).
+4. Install [Android Studio](https://developer.android.com/studio/install),
+   [Flutter](https://docs.flutter.dev/install), and the
+   [Flutter plugin](https://docs.flutter.dev/tools/android-studio) (skip if you just want to run the
    C++ code from the command line).
 5. Open a terminal and use the `cd` command to enter the folder in which you want to download the
    repository (mine is /home/michele/AndroidStudioProjects).
 6. Download the repository with the command `gh repo clone borassi/othello-sensei` (web link:
    https://github.com/borassi/othello-sensei).
 7. Test if you can run the FFO test by running the following commands in a terminal:
-   $ cd othello-sensei
-   $ cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Debug
-   $ cmake --build build --parallel=HOW_MANY_THREADS_YOU_HAVE --target=endgame_ffo_main
-   $ ./build/analyzers/endgame_ffo_main
+
+   **Linux / macOS:**
+   ```bash
+   cd othello-sensei
+   cmake -S engine -B build -DANDROID=FALSE -DCMAKE_BUILD_TYPE=Debug
+   cmake --build build --parallel=HOW_MANY_THREADS_YOU_HAVE --target=endgame_ffo_main
+   ./build/analyzers/endgame_ffo_main
+   ```
+
+   **Windows:**
+   ```powershell
+   cd othello-sensei
+   cmake -S windows -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_WITH_FLUTTER=OFF
+   cmake --build build --config=Debug --parallel=12 --target=expand_book_main
+   .\build\runner\analyzers\Debug\endgame_ffo_main.exe
+   ```
 8. Open Android Studio and click File > New > New Flutter project, and follow the instructions to
    create a Flutter project. Run it to see if it works.
 9. Click File > Open and select the othello-sensei folder. Run the project.
