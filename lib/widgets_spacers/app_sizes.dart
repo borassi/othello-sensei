@@ -94,7 +94,7 @@ class AppSizes extends ThemeExtension<AppSizes> {
     squareSize = (boardSize) / 8;
     sideMargin = sideMarginFraction * boardSize;
     margin = internalMarginFraction * boardSize;
-    sideBarWidth = vertical ? boardSize - 2 * sideMargin : width - margin - boardSize - 2 * sideMargin;
+    sideBarWidth = vertical ? boardSize : width - margin - boardSize - 2 * sideMargin;
     sideBarHeight = vertical ? heightMinusBarHeight - boardSize : heightMinusBarHeight;
     secondaryWindowWidth = 8 * squareSize;
     minButtonSize = max(kMinInteractiveDimension, 0.8 * squareSize);
