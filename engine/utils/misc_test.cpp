@@ -122,6 +122,29 @@ TEST(Misc, EndsWith) {
   EXPECT_TRUE(EndsWith("abcd", "abcd"));
 }
 
+TEST(Misc, StringContains) {
+  EXPECT_TRUE(StringContains("abcd", "abc"));
+  EXPECT_TRUE(StringContains("abcd", "b"));
+  EXPECT_TRUE(StringContains("abcd", "bcd"));
+  EXPECT_TRUE(StringContains("abcd", "abcd"));
+  EXPECT_TRUE(StringContains("abcd", ""));
+  EXPECT_TRUE(StringContains("", ""));
+  EXPECT_FALSE(StringContains("abcd", "bcda"));
+  EXPECT_FALSE(StringContains("abcd", "e"));
+  EXPECT_FALSE(StringContains("", "e"));
+}
+
+TEST(Misc, HasParentheses) {
+  EXPECT_TRUE(HasParentheses("()"));
+  EXPECT_TRUE(HasParentheses("a()"));
+  EXPECT_TRUE(HasParentheses("a(b)"));
+  EXPECT_TRUE(HasParentheses("a(b)c"));
+  EXPECT_TRUE(HasParentheses("(b)c"));
+  EXPECT_FALSE(HasParentheses("("));
+  EXPECT_FALSE(HasParentheses(")"));
+  EXPECT_FALSE(HasParentheses(")"));
+}
+
 TEST(Misc, Split) {
   EXPECT_THAT(Split("abc  , def  ", ',', true), ElementsAre("abc", "def"));
   EXPECT_THAT(Split("abc  , def  ,", ',', true), ElementsAre("abc", "def"));

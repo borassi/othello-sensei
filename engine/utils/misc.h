@@ -144,6 +144,10 @@ std::string ToLower(const std::string& s);
 
 bool EndsWith(const std::string& s, const std::string& suffix);
 
+bool StringContains(const std::string& s, const std::string& substring);
+
+bool HasParentheses(const std::string& s);
+
 short GetCurrentYear();
 
 std::string PrettyPrintDouble(double d);
@@ -172,5 +176,7 @@ constexpr std::size_t murmur64(std::size_t h) {
 constexpr std::size_t CombineHashes(std::size_t h1, std::size_t h2) {
   return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
 }
+
+
 
 #endif  // UTILS_MISC_H
