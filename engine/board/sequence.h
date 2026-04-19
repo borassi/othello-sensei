@@ -290,21 +290,7 @@ class Sequence {
     return stream.str();
   }
 
-  uint8_t GetTransposition(const Sequence& goal) const {
-    Board goal_board = goal.ToBoard();
-    Board board = ToBoard();
-    if (goal_board == board) {
-      return 0;
-    }
-    int i = 0;
-    for (const Board& actual : board.AllTranspositions()) {
-      if (actual == goal_board) {
-        return i;
-      }
-      ++i;
-    }
-    throw std::invalid_argument("This should never happen. Wrong rotation.");
-  }
+  uint8_t GetTransposition(const Sequence& goal) const;
 
   void AddMove(Square move) {
     UpdateSize(Size() + 1);
