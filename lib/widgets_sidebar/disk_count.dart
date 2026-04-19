@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024. Michele Borassi
+ * Copyright (c) 2023-2026. Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ class DiskCountWithExtraContent extends StatelessWidget {
       width: sideBarWidth,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapDown: (TapDownDetails details) {
+        onTapUp: (TapUpDetails details) {
           if (details.localPosition.dx < sideBarWidth / 2) {
             maybeUndo();
           } else {
