@@ -257,6 +257,8 @@ class Settings extends StatelessWidget {
     'Analyze on import',
     'Analyze on open',
     'When the game ends',
+    'Remember archive players',
+    'Remember archive folder',
   ];
 
   static const _enginePreferences = [
@@ -275,6 +277,11 @@ class Settings extends StatelessWidget {
     'Active tab',
     'Black player',
     'White player',
+    'Archive selected Black',
+    'Archive selected White',
+    'Archive include XOT',
+    'Archive include bots',
+    'Archive active folder',
   ];
 
   @override

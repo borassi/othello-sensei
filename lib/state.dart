@@ -711,6 +711,8 @@ class PreferencesState with ChangeNotifier {
     'Archive include XOT': false,
     'Archive include bots': false,
     'Archive active folder': 'All',
+    'Remember archive players': true,
+    'Remember archive folder': true,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -1031,6 +1033,13 @@ class ThorMetadataState with ChangeNotifier {
 
   void set(ffi.Pointer<ThorMetadata> ptr) {
     this.ptr = ptr;
+    if (!GlobalState.preferences.get('Remember archive players')) {
+      GlobalState.preferences.set('Archive selected Black', <String>[]);
+      GlobalState.preferences.set('Archive selected White', <String>[]);
+    }
+    if (!GlobalState.preferences.get('Remember archive folder')) {
+      GlobalState.preferences.set('Archive active folder', 'All');
+    }
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     var tournamentsSet = HashSet<String>();
     for (int i = 0; i < ptr.ref.num_sources; ++i) {
