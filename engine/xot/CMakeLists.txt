@@ -20,7 +20,7 @@ add_library(
 
 target_link_libraries(
         xot
-        LINK_PRIVATE
+        LINK_PUBLIC
         board
         misc
         sequence

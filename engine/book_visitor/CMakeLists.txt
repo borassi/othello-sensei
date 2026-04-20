@@ -32,7 +32,7 @@ add_library(
 
 target_link_libraries(
         visitor
-        LINK_PRIVATE
+        LINK_PUBLIC
         book
         get_moves
         sequence
@@ -65,7 +65,7 @@ add_library(
 
 target_link_libraries(
         merger
-        LINK_PRIVATE
+        LINK_PUBLIC
         book
         visitor
 )

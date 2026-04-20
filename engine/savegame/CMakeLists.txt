@@ -20,7 +20,7 @@ add_library(
 
 target_link_libraries(
         game_to_save
-        LINK_PRIVATE
+        LINK_PUBLIC
         files
         game
         get_moves
@@ -53,7 +53,7 @@ add_library(
 
 target_link_libraries(
         saved_game_list
-        LINK_PRIVATE
+        LINK_PUBLIC
         files
         game
         game_to_save

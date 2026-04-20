@@ -29,6 +29,12 @@ cmake_minimum_required(VERSION 3.10)
 
 project("othellosensei" CXX)
 
+# Silences some warnings with the absl library.
+add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
+add_compile_options(-Wno-gcc-compat)
+
+include(FetchContent)
+
 IF(NOT DEFINED ANDROID)
     SET(ANDROID TRUE)
 ENDIF()
@@ -49,7 +55,6 @@ SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS} -pthread -fPIC")
 
 IF(ENABLE_GOOGLETEST)
-    INCLUDE(FetchContent)
     FetchContent_Declare(
       googletest
       DOWNLOAD_EXTRACT_TIMESTAMP ON
@@ -59,6 +64,13 @@ IF(ENABLE_GOOGLETEST)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 ENDIF()
+
+FetchContent_Declare(
+        absl
+        GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+        GIT_TAG        20260107.1 # Use a recent LTS release tag
+)
+FetchContent_MakeAvailable(absl)
 
 SET(
         CMAKE_CXX_FLAGS_RELEASE

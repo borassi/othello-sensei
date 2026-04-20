@@ -26,7 +26,7 @@ add_library(
 
 target_link_libraries(
         game
-        LINK_PRIVATE
+        LINK_PUBLIC
         board
         misc
         sequence

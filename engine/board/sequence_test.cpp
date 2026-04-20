@@ -452,14 +452,14 @@ TEST(Sequence, SequenceCanonicalizerSerialize) {
   copy.Load(canonicalizer.Serialize());
 
   EXPECT_THAT(
-      canonicalizer.AllEquivalentSequences(Sequence("e6f6f5f4e3c5c6d6")),
+      copy.AllEquivalentSequences(Sequence("e6f6f5f4e3c5c6d6")),
       UnorderedElementsAre(
           Sequence("e6f6f5f4e3d6c6c5"),
           Sequence("e6f6f5d6c5e3f3f4")
       )
   );
   EXPECT_THAT(
-      canonicalizer.AllEquivalentSequences(Sequence("e6f6f5f4e3c5c6d6e7")),
+      copy.AllEquivalentSequences(Sequence("e6f6f5f4e3c5c6d6e7")),
       UnorderedElementsAre(
           Sequence("e6f6f5f4e3d6c6c5e7"),
           Sequence("e6f6f5d6c5e3f3f4g5")

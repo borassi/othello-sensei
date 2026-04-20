@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "absl/container/flat_hash_map.h"
 #include "bitpattern.h"
 #include "board.h"
 #include "get_flip.h"
@@ -382,6 +383,16 @@ namespace std {
 std::ostream& operator<<(std::ostream& stream, const Sequence& s);
 
 class SequenceCanonicalizer {
+ private:
+  struct SequencesData {
+    int num_sequences;
+    int size;
+    size_t offset;
+
+    SequencesData() : num_sequences(0), size(0), offset(0) {}
+    SequencesData(int num_sequences, int size, size_t offset) : num_sequences(num_sequences), size(size), offset(offset) {}
+  };
+
  public:
   SequenceCanonicalizer() = default;
 
@@ -389,22 +400,21 @@ class SequenceCanonicalizer {
     AddAll(sequences);
   }
 
-  void Load(const std::vector<char>& serialized) {
+  void Load(std::vector<char> serialized) {
     const char* it = serialized.data();
+    board_to_sequence_data_.reserve(serialized.size() / (sizeof(Board) + sizeof(int) + 3));
     while (it < serialized.data() + serialized.size()) {
       Board& board = *((Board*) it);
       it += sizeof(Board);
-      int n_sequences = *((int*) it);
+      auto& board_to_sequence_data = board_to_sequence_data_[board];
+      board_to_sequence_data.num_sequences = *((int*) it);
       it += sizeof(int);
-      uint8_t size = *((uint8_t*) it);
+      board_to_sequence_data.size = *((uint8_t*) it);
       it += sizeof(uint8_t);
-      std::vector<Sequence>& sequences = board_to_sequences_[board];
-      sequences.reserve(n_sequences);
-      for (int i = 0; i < n_sequences; ++i) {
-        sequences.emplace_back(Sequence((Square*) it, size));
-        it += size;
-      }
+      board_to_sequence_data.offset = it - serialized.data();
+      it += board_to_sequence_data.size * board_to_sequence_data.num_sequences;
     }
+    serialized_board_to_sequences_ = std::move(serialized);
   }
 
   void AddAll(const std::vector<Sequence>& sequences) {
@@ -423,6 +433,8 @@ class SequenceCanonicalizer {
       }
     }
     k = 0;
+    std::unordered_map<Board, std::vector<Sequence>> board_to_sequences;
+    board_to_sequences.reserve(boards.size());
     for (const Sequence& sequence : sequences) {
       if (++k % 10000 == 0) {
         std::cout << "Preprocessing sequence " << k << " of " << sequences.size() << " after " << t.Get() << " seconds.\n" << std::flush;
@@ -430,7 +442,7 @@ class SequenceCanonicalizer {
       for (const Board& b : sequence.ToBoards()) {
         Board unique = b.Unique();
         if (boards[unique] > 1) {
-          std::vector<Sequence>& new_sequences = board_to_sequences_.insert({unique, std::vector<Sequence>()}).first->second;
+          std::vector<Sequence>& new_sequences = board_to_sequences.insert({unique, std::vector<Sequence>()}).first->second;
           Sequence subsequence = sequence.Subsequence(60 - b.NEmpties());
           if (!Contains(new_sequences, subsequence)) {
             new_sequences.push_back(subsequence);
@@ -438,14 +450,14 @@ class SequenceCanonicalizer {
         }
       }
     }
-    for (auto it = board_to_sequences_.begin(); it != board_to_sequences_.end(); ) {
+    for (auto it = board_to_sequences.begin(); it != board_to_sequences.end(); ++it) {
       if (it->second.size() == 1) {
-        it = board_to_sequences_.erase(it);
         continue;
       }
       Board previous_board(0, 0);
       Square last_move = kNoSquare;
       bool same_previous_board = true;
+      std::vector<Sequence> sequences;
       for (const auto& sequence : it->second) {
         auto boards_in_sequence = sequence.ToBoards();
         Board& new_previous_board = boards_in_sequence[boards_in_sequence.size() - 2];
@@ -455,14 +467,22 @@ class SequenceCanonicalizer {
         }
         if (previous_board != new_previous_board || last_move != sequence.LastMove()) {
           same_previous_board = false;
-          break;
         }
+        sequences.push_back(sequence);
       }
       if (same_previous_board) {
-        it = board_to_sequences_.erase(it);
         continue;
       }
-      ++it;
+      int num_sequences = sequences.size();
+      uint8_t size = sequences[0].Size();
+      assert(sequences.size() > 1);
+      serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &it->first, ((char*) &it->first) + sizeof(Board));
+      serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &num_sequences, ((char*) &num_sequences) + sizeof(int));
+      serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &size, ((char*) &size) + sizeof(uint8_t));
+      board_to_sequence_data_[it->first] = SequencesData(sequences.size(), sequences[0].Size(), serialized_board_to_sequences_.size());
+      for (const Sequence& sequence : sequences) {
+        serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), sequence.Moves(), sequence.Moves() + sequence.Size());
+      }
     }
   }
 
@@ -470,12 +490,12 @@ class SequenceCanonicalizer {
     auto boards = sequence.ToBoards();
     for (auto it = boards.rbegin(); it != boards.rend(); ++it) {
       Board unique = it->Unique();
-      auto sequences_it = board_to_sequences_.find(unique);
-      if (sequences_it == board_to_sequences_.end()) {
+      auto sequences_it = board_to_sequence_data_.find(unique);
+      if (sequences_it == board_to_sequence_data_.end()) {
         continue;
       }
       std::vector<Sequence> result;
-      for (const Sequence& replacement : sequences_it->second) {
+      for (const Sequence& replacement : GetSequences(sequences_it->second)) {
         Sequence copy = sequence;
         auto transposition = copy.Subsequence(replacement.Size()).GetTransposition(replacement);
         if (transposition != 0) {
@@ -489,22 +509,22 @@ class SequenceCanonicalizer {
     return {sequence};
   }
 
-  std::vector<char> Serialize() {
-    std::vector<char> result;
-    for (const auto& [board, sequences] : board_to_sequences_) {
-      result.insert(result.end(), (char*) &board, (char*) &board + sizeof(Board));
-      int n_sequences = (int) sequences.size();
-      result.insert(result.end(), (char*) &n_sequences, (char*) &n_sequences + sizeof(int));
-      result.push_back((char) sequences.begin()->Size());
-      for (const Sequence& sequence : sequences) {
-        result.insert(result.end(), sequence.Moves(), sequence.Moves() + sequence.Size());
-      }
+  const std::vector<char>& Serialize() {
+    return serialized_board_to_sequences_;
+  }
+
+  std::vector<Sequence> GetSequences(const SequencesData& sequence_data) const {
+    std::vector<Sequence> result;
+    result.reserve(sequence_data.num_sequences);
+    for (int i = 0; i < sequence_data.num_sequences; ++i) {
+      result.emplace_back(Sequence((Square*) &serialized_board_to_sequences_[sequence_data.offset + sequence_data.size * i], sequence_data.size));
     }
     return result;
   }
 
  private:
-  std::unordered_map<Board, std::vector<Sequence>> board_to_sequences_;
+  absl::flat_hash_map<Board, SequencesData> board_to_sequence_data_;
+  std::vector<char> serialized_board_to_sequences_;
 };
 
 #endif  // BOARD_SEQUENCE_H

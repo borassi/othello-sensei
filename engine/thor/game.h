@@ -208,10 +208,11 @@ inline std::string Tournament(const Game& g) { return g.Tournament(); }
 inline short Year(const Game& g) { return g.Year(); }
 
 inline XotBotYear GetXotBotYear(const Game& g) {
-  return XotBotYear{
-    .xot = g.IsXot(),
-    .bot = g.AtLeastOneBot(),
-    .year = g.Year()};
+  XotBotYear xot_bot_year;
+  xot_bot_year.xot = g.IsXot();
+  xot_bot_year.bot = g.AtLeastOneBot();
+  xot_bot_year.year = g.Year();
+  return xot_bot_year;
 }
 
 template<class GameGetter>

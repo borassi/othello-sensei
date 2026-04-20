@@ -97,9 +97,7 @@ Engine::Engine(
     thor_metadata_(),
     last_first_state_(nullptr),
     last_state_(nullptr) {
-  ElapsedTime t;
   BuildThor(thor_filepath, saved_games_filepath);
-  std::cout << "Built thor in " << t.Get() << "\n" << std::flush;
 }
 
 void Engine::Initialize(

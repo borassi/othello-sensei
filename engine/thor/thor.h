@@ -236,7 +236,7 @@ class Thor {
 
   void SaveCanonicalizer() {
     std::ofstream file(CanonicalizerPath(), std::ios::binary);
-    std::vector<char> serialized = canonicalizer_.Serialize();
+    const std::vector<char>& serialized = canonicalizer_.Serialize();
     file.write((char*) serialized.data(),
                (int) (serialized.size() * sizeof(Square)));
   }
@@ -260,11 +260,10 @@ class Thor {
   SequenceCanonicalizer canonicalizer_;
 
   void LoadCanonicalizer() {
-    canonicalizer_.Load(ReadFile<char>(CanonicalizerPath()));
+    canonicalizer_.Load(std::move(ReadFile<char>(CanonicalizerPath())));
   }
 
   void ComputeCanonicalizer() {
-    ElapsedTime t;
     std::vector<Sequence> all_sequences;
 
     for (const auto& [_, source] : sources_) {

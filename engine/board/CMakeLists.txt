@@ -229,6 +229,12 @@ target_link_libraries(
         misc
 )
 
+target_link_libraries(
+        sequence
+        LINK_PUBLIC
+        absl::flat_hash_map
+)
+
 IF(ENABLE_GOOGLETEST)
 add_executable(
         sequence_test
