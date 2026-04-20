@@ -187,7 +187,6 @@ struct EvaluateParams {
 typedef void (*SetBoard)(struct BoardUpdate);
 typedef void (*UpdateAnnotations)(unsigned int, bool, int);
 typedef void (*UpdateTimers)(double, double);
-typedef void (*SetThorMetadata)(const struct ThorMetadata* const);
 typedef void (*SendMessage)(const char* const);
 
 #ifdef __cplusplus

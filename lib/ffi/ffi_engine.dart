@@ -74,7 +74,6 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
-    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message,
   ) {
@@ -87,7 +86,6 @@ class FFIEngine {
       xot_large_filepath,
       set_board,
       update_annotations,
-      set_thor_metadata,
       update_timers,
       send_message,
     );
@@ -105,7 +103,6 @@ class FFIEngine {
             ffi.Pointer<ffi.Char>,
             SetBoard,
             UpdateAnnotations,
-            SetThorMetadata,
             UpdateTimers,
             SendMessage,
           )
@@ -122,7 +119,6 @@ class FFIEngine {
           ffi.Pointer<ffi.Char>,
           SetBoard,
           UpdateAnnotations,
-          SetThorMetadata,
           UpdateTimers,
           SendMessage,
         )
@@ -565,6 +561,21 @@ class FFIEngine {
         bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
       >();
 
+  ffi.Pointer<ThorMetadata> GetThorMetadata(ffi.Pointer<ffi.Void> ptr) {
+    return _GetThorMetadata(ptr);
+  }
+
+  late final _GetThorMetadataPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ThorMetadata> Function(ffi.Pointer<ffi.Void>)
+        >
+      >('GetThorMetadata');
+  late final _GetThorMetadata =
+      _GetThorMetadataPtr.asFunction<
+        ffi.Pointer<ThorMetadata> Function(ffi.Pointer<ffi.Void>)
+      >();
+
   void SetCountingTime(ffi.Pointer<ffi.Void> ptr, bool value) {
     return _SetCountingTime(ptr, value);
   }
@@ -949,10 +960,6 @@ typedef UpdateAnnotations =
 typedef UpdateTimersFunction = ffi.Void Function(ffi.Double, ffi.Double);
 typedef DartUpdateTimersFunction = void Function(double, double);
 typedef UpdateTimers = ffi.Pointer<ffi.NativeFunction<UpdateTimersFunction>>;
-typedef SetThorMetadataFunction = ffi.Void Function(ffi.Pointer<ThorMetadata>);
-typedef DartSetThorMetadataFunction = void Function(ffi.Pointer<ThorMetadata>);
-typedef SetThorMetadata =
-    ffi.Pointer<ffi.NativeFunction<SetThorMetadataFunction>>;
 typedef SendMessageFunction = ffi.Void Function(ffi.Pointer<ffi.Char>);
 typedef DartSendMessageFunction = void Function(ffi.Pointer<ffi.Char>);
 typedef SendMessage = ffi.Pointer<ffi.NativeFunction<SendMessageFunction>>;

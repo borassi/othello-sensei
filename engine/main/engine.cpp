@@ -82,10 +82,8 @@ Engine::Engine(
     const std::string& thor_filepath,
     const std::string& saved_games_filepath,
     UpdateAnnotations update_annotations,
-    SetThorMetadata set_thor_metadata,
     SendMessage send_message) :
     update_annotations_(update_annotations),
-    set_thor_metadata_(set_thor_metadata),
     send_message_(send_message),
     hash_map_(),
     tree_node_supplier_(),
@@ -98,7 +96,11 @@ Engine::Engine(
     ).share()),
     thor_metadata_(),
     last_first_state_(nullptr),
-    last_state_(nullptr) {}
+    last_state_(nullptr) {
+  ElapsedTime t;
+  BuildThor(thor_filepath, saved_games_filepath);
+  std::cout << "Built thor in " << t.Get() << "\n" << std::flush;
+}
 
 void Engine::Initialize(
     const std::string& evals_filepath,
@@ -107,11 +109,9 @@ void Engine::Initialize(
     const std::string& saved_games_filepath) {
   auto future_evals = std::async(std::launch::async, &Engine::BuildEvals, this, evals_filepath);
   auto future_book = std::async(std::launch::async, &Engine::BuildBook, this, book_filepath);
-  auto future_thor = std::async(std::launch::async, &Engine::BuildThor, this, thor_filepath, saved_games_filepath);
 
   future_evals.get();
   future_book.get();
-  future_thor.get();
   CreateBoardsToEvaluate();
 }
 
@@ -135,7 +135,6 @@ void Engine::BuildThorSourceMetadata() {
   }
   thor_metadata_.sources = thor_sources_metadata_.data();
   thor_metadata_.num_sources = (int) thor_sources_metadata_.size();
-  set_thor_metadata_(&thor_metadata_);
 }
 
 void Engine::BuildThor(const std::string& filepath, const std::string& saved_games_filepath) {
@@ -156,6 +155,9 @@ void Engine::Start(EvaluationState* current_state,
            std::shared_ptr<EvaluationState>& first_state,
            const EvaluateParams& params, bool in_analysis) {
   // Propagate errors to the main thread.
+  // We are not waiting here, unless the current_future_ is done (we wait inside Engine::Run).
+  // We are just checking if the future is finished, and in this case we get it so that the main
+  // thread knows of any errors.
   auto status = current_future_.wait_for(std::chrono::seconds(0));
   if (status == std::future_status::ready) {
     current_future_.get();

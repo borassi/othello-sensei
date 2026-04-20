@@ -45,7 +45,6 @@ void* MainInit(
     char* xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
-    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message);
 
@@ -144,6 +143,9 @@ void SetFileSources(void* ptr, int num_folders, char** folders);
 
 EXPORT
 bool ReloadSourceUi(void* ptr, const char* file);
+
+EXPORT
+struct ThorMetadata* GetThorMetadata(void* ptr);
 
 EXPORT
 void SetCountingTime(void* ptr, bool value);

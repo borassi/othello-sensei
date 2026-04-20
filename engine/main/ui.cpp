@@ -30,12 +30,11 @@ void* MainInit(
     char* xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
-    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message) {
   return new Main(
       evals_filepath, book_filepath, thor_filepath, saved_games_filepath, xot_small_filepath,
-      xot_large_filepath, set_board, update_annotations, set_thor_metadata, update_timers,
+      xot_large_filepath, set_board, update_annotations, update_timers,
       send_message);
 }
 
@@ -116,4 +115,5 @@ void SetFileSources(void* ptr, int num_folders, char** folders) {
 }
 
 bool ReloadSourceUi(void* ptr, const char* file) { return static_cast<Main*>(ptr)->ReloadSource(file); }
+struct ThorMetadata* GetThorMetadata(void* ptr) { return static_cast<Main*>(ptr)->GetThorMetadata(); }
 void SetCountingTime(void* ptr, bool value) { static_cast<Main*>(ptr)->SetCountingTime(value); }

@@ -151,7 +151,6 @@ class Engine {
       const std::string& thor_filepath,
       const std::string& saved_games_filepath,
       UpdateAnnotations update_annotations,
-      SetThorMetadata set_thor_metadata,
       SendMessage send_message);
 
   void Start(EvaluationState* current_state,
@@ -185,11 +184,12 @@ class Engine {
 
   uint32_t CurrentThread() { return current_thread_.load(); }
 
+  ThorMetadata* GetThorMetadata() { return &thor_metadata_; }
+
  private:
   static constexpr int kNumEvaluators = 60;
 
   UpdateAnnotations update_annotations_;
-  SetThorMetadata set_thor_metadata_;
   [[maybe_unused]] SendMessage send_message_;
 
   std::unique_ptr<EvalType> evals_;

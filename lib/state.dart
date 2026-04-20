@@ -194,7 +194,6 @@ class GlobalState {
     thorMetadata.invalidate();
     NativeCallable<SetBoardFunction> setBoardCallback = NativeCallable.listener(setBoard);
     NativeCallable<UpdateAnnotationsFunction> setAnnotationsCallback = NativeCallable.listener(updateAnnotations);
-    NativeCallable<SetThorMetadataFunction> setThorMetadataCallback = NativeCallable.listener(setThorMetadata);
     NativeCallable<UpdateTimersFunction> updateTimersCallback = NativeCallable.listener(updateTimers);
     NativeCallable<SendMessageFunction> sendMessageCallback = NativeCallable.listener(sendMessage);
     var localAssetPathVar = localAssetPath();
@@ -209,7 +208,6 @@ class GlobalState {
         evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC, xotSmallC, xotLargeC,
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction,
-        setThorMetadataCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
         sendMessageCallback.nativeFunction
     );
@@ -217,6 +215,7 @@ class GlobalState {
                      xotSmallC, xotLargeC]) {
       malloc.free(ptr);
     }
+    GlobalState.thorMetadata.set(ffiEngine.GetThorMetadata(ffiMain));
     evaluate();
   }
 
@@ -767,6 +766,9 @@ class PreferencesState with ChangeNotifier {
       var possibleValues = enumTypeToValues[defaultValue.runtimeType];
       value = possibleValues!.firstWhere((e) => e.name == value);
     }
+    if (value is List<dynamic> && (defaultPreferences[name] is List<String>)) {
+      value = List<String>.of(value.map((e) => e.toString()));
+    }
     _checkPreferenceNameAndValue(name, value);
     return value;
   }
@@ -868,7 +870,8 @@ class PreferencesState with ChangeNotifier {
       throw InvalidPreferenceException('Invalid value $value for preference $name. Valid values: $validValues');
     }
     if (value.runtimeType != defaultPreferences[name].runtimeType &&
-        !(value is String && (defaultPreferences[name] is Enum))) {
+        !(value is String && (defaultPreferences[name] is Enum)) &&
+        !(value is List<dynamic> && (defaultPreferences[name] is List<String>))) {
       throw InvalidPreferenceException('Invalid type ${value.runtimeType} for preference $name. Expected: ${defaultPreferences[name].runtimeType}');
     }
   }
@@ -1008,7 +1011,6 @@ class SourcePlayerIndex {
 }
 
 void setThorMetadata(Pointer<ThorMetadata> ptr) {
-  GlobalState.thorMetadata.set(ptr);
 }
 
 class ThorMetadataState with ChangeNotifier {
@@ -1027,7 +1029,7 @@ class ThorMetadataState with ChangeNotifier {
         folders = [],
         gameFolders = [];
 
-  void set(ffi.Pointer<ThorMetadata> ptr) async {
+  void set(ffi.Pointer<ThorMetadata> ptr) {
     this.ptr = ptr;
     var playerToSources = <String, List<SourcePlayerIndex>>{};
     var tournamentsSet = HashSet<String>();
@@ -1149,7 +1151,12 @@ class ThorMetadataState with ChangeNotifier {
       List<int> nextIndex = List.generate(ptr!.ref.num_sources, (index) => 0);
 
       for (var player in players) {
-        var index = playerStringToIndex[player]!;
+        var index = playerStringToIndex[player];
+        if (index == null) {
+          GlobalState.preferences.set('Archive selected Black', selectedBlack().where((p) => p != player).toList());
+          GlobalState.preferences.set('Archive selected White', selectedWhite().where((p) => p != player).toList());
+          continue;
+        }
         var sourceIndex = index.sourceIndex;
         getSource(sourceIndex)[nextIndex[sourceIndex]++] = index.playerIndex;
       }

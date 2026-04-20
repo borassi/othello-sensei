@@ -27,7 +27,6 @@ Main::Main(
     const std::string& xot_large_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
-    SetThorMetadata set_thor_metadata,
     UpdateTimers update_timers,
     SendMessage send_message) :
     set_board_(set_board),
@@ -37,7 +36,7 @@ Main::Main(
     xot_small_(LoadTextFile(xot_small_filepath)),
     xot_large_(LoadTextFile(xot_large_filepath)),
     xot_state_(XOT_STATE_AUTOMATIC),
-    engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations, set_thor_metadata, send_message),
+    engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations, send_message),
     analyzing_(0),
     time_on_this_position_(std::nullopt),
     is_being_destroyed_(false) {

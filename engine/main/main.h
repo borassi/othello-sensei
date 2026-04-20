@@ -49,7 +49,6 @@ class Main {
       const std::string& xot_large_filepath,
       SetBoard set_board,
       UpdateAnnotations update_annotations,
-      SetThorMetadata set_thor_metadata,
       UpdateTimers update_timers,
       SendMessage send_message);
 
@@ -324,6 +323,8 @@ class Main {
   bool ReloadSource(const std::string& source) {
     return engine_.ReloadSource(source);
   }
+
+  ThorMetadata* GetThorMetadata() { return engine_.GetThorMetadata(); }
 
  private:
   static constexpr int kNumEvaluators = 60;

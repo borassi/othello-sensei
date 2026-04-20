@@ -36,4 +36,5 @@ EXPORTS
     OpenThorGame
     SetFileSources
     ReloadSourceUi
+    GetThorMetadata
     SetCountingTime
