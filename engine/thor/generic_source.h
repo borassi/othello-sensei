@@ -39,7 +39,9 @@ class GenericSource {
       const std::vector<std::string>& whites = {},
       const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) const = 0;
+      short end_year = SHRT_MAX,
+      std::vector<bool> xot_values = {false},
+      std::vector<bool> bot_values = {false}) const = 0;
   virtual int NumGames() const = 0;
   virtual void Save() const {};
   virtual std::vector<Game> AllGames() const = 0;

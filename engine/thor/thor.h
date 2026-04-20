@@ -183,13 +183,15 @@ class Thor {
       std::vector<std::string> whites = {},
       std::vector<std::string> tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) const {
+      short end_year = SHRT_MAX,
+      std::vector<bool> xot_values = {false},
+      std::vector<bool> bot_values = {false}) const {
     GamesList games;
     games.num_games = 0;
     games.max_games = max_games;
     for (const auto& [source_name, _] : sources_) {
       GamesList new_games = GetGames<transpositions>(
-          source_name, sequence, max_games, blacks, whites, tournaments, start_year, end_year);
+          source_name, sequence, max_games, blacks, whites, tournaments, start_year, end_year, xot_values, bot_values);
       games.Merge(new_games);
     }
     return games;
@@ -204,7 +206,9 @@ class Thor {
       const std::vector<std::string>& whites = {},
       const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) const {
+      short end_year = SHRT_MAX,
+      std::vector<bool> xot_values = {false},
+      std::vector<bool> bot_values = {false}) const {
     assert(max_games > 0);  // Otherwise the Rotate() does not know how to rotate.
     const Sequence& canonical = sequence.ToCanonicalGame();
     GamesList games;
@@ -219,7 +223,7 @@ class Thor {
         : std::vector<Sequence>({canonical});
     for (const Sequence& lookup_sequence : lookup_sequences) {
       GamesList new_games = source_element->second->GetGames(
-          lookup_sequence, max_games, blacks, whites, tournaments, start_year, end_year);
+          lookup_sequence, max_games, blacks, whites, tournaments, start_year, end_year, xot_values, bot_values);
       new_games.Rotate(sequence);
       games.Merge(new_games);
     }

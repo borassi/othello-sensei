@@ -171,13 +171,15 @@ class GameGetterInMemory : public GameGetterOnDisk {
   std::vector<Game> all_games_;
 };
 
-struct GamesInterval {
+// NOTE: A GamesIntervalSequenceSorted MUST be sorted by sequence (not e.g. by is_xot, sequence).
+struct GamesIntervalSequenceSorted {
   std::vector<uint32_t>::const_iterator start;
   std::vector<uint32_t>::const_iterator end;
+  short year;
 
-  GamesInterval() = default;
-  GamesInterval(std::vector<uint32_t>::const_iterator start,
-                std::vector<uint32_t>::const_iterator end) : start(start), end(end) {}
+  GamesIntervalSequenceSorted() = default;
+  GamesIntervalSequenceSorted(std::vector<uint32_t>::const_iterator start,
+                              std::vector<uint32_t>::const_iterator end, short year) : start(start), end(end), year(year) {}
 };
 
 template<class GameGetter = GameGetterOnDisk>
@@ -189,7 +191,7 @@ class Source : public GenericSource {
       return;
     }
     ElapsedTime t;
-    game_indices_ = {&game_index_by_black_, &game_index_by_white_, &game_index_by_tournament_, &game_index_by_year_};
+    game_indices_ = {&game_index_by_black_, &game_index_by_white_, &game_index_by_tournament_, &game_index_by_xot_bot_year_};
     if (FileExists(SortedGamesPath()) && !rebuild_games_order) {
       LoadSortedGames();
     } else {
@@ -212,7 +214,9 @@ class Source : public GenericSource {
       const std::vector<std::string>& whites = {},
       const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) const override;
+      short end_year = SHRT_MAX,
+      std::vector<bool> xot_values = {false},
+      std::vector<bool> bot_values = {false}) const override;
 
   int NumGames() const override { return game_getter_.NumGames(); }
 
@@ -254,7 +258,7 @@ class Source : public GenericSource {
   std::vector<uint32_t> game_index_by_black_;
   std::vector<uint32_t> game_index_by_white_;
   std::vector<uint32_t> game_index_by_tournament_;
-  std::vector<uint32_t> game_index_by_year_;
+  std::vector<uint32_t> game_index_by_xot_bot_year_;
   std::vector<std::vector<uint32_t>> games_with_small_hash_;
 
   std::vector<std::vector<uint32_t>*> game_indices_;
@@ -282,11 +286,11 @@ class Source : public GenericSource {
 
   void ComputeGamesSmallHash() {
     ElapsedTime t1;
-    games_with_small_hash_.resize(IncludeProbabilityToHashIndex(1 - 0.5 / game_index_by_year_.size()));
+    games_with_small_hash_.resize(IncludeProbabilityToHashIndex(1 - 0.5 / game_index_by_xot_bot_year_.size()));
     GameGetterInMemory game_getter(folder_);
 
-    for (uint32_t i = 0; i < game_index_by_year_.size(); ++i) {
-      Game game = game_getter.GetGame(game_index_by_year_[i]);
+    for (uint32_t i = 0; i < game_index_by_xot_bot_year_.size(); ++i) {
+      Game game = game_getter.GetGame(game_index_by_xot_bot_year_[i]);
       auto probability = game.Priority();
       for (int j = std::min(IncludeProbabilityToHashIndex(probability), (int) games_with_small_hash_.size() - 1);
            j >= 0; --j) {
@@ -311,15 +315,15 @@ class Source : public GenericSource {
       game_index_by_black_.push_back(i);
       game_index_by_white_.push_back(i);
       game_index_by_tournament_.push_back(i);
-      game_index_by_year_.push_back(i);
+      game_index_by_xot_bot_year_.push_back(i);
     }
     std::sort(game_index_by_black_.begin(), game_index_by_black_.end(), CmpByBlack<GameGetter>(game_getter_));
     std::sort(game_index_by_white_.begin(), game_index_by_white_.end(), CmpByWhite<GameGetter>(game_getter_));
     std::sort(game_index_by_tournament_.begin(), game_index_by_tournament_.end(), CmpByTournament<GameGetter>(game_getter_));
-    std::sort(game_index_by_year_.begin(), game_index_by_year_.end(), CmpByYear<GameGetter>(game_getter_));
+    std::sort(game_index_by_xot_bot_year_.begin(), game_index_by_xot_bot_year_.end(), CmpByXotBotYear<GameGetter>(game_getter_));
   }
 
-  void FillNextMoves(const GamesInterval& interval, int sequence_size, std::unordered_map<Square, int>& next_moves) const {
+  void FillNextMoves(const GamesIntervalSequenceSorted& interval, int sequence_size, std::unordered_map<Square, int>& next_moves) const {
     for (auto it = interval.start; it < interval.end; ) {
       Game game = game_getter_.GetGame(*it);
       Square next_move = sequence_size < game.Moves().Size() + 1 ? game.Move(sequence_size) : kNoSquare;
@@ -330,6 +334,8 @@ class Source : public GenericSource {
       auto next_it = std::upper_bound(
           it, interval.end,
           std::pair<short, Sequence>{game.Year(), next_sequence},
+          // We assume that the interval is sorted by sequence (e.g., if it comes from xot_bot_year,
+          // it has only one value for xot, bot, year).
           CmpByYear<GameGetter>(game_getter_));
       next_moves[next_move] += (int) (next_it - it);
       it = next_it;
@@ -337,10 +343,11 @@ class Source : public GenericSource {
   }
 
   template<class T, class Compare>
-  GamesInterval GetGameIntervals(const std::vector<uint32_t>& games, const T& search_key, Compare c) const {
-    return GamesInterval(
+  GamesIntervalSequenceSorted GetGameIntervals(const std::vector<uint32_t>& games, const T& search_key, Compare c, int year) const {
+    return GamesIntervalSequenceSorted(
         std::lower_bound(games.begin(), games.end(), search_key, c),
-        std::upper_bound(games.begin(), games.end(), search_key, c)
+        std::upper_bound(games.begin(), games.end(), search_key, c),
+        year
     );
   }
 };

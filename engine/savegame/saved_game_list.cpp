@@ -23,18 +23,19 @@ GamesList SavedGameList::GetGames(
     const std::vector<std::string>& whites,
     const std::vector<std::string>& tournaments,
     short start_year,
-    short end_year) const {
+    short end_year,
+    std::vector<bool> xot_values,
+    std::vector<bool> bot_values) const {
   Sequence canonical = sequence.ToCanonicalGame();
   GamesList result;
   result.num_games = 0;
   result.max_games = max_games;
   int sequence_size = (int) sequence.Size();
   for (auto& game : games_) {
-    if ((!blacks.empty() && !Contains(blacks, game.Black())) ||
-        (!whites.empty() && !Contains(whites, game.White())) ||
-        (!tournaments.empty() && !Contains(tournaments, game.Tournament())) ||
-        game.Year() < start_year || game.Year() > end_year ||
-        !game.Moves().StartsWith(canonical)) {
+    if (!game.Moves().StartsWith(canonical)) {
+      continue;
+    }
+    if (!game.PassesFilters(blacks, whites, tournaments, start_year, end_year, xot_values, bot_values)) {
       continue;
     }
     result.next_moves[game.Moves().Move(sequence_size)]++;

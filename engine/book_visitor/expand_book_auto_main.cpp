@@ -80,7 +80,7 @@ class BookVisitorBestLines : public BookVisitorWithProgress<kBookVersion> {
   using BookVisitor::depth_;
 
   bool VisitNode(Node& node) {
-    int num_thor_games = archive_.GetGames<false>("OthelloQuest", sequence_).num_games;
+    int num_thor_games = archive_.GetGames<false>("OthelloQuest", sequence_, 1, {}, {}, {}, 0, 3000, {true, false}, {true, false}).num_games;
     if (num_thor_games < min_games_) {
       return false;
     }

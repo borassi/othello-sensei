@@ -48,3 +48,93 @@ TEST(Game, Load) {
   EXPECT_FLOAT_EQ(game.Priority(), 0.5);
 }
 
+TEST(Game, IsNotXOT) {
+  std::vector<std::string> players = {"player0"};
+  std::vector<std::string> tournaments = {"tournament0"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 0, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_FALSE(game.IsXot());
+}
+
+TEST(Game, IsXOT) {
+  std::vector<std::string> players = {"player0"};
+  std::vector<std::string> tournaments = {"tournament0 (XOT)"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 0, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_TRUE(game.IsXot());
+}
+
+TEST(Game, AtLeastOneBotFalse) {
+  std::vector<std::string> players = {"player0", "player1"};
+  std::vector<std::string> tournaments = {"tournament0"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 0, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_FALSE(game.AtLeastOneBot());
+}
+
+TEST(Game, AtLeastOneBotTrue1) {
+  std::vector<std::string> players = {"player0", "player1 (borassi)"};
+  std::vector<std::string> tournaments = {"tournament0 (XOT)"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 1, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_TRUE(game.AtLeastOneBot());
+}
+
+TEST(Game, AtLeastOneBotTrue2) {
+  std::vector<std::string> players = {"player0 (norelli)", "player1 (borassi)"};
+  std::vector<std::string> tournaments = {"tournament0 (XOT)"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 1, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_TRUE(game.AtLeastOneBot());
+}
+
+TEST(Game, PassesFilters) {
+  std::vector<std::string> players = {"player0", "player1"};
+  std::vector<std::string> tournaments = {"tournament0"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 1, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_TRUE(game.PassesFilters({"player0"}, {}, {}, 2023, 2023, {false}, {false}));
+  EXPECT_FALSE(game.PassesFilters({"player1"}, {}, {}, 2023, 2023, {false}, {false}));
+  EXPECT_TRUE(game.PassesFilters({}, {"player1"}, {}, 2023, 2023, {false}, {false}));
+  EXPECT_FALSE(game.PassesFilters({}, {"player0"}, {}, 2023, 2023, {false}, {false}));
+  EXPECT_TRUE(game.PassesFilters({}, {}, {"tournament0"}, 2023, 2023, {false}, {false}));
+  EXPECT_FALSE(game.PassesFilters({}, {}, {"tournament1"}, 2023, 2023, {false}, {false}));
+  EXPECT_FALSE(game.PassesFilters({}, {}, {}, 2024, 2025, {false}, {false}));
+  EXPECT_FALSE(game.PassesFilters({}, {}, {}, 2023, 2023, {true}, {false}));
+  EXPECT_FALSE(game.PassesFilters({}, {}, {}, 2023, 2023, {false}, {true}));
+}
+
+TEST(Game, PassesFiltersXotBot) {
+  std::vector<std::string> players = {"player0 (borassi)", "player1"};
+  std::vector<std::string> tournaments = {"tournament0 (XOT)"};
+  std::string moves = "e6f4c3c4d3d6e3c2b3d2c5f5f3f6e1d1e2f1g4g3g5b5b4c6c1b1f2a5a4g1h3g6a6a3a2b6g2h1h2h4e7c7a7b7a8d8d7b2f8f7g8c8h5h7h6e8b8g7h8a1";
+  std::vector<char> stored_game = StoredGame(0, 0, 1, 2, 2, moves);
+
+  Game game(stored_game.data(), 0, 2023, players, tournaments, 0.5);
+
+  EXPECT_TRUE(game.PassesFilters({}, {}, {}, 2023, 2023, {true, false}, {true, false}));
+  EXPECT_TRUE(game.PassesFilters({}, {}, {}, 2023, 2023, {true}, {true}));
+  EXPECT_FALSE(game.PassesFilters({}, {}, {}, 2023, 2023, {false}, {true, false}));
+  EXPECT_FALSE(game.PassesFilters({}, {}, {}, 2023, 2023, {true, false}, {false}));
+}
+
+
+

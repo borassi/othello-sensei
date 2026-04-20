@@ -96,9 +96,6 @@ class ThorTest : public testing::Test {
   void TearDown() override {
     fs::remove_all(kThorTestData);
   }
-
- protected:
-  std::vector<Game> games_;
 };
 
 TEST_F(ThorTest, Metadata) {
@@ -335,4 +332,113 @@ TEST_F(ThorTest, ReloadSourceEmpty) {
   EXPECT_TRUE(thor.ReloadSource(folder + "/game.sensei.txt"));
   EXPECT_THAT(thor.Sources(), ElementsAre("Folder"));
   EXPECT_EQ(thor.GetGamesFromAllSources(Sequence("e6")).num_games, 0);
+}
+
+class XotBotSourceTest : public testing::Test {
+  void SetUp() override {
+    fs::remove_all(kThorTestData);
+    fs::create_directories(kThorTestData + "/Thor");
+    std::ofstream games_file(kThorTestData + "/Thor/WTH_2023.wtb", std::ios::binary);
+    std::ofstream players_file(kThorTestData + "/Thor/WTH.JOU", std::ios::binary);
+    std::ofstream tournaments_file(kThorTestData + "/Thor/WTH.TRN", std::ios::binary);
+
+    WriteHeader(games_file, 2023);
+    WriteHeader(players_file, 2023);
+    WriteHeader(tournaments_file, 2023);
+
+    std::vector<std::string> players = {"player0", "player1", "bot_player0 (author)", "bot_player1 (author)"};
+    std::vector<std::string> tournaments = {"tournament0", "tournament1 (XOT)"};
+
+    for (const std::string& s : players) {
+      std::string padded = PadString(s, 20);
+      players_file.write(padded.c_str(), 20);
+    }
+    for (const std::string& s : tournaments) {
+      std::string padded = PadString(s, 26);
+      tournaments_file.write(padded.c_str(), 26);
+    }
+
+    for (int i = 0; i < 4; ++i) {
+      // Game 0 is non-xot, non-bot.
+      // Game 1 is xot, non-bot.
+      // Game 2 is non-xot, bot.
+      // Game 3 is xot, bot.
+      std::vector<char> game = StoredGame(
+          i % tournaments.size(),
+          i < 2 ? 0 : 2,
+          i < 2 ? 1 : 3,
+          12,
+          -4,
+          "e6f4c3c4c5c6c7");
+      games_file.write(game.data(), game.size());
+    }
+  }
+
+  void TearDown() override {
+    fs::remove_all(kThorTestData);
+  }
+};
+
+TEST_F(XotBotSourceTest, ByBlackAll) {
+  Thor thor(kThorTestData, "");
+  auto games = thor.GetGames(
+      "Thor",
+      Sequence("e6"),
+      100,
+      {"player0", "bot_player0 (author)"},
+      {},
+      {},
+      2023,
+      2023,
+      {true, false},
+      {true, false});
+  EXPECT_EQ(games.num_games, 4);
+}
+
+TEST_F(XotBotSourceTest, ByWhiteBotXotOnly) {
+  Thor thor(kThorTestData, "");
+  auto games = thor.GetGames(
+      "Thor",
+      Sequence("e6"),
+      100,
+      {},
+      {"player1", "bot_player1 (author)"},
+      {},
+      2023,
+      2023,
+      {true},
+      {true});
+  EXPECT_EQ(games.num_games, 1);
+}
+
+TEST_F(XotBotSourceTest, ByTournamentBotOnly) {
+  Thor thor(kThorTestData, "");
+  auto games = thor.GetGames(
+      "Thor",
+      Sequence("e6"),
+      100,
+      {},
+      {},
+      {"tournament0", "tournament1 (XOT)"},
+      2023,
+      2023,
+      {true, false},
+      {true});
+  EXPECT_EQ(games.num_games, 2);
+}
+
+TEST_F(XotBotSourceTest, ByYearBotXot) {
+  Thor thor(kThorTestData, "");
+  auto games = thor.GetGames(
+      "Thor",
+      Sequence("e6"),
+      100,
+      {},
+      {},
+      {},
+      2023,
+      2023,
+      {true},
+      {true, false});
+  EXPECT_EQ(games.num_games, 2);
 }

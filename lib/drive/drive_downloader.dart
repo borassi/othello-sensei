@@ -55,7 +55,7 @@ void downloadBook(BuildContext context) {
 }
 
 void downloadArchive(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v2.tar.gz', 150, true, 58);
+  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v3.tar.gz', 150, true, 58);
 }
 
 enum DialogOptions {

@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
   Thor thor(kAssetFilepath, "/tmp/saved_files.txt");
   for (int year = start_year; year >= end_year; --year) {
     Sequence sequence("e6");
-    GamesList games = thor.GetGames("thor", sequence, INT_MAX, {}, {}, {}, year);
+    GamesList games = thor.GetGames("Thor", sequence, INT_MAX, {}, {}, {}, year, year, {true, false}, {true, false});
     int i = 0;
     for (auto& game : games.examples) {
       // TODO: Fix.

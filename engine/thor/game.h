@@ -24,6 +24,7 @@
 
 #include "../board/board.h"
 #include "../board/sequence.h"
+#include "../utils/misc.h"
 
 class Game {
  public:
@@ -63,6 +64,33 @@ class Game {
   short Year() const { return year_; }
   Eval Score() const { return score_; }
   double Priority() const { return priority_; }
+  bool IsXot() const { return StringContains(*tournament_, "XOT"); }
+  bool AtLeastOneBot() const { return HasParentheses(*black_) || HasParentheses(*white_); }
+  bool PassesFilters(
+      const std::vector<std::string>& blacks,
+      const std::vector<std::string>& whites,
+      const std::vector<std::string>& tournaments,
+      short start_year,
+      short end_year,
+      const std::vector<bool>& xot_values,
+      const std::vector<bool>& bot_values) const {
+    if (!blacks.empty() && !Contains(blacks, Black())) {
+      return false;
+    }
+    if (!whites.empty() && !Contains(whites, White())) {
+      return false;
+    }
+    if (!tournaments.empty() && !Contains(tournaments, Tournament())) {
+      return false;
+    }
+    if (Year() < start_year || Year() > end_year) {
+      return false;
+    }
+    if (!Contains(xot_values, IsXot()) || !Contains(bot_values, AtLeastOneBot())) {
+      return false;
+    }
+    return true;
+  }
 
   const Sequence& Moves() const { return moves_; }
   Square Move(Square i) const { return moves_.Move(i); }
@@ -159,11 +187,32 @@ class CmpGameAndSequence {
   const GameGetter& game_getter_;
 };
 
+struct XotBotYear {
+  bool xot;
+  bool bot;
+  short year;
+
+  bool operator<(const XotBotYear& other) const {
+    return std::tie(xot, bot, year) < std::tie(other.xot, other.bot, other.year);
+  }
+
+  bool operator==(const XotBotYear& other) const {
+    return std::tie(xot, bot, year) == std::tie(other.xot, other.bot, other.year);
+  };
+};
+
 inline bool True(const Game& g) { return true; }
 inline std::string Black(const Game& g) { return g.Black(); }
 inline std::string White(const Game& g) { return g.White(); }
 inline std::string Tournament(const Game& g) { return g.Tournament(); }
 inline short Year(const Game& g) { return g.Year(); }
+
+inline XotBotYear GetXotBotYear(const Game& g) {
+  return XotBotYear{
+    .xot = g.IsXot(),
+    .bot = g.AtLeastOneBot(),
+    .year = g.Year()};
+}
 
 template<class GameGetter>
 class CmpByBlack : public CmpGameAndSequence<std::string, Black, GameGetter> { using CmpGameAndSequence<std::string, Black, GameGetter>::CmpGameAndSequence; };
@@ -172,6 +221,9 @@ class CmpByWhite : public CmpGameAndSequence<std::string, White, GameGetter> { u
 template<class GameGetter>
 class CmpByTournament : public CmpGameAndSequence<std::string, Tournament, GameGetter> { using CmpGameAndSequence<std::string, Tournament, GameGetter>::CmpGameAndSequence; };
 template<class GameGetter>
+// Still used to fill the next moves.
 class CmpByYear : public CmpGameAndSequence<short, Year, GameGetter> { using CmpGameAndSequence<short, Year, GameGetter>::CmpGameAndSequence; };
+template<class GameGetter>
+class CmpByXotBotYear : public CmpGameAndSequence<XotBotYear, GetXotBotYear, GameGetter> { using CmpGameAndSequence<XotBotYear, GetXotBotYear, GameGetter>::CmpGameAndSequence; };
 
 #endif // OTHELLO_SENSEI_GAME_H

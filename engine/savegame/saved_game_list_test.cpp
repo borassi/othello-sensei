@@ -246,3 +246,24 @@ TEST_F(SavedGamesListTest, MaxGamesWithOtherFiles) {
   auto games = source.GetGames(Sequence("e6f4c3c4d3"), 10);
   EXPECT_EQ(games.num_games, 2);
 }
+
+TEST_F(SavedGamesListTest, XotBot) {
+  GameToSave game1(Sequence("e6f4c3c4d3"), "B (author)", "W", "T (XOT)", "N", 2022, 34, "R");
+  SaveGame(game1, "game1.sensei.txt");
+  GameToSave game2(Sequence("e6f4c3c4d3"), "B (author)", "W", "T", "N", 2022, 34, "R");
+  SaveGame(game2, "game2.sensei.txt");
+  GameToSave game3(Sequence("e6f4c3c4d3"), "B", "W", "T (XOT)", "N", 2022, 34, "R");
+  SaveGame(game3, "game3.sensei.txt");
+  GameToSave game4(Sequence("e6f4c3c4d3"), "B", "W", "T", "N", 2022, 34, "R");
+  SaveGame(game4, "game4.sensei.txt");
+  SavedGameList source(kTestFolder);
+  auto games = source.GetGames(Sequence("e6"), 10, {}, {}, {}, 2022, 2022, {true, false}, {true, false});
+  EXPECT_EQ(games.num_games, 4);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame(true), game2.ToGame(true), game3.ToGame(true), game4.ToGame(true)));
+  games = source.GetGames(Sequence("e6"), 10, {}, {}, {}, 2022, 2022, {true}, {true});
+  EXPECT_EQ(games.num_games, 1);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame(true)));
+  games = source.GetGames(Sequence("e6"), 10, {}, {}, {}, 2022, 2022, {true, false}, {true});
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(game1.ToGame(true), game2.ToGame(true)));
+}

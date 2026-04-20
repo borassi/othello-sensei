@@ -139,6 +139,18 @@ std::vector<std::string> Split(const std::string& s, char c, bool strip) {
   return result;
 }
 
+bool StringContains(const std::string& s, const std::string& substring) {
+  return s.find(substring) != std::string::npos;
+}
+
+bool HasParentheses(const std::string& s) {
+  size_t open_pos = s.find('(');
+  if (open_pos == std::string_view::npos) {
+    return false;
+  }
+  return s.find(')', open_pos + 1) != std::string_view::npos;
+}
+
 void PrintSupportedFeatures() {
 #if __POPCNT__
   std::cout << "Using intrinsic popcount\n" << std::flush;

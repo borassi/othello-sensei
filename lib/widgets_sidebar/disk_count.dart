@@ -98,7 +98,7 @@ class GameFolderSearch extends StatelessWidget {
     var textStyle = Theme.of(context).textTheme.bodyMedium!;
     return DropdownSearch<String>(
       items: (f, cs) => ['All'] + GlobalState.thorMetadata.folders,
-      selectedItem: GlobalState.thorMetadata.activeFolder,
+      selectedItem: GlobalState.thorMetadata.activeFolder(),
       onChanged: (String? value) {
         if (value != null) {
           GlobalState.thorMetadata.setActiveFolder(value);

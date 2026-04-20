@@ -707,6 +707,11 @@ class PreferencesState with ChangeNotifier {
     'Show settings dialog at startup': true,
     'Timer (minutes, 0 for no countdown)': 0.0,
     'Show dialog on save outside archive': canLookupFiles(),
+    'Archive selected Black': <String>[],
+    'Archive selected White': <String>[],
+    'Archive include XOT': false,
+    'Archive include bots': false,
+    'Archive active folder': 'All',
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -1007,15 +1012,12 @@ void setThorMetadata(Pointer<ThorMetadata> ptr) {
 }
 
 class ThorMetadataState with ChangeNotifier {
-  String activeFolder;
   List<String> folders;
   List<String> gameFolders;
   Pointer<ThorMetadata>? ptr;
   Map<String, SourcePlayerIndex> playerStringToIndex;
   List<String> players;
   List<String> tournaments;
-  List<String> selectedBlacks;
-  List<String> selectedWhites;
 
   ThorMetadataState() :
         ptr = null,
@@ -1023,10 +1025,7 @@ class ThorMetadataState with ChangeNotifier {
         players = [],
         tournaments = [],
         folders = [],
-        gameFolders = [],
-        selectedBlacks = [],
-        selectedWhites = [],
-        activeFolder = 'All';
+        gameFolders = [];
 
   void set(ffi.Pointer<ThorMetadata> ptr) async {
     this.ptr = ptr;
@@ -1080,28 +1079,57 @@ class ThorMetadataState with ChangeNotifier {
     tournaments = [];
     folders = [];
     gameFolders = [];
-    selectedBlacks = [];
-    selectedWhites = [];
-    activeFolder = 'All';
     notifyListeners();
   }
 
   void setSelectedBlacks(List<String> value) {
-    selectedBlacks = value;
+    GlobalState.preferences.set('Archive selected Black', value);
     notifyListeners();
     _setFilters();
   }
 
   void setSelectedWhites(List<String> value) {
-    selectedWhites = value;
+    GlobalState.preferences.set('Archive selected White', value);
     notifyListeners();
     _setFilters();
   }
 
-  void setActiveFolder(String name) {
-    activeFolder = name;
+  void setIncludeXot(bool value) {
+    GlobalState.preferences.set('Archive include XOT', value);
     notifyListeners();
     _setFilters();
+  }
+
+  void setIncludeBot(bool value) {
+    GlobalState.preferences.set('Archive include bots', value);
+    notifyListeners();
+    _setFilters();
+  }
+
+  void setActiveFolder(String value) {
+    GlobalState.preferences.set('Archive active folder', value);
+    notifyListeners();
+    _setFilters();
+  }
+
+  String activeFolder() {
+    return GlobalState.preferences.get('Archive active folder');
+  }
+
+  bool includeXot() {
+    return GlobalState.preferences.get('Archive include XOT');
+  }
+
+  bool includeBot() {
+    return GlobalState.preferences.get('Archive include bots');
+  }
+
+  List<String> selectedBlack() {
+    return GlobalState.preferences.get('Archive selected Black');
+  }
+
+  List<String> selectedWhite() {
+    return GlobalState.preferences.get('Archive selected White');
   }
 
   void _setFilters() {
@@ -1110,11 +1138,13 @@ class ThorMetadataState with ChangeNotifier {
     }
     for (int i = 0; i < ptr!.ref.num_sources; ++i) {
       ThorSourceMetadata source = (ptr!.ref.sources + i).value.ref;
-      source.active = (activeFolder == source.name.cast<Utf8>().toDartString()) || activeFolder == 'All';
+      source.active = (activeFolder() == source.name.cast<Utf8>().toDartString()) || activeFolder() == 'All';
+      source.include_xot = includeXot();
+      source.include_bot = includeBot();
     }
     for (var (players, getSource) in [
-      (selectedBlacks, (sourceIndex) => ptr!.ref.sources[sourceIndex].ref.selected_blacks),
-      (selectedWhites, (sourceIndex) => ptr!.ref.sources[sourceIndex].ref.selected_whites)]) {
+      (selectedBlack(), (sourceIndex) => ptr!.ref.sources[sourceIndex].ref.selected_blacks),
+      (selectedWhite(), (sourceIndex) => ptr!.ref.sources[sourceIndex].ref.selected_whites)]) {
 
       List<int> nextIndex = List.generate(ptr!.ref.num_sources, (index) => 0);
 
@@ -1130,9 +1160,9 @@ class ThorMetadataState with ChangeNotifier {
   }
 
   void swapBlackWhite() {
-    var tmp = List.of(selectedBlacks);
-    selectedBlacks = selectedWhites;
-    selectedWhites = tmp;
+    var tmp = List.of(selectedBlack());
+    GlobalState.preferences.set('Archive selected Black', selectedWhite());
+    GlobalState.preferences.set('Archive selected White', tmp);
     notifyListeners();
     _setFilters();
   }

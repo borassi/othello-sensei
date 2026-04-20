@@ -211,6 +211,14 @@ bool IncludeAllSources(ThorMetadata thor_metadata) {
   return true;
 }
 
+namespace {
+const std::vector<bool> kIncludeTrue = {true, false};
+const std::vector<bool> kIncludeFalse = {false};
+std::vector<bool> ToValues(bool include) {
+  return include ? kIncludeTrue : kIncludeFalse;
+}
+}  // namespace
+
 void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) {
   if (state.IsModified() || thor_ == nullptr) {
     return;
@@ -244,9 +252,13 @@ void Engine::EvaluateThor(const EvaluateParams& params, EvaluationState& state) 
     }
 
     if (include_all_sources || !blacks.empty() || !whites.empty() || !tournaments.empty()) {
+      auto xot_values = ToValues(source.include_xot);
+      auto bot_values = ToValues(source.include_bot);
+
       games.Merge(thor_->GetGames(
           source.name, *sequence_opt, filters.max_games, blacks, whites,
-          tournaments, (short) filters.start_year, (short) filters.end_year));
+          tournaments, (short) filters.start_year, (short) filters.end_year,
+          xot_values, bot_values));
     }
   }
   state.SetThor(games);

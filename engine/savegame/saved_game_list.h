@@ -65,7 +65,9 @@ class SavedGameList : public GenericSource {
       const std::vector<std::string>& whites = {},
       const std::vector<std::string>& tournaments = {},
       short start_year = SHRT_MIN,
-      short end_year = SHRT_MAX) const override;
+      short end_year = SHRT_MAX,
+      std::vector<bool> xot_values = {false},
+      std::vector<bool> bot_values = {false}) const override;
 
   int NumGames() const override { return (int) games_.size(); }
 

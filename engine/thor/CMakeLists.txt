@@ -28,6 +28,7 @@ target_link_libraries(
         game
         LINK_PRIVATE
         board
+        misc
         sequence
 )
 

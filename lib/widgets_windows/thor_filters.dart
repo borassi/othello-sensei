@@ -26,6 +26,55 @@ import '../widgets_spacers/margins.dart';
 import '../widgets_utils/text.dart';
 import '../widgets_utils/misc.dart';
 
+class ToggleWidget extends StatelessWidget {
+  final double squareSize;
+  final String type;
+
+  const ToggleWidget(this.squareSize, this.type, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+            height: squareSize,
+            width: squareSize,
+            child:  ListenableBuilder(
+                listenable: GlobalState.thorMetadata,
+                builder: (BuildContext context, Widget? child) {
+                  if (type == "XOT") {
+                    return SenseiToggle(
+                        initialValue: GlobalState.thorMetadata.includeXot(),
+                        onChanged: (bool? value) {
+                          if (value != null) {
+                            GlobalState.thorMetadata.setIncludeXot(value);
+                          }
+                        }
+                    );
+                  } else if (type == "bots") {
+                    return SenseiToggle(
+                        initialValue: GlobalState.thorMetadata.includeBot(),
+                        onChanged: (bool? value) {
+                          if (value != null) {
+                            GlobalState.thorMetadata.setIncludeBot(value);
+                          }
+                        }
+                    );
+                  } else {
+                    throw Exception("Invalid type $type for archive toggle");
+                  }
+                }
+            )
+        ),
+        const Margin.internal(),
+        Expanded(
+            child: LargeText("Include $type", intrinsicSize: true),
+        )
+      ]
+    );
+  }
+}
+
 class ThorFiltersWidget extends StatelessWidget {
   final double squareSize;
 
@@ -51,8 +100,8 @@ class ThorFiltersWidget extends StatelessWidget {
           items: (filter, infiniteScrollProps) => players,
           autoValidateMode: AutovalidateMode.always,
           selectedItems: black
-              ? GlobalState.thorMetadata.selectedBlacks
-              : GlobalState.thorMetadata.selectedWhites,
+              ? GlobalState.thorMetadata.selectedBlack()
+              : GlobalState.thorMetadata.selectedWhite(),
           popupProps: PopupPropsMultiSelection.menu(
             showSearchBox: true,
             fit: FlexFit.loose,
@@ -156,6 +205,11 @@ class ThorFiltersWidget extends StatelessWidget {
                         Expanded(child: playerSearch(context, false)),
                       ],
                     ),
+                    const Margin.internal(),
+                    ToggleWidget(squareSize, 'XOT'),
+                    const Margin.internal(),
+                    ToggleWidget(squareSize, 'bots'),
+                    const Margin.internal(),
                     const Spacer(),
                     SizedBox(
                       height: squareSize,

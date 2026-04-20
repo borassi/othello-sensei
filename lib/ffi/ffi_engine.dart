@@ -608,6 +608,12 @@ final class ThorSourceMetadata extends ffi.Struct {
 
   @ffi.Bool()
   external bool is_saved_games_folder;
+
+  @ffi.Bool()
+  external bool include_xot;
+
+  @ffi.Bool()
+  external bool include_bot;
 }
 
 final class ThorMetadata extends ffi.Struct {

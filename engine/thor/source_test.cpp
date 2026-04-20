@@ -67,14 +67,18 @@ class ThorSourceTest : public testing::Test {
       "e6d6c5f6f5e3",
       ""
     };
-    std::vector<Sequence> sequences;
 
     for (int year = 2023; year >= 2022; year--) {
       auto& thor_games = year == 2022 ? thor_games_2022 : thor_games_2023;
       auto games = year == 2022 ? games_2022 : games_2023;
       for (int i = 0; i < games.size(); ++i) {
-        sequences.push_back(Sequence(games[i]));
-        std::vector<char> game = StoredGame(i % tournaments.size(), i % players.size(), (i+1) % players.size(), 12, -4, games[i]);
+        std::vector<char> game = StoredGame(
+            i % tournaments.size(),
+            i % players.size(),
+            (i+1) % players.size(),
+            12,
+            -4,
+            games[i]);
         thor_games.write(game.data(), game.size());
       }
     }
@@ -83,9 +87,6 @@ class ThorSourceTest : public testing::Test {
   void TearDown() override {
     fs::remove_all(kFolder);
   }
-
- protected:
-  std::vector<Game> games_;
 };
 
 TEST_F(ThorSourceTest, Basic) {
@@ -348,4 +349,113 @@ TYPED_TEST(SourceTest, EndToEnd) {
     ASSERT_EQ(actual.examples, std::vector<Game>(expected.begin(), std::min(expected.end(), expected.begin() + max_games)));
   }
   fs::remove_all(kFolder);
+}
+
+class XotBotSourceTest : public testing::Test {
+  void SetUp() override {
+    fs::remove_all(kFolder);
+    fs::create_directories(kFolder);
+    std::ofstream games_file(kFolder + "/WTH_2023.wtb", std::ios::binary);
+    std::ofstream players_file(kFolder + "/WTH.JOU", std::ios::binary);
+    std::ofstream tournaments_file(kFolder + "/WTH.TRN", std::ios::binary);
+
+    WriteHeader(games_file, 2023);
+    WriteHeader(players_file, 2023);
+    WriteHeader(tournaments_file, 2023);
+
+    std::vector<std::string> players = {"player0", "player1", "bot_player0 (author)", "bot_player1 (author)"};
+    std::vector<std::string> tournaments = {"tournament0", "tournament1 (XOT)"};
+
+    for (const std::string& s : players) {
+      std::string padded = PadString(s, 20);
+      players_file.write(padded.c_str(), 20);
+    }
+    for (const std::string& s : tournaments) {
+      std::string padded = PadString(s, 26);
+      tournaments_file.write(padded.c_str(), 26);
+    }
+
+    for (int i = 0; i < 4; ++i) {
+      // Game 0 is non-xot, non-bot.
+      // Game 1 is xot, non-bot.
+      // Game 2 is non-xot, bot.
+      // Game 3 is xot, bot.
+      std::vector<char> game = StoredGame(
+          i % tournaments.size(),
+          i < 2 ? 0 : 2,
+          i < 2 ? 1 : 3,
+          12,
+          -4,
+          "e6f4c3c4c5c6c7");
+      games_file.write(game.data(), game.size());
+    }
+  }
+
+  void TearDown() override {
+    fs::remove_all(kFolder);
+  }
+};
+
+TEST_F(XotBotSourceTest, ByBlackAll) {
+  Source source(kFolder);
+  auto games = source.GetGames(
+      Sequence("e6"),
+      100,
+      {"player0", "bot_player0 (author)"},
+      {},
+      {},
+      2022,
+      2024,
+      {true, false},
+      {true, false});
+  EXPECT_EQ(games.num_games, 4);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[0], source.AllGames()[1], source.AllGames()[2], source.AllGames()[3]));
+}
+
+TEST_F(XotBotSourceTest, ByWhiteBotXotOnly) {
+  Source source(kFolder);
+  auto games = source.GetGames(
+      Sequence("e6"),
+      100,
+      {},
+      {"player1", "bot_player1 (author)"},
+      {},
+      2023,
+      2023,
+      {true},
+      {true});
+  EXPECT_EQ(games.num_games, 1);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[3]));
+}
+
+TEST_F(XotBotSourceTest, ByTournamentBotOnly) {
+  Source source(kFolder);
+  auto games = source.GetGames(
+      Sequence("e6"),
+      100,
+      {},
+      {},
+      {"tournament0", "tournament1 (XOT)"},
+      2023,
+      2023,
+      {true, false},
+      {true});
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[2], source.AllGames()[3]));
+}
+
+TEST_F(XotBotSourceTest, ByYearBotXot) {
+  Source source(kFolder);
+  auto games = source.GetGames(
+      Sequence("e6"),
+      100,
+      {},
+      {},
+      {},
+      2023,
+      2023,
+      {true},
+      {true, false});
+  EXPECT_EQ(games.num_games, 2);
+  EXPECT_THAT(games.examples, UnorderedElementsAre(source.AllGames()[1], source.AllGames()[3]));
 }
