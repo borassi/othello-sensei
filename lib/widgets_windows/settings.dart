@@ -236,13 +236,13 @@ class Settings extends StatelessWidget {
     'Show unsupported CPU at startup',
     'Board on the right in horizontal mode',
     'Board color',
+    'Best move green, other yellow',
   ];
 
   static const _evalPreferences = [
     'Round evaluations',
     'Show extra data in evaluate mode',
     'Highlight distance from best move',
-    'Best move green, other yellow',
     'Highlight next move in analysis',
     'Highlight next moves outside analysis',
   ];
