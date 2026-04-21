@@ -116,6 +116,7 @@ class Main {
       }
       ToState(current_state_->NextState(moves.Move(i)), false);
     }
+    current_state_->SetPrimaryLine();
   }
 
   bool SetSequence(const std::string& sequence) {

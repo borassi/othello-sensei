@@ -188,7 +188,7 @@ bool highlightCase(int index) {
     return globalAnnotations.ref.next_state_primary.ref.moves[0] == index;
   }
   return GlobalState.preferences.get('Highlight next moves outside analysis') &&
-      annotations.first_child != nullptr && annotations.first_child.ref.valid &&
+      annotations.first_child != nullptr &&
       // Highlight only the played move and not the transpositions.
       annotations.moves[0] == index;
 }
