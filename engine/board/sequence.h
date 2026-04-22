@@ -367,13 +367,13 @@ namespace std {
   template<>
   struct hash<Sequence> {
     std::size_t operator()(const Sequence& s) const {
-      std::size_t hash = murmur64(42);
+      std::size_t hash = murmur(42);
       int last_quick = s.Size() - s.Size() % 8;
       for (auto* position = (int64_t*) s.Moves(); position < (int64_t*) (s.Moves() + last_quick); ++position) {
-        hash = CombineHashes(hash, murmur64(*position));
+        hash = CombineHashes(hash, murmur(*position));
       }
       for (Square* position = s.Moves() + last_quick; position < s.Moves() + s.Size(); ++position) {
-        hash = CombineHashes(hash, murmur64(*position));
+        hash = CombineHashes(hash, murmur(*position));
       }
       return hash;
     }
@@ -401,6 +401,7 @@ class SequenceCanonicalizer {
   }
 
   void Load(std::vector<char> serialized) {
+    std::cout << "Load canonicalizer!\n" << std::flush;
     const char* it = serialized.data();
     board_to_sequence_data_.reserve(serialized.size() / (sizeof(Board) + sizeof(int) + 3));
     while (it < serialized.data() + serialized.size()) {
@@ -414,7 +415,9 @@ class SequenceCanonicalizer {
       board_to_sequence_data.offset = it - serialized.data();
       it += board_to_sequence_data.size * board_to_sequence_data.num_sequences;
     }
+    std::cout << "Loaded canonicalizer 1!\n" << std::flush;
     serialized_board_to_sequences_ = std::move(serialized);
+    std::cout << "Loaded canonicalizer 2!\n" << std::flush;
   }
 
   void AddAll(const std::vector<Sequence>& sequences) {
