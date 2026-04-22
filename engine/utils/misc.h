@@ -164,13 +164,33 @@ constexpr inline Eval MinEval(Eval eval1, Eval eval2) {
 }
 void PrintSupportedFeatures();
 
-constexpr std::size_t murmur64(std::size_t h) {
-  h ^= h >> 33;
-  h *= 0xff51afd7ed558ccdL;
-  h ^= h >> 33;
-  h *= 0xc4ceb9fe1a85ec53L;
-  h ^= h >> 33;
-  return h;
+template <typename T>
+constexpr T murmur_hash(T h) {
+  if constexpr (sizeof(T) == 8) {
+    // 64-bit architecture
+    // Note: Use ULL instead of L, because L is 32-bit on some platforms (like Windows/WASM)
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccdULL;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53ULL;
+    h ^= h >> 33;
+    return h;
+  } else if constexpr (sizeof(T) == 4) {
+    // 32-bit architecture (WebAssembly)
+    // Standard Murmur3 32-bit finalizer
+    h ^= h >> 16;
+    h *= 0x85ebca6bUL;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35UL;
+    h ^= h >> 16;
+    return h;
+  } else {
+    return h;
+  }
+}
+
+constexpr std::size_t murmur(std::size_t h) {
+  return murmur_hash<std::size_t>(h);
 }
 
 constexpr std::size_t CombineHashes(std::size_t h1, std::size_t h2) {
