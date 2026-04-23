@@ -1,0 +1,65 @@
+<!--
+Copyright 2026 Michele Borassi
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Othello Sensei WASM</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+</head>
+<body>
+
+<h2>Othello Sensei</h2>
+<div id="status">WASM Loading...</div>
+
+<div class="controls">
+  <button onclick="handleAction('newGame')" title="New Game">
+    <span class="material-symbols-rounded">restart_alt</span>
+  </button>
+  <button onclick="handleAction('toLastImportantNode')" title="First Position">
+    <span class="material-symbols-rounded">keyboard_double_arrow_left</span>
+  </button>
+  <button onclick="handleAction('undo')" title="Undo">
+    <span class="material-symbols-rounded">chevron_left</span>
+  </button>
+  <button onclick="handleAction('redo')" title="Redo">
+    <span class="material-symbols-rounded">chevron_right</span>
+  </button>
+  <button onclick="handleAction('stop')" title="Stop">
+    <span class="material-symbols-rounded">stop</span>
+  </button>
+</div>
+
+<div class="board" id="othello-board">
+</div>
+
+<div class="stats-container">
+  <div class="stats-row">
+    <span id="stat-positions"></span>
+    <span id="stat-pos-sec"></span>
+  </div>
+  <div class="stats-row">
+    <span id="stat-time"></span>
+    <span id="stat-empties">Empties: 60</span>
+  </div>
+</div>
+
+<script src="wasm_bindings.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

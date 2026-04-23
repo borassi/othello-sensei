@@ -5,6 +5,7 @@ gradlew
 assets/archive/PlayOK
 assets/archive/OthelloQuest
 build
+build_wasm
 /captures
 .externalNativeBuild
 .cxx

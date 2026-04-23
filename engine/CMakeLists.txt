@@ -1,4 +1,4 @@
-# Copyright 2023-2025 Michele Borassi
+# Copyright 2023-2026 Michele Borassi
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,22 @@ project("othellosensei" CXX)
 # Silences some warnings with the absl library.
 add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
 add_compile_options(-Wno-gcc-compat)
+
+if(EMSCRIPTEN)
+    # Suppress warnings about using deprecated Emscripten macros in 3rd party libs
+    add_compile_options(
+            "-Wno-deprecated"
+            "-Wno-deprecated-pragma"
+            "-Wno-deprecated-declarations"
+    )
+    # Apply optimizations to ALL targets in the project
+    add_compile_options(
+            "-O3"
+            "-flto"
+            "-pthread"
+            "-msimd128"
+    )
+endif()
 
 include(FetchContent)
 
@@ -99,3 +115,7 @@ add_subdirectory(savegame)
 add_subdirectory(thor)
 add_subdirectory(utils)
 add_subdirectory(xot)
+
+if (EMSCRIPTEN)
+    add_subdirectory(wasm)
+ENDIF()

@@ -223,6 +223,9 @@ const InstructionSet kInstructionSet;
 bool CPUHasBMI2() {
   return kInstructionSet.AVX2() && kInstructionSet.BMI2(); }
 bool CPUHasPopcnt() { return kInstructionSet.POPCNT(); }
+#elif __EMSCRIPTEN__
+bool CPUHasBMI2() { return false; }
+bool CPUHasPopcnt() { return false; }
 #else
 bool CPUHasBMI2() { return __builtin_cpu_supports("bmi2"); }
 bool CPUHasPopcnt() { return __builtin_cpu_supports("popcnt"); }

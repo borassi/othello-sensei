@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,18 +37,22 @@ class Thor {
       bool rebuild_games_small_hash = false)
       : folder_(folder), saved_files_path_(saved_files_path), sources_() {
     FutureVector sources_futures;
-    for (const auto& entry : GetAllFiles(folder, /*include_files=*/true, /*include_directories=*/true)) {
-      if (fs::is_directory(entry)) {
-        sources_futures.push_back(
-            std::move(std::async(std::launch::async, &Thor::LoadSource, this, entry, rebuild_games_order,
-                       rebuild_games_small_hash)));
-      }
+    auto source_read_launch = std::launch::async;
+    #ifdef __EMSCRIPTEN__
+    // We're running this on the main thread, which causes a deadlock in WASM.
+    source_read_launch = std::launch::deferred;
+    #endif
+
+    for (const auto& entry : GetAllFiles(folder, /*include_files=*/false, /*include_directories=*/true)) {
+      sources_futures.push_back(
+          std::move(std::async(source_read_launch, &Thor::LoadSource, this, entry, rebuild_games_order,
+                     rebuild_games_small_hash)));
     }
     FutureVector saved_games_futures = LoadAllSavedGameLists();
     std::unique_ptr<std::future<void>> load_canonicalizer_future = nullptr;
     if (!rebuild_canonicalizer && FileExists(CanonicalizerPath())) {
       load_canonicalizer_future = std::make_unique<std::future<void>>(
-          std::async(std::launch::async, &Thor::LoadCanonicalizer, this));
+          std::async(source_read_launch, &Thor::LoadCanonicalizer, this));
     }
     ParseGameListFutures(sources_futures);
     ParseGameListFutures(saved_games_futures);
