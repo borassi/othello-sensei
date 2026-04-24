@@ -355,3 +355,47 @@ model and always add `Give me specific instructions for Flutter` to the prompt (
 generic responses that don't work for a Flutter app).
 
 If also Gemini fails, write me at michele.borassi@gmail.com.
+
+### Can I embed Sensei in my HTML page?
+
+Yes (EXPERIMENTAL AND NOT TESTED, YET). Othello Sensei is compiled to WebAssembly (WASM), allowing
+you to run the engine directly in modern web browsers with near-native performance.
+
+#### Standard use-case: using pre-built binaries
+
+Use this method if you only want to use standard features (evaluate, book, Thor, etc.). The complete
+list of functions you can use are in engine/wasm/wasm_bindings.cpp.
+
+What to do:
+
+1.  Copy the following artifacts from installers/wasm/ to your web server:
+    - wasm_bindings.js: The JavaScript "glue" code that loads the engine.
+    - wasm_bindings.wasm: The compiled C++ engine.
+    - wasm_bindings.data: The pre-loaded assets (evaluation patterns and opening books).
+
+2.  Copy the parts of index.html and app.js that are relevant to your use-case.
+
+NOTE: For local testing, run python3 server.py and open `http://localhost:8080` in your browser. You
+can't just open the HTML file, because for security reasons the browser will not be able to access
+the WASM files on your computer.
+
+NOTE: For deployment, you do not need server.py. You can use any web server (Nginx, Apache, GitHub
+Pages), provided you configure the server to send the following headers:
+-   Cross-Origin-Opener-Policy: same-origin
+-   Cross-Origin-Embedder-Policy: require-corp
+
+#### Advanced use-case: recompiling Sensei
+
+Use this method if you want to use non-standard features (e.g.,
+functions not in `engine/wasm/wasm_bindings.cpp`).
+
+1.  Modify the C++ code (probably you just need to touch `engine/wasm/wasm_bindings.cpp`).
+2.  Run the following commands.
+    ```bash
+    cd MY_SENSEI_FOLDER
+    emcmake cmake -S engine -B build_wasm && \
+    cmake --build build_wasm -j4 --target=wasm_bindings && \
+    python3 installers/wasm/server.py
+    ```
+3.  Follow the instructions on the standard use-case, but with the new wasm files that were
+    automatically copied to `installers/wasm`.

@@ -36,26 +36,7 @@ target_link_options(wasm_bindings PRIVATE
         "-pthread"
         "--no-entry"
         "-sINITIAL_MEMORY=2147483648"   # 2GB
-)
-
-# Copy the HTML page, CSS, JS, and Python file to the destination
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/index.html
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/style.css
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/app.js
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/server.py
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-# Copy the assets folder from the root of the project into the build directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../assets/
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/assets/)
-
-# Update the Emscripten link options to preload the new folder
-target_link_options(wasm_bindings PRIVATE
-        # Tells Emscripten: "Take the physical assets/ folder and mount it at /assets/ in RAM"
-        "--preload-file" "${CMAKE_CURRENT_BINARY_DIR}/assets/@/assets/"
+        "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/../../assets@/assets"
 )
 
 # Define the destination directory relative to the wasm/ folder.
@@ -71,12 +52,6 @@ add_custom_command(TARGET wasm_bindings POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:wasm_bindings>/wasm_bindings.js ${INSTALLER_WASM_DIR}/
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:wasm_bindings>/wasm_bindings.wasm ${INSTALLER_WASM_DIR}/
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:wasm_bindings>/wasm_bindings.data ${INSTALLER_WASM_DIR}/
-
-        # 3. Copy the static web files
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/index.html ${INSTALLER_WASM_DIR}/
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/style.css ${INSTALLER_WASM_DIR}/
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/app.js ${INSTALLER_WASM_DIR}/
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/server.py ${INSTALLER_WASM_DIR}/
 
         COMMENT "Copying WASM build artifacts to installers/wasm/"
 )
