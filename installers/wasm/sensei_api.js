@@ -19,6 +19,29 @@ export class SenseiAPI {
   constructor() {
     this._engine = null;
     this._enginePtr = null;
+    // Default evaluation params.
+    this.params = {
+      lower: -63,
+      upper: 63,
+      max_positions: 10000000n,
+      max_time_first_eval: 0.1,
+      max_time_next_evals: 1.0,
+      max_time_analysis: 1.0,
+      max_time_play: 1.0,
+      error_play: 20.0,
+      max_error_move_play: 6.0,
+      n_threads: navigator.hardwareConcurrency,
+      delta: 6.0,
+      approx: false,
+      use_book: true,
+      reevaluate_during_analysis: false,
+      thor_filters: {
+        max_games: 100,
+        start_year: 1900,
+        end_year: 3000
+      },
+      sensei_action: 0  // SENSEI_INVALID_ACTION - we set it to SENSEI_EVALUATES later.
+    };
 
     // The Proxy intercepts property access
     return new Proxy(this, {
@@ -51,7 +74,24 @@ export class SenseiAPI {
       "assets/xot/openingslarge.txt"
     );
 
-    this._engine.newGame(this._enginePtr);
-    this._engine.evaluate(this._enginePtr);
+    this.params.sensei_action = this._engine.SenseiAction.Evaluates;
+
+    this.updateParams({});
+    this.newGame();
+    this.evaluate();
+  }
+
+  updateParams(newValues) {
+    // Handle nested struct merging
+    if (newValues.thor_filters) {
+      this.params.thor_filters = { ...this.params.thor_filters, ...newValues.thor_filters };
+    }
+
+    this.params = { ...this.params, ...newValues };
+
+    console.log(this.params);
+
+    // Proxy automatically injects enginePtr
+    this.setEvaluateParams(this.params);
   }
 }

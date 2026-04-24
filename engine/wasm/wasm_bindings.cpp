@@ -175,6 +175,37 @@ EMSCRIPTEN_BINDINGS(othello_module) {
         .field("black_turn", &BoardUpdate::black_turn)
         .field("last_move", &BoardUpdate::last_move);
 
+    enum_<SenseiAction>("SenseiAction")
+        .value("InvalidAction", SENSEI_INVALID_ACTION)
+        .value("Inactive",      SENSEI_INACTIVE)
+        .value("Evaluates",     SENSEI_EVALUATES)
+        .value("PlaysBlack",    SENSEI_PLAYS_BLACK)
+        .value("PlaysWhite",    SENSEI_PLAYS_WHITE)
+        .value("PlaysBoth",     SENSEI_PLAYS_BOTH);
+
+    value_object<ThorParams>("ThorParams")
+        .field("max_games", &ThorParams::max_games)
+        .field("start_year",  &ThorParams::start_year)
+        .field("end_year",  &ThorParams::end_year);
+
+    value_object<EvaluateParams>("EvaluateParams")
+        .field("lower",                      &EvaluateParams::lower)
+        .field("upper",                      &EvaluateParams::upper)
+        .field("max_positions",              &EvaluateParams::max_positions)
+        .field("max_time_first_eval",        &EvaluateParams::max_time_first_eval)
+        .field("max_time_next_evals",        &EvaluateParams::max_time_next_evals)
+        .field("max_time_analysis",          &EvaluateParams::max_time_analysis)
+        .field("max_time_play",              &EvaluateParams::max_time_play)
+        .field("error_play",                 &EvaluateParams::error_play)
+        .field("max_error_move_play",        &EvaluateParams::max_error_move_play)
+        .field("n_threads",                  &EvaluateParams::n_threads)
+        .field("delta",                      &EvaluateParams::delta)
+        .field("approx",                     &EvaluateParams::approx)
+        .field("use_book",                   &EvaluateParams::use_book)
+        .field("reevaluate_during_analysis", &EvaluateParams::reevaluate_during_analysis)
+        .field("thor_filters",               &EvaluateParams::thor_filters)
+        .field("sensei_action",              &EvaluateParams::sensei_action);
+
     // Bind the initialization logic
     function("mainInit", optional_override([](
       std::string evals, std::string book, std::string thor,
@@ -194,7 +225,7 @@ EMSCRIPTEN_BINDINGS(othello_module) {
 
       return reinterpret_cast<uintptr_t>(main);
     }), allow_raw_pointers());
-// --- 3. Core Engine Actions ---
+    // --- 3. Core Engine Actions ---
     function("newGame",             &wrap<NewGame>::call);
     function("playMove",            &wrap<PlayMove>::call);
     function("undo",                &wrap<Undo>::call);
