@@ -40,7 +40,8 @@ export class SenseiAPI {
         start_year: 1900,
         end_year: 3000
       },
-      sensei_action: 0  // SENSEI_INVALID_ACTION - we set it to SENSEI_EVALUATES later.
+      sensei_action: 0,  // SENSEI_INVALID_ACTION - we set it to SENSEI_EVALUATES later.
+      evaluate_only_starting_position: false
     };
 
     // The Proxy intercepts property access

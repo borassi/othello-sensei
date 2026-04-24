@@ -358,31 +358,31 @@ If also Gemini fails, write me at michele.borassi@gmail.com.
 
 ### Can I embed Sensei in my HTML page?
 
-Yes (EXPERIMENTAL AND NOT TESTED, YET). Othello Sensei is compiled to WebAssembly (WASM), allowing
-you to run the engine directly in modern web browsers with near-native performance.
+Yes (experimental). Othello Sensei is compiled to WebAssembly (WASM), allowing you to run the engine
+directly in modern web browsers with near-native performance.
 
 #### Standard use-case: using pre-built binaries
 
-Use this method if you only want to use standard features (evaluate, book, Thor, etc.). The complete
+Use this method if you only want to use standard features (evaluate, book, etc.). The complete
 list of functions you can use are in engine/wasm/wasm_bindings.cpp.
 
 What to do:
 
-1.  Copy the following artifacts from installers/wasm/ to your web server:
-    - wasm_bindings.js: The JavaScript "glue" code that loads the engine.
-    - wasm_bindings.wasm: The compiled C++ engine.
-    - wasm_bindings.data: The pre-loaded assets (evaluation patterns and opening books).
-
-2.  Copy the parts of index.html and app.js that are relevant to your use-case.
-
-NOTE: For local testing, run python3 server.py and open `http://localhost:8080` in your browser. You
-can't just open the HTML file, because for security reasons the browser will not be able to access
-the WASM files on your computer.
+1.  Download the entire installers/wasm folder.
+2.  Run python3 server.py from the wasm folder.
+3.  Open http://localhost:8080/full_board.html or http://localhost:8080/minimal.html and see if they
+    work (you can't simply open the HTML files because the browser does not allow them to access
+    other files in your disk, for security reasons).
+4.  If you want a full board managed by Sensei, adapt index.html to your needs. Test it by
+    refreshing http://localhost:8080/full_board.html. you want to evaluate positions coming from
+    your website, start from minimal.html.
 
 NOTE: For deployment, you do not need server.py. You can use any web server (Nginx, Apache, GitHub
 Pages), provided you configure the server to send the following headers:
 -   Cross-Origin-Opener-Policy: same-origin
 -   Cross-Origin-Embedder-Policy: require-corp
+
+NOTE: If you deploy outside of GitHub, you also don't need coi-serviceworker.js.
 
 #### Advanced use-case: recompiling Sensei
 

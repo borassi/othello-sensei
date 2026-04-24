@@ -3,7 +3,10 @@
 import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-os.chdir('installers/wasm')
+try:
+  os.chdir('installers/wasm')
+except OSError:
+  pass
 
 class WASMHandler(SimpleHTTPRequestHandler):
   def end_headers(self):

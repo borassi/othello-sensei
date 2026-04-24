@@ -27,30 +27,6 @@ using namespace emscripten;
 static val js_set_board = val::undefined();
 static val js_update_annotations = val::undefined();
 
-// Define your default parameters globally or statically
-static constexpr EvaluateParams kDefaultEvaluateParams = {
-    -63,
-    63,
-    10000000,
-    0.1,
-    1.0,
-    1.0,
-    1.0,
-    20.0,
-    6.0,
-    1,
-    6,
-    false,
-    true,
-    false,
-    {
-      100,
-      1900,
-      3000
-    },
-    SenseiAction::SENSEI_EVALUATES
-};
-
 // These C-style functions match the typedefs in your header
 // and forward the calls to the stored JavaScript functions.
 void WasmSetBoard(struct BoardUpdate b) {
@@ -116,8 +92,17 @@ emscripten::val AnnotationToJS(const struct Annotations* ann) {
   return obj;
 }
 
-// Updated function to return the current annotation and its children
-emscripten::val GetEvaluations(uintptr_t ptr, int thread_id) {
+// Return the evaluation of the current node as a Javascript objects.
+emscripten::val GetCurrentEvaluation(uintptr_t ptr, int thread_id) {
+  struct Annotations* ann = GetCurrentAnnotations(reinterpret_cast<void*>(ptr), thread_id);
+  if (ann == nullptr || !ann->valid) {
+    return emscripten::val::null();
+  }
+  return AnnotationToJS(ann);
+}
+
+// Return the children evaluations as Javascript objects.
+emscripten::val GetChildrenEvaluations(uintptr_t ptr, int thread_id) {
   emscripten::val result = emscripten::val::array();
 
   struct Annotations* ann = GetCurrentAnnotations(reinterpret_cast<void*>(ptr), thread_id);
@@ -218,11 +203,6 @@ EMSCRIPTEN_BINDINGS(othello_module) {
           WasmSetBoard, WasmUpdateAnnotations, WasmUpdateTimers, WasmSendMessage
       );
 
-      EvaluateParams params = kDefaultEvaluateParams;
-      params.n_threads = static_cast<int>(std::thread::hardware_concurrency());
-      std::cout << "Detected threads: " << params.n_threads << std::endl << std::flush;
-      SetEvaluateParams(main, &params);
-
       return reinterpret_cast<uintptr_t>(main);
     }), allow_raw_pointers());
     // --- 3. Core Engine Actions ---
@@ -278,8 +258,11 @@ EMSCRIPTEN_BINDINGS(othello_module) {
     function("setEvaluateParams",    &wrap_st<SetEvaluateParams>::call);
 
     // --- 8. Metadata & Annotations ---
-    function("getEvaluations", optional_override([](uintptr_t ptr, int thread_id) {
-      return GetEvaluations(ptr, thread_id);
+    function("getCurrentEvaluation", optional_override([](uintptr_t ptr, int thread_id) {
+      return GetCurrentEvaluation(ptr, thread_id);
+    }));
+    function("getChildrenEvaluations", optional_override([](uintptr_t ptr, int thread_id) {
+      return GetChildrenEvaluations(ptr, thread_id);
     }));
     function("getCurrentAnnotations", &wrap<GetCurrentAnnotations>::call, allow_raw_pointers());
     function("getStartAnnotations",   &wrap<GetStartAnnotations>::call,   allow_raw_pointers());

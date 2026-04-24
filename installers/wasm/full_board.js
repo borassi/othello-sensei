@@ -18,9 +18,11 @@ import { SenseiAPI } from './sensei_api.js';
 const senseiApi = new SenseiAPI();
 
 // Initialize the API class
-senseiApi.init(window.onSetBoard, window.onUpdateAnnotations).then(() => {
-  statusEl.innerText = "Engine Ready";
-});
+(async () => {
+    senseiApi.init(window.onSetBoard, window.onUpdateAnnotations).then(() => {
+      statusEl.innerText = "Engine Ready";
+    });
+})()
 
 // Create this formatter once outside your functions for performance
 const evalFormatter = new Intl.NumberFormat('en-US', {
@@ -63,6 +65,7 @@ for (let i = 0; i < 64; i++) {
 document.getElementById('othello-board').addEventListener('contextmenu', (e) => {
   e.preventDefault(); // Prevent the default browser right-click menu
   senseiApi.undo();
+  senseiApi.evaluate();
 });
 
 document.getElementById('btn-new-game').addEventListener('click', () => {
@@ -144,7 +147,7 @@ window.onUpdateAnnotations = (threadId, finished, move) => {
   }
 
   // 2. Fetch the new evaluation array from C++
-  const children = senseiApi.getEvaluations(threadId);
+  const children = senseiApi.getChildrenEvaluations(threadId);
   if (!children || children.length === 0) return;
 
   // 3. First loop: compute the best evaluation
