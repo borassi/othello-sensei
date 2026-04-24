@@ -13,12 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { SenseiAPI } from './sensei_api.js';
+
+const senseiApi = new SenseiAPI();
+
+// Initialize the API class
+senseiApi.init(window.onSetBoard, window.onUpdateAnnotations).then(() => {
+  statusEl.innerText = "Engine Ready";
+});
+
+// Create this formatter once outside your functions for performance
+const evalFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    signDisplay: 'always' // Forces + for positive and 0, - for negative
+});
+
+// Formats large numbers like Flutter's prettyPrintDouble (e.g., 1.5M, 24K)
+const compactFormatter = new Intl.NumberFormat('en-US', {
+    notation: "compact",
+    maximumFractionDigits: 1
+});
 
 const boardEl = document.getElementById('othello-board');
-const consoleEl = document.getElementById('console-output');
 const statusEl = document.getElementById('status');
-let enginePtr = null;
-let engine = null;
 
 // 1. Create the Board UI (0-63)// 1. Create the Board UI (0-63)
 for (let i = 0; i < 64; i++) {
@@ -44,25 +62,37 @@ for (let i = 0; i < 64; i++) {
 
 document.getElementById('othello-board').addEventListener('contextmenu', (e) => {
   e.preventDefault(); // Prevent the default browser right-click menu
-  handleAction('undo');
+  senseiApi.undo();
+});
+
+document.getElementById('btn-new-game').addEventListener('click', () => {
+  senseiApi.newGame();
+  senseiApi.evaluate();
+});
+
+document.getElementById('btn-first-pos').addEventListener('click', () => {
+  senseiApi.toLastImportantNode();
+  senseiApi.evaluate();
+});
+
+document.getElementById('btn-undo').addEventListener('click', () => {
+  senseiApi.undo();
+  senseiApi.evaluate();
+});
+
+document.getElementById('btn-redo').addEventListener('click', () => {
+  senseiApi.redo();
+  senseiApi.evaluate();
+});
+
+document.getElementById('btn-stop').addEventListener('click', () => {
+  senseiApi.stop();
 });
 
 function handleSquareClick(index) {
-  if (!enginePtr) return;
-  engine.playMove(enginePtr, index, false);
-  engine.evaluate(enginePtr);
+  senseiApi.playMove(index, false);
+  senseiApi.evaluate();
 }
-
-function handleAction(action) {
-  if (!enginePtr) return;
-  engine[action](enginePtr);
-  if (action !== 'stop') {
-    engine.evaluate(enginePtr);
-  }
-}
-
-// 2. Define the Thread-Safe Global Callbacks for C++
-window.onSendMessage = (msg) => {};
 
 window.onSetBoard = (data) => {
   const player = BigInt(data.player);
@@ -101,35 +131,20 @@ window.onSetBoard = (data) => {
   document.getElementById('stat-empties').innerText = `Empties: ${empties}`;
 };
 
-window.onUpdateTimers = (t1, t2) => {
-    statusEl.innerText = `B: ${t1.toFixed(1)}s | W: ${t2.toFixed(1)}s`;
-};
-
-// Create this formatter once outside your functions for performance
-const evalFormatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    signDisplay: 'always' // Forces + for positive and 0, - for negative
-});
-
-// Formats large numbers like Flutter's prettyPrintDouble (e.g., 1.5M, 24K)
-const compactFormatter = new Intl.NumberFormat('en-US', {
-    notation: "compact",
-    maximumFractionDigits: 1
-});
+window.onUpdateTimers = (t1, t2) => {};
 
 window.onUpdateAnnotations = (threadId, finished, move) => {
   // 1. Clear all old annotations from the board
   for (let i = 0; i < 64; i++) {
-    const ann = document.getElementById(`annotation-${i}`);
-    if (ann) {
-      ann.innerText = '';
-      ann.classList.remove('optimal');
+    const annotation = document.getElementById(`annotation-${i}`);
+    if (annotation) {
+      annotation.innerText = '';
+      annotation.classList.remove('optimal');
     }
   }
 
   // 2. Fetch the new evaluation array from C++
-  const children = engine.getEvaluations(enginePtr, threadId);
+  const children = senseiApi.getEvaluations(threadId);
   if (!children || children.length === 0) return;
 
   // 3. First loop: compute the best evaluation
@@ -189,33 +204,6 @@ window.onUpdateAnnotations = (threadId, finished, move) => {
 
   // 6. Continue evaluating if not finished
   if (!finished) {
-    engine.evaluate(enginePtr);
+    senseiApi.evaluate();
   }
 };
-
-// 3. The Promise-based Starter (This fixes the 'expectedDataFileDownloads' error)
-sensei_wasm_generated().then((instance) => {
-  // Capture the fully initialized WASM instance
-  engine = instance;
-
-  // Now call your initialization function
-  enginePtr = engine.mainInit(
-    "assets/pattern_evaluator.dat",
-    "assets/book",
-    "assets/archive",
-    "",
-    "assets/xot/openingssmall.txt",
-    "assets/xot/openingslarge.txt",
-    window.onSetBoard,
-    window.onUpdateAnnotations
-  );
-
-  // Start the game
-  engine.newGame(enginePtr);
-  engine.evaluate(enginePtr);
-
-  statusEl.innerText = "WASM ready";
-}).catch((err) => {
-  console.error("Failed to start engine:", err);
-  statusEl.innerText = "Engine Load Error";
-});

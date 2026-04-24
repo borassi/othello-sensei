@@ -29,19 +29,19 @@ limitations under the License.
 <div id="status">WASM Loading...</div>
 
 <div class="controls">
-  <button onclick="handleAction('newGame')" title="New Game">
+  <button id="btn-new-game" title="New Game">
     <span class="material-symbols-rounded">restart_alt</span>
   </button>
-  <button onclick="handleAction('toLastImportantNode')" title="First Position">
+  <button id="btn-first-pos" title="First Position">
     <span class="material-symbols-rounded">keyboard_double_arrow_left</span>
   </button>
-  <button onclick="handleAction('undo')" title="Undo">
+  <button id="btn-undo" title="Undo">
     <span class="material-symbols-rounded">chevron_left</span>
   </button>
-  <button onclick="handleAction('redo')" title="Redo">
+  <button id="btn-redo" title="Redo">
     <span class="material-symbols-rounded">chevron_right</span>
   </button>
-  <button onclick="handleAction('stop')" title="Stop">
+  <button id="btn-stop" title="Stop">
     <span class="material-symbols-rounded">stop</span>
   </button>
 </div>
@@ -60,10 +60,8 @@ limitations under the License.
   </div>
 </div>
 
-<!--Loads the Sensei engine-->
-<script src="sensei_wasm_generated.js"></script>
 <!--Renders Sensei's evaluations in the web page-->
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 
 </body>
 </html>

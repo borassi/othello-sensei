@@ -44,8 +44,9 @@ target_link_options(wasm_bindings PRIVATE
         # Ensure headroom for the timers, initializations, ...
         # Should be 5 in total, we put 8 for safety.
         "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency+8"
-        "-sMODULARIZE=1"
+        "-sMODULARIZE=1"  # Use it as a module so that you can e.g. load 2 of them.
         "-sEXPORT_NAME=\"sensei_wasm_generated\""
+        "-sEXPORT_ES6=1"  # To enable importing it into another .js file.
 )
 
 # Define the destination directory relative to the wasm/ folder.
