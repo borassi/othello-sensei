@@ -26,9 +26,6 @@ using namespace emscripten;
 // don't carry "context" (like JS 'this' or closures).
 static val js_set_board = val::undefined();
 static val js_update_annotations = val::undefined();
-static val js_set_thor_metadata = val::undefined();
-static val js_update_timers = val::undefined();
-static val js_send_message = val::undefined();
 
 // Define your default parameters globally or statically
 static constexpr EvaluateParams kDefaultEvaluateParams = {
@@ -56,7 +53,7 @@ static constexpr EvaluateParams kDefaultEvaluateParams = {
 
 // These C-style functions match the typedefs in your header
 // and forward the calls to the stored JavaScript functions.
-void c_set_board(struct BoardUpdate b) {
+void WasmSetBoard(struct BoardUpdate b) {
   // We pass the struct fields as arguments to the main thread.
   // player/opponent are BitPatterns (uint64_t), which JS receives as BigInt.
   MAIN_THREAD_EM_ASM({
@@ -119,7 +116,7 @@ emscripten::val AnnotationToJS(const struct Annotations* ann) {
   return obj;
 }
 // Updated function to return the current annotation and its children
-emscripten::val get_evaluations(uintptr_t ptr, int thread_id) {
+emscripten::val GetEvaluations(uintptr_t ptr, int thread_id) {
   emscripten::val result = emscripten::val::array();
 
   struct Annotations* ann = GetCurrentAnnotations(reinterpret_cast<void*>(ptr), thread_id);
@@ -134,7 +131,7 @@ emscripten::val get_evaluations(uintptr_t ptr, int thread_id) {
   return result;
 }
 
-void c_update_annotations(unsigned int thread_id, bool finished, int move) {
+void WasmUpdateAnnotations(unsigned int thread_id, bool finished, int move) {
   MAIN_THREAD_EM_ASM({
                          if (typeof window.onUpdateAnnotations === 'function') {
                            window.onUpdateAnnotations($0, !!$1, $2);
@@ -142,9 +139,9 @@ void c_update_annotations(unsigned int thread_id, bool finished, int move) {
                      }, thread_id, finished, move);
 }
 
-void c_update_timers(double t1, double t2) {}
+void WasmUpdateTimers(double t1, double t2) {}
 
-void c_send_message(const char* const m) {}
+void WasmSendMessage(const char* const m) {}
 
 EMSCRIPTEN_BINDINGS(othello_module) {
     // Register the complex structs so JS can read their properties
@@ -158,19 +155,16 @@ EMSCRIPTEN_BINDINGS(othello_module) {
     function("mainInit", optional_override([](
       std::string evals, std::string book, std::string thor,
       std::string saved, std::string xot_s, std::string xot_l,
-      val s_board, val u_ann, val s_thor, val u_timers, val s_msg
+      val set_board, val update_annotations
     ) {
       // Store JS functions globally so the C-callbacks can find them
-      js_set_board = s_board;
-      js_update_annotations = u_ann;
-      js_set_thor_metadata = s_thor;
-      js_update_timers = u_timers;
-      js_send_message = s_msg;
+      js_set_board = set_board;
+      js_update_annotations = update_annotations;
 
       void* main = MainInit(
           (char*)evals.c_str(), (char*)book.c_str(), (char*)thor.c_str(),
           (char*)saved.c_str(), (char*)xot_s.c_str(), (char*)xot_l.c_str(),
-          c_set_board, c_update_annotations, c_update_timers, c_send_message
+          WasmSetBoard, WasmUpdateAnnotations, WasmUpdateTimers, WasmSendMessage
       );
 
       EvaluateParams params = kDefaultEvaluateParams;
@@ -203,7 +197,7 @@ EMSCRIPTEN_BINDINGS(othello_module) {
     }));
 
     function("getEvaluations", optional_override([](uintptr_t ptr, int thread_id) {
-      return get_evaluations(ptr, thread_id);
+      return GetEvaluations(ptr, thread_id);
     }));
 
     function("newGame", optional_override([](uintptr_t ptr) {

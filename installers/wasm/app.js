@@ -199,7 +199,8 @@ Module.onRuntimeInitialized = () => {
   // Initialize your engine using the uintptr_t wrapper approach
   enginePtr = Module.mainInit(
       "assets/pattern_evaluator.dat", "assets/book", "assets/archive",
-      "", "assets/xot/openingssmall.txt", "assets/xot/openingslarge.txt"
+      "", "assets/xot/openingssmall.txt", "assets/xot/openingslarge.txt",
+      onSetBoard, onUpdateAnnotations
   );
 
   Module.newGame(enginePtr);

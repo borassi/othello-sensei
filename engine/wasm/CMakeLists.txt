@@ -35,8 +35,11 @@ target_link_options(wasm_bindings PRIVATE
         "-flto"
         "-pthread"
         "--no-entry"
-        "-sINITIAL_MEMORY=2147483648"   # 2GB
+        "-sINITIAL_MEMORY=1073741824"   # 1GB
         "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/../../assets@/assets"
+        # Ensure headroom for the timers, initializations, ...
+        # Should be 5 in total, we put 8 for safety.
+        "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency+8"
 )
 
 # Define the destination directory relative to the wasm/ folder.
