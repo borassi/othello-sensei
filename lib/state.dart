@@ -713,6 +713,7 @@ class PreferencesState with ChangeNotifier {
     'Archive active folder': 'All',
     'Remember archive players': true,
     'Remember archive folder': true,
+    'Evaluate only the starting position': false,
   };
   static const Map<String, List<String>> preferencesValues = {
     'Last move marker': ['None', 'Dot', 'Number (S)', 'Number (L)'],
@@ -796,6 +797,7 @@ class PreferencesState with ChangeNotifier {
     params.thor_filters.start_year = 1000;
     params.thor_filters.end_year = 3000;
     params.sensei_actionAsInt = GlobalState.actionWhenPlay.getSenseiAction().value;
+    params.evaluate_only_starting_position = get('Evaluate only the starting position');
 
     GlobalState.ffiEngine.SetEvaluateParams(GlobalState.ffiMain, paramsPtr);
     malloc.free(paramsPtr);

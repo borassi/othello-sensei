@@ -182,6 +182,7 @@ struct EvaluateParams {
   bool reevaluate_during_analysis;
   struct ThorParams thor_filters;
   enum SenseiAction sensei_action;
+  bool evaluate_only_starting_position;
 };
 
 typedef void (*SetBoard)(struct BoardUpdate);

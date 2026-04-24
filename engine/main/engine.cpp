@@ -195,9 +195,14 @@ bool MustBeEvaluated(
 void Engine::UpdateBoardsToEvaluate(EvaluationState& state, const EvaluateParams& params, bool in_analysis) {
   num_boards_to_evaluate_ = 0;
 
-  for (EvaluationState* child : state.GetChildren()) {
-    bool finished = !MustBeEvaluated(state, *child, params, in_analysis);
-    boards_to_evaluate_[num_boards_to_evaluate_++]->Reset(child, finished);
+  if (params.evaluate_only_starting_position) {
+    bool finished = !MustBeEvaluated(state, state, params, in_analysis);
+    boards_to_evaluate_[num_boards_to_evaluate_++]->Reset(&state, finished);
+  } else {
+    for (EvaluationState* child: state.GetChildren()) {
+      bool finished = !MustBeEvaluated(state, *child, params, in_analysis);
+      boards_to_evaluate_[num_boards_to_evaluate_++]->Reset(child, finished);
+    }
   }
 }
 
@@ -321,7 +326,8 @@ void Engine::AnalyzePosition(
     int current_thread, EvaluationState* current_state,
     const std::shared_ptr<EvaluationState>& first_state,
     const EvaluateParams& params, bool in_analysis) {
-  bool first_eval = last_state_ != current_state || last_first_state_ != first_state || !current_state->HasValidChildren();
+  bool first_eval = last_state_ != current_state || last_first_state_ != first_state || (
+      !current_state->HasValidChildren() && !params.evaluate_only_starting_position);
   double max_time = MaxTime(params.sensei_action, current_state->SecondsToEvaluateThisNode(), first_eval, in_analysis, params);
   ElapsedTime time;
   if (first_eval) {

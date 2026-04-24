@@ -947,6 +947,9 @@ final class EvaluateParams extends ffi.Struct {
   external int sensei_actionAsInt;
 
   SenseiAction get sensei_action => SenseiAction.fromValue(sensei_actionAsInt);
+
+  @ffi.Bool()
+  external bool evaluate_only_starting_position;
 }
 
 typedef SetBoardFunction = ffi.Void Function(BoardUpdate);
