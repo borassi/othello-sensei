@@ -44,6 +44,8 @@ target_link_options(wasm_bindings PRIVATE
         # Ensure headroom for the timers, initializations, ...
         # Should be 5 in total, we put 8 for safety.
         "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency+8"
+        "-sMODULARIZE=1"
+        "-sEXPORT_NAME=\"sensei_wasm_generated\""
 )
 
 # Define the destination directory relative to the wasm/ folder.

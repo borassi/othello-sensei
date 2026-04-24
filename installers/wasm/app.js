@@ -18,6 +18,7 @@ const boardEl = document.getElementById('othello-board');
 const consoleEl = document.getElementById('console-output');
 const statusEl = document.getElementById('status');
 let enginePtr = null;
+let engine = null;
 
 // 1. Create the Board UI (0-63)// 1. Create the Board UI (0-63)
 for (let i = 0; i < 64; i++) {
@@ -48,15 +49,15 @@ document.getElementById('othello-board').addEventListener('contextmenu', (e) => 
 
 function handleSquareClick(index) {
   if (!enginePtr) return;
-  Module.playMove(enginePtr, index, false);
-  Module.evaluate(enginePtr);
+  engine.playMove(enginePtr, index, false);
+  engine.evaluate(enginePtr);
 }
 
 function handleAction(action) {
   if (!enginePtr) return;
-  Module[action](enginePtr);
+  engine[action](enginePtr);
   if (action !== 'stop') {
-    Module.evaluate(enginePtr);
+    engine.evaluate(enginePtr);
   }
 }
 
@@ -128,7 +129,7 @@ window.onUpdateAnnotations = (threadId, finished, move) => {
   }
 
   // 2. Fetch the new evaluation array from C++
-  const children = Module.getEvaluations(enginePtr, threadId);
+  const children = engine.getEvaluations(enginePtr, threadId);
   if (!children || children.length === 0) return;
 
   // 3. First loop: compute the best evaluation
@@ -188,21 +189,33 @@ window.onUpdateAnnotations = (threadId, finished, move) => {
 
   // 6. Continue evaluating if not finished
   if (!finished) {
-    Module.evaluate(enginePtr);
+    engine.evaluate(enginePtr);
   }
 };
 
-// 3. Initialize Engine
-Module.onRuntimeInitialized = () => {
-  statusEl.innerText = "Engine Ready";
+// 3. The Promise-based Starter (This fixes the 'expectedDataFileDownloads' error)
+sensei_wasm_generated().then((instance) => {
+  // Capture the fully initialized WASM instance
+  engine = instance;
 
-  // Initialize your engine using the uintptr_t wrapper approach
-  enginePtr = Module.mainInit(
-      "assets/pattern_evaluator.dat", "assets/book", "assets/archive",
-      "", "assets/xot/openingssmall.txt", "assets/xot/openingslarge.txt",
-      onSetBoard, onUpdateAnnotations
+  // Now call your initialization function
+  enginePtr = engine.mainInit(
+    "assets/pattern_evaluator.dat",
+    "assets/book",
+    "assets/archive",
+    "",
+    "assets/xot/openingssmall.txt",
+    "assets/xot/openingslarge.txt",
+    window.onSetBoard,
+    window.onUpdateAnnotations
   );
 
-  Module.newGame(enginePtr);
-  Module.evaluate(enginePtr);
-};
+  // Start the game
+  engine.newGame(enginePtr);
+  engine.evaluate(enginePtr);
+
+  statusEl.innerText = "WASM ready";
+}).catch((err) => {
+  console.error("Failed to start engine:", err);
+  statusEl.innerText = "Engine Load Error";
+});
