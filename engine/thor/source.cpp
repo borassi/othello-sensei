@@ -100,7 +100,7 @@ GamesList Source<GameGetter>::GetGames(
       assert(interval.year <= current_year);
       if (interval.year < current_year) {
         current_year = interval.year;
-        games_higher_year = result.examples.size();
+        games_higher_year = (int) result.examples.size();
       }
       int games_to_add = (int) (max_games - games_higher_year);
       if (games_to_add <= 0) {

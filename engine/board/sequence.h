@@ -401,7 +401,6 @@ class SequenceCanonicalizer {
   }
 
   void Load(std::vector<char> serialized) {
-    std::cout << "Load canonicalizer!\n" << std::flush;
     const char* it = serialized.data();
     board_to_sequence_data_.reserve(serialized.size() / (sizeof(Board) + sizeof(int) + 3));
     while (it < serialized.data() + serialized.size()) {
@@ -415,9 +414,7 @@ class SequenceCanonicalizer {
       board_to_sequence_data.offset = it - serialized.data();
       it += board_to_sequence_data.size * board_to_sequence_data.num_sequences;
     }
-    std::cout << "Loaded canonicalizer 1!\n" << std::flush;
     serialized_board_to_sequences_ = std::move(serialized);
-    std::cout << "Loaded canonicalizer 2!\n" << std::flush;
   }
 
   void AddAll(const std::vector<Sequence>& sequences) {
@@ -460,7 +457,7 @@ class SequenceCanonicalizer {
       Board previous_board(0, 0);
       Square last_move = kNoSquare;
       bool same_previous_board = true;
-      std::vector<Sequence> sequences;
+      std::vector<Sequence> new_sequences;
       for (const auto& sequence : it->second) {
         auto boards_in_sequence = sequence.ToBoards();
         Board& new_previous_board = boards_in_sequence[boards_in_sequence.size() - 2];
@@ -471,19 +468,19 @@ class SequenceCanonicalizer {
         if (previous_board != new_previous_board || last_move != sequence.LastMove()) {
           same_previous_board = false;
         }
-        sequences.push_back(sequence);
+        new_sequences.push_back(sequence);
       }
       if (same_previous_board) {
         continue;
       }
-      int num_sequences = sequences.size();
-      uint8_t size = sequences[0].Size();
-      assert(sequences.size() > 1);
+      int num_sequences = (int) new_sequences.size();
+      uint8_t size = new_sequences[0].Size();
+      assert(new_sequences.size() > 1);
       serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &it->first, ((char*) &it->first) + sizeof(Board));
       serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &num_sequences, ((char*) &num_sequences) + sizeof(int));
       serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &size, ((char*) &size) + sizeof(uint8_t));
-      board_to_sequence_data_[it->first] = SequencesData(sequences.size(), sequences[0].Size(), serialized_board_to_sequences_.size());
-      for (const Sequence& sequence : sequences) {
+      board_to_sequence_data_[it->first] = SequencesData((int) sequences.size(), new_sequences[0].Size(), serialized_board_to_sequences_.size());
+      for (const Sequence& sequence : new_sequences) {
         serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), sequence.Moves(), sequence.Moves() + sequence.Size());
       }
     }
