@@ -316,7 +316,7 @@ class Main {
   }
 
   void SetFileSources(const std::vector<std::string>& sources) {
-    engine_.StartSetFileSources(sources);
+    engine_.SetFileSources(sources);
   }
 
   bool ReloadSource(const std::string& source) {

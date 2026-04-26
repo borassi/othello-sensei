@@ -169,11 +169,6 @@ class Engine {
 
   void Stop();
 
-  void StartSetFileSources(const std::vector<std::string>& sources) {
-    current_future_ = std::async(
-        std::launch::async, &Engine::RunSetFileSources, this, sources, current_future_).share();
-  }
-
   bool ReloadSource(const std::string& file) {
     Stop();
     current_future_.wait();
@@ -185,6 +180,12 @@ class Engine {
   uint32_t CurrentThread() { return current_thread_.load(); }
 
   ThorMetadata* GetThorMetadata() { return &thor_metadata_; }
+
+  void SetFileSources(const std::vector<std::string>& sources) {
+    StopBlocking();
+    thor_->SetFileSources(sources);
+    BuildThorSourceMetadata();
+  }
 
  private:
   static constexpr int kNumEvaluators = 60;
@@ -211,12 +212,6 @@ class Engine {
 
   std::shared_ptr<EvaluationState> last_first_state_;
   EvaluationState* last_state_;
-
-  void RunSetFileSources(const std::vector<std::string>& sources, std::shared_future<void> last_future) {
-    last_future.get();
-    thor_->SetFileSources(sources);
-    BuildThorSourceMetadata();
-  }
 
   void BuildThorSourceMetadata();
 
