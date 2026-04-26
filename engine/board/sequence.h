@@ -479,7 +479,7 @@ class SequenceCanonicalizer {
       serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &it->first, ((char*) &it->first) + sizeof(Board));
       serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &num_sequences, ((char*) &num_sequences) + sizeof(int));
       serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), (char*) &size, ((char*) &size) + sizeof(uint8_t));
-      board_to_sequence_data_[it->first] = SequencesData((int) sequences.size(), new_sequences[0].Size(), serialized_board_to_sequences_.size());
+      board_to_sequence_data_[it->first] = SequencesData((int) new_sequences.size(), new_sequences[0].Size(), serialized_board_to_sequences_.size());
       for (const Sequence& sequence : new_sequences) {
         serialized_board_to_sequences_.insert(serialized_board_to_sequences_.end(), sequence.Moves(), sequence.Moves() + sequence.Size());
       }
