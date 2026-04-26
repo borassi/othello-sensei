@@ -55,7 +55,7 @@ dependencies:
   googleapis_auth: any
   system_info2: ^4.0.0
   url_launcher: ^6.3.0
-  connectivity_plus: ^6.0.5
+  connectivity_plus: ^7.0.1
   android_intent_plus: ^5.2.0
   receive_sharing_intent: ^1.8.1
   receive_intent: ^0.2.5

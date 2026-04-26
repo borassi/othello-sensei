@@ -32,7 +32,7 @@ add_library(
 
 target_link_libraries(
         visitor
-        LINK_PUBLIC
+        PUBLIC
         book
         get_moves
         sequence

@@ -26,7 +26,7 @@ add_library(
 
 target_link_libraries(
         game
-        LINK_PUBLIC
+        PUBLIC
         board
         misc
         sequence
@@ -95,7 +95,7 @@ add_library(
 
 target_link_libraries(
         generic_source
-        LINK_PUBLIC
+        PUBLIC
         game
         sequence
 )
@@ -108,7 +108,7 @@ add_library(
 
 target_link_libraries(
         source
-        LINK_PUBLIC
+        PUBLIC
         files
         game
         generic_source
@@ -123,7 +123,7 @@ add_executable(
 
 target_link_libraries(
         source_test
-        LINK_PRIVATE
+        PRIVATE
         files
         sequence
         source

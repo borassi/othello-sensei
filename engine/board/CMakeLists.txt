@@ -221,7 +221,7 @@ add_library(
 
 target_link_libraries(
         sequence
-        LINK_PRIVATE
+        PRIVATE
         bitpattern
         board
         get_flip
@@ -231,7 +231,7 @@ target_link_libraries(
 
 target_link_libraries(
         sequence
-        LINK_PUBLIC
+        PUBLIC
         absl::flat_hash_map
 )
 
@@ -243,7 +243,7 @@ add_executable(
 
 target_link_libraries(
         sequence_test
-        LINK_PRIVATE
+        PRIVATE
         sequence
         GTest::gmock
         GTest::gtest

@@ -20,7 +20,7 @@ add_library(
 
 target_link_libraries(
         xot
-        LINK_PUBLIC
+        PUBLIC
         board
         misc
         sequence
@@ -34,7 +34,7 @@ IF(ENABLE_GOOGLETEST)
 
     target_link_libraries(
             xot_test
-            LINK_PRIVATE
+            PRIVATE
             board
             sequence
             xot

@@ -65,7 +65,7 @@ add_executable(
 
 target_link_libraries(
         evaluate_cli_main
-        LINK_PUBLIC
+        PUBLIC
         board
         evaluator_alpha_beta
         evaluator_derivative

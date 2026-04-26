@@ -53,7 +53,7 @@ add_library(
 
 target_link_libraries( # Specifies the target library.
         state
-        LINK_PUBLIC
+        PUBLIC
         bindings
         board
         get_flip
