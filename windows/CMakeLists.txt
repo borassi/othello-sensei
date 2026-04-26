@@ -1,4 +1,4 @@
-# Project-level configuration.
+﻿# Project-level configuration.
 cmake_minimum_required(VERSION 3.15)
 project(othello_sensei LANGUAGES CXX)
 
@@ -14,16 +14,22 @@ add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 # the on-disk name of your application.
 set(BINARY_NAME "othello_sensei")
 
-#SET(
-#        CMAKE_CXX_FLAGS_RELEASE
-#        "${CMAKE_CXX_FLAGS_RELEASE} /GL"
-#)
-#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /LTCG /GENPROFILE:EXACT")
-#SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /LTCG /USEPROFILE")
+# Silence warnings about Firebase not finding the source for libraries.
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
-cmake_policy(VERSION 3.5)
+cmake_policy(VERSION 3.15)
+
+include(FetchContent)
+
+FetchContent_Declare(
+        absl
+        GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+        GIT_TAG        20260107.1 # Use a recent LTS release tag
+)
+FetchContent_MakeAvailable(absl)
 
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -84,7 +90,9 @@ if(BUILD_WITH_FLUTTER)
   if(POLICY CMP0079)
     cmake_policy(SET CMP0079 NEW)
   endif()
+  set(CMAKE_WARN_DEPRECATED OFF)
   include(flutter/generated_plugins.cmake)
+  set(CMAKE_WARN_DEPRECATED ON)
 endif()
 
 

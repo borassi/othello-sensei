@@ -255,14 +255,13 @@ class Main {
 
   GameMetadata* MutableGameMetadata() { return &game_metadata_; }
 
-  SaveGameOutput* GetGameToSave() {
+  void GetGameToSave(SaveGameOutput* output) {
     auto sequence_opt = current_state_->GetSequence();
-    auto save_game_output = (SaveGameOutput*) malloc(sizeof(SaveGameOutput));
     if (!sequence_opt) {
-      save_game_output->success = false;
+      output->success = false;
       static const std::string kErrorNoSequence = "Cannot save games with manual board setup (yet).";
-      strncpy(save_game_output->error, kErrorNoSequence.c_str(), kErrorNoSequence.size() + 1);
-      return save_game_output;
+      strncpy(output->error, kErrorNoSequence.c_str(), kErrorNoSequence.size() + 1);
+      return;
     }
     GameToSave game(
         *sequence_opt,
@@ -273,17 +272,16 @@ class Main {
         static_cast<short>(game_metadata_.year),
         static_cast<Eval>(game_metadata_.black_disks),
         game_metadata_.round);
-    std::string output = game.ToString();
-    if (output.size() >= 2000) {
-      save_game_output->success = false;
+    std::string output_string = game.ToString();
+    if (output_string.size() >= 2000) {
+      output->success = false;
       static const std::string kErrorLargeOutput = "Output too large (probably a bug). Please notify michele.borassi@gmail.com.";
-      strncpy(save_game_output->error, kErrorLargeOutput.c_str(), kErrorLargeOutput.size() + 1);
-      return save_game_output;
+      strncpy(output->error, kErrorLargeOutput.c_str(), kErrorLargeOutput.size() + 1);
+      return;
     }
-    save_game_output->success = true;
-    strncpy(save_game_output->game, output.c_str(), output.size() + 1);
-    strncpy(save_game_output->error, "", 1);
-    return save_game_output;
+    output->success = true;
+    strncpy(output->game, output_string.c_str(), output_string.size() + 1);
+    strncpy(output->error, "", 1);
   }
 
   void Open(const std::string& path) {

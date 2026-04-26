@@ -448,19 +448,22 @@ class FFIEngine {
   late final _InvertTurn =
       _InvertTurnPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
-  ffi.Pointer<SaveGameOutput> GetGameToSave(ffi.Pointer<ffi.Void> ptr) {
-    return _GetGameToSave(ptr);
+  void GetGameToSave(
+    ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<SaveGameOutput> output,
+  ) {
+    return _GetGameToSave(ptr, output);
   }
 
   late final _GetGameToSavePtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Pointer<SaveGameOutput> Function(ffi.Pointer<ffi.Void>)
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<SaveGameOutput>)
         >
       >('GetGameToSave');
   late final _GetGameToSave =
       _GetGameToSavePtr.asFunction<
-        ffi.Pointer<SaveGameOutput> Function(ffi.Pointer<ffi.Void>)
+        void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<SaveGameOutput>)
       >();
 
   void Open(ffi.Pointer<ffi.Void> ptr, ffi.Pointer<ffi.Char> path) {

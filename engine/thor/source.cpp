@@ -60,7 +60,10 @@ GamesList Source<GameGetter>::GetGames(
     for (short year = end_year; year >= start_year; --year) {
       for (bool xot : xot_values) {
         for (bool bot : bot_values) {
-          XotBotYear xot_bot_year {.xot = xot, .bot = bot, .year = year};
+          XotBotYear xot_bot_year;
+          xot_bot_year.xot = xot;
+          xot_bot_year.bot = bot;
+          xot_bot_year.year = year;
           games_interval = GetGameIntervals<std::pair<XotBotYear, Sequence>>(
               game_index_by_xot_bot_year_, {xot_bot_year, sequence}, CmpByXotBotYear<GameGetter>(game_getter_), year);
           intervals.push_back(games_interval);

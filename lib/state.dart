@@ -215,7 +215,9 @@ class GlobalState {
                      xotSmallC, xotLargeC]) {
       malloc.free(ptr);
     }
+    print('Setting Thor metadata');
     GlobalState.thorMetadata.set(ffiEngine.GetThorMetadata(ffiMain));
+    print('Done');
     evaluate();
   }
 
@@ -311,7 +313,8 @@ class GlobalState {
   }
 
   static Future<void> setDetailsAndSave(BuildContext context) async {
-    var game = ffiEngine.GetGameToSave(ffiMain);
+    Pointer<SaveGameOutput> game = malloc<SaveGameOutput>();
+    ffiEngine.GetGameToSave(ffiMain, game);
     if (!game.ref.success) {
       showSenseiDialog(SenseiDialog(
         title: "Failed to save the game",
@@ -327,7 +330,8 @@ class GlobalState {
   }
 
   static Future<void> save() async {
-    var game = ffiEngine.GetGameToSave(ffiMain);
+    Pointer<SaveGameOutput> game = malloc<SaveGameOutput>();
+    ffiEngine.GetGameToSave(ffiMain, game);
     String? file = await FilePicker.platform.saveFile(
       initialDirectory: GlobalState.thorMetadata.gameFolders.elementAtOrNull(0),
       fileName: GlobalState.gameMetadataState.getGameName(),
@@ -339,8 +343,11 @@ class GlobalState {
     malloc.free(game);
     if (file != null && canLookupFiles()) {
       var fileC = file.toNativeUtf8().cast<Char>();
+      print('invalidate');
       GlobalState.thorMetadata.invalidate();
+      print('reload');
       bool reloaded = GlobalState.ffiEngine.ReloadSourceUi(GlobalState.ffiMain, fileC);
+      print('done reload');
       malloc.free(fileC);
       if (!reloaded &&
           GlobalState.preferences.get('Show dialog on save outside archive')) {
@@ -357,6 +364,7 @@ class GlobalState {
           actions.add((
               text: 'Add folder $folderName to the archive',
               onPressed: (ctx) {
+                print('set file sources');
                 setFileSources(GlobalState.thorMetadata.gameFolders + [folder]);
                 Navigator.pop(ctx);
               }
@@ -1012,9 +1020,6 @@ class SourcePlayerIndex {
   int sourceIndex;
   int playerIndex;
   SourcePlayerIndex(this.sourceIndex, this.playerIndex);
-}
-
-void setThorMetadata(Pointer<ThorMetadata> ptr) {
 }
 
 class ThorMetadataState with ChangeNotifier {

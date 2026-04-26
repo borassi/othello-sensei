@@ -57,13 +57,14 @@ HOW TO RELEASE ON WINDOWS (APP STORE):
 - Check that the link on Windows Defender in drive_downloader is updated.
 - Change msix version in pubspec.yaml.
 - Ensure the BMI2 and POPCNT lines in windows/CMakeLists.txt are enabled
-- flutter build windows
-- Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-bmi2.dll
-- Comment the BMI2 line in windows/CMakeLists.txt
-- flutter build windows
-- Rename \build\windows\x64\runner\Release\ui_win.dll to ui_win-popcnt.dll
-- Comment the POPCNT line in windows/CMakeLists.txt
-- dart run msix:create
+- Run the following:
+    flutter build windows;
+    mv build\windows\x64\runner\Release\ui_win.dll ui_win-bmi2.dll;
+    (Get-Content windows\CMakeLists.txt) -replace '^(SET\(CMAKE_CXX_FLAGS_RELEASE "\$\{CMAKE_CXX_FLAGS_RELEASE\} /arch:AVX2 -D__BMI2__"\))', '#$1' | Set-Content windows\CMakeLists.txt -Encoding UTF8;
+    flutter build windows;
+    mv build\windows\x64\runner\Release\ui_win.dll ui_win-popcnt.dll;
+    (Get-Content windows\CMakeLists.txt) -replace '^(SET\(CMAKE_CXX_FLAGS_RELEASE "\$\{CMAKE_CXX_FLAGS_RELEASE\} -D__POPCNT__"\))', '#$1' | Set-Content windows\CMakeLists.txt -Encoding UTF8;
+    dart run msix:create;
 - Install locally by double-clicking on build\windows\x64\runner\Release\othello_sensei.msix
 - Copy the installer to the "installers" folder and rename it to Othello Sensei.msix
 - dart run msix:create --store

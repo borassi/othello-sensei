@@ -99,7 +99,9 @@ void SetBlackSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(
 void SetWhiteSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 1); }
 void SetEmptySquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 0); }
 void InvertTurn(void* ptr) { static_cast<Main*>(ptr)->InvertTurn(); }
-struct SaveGameOutput* GetGameToSave(void* ptr) { return static_cast<Main*>(ptr)->GetGameToSave(); }
+void GetGameToSave(void* ptr, SaveGameOutput* output) {
+  static_cast<Main*>(ptr)->GetGameToSave(output);
+}
 void Open(void* ptr, char* path) { static_cast<Main*>(ptr)->Open(path); }
 void PlayOneMove(void* ptr, struct ThorGame game) { static_cast<Main*>(ptr)->PlayOneMove(game); }
 void OpenThorGame(void* ptr, struct ThorGame game) { static_cast<Main*>(ptr)->OpenThorGame(game); }

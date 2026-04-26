@@ -23,7 +23,7 @@
 # kcachegrind /tmp/callgrind.out
 
 # Sets the minimum version of CMake required to build the native library.
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
 # Declares and names the project.
 
@@ -58,12 +58,8 @@ IF(NOT DEFINED PROFILE)
     SET(PROFILE FALSE)
 ENDIF()
 
-IF(${CMAKE_VERSION} VERSION_GREATER "3.13.0")
-    SET(ENABLE_GOOGLETEST TRUE)
-ELSE()
-    SET(ENABLE_GOOGLETEST FALSE)
-    MESSAGE("WARNING: disabled googletest because CMake version ${CMAKE_VERSION} is too old")
-ENDIF()
+# Change to disable tests.
+SET(ENABLE_GOOGLETEST TRUE)
 
 MESSAGE("Compiler: ${CMAKE_CXX_COMPILER_ID}")
 

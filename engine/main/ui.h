@@ -124,7 +124,7 @@ EXPORT
 void InvertTurn(void* ptr);
 
 EXPORT
-struct SaveGameOutput* GetGameToSave(void* ptr);
+void GetGameToSave(void* ptr, struct SaveGameOutput* output);
 
 EXPORT
 void Open(void* ptr, char* path);
