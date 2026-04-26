@@ -119,7 +119,7 @@ class Annotations extends StatelessWidget {
     var bestMoveGreen = GlobalState.preferences.get('Best move green, other yellow');
     var color = (eval > bestEval - delta) != bestMoveGreen ? colorScheme.onSecondaryContainer : colorScheme.onPrimaryContainer;
 
-    String evalText = '${eval < 0 ? "-" : "+"}${formatEval(eval.abs(), false)}';
+    String evalText = '${eval < 0 && formatEval(eval.abs(), false) != "0.00" ? "-" : "+"}${formatEval(eval.abs(), false)}';
     String line1;
     String line2;
     String line3 = '';
