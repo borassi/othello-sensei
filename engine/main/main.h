@@ -108,23 +108,13 @@ class Main {
     return result;
   }
 
-  void SetSequence(const Sequence& moves, bool eval = false) {
-    NewGame();
-    for (int i = 0; i < moves.Size(); ++i) {
-      if (eval) {
-        Evaluate();
-      }
-      ToState(current_state_->NextState(moves.Move(i)), false);
-    }
-    current_state_->SetPrimaryLine();
-  }
-
-  bool SetSequence(const std::string& sequence) {
+  bool PasteSequence(const std::string& sequence) {
     Sequence moves = Sequence::ParseFromString(sequence);
     if (moves.Size() == 0 && sequence != "") {
       return false;
     }
     SetSequence(moves);
+    current_state_->SetPrimaryLine();
     return true;
   }
 
@@ -379,6 +369,16 @@ class Main {
     game_metadata_.black_disks = 64;
     memset(game_metadata_.round, 0, 10);
     memset(game_metadata_.notes, 0, 300);
+  }
+
+  void SetSequence(const Sequence& moves, bool eval = false) {
+    NewGame();
+    for (int i = 0; i < moves.Size(); ++i) {
+      if (eval) {
+        Evaluate();
+      }
+      ToState(current_state_->NextState(moves.Move(i)), false);
+    }
   }
 };
 

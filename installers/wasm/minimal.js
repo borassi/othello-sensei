@@ -36,7 +36,7 @@ analyzeBtn.addEventListener('click', () => {
   if (!input) return;
 
   // 1. Try to set as a sequence (e.g., "f5f6e6...")
-  let success = senseiApi.setSequence(input);
+  let success = senseiApi.pasteSequence(input);
 
   // 2. If it fails, try to paste as a board string
   if (!success) {

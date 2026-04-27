@@ -179,18 +179,21 @@ class FFIEngine {
         bool Function(ffi.Pointer<ffi.Void>, int, bool)
       >();
 
-  bool SetSequence(ffi.Pointer<ffi.Void> ptr, ffi.Pointer<ffi.Char> sequence) {
-    return _SetSequence(ptr, sequence);
+  bool PasteSequence(
+    ffi.Pointer<ffi.Void> ptr,
+    ffi.Pointer<ffi.Char> sequence,
+  ) {
+    return _PasteSequence(ptr, sequence);
   }
 
-  late final _SetSequencePtr =
+  late final _PasteSequencePtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
         >
-      >('SetSequence');
-  late final _SetSequence =
-      _SetSequencePtr.asFunction<
+      >('PasteSequence');
+  late final _PasteSequence =
+      _PasteSequencePtr.asFunction<
         bool Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
       >();
 

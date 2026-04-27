@@ -110,7 +110,7 @@ Future<void> setGameOrError(String? game, String preference) async {
     return;
   }
   var gameC = game.toNativeUtf8().cast<Char>();
-  var success = GlobalState.ffiEngine.SetSequence(GlobalState.ffiMain, gameC);
+  var success = GlobalState.ffiEngine.PasteSequence(GlobalState.ffiMain, gameC);
   if (!success) {
     success = GlobalState.ffiEngine.PasteBoard(GlobalState.ffiMain, gameC);
   }

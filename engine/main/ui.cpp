@@ -51,9 +51,9 @@ bool PlayMove(void* ptr, int square, bool automatic) {
   return static_cast<Main*>(ptr)->PlayMove(square, automatic);
 }
 
-bool SetSequence(void* ptr, char* sequence) {
+bool PasteSequence(void* ptr, char* sequence) {
   std::string sequence_string(sequence);
-  return static_cast<Main*>(ptr)->SetSequence(sequence_string);
+  return static_cast<Main*>(ptr)->PasteSequence(sequence_string);
 }
 
 bool PasteBoard(void* ptr, char* board) {

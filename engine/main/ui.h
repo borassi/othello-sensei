@@ -61,7 +61,7 @@ EXPORT
 bool PlayMove(void* ptr, int square, bool automatic);
 
 EXPORT
-bool SetSequence(void* ptr, char* sequence);
+bool PasteSequence(void* ptr, char* sequence);
 
 EXPORT
 bool PasteBoard(void* ptr, char* sequence);

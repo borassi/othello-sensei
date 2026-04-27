@@ -230,8 +230,8 @@ EMSCRIPTEN_BINDINGS(othello_module) {
     function("setCurrentMove", &wrap<SetCurrentMove>::call);
 
     // String functions still need manual lambdas to handle std::string <-> char*
-    function("setSequence", optional_override([](uintptr_t ptr, std::string seq) {
-      return SetSequence(reinterpret_cast<void*>(ptr), (char*)seq.c_str());
+    function("pasteSequence", optional_override([](uintptr_t ptr, std::string seq) {
+      return PasteSequence(reinterpret_cast<void*>(ptr), (char*)seq.c_str());
     }));
     function("pasteBoard", optional_override([](uintptr_t ptr, std::string seq) {
       return PasteBoard(reinterpret_cast<void*>(ptr), (char*)seq.c_str());
