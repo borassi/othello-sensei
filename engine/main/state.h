@@ -50,6 +50,9 @@ class EvaluationState : public TreeNode {
     EnlargeEvaluations();
     is_book_leaf_ = false;
     annotations_.num_moves = 0;
+    for (int i = 0; i < 8; ++i) {
+      annotations_.moves[i] = kNoSquare;
+    }
     AddMove(move);
     annotations_.depth = depth_;
     annotations_.depth_no_pass = depth_no_pass;

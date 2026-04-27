@@ -22,6 +22,7 @@ import 'package:othello_sensei/ffi/ffi_engine.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:othello_sensei/utils.dart';
 
+import '../ffi/ffi_engine.dart' as ffiEngine;
 import '../widgets_spacers/app_sizes.dart';
 import '../widgets_utils/text.dart';
 import '../widgets_spacers/text_sizes.dart';
@@ -174,6 +175,17 @@ class Annotations extends StatelessWidget {
   }
 }
 
+bool caseWasPlayed(ffiEngine.Annotations annotations) {
+  if (annotations.first_child == nullptr || annotations.first_child.ref.num_moves == 0) {
+    return false;
+  }
+  var move = annotations.first_child.ref.moves[0];
+  if (move >= 0 && move <= 63) {
+    return true;
+  }
+  return caseWasPlayed(annotations.first_child.ref);
+}
+
 bool highlightCase(int index) {
   if (index == 255) {
     return false;
@@ -183,12 +195,13 @@ bool highlightCase(int index) {
   if (annotations == null || globalAnnotations == null) {
     return false;
   }
+  var nextState = globalAnnotations.ref.next_state_primary;
   if (GlobalState.preferences.get('Highlight next move in analysis')
-      && globalAnnotations.ref.next_state_primary != nullptr) {
-    return globalAnnotations.ref.next_state_primary.ref.moves[0] == index;
+      && nextState != nullptr) {
+    return nextState.ref.num_moves > 0 && nextState.ref.moves[0] == index;
   }
   return GlobalState.preferences.get('Highlight next moves outside analysis') &&
-      annotations.first_child != nullptr &&
+      caseWasPlayed(annotations.first_child.ref) &&
       // Highlight only the played move and not the transpositions.
       annotations.moves[0] == index;
 }
