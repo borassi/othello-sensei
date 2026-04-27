@@ -7,7 +7,7 @@
 # $ rm -R /root/parts/othello-sensei/build
 
 name: othello-sensei
-version: 2.1.0
+version: 2.2.0
 title: Othello Sensei
 summary: Othello Sensei
 description: A strong, responsive, and user-friendly Othello engine for advanced players

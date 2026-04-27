@@ -49,9 +49,10 @@ HOW TO RELEASE ON ANDROID:
 
 HOW TO RELEASE ON LINUX:
 - Rollback the file_picker package to 10.2.1.
+- Change the version in snap/snapcraft.yaml.
 - Remove -D__POPCNT__ -mbmi2 from CMAKE_CXX_FLAGS_RELEASE in engine/CMakeLists.txt.
-- rm -Rf build && snapcraft clean && snapcraft pack --debug && sudo snap install ./othello-sensei_2.1.0_amd64.snap --dangerous && othello-sensei
-- snapcraft upload --release=beta othello-sensei_2.1.0_amd64.snap
+- rm -Rf build && snapcraft clean && snapcraft pack --debug && sudo snap install ./othello-sensei_2.2.0_amd64.snap --dangerous && othello-sensei
+- snapcraft upload --release=beta othello-sensei_2.2.0_amd64.snap
 
 HOW TO RELEASE ON WINDOWS (APP STORE):
 - Check that the link on Windows Defender in drive_downloader is updated.
