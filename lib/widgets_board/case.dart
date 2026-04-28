@@ -201,6 +201,7 @@ bool highlightCase(int index) {
     return nextState.ref.num_moves > 0 && nextState.ref.moves[0] == index;
   }
   return GlobalState.preferences.get('Highlight next moves outside analysis') &&
+      annotations.first_child != nullptr &&
       caseWasPlayed(annotations.first_child.ref) &&
       // Highlight only the played move and not the transpositions.
       annotations.moves[0] == index;
