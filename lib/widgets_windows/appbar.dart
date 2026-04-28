@@ -323,7 +323,7 @@ class SenseiAppBar extends StatelessWidget {
                         depth: 1,
                         context: context,
                         items: [
-                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBook, text: 'Large (>700MB)'),
+                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBook, text: 'Large (>900MB)'),
                           _buildMenuItem(context, menuItem: MenuItem.downloadLatestBookMedium, text: 'Medium (~100MB)'),
                           _buildMenuItem(context, menuItem: MenuItem.downloadLatestBookSmall, text: 'Small (~10MB)'),
                         ],

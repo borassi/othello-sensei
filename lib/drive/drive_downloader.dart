@@ -51,11 +51,11 @@ void downloadBookMedium(BuildContext context) {
 }
 
 void downloadBook(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'book', 'Books/latest.tar.gz', 600, true, 258);
+  _downloadMaybeWithConfirmation(context, 'book', 'Books/latest.tar.gz', 900, true, 258);
 }
 
 void downloadArchive(BuildContext context) {
-  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v3.tar.gz', 150, true, 58);
+  _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v3.tar.gz', 100, true, 58);
 }
 
 enum DialogOptions {
@@ -112,7 +112,7 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
       // on mobile. This causes a strange error message if there is no
       // connection.
       // TODO: Avoid missing the connection on Linux, using Snapcraft.
-      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows || sizeMB < 50) {
         _download(context, name, path, numFilesForProgress);
       } else {
         _downloadWithConfirmation(context, name, path, sizeMB, sizeLowerBound, numFilesForProgress);
