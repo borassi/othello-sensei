@@ -175,15 +175,15 @@ class Annotations extends StatelessWidget {
   }
 }
 
-bool caseWasPlayed(ffiEngine.Annotations annotations) {
-  if (annotations.first_child == nullptr || annotations.first_child.ref.num_moves == 0) {
+bool caseWasPlayed(Pointer<ffiEngine.Annotations> firstChild) {
+  if (firstChild == nullptr || firstChild.ref.num_moves == 0) {
     return false;
   }
-  var move = annotations.first_child.ref.moves[0];
+  var move = firstChild.ref.moves[0];
   if (move >= 0 && move <= 63) {
     return true;
   }
-  return caseWasPlayed(annotations.first_child.ref);
+  return caseWasPlayed(firstChild.ref.first_child);
 }
 
 bool highlightCase(int index) {
@@ -201,8 +201,7 @@ bool highlightCase(int index) {
     return nextState.ref.num_moves > 0 && nextState.ref.moves[0] == index;
   }
   return GlobalState.preferences.get('Highlight next moves outside analysis') &&
-      annotations.first_child != nullptr &&
-      caseWasPlayed(annotations.first_child.ref) &&
+      caseWasPlayed(annotations.first_child) &&
       // Highlight only the played move and not the transpositions.
       annotations.moves[0] == index;
 }

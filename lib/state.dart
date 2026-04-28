@@ -945,11 +945,9 @@ class GlobalAnnotationState with ChangeNotifier {
       if (annotation.ref.moves[0] == GlobalState.ffiEngine.SetupBoardMove()) {
         assert(scores.isNotEmpty);
         scores[scores.length - 1] = getEvalFromAnnotations(annotation.ref, true, bestLine: true);
-        continue;
-      } else if (annotation.ref.moves[0] == GlobalState.ffiEngine.PassMove()) {
-        continue;
+      } else if (annotation.ref.moves[0] != GlobalState.ffiEngine.PassMove()) {
+        scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
       }
-      scores.add(getEvalFromAnnotations(annotation.ref, true, bestLine: true));
       lastMove = annotation.ref.depth_no_pass;
       // During analysis, moveBackToGame is the last move in the main line.
       if (primary &&
