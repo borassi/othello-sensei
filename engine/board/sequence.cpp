@@ -160,7 +160,7 @@ struct PlayToBoard : public PlayResultFetcher<std::pair<Board, bool>> {
 struct PlayIsValid : public PlayResultFetcher<bool> {
   bool Get() override { return result_; }
   bool AtBoard(const Board& b) override { return true; }
-  void AtFail() override { result_ = false; }
+  void AtFail(const std::string& message) override { result_ = false; }
 
  private:
   bool result_ = true;
@@ -198,7 +198,7 @@ std::pair<Board, bool> Sequence::ToBoardAndBlackTurn(int i) const {
     i += size_ + 1;
   }
   if (i < 0 || i > size_) {
-    throw InvalidSequenceException();
+    throw InvalidSequenceException("Sequence " + ToString() + " cannot be cut at " + std::to_string(i));
   }
   PlayToBoard play_to_board(i);
   return Play<std::pair<Board, bool>>(&play_to_board);

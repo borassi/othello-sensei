@@ -52,7 +52,11 @@ struct ThorSquareToSquare {
 
 constexpr ThorSquareToSquare kThorSquareToSquare;
 
-class InvalidSequenceException : public std::exception {};
+class InvalidSequenceException : public std::invalid_argument {
+ public:
+  explicit InvalidSequenceException(const std::string& message)
+      : std::invalid_argument(message) {}
+};
 
 constexpr Square VerticalMirrorMove(Square move) { return 8 * (7 - move / 8) + (move % 8); }
 constexpr Square Diag9MirrorMove(Square move) { return 8 * (move % 8) + (move / 8); }
@@ -76,8 +80,8 @@ template<class T>
 struct PlayResultFetcher {
   virtual T Get() = 0;
   virtual bool AtBoard(const Board&) = 0;
-  virtual void AtFail() {
-    throw InvalidSequenceException();
+  virtual void AtFail(const std::string& message) {
+    throw InvalidSequenceException(message);
   }
   virtual void AtPass() {}
 };
@@ -347,7 +351,7 @@ class Sequence {
         flip = GetFlip(move, b.Player(), b.Opponent());
       }
       if (flip == 0) {
-        fetcher->AtFail();
+        fetcher->AtFail("Invalid sequence " + ToString());
         return fetcher->Get();
       }
       b.PlayMove(flip);
