@@ -30,14 +30,20 @@ class XOT {
     for (const std::string& sequence_string : Split(sequences, '\n')) {
       sequences_.emplace_back(Sequence(sequence_string));
     }
+    sequence_size_ = -1;
     for (const SequenceWithMetadata& sequence : sequences_) {
-      assert(sequence.sequence.Size() == 8);
+      if (sequence_size_ == -1) {
+        sequence_size_ = sequence.sequence.Size();
+      }
+      assert(sequence_size_ == sequence.sequence.Size());
       board_to_sequence_[sequence.sequence_unique] = &sequence;
     }
   }
 
+  int SequenceSize() const { return sequence_size_; }
+
   bool IsInListPrefix(const Sequence& sequence) const {
-    return sequence.Size() >= 8 && IsInList(sequence.Subsequence(8));
+    return sequence.Size() >= sequence_size_ && IsInList(sequence.Subsequence(sequence_size_));
   }
 
   bool IsInList(const Sequence& sequence) const {
@@ -66,6 +72,7 @@ class XOT {
   };
   std::vector<SequenceWithMetadata> sequences_;
   std::unordered_map<Sequence, const SequenceWithMetadata*> board_to_sequence_;
+  int sequence_size_;
 };
 
 #endif  // OTHELLO_SENSEI_XOT_XOT_H

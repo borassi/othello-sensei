@@ -38,6 +38,7 @@ TEST(XOT, IsInList) {
   EXPECT_FALSE(xot.IsInList(Sequence("")));
   EXPECT_FALSE(xot.IsInList(Sequence("e6f4c3c4d3d6f6e7")));
 }
+
 TEST(XOT, IsInListPrefix) {
   XOT xot("f5d6c4d3c2b3b4b5\n"
           "f5f4g3g6f3g4e3e2");
@@ -135,4 +136,22 @@ TEST(XOT, FindStartMultipleLimit) {
       xot.FindStart(Sequence("c5"), 1),
       UnorderedElementsAre(Sequence("f5d6c4d3c2b3b4b5"))
   );
+}
+
+TEST(XOT, DifferentSize) {
+  XOT xot("f5d6c4d3\n"
+          "f5f4g3g6");
+  EXPECT_EQ(xot.SequenceSize(), 4);
+  EXPECT_TRUE(xot.IsInList(Sequence("f5d6c4d3")));
+  EXPECT_TRUE(xot.IsInList(Sequence("f5f4g3g6")));
+  EXPECT_TRUE(xot.IsInList(Sequence("c4e3f5e6")));
+  EXPECT_FALSE(xot.IsInList(Sequence("")));
+  EXPECT_FALSE(xot.IsInList(Sequence("e6f4d3c4c3")));
+
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("f5d6c4d3")));
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("f5f4g3g6")));
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("c4e3f5e6")));
+  EXPECT_TRUE(xot.IsInListPrefix(Sequence("f5d6c4d3c2")));
+  EXPECT_FALSE(xot.IsInListPrefix(Sequence("")));
+  EXPECT_FALSE(xot.IsInListPrefix(Sequence("f5d6c4b3")));
 }
