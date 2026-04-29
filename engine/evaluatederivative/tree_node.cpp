@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Michele Borassi
+ * Copyright 2023-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 
 #include <limits>
-#include "tree_node.h"
 #include "evaluator_derivative.h"
+#include "tree_node.h"
+
+#include "../board/stable.h"
 
 constexpr int kMutexAtDepthBits = 10;
 constexpr int kMutexAtDepthSize = 1 << kMutexAtDepthBits;
@@ -104,8 +106,8 @@ void TreeNode::ResetNoLock(
   player_ = player;
   opponent_ = opponent;
   n_empties_ = ::NEmpties(player, opponent);
-  lower_ = kMinEval;
-  upper_ = kMaxEval;
+  lower_ = -GetStableDisksUpperBound(opponent, player);
+  upper_ = GetStableDisksUpperBound(player, opponent);
   evaluator_ = evaluator;
   if (n_fathers_ != 0) {
     free(fathers_);
