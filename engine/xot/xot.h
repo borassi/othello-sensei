@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Michele Borassi
+ * Copyright 2025-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,16 @@
 #include "../board/sequence.h"
 #include "../utils/misc.h"
 
-class XOT {
+class Xot {
  public:
+  // Delete copy and move constructors/assignments (board_to_sequence_ uses pointers).
+  // It's relatively easy to recreate these, but not worth it as of now.
+  Xot(const Xot&) = delete;
+  Xot& operator=(const Xot&) = delete;
+  Xot(Xot&&) = delete;
+  Xot& operator=(Xot&&) = delete;
 
-  XOT(const std::string& sequences) {
+  Xot(const std::string& sequences, const std::string& name = "") : name_(name) {
     for (const std::string& sequence_string : Split(sequences, '\n')) {
       sequences_.emplace_back(Sequence(sequence_string));
     }
@@ -39,6 +45,8 @@ class XOT {
       board_to_sequence_[sequence.sequence_unique] = &sequence;
     }
   }
+
+  const std::string& Name() const { return name_; }
 
   int SequenceSize() const { return sequence_size_; }
 
@@ -70,9 +78,37 @@ class XOT {
       sequence_transpositions = sequence.AllTranspositions();
     }
   };
+  std::string name_;
   std::vector<SequenceWithMetadata> sequences_;
   std::unordered_map<Sequence, const SequenceWithMetadata*> board_to_sequence_;
   int sequence_size_;
+};
+
+// Handles multiple Xot datasets loaded from a directory.
+class XotHandler {
+ public:
+  // Initializes the handler by loading all Xot files from the given folder.
+  // Files are loaded in alphabetical order. It assumes all filenames have a
+  // prefix of the same length (used for sorting), followed by a " - " delimiter,
+  // and ending with a file extension.
+  // The resulting Xot name will have the prefix, the delimiter, and the extension
+  // removed (e.g., "000 - file2.txt" becomes "file2").
+  explicit XotHandler(const std::string& folder);
+
+  // Returns the length of the sequence prefix found in the lists, or -1 if not found.
+  int GetPrefixLength(const Sequence& sequence) const;
+
+  // Returns true if the sequence is fully present in any of the loaded Xot lists.
+  bool IsInList(const Sequence& sequence) const;
+
+  // Returns a random sequence from the specific Xot file.
+  Sequence RandomSequence(const std::string& filename) const;
+
+  // Returns a list of all loaded Xot filenames.
+  std::vector<std::string> Filenames() const;
+
+ private:
+  std::vector<std::unique_ptr<Xot>> xots_;
 };
 
 #endif  // OTHELLO_SENSEI_XOT_XOT_H
