@@ -811,9 +811,6 @@ final class Annotations extends ffi.Struct {
   AnnotationsProvenance get provenance =>
       AnnotationsProvenance.fromValue(provenanceAsInt);
 
-  @ffi.Bool()
-  external bool derived;
-
   @ffi.Double()
   external double prob_lower_eval;
 

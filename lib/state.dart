@@ -997,11 +997,9 @@ class GlobalAnnotationState with ChangeNotifier {
     var positionsBook = 0;
     var seconds = 0.0;
     for (var child = annotations!.ref.first_child; child != nullptr; child = child.ref.next_sibling) {
-      if (!child.ref.derived) {
-        positions += child.ref.descendants;
-        positionsBook += child.ref.descendants_book;
-        seconds += child.ref.seconds;
-      }
+      positions += child.ref.descendants;
+      positionsBook += child.ref.descendants_book;
+      seconds += child.ref.seconds;
     }
     return EvaluationStats(positions, positionsBook, seconds);
   }

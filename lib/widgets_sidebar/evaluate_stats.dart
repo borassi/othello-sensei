@@ -44,7 +44,7 @@ String getPositionsText(EvaluationStats stats) {
   }
 }
 
-String getTimeText(EvaluationStats stats) {
+String _getPosPerSecText(EvaluationStats stats) {
   if (stats.seconds > 0) {
     return 'Pos / sec: ${prettyPrintDouble(stats.nVisited / stats.seconds)}';
   } else {
@@ -52,7 +52,7 @@ String getTimeText(EvaluationStats stats) {
   }
 }
 
-String getPosPerSecText(EvaluationStats stats) {
+String _getTimeText(EvaluationStats stats) {
   if (stats.nVisitedBook > 0) {
     if (stats.nVisited > 0) {
       return 'Book + Evaluate';
@@ -81,13 +81,13 @@ class EvaluateStats extends StatelessWidget {
               children: [
                 MediumText(getPositionsText(stats)),
                 const Spacer(),
-                MediumText(getTimeText(stats)),
+                MediumText(_getPosPerSecText(stats)),
               ]
             ),
             SizedBox(height: 10),
             Row(
                 children: [
-                  MediumText(getPosPerSecText(stats)),
+                  MediumText(_getTimeText(stats)),
                   const Spacer(),
                   MediumText("Empties: ${GlobalState.board.emptySquares()}")
                 ]

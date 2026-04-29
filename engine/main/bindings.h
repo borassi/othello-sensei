@@ -127,7 +127,6 @@ struct Annotations {
   int median_eval;
   int median_eval_best_line;
   enum AnnotationsProvenance provenance;
-  bool derived;  // If true, ignore it for time and descendants.
   double prob_lower_eval;
   double prob_upper_eval;
   double proof_number_lower;
