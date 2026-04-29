@@ -90,7 +90,7 @@ class Main {
   }
 
   bool ToLastImportantNode() {
-    EvaluationState* goal = current_state_->LastImportantNode(IsXot(), first_state_->InAnalysisLine(), evaluate_params_.sensei_action);
+    EvaluationState* goal = current_state_->LastImportantNode(XotDepth(), first_state_->InAnalysisLine(), evaluate_params_.sensei_action);
     if (current_state_ == goal) {
       return false;
     }
@@ -176,30 +176,31 @@ class Main {
   }
   XOTState GetXOTState() { return xot_state_; }
 
-  bool IsXot() {
+  // TODO: make this function handle any depth.
+  int XotDepth() {
     switch (xot_state_) {
       case XOT_STATE_ALWAYS:
-        return true;
+        return 8;
       case XOT_STATE_NEVER:
-        return false;
+        return -1;
       case XOT_STATE_AUTOMATIC: {
         if (!first_state_) {
-          return false;
+          return -1;
         }
         auto state_in_xot = first_state_->ToDepth(8, SENSEI_EVALUATES);
         if (!state_in_xot) {
-          return false;
+          return -1;
         }
-        auto sequence = state_in_xot->GetSequence();
+        auto sequence = current_state_->GetSequence();
         if (!(sequence && xot_large_.IsInListPrefix(*sequence))) {
-          return false;
+          return -1;
         }
         auto [error_black, error_white] = state_in_xot->TotalError();
-        return std::max(error_black, error_white) > 5;
+        return std::max(error_black, error_white) > 5 ? 8 : -1;
       }
       default:
         assert(false);
-        return false;
+        return -1;
     }
   }
 

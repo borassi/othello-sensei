@@ -156,11 +156,12 @@ class EvaluationState : public TreeNode {
     return result;
   }
 
-  bool IsImportant(bool is_xot, bool primary_states_available, bool is_next_state_primary, SenseiAction action) {
+  // xot_depth = -1 = not XOT.
+  bool IsImportant(int xot_depth, bool primary_states_available, bool is_next_state_primary, SenseiAction action) {
     if (PreviousLandable(action) == nullptr) {
       return true;
     }
-    if (is_xot && annotations_.depth > 8 && PreviousLandable(action)->annotations_.depth < 8) {
+    if (annotations_.depth > xot_depth && PreviousLandable(action)->annotations_.depth < xot_depth) {
       return true;
     }
     if (primary_states_available) {
@@ -170,9 +171,9 @@ class EvaluationState : public TreeNode {
     }
   }
 
-  EvaluationState* LastImportantNode(bool is_xot, bool primary_states_available, SenseiAction action) {
+  EvaluationState* LastImportantNode(int xot_depth, bool primary_states_available, SenseiAction action) {
     for (EvaluationState* state = PreviousLandable(action); state != nullptr; state = state->PreviousLandable(action)) {
-      if (state->IsImportant(is_xot, primary_states_available, InAnalysisLine(), action)) {
+      if (state->IsImportant(xot_depth, primary_states_available, InAnalysisLine(), action)) {
         return state;
       }
     }

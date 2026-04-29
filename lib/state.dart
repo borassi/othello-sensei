@@ -296,11 +296,11 @@ class GlobalState {
     GlobalState.ffiEngine.Evaluate(GlobalState.ffiMain);
   }
 
-  static bool isXot() {
+  static int xotDepth() {
     if (ffiMain == nullptr) {
-      return false;
+      return -1;
     }
-    return GlobalState.ffiEngine.IsXot(GlobalState.ffiMain);
+    return GlobalState.ffiEngine.XotDepth(GlobalState.ffiMain);
   }
 
   static void resetAnnotations() {
@@ -963,12 +963,15 @@ class GlobalAnnotationState with ChangeNotifier {
     var errorBlack = 0.0;
     var errorWhite = 0.0;
     var (allScores, lastMove) = getAllScoresAndLastMove();
-    var start = GlobalState.isXot() ? 8 : 0;
+    var start = GlobalState.xotDepth();
     int lastMoveForScores =
         GlobalState.globalAnnotations.annotations?.ref.during_analysis ?? false ?
         allScores.length : min(allScores.length, lastMove + 1);
     var hasNaN = false;
-    var oldScore = allScores.elementAtOrNull(start) ?? double.nan;
+    var oldScore = double.nan;
+    if (start >= 0) {
+      oldScore = allScores.elementAtOrNull(start) ?? double.nan;
+    }
     if (oldScore.isNaN) {
       oldScore = 0;
     }

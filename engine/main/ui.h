@@ -109,7 +109,7 @@ EXPORT
 enum XOTState GetXOTState(void* ptr);
 
 EXPORT
-bool IsXot(void* ptr);
+int XotDepth(void* ptr);
 
 EXPORT
 void SetBlackSquare(void* ptr, int square);

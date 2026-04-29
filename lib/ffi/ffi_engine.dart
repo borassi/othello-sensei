@@ -390,16 +390,16 @@ class FFIEngine {
   late final _GetXOTState =
       _GetXOTStatePtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 
-  bool IsXot(ffi.Pointer<ffi.Void> ptr) {
-    return _IsXot(ptr);
+  int XotDepth(ffi.Pointer<ffi.Void> ptr) {
+    return _XotDepth(ptr);
   }
 
-  late final _IsXotPtr =
-      _lookup<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void>)>>(
-        'IsXot',
+  late final _XotDepthPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Void>)>>(
+        'XotDepth',
       );
-  late final _IsXot =
-      _IsXotPtr.asFunction<bool Function(ffi.Pointer<ffi.Void>)>();
+  late final _XotDepth =
+      _XotDepthPtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 
   void SetBlackSquare(ffi.Pointer<ffi.Void> ptr, int square) {
     return _SetBlackSquare(ptr, square);

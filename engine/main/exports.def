@@ -24,7 +24,7 @@ EXPORTS
     RandomXOT
     SetXOTState
     GetXOTState
-    IsXot
+    XotDepth
     SetBlackSquare
     SetWhiteSquare
     SetEmptySquare

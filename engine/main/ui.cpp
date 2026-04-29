@@ -93,7 +93,7 @@ void RandomXOT(void* ptr, bool large) { static_cast<Main*>(ptr)->RandomXOT(large
 void SetXOTState(void* ptr, XOTState xot_state) { static_cast<Main*>(ptr)->SetXOTState(xot_state); }
 XOTState GetXOTState(void* ptr) { return static_cast<Main*>(ptr)->GetXOTState(); }
 
-bool IsXot(void* ptr) { return static_cast<Main*>(ptr)->IsXot(); }
+int XotDepth(void* ptr) { return static_cast<Main*>(ptr)->XotDepth(); }
 
 void SetBlackSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, -1); }
 void SetWhiteSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 1); }

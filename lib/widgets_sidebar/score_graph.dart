@@ -54,7 +54,7 @@ class ScoreGraph extends StatelessWidget {
     Color? borderColor;
     if (x == moveToHighlight) {
       color = colorScheme.onSecondaryContainer;
-    } else if (GlobalState.isXot() && x <= 8) {
+    } else if (x <= GlobalState.xotDepth()) {
       color = colorScheme.primaryContainer;
     } else if (!GlobalState.preferences.get('Black and white bars in the graph')) {
       color = colorScheme.onPrimaryContainer;
