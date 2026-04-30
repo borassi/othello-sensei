@@ -40,6 +40,7 @@ enum MenuItem {
   downloadLatestBookMedium,
   downloadLatestBookSmall,
   downloadLatestArchive,
+  downloadLatestXot,
   settings,
   xotAutomatic,
   xotAlways,
@@ -88,6 +89,10 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
     case MenuItem.downloadLatestArchive:
       GlobalState.stop();
       downloadArchive(context);
+      return;
+    case MenuItem.downloadLatestXot:
+      GlobalState.stop();
+      downloadXot(context);
       return;
     case MenuItem.settings:
       GlobalState.stop();
@@ -331,6 +336,7 @@ class SenseiAppBar extends StatelessWidget {
                     ),
                 ),
                 _buildMenuItem(context, value: MenuItem.downloadLatestArchive),
+                _buildMenuItem(context, value: MenuItem.downloadLatestXot),
               ] + (
                   canLookupFiles() ?
                   [

@@ -1234,6 +1234,7 @@ class XotSourcesState with ChangeNotifier {
   XotSourcesState() : sourceNames = [];
 
   void updateState() {
+    sourceNames = [];
     Pointer<XotSources> xotSources = GlobalState.ffiEngine.GetXotSources(GlobalState.ffiMain);
     for (int i = 0; i < xotSources.ref.num_sources; ++i) {
       sourceNames.add(cStringToString(xotSources.ref.sources[i].name));

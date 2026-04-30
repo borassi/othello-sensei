@@ -20,7 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:othello_sensei/state.dart';
 import 'package:path/path.dart';
 
-const String assetVersion = "23";
+const String assetVersion = "30";
 
 String localAssetPath() {
   return join(GlobalState.localPath, "assets");

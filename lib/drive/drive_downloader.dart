@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Michele Borassi
+ * Copyright 2024-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,10 @@ void downloadArchive(BuildContext context) {
   _downloadMaybeWithConfirmation(context, 'archive', 'Archive/latest_v3.tar.gz', 100, true, 58);
 }
 
+void downloadXot(BuildContext context) {
+  _downloadMaybeWithConfirmation(context, 'xot', 'Xot/latest.tar.gz', 1, true, 3);
+}
+
 enum DialogOptions {
   dialogFailNoConnection,
   dialogShow,
@@ -98,21 +102,25 @@ void _downloadMaybeWithConfirmation(BuildContext context, String name, String pa
       showSenseiDialog(SenseiDialog(title: 'Download failed', content: 'No internet connection available'));
       return;
     case DialogOptions.dialogShow:
-      _downloadWithConfirmation(
-          context,
-          name,
-          path,
-          sizeMB,
-          sizeLowerBound,
-          numFilesForProgress
-      );
+      if (sizeMB < 30) {
+        _download(context, name, path, numFilesForProgress);
+      } else {
+        _downloadWithConfirmation(
+            context,
+            name,
+            path,
+            sizeMB,
+            sizeLowerBound,
+            numFilesForProgress
+        );
+      }
       return;
     case DialogOptions.dialogShowMobileOnly:
       // If we are not sure about the connection, we ask for confirmation only
       // on mobile. This causes a strange error message if there is no
       // connection.
       // TODO: Avoid missing the connection on Linux, using Snapcraft.
-      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows || sizeMB < 50) {
+      if (Platform.isLinux || Platform.isMacOS || Platform.isWindows || sizeMB < 30) {
         _download(context, name, path, numFilesForProgress);
       } else {
         _downloadWithConfirmation(context, name, path, sizeMB, sizeLowerBound, numFilesForProgress);
