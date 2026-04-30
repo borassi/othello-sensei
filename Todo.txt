@@ -60,10 +60,10 @@ HOW TO RELEASE ON WINDOWS (APP STORE):
 - Ensure the BMI2 and POPCNT lines in windows/CMakeLists.txt are enabled
 - Run the following:
     flutter build windows;
-    mv build\windows\x64\runner\Release\ui_win.dll ui_win-bmi2.dll;
+    mv build\windows\x64\runner\Release\ui_win.dll build\windows\x64\runner\Release\ui_win-bmi2.dll;
     (Get-Content windows\CMakeLists.txt) -replace '^(SET\(CMAKE_CXX_FLAGS_RELEASE "\$\{CMAKE_CXX_FLAGS_RELEASE\} /arch:AVX2 -D__BMI2__"\))', '#$1' | Set-Content windows\CMakeLists.txt -Encoding UTF8;
     flutter build windows;
-    mv build\windows\x64\runner\Release\ui_win.dll ui_win-popcnt.dll;
+    mv build\windows\x64\runner\Release\ui_win.dll build\windows\x64\runner\Release\ui_win-popcnt.dll;
     (Get-Content windows\CMakeLists.txt) -replace '^(SET\(CMAKE_CXX_FLAGS_RELEASE "\$\{CMAKE_CXX_FLAGS_RELEASE\} -D__POPCNT__"\))', '#$1' | Set-Content windows\CMakeLists.txt -Encoding UTF8;
     dart run msix:create;
 - Install locally by double-clicking on build\windows\x64\runner\Release\othello_sensei.msix
