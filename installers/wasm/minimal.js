@@ -42,10 +42,12 @@ analyzeBtn.addEventListener('click', () => {
   const input = boardInput.value.trim();
   if (!input) return;
 
-  // 1. Try to set as a sequence (e.g., "f5f6e6...")
+  // 1. Try to set the board from a sequence (e.g., "f5f6e6...")
   let success = senseiApi.pasteSequence(input);
 
-  // 2. If it fails, try to paste as a board string
+  // 2. If it fails, try to paste as a board string. See engine/board/board.h:FromString for the
+  //    format (TL;DR: "---------------------------OX------XO--------------------------- X" is the
+  //    starting position, with Black to move - the last X).
   if (!success) {
     success = senseiApi.pasteBoard(input);
   }
@@ -65,13 +67,13 @@ stopBtn.addEventListener('click', () => {
 
 // This is called every time we have a new evaluation (by default every second).
 window.onUpdateAnnotations = (threadId, finished, move) => {
-  // Use thread 0 for the primary evaluation
   const evaluation = senseiApi.getCurrentEvaluation(threadId);
 
   // Ensures that we never get -0.00.
   const displayEval = Math.round(evaluation.eval * 100) / 100 + 0.0000001;
   evaluationVal.innerText = evalFormatter.format(displayEval);
   if (!finished) {
+    // Continue the evaluation to get better scores.
     senseiApi.evaluate();
   }
 };

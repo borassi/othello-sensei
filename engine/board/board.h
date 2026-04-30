@@ -31,6 +31,29 @@ class Board {
   Board(const std::string& board, bool player_black);
   Board(const std::string& sequence, std::vector<Board>* previous = nullptr);
   Board();
+  /**
+   * @brief Parses a string representation of a 64-square board.
+   *
+   * The input string must represent exactly 64 squares, evaluated sequentially. Any whitespace
+   * interspersed between the characters is ignored.
+   *
+   * Character Mapping:
+   * - Black / Player 1 (Mapped to 'X'): 'X', 'x', 'B', 'b', '*'
+   * - White / Player 2 (Mapped to 'O'): 'O', 'o', 'W', 'w'
+   * - Empty Square (Mapped to '-'):     '-', '.'
+   *
+   * Turn Indicator (Optional):
+   * After the 64 board characters, a trailing character separated by whitespace can explicitly
+   * set the turn (e.g., passing 'W' explicitly sets it to White's turn). If omitted, the turn
+   * is automatically calculated: it defaults to Black's turn if there is an even number of
+   * empty squares on the board.
+   *
+   * @param board A string containing the board configuration and an optional turn indicator.
+   * @return std::optional<std::pair<Board, bool>> On success, returns a pair where the first
+   *         element is the instantiated Board object and the second element is a boolean
+   *         representing the turn (true for Black, false for White). On failure (invalid format),
+   *         returns std::nullopt.
+   */
   static std::optional<std::pair<Board, bool>> FromString(const std::string& board);
 
   BitPattern Player() const {
