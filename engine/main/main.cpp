@@ -17,6 +17,7 @@
 #include "main.h"
 #include "bindings.h"
 #include "../utils/misc.h"
+#include "../xot/xot.h"
 
 Main::Main(
     const std::string& evals_filepath,
@@ -44,7 +45,7 @@ Main::Main(
   update_timers_future_ = std::async(std::launch::async, &Main::RunUpdateTimersThread, this);
   std::vector<std::string> xot_sources = xot_handler_.SourceNames();
   xot_sources_.sources =  new XotSource[xot_sources.size()];
-  xot_sources_.num_sources = xot_sources.size();
+  xot_sources_.num_sources = (int) xot_sources.size();
   for (int i = 0; i < xot_sources.size(); ++i) {
     xot_sources_.sources[i].name = new char[xot_sources[i].size() + 1];
     std::strcpy(xot_sources_.sources[i].name, xot_sources[i].c_str());
