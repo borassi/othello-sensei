@@ -17,7 +17,7 @@
 #include "fix_xot_source.h"
 
 namespace {
-FindXOTFileResults FixXOTFile(const XOT& xot, const std::string& input_filepath, const std::string& output_filepath) {
+FindXOTFileResults FixXOTFile(const Xot& xot, const std::string& input_filepath, const std::string& output_filepath) {
   std::vector<char> input = ReadFile<char>(input_filepath);
   std::ofstream output(output_filepath, std::ios::binary);
   output.write(input.data(), 16);
@@ -55,7 +55,7 @@ std::ostream& operator<<(std::ostream& stream, const FindXOTFileResults& s) {
 }
 
 FindXOTFileResults FixXOTSource(
-    const XOT& xot,
+    const Xot& xot,
     const std::string& input_folder,
     const std::string& output_folder) {
   fs::create_directories(output_folder);

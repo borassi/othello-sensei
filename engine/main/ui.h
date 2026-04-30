@@ -41,8 +41,7 @@ void* MainInit(
     char* book_filepath,
     char* thor_filepath,
     char* saved_games_filepath,
-    char* xot_small_filepath,
-    char* xot_large_filepath,
+    char* xot_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
     UpdateTimers update_timers,
@@ -100,16 +99,19 @@ EXPORT
 void Stop(void* ptr);
 
 EXPORT
-void RandomXOT(void* ptr, bool large);
+void RandomXot(void* ptr, char* source);
 
 EXPORT
-void SetXOTState(void* ptr, enum XOTState xot_state);
+void SetXotState(void* ptr, enum XotState xot_state);
 
 EXPORT
-enum XOTState GetXOTState(void* ptr);
+enum XotState GetXotState(void* ptr);
 
 EXPORT
 int XotDepth(void* ptr);
+
+EXPORT
+struct XotSources* GetXotSources(void* ptr);
 
 EXPORT
 void SetBlackSquare(void* ptr, int square);

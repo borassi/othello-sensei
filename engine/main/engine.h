@@ -219,9 +219,7 @@ class Engine {
 
   void Initialize(
       const std::string& evals_filepath,
-      const std::string& book_filepath,
-      const std::string& thor_filepath,
-      const std::string& saved_games_filepath);
+      const std::string& book_filepath);
 
   void BuildEvals(const std::string& filepath) {
     evals_ = std::make_unique<EvalType>(LoadEvals(filepath));

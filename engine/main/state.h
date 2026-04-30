@@ -70,7 +70,10 @@ class EvaluationState : public TreeNode {
   ~EvaluationState() { free(annotations_.example_thor_games); }
   EvaluationState(const EvaluationState&) = delete;
 
-  Square FirstMove() const { return annotations_.moves[0]; }
+  Square FirstMove() const {
+    assert(annotations_.num_moves > 0);
+    return annotations_.moves[0];
+  }
   Square LastMove() const { return FirstMove() == kPassMove ? Father()->FirstMove() : FirstMove(); }
   Annotations* GetAnnotations() { return &annotations_; }
   const Annotations* GetAnnotations() const { return &annotations_; }
@@ -161,7 +164,7 @@ class EvaluationState : public TreeNode {
     if (PreviousLandable(action) == nullptr) {
       return true;
     }
-    if (annotations_.depth > xot_depth && PreviousLandable(action)->annotations_.depth < xot_depth) {
+    if (annotations_.depth_no_pass >= xot_depth && PreviousLandable(action)->annotations_.depth_no_pass < xot_depth) {
       return true;
     }
     if (primary_states_available) {
@@ -172,6 +175,7 @@ class EvaluationState : public TreeNode {
   }
 
   EvaluationState* LastImportantNode(int xot_depth, bool primary_states_available, SenseiAction action) {
+    std::cout << xot_depth << "\n"<<std::flush;
     for (EvaluationState* state = PreviousLandable(action); state != nullptr; state = state->PreviousLandable(action)) {
       if (state->IsImportant(xot_depth, primary_states_available, InAnalysisLine(), action)) {
         return state;
@@ -249,6 +253,12 @@ class EvaluationState : public TreeNode {
     for (;
          result != nullptr && result->annotations_.depth_no_pass < new_depth;
          result = result->NextLandable(action)) {}
+    return result;
+  }
+
+  EvaluationState* ToMaxDepthBeforeSetBoard() {
+    EvaluationState* result = this;
+    for (; result->NextState() != nullptr && result->NextState()->FirstMove() != kSetupBoardMove; result = result->NextState()) {}
     return result;
   }
 

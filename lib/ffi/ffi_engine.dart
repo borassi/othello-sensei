@@ -70,8 +70,7 @@ class FFIEngine {
     ffi.Pointer<ffi.Char> book_filepath,
     ffi.Pointer<ffi.Char> thor_filepath,
     ffi.Pointer<ffi.Char> saved_games_filepath,
-    ffi.Pointer<ffi.Char> xot_small_filepath,
-    ffi.Pointer<ffi.Char> xot_large_filepath,
+    ffi.Pointer<ffi.Char> xot_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
     UpdateTimers update_timers,
@@ -82,8 +81,7 @@ class FFIEngine {
       book_filepath,
       thor_filepath,
       saved_games_filepath,
-      xot_small_filepath,
-      xot_large_filepath,
+      xot_filepath,
       set_board,
       update_annotations,
       update_timers,
@@ -100,7 +98,6 @@ class FFIEngine {
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
             ffi.Pointer<ffi.Char>,
-            ffi.Pointer<ffi.Char>,
             SetBoard,
             UpdateAnnotations,
             UpdateTimers,
@@ -111,7 +108,6 @@ class FFIEngine {
   late final _MainInit =
       _MainInitPtr.asFunction<
         ffi.Pointer<ffi.Void> Function(
-          ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
           ffi.Pointer<ffi.Char>,
@@ -355,40 +351,44 @@ class FFIEngine {
   late final _Stop =
       _StopPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
-  void RandomXOT(ffi.Pointer<ffi.Void> ptr, bool large) {
-    return _RandomXOT(ptr, large);
+  void RandomXot(ffi.Pointer<ffi.Void> ptr, ffi.Pointer<ffi.Char> source) {
+    return _RandomXot(ptr, source);
   }
 
-  late final _RandomXOTPtr =
+  late final _RandomXotPtr =
       _lookup<
-        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Bool)>
-      >('RandomXOT');
-  late final _RandomXOT =
-      _RandomXOTPtr.asFunction<void Function(ffi.Pointer<ffi.Void>, bool)>();
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
+        >
+      >('RandomXot');
+  late final _RandomXot =
+      _RandomXotPtr.asFunction<
+        void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Char>)
+      >();
 
-  void SetXOTState(ffi.Pointer<ffi.Void> ptr, XOTState xot_state) {
-    return _SetXOTState(ptr, xot_state.value);
+  void SetXotState(ffi.Pointer<ffi.Void> ptr, XotState xot_state) {
+    return _SetXotState(ptr, xot_state.value);
   }
 
-  late final _SetXOTStatePtr =
+  late final _SetXotStatePtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.UnsignedInt)
         >
-      >('SetXOTState');
-  late final _SetXOTState =
-      _SetXOTStatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>, int)>();
+      >('SetXotState');
+  late final _SetXotState =
+      _SetXotStatePtr.asFunction<void Function(ffi.Pointer<ffi.Void>, int)>();
 
-  XOTState GetXOTState(ffi.Pointer<ffi.Void> ptr) {
-    return XOTState.fromValue(_GetXOTState(ptr));
+  XotState GetXotState(ffi.Pointer<ffi.Void> ptr) {
+    return XotState.fromValue(_GetXotState(ptr));
   }
 
-  late final _GetXOTStatePtr =
+  late final _GetXotStatePtr =
       _lookup<
         ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ffi.Void>)>
-      >('GetXOTState');
-  late final _GetXOTState =
-      _GetXOTStatePtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
+      >('GetXotState');
+  late final _GetXotState =
+      _GetXotStatePtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
 
   int XotDepth(ffi.Pointer<ffi.Void> ptr) {
     return _XotDepth(ptr);
@@ -400,6 +400,21 @@ class FFIEngine {
       );
   late final _XotDepth =
       _XotDepthPtr.asFunction<int Function(ffi.Pointer<ffi.Void>)>();
+
+  ffi.Pointer<XotSources> GetXotSources(ffi.Pointer<ffi.Void> ptr) {
+    return _GetXotSources(ptr);
+  }
+
+  late final _GetXotSourcesPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<XotSources> Function(ffi.Pointer<ffi.Void>)
+        >
+      >('GetXotSources');
+  late final _GetXotSources =
+      _GetXotSourcesPtr.asFunction<
+        ffi.Pointer<XotSources> Function(ffi.Pointer<ffi.Void>)
+      >();
 
   void SetBlackSquare(ffi.Pointer<ffi.Void> ptr, int square) {
     return _SetBlackSquare(ptr, square);
@@ -694,20 +709,31 @@ final class SaveGameOutput extends ffi.Struct {
   external bool success;
 }
 
-enum XOTState {
+enum XotState {
   XOT_STATE_AUTOMATIC(0),
   XOT_STATE_ALWAYS(1),
   XOT_STATE_NEVER(2);
 
   final int value;
-  const XOTState(this.value);
+  const XotState(this.value);
 
-  static XOTState fromValue(int value) => switch (value) {
+  static XotState fromValue(int value) => switch (value) {
     0 => XOT_STATE_AUTOMATIC,
     1 => XOT_STATE_ALWAYS,
     2 => XOT_STATE_NEVER,
-    _ => throw ArgumentError('Unknown value for XOTState: $value'),
+    _ => throw ArgumentError('Unknown value for XotState: $value'),
   };
+}
+
+final class XotSource extends ffi.Struct {
+  external ffi.Pointer<ffi.Char> name;
+}
+
+final class XotSources extends ffi.Struct {
+  external ffi.Pointer<XotSource> sources;
+
+  @ffi.Int()
+  external int num_sources;
 }
 
 enum AnnotationsProvenance {

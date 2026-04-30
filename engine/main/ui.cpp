@@ -26,16 +26,14 @@ void* MainInit(
     char* book_filepath,
     char* thor_filepath,
     char* saved_games_filepath,
-    char* xot_small_filepath,
-    char* xot_large_filepath,
+    char* xot_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
     UpdateTimers update_timers,
     SendMessage send_message) {
   return new Main(
-      evals_filepath, book_filepath, thor_filepath, saved_games_filepath, xot_small_filepath,
-      xot_large_filepath, set_board, update_annotations, update_timers,
-      send_message);
+      evals_filepath, book_filepath, thor_filepath, saved_games_filepath, xot_filepath, set_board,
+      update_annotations, update_timers, send_message);
 }
 
 void MainDelete(void* ptr) { delete static_cast<Main*>(ptr); }
@@ -88,12 +86,13 @@ Annotations* GetStartAnnotations(void* ptr, int current_thread) {
   return static_cast<Main*>(ptr)->GetStartAnnotations(current_thread);
 }
 
-void RandomXOT(void* ptr, bool large) { static_cast<Main*>(ptr)->RandomXOT(large); }
+void RandomXot(void* ptr, char* source) { static_cast<Main*>(ptr)->RandomXot(source); }
 
-void SetXOTState(void* ptr, XOTState xot_state) { static_cast<Main*>(ptr)->SetXOTState(xot_state); }
-XOTState GetXOTState(void* ptr) { return static_cast<Main*>(ptr)->GetXOTState(); }
+void SetXotState(void* ptr, XotState xot_state) { static_cast<Main*>(ptr)->SetXotState(xot_state); }
+XotState GetXotState(void* ptr) { return static_cast<Main*>(ptr)->GetXotState(); }
 
 int XotDepth(void* ptr) { return static_cast<Main*>(ptr)->XotDepth(); }
+struct XotSources* GetXotSources(void* ptr) { return static_cast<Main*>(ptr)->GetXotSources(); }
 
 void SetBlackSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, -1); }
 void SetWhiteSquare(void* ptr, int square) { static_cast<Main*>(ptr)->SetSquare(square, 1); }

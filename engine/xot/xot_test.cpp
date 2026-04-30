@@ -191,7 +191,7 @@ TEST_F(XotHandlerTest, Empty) {
   EXPECT_EQ(xot_handler.GetPrefixLength(Sequence()), -1);
   EXPECT_EQ(xot_handler.GetPrefixLength(Sequence("e6f4")), -1);
   EXPECT_FALSE(xot_handler.IsInList(Sequence("e6f4")));
-  EXPECT_TRUE(xot_handler.Filenames().empty());
+  EXPECT_TRUE(xot_handler.SourceNames().empty());
 }
 
 TEST_F(XotHandlerTest, LoadsMultipleFiles) {
@@ -200,7 +200,7 @@ TEST_F(XotHandlerTest, LoadsMultipleFiles) {
 
   XotHandler xot_handler(kTestDataFolder);
 
-  EXPECT_THAT(xot_handler.Filenames(), UnorderedElementsAre("file1", "file2"));
+  EXPECT_THAT(xot_handler.SourceNames(), UnorderedElementsAre("file1", "file2"));
   EXPECT_TRUE(xot_handler.IsInList(Sequence("f5d6c4d3c2b3b4b5")));
   EXPECT_TRUE(xot_handler.IsInList(Sequence("f5f4g3g6f3g4e3e2")));
   EXPECT_FALSE(xot_handler.IsInList(Sequence("e6f4c3c4d3d6f6e7")));
@@ -217,7 +217,7 @@ TEST_F(XotHandlerTest, DuplicateNames) {
   // First occurrence gets the base name, subsequent occurrences
   // get (2), (3), etc.
   EXPECT_THAT(
-      xot_handler.Filenames(),
+      xot_handler.SourceNames(),
       ::testing::ElementsAre("match", "match (2)", "match (3)")
   );
 }
@@ -236,7 +236,7 @@ TEST_F(XotHandlerTest, MixedPrefixesAndAlphabeticalOrder) {
   // The resulting list follows the strict lexicographical order of the
   // original filenames, not the stripped names or integer prefix values.
   EXPECT_THAT(
-      xot_handler.Filenames(),
+      xot_handler.SourceNames(),
       ::testing::ElementsAre("zebra", "apple", "banana")
   );
 }
@@ -268,7 +268,7 @@ TEST_F(XotHandlerTest, FilenameParsingAndStripping) {
 
   // Checks that the prefix ("XXX - ") and the extensions (".txt", ".xot") are removed.
   EXPECT_THAT(
-      xot_handler.Filenames(),
+      xot_handler.SourceNames(),
       UnorderedElementsAre("file2", "file1", "another_file")
   );
 
@@ -298,4 +298,19 @@ TEST_F(XotHandlerTest, FallbackToShorterSequence) {
   // The first loaded file ("000 - file1.txt") expects f5d6c4d3c2, so it fails.
   // The second loaded file ("001 - file2.txt") expects f5d6c4d3, which matches, returning 4.
   EXPECT_EQ(xot_handler.GetPrefixLength(Sequence("f5d6c4d3d7")), 4);
+}
+
+TEST_F(XotHandlerTest, FirstFileSequenceSize) {
+  CreateXotFile("001 - file1.txt", "f5d6c4d3c2\n"); // 5 moves
+  CreateXotFile("002 - file2.txt", "f5d6c4d3\n");   // 4 moves
+
+  XotHandler xot_handler(kTestDataFolder);
+
+  EXPECT_EQ(xot_handler.FirstFileSequenceSize(), 5);
+}
+
+TEST_F(XotHandlerTest, FirstFileSequenceSizeEmpty) {
+  XotHandler xot_handler(kTestDataFolder);
+
+  EXPECT_EQ(xot_handler.FirstFileSequenceSize(), -1);
 }

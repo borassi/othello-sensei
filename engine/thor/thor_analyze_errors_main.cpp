@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
   TreeNodeSupplier tree_node_supplier;
   EvaluatorDerivative evaluator(&tree_node_supplier, &hash_map, PatternEvaluator::Factory(evals.data()));
   Book book(book_path);
-  XOT xot(LoadTextFile(xot_path));
+  Xot xot(LoadTextFile(xot_path));
 
   auto rng = std::default_random_engine {};
   rng.seed(42);

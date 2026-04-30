@@ -82,10 +82,19 @@ struct SaveGameOutput {
   bool success;
 };
 
-enum XOTState {
+enum XotState {
   XOT_STATE_AUTOMATIC,
   XOT_STATE_ALWAYS,
   XOT_STATE_NEVER,
+};
+
+struct XotSource {
+  char* name;
+};
+
+struct XotSources {
+  struct XotSource* sources;
+  int num_sources;
 };
 
 enum AnnotationsProvenance {

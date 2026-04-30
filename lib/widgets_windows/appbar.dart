@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Michele Borassi
+ * Copyright (c) 2023-2026 Michele Borassi
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,6 @@ import '../widgets_utils/misc.dart';
 
 enum MenuItem {
   newGame,
-  newGameXotSmall,
-  newGameXotLarge,
   open,
   save,
   copy,
@@ -54,12 +52,6 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
   switch (item) {
     case MenuItem.newGame:
       GlobalState.newGame();
-      return;
-    case MenuItem.newGameXotSmall:
-      GlobalState.newGameXot(true);
-      return;
-    case MenuItem.newGameXotLarge:
-      GlobalState.newGameXot(false);
       return;
     case MenuItem.save:
       await GlobalState.setDetailsAndSave(context);
@@ -109,15 +101,15 @@ void handleMenuItem(BuildContext context, MenuItem item) async {
       GlobalState.evaluate();
       return;
     case MenuItem.xotAlways:
-      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_ALWAYS);
+      GlobalState.ffiEngine.SetXotState(GlobalState.ffiMain, XotState.XOT_STATE_ALWAYS);
       GlobalState.evaluate();
       return;
     case MenuItem.xotAutomatic:
-      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_AUTOMATIC);
+      GlobalState.ffiEngine.SetXotState(GlobalState.ffiMain, XotState.XOT_STATE_AUTOMATIC);
       GlobalState.evaluate();
       return;
     case MenuItem.xotNever:
-      GlobalState.ffiEngine.SetXOTState(GlobalState.ffiMain, XOTState.XOT_STATE_NEVER);
+      GlobalState.ffiEngine.SetXotState(GlobalState.ffiMain, XotState.XOT_STATE_NEVER);
       GlobalState.evaluate();
       return;
     case MenuItem.editSavedGamesFolders:
@@ -155,22 +147,29 @@ class SenseiIconButton extends StatelessWidget {
   }
 }
 
-PopupMenuButton<MenuItem> _buildMenu({
+PopupMenuButton<T> _buildMenu<T>({
   required BuildContext context,
-  required List<PopupMenuItem<MenuItem>> items,
+  required List<PopupMenuItem<T>> items,
   required double width,
   String? tooltip,
   Icon? icon,
   String? text,
+  void Function(T)? onSelected,
   int depth = 0}) {
-  return PopupMenuButton<MenuItem>(
+  return PopupMenuButton<T>(
     icon: icon,
     constraints: BoxConstraints.tightFor(width: width),
-    onSelected: (MenuItem i) {
+    onSelected: (T i) {
       for (int j = 0; j < depth; ++j) {
         Navigator.pop(context);
       }
-      handleMenuItem(context, i);
+      if (onSelected != null) {
+        onSelected(i);
+      } else if (i is MenuItem) {
+        handleMenuItem(context, i);
+      } else {
+        throw Exception('Unexpected use of PopupMenuButton');
+      }
     },
     itemBuilder: (context) => items,
     tooltip: tooltip ?? "",
@@ -185,7 +184,7 @@ PopupMenuButton<MenuItem> _buildMenu({
   );
 }
 
-PopupMenuItem<MenuItem> _buildMenuItem(BuildContext context, {MenuItem? menuItem, String? text, Widget? child, bool? checked}) {
+PopupMenuItem<T> _buildMenuItem<T>(BuildContext context, {T? value, String? text, Widget? child, bool? checked, }) {
   var height = Theme.of(context).extension<AppSizes>()!.squareSize;
   List<Widget> checkBoxChildren;
   if (checked == null) {
@@ -195,22 +194,22 @@ PopupMenuItem<MenuItem> _buildMenuItem(BuildContext context, {MenuItem? menuItem
   } else {
     checkBoxChildren = [Icon(Icons.check_box_outline_blank, color: Theme.of(context).colorScheme.onPrimaryContainer)];
   }
+  String defaultText = '';
+  if (value is MenuItem) defaultText = camelCaseToSpaces(value.name);
   child = child ?? Align(
       alignment: Alignment.centerLeft,
       child: Row(
         children: checkBoxChildren +
         [
           const Margin.internal(),
-          MediumText(
-              text ?? camelCaseToSpaces(menuItem?.name ?? ''),
-          ),
+          MediumText(text ?? defaultText),
           const Spacer(),
         ],
       )
   );
-  return PopupMenuItem<MenuItem>(
+  return PopupMenuItem<T>(
     padding: EdgeInsets.zero,
-    value: menuItem,
+    value: value,
     child: SizedBox(
         height: height,
         width: 4 * height,
@@ -257,7 +256,7 @@ class SenseiAppBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: icons + [
         ListenableBuilder(
-          listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations]),
+          listenable: Listenable.merge([GlobalState.actionWhenPlay, GlobalState.globalAnnotations, GlobalState.xotSourcesState]),
           builder: (BuildContext context, Widget? widget) => SingleChildScrollView(
             child: _buildMenu(
               tooltip: "Menu",
@@ -268,25 +267,25 @@ class SenseiAppBar extends StatelessWidget {
               ),
               width: 4 * menuItemHeight,
               items: [
-                _buildMenuItem(context, menuItem: MenuItem.newGame),
+                _buildMenuItem(context, value: MenuItem.newGame),
                 _buildMenuItem(
                   context,
-                  child: _buildMenu(
+                  child: _buildMenu<String>(
                     context: context,
                     width: 3 * menuItemHeight,
                     depth: 1,
-                    items: [
-                      _buildMenuItem(context, menuItem: MenuItem.newGameXotSmall, text: 'Small list'),
-                      _buildMenuItem(context, menuItem: MenuItem.newGameXotLarge, text: 'Large list'),
-                    ],
+                    onSelected: (String xotName) => GlobalState.newGameXot(xotName),
+                    items: GlobalState.xotSourcesState.sourceNames.map(
+                        (name) => _buildMenuItem<String>(context, value: name, text: name)
+                    ).toList(),
                     text:'New XOT game',
                   )
                 ),
-                _buildMenuItem(context, menuItem: MenuItem.open),
-                _buildMenuItem(context, menuItem: MenuItem.save),
-                _buildMenuItem(context, menuItem: MenuItem.copy),
-                _buildMenuItem(context, menuItem: MenuItem.paste),
-                _buildMenuItem(context, menuItem: MenuItem.analyze, text: GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze'),
+                _buildMenuItem(context, value: MenuItem.open),
+                _buildMenuItem(context, value: MenuItem.save),
+                _buildMenuItem(context, value: MenuItem.copy),
+                _buildMenuItem(context, value: MenuItem.paste),
+                _buildMenuItem(context, value: MenuItem.analyze, text: GlobalState.globalAnnotations.existsAnalyzedGame() ? 'Reset analyzed game' : 'Analyze'),
                 _buildMenuItem(
                     context,
                     child: _buildMenu(
@@ -296,49 +295,49 @@ class SenseiAppBar extends StatelessWidget {
                       depth: 1,
                       items: [
                         _buildMenuItem(
-                            context,
-                            menuItem: MenuItem.xotAutomatic,
-                            checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_AUTOMATIC,
-                            text: 'Automatic',
+                          context,
+                          value: MenuItem.xotAutomatic,
+                          checked: GlobalState.ffiEngine.GetXotState(GlobalState.ffiMain) == XotState.XOT_STATE_AUTOMATIC,
+                          text: 'Automatic',
                         ),
                         _buildMenuItem(
                           context,
-                          menuItem: MenuItem.xotAlways,
-                          checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_ALWAYS,
+                          value: MenuItem.xotAlways,
+                          checked: GlobalState.ffiEngine.GetXotState(GlobalState.ffiMain) == XotState.XOT_STATE_ALWAYS,
                           text: 'Always XOT',
                         ),
                         _buildMenuItem(
                           context,
-                          menuItem: MenuItem.xotNever,
-                          checked: GlobalState.ffiEngine.GetXOTState(GlobalState.ffiMain) == XOTState.XOT_STATE_NEVER,
+                          value: MenuItem.xotNever,
+                          checked: GlobalState.ffiEngine.GetXotState(GlobalState.ffiMain) == XotState.XOT_STATE_NEVER,
                           text: 'Never XOT',
                         ),
                       ]
                     )
                 ),
-                _buildMenuItem(context, menuItem: MenuItem.setupBoard),
+                _buildMenuItem(context, value: MenuItem.setupBoard),
                 _buildMenuItem(
                     context,
                     child: _buildMenu(
                         depth: 1,
                         context: context,
                         items: [
-                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBook, text: 'Large (>900MB)'),
-                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBookMedium, text: 'Medium (~100MB)'),
-                          _buildMenuItem(context, menuItem: MenuItem.downloadLatestBookSmall, text: 'Small (~10MB)'),
+                          _buildMenuItem(context, value: MenuItem.downloadLatestBook, text: 'Large (>900MB)'),
+                          _buildMenuItem(context, value: MenuItem.downloadLatestBookMedium, text: 'Medium (~100MB)'),
+                          _buildMenuItem(context, value: MenuItem.downloadLatestBookSmall, text: 'Small (~10MB)'),
                         ],
                         width: 3 * menuItemHeight,
                         text: 'Download latest book'
                     ),
                 ),
-                _buildMenuItem(context, menuItem: MenuItem.downloadLatestArchive),
+                _buildMenuItem(context, value: MenuItem.downloadLatestArchive),
               ] + (
                   canLookupFiles() ?
                   [
-                    _buildMenuItem(context, menuItem: MenuItem.editSavedGamesFolders, text: 'Edit archive folders'),
+                    _buildMenuItem(context, value: MenuItem.editSavedGamesFolders, text: 'Edit archive folders'),
                   ] : []
               ) + [
-                _buildMenuItem(context, menuItem: MenuItem.settings),
+                _buildMenuItem(context, value: MenuItem.settings),
               ]
             )
           )

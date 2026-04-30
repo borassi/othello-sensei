@@ -45,17 +45,13 @@ class Main {
       const std::string& book_filepath,
       const std::string& thor_filepath,
       const std::string& saved_games_filepath,
-      const std::string& xot_small_filepath,
-      const std::string& xot_large_filepath,
+      const std::string& xot_filepath,
       SetBoard set_board,
       UpdateAnnotations update_annotations,
       UpdateTimers update_timers,
       SendMessage send_message);
 
-  ~Main() {
-    is_being_destroyed_ = true;
-    update_timers_future_.get();
-  }
+  ~Main();
 
   void NewGame() {
     first_state_ = std::make_shared<EvaluationState>(kStartingPositionMove, Board(), true, 0, 0, false);
@@ -164,39 +160,34 @@ class Main {
     return last_state_flutter_->GetAnnotations();
   }
 
-  void RandomXOT(bool large) {
-    const XOT& xot = large ? xot_small_ : xot_large_;
-    Sequence sequence = xot.RandomSequence();
+  void RandomXot(const std::string& source_name) {
+    Sequence sequence = xot_handler_.RandomSequence(source_name);
     SetSequence(sequence, true);
   }
 
-  void SetXOTState(XOTState xot_state) {
+  void SetXotState(XotState xot_state) {
     xot_state_ = xot_state;
     RunSetBoard(false);
   }
-  XOTState GetXOTState() { return xot_state_; }
 
-  // TODO: make this function handle any depth.
+  XotState GetXotState() { return xot_state_; }
+  XotSources* GetXotSources() { return &xot_sources_; }
+
   int XotDepth() {
+    auto xot_depth = XotDepthNoStatus();
     switch (xot_state_) {
       case XOT_STATE_ALWAYS:
-        return 8;
+        return xot_depth == -1 ? xot_handler_.FirstFileSequenceSize() : xot_depth;
       case XOT_STATE_NEVER:
         return -1;
       case XOT_STATE_AUTOMATIC: {
-        if (!first_state_) {
+        auto xot_state = first_state_->ToDepth(xot_depth, SENSEI_EVALUATES);
+        if (!xot_state) {
+          assert(false);
           return -1;
         }
-        auto state_in_xot = first_state_->ToDepth(8, SENSEI_EVALUATES);
-        if (!state_in_xot) {
-          return -1;
-        }
-        auto sequence = current_state_->GetSequence();
-        if (!(sequence && xot_large_.IsInListPrefix(*sequence))) {
-          return -1;
-        }
-        auto [error_black, error_white] = state_in_xot->TotalError();
-        return std::max(error_black, error_white) > 5 ? 8 : -1;
+        auto [error_black, error_white] = xot_state->TotalError();
+        return std::max(error_black, error_white) > 5 ? xot_depth : -1;
       }
       default:
         assert(false);
@@ -327,9 +318,9 @@ class Main {
   std::shared_ptr<EvaluationState> last_state_flutter_;
   std::shared_ptr<EvaluationState> first_state_;
   EvaluationState* current_state_;
-  XOT xot_small_;
-  XOT xot_large_;
-  XOTState xot_state_;
+  XotHandler xot_handler_;
+  XotSources xot_sources_;
+  XotState xot_state_;
 
   Engine engine_;
   // 0 = not in analysis; 1 = started analysis (skip undo), 2 = in analysis.
@@ -381,6 +372,22 @@ class Main {
       ToState(current_state_->NextState(moves.Move(i)), false);
     }
   }
+
+  int XotDepthNoStatus() {
+    if (!first_state_) {
+      return -1;
+    }
+    auto most_forward_state = first_state_->ToMaxDepthBeforeSetBoard();
+    if (!most_forward_state) {
+      return -1;
+    }
+    auto sequence = most_forward_state->GetSequence();
+    if (!sequence) {
+      return -1;
+    }
+    return xot_handler_.GetPrefixLength(*sequence);
+  }
+
 };
 
 #endif // OTHELLO_SENSEI_MAIN_H

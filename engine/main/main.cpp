@@ -23,8 +23,7 @@ Main::Main(
     const std::string& book_filepath,
     const std::string& thor_filepath,
     const std::string& saved_games_filepath,
-    const std::string& xot_small_filepath,
-    const std::string& xot_large_filepath,
+    const std::string& xot_filepath,
     SetBoard set_board,
     UpdateAnnotations update_annotations,
     UpdateTimers update_timers,
@@ -33,8 +32,7 @@ Main::Main(
     update_timers_(update_timers),
     last_state_flutter_(nullptr),
     current_state_(nullptr),
-    xot_small_(LoadTextFile(xot_small_filepath)),
-    xot_large_(LoadTextFile(xot_large_filepath)),
+    xot_handler_(xot_filepath),
     xot_state_(XOT_STATE_AUTOMATIC),
     engine_(evals_filepath, book_filepath, thor_filepath, saved_games_filepath, update_annotations, send_message),
     analyzing_(0),
@@ -44,7 +42,23 @@ Main::Main(
   srand((int) time(nullptr));
   PrintSupportedFeatures();
   update_timers_future_ = std::async(std::launch::async, &Main::RunUpdateTimersThread, this);
+  std::vector<std::string> xot_sources = xot_handler_.SourceNames();
+  xot_sources_.sources =  new XotSource[xot_sources.size()];
+  xot_sources_.num_sources = xot_sources.size();
+  for (int i = 0; i < xot_sources.size(); ++i) {
+    xot_sources_.sources[i].name = new char[xot_sources[i].size() + 1];
+    std::strcpy(xot_sources_.sources[i].name, xot_sources[i].c_str());
+  }
   NewGame();
+}
+
+Main::~Main() {
+  is_being_destroyed_ = true;
+  update_timers_future_.get();
+  for (int i = 0; i < xot_sources_.num_sources; ++i) {
+    delete(xot_sources_.sources[i].name);
+  }
+  delete xot_sources_.sources;
 }
 
 void Main::Evaluate() {

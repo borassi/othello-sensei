@@ -39,7 +39,7 @@ struct FindXOTFileResults {
 std::ostream& operator<<(std::ostream& stream, const FindXOTFileResults& s);
 
 FindXOTFileResults FixXOTSource(
-    const XOT& xot,
+    const Xot& xot,
     const std::string& input_folder,
     const std::string& output_folder);
 

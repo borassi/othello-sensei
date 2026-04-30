@@ -153,6 +153,7 @@ class GlobalState {
   static late List<ConnectivityResult> connectivity;
   static ThorMetadataState thorMetadata = ThorMetadataState();
   static GameMetadataState gameMetadataState = GameMetadataState();
+  static XotSourcesState xotSourcesState = XotSourcesState();
   static late FFIEngine ffiEngine;
   static late CpuType cpuType;
   static late String localPath;
@@ -202,25 +203,28 @@ class GlobalState {
     var bookC = join(localAssetPathVar, 'book').toNativeUtf8().cast<Char>();
     var archiveC = join(localAssetPathVar, 'archive').toNativeUtf8().cast<Char>();
     var localSavedGamesFoldersPathC = localSavedGamesFoldersPath().toNativeUtf8().cast<Char>();
-    var xotSmallC = join(localAssetPathVar, 'xot/openingssmall.txt').toNativeUtf8().cast<Char>();
-    var xotLargeC = join(localAssetPathVar, 'xot/openingslarge.txt').toNativeUtf8().cast<Char>();
+    var xotC = join(localAssetPathVar, 'xot').toNativeUtf8().cast<Char>();
     ffiMain = GlobalState.ffiEngine.MainInit(
-        evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC, xotSmallC, xotLargeC,
+        evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC, xotC,
         setBoardCallback.nativeFunction,
         setAnnotationsCallback.nativeFunction,
         updateTimersCallback.nativeFunction,
         sendMessageCallback.nativeFunction
     );
     for (var ptr in [evaluatorC, bookC, archiveC, localSavedGamesFoldersPathC,
-                     xotSmallC, xotLargeC]) {
+                     xotC]) {
       malloc.free(ptr);
     }
     GlobalState.thorMetadata.set(ffiEngine.GetThorMetadata(ffiMain));
+    xotSourcesState.updateState();
     evaluate();
   }
 
-  static void newGameXot(bool small) async {
-    GlobalState.ffiEngine.RandomXOT(GlobalState.ffiMain, small);
+  static void newGameXot(String source) async {
+    assert(GlobalState.xotSourcesState.sourceNames.contains(source));
+    var sourceC = source.toNativeUtf8().cast<Char>();
+    GlobalState.ffiEngine.RandomXot(GlobalState.ffiMain, sourceC);
+    malloc.free(sourceC);
     evaluate();
   }
 
@@ -1220,6 +1224,20 @@ class TimerState with ChangeNotifier {
     }
     this.secondsBlack = newSecondsBlack;
     this.secondsWhite = newSecondsWhite;
+    notifyListeners();
+  }
+}
+
+class XotSourcesState with ChangeNotifier {
+  List<String> sourceNames;
+
+  XotSourcesState() : sourceNames = [];
+
+  void updateState() {
+    Pointer<XotSources> xotSources = GlobalState.ffiEngine.GetXotSources(GlobalState.ffiMain);
+    for (int i = 0; i < xotSources.ref.num_sources; ++i) {
+      sourceNames.add(cStringToString(xotSources.ref.sources[i].name));
+    }
     notifyListeners();
   }
 }

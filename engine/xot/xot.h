@@ -104,8 +104,11 @@ class XotHandler {
   // Returns a random sequence from the specific Xot file.
   Sequence RandomSequence(const std::string& filename) const;
 
-  // Returns a list of all loaded Xot filenames.
-  std::vector<std::string> Filenames() const;
+  // Returns a list of all loaded Xot source names.
+  std::vector<std::string> SourceNames() const;
+
+  // Returns the sequence size of the first loaded Xot file, or -1 if no files are loaded.
+  int FirstFileSequenceSize() const;
 
  private:
   std::vector<std::unique_ptr<Xot>> xots_;

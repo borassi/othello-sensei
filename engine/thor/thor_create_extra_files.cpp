@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
     std::cout << "XOT path, fixing...\n";
-    XOT xot(LoadTextFile(xot_path));
+    Xot xot(LoadTextFile(xot_path));
     for (const auto& entry : GetAllFiles(input_path, /*include_files=*/false, /*include_directories=*/true)) {
       std::cout << "  Starting " << entry << "\n";
       auto result = FixXOTSource(xot, entry, (fs::path(output_path) / fs::path(entry).filename()).string());

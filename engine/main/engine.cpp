@@ -41,9 +41,6 @@ void BoardToEvaluate::FinalizeEvaluation() {
   if (evaluator_.GetStatus() == SOLVED) {
     finished_ = true;
   }
-  if (state_->HasValidChildren()) {
-    std::cout << state_->ToBoard() << "\n" << std::flush;
-  }
   assert(!state_->HasValidChildren() || state_->IsBeforeModification());
   if (!state_->IsValid() || state_->GetNVisited() < first_position.GetNVisited()) {
     state_->SetAnnotations(first_position, false, evaluator_.GetElapsedTime());
@@ -91,9 +88,7 @@ Engine::Engine(
     num_boards_to_evaluate_(0),
     current_thread_(0),
     current_future_(std::async(
-        std::launch::async, &Engine::Initialize, this, evals_filepath,
-        book_filepath, thor_filepath, saved_games_filepath
-    ).share()),
+        std::launch::async, &Engine::Initialize, this, evals_filepath, book_filepath).share()),
     thor_metadata_(),
     last_first_state_(nullptr),
     last_state_(nullptr) {
@@ -102,9 +97,7 @@ Engine::Engine(
 
 void Engine::Initialize(
     const std::string& evals_filepath,
-    const std::string& book_filepath,
-    const std::string& thor_filepath,
-    const std::string& saved_games_filepath) {
+    const std::string& book_filepath) {
   auto future_evals = std::async(std::launch::async, &Engine::BuildEvals, this, evals_filepath);
   auto future_book = std::async(std::launch::async, &Engine::BuildBook, this, book_filepath);
 

@@ -125,11 +125,18 @@ Sequence XotHandler::RandomSequence(const std::string& filename) const {
   throw std::invalid_argument("Xot name not found: " + filename);
 }
 
-std::vector<std::string> XotHandler::Filenames() const {
+std::vector<std::string> XotHandler::SourceNames() const {
   std::vector<std::string> names;
   names.reserve(xots_.size());
   for (const auto& xot : xots_) {
     names.push_back(xot->Name());
   }
   return names;
+}
+
+int XotHandler::FirstFileSequenceSize() const {
+  if (xots_.empty()) {
+    return -1;
+  }
+  return xots_.front()->SequenceSize();
 }

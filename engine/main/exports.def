@@ -21,10 +21,11 @@ EXPORTS
     GetCurrentAnnotations
     GetStartAnnotations
     Stop
-    RandomXOT
-    SetXOTState
-    GetXOTState
+    RandomXot
+    SetXotState
+    GetXotState
     XotDepth
+    GetXotSources
     SetBlackSquare
     SetWhiteSquare
     SetEmptySquare

@@ -22,6 +22,7 @@ target_link_libraries(
         xot
         PUBLIC
         board
+        files
         misc
         sequence
 )
