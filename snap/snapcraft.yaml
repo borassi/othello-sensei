@@ -67,8 +67,10 @@ parts:
     disable-parallel: false
     plugin: flutter
     flutter-target: lib/main.dart
-    stage-packages:
-      - zenity
+    build-packages:
+      - lld
+      - binutils
+      - llvm
 
   cleanup:
     after: [othello-sensei, engine-popcnt, engine-bmi2]
@@ -87,5 +89,7 @@ parts:
       cp lib/libui.so final_lib
       cp lib/libcpu_adapter.so final_lib
       cp lib/libapp.so final_lib
+      strip --strip-unneeded final_lib/*.so
       rm -Rf lib
+      rm -Rf include
       mv final_lib lib

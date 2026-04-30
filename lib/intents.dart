@@ -51,7 +51,6 @@ Future<String> _resolveToRealFilePath(String uriString) async {
 }
 
 void _handleIntentAndroid(Intent? intent) async {
-  print('Handle intent');
   if (intent == null) {
     return;
   }

@@ -175,7 +175,6 @@ class EvaluationState : public TreeNode {
   }
 
   EvaluationState* LastImportantNode(int xot_depth, bool primary_states_available, SenseiAction action) {
-    std::cout << xot_depth << "\n"<<std::flush;
     for (EvaluationState* state = PreviousLandable(action); state != nullptr; state = state->PreviousLandable(action)) {
       if (state->IsImportant(xot_depth, primary_states_available, InAnalysisLine(), action)) {
         return state;
