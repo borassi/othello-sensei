@@ -76,7 +76,6 @@ void main() async {
   if (Platform.isAndroid || Platform.isIOS) {
     await initializeFirebase();
   }
-  maybeForwardIntent();
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
   }

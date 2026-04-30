@@ -31,26 +31,6 @@ import 'package:receive_intent/receive_intent.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:uri_content/uri_content.dart';
 
-Future<bool> maybeForwardIntent() async {
-  if (!Platform.isAndroid) {
-    return false;
-  }
-  final intent = await ReceiveIntent.getInitialIntent();
-  if (intent == null || intent.fromPackageName == null || intent.action != 'android.intent.action.SEND') {
-    return false;
-  }
-  SystemNavigator.pop();
-  final AndroidIntent sendIntent = AndroidIntent(
-    action: 'com.othellosensei.app.FORWARD_INTENT',
-    flags: [Flag.FLAG_ACTIVITY_SINGLE_TOP],
-    data: intent.data,
-    category: intent.categories?.elementAtOrNull(0),
-    arguments: intent.extra,
-  );
-  await sendIntent.launch();
-  return true;
-}
-
 Future<String> _resolveToRealFilePath(String uriString) async {
   final uri = Uri.parse(uriString);
 
@@ -71,6 +51,7 @@ Future<String> _resolveToRealFilePath(String uriString) async {
 }
 
 void _handleIntentAndroid(Intent? intent) async {
+  print('Handle intent');
   if (intent == null) {
     return;
   }
