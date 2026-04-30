@@ -26,6 +26,8 @@
 		CD3DF9662CE12CE3000E5098 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD3DF9652CE12CE3000E5098 /* ShareViewController.swift */; };
 		CD3DF9692CE12CE3000E5098 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = CD3DF9682CE12CE3000E5098 /* Base */; };
 		CD3DF96D2CE12CE3000E5098 /* Share Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CD3DF9632CE12CE3000E5098 /* Share Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CD9A0A012FA354B700BA7CE7 /* CMakeLists.txt in Resources */ = {isa = PBXBuildFile; fileRef = CD9A09FC2FA354B700BA7CE7 /* CMakeLists.txt */; };
+		CD9A0A032FA354B700BA7CE7 /* xot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD9A09FE2FA354B700BA7CE7 /* xot.cpp */; };
 		CDA310182CB19610006E46F5 /* bitpattern.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F7F2CB19610006E46F5 /* bitpattern.cpp */; };
 		CDA3101A2CB19610006E46F5 /* board.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F822CB19610006E46F5 /* board.cpp */; };
 		CDA3101E2CB19610006E46F5 /* get_flip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CDA30F872CB19610006E46F5 /* get_flip.cpp */; };
@@ -151,6 +153,9 @@
 		CD3DF9682CE12CE3000E5098 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
 		CD3DF96A2CE12CE3000E5098 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CD3DF9722CE12E67000E5098 /* Share Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Share Extension.entitlements"; sourceTree = "<group>"; };
+		CD9A09FC2FA354B700BA7CE7 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CD9A09FD2FA354B700BA7CE7 /* xot.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xot.h; sourceTree = "<group>"; };
+		CD9A09FE2FA354B700BA7CE7 /* xot.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xot.cpp; sourceTree = "<group>"; };
 		CDA30F762CB19610006E46F5 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		CDA30F772CB19610006E46F5 /* collect_examples.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = collect_examples.cpp; sourceTree = "<group>"; };
 		CDA30F782CB19610006E46F5 /* endgame_ffo_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = endgame_ffo_main.cpp; sourceTree = "<group>"; };
@@ -413,6 +418,16 @@
 			path = "Share Extension";
 			sourceTree = "<group>";
 		};
+		CD9A0A002FA354B700BA7CE7 /* xot */ = {
+			isa = PBXGroup;
+			children = (
+				CD9A09FC2FA354B700BA7CE7 /* CMakeLists.txt */,
+				CD9A09FD2FA354B700BA7CE7 /* xot.h */,
+				CD9A09FE2FA354B700BA7CE7 /* xot.cpp */,
+			);
+			path = xot;
+			sourceTree = "<group>";
+		};
 		CDA30F7D2CB19610006E46F5 /* analyzers */ = {
 			isa = PBXGroup;
 			children = (
@@ -635,6 +650,7 @@
 		CDA310102CB19610006E46F5 /* engine */ = {
 			isa = PBXGroup;
 			children = (
+				CD9A0A002FA354B700BA7CE7 /* xot */,
 				CDA30F7D2CB19610006E46F5 /* analyzers */,
 				CDA30F922CB19610006E46F5 /* board */,
 				CDA30FA12CB19610006E46F5 /* book */,
@@ -801,6 +817,7 @@
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
+				CD9A0A012FA354B700BA7CE7 /* CMakeLists.txt in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				E144B2F024955CBE5BB39733 /* GoogleService-Info.plist in Resources */,
@@ -826,9 +843,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -859,9 +880,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -995,6 +1020,7 @@
 				CD300FE22E7F07A5004936EF /* move_selector.h in Sources */,
 				CDA310562CB19610006E46F5 /* state.cpp in Sources */,
 				CDA310312CB19610006E46F5 /* endgame_time.cpp in Sources */,
+				CD9A0A032FA354B700BA7CE7 /* xot.cpp in Sources */,
 				CDA3105A2CB19610006E46F5 /* game.cpp in Sources */,
 				CDA310242CB19610006E46F5 /* stable.cpp in Sources */,
 				CDA310492CB19610006E46F5 /* evaluator_derivative.cpp in Sources */,

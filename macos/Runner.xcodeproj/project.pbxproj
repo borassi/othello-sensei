@@ -119,6 +119,8 @@
 		CD3905682E6DF0F70009439A /* saved_game_list.h in Sources */ = {isa = PBXBuildFile; fileRef = CD3905642E6DF0F70009439A /* saved_game_list.h */; };
 		CD39056B2E6DF1710009439A /* move_selector.h in Sources */ = {isa = PBXBuildFile; fileRef = CD3905692E6DF1710009439A /* move_selector.h */; };
 		CD39056C2E6DF1710009439A /* move_selector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD39056A2E6DF1710009439A /* move_selector.cpp */; };
+		CD9A09F92FA353A900BA7CE7 /* xot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD9A09F62FA353A900BA7CE7 /* xot.cpp */; };
+		CD9A09FB2FA353A900BA7CE7 /* CMakeLists.txt in Resources */ = {isa = PBXBuildFile; fileRef = CD9A09F42FA353A900BA7CE7 /* CMakeLists.txt */; };
 		EFDFEDE6AE02C395A4836950 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 674196E3A2BEAD71506B7796 /* Pods_RunnerTests.framework */; };
 /* End PBXBuildFile section */
 
@@ -325,6 +327,10 @@
 		CD3905642E6DF0F70009439A /* saved_game_list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = saved_game_list.h; path = ../engine/savegame/saved_game_list.h; sourceTree = "<group>"; };
 		CD3905692E6DF1710009439A /* move_selector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = move_selector.h; path = ../engine/playagainstsensei/move_selector.h; sourceTree = "<group>"; };
 		CD39056A2E6DF1710009439A /* move_selector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = move_selector.cpp; path = ../engine/playagainstsensei/move_selector.cpp; sourceTree = "<group>"; };
+		CD9A09F42FA353A900BA7CE7 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		CD9A09F52FA353A900BA7CE7 /* xot.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = xot.h; sourceTree = "<group>"; };
+		CD9A09F62FA353A900BA7CE7 /* xot.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xot.cpp; sourceTree = "<group>"; };
+		CD9A09F72FA353A900BA7CE7 /* xot_test.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = xot_test.cpp; sourceTree = "<group>"; };
 		CDA8754A2CBC3779004504D9 /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		E5FD299C50711500B2D37FC7 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		E6A5C5E521A750E754E38082 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
@@ -671,6 +677,7 @@
 		CD1DEA222CA9950B00FC1250 /* engine */ = {
 			isa = PBXGroup;
 			children = (
+				CD9A09F82FA353A900BA7CE7 /* xot */,
 				CD1DE98F2CA9950B00FC1250 /* analyzers */,
 				CD1DE9A42CA9950B00FC1250 /* board */,
 				CD1DE9B32CA9950B00FC1250 /* book */,
@@ -686,6 +693,17 @@
 			);
 			name = engine;
 			path = ../engine;
+			sourceTree = "<group>";
+		};
+		CD9A09F82FA353A900BA7CE7 /* xot */ = {
+			isa = PBXGroup;
+			children = (
+				CD9A09F42FA353A900BA7CE7 /* CMakeLists.txt */,
+				CD9A09F52FA353A900BA7CE7 /* xot.h */,
+				CD9A09F62FA353A900BA7CE7 /* xot.cpp */,
+				CD9A09F72FA353A900BA7CE7 /* xot_test.cpp */,
+			);
+			path = xot;
 			sourceTree = "<group>";
 		};
 		DB67CC44AC8811CB0B240B20 /* Frameworks */ = {
@@ -804,6 +822,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD9A09FB2FA353A900BA7CE7 /* CMakeLists.txt in Resources */,
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
 				AF3FFC55BCE448698C7CF8A9 /* GoogleService-Info.plist in Resources */,
@@ -1031,6 +1050,8 @@
 				CD1DEAD52CA9960200FC1250 /* stable.cpp in Sources */,
 				CD1DEAD62CA9960200FC1250 /* stable.h in Sources */,
 				CD1DEAC52CA995F900FC1250 /* bitpattern.cpp in Sources */,
+				CD9A09F92FA353A900BA7CE7 /* xot.cpp in Sources */,
+				CD9A09FA2FA353A900BA7CE7 /* xot_test.cpp in Sources */,
 				CD1DEAC62CA995F900FC1250 /* bitpattern.h in Sources */,
 				CD1DEAC82CA995F900FC1250 /* board.cpp in Sources */,
 				CD1DEAC92CA995F900FC1250 /* board.h in Sources */,
