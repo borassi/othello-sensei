@@ -170,7 +170,8 @@ window.onUpdateAnnotations = (threadId, finished, move) => {
   // 4. Second loop: paint the annotations
   for (let i = 0; i < children.length; i++) {
     const child = children[i];
-    const displayEval = -child.eval;
+    // Ensures that we never get -0.00.
+    const displayEval = Math.round(-child.eval * 100) / 100 + 0.0000001;
     for (let j = 0; j < child.num_moves; ++j) {
       const moveId = `annotation-${child.moves[j]}`;
       const annElement = document.getElementById(moveId);

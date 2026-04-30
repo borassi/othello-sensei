@@ -71,8 +71,7 @@ export class SenseiAPI {
       "assets/book",
       "assets/archive",
       "",
-      "assets/xot/openingssmall.txt",
-      "assets/xot/openingslarge.txt"
+      "assets/xot"
     );
 
     this.params.sensei_action = this._engine.SenseiAction.Evaluates;

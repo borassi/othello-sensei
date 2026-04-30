@@ -24,6 +24,13 @@ const boardInput = document.getElementById('board-input');
 const evaluationVal = document.getElementById('evaluation-value');
 const stopBtn = document.getElementById('stop-btn');
 
+// Create this formatter once outside your functions for performance
+const evalFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    signDisplay: 'always' // Forces + for positive and 0, - for negative
+});
+
 (async () => {
     senseiApi.init(window.onSetBoard, window.onUpdateAnnotations).then(() => {
       statusEl.innerText = "Engine Ready";
@@ -61,9 +68,9 @@ window.onUpdateAnnotations = (threadId, finished, move) => {
   // Use thread 0 for the primary evaluation
   const evaluation = senseiApi.getCurrentEvaluation(threadId);
 
-  // Format the score (assuming it's a float/int from the engine)
-  const formattedScore = (evaluation.eval > 0 ? "+" : "") + evaluation.eval.toFixed(2);
-  evaluationVal.innerText = formattedScore;
+  // Ensures that we never get -0.00.
+  const displayEval = Math.round(evaluation.eval * 100) / 100 + 0.0000001;
+  evaluationVal.innerText = evalFormatter.format(displayEval);
   if (!finished) {
     senseiApi.evaluate();
   }

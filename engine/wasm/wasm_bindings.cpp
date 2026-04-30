@@ -70,7 +70,6 @@ emscripten::val AnnotationToJS(const struct Annotations* ann) {
   obj.set("median_eval", ann->median_eval);
   obj.set("median_eval_best_line", ann->median_eval_best_line);
   obj.set("provenance", static_cast<int>(ann->provenance)); // Cast enum to int
-  obj.set("derived", ann->derived);
   obj.set("prob_lower_eval", ann->prob_lower_eval);
   obj.set("prob_upper_eval", ann->prob_upper_eval);
   obj.set("proof_number_lower", ann->proof_number_lower);
@@ -194,12 +193,12 @@ EMSCRIPTEN_BINDINGS(othello_module) {
     // Bind the initialization logic
     function("mainInit", optional_override([](
       std::string evals, std::string book, std::string thor,
-      std::string saved, std::string xot_s, std::string xot_l
+      std::string saved, std::string xot
     ) {
 
       void* main = MainInit(
           (char*)evals.c_str(), (char*)book.c_str(), (char*)thor.c_str(),
-          (char*)saved.c_str(), (char*)xot_s.c_str(), (char*)xot_l.c_str(),
+          (char*)saved.c_str(), (char*)xot.c_str(),
           WasmSetBoard, WasmUpdateAnnotations, WasmUpdateTimers, WasmSendMessage
       );
 
@@ -221,10 +220,14 @@ EMSCRIPTEN_BINDINGS(othello_module) {
     function("setWhiteSquare", &wrap<SetWhiteSquare>::call);
     function("setEmptySquare", &wrap<SetEmptySquare>::call);
     function("invertTurn",     &wrap<InvertTurn>::call);
-    function("randomXOT",      &wrap<RandomXOT>::call);
-    function("isXot",          &wrap<IsXot>::call);
-    function("setXOTState",    &wrap<SetXOTState>::call);
-    function("getXOTState",    &wrap<GetXOTState>::call);
+    function("xotDepth",       &wrap<XotDepth>::call);
+    function("setXotState",    &wrap<SetXotState>::call);
+    function("getXotState",    &wrap<GetXotState>::call);
+    function("getXotSources",  &wrap<MutableGameMetadata>::call, allow_raw_pointers());
+
+    function("randomXot", optional_override([](uintptr_t ptr, std::string source) {
+      RandomXot(reinterpret_cast<void*>(ptr), (char*)source.c_str());
+    }));
 
     // --- 5. Sequence & Navigation ---
     function("setCurrentMove", &wrap<SetCurrentMove>::call);
