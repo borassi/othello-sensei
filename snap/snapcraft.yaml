@@ -40,10 +40,11 @@ architectures:
 apps:
   othello-sensei:
     command: othello_sensei
-    extensions: [gnome] # gnome includes the libraries required by flutter
+    extensions: [gnome]  # gnome includes the libraries required by flutter
     plugs:
       - network
       - network-manager-observe
+      - home  # to look at all the games in the saved games folders
     slots:
       - dbus-othello-sensei
 parts:
