@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
       node->SetLower(lower);
       node->SetUpper(upper);
       n_visited += result.GetNVisited();
-      solved = lower != -64 || upper != 64;
+      solved = upper <= alpha || lower == upper || lower >= beta;
       if (solved) {
         std::cout << "Solved: " << (int) result.Lower() << " <= eval <= " << (int) result.Upper() << "\n";
       } else {
@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
       std::cout << "Too early to solve\n";
     }
     if (!solved) {
+      tree_node_supplier.Reset();
       std::cout << "Adding children\n";
       std::vector<Node> children;
       int i = 0;
@@ -177,7 +178,8 @@ int main(int argc, char* argv[]) {
             child.Player(), child.Opponent(), -63, 63, n_descendants_children / 100, 300, n_threads);
         auto early_result = evaluator->GetFirstPosition();
         assert(early_result);
-        auto remaining_work = std::max((NVisited) 1000, (NVisited) early_result->RemainingWork(alpha, beta));
+        // At least evaluate 10M nodes.
+        auto remaining_work = std::max((NVisited) 300000000, (NVisited) early_result->RemainingWork(alpha, beta));
         evaluator->ContinueEvaluate(
             std::min(n_descendants_children, (NVisited) remaining_work / 30), 300, n_threads);
         auto result = evaluator->GetFirstPosition();
