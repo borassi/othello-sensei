@@ -57,9 +57,9 @@ Main::~Main() {
   is_being_destroyed_ = true;
   update_timers_future_.get();
   for (int i = 0; i < xot_sources_.num_sources; ++i) {
-    delete(xot_sources_.sources[i].name);
+    delete[] xot_sources_.sources[i].name;
   }
-  delete xot_sources_.sources;
+  delete[] xot_sources_.sources;
 }
 
 void Main::Evaluate() {
