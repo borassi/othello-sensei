@@ -40,12 +40,20 @@ if(EMSCRIPTEN)
             "-Wno-deprecated-pragma"
             "-Wno-deprecated-declarations"
     )
-    # Apply optimizations to ALL targets in the project
+    # Apply optimizations to ALL targets in the project.
+    #
+    # NDEBUG has to be listed here: it is otherwise only added through
+    # CMAKE_CXX_FLAGS_RELEASE below, and the WASM build never sets
+    # CMAKE_BUILD_TYPE, so those flags do not apply. Without it every assert()
+    # is compiled into the WASM build - a live branch in the search hot paths,
+    # plus the assertion text and the absolute source paths of the build
+    # machine in the shipped binary.
     add_compile_options(
             "-O3"
             "-flto"
             "-pthread"
             "-msimd128"
+            "-DNDEBUG"
     )
 endif()
 
