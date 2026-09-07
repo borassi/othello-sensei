@@ -89,9 +89,18 @@ target_link_libraries( # Specifies the target library.
         xot
 )
 
+# Android loads this through JNI, so it has to be a shared library there.
+# Under Emscripten a SHARED library becomes a side module that the page would
+# have to fetch as libui.so at runtime, which no static web host serves.
+if(EMSCRIPTEN)
+    set(SENSEI_UI_LIBRARY_TYPE STATIC)
+else()
+    set(SENSEI_UI_LIBRARY_TYPE SHARED)
+endif()
+
 add_library(
         ui
-        SHARED
+        ${SENSEI_UI_LIBRARY_TYPE}
         ui.h
         ui.cpp
 )
